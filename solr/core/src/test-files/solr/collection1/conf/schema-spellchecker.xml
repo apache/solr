@@ -16,15 +16,6 @@
  limitations under the License.
 -->
 
-<!-- This is the Solr schema file. This file should be named "schema.xml" and
- should be in the conf directory under the solr home
- (i.e. ./solr/conf/schema.xml by default) 
- or located where the classloader for the Solr webapp can find it.
-
- For more information, on how to customize this file, please see
- http://wiki.apache.org/solr/SchemaXml
--->
-
 <schema name="Solr SpellCheck Test" version="1.1">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
@@ -58,10 +49,26 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="teststop_type" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <fieldType name="long" class="solr.LongPointField"/>
+
   <field name="id" type="string" indexed="true" stored="true"/>
   <field name="spell" type="spellText" indexed="true" stored="true"/>
   <field name="suggest" type="spellText" indexed="true" stored="true"/>
+  <field name="teststop" type="teststop_type" indexed="true" stored="true"/>
   <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
 
   <copyField source="text" dest="spell"/>
   <copyField source="text" dest="suggest"/>

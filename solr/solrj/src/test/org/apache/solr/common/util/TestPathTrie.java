@@ -17,21 +17,19 @@
 
 package org.apache.solr.common.util;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-import org.apache.solr.SolrTestCaseJ4;
-
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.solr.SolrTestCaseJ4;
+
 public class TestPathTrie extends SolrTestCaseJ4 {
 
   public void testPathTrie() {
-    PathTrie<String> pathTrie = new PathTrie<>(ImmutableSet.of("_introspect"));
+    PathTrie<String> pathTrie = new PathTrie<>(Set.of("_introspect"));
     pathTrie.insert("/", emptyMap(), "R");
     pathTrie.insert("/aa", emptyMap(), "d");
     pathTrie.insert("/aa/bb/{cc}/dd", emptyMap(), "a");
@@ -39,7 +37,7 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     pathTrie.insert("/aa/bb/{cc}/{xx}", emptyMap(), "b");
     pathTrie.insert("/aa/bb", emptyMap(), "c");
 
-    HashMap<String,String> templateValues = new HashMap<>();
+    HashMap<String, String> templateValues = new HashMap<>();
     assertEquals("R", pathTrie.lookup("/", templateValues, null));
     assertEquals("d", pathTrie.lookup("/aa", templateValues, null));
     assertEquals("a", pathTrie.lookup("/aa/bb/hello/dd", templateValues, null));
@@ -50,24 +48,24 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     assertEquals("b", pathTrie.lookup("/aa/bb/hello/world", templateValues, null));
     assertEquals("hello", templateValues.get("cc"));
     assertEquals("world", templateValues.get("xx"));
-    Set<String> subPaths =  new HashSet<>();
+    Set<String> subPaths = new HashSet<>();
     templateValues.clear();
-    pathTrie.lookup("/aa",templateValues, subPaths);
+    pathTrie.lookup("/aa", templateValues, subPaths);
     assertEquals(3, subPaths.size());
 
-    pathTrie = new PathTrie<>(ImmutableSet.of("_introspect"));
+    pathTrie = new PathTrie<>(Set.of("_introspect"));
     pathTrie.insert("/aa/bb/{cc}/tt/*", emptyMap(), "W");
 
     templateValues.clear();
-    assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt/hello", templateValues));
+    assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello", templateValues));
     assertEquals(templateValues.get("*"), "/hello");
 
     templateValues.clear();
-    assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt", templateValues));
-    assertEquals(templateValues.get("*"), null);
+    assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt", templateValues));
+    assertNull(templateValues.get("*"));
 
     templateValues.clear();
-    assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
+    assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
     assertEquals(templateValues.get("*"), "/hello/world/from/solr");
 
     pathTrie.insert("/1/2/{x}/4", emptyMap(), "a");
@@ -76,6 +74,6 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     assertEquals("a", pathTrie.lookup("/1/2/3/4", templateValues));
     assertEquals(templateValues.get("x"), "3");
     pathTrie.remove(PathTrie.getPathSegments("/1/2/3/4"));
-    assertEquals(null, pathTrie.lookup("/1/2/3/4", null));
+    assertNull(pathTrie.lookup("/1/2/3/4", null));
   }
 }

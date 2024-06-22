@@ -17,11 +17,11 @@
 package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -31,15 +31,17 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class JavabinLoaderTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   /**
-   * Verifies the isLastDocInBatch flag gets set correctly for a batch of docs and for a request with a single doc.
+   * Verifies the isLastDocInBatch flag gets set correctly for a batch of docs and for a request
+   * with a single doc.
    */
   public void testLastDocInBatchFlag() throws Exception {
     doTestLastDocInBatchFlag(1); // single doc
@@ -48,7 +50,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
 
   protected void doTestLastDocInBatchFlag(int numDocsInBatch) throws Exception {
     List<SolrInputDocument> batch = new ArrayList<>(numDocsInBatch);
-    for (int d=0; d < numDocsInBatch; d++) {
+    for (int d = 0; d < numDocsInBatch; d++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", String.valueOf(d));
       batch.add(doc);
@@ -66,26 +68,51 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
     (new JavaBinUpdateRequestCodec()).marshal(updateRequest, os);
 
     // need to override the processAdd method b/c JavabinLoader calls
-    // clear on the addCmd after it is passed on to the handler ... a simple clone will suffice for this test
-    BufferingRequestProcessor mockUpdateProcessor = new BufferingRequestProcessor(null) {
-      @Override
-      public void processAdd(AddUpdateCommand cmd) throws IOException {
-        addCommands.add((AddUpdateCommand)cmd.clone());
-      }
-    };
+    // clear on the addCmd after it is passed on to the handler ... a simple clone will suffice for
+    // this test
+    BufferingRequestProcessor mockUpdateProcessor =
+        new BufferingRequestProcessor(null) {
+          @Override
+          public void processAdd(AddUpdateCommand cmd) {
+            addCommands.add((AddUpdateCommand) cmd.clone());
+          }
+        };
 
     SolrQueryRequest req = req();
-    (new JavabinLoader()).load(req,
-        new SolrQueryResponse(),
-        new ContentStreamBase.ByteArrayStream(os.toByteArray(), "test"),
-        mockUpdateProcessor);
+    (new JavabinLoader())
+        .load(
+            req,
+            new SolrQueryResponse(),
+            new ContentStreamBase.ByteArrayStream(os.toByteArray(), "test"),
+            mockUpdateProcessor);
     req.close();
 
-    assertTrue(mockUpdateProcessor.addCommands.size() == numDocsInBatch);
-    for (int i=0; i < numDocsInBatch-1; i++)
+    assertEquals(mockUpdateProcessor.addCommands.size(), numDocsInBatch);
+    for (int i = 0; i < numDocsInBatch - 1; i++)
       assertFalse(mockUpdateProcessor.addCommands.get(i).isLastDocInBatch); // not last doc in batch
 
     // last doc should have the flag set
-    assertTrue(mockUpdateProcessor.addCommands.get(batch.size()-1).isLastDocInBatch);
+    assertTrue(mockUpdateProcessor.addCommands.get(batch.size() - 1).isLastDocInBatch);
+  }
+
+  @Test
+  public void javabinLoader_denseVector_shouldIndexCorrectly() throws Exception {
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.addField("id", "555");
+    doc1.addField("vector", Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f));
+
+    EmbeddedSolrServer solrJClient =
+        new EmbeddedSolrServer(
+            h.getCoreContainer(), "collection1", EmbeddedSolrServer.RequestWriterSupplier.JavaBin);
+    solrJClient.add(doc1);
+    solrJClient.commit();
+
+    assertQ(
+        req("q", "id:555", "fl", "vector"),
+        "*[count(//doc)=1]",
+        "//result/doc[1]/arr[@name=\"vector\"]/float[1][.='" + 1.4 + "']",
+        "//result/doc[1]/arr[@name=\"vector\"]/float[2][.='" + 2.4 + "']",
+        "//result/doc[1]/arr[@name=\"vector\"]/float[3][.='" + 3.4 + "']",
+        "//result/doc[1]/arr[@name=\"vector\"]/float[4][.='" + 4.4 + "']");
   }
 }

@@ -17,15 +17,13 @@
 
 package org.apache.solr.cluster.api;
 
-/**
- * Types of API calls
- */
+/** Types of API calls */
 public enum ApiType {
-    V1("solr"),
-    V2("api");
-    final String prefix;
+  V1("solr"),
+  V2("api");
+  final String prefix;
 
-    ApiType(String prefix) {
-        this.prefix = prefix;
-    }
+  ApiType(String prefix) {
+    this.prefix = prefix;
+  }
 }

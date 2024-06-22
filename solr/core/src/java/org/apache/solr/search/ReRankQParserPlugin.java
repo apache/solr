@@ -17,21 +17,25 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
+import java.lang.invoke.MethodHandles;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
-
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.request.SolrRequestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
-*
-*  Syntax: q=*:*&rq={!rerank reRankQuery=$rqq reRankDocs=300 reRankWeight=3}
-*
-*/
+ *
+ *  Syntax: q=*:*&rq={!rerank reRankQuery=$rqq reRankDocs=300 reRankWeight=3}
+ *
+ */
 
 public class ReRankQParserPlugin extends QParserPlugin {
 
@@ -46,91 +50,239 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public static final String RERANK_WEIGHT = "reRankWeight";
   public static final double RERANK_WEIGHT_DEFAULT = 2.0d;
 
-  public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public static final String RERANK_OPERATOR = "reRankOperator";
+  public static final String RERANK_OPERATOR_DEFAULT = "add";
+
+  public static final String RERANK_SCALE = "reRankScale";
+  public static final String RERANK_MAIN_SCALE = "reRankMainScale";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Override
+  public QParser createParser(
+      String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ReRankQParser(query, localParams, params, req);
   }
 
-  private class ReRankQParser extends QParser  {
+  private static class ReRankQParser extends QParser {
 
-    public ReRankQParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    private boolean isExplainResults() {
+      final SolrRequestInfo ri = SolrRequestInfo.getRequestInfo();
+      if (null != ri) {
+        final ResponseBuilder rb = ri.getResponseBuilder();
+        if (null != rb) {
+          return rb.isDebugResults();
+        }
+      }
+
+      // HACK: The code below should not be used. It is preserved for backcompat
+      // on the slim remote chance that someone is using ReRankQParserPlugin
+      // w/o using SearchHandler+ResponseBuilder
+      //
+      // (It's also wrong, and doesn't account for thigns like debug=true
+      // or debug=all ... but as stated: it's for esoteric backcompat purposes
+      // only, so we're not going to change it and start returning "true"
+      // if existing code doesn't expect it
+
+      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
+
+      if (!debugQuery) {
+        String[] debugParams = params.getParams(CommonParams.DEBUG);
+        if (debugParams != null) {
+          for (String debugParam : debugParams) {
+            if ("true".equals(debugParam)) {
+              debugQuery = true;
+              break;
+            }
+          }
+        }
+      }
+      return debugQuery;
+    }
+
+    public ReRankQParser(
+        String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
     }
 
+    @Override
     public Query parse() throws SyntaxError {
       String reRankQueryString = localParams.get(RERANK_QUERY);
-      if (StringUtils.isBlank(reRankQueryString)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, RERANK_QUERY+" parameter is mandatory");
+      if (StrUtils.isBlank(reRankQueryString)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, RERANK_QUERY + " parameter is mandatory");
       }
       QParser reRankParser = QParser.getParser(reRankQueryString, req);
       Query reRankQuery = reRankParser.parse();
 
-      int reRankDocs  = localParams.getInt(RERANK_DOCS, RERANK_DOCS_DEFAULT);
-      reRankDocs = Math.max(1, reRankDocs); //
+      int reRankDocs = localParams.getInt(RERANK_DOCS, RERANK_DOCS_DEFAULT);
+      reRankDocs = Math.max(1, reRankDocs);
 
       double reRankWeight = localParams.getDouble(RERANK_WEIGHT, RERANK_WEIGHT_DEFAULT);
 
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight);
+      ReRankOperator reRankOperator =
+          ReRankOperator.get(localParams.get(RERANK_OPERATOR, RERANK_OPERATOR_DEFAULT));
+
+      String mainScale = localParams.get(RERANK_MAIN_SCALE);
+      String reRankScale = localParams.get(RERANK_SCALE);
+
+      final boolean explainResults = isExplainResults();
+
+      double reRankScaleWeight = reRankWeight;
+
+      ReRankScaler reRankScaler =
+          new ReRankScaler(
+              mainScale,
+              reRankScale,
+              reRankScaleWeight,
+              reRankOperator,
+              new ReRankQueryRescorer(reRankQuery, 1, ReRankOperator.REPLACE),
+              explainResults);
+
+      if (reRankScaler.scaleScores()) {
+        // Scaler applies the weighting instead of the rescorer
+        reRankWeight = 1;
+      }
+
+      return new ReRankQuery(
+          reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, explainResults);
     }
   }
 
   private static final class ReRankQueryRescorer extends QueryRescorer {
 
-    final double reRankWeight;
+    final BiFloatFunction scoreCombiner;
 
-    public ReRankQueryRescorer(Query reRankQuery, double reRankWeight) {
+    @FunctionalInterface
+    interface BiFloatFunction {
+      float func(float a, float b);
+    }
+
+    public ReRankQueryRescorer(
+        Query reRankQuery, double reRankWeight, ReRankOperator reRankOperator) {
       super(reRankQuery);
-      this.reRankWeight = reRankWeight;
+      switch (reRankOperator) {
+        case ADD:
+          scoreCombiner = (score, second) -> (float) (score + reRankWeight * second);
+          break;
+        case MULTIPLY:
+          scoreCombiner = (score, second) -> (float) (score * reRankWeight * second);
+          break;
+        case REPLACE:
+          scoreCombiner = (score, second) -> (float) (reRankWeight * second);
+          break;
+        default:
+          scoreCombiner = null;
+          throw new IllegalArgumentException("Unexpected: reRankOperator=" + reRankOperator);
+      }
     }
 
     @Override
-    protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
+    protected float combine(
+        float firstPassScore, boolean secondPassMatches, float secondPassScore) {
       float score = firstPassScore;
       if (secondPassMatches) {
-        score += reRankWeight * secondPassScore;
+        return scoreCombiner.func(score, secondPassScore);
       }
       return score;
     }
   }
 
-  private final class ReRankQuery extends AbstractReRankQuery {
-    final private Query reRankQuery;
-    final private double reRankWeight;
+  private static final class ReRankQuery extends AbstractReRankQuery {
+    private final Query reRankQuery;
+    private final double reRankWeight;
+    private final boolean explainResults;
 
+    @Override
     public int hashCode() {
-      return 31 * classHash() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
+      return 31 * classHash()
+          + mainQuery.hashCode()
+          + reRankQuery.hashCode()
+          + (int) reRankWeight
+          + reRankDocs
+          + reRankOperator.hashCode()
+          + reRankScaler.hashCode();
     }
 
+    @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(ReRankQuery rrq) {
-      return mainQuery.equals(rrq.mainQuery) &&
-             reRankQuery.equals(rrq.reRankQuery) &&
-             reRankWeight == rrq.reRankWeight &&
-             reRankDocs == rrq.reRankDocs;
+      return mainQuery.equals(rrq.mainQuery)
+          && reRankQuery.equals(rrq.reRankQuery)
+          && reRankWeight == rrq.reRankWeight
+          && reRankDocs == rrq.reRankDocs
+          && reRankOperator.equals(rrq.reRankOperator)
+          && reRankScaler.equals(rrq.reRankScaler);
     }
 
-    public ReRankQuery(Query reRankQuery, int reRankDocs, double reRankWeight) {
-      super(defaultQuery, reRankDocs, new ReRankQueryRescorer(reRankQuery, reRankWeight));
+    public ReRankQuery(
+        Query reRankQuery,
+        int reRankDocs,
+        double reRankWeight,
+        ReRankOperator reRankOperator,
+        ReRankScaler reRankScaler,
+        boolean explainResults) {
+      super(
+          defaultQuery,
+          reRankDocs,
+          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator),
+          reRankScaler,
+          reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
+      this.explainResults = explainResults;
     }
 
     @Override
     public String toString(String s) {
-      final StringBuilder sb = new StringBuilder(100); // default initialCapacity of 16 won't be enough
+      final StringBuilder sb =
+          new StringBuilder(100); // default initialCapacity of 16 won't be enough
       sb.append("{!").append(NAME);
       sb.append(" mainQuery='").append(mainQuery.toString()).append("' ");
       sb.append(RERANK_QUERY).append("='").append(reRankQuery.toString()).append("' ");
       sb.append(RERANK_DOCS).append('=').append(reRankDocs).append(' ');
-      sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append('}');
+      if (reRankScaler.scaleScores()) {
+        // The reRankScaler applies the weight
+        sb.append(RERANK_WEIGHT)
+            .append('=')
+            .append(reRankScaler.getReRankScaleWeight())
+            .append(' ');
+      } else {
+        sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append(' ');
+      }
+      if (reRankScaler.getReRankScalerExplain().getReRankScale() != null) {
+        sb.append(RERANK_SCALE)
+            .append('=')
+            .append(reRankScaler.getReRankScalerExplain().getReRankScale())
+            .append(' ');
+      }
+      if (reRankScaler.getReRankScalerExplain().getMainScale() != null) {
+        sb.append(RERANK_MAIN_SCALE)
+            .append('=')
+            .append(reRankScaler.getReRankScalerExplain().getMainScale())
+            .append(' ');
+      }
+      sb.append(RERANK_OPERATOR).append('=').append(reRankOperator.toLower()).append('}');
       return sb.toString();
     }
 
+    @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight).wrap(rewrittenMainQuery);
+      return new ReRankQuery(
+              reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, explainResults)
+          .wrap(rewrittenMainQuery);
+    }
+
+    @Override
+    public boolean getCache() {
+      if (reRankScaler.scaleScores() && explainResults) {
+        // Caching breaks explain when reRankScaling is used.
+        return false;
+      } else {
+        return super.getCache();
+      }
     }
   }
 }

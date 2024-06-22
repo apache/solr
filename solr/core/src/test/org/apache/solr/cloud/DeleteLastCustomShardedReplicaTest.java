@@ -26,9 +26,7 @@ public class DeleteLastCustomShardedReplicaTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -45,11 +43,11 @@ public class DeleteLastCustomShardedReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "a", replica.getName())
         .process(cluster.getSolrClient());
 
-    waitForState("Expected shard 'a' to have no replicas", collectionName, (n, c) -> {
-      return c.getSlice("a") == null || c.getSlice("a").getReplicas().size() == 0;
-    });
-
+    waitForState(
+        "Expected shard 'a' to have no replicas",
+        collectionName,
+        (n, c) -> {
+          return c.getSlice("a") == null || c.getSlice("a").getReplicas().size() == 0;
+        });
   }
-
 }
-

@@ -16,10 +16,6 @@
  */
 package org.apache.solr.security;
 
-import javax.security.auth.Subject;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -33,9 +29,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
-
-import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import javax.security.auth.Subject;
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -54,10 +51,11 @@ import org.eclipse.jetty.client.api.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEditablePlugin , SpecProvider {
+public class BasicAuthPlugin extends AuthenticationPlugin
+    implements ConfigEditablePlugin, SpecProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider authenticationProvider;
-  private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
+  private static final ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
   private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
@@ -73,7 +71,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       try {
         blockUnknown = Boolean.parseBoolean(o.toString());
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value for parameter " + PROPERTY_BLOCK_UNKNOWN);
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid value for parameter " + PROPERTY_BLOCK_UNKNOWN);
       }
     }
     o = pluginConfig.get(FORWARD_CREDENTIALS);
@@ -81,7 +80,8 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       try {
         forwardCredentials = Boolean.parseBoolean(o.toString());
       } catch (Exception e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid value for parameter " + FORWARD_CREDENTIALS);
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST, "Invalid value for parameter " + FORWARD_CREDENTIALS);
       }
     }
     authenticationProvider = getAuthenticationProvider(pluginConfig);
@@ -115,16 +115,19 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     return provider;
   }
 
-  private void authenticationFailure(HttpServletResponse response, boolean isAjaxRequest, String message) throws IOException {
+  private void authenticationFailure(
+      HttpServletResponse response, boolean isAjaxRequest, String message) throws IOException {
     getPromptHeaders(isAjaxRequest).forEach(response::setHeader);
     response.sendError(401, message);
   }
 
   @Override
-  public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws Exception {
+  public boolean doAuthenticate(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws Exception {
     String authHeader = request.getHeader("Authorization");
     boolean isAjaxRequest = isAjaxRequest(request);
-    
+
     if (authHeader != null) {
       BasicAuthPlugin.authHeader.set(new BasicHeader("Authorization", authHeader));
       StringTokenizer st = new StringTokenizer(authHeader);
@@ -133,8 +136,9 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         if (basic.equalsIgnoreCase("Basic")) {
           if (st.hasMoreTokens()) {
             try {
-              String credentials = new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              String credentials =
+                  new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
@@ -166,7 +170,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         }
       }
     }
-    
+
     // No auth header OR header empty OR Authorization header not of type Basic, i.e. "unknown" user
     if (blockUnknown) {
       numMissingCredentials.inc();
@@ -181,26 +185,27 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   }
 
   /**
-   * Get the prompt headers, and replace Basic with xBasic if ajax request to avoid
-   * browser intercepting the authentication
+   * Get the prompt headers, and replace Basic with xBasic if ajax request to avoid browser
+   * intercepting the authentication
+   *
    * @param isAjaxRequest set to true if the request is an ajax request
    * @return map of headers
    */
   private Map<String, String> getPromptHeaders(boolean isAjaxRequest) {
-    Map<String,String> headers = new HashMap<>(authenticationProvider.getPromptHeaders());
-    if (isAjaxRequest && headers.containsKey(HttpHeaders.WWW_AUTHENTICATE) 
+    Map<String, String> headers = new HashMap<>(authenticationProvider.getPromptHeaders());
+    if (isAjaxRequest
+        && headers.containsKey(HttpHeaders.WWW_AUTHENTICATE)
         && headers.get(HttpHeaders.WWW_AUTHENTICATE).startsWith("Basic ")) {
       headers.put(HttpHeaders.WWW_AUTHENTICATE, "x" + headers.get(HttpHeaders.WWW_AUTHENTICATE));
-      log.debug("Prefixing {} header for Basic Auth with 'x' to prevent browser basic auth popup",
+      log.debug(
+          "Prefixing {} header for Basic Auth with 'x' to prevent browser basic auth popup",
           HttpHeaders.WWW_AUTHENTICATE);
     }
     return headers;
   }
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 
   @Override
   public void closeRequest() {
@@ -221,8 +226,13 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       if (httpContext instanceof HttpClientContext) {
         HttpClientContext httpClientContext = (HttpClientContext) httpContext;
         if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal) {
-          BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) httpClientContext.getUserToken();
-          String userPassBase64 = Base64.getEncoder().encodeToString((principal.getName() + ":" + principal.getPassword()).getBytes(StandardCharsets.UTF_8));
+          BasicAuthUserPrincipal principal =
+              (BasicAuthUserPrincipal) httpClientContext.getUserToken();
+          String userPassBase64 =
+              Base64.getEncoder()
+                  .encodeToString(
+                      (principal.getName() + ":" + principal.getPassword())
+                          .getBytes(StandardCharsets.UTF_8));
           httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
           return true;
         }
@@ -237,7 +247,11 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
       Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
       if (userToken instanceof BasicAuthUserPrincipal) {
         BasicAuthUserPrincipal principal = (BasicAuthUserPrincipal) userToken;
-        String userPassBase64 = Base64.getEncoder().encodeToString((principal.getName() + ":" + principal.getPassword()).getBytes(StandardCharsets.UTF_8));
+        String userPassBase64 =
+            Base64.getEncoder()
+                .encodeToString(
+                    (principal.getName() + ":" + principal.getPassword())
+                        .getBytes(StandardCharsets.UTF_8));
         request.header(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
         return true;
       }
@@ -249,26 +263,29 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   public ValidatingJsonMap getSpec() {
     return authenticationProvider.getSpec();
   }
-  public boolean getBlockUnknown(){
+
+  public boolean getBlockUnknown() {
     return blockUnknown;
   }
 
   public static final String PROPERTY_BLOCK_UNKNOWN = "blockUnknown";
   public static final String PROPERTY_REALM = "realm";
   public static final String FORWARD_CREDENTIALS = "forwardCredentials";
-  private static final Set<String> PROPS = ImmutableSet.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
+  private static final Set<String> PROPS =
+      Set.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
 
   /**
-   * Check if the request is an AJAX request, i.e. from the Admin UI or other SPA front 
+   * Check if the request is an AJAX request, i.e. from the Admin UI or other SPA front
+   *
    * @param request the servlet request
    * @return true if the request is AJAX request
    */
-  private boolean isAjaxRequest(HttpServletRequest request) {
+  static boolean isAjaxRequest(HttpServletRequest request) {
     return "XMLHttpRequest".equalsIgnoreCase(request.getHeader(X_REQUESTED_WITH_HEADER));
   }
-  
+
   @Contract(threading = ThreadingBehavior.IMMUTABLE)
-  private class BasicAuthUserPrincipal implements Principal, Serializable {
+  private static class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;
 
@@ -279,7 +296,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     @Override
     public String getName() {
-        return this.username;
+      return this.username;
     }
 
     public String getPassword() {
@@ -294,10 +311,9 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof BasicAuthUserPrincipal)) return false;
       BasicAuthUserPrincipal that = (BasicAuthUserPrincipal) o;
-      return Objects.equals(username, that.username) &&
-          Objects.equals(password, that.password);
+      return Objects.equals(username, that.username) && Objects.equals(password, that.password);
     }
 
     @Override
@@ -307,10 +323,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
 
     @Override
     public String toString() {
-      return new ToStringBuilder(this)
-          .append("username", username)
-          .append("pwd", "*****")
-          .toString();
+      return "BasicAuthPlugin [username=" + username + ",pwd=*****]";
     }
   }
 }

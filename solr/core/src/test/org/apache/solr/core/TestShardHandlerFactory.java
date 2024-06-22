@@ -17,26 +17,47 @@
 package org.apache.solr.core;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 
-/**
- * Tests specifying a custom ShardHandlerFactory
- */
+/** Tests specifying a custom ShardHandlerFactory */
 public class TestShardHandlerFactory extends SolrTestCaseJ4 {
 
-  public void testXML() throws Exception {
-    Path home = Paths.get(TEST_HOME());
+  public void testXML() {
+    Path home = TEST_PATH();
     CoreContainer cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler.xml"));
     ShardHandlerFactory factory = cc.getShardHandlerFactory();
     assertTrue(factory instanceof MockShardHandlerFactory);
-    NamedList<?> args = ((MockShardHandlerFactory)factory).args;
+    NamedList<?> args = ((MockShardHandlerFactory) factory).args;
     assertEquals("myMagicRequiredValue", args.get("myMagicRequiredParameter"));
     factory.close();
     cc.shutdown();
   }
 
+  /** Test {@link ShardHandler#setShardAttributesToParams} */
+  public void testSetShardAttributesToParams() {
+    // NOTE: the value of this test is really questionable; we should feel free to remove it
+    ModifiableSolrParams modifiable = new ModifiableSolrParams();
+    var dummyIndent = "Dummy-Indent";
+
+    modifiable.set(ShardParams.SHARDS, "dummyValue");
+    modifiable.set(CommonParams.HEADER_ECHO_PARAMS, "dummyValue");
+    modifiable.set(CommonParams.INDENT, dummyIndent);
+
+    ShardHandler.setShardAttributesToParams(modifiable, 2);
+
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.DISTRIB));
+    assertEquals("2", modifiable.get(ShardParams.SHARDS_PURPOSE));
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.OMIT_HEADER));
+    assertEquals(Boolean.TRUE.toString(), modifiable.get(ShardParams.IS_SHARD));
+
+    assertNull(modifiable.get(CommonParams.HEADER_ECHO_PARAMS));
+    assertNull(modifiable.get(ShardParams.SHARDS));
+    assertNull(modifiable.get(CommonParams.INDENT));
+  }
 }

@@ -16,17 +16,14 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Token filter factory that misbehaves on command.
- */
+/** Token filter factory that misbehaves on command. */
 public class ThrowingMockTokenFilterFactory extends TokenFilterFactory {
 
   private Class<? extends RuntimeException> exceptionClass;
@@ -44,11 +41,10 @@ public class ThrowingMockTokenFilterFactory extends TokenFilterFactory {
       throw new RuntimeException("Required parameter exceptionClassName is missing");
     }
     try {
-      exceptionClass = (Class<? extends RuntimeException>)Class.forName(exceptionClassName);
+      exceptionClass = (Class<? extends RuntimeException>) Class.forName(exceptionClassName);
     } catch (ClassNotFoundException e) {
       throw new RuntimeException(e);
     }
-
   }
 
   @Override
@@ -59,7 +55,10 @@ public class ThrowingMockTokenFilterFactory extends TokenFilterFactory {
         if (input.incrementToken()) {
           try {
             throw exceptionClass.getConstructor().newInstance();
-          } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException iae) {
+          } catch (IllegalAccessException
+              | InstantiationException
+              | InvocationTargetException
+              | NoSuchMethodException iae) {
             throw new RuntimeException(iae);
           }
         }

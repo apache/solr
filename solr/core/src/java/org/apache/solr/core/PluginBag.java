@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.api.ApiBag.HANDLER_NAME;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -29,30 +32,30 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProviderBinder;
+import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.api.ApiBag.HANDLER_NAME;
-
-/**
- * This manages the lifecycle of a set of plugin of the same type .
- */
+/** This manages the lifecycle of a set of plugin of the same type . */
 public class PluginBag<T> implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -62,29 +65,61 @@ public class PluginBag<T> implements AutoCloseable {
   private final Class<T> klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
+
+  private final boolean loadV2ApisIfPresent;
   private final ApiBag apiBag;
+  private final ResourceConfig jerseyResources;
 
   /**
-   * Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups.
+   * Allows JAX-RS 'filters' to find the requestHandler (if any) associated particular JAX-RS
+   * resource classes
+   *
+   * <p>Used primarily by JAX-RS when recording per-request metrics, which requires a {@link
+   * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} object from the relevant
+   * requestHandler.
    */
+  public static class JaxrsResourceToHandlerMappings
+      extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
+
+  private final JaxrsResourceToHandlerMappings jaxrsResourceRegistry;
+
+  public JaxrsResourceToHandlerMappings getJaxrsRegistry() {
+    return jaxrsResourceRegistry;
+  }
+
+  /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    this.apiBag = klass == SolrRequestHandler.class ? new ApiBag(core != null) : null;
+    if (klass == SolrRequestHandler.class && V2ApiUtils.isEnabled()) {
+      this.loadV2ApisIfPresent = true;
+      this.apiBag = new ApiBag(core != null);
+      this.jaxrsResourceRegistry = new JaxrsResourceToHandlerMappings();
+      this.jerseyResources =
+          (core == null)
+              ? new JerseyApplications.CoreContainerApp()
+              : new JerseyApplications.SolrCoreApp();
+    } else {
+      this.loadV2ApisIfPresent = false;
+      this.apiBag = null;
+      this.jerseyResources = null;
+      this.jaxrsResourceRegistry = null;
+    }
     this.core = core;
     this.klass = klass;
-    // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
+    // TODO: since reads will dominate writes, we could also think about creating a new instance of
+    // a map each time it changes.
     // Not sure how much benefit this would have over ConcurrentHashMap though
-    // We could also perhaps make this constructor into a factory method to return different implementations depending on thread safety needs.
+    // We could also perhaps make this constructor into a factory method to return different
+    // implementations depending on thread safety needs.
     this.registry = needThreadSafety ? new ConcurrentHashMap<>() : new HashMap<>();
     this.immutableRegistry = Collections.unmodifiableMap(registry);
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown Plugin : " + klass.getName());
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unknown Plugin : " + klass.getName());
     }
   }
 
-  /**
-   * Constructs a non-threadsafe plugin registry
-   */
+  /** Constructs a non-threadsafe plugin registry */
   public PluginBag(Class<T> klass, SolrCore core) {
     this(klass, core, false);
   }
@@ -103,12 +138,9 @@ public class PluginBag<T> implements AutoCloseable {
     if (inst instanceof RequestHandlerBase) {
       ((RequestHandlerBase) inst).setPluginInfo(info);
     }
-
   }
 
-  /**
-   * Check if any of the mentioned names are missing. If yes, return the Set of missing names
-   */
+  /** Check if any of the mentioned names are missing. If yes, return the Set of missing names */
   public Set<String> checkContains(Collection<String> names) {
     if (names == null || names.isEmpty()) return Collections.emptySet();
     HashSet<String> result = new HashSet<>();
@@ -118,17 +150,24 @@ public class PluginBag<T> implements AutoCloseable {
 
   @SuppressWarnings({"unchecked"})
   public PluginHolder<T> createPlugin(PluginInfo info) {
-   if ("lazy".equals(info.attributes.get("startup")) && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
+    if ("lazy".equals(info.attributes.get("startup"))
+        && meta.options.contains(SolrConfig.PluginOpts.LAZY)) {
       if (log.isDebugEnabled()) {
         log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       }
-      return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader());
+      return new LazyPluginHolder<>(meta, info, core, core.getResourceLoader());
     } else {
       if (info.pkgName != null) {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
         return holder;
       } else {
-        T inst = SolrCore.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        T inst =
+            SolrCore.createInstance(
+                info.className,
+                (Class<T>) meta.clazz,
+                meta.getCleanTag(),
+                null,
+                core.getResourceLoader());
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }
@@ -138,8 +177,9 @@ public class PluginBag<T> implements AutoCloseable {
   /**
    * make a plugin available in an alternate name. This is an internal API and not for public use
    *
-   * @param src    key in which the plugin is already registered
-   * @param target the new key in which the plugin should be aliased to. If target exists already, the alias fails
+   * @param src key in which the plugin is already registered
+   * @param target the new key in which the plugin should be aliased to. If target exists already,
+   *     the alias fails
    * @return flag if the operation is successful or not
    */
   boolean alias(String src, String target) {
@@ -152,10 +192,7 @@ public class PluginBag<T> implements AutoCloseable {
     return true;
   }
 
-  /**
-   * Get a plugin by name. If the plugin is not already instantiated, it is
-   * done here
-   */
+  /** Get a plugin by name. If the plugin is not already instantiated, it is done here */
   public T get(String name) {
     PluginHolder<T> result = registry.get(name);
     return result == null ? null : result.get();
@@ -164,7 +201,7 @@ public class PluginBag<T> implements AutoCloseable {
   /**
    * Fetches a plugin by name , or the default
    *
-   * @param name       name using which it is registered
+   * @param name name using which it is registered
    * @param useDefault Return the default , if a plugin by that name does not exist
    */
   public T get(String name, boolean useDefault) {
@@ -177,9 +214,7 @@ public class PluginBag<T> implements AutoCloseable {
     return immutableRegistry.keySet();
   }
 
-  /**
-   * register a plugin by a name
-   */
+  /** register a plugin by a name */
   public T put(String name, T plugin) {
     if (plugin == null) return null;
     PluginHolder<T> pluginHolder = new PluginHolder<>(null, plugin);
@@ -201,7 +236,7 @@ public class PluginBag<T> implements AutoCloseable {
       }
     }
 
-    if (apiBag != null) {
+    if (loadV2ApisIfPresent) {
       if (plugin.isLoaded()) {
         T inst = plugin.get();
         if (inst instanceof ApiSupport) {
@@ -209,7 +244,7 @@ public class PluginBag<T> implements AutoCloseable {
           if (registerApi == null) registerApi = apiSupport.registerV2();
           if (disableHandler == null) disableHandler = !apiSupport.registerV1();
 
-          if(registerApi) {
+          if (registerApi && V2ApiUtils.isEnabled()) {
             Collection<Api> apis = apiSupport.getApis();
             if (apis != null) {
               Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
@@ -217,8 +252,30 @@ public class PluginBag<T> implements AutoCloseable {
                 apiBag.register(api, nameSubstitutes);
               }
             }
-          }
 
+            // TODO Should we use <requestHandler name="/blah"> to override the path that each
+            //  resource registers under?
+            Collection<Class<? extends JerseyResource>> jerseyApis =
+                apiSupport.getJerseyResources();
+            if (jerseyApis != null) {
+              for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
+                if (log.isDebugEnabled()) {
+                  log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
+                }
+                jerseyResources.register(jerseyClazz);
+                // See RequestMetricHandling javadocs for a better understanding of this
+                // resource->RH
+                // mapping
+                if (apiSupport instanceof RequestHandlerBase) {
+                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) apiSupport);
+                }
+              }
+              if (apiSupport instanceof APIConfigProvider) {
+                jerseyResources.register(
+                    new APIConfigProviderBinder((APIConfigProvider<?>) apiSupport));
+              }
+            }
+          }
         }
       } else {
         if (registerApi != null && registerApi)
@@ -267,7 +324,8 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   /**
-   * Initializes the plugins after reading the meta data from {@link org.apache.solr.core.SolrConfig}.
+   * Initializes the plugins after reading the metadata from {@link
+   * org.apache.solr.core.SolrConfig}.
    *
    * @param defaults These will be registered if not explicitly specified
    */
@@ -284,20 +342,22 @@ public class PluginBag<T> implements AutoCloseable {
     }
     if (infos.size() > 0) { // Aggregate logging
       if (log.isDebugEnabled()) {
-        log.debug("[{}] Initialized {} plugins of type {}: {}", solrCore.getName(), infos.size(), meta.getCleanTag(),
+        log.debug(
+            "[{}] Initialized {} plugins of type {}: {}",
+            solrCore.getName(),
+            infos.size(),
+            meta.getCleanTag(),
             infos.stream().map(i -> i.name).collect(Collectors.toList()));
       }
     }
     for (Map.Entry<String, T> e : defaults.entrySet()) {
       if (!contains(e.getKey())) {
-        put(e.getKey(), new PluginHolder<T>(null, e.getValue()));
+        put(e.getKey(), new PluginHolder<>(null, e.getValue()));
       }
     }
   }
 
-  /**
-   * To check if a plugin by a specified name is already loaded
-   */
+  /** To check if a plugin by a specified name is already loaded */
   public boolean isLoaded(String name) {
     PluginHolder<T> result = registry.get(name);
     if (result == null) return false;
@@ -313,10 +373,7 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
-
-  /**
-   * Close this registry. This will in turn call a close on all the contained plugins
-   */
+  /** Close this registry. This will in turn call a close on all the contained plugins */
   @Override
   public void close() {
     for (Map.Entry<String, PluginHolder<T>> e : registry.entrySet()) {
@@ -328,27 +385,29 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
-  public static void closeQuietly(Object inst)  {
+  public static void closeQuietly(Object inst) {
     try {
       if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
     } catch (Exception e) {
-      log.error("Error closing {}", inst , e);
+      log.error("Error closing {}", inst, e);
     }
   }
 
   /**
-   * An indirect reference to a plugin. It just wraps a plugin instance.
-   * subclasses may choose to lazily load the plugin
+   * An indirect reference to a plugin. It just wraps a plugin instance. subclasses may choose to
+   * lazily load the plugin
    */
-  public static class PluginHolder<T> implements Supplier<T>,  AutoCloseable {
+  public static class PluginHolder<T> implements Supplier<T>, AutoCloseable {
     protected volatile T inst;
     protected final PluginInfo pluginInfo;
     boolean registerAPI = false;
 
     public PluginHolder(T inst, SolrConfig.SolrPluginInfo info) {
       this.inst = inst;
-      pluginInfo = new PluginInfo(info.tag, Collections.singletonMap("class", inst.getClass().getName()));
+      pluginInfo =
+          new PluginInfo(info.tag, Collections.singletonMap("class", inst.getClass().getName()));
     }
+
     public PluginHolder(PluginInfo info) {
       this.pluginInfo = info;
     }
@@ -362,6 +421,7 @@ public class PluginBag<T> implements AutoCloseable {
       return Optional.ofNullable(inst);
     }
 
+    @Override
     public T get() {
       return inst;
     }
@@ -383,7 +443,7 @@ public class PluginBag<T> implements AutoCloseable {
           try {
             ((AutoCloseable) myInst).close();
           } catch (Exception e) {
-            log.error("Error closing {}", inst , e);
+            log.error("Error closing {}", inst, e);
           }
         }
       }
@@ -394,18 +454,20 @@ public class PluginBag<T> implements AutoCloseable {
       if (pluginInfo != null) return pluginInfo.className;
       return null;
     }
+
     public PluginInfo getPluginInfo() {
       return pluginInfo;
     }
 
+    @Override
     public String toString() {
       return String.valueOf(inst);
     }
   }
 
   /**
-   * A class that loads plugins Lazily. When the get() method is invoked
-   * the Plugin is initialized and returned.
+   * A class that loads plugins Lazily. When the get() method is invoked the Plugin is initialized
+   * and returned.
    */
   public class LazyPluginHolder<T> extends PluginHolder<T> {
     private volatile T lazyInst;
@@ -414,8 +476,11 @@ public class PluginBag<T> implements AutoCloseable {
     private final SolrCore core;
     protected ResourceLoader resourceLoader;
 
-
-    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader) {
+    LazyPluginHolder(
+        SolrConfig.SolrPluginInfo pluginMeta,
+        PluginInfo pluginInfo,
+        SolrCore core,
+        ResourceLoader loader) {
       super(pluginInfo);
       this.pluginMeta = pluginMeta;
       this.core = core;
@@ -431,7 +496,8 @@ public class PluginBag<T> implements AutoCloseable {
     public T get() {
       if (lazyInst != null) return lazyInst;
       if (solrException != null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Unrecoverable error", solrException);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Unrecoverable error", solrException);
       }
       if (createInst()) {
         // check if we created the instance to avoid registering it again
@@ -450,7 +516,9 @@ public class PluginBag<T> implements AutoCloseable {
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
       T localInst = null;
       try {
-        localInst = SolrCore.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+        localInst =
+            SolrCore.createInstance(
+                pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
       } catch (SolrException e) {
         throw e;
       }
@@ -464,17 +532,21 @@ public class PluginBag<T> implements AutoCloseable {
         try {
           ((ResourceLoaderAware) localInst).inform(core.getResourceLoader());
         } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error initializing component", e);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "error initializing component", e);
         }
       }
-      lazyInst = localInst;  // only assign the volatile until after the plugin is completely ready to use
+      lazyInst =
+          localInst; // only assign the volatile until after the plugin is completely ready to use
       return true;
     }
   }
 
   public Api v2lookup(String path, String method, Map<String, String> parts) {
     if (apiBag == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "this should not happen, looking up for v2 API at the wrong place");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "this should not happen, looking up for v2 API at the wrong place");
     }
     return apiBag.lookup(path, method, parts);
   }
@@ -483,4 +555,7 @@ public class PluginBag<T> implements AutoCloseable {
     return apiBag;
   }
 
+  public ResourceConfig getJerseyEndpoints() {
+    return jerseyResources;
+  }
 }

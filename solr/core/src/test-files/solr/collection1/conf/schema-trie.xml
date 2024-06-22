@@ -16,18 +16,6 @@
  limitations under the License.
 -->
 
-<!--
- This is the Solr schema file. This file should be named "schema.xml" and
- should be in the conf directory under the solr home
- (i.e. ./solr/conf/schema.xml by default)
- or located where the classloader for the Solr webapp can find it.
-
- This example schema is the recommended starting point for users.
- It should be kept correct and concise, usable out-of-the-box.
-
- For more information, on how to customize this file, please see
- http://wiki.apache.org/solr/SchemaXml
--->
 
 <schema name="example" version="1.2">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
@@ -124,18 +112,6 @@
        change the name
    -->
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
-
-  <!-- solr.TextField allows the specification of custom text analyzers
-       specified as a tokenizer and a list of token filters. Different
-       analyzers may be specified for indexing and querying.
-
-       The optional positionIncrementGap puts space between multiple fields of
-       this type on the same document, with the purpose of preventing false phrase
-       matching across fields.
-
-       For more info on customizing your analyzer chain, please see
-       http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters
-   -->
 
   <!-- One can also specify an existing Analyzer class that has a
        default constructor via the class attribute on the analyzer element

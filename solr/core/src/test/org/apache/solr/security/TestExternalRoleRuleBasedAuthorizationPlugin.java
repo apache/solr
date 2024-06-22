@@ -23,13 +23,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-
 import org.apache.http.auth.BasicUserPrincipal;
 
 /**
- * Tests {@link ExternalRoleRuleBasedAuthorizationPlugin} through simulating principals with roles attached
+ * Tests {@link ExternalRoleRuleBasedAuthorizationPlugin} through simulating principals with roles
+ * attached
  */
-public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBasedAuthorizationPlugin {
+public class TestExternalRoleRuleBasedAuthorizationPlugin
+    extends BaseTestRuleBasedAuthorizationPlugin {
   private HashMap<String, Principal> principals;
 
   @Override
@@ -58,9 +59,11 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin extends BaseTestRuleBa
       @Override
       public Principal getUserPrincipal() {
         String userPrincipal = (String) values.get("userPrincipal");
-        return userPrincipal == null ? null :
-            principals.get(userPrincipal) != null ? principals.get(userPrincipal) :
-                new BasicUserPrincipal(userPrincipal);
+        return userPrincipal == null
+            ? null
+            : principals.get(userPrincipal) != null
+                ? principals.get(userPrincipal)
+                : new BasicUserPrincipal(userPrincipal);
       }
     };
   }

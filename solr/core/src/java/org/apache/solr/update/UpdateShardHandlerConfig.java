@@ -23,10 +23,23 @@ public class UpdateShardHandlerConfig {
   public static final String DEFAULT_METRICNAMESTRATEGY = "queryLessURLAndMethod";
   public static final int DEFAULT_MAXRECOVERYTHREADS = -1;
 
-  public static final UpdateShardHandlerConfig DEFAULT
-      = new UpdateShardHandlerConfig(HttpClientUtil.DEFAULT_MAXCONNECTIONS, HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-                                     HttpClientUtil.DEFAULT_SO_TIMEOUT, HttpClientUtil.DEFAULT_CONNECT_TIMEOUT,
-                                      DEFAULT_METRICNAMESTRATEGY, DEFAULT_MAXRECOVERYTHREADS);
+  public static final UpdateShardHandlerConfig DEFAULT =
+      new UpdateShardHandlerConfig(
+          HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+          HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+          HttpClientUtil.DEFAULT_SO_TIMEOUT,
+          HttpClientUtil.DEFAULT_CONNECT_TIMEOUT,
+          DEFAULT_METRICNAMESTRATEGY,
+          DEFAULT_MAXRECOVERYTHREADS);
+
+  public static final UpdateShardHandlerConfig TEST_DEFAULT =
+      new UpdateShardHandlerConfig(
+          HttpClientUtil.DEFAULT_MAXCONNECTIONS,
+          HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
+          30000,
+          30000,
+          UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
+          UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
 
   private final int maxUpdateConnections;
 
@@ -40,8 +53,13 @@ public class UpdateShardHandlerConfig {
 
   private final int maxRecoveryThreads;
 
-  public UpdateShardHandlerConfig(int maxUpdateConnections, int maxUpdateConnectionsPerHost, int distributedSocketTimeout, int distributedConnectionTimeout,
-                                  String metricNameStrategy, int maxRecoveryThreads) {
+  public UpdateShardHandlerConfig(
+      int maxUpdateConnections,
+      int maxUpdateConnectionsPerHost,
+      int distributedSocketTimeout,
+      int distributedConnectionTimeout,
+      String metricNameStrategy,
+      int maxRecoveryThreads) {
     this.maxUpdateConnections = maxUpdateConnections;
     this.maxUpdateConnectionsPerHost = maxUpdateConnectionsPerHost;
     this.distributedSocketTimeout = distributedSocketTimeout;

@@ -22,7 +22,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
-
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -31,19 +30,21 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.TermsParams;
 
-
 /**
- * This is an augmented SolrParams with get/set/add fields for common fields used
- * in the Standard and Dismax request handlers
- * 
+ * This is an augmented SolrParams with get/set/add fields for common fields used in the Standard
+ * and Dismax request handlers
  *
  * @since solr 1.3
  */
-public class SolrQuery extends ModifiableSolrParams 
-{  
-  public static final String DOCID = "_docid_"; // duplicate of org.apache.solr.search.SortSpecParsing.DOCID which is not accessible from here
-  
-  public enum ORDER { desc, asc;
+public class SolrQuery extends ModifiableSolrParams {
+  // duplicate of org.apache.solr.search.SortSpecParsing.DOCID which is not
+  // accessible from here
+  public static final String DOCID = "_docid_";
+
+  public enum ORDER {
+    desc,
+    asc;
+
     public ORDER reverse() {
       return (this == asc) ? desc : asc;
     }
@@ -51,13 +52,14 @@ public class SolrQuery extends ModifiableSolrParams
 
   /** Maintains a map of current sorts */
   private List<SortClause> sortClauses;
-  
+
   public SolrQuery() {
     super();
   }
 
-  /** Create a new SolrQuery
-   * 
+  /**
+   * Create a new SolrQuery
+   *
    * @param q query string
    */
   public SolrQuery(String q) {
@@ -73,9 +75,11 @@ public class SolrQuery extends ModifiableSolrParams
     }
   }
 
-  /** enable/disable terms.  
-   * 
-   * @param b flag to indicate terms should be enabled. <br> if b==false, removes all other terms parameters
+  /**
+   * enable/disable terms.
+   *
+   * @param b flag to indicate terms should be enabled. <br>
+   *     if b==false, removes all other terms parameters
    * @return Current reference (<i>this</i>)
    */
   public SolrQuery setTerms(boolean b) {
@@ -99,70 +103,70 @@ public class SolrQuery extends ModifiableSolrParams
     }
     return this;
   }
-  
+
   public boolean getTerms() {
     return this.getBool(TermsParams.TERMS, false);
   }
-  
+
   public SolrQuery addTermsField(String field) {
     this.add(TermsParams.TERMS_FIELD, field);
     return this;
   }
-  
+
   public String[] getTermsFields() {
     return this.getParams(TermsParams.TERMS_FIELD);
   }
-  
+
   public SolrQuery setTermsLower(String lower) {
     this.set(TermsParams.TERMS_LOWER, lower);
     return this;
   }
-  
+
   public String getTermsLower() {
     return this.get(TermsParams.TERMS_LOWER, "");
   }
-  
+
   public SolrQuery setTermsUpper(String upper) {
     this.set(TermsParams.TERMS_UPPER, upper);
     return this;
   }
-  
+
   public String getTermsUpper() {
     return this.get(TermsParams.TERMS_UPPER, "");
   }
-  
+
   public SolrQuery setTermsUpperInclusive(boolean b) {
     this.set(TermsParams.TERMS_UPPER_INCLUSIVE, b);
     return this;
   }
-  
+
   public boolean getTermsUpperInclusive() {
     return this.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
   }
-  
+
   public SolrQuery setTermsLowerInclusive(boolean b) {
     this.set(TermsParams.TERMS_LOWER_INCLUSIVE, b);
     return this;
   }
-  
+
   public boolean getTermsLowerInclusive() {
     return this.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
   }
- 
+
   public SolrQuery setTermsLimit(int limit) {
     this.set(TermsParams.TERMS_LIMIT, limit);
     return this;
   }
-  
+
   public int getTermsLimit() {
     return this.getInt(TermsParams.TERMS_LIMIT, 10);
   }
- 
+
   public SolrQuery setTermsMinCount(int cnt) {
     this.set(TermsParams.TERMS_MINCOUNT, cnt);
     return this;
   }
-  
+
   public int getTermsMinCount() {
     return this.getInt(TermsParams.TERMS_MINCOUNT, 1);
   }
@@ -171,39 +175,39 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(TermsParams.TERMS_MAXCOUNT, cnt);
     return this;
   }
-  
+
   public int getTermsMaxCount() {
     return this.getInt(TermsParams.TERMS_MAXCOUNT, -1);
   }
-  
+
   public SolrQuery setTermsPrefix(String prefix) {
     this.set(TermsParams.TERMS_PREFIX_STR, prefix);
     return this;
   }
-  
+
   public String getTermsPrefix() {
     return this.get(TermsParams.TERMS_PREFIX_STR, "");
   }
-  
+
   public SolrQuery setTermsRaw(boolean b) {
     this.set(TermsParams.TERMS_RAW, b);
     return this;
   }
-  
+
   public boolean getTermsRaw() {
     return this.getBool(TermsParams.TERMS_RAW, false);
   }
- 
+
   public SolrQuery setTermsSortString(String type) {
     this.set(TermsParams.TERMS_SORT, type);
     return this;
   }
-  
+
   public String getTermsSortString() {
     return this.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT);
   }
 
-  public SolrQuery setTermsRegex(String regex)  {
+  public SolrQuery setTermsRegex(String regex) {
     this.set(TermsParams.TERMS_REGEXP_STR, regex);
     return this;
   }
@@ -217,29 +221,31 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  public String[] getTermsRegexFlags()  {
+  public String[] getTermsRegexFlags() {
     return this.getParams(TermsParams.TERMS_REGEXP_FLAG);
   }
-     
-  /** Add field(s) for facet computation.
-   * 
+
+  /**
+   * Add field(s) for facet computation.
+   *
    * @param fields Array of field names from the IndexSchema
    * @return this
    */
-  public SolrQuery addFacetField(String ... fields) {
+  public SolrQuery addFacetField(String... fields) {
     add(FacetParams.FACET_FIELD, fields);
     this.set(FacetParams.FACET, true);
     return this;
   }
 
-  /** Add field(s) for pivot computation.
-   * 
-   * pivot fields are comma separated
-   * 
+  /**
+   * Add field(s) for pivot computation.
+   *
+   * <p>pivot fields are comma separated
+   *
    * @param fields Array of field names from the IndexSchema
    * @return this
    */
-  public SolrQuery addFacetPivotField(String ... fields) {
+  public SolrQuery addFacetPivotField(String... fields) {
     add(FacetParams.FACET_PIVOT, fields);
     this.set(FacetParams.FACET, true);
     return this;
@@ -256,7 +262,9 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addNumericRangeFacet(String field, Number start, Number end, Number gap) {
     add(FacetParams.FACET_RANGE, field);
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toString());
+    add(
+        String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START),
+        start.toString());
     add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END), end.toString());
     add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap.toString());
     this.set(FacetParams.FACET, true);
@@ -274,26 +282,29 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addDateRangeFacet(String field, Date start, Date end, String gap) {
     add(FacetParams.FACET_RANGE, field);
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toInstant().toString());
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END),   end.toInstant().toString());
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP),   gap);
+    add(
+        String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START),
+        start.toInstant().toString());
+    add(
+        String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END),
+        end.toInstant().toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap);
     this.set(FacetParams.FACET, true);
     return this;
   }
-  
+
   /**
-   * Add Interval Faceting on a field. All intervals for the same field should be included
-   * in the same call to this method.
-   * For syntax documentation see <a href="https://wiki.apache.org/solr/SimpleFacetParameters#Interval_Faceting">Solr wiki</a>.
-   * <br>
-   * Key substitution, filter exclusions or other local params on the field are not supported when using this method, 
-   * if this is needed, use the lower level {@link #add} method.<br> 
+   * Add Interval Faceting on a field. All intervals for the same field should be included in the
+   * same call to this method. For syntax documentation see <a
+   * href="https://solr.apache.org/guide/solr/latest/query-guide/faceting.html#interval-faceting">Solr
+   * wiki</a>. <br>
+   * Key substitution, filter exclusions or other local params on the field are not supported when
+   * using this method, if this is needed, use the lower level {@link #add} method.<br>
    * Key substitution IS supported on intervals when using this method.
-   * 
-   * 
+   *
    * @param field the field to add facet intervals. Must be an existing field and can't be null
-   * @param intervals Intervals to be used for faceting. It can be an empty array, but it can't 
-   * be <code>null</code>
+   * @param intervals Intervals to be used for faceting. It can be an empty array, but it can't be
+   *     <code>null</code>
    * @return this
    */
   public SolrQuery addIntervalFacets(String field, String[] intervals) {
@@ -305,37 +316,39 @@ public class SolrQuery extends ModifiableSolrParams
     }
     set(FacetParams.FACET, true);
     add(FacetParams.FACET_INTERVAL, field);
-    for (String interval:intervals) {
+    for (String interval : intervals) {
       add(String.format(Locale.ROOT, "f.%s.facet.interval.set", field), interval);
     }
     return this;
   }
-  
+
   /**
    * Remove all Interval Facets on a field
-   * 
+   *
    * @param field the field to remove from facet intervals
    * @return Array of current intervals for <code>field</code>
    */
   public String[] removeIntervalFacets(String field) {
-    while(remove(FacetParams.FACET_INTERVAL, field)){};
+    while (remove(FacetParams.FACET_INTERVAL, field)) {}
+    ;
     return remove(String.format(Locale.ROOT, "f.%s.facet.interval.set", field));
   }
-  
-  /** get the facet fields
-   * 
+
+  /**
+   * get the facet fields
+   *
    * @return string array of facet fields or null if not set/empty
    */
   public String[] getFacetFields() {
     return this.getParams(FacetParams.FACET_FIELD);
   }
 
-  /** remove a facet field
-   * 
+  /**
+   * remove a facet field
+   *
    * @param name Name of the facet field to be removed.
-   * 
    * @return true, if the item was removed. <br>
-   *           false, if the facet field was null or did not exist.
+   *     false, if the facet field was null or did not exist.
    */
   public boolean removeFacetField(String name) {
     boolean b = this.remove(FacetParams.FACET_FIELD, name);
@@ -344,10 +357,12 @@ public class SolrQuery extends ModifiableSolrParams
     }
     return b;
   }
-  
-  /** enable/disable faceting.  
-   * 
-   * @param b flag to indicate faceting should be enabled. <br> if b==false, removes all other faceting parameters
+
+  /**
+   * enable/disable faceting.
+   *
+   * @param b flag to indicate faceting should be enabled. <br>
+   *     if b==false, removes all other faceting parameters
    * @return Current reference (<i>this</i>)
    */
   public SolrQuery setFacet(boolean b) {
@@ -369,21 +384,20 @@ public class SolrQuery extends ModifiableSolrParams
     }
     return this;
   }
-  
-  public SolrQuery setFacetPrefix( String prefix )
-  {
-    this.set( FacetParams.FACET_PREFIX, prefix );
+
+  public SolrQuery setFacetPrefix(String prefix) {
+    this.set(FacetParams.FACET_PREFIX, prefix);
     return this;
   }
 
-  public SolrQuery setFacetPrefix( String field, String prefix )
-  {
-    this.set( "f."+field+"."+FacetParams.FACET_PREFIX, prefix );
+  public SolrQuery setFacetPrefix(String field, String prefix) {
+    this.set("f." + field + "." + FacetParams.FACET_PREFIX, prefix);
     return this;
   }
 
-  /** add a faceting query
-   * 
+  /**
+   * add a faceting query
+   *
    * @param f facet query
    */
   public SolrQuery addFacetQuery(String f) {
@@ -392,16 +406,18 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** get facet queries
-   * 
+  /**
+   * get facet queries
+   *
    * @return all facet queries or null if not set/empty
    */
   public String[] getFacetQuery() {
     return this.getParams(FacetParams.FACET_QUERY);
   }
 
-  /** remove a facet query
-   * 
+  /**
+   * remove a facet query
+   *
    * @param q the facet query to remove
    * @return true if the facet query was removed false otherwise
    */
@@ -413,8 +429,9 @@ public class SolrQuery extends ModifiableSolrParams
     return b;
   }
 
-  /** set the facet limit
-   * 
+  /**
+   * set the facet limit
+   *
    * @param lim number facet items to return
    */
   public SolrQuery setFacetLimit(int lim) {
@@ -422,16 +439,18 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** get current facet limit
-   * 
+  /**
+   * get current facet limit
+   *
    * @return facet limit or default of 25
    */
   public int getFacetLimit() {
     return this.getInt(FacetParams.FACET_LIMIT, 25);
   }
 
-  /** set facet minimum count
-   * 
+  /**
+   * set facet minimum count
+   *
    * @param cnt facets having less that cnt hits will be excluded from teh facet list
    */
   public SolrQuery setFacetMinCount(int cnt) {
@@ -439,8 +458,9 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** get facet minimum count
-   * 
+  /**
+   * get facet minimum count
+   *
    * @return facet minimum count or default of 1
    */
   public int getFacetMinCount() {
@@ -448,9 +468,9 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * Sets facet missing boolean flag 
-   * 
-   * @param v flag to indicate the field of  {@link FacetParams#FACET_MISSING} .
+   * Sets facet missing boolean flag
+   *
+   * @param v flag to indicate the field of {@link FacetParams#FACET_MISSING} .
    * @return this
    */
   public SolrQuery setFacetMissing(Boolean v) {
@@ -458,17 +478,18 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** get facet sort
-   * 
+  /**
+   * get facet sort
+   *
    * @return facet sort or default of {@link FacetParams#FACET_SORT_COUNT}
    */
   public String getFacetSortString() {
     return this.get(FacetParams.FACET_SORT, FacetParams.FACET_SORT_COUNT);
   }
 
-
-  /** set facet sort
-   * 
+  /**
+   * set facet sort
+   *
    * @param sort sort facets
    * @return this
    */
@@ -477,8 +498,9 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** add highlight field
-   * 
+  /**
+   * add highlight field
+   *
    * @param f field to enable for highlighting
    */
   public SolrQuery addHighlightField(String f) {
@@ -487,10 +509,12 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** remove a field for highlighting
-   * 
+  /**
+   * remove a field for highlighting
+   *
    * @param f field name to not highlight
-   * @return <i>true</i>, if removed, <br> <i>false</i>, otherwise
+   * @return <i>true</i>, if removed, <br>
+   *     <i>false</i>, otherwise
    */
   public boolean removeHighlightField(String f) {
     boolean b = this.remove(HighlightParams.FIELDS, f);
@@ -500,8 +524,9 @@ public class SolrQuery extends ModifiableSolrParams
     return b;
   }
 
-  /** get list of highlighted fields
-   * 
+  /**
+   * get list of highlighted fields
+   *
    * @return Array of highlight fields or null if not set/empty
    */
   public String[] getHighlightFields() {
@@ -555,17 +580,16 @@ public class SolrQuery extends ModifiableSolrParams
 
   /**
    * Gets the raw sort field, as it will be sent to Solr.
-   * <p>
-   * The returned sort field will always contain a serialized version
-   * of the sort string built using {@link #setSort(SortClause)},
-   * {@link #addSort(SortClause)}, {@link #addOrUpdateSort(SortClause)},
-   * {@link #removeSort(SortClause)}, {@link #clearSorts()} and 
+   *
+   * <p>The returned sort field will always contain a serialized version of the sort string built
+   * using {@link #setSort(SortClause)}, {@link #addSort(SortClause)}, {@link
+   * #addOrUpdateSort(SortClause)}, {@link #removeSort(SortClause)}, {@link #clearSorts()} and
    * {@link #setSorts(List)}.
    */
   public String getSortField() {
     return this.get(CommonParams.SORT);
   }
-  
+
   /**
    * Clears current sort information.
    *
@@ -646,10 +670,9 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * Updates or adds a single sort clause to the query.
-   * If the field is already used for sorting, the order
-   * of the existing field is modified; otherwise, it is
-   * added to the end.
+   * Updates or adds a single sort clause to the query. If the field is already used for sorting,
+   * the order of the existing field is modified; otherwise, it is added to the end.
+   *
    * @return the modified SolrQuery object, for easy chaining
    * @since 4.2
    */
@@ -658,17 +681,16 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * Updates or adds a single sort field specification to the current sort
-   * information. If the sort field already exist in the sort information map,
-   * its position is unchanged and the sort order is set; if it does not exist,
-   * it is appended at the end with the specified order..
+   * Updates or adds a single sort field specification to the current sort information. If the sort
+   * field already exist in the sort information map, its position is unchanged and the sort order
+   * is set; if it does not exist, it is appended at the end with the specified order..
    *
    * @return the modified SolrQuery object, for easy chaining
    * @since 4.2
    */
   public SolrQuery addOrUpdateSort(SortClause sortClause) {
     if (sortClauses != null) {
-      for (int index=0 ; index<sortClauses.size() ; index++) {
+      for (int index = 0; index < sortClauses.size(); index++) {
         SortClause existing = sortClauses.get(index);
         if (existing.getItem().equals(sortClause.getItem())) {
           sortClauses.set(index, sortClause);
@@ -725,32 +747,26 @@ public class SolrQuery extends ModifiableSolrParams
     }
   }
 
-  public void setGetFieldStatistics( boolean v )
-  {
-    this.set( StatsParams.STATS, v );
+  public void setGetFieldStatistics(boolean v) {
+    this.set(StatsParams.STATS, v);
   }
-  
-  public void setGetFieldStatistics( String field )
-  {
-    this.set( StatsParams.STATS, true );
-    this.add( StatsParams.STATS_FIELD, field );
-  }
-  
 
-  public void addGetFieldStatistics( String ... field )
-    {
-      this.set( StatsParams.STATS, true );
-      this.add( StatsParams.STATS_FIELD, field );
-    }
-  
-  public void addStatsFieldFacets( String field, String ... facets )
-  {
-    if( field == null ) {
-      this.add( StatsParams.STATS_FACET, facets );
-    }
-    else {
-      for( String f : facets ) {
-        this.add( "f."+field+"."+StatsParams.STATS_FACET, f );
+  public void setGetFieldStatistics(String field) {
+    this.set(StatsParams.STATS, true);
+    this.add(StatsParams.STATS_FIELD, field);
+  }
+
+  public void addGetFieldStatistics(String... field) {
+    this.set(StatsParams.STATS, true);
+    this.add(StatsParams.STATS_FIELD, field);
+  }
+
+  public void addStatsFieldFacets(String field, String... facets) {
+    if (field == null) {
+      this.add(StatsParams.STATS_FACET, facets);
+    } else {
+      for (String f : facets) {
+        this.add("f." + field + "." + StatsParams.STATS_FACET, f);
       }
     }
   }
@@ -759,16 +775,17 @@ public class SolrQuery extends ModifiableSolrParams
     if (field == null) {
       this.add(StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
     } else {
-      this.add("f." + field + "." + StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
+      this.add(
+          "f." + field + "." + StatsParams.STATS_CALC_DISTINCT, Boolean.toString(calcDistinct));
     }
   }
 
-  public SolrQuery setFilterQueries(String ... fq) {
+  public SolrQuery setFilterQueries(String... fq) {
     this.set(CommonParams.FQ, fq);
     return this;
   }
 
-  public SolrQuery addFilterQuery(String ... fq) {
+  public SolrQuery addFilterQuery(String... fq) {
     this.add(CommonParams.FQ, fq);
     return this;
   }
@@ -780,11 +797,11 @@ public class SolrQuery extends ModifiableSolrParams
   public String[] getFilterQueries() {
     return this.getParams(CommonParams.FQ);
   }
-  
+
   public boolean getHighlight() {
     return this.getBool(HighlightParams.HIGHLIGHT, false);
   }
-  
+
   public SolrQuery setHighlight(boolean b) {
     if (b) {
       this.set(HighlightParams.HIGHLIGHT, true);
@@ -801,10 +818,8 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-
   /**
-   * Add field for MoreLikeThis. Automatically
-   * enables MoreLikeThis.
+   * Add field for MoreLikeThis. Automatically enables MoreLikeThis.
    *
    * @param field the names of the field to be added
    * @return this
@@ -815,8 +830,8 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public SolrQuery setMoreLikeThisFields(String... fields) {
-    if( fields == null || fields.length == 0 ) {
-      this.remove( MoreLikeThisParams.SIMILARITY_FIELDS );
+    if (fields == null || fields.length == 0) {
+      this.remove(MoreLikeThisParams.SIMILARITY_FIELDS);
       this.setMoreLikeThis(false);
       return this;
     }
@@ -837,7 +852,7 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public String[] getMoreLikeThisFields() {
     String fl = this.get(MoreLikeThisParams.SIMILARITY_FIELDS);
-    if(fl==null || fl.length()==0) {
+    if (fl == null || fl.length() == 0) {
       return null;
     }
     return fl.split(",");
@@ -854,16 +869,14 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets the frequency below which terms will be ignored in the source doc
-   */
+  /** Gets the frequency below which terms will be ignored in the source doc */
   public int getMoreLikeThisMinTermFreq() {
     return this.getInt(MoreLikeThisParams.MIN_TERM_FREQ, 2);
   }
 
   /**
-   * Sets the frequency at which words will be ignored which do not occur in
-   * at least this many docs.
+   * Sets the frequency at which words will be ignored which do not occur in at least this many
+   * docs.
    *
    * @param mindf the minimum document frequency
    * @return this
@@ -874,8 +887,8 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * Gets the frequency at which words will be ignored which do not occur in
-   * at least this many docs.
+   * Gets the frequency at which words will be ignored which do not occur in at least this many
+   * docs.
    */
   public int getMoreLikeThisMinDocFreq() {
     return this.getInt(MoreLikeThisParams.MIN_DOC_FREQ, 5);
@@ -892,9 +905,7 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets the minimum word length below which words will be ignored.
-   */
+  /** Gets the minimum word length below which words will be ignored. */
   public int getMoreLikeThisMinWordLen() {
     return this.getInt(MoreLikeThisParams.MIN_WORD_LEN, 0);
   }
@@ -910,16 +921,13 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets the maximum word length above which words will be ignored.
-   */
+  /** Gets the maximum word length above which words will be ignored. */
   public int getMoreLikeThisMaxWordLen() {
     return this.getInt(MoreLikeThisParams.MAX_WORD_LEN, 0);
   }
 
   /**
-   * Sets the maximum number of query terms that will be included in any
-   * generated query.
+   * Sets the maximum number of query terms that will be included in any generated query.
    *
    * @param maxqt the maximum number of query terms
    * @return this
@@ -929,17 +937,14 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets the maximum number of query terms that will be included in any
-   * generated query.
-   */
+  /** Gets the maximum number of query terms that will be included in any generated query. */
   public int getMoreLikeThisMaxQueryTerms() {
     return this.getInt(MoreLikeThisParams.MAX_QUERY_TERMS, 25);
   }
 
   /**
-   * Sets the maximum number of tokens to parse in each example doc field
-   * that is not stored with TermVector support.
+   * Sets the maximum number of tokens to parse in each example doc field that is not stored with
+   * TermVector support.
    *
    * @param maxntp the maximum number of tokens to parse
    * @return this
@@ -950,8 +955,8 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * Gets the maximum number of tokens to parse in each example doc field
-   * that is not stored with TermVector support.
+   * Gets the maximum number of tokens to parse in each example doc field that is not stored with
+   * TermVector support.
    */
   public int getMoreLikeThisMaxTokensParsed() {
     return this.getInt(MoreLikeThisParams.MAX_NUM_TOKENS_PARSED, 5000);
@@ -968,17 +973,15 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets if the query will be boosted by the interesting term relevance.
-   */
+  /** Gets if the query will be boosted by the interesting term relevance. */
   public boolean getMoreLikeThisBoost() {
     return this.getBool(MoreLikeThisParams.BOOST, false);
   }
 
   /**
-   * Sets the query fields and their boosts using the same format as that
-   * used in DisMaxQParserPlugin. These fields must also be added
-   * using {@link #addMoreLikeThisField(String)}.
+   * Sets the query fields and their boosts using the same format as that used in
+   * DisMaxQParserPlugin. These fields must also be added using {@link
+   * #addMoreLikeThisField(String)}.
    *
    * @param qf the query fields
    * @return this
@@ -988,9 +991,7 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets the query fields and their boosts.
-   */
+  /** Gets the query fields and their boosts. */
   public String getMoreLikeThisQF() {
     return this.get(MoreLikeThisParams.QF);
   }
@@ -1006,24 +1007,21 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /**
-   * Gets the number of similar documents to return for each result.
-   */
+  /** Gets the number of similar documents to return for each result. */
   public int getMoreLikeThisCount() {
     return this.getInt(MoreLikeThisParams.DOC_COUNT, MoreLikeThisParams.DEFAULT_DOC_COUNT);
   }
 
   /**
-   * Enable/Disable MoreLikeThis. After enabling MoreLikeThis, the fields
-   * used for computing similarity must be specified calling
-   * {@link #addMoreLikeThisField(String)}.
+   * Enable/Disable MoreLikeThis. After enabling MoreLikeThis, the fields used for computing
+   * similarity must be specified calling {@link #addMoreLikeThisField(String)}.
    *
-   * @param b flag to indicate if MoreLikeThis should be enabled. if b==false
-   * removes all mlt.* parameters
+   * @param b flag to indicate if MoreLikeThis should be enabled. if b==false removes all mlt.*
+   *     parameters
    * @return this
    */
   public SolrQuery setMoreLikeThis(boolean b) {
-    if(b) {
+    if (b) {
       this.set(MoreLikeThisParams.MLT, true);
     } else {
       this.remove(MoreLikeThisParams.MLT);
@@ -1048,28 +1046,28 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getBool(MoreLikeThisParams.MLT, false);
   }
 
-  public SolrQuery setFields(String ... fields) {
-    if( fields == null || fields.length == 0 ) {
-      this.remove( CommonParams.FL );
+  public SolrQuery setFields(String... fields) {
+    if (fields == null || fields.length == 0) {
+      this.remove(CommonParams.FL);
       return this;
     }
     StringBuilder sb = new StringBuilder();
-    sb.append( fields[0] );
-    for( int i=1; i<fields.length; i++ ) {
-      sb.append( ',' );
-      sb.append( fields[i] );
+    sb.append(fields[0]);
+    for (int i = 1; i < fields.length; i++) {
+      sb.append(',');
+      sb.append(fields[i]);
     }
-    this.set(CommonParams.FL, sb.toString() );
+    this.set(CommonParams.FL, sb.toString());
     return this;
   }
-    
+
   public SolrQuery addField(String field) {
     return addValueToParam(CommonParams.FL, field);
   }
 
   public String getFields() {
     String fields = this.get(CommonParams.FL);
-    if (fields!=null && fields.equals("score")) {
+    if (fields != null && fields.equals("score")) {
       fields = "*, score";
     }
     return fields;
@@ -1078,10 +1076,10 @@ public class SolrQuery extends ModifiableSolrParams
   private static Pattern scorePattern = Pattern.compile("(^|[, ])score");
 
   public SolrQuery setIncludeScore(boolean includeScore) {
-    String fields = get(CommonParams.FL,"*");
+    String fields = get(CommonParams.FL, "*");
     if (includeScore) {
-      if (!scorePattern.matcher(fields).find()) {   
-        this.set(CommonParams.FL, fields+",score");
+      if (!scorePattern.matcher(fields).find()) {
+        this.set(CommonParams.FL, fields + ",score");
       }
     } else {
       this.set(CommonParams.FL, scorePattern.matcher(fields).replaceAll(""));
@@ -1099,17 +1097,15 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   public SolrQuery setRows(Integer rows) {
-    if( rows == null ) {
-      this.remove( CommonParams.ROWS );
-    }
-    else {
+    if (rows == null) {
+      this.remove(CommonParams.ROWS);
+    } else {
       this.set(CommonParams.ROWS, rows);
     }
     return this;
   }
 
-  public Integer getRows()
-  {
+  public Integer getRows() {
     return this.getInt(CommonParams.ROWS);
   }
 
@@ -1122,27 +1118,24 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(CommonParams.DISTRIB, String.valueOf(val));
   }
 
-
   public SolrQuery setStart(Integer start) {
-    if( start == null ) {
-      this.remove( CommonParams.START );
-    }
-    else {
+    if (start == null) {
+      this.remove(CommonParams.START);
+    } else {
       this.set(CommonParams.START, start);
     }
     return this;
   }
-  
-  public Integer getStart()
-  {
+
+  public Integer getStart() {
     return this.getInt(CommonParams.START);
   }
 
   /**
    * The Request Handler to use (see the solrconfig.xml), which is stored in the "qt" parameter.
-   * Normally it starts with a '/' and if so it will be used by
-   * {@link org.apache.solr.client.solrj.request.QueryRequest#getPath()} in the URL instead of the "qt" parameter.
-   * If this is left blank, then the default of "/select" is assumed.
+   * Normally it starts with a '/' and if so it will be used by {@link
+   * org.apache.solr.client.solrj.request.QueryRequest#getPath()} in the URL instead of the "qt"
+   * parameter. If this is left blank, then the default of "/select" is assumed.
    *
    * @param qt The Request Handler name corresponding to one in solrconfig.xml on the server.
    * @return this
@@ -1160,7 +1153,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @return this
    * @see ModifiableSolrParams#set(String,String[])
    */
-  public SolrQuery setParam(String name, String ... values) {
+  public SolrQuery setParam(String name, String... values) {
     this.set(name, values);
     return this;
   }
@@ -1174,7 +1167,7 @@ public class SolrQuery extends ModifiableSolrParams
     return this;
   }
 
-  /** get a deep copy of this object **/
+  /** get a deep copy of this object * */
   public SolrQuery getCopy() {
     SolrQuery q = new SolrQuery();
     for (String name : this.getParameterNames()) {
@@ -1182,16 +1175,15 @@ public class SolrQuery extends ModifiableSolrParams
     }
     return q;
   }
-  
+
   /**
-  * Set the maximum time allowed for this query. If the query takes more time
-  * than the specified milliseconds, a timeout occurs and partial (or no)
-  * results may be returned.
-  * 
-  * If given Integer is null, then this parameter is removed from the request
-  * 
-  *@param milliseconds the time in milliseconds allowed for this query
-  */
+   * Set the maximum time allowed for this query. If the query takes more time than the specified
+   * milliseconds, a timeout occurs and partial (or no) results may be returned.
+   *
+   * <p>If given Integer is null, then this parameter is removed from the request
+   *
+   * @param milliseconds the time in milliseconds allowed for this query
+   */
   public SolrQuery setTimeAllowed(Integer milliseconds) {
     if (milliseconds == null) {
       this.remove(CommonParams.TIME_ALLOWED);
@@ -1200,44 +1192,65 @@ public class SolrQuery extends ModifiableSolrParams
     }
     return this;
   }
-  
-  /**
-  * Get the maximum time allowed for this query.
-  */
+
+  /** Get the maximum time allowed for this query. */
   public Integer getTimeAllowed() {
     return this.getInt(CommonParams.TIME_ALLOWED);
+  }
+
+  /**
+   * Set the maximum CPU time allowed for this query. If the thread that executes the query takes
+   * more CPU time than the specified milliseconds, a timeout occurs and partial (or no) results may
+   * be returned.
+   *
+   * <p>If given Integer is null, then this parameter is removed from the request
+   *
+   * @param milliseconds the CPU time in milliseconds allowed for this query
+   */
+  public SolrQuery setCpuAllowed(Integer milliseconds) {
+    if (milliseconds == null) {
+      this.remove(CommonParams.CPU_ALLOWED);
+    } else {
+      this.set(CommonParams.CPU_ALLOWED, milliseconds);
+    }
+    return this;
+  }
+
+  /** Get the maximum time allowed for this query. */
+  public Integer getCpuAllowed() {
+    return this.getInt(CommonParams.CPU_ALLOWED);
   }
 
   ///////////////////////
   //  Utility functions
   ///////////////////////
-  
+
   private String toSortString(String field, ORDER order) {
     return field.trim() + ' ' + String.valueOf(order).trim();
   }
-  
+
   private String join(String a, String b, String sep) {
     StringBuilder sb = new StringBuilder();
-    if (a!=null && a.length()>0) {
+    if (a != null && a.length() > 0) {
       sb.append(a);
       sb.append(sep);
-    } 
-    if (b!=null && b.length()>0) {
+    }
+    if (b != null && b.length() > 0) {
       sb.append(b);
     }
     return sb.toString().trim();
   }
-  
+
   private SolrQuery addValueToParam(String name, String value) {
     String tmp = this.get(name);
     tmp = join(tmp, value, ",");
     this.set(name, tmp);
     return this;
   }
-   
+
   private String join(String[] vals, String sep, String removeVal) {
     StringBuilder sb = new StringBuilder();
-    for (int i=0; i<vals.length; i++) {
+    for (int i = 0; i < vals.length; i++) {
       if (!vals[i].equals(removeVal)) {
         if (sb.length() > 0) {
           sb.append(sep);
@@ -1250,12 +1263,12 @@ public class SolrQuery extends ModifiableSolrParams
 
   /**
    * A single sort clause, encapsulating what to sort and the sort order.
-   * <p>
-   * The item specified can be "anything sortable" by solr; some examples
-   * include a simple field name, the constant string {@code score}, and functions
-   * such as {@code sum(x_f, y_f)}.
-   * <p>
-   * A SortClause can be created through different mechanisms:
+   *
+   * <p>The item specified can be "anything sortable" by solr; some examples include a simple field
+   * name, the constant string {@code score}, and functions such as {@code sum(x_f, y_f)}.
+   *
+   * <p>A SortClause can be created through different mechanisms:
+   *
    * <PRE><code>
    * new SortClause("product", SolrQuery.ORDER.asc);
    * new SortClause("product", "asc");
@@ -1272,6 +1285,7 @@ public class SolrQuery extends ModifiableSolrParams
 
     /**
      * Creates a SortClause based on item and order
+     *
      * @param item item to sort on
      * @param order direction to sort
      */
@@ -1282,6 +1296,7 @@ public class SolrQuery extends ModifiableSolrParams
 
     /**
      * Creates a SortClause based on item and order
+     *
      * @param item item to sort on
      * @param order string value for direction to sort
      */
@@ -1291,14 +1306,16 @@ public class SolrQuery extends ModifiableSolrParams
 
     /**
      * Creates an ascending SortClause for an item
+     *
      * @param item item to sort on
      */
-    public static SortClause create (String item, ORDER order) {
+    public static SortClause create(String item, ORDER order) {
       return new SortClause(item, order);
     }
 
     /**
      * Creates a SortClause based on item and order
+     *
      * @param item item to sort on
      * @param order string value for direction to sort
      */
@@ -1308,22 +1325,25 @@ public class SolrQuery extends ModifiableSolrParams
 
     /**
      * Creates an ascending SortClause for an item
+     *
      * @param item item to sort on
      */
-    public static SortClause asc (String item) {
+    public static SortClause asc(String item) {
       return new SortClause(item, ORDER.asc);
     }
 
     /**
      * Creates a decending SortClause for an item
+     *
      * @param item item to sort on
      */
-    public static SortClause desc (String item) {
+    public static SortClause desc(String item) {
       return new SortClause(item, ORDER.desc);
     }
 
     /**
      * Gets the item to sort, typically a function or a fieldname
+     *
      * @return item to sort
      */
     public String getItem() {
@@ -1332,32 +1352,43 @@ public class SolrQuery extends ModifiableSolrParams
 
     /**
      * Gets the order to sort
+     *
      * @return order to sort
      */
     public ORDER getOrder() {
       return order;
     }
 
-    public boolean equals(Object other){
+    @Override
+    public boolean equals(Object other) {
       if (this == other) return true;
       if (!(other instanceof SortClause)) return false;
       final SortClause that = (SortClause) other;
       return this.getItem().equals(that.getItem()) && this.getOrder().equals(that.getOrder());
     }
 
-    public int hashCode(){
+    @Override
+    public int hashCode() {
       return this.getItem().hashCode();
     }
 
     /**
      * Gets a human readable description of the sort clause.
-     * <p>
-     * The returned string is not suitable for passing to Solr,
-     * but may be useful in debug output and the like.
+     *
+     * <p>The returned string is not suitable for passing to Solr, but may be useful in debug output
+     * and the like.
+     *
      * @return a description of the current sort clause
      */
+    @Override
     public String toString() {
-      return "[" + getClass().getSimpleName() + ": item=" + getItem() + "; order=" + getOrder() + "]";
+      return "["
+          + getClass().getSimpleName()
+          + ": item="
+          + getItem()
+          + "; order="
+          + getOrder()
+          + "]";
     }
   }
 }

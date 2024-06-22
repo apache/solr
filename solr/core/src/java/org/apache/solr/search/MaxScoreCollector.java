@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;

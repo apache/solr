@@ -17,6 +17,7 @@
 
 package org.apache.solr.response;
 
+import static java.util.Collections.singletonMap;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,7 +25,6 @@ import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -38,19 +38,19 @@ import org.apache.solr.util.BaseTestHarness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
-
 public class TestPushWriter extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
 
   @SuppressWarnings({"unchecked"})
   public void testStandardResponse() throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     Map<Object, Object> m;
     try (OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
-      JSONWriter pw = new JSONWriter(osw,
-          new LocalSolrQueryRequest(null, new ModifiableSolrParams()), new SolrQueryResponse());
+      JSONWriter pw =
+          new JSONWriter(
+              osw,
+              new LocalSolrQueryRequest(null, new ModifiableSolrParams()),
+              new SolrQueryResponse());
       writeData(null, pw);
       osw.flush();
       if (log.isInfoEnabled()) {
@@ -60,7 +60,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
       checkValues(m);
     }
 
-    try (JavaBinCodec jbc = new JavaBinCodec(baos= new ByteArrayOutputStream(), null)) {
+    try (JavaBinCodec jbc = new JavaBinCodec(baos = new ByteArrayOutputStream(), null)) {
       writeData(jbc);
       m = (Map<Object, Object>) Utils.fromJavabin(baos.toByteArray());
     }
@@ -70,55 +70,77 @@ public class TestPushWriter extends SolrTestCaseJ4 {
   public void testXmlWriter() throws Exception {
     try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
         OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
-      XMLWriter xml = new XMLWriter(osw,
-          new LocalSolrQueryRequest(null, new ModifiableSolrParams()), new SolrQueryResponse());
+      XMLWriter xml =
+          new XMLWriter(
+              osw,
+              new LocalSolrQueryRequest(null, new ModifiableSolrParams()),
+              new SolrQueryResponse());
       writeData(null, xml);
       osw.flush();
       if (log.isInfoEnabled()) {
         log.info("{}", new String(baos.toByteArray(), StandardCharsets.UTF_8));
       }
       String response = new String(baos.toByteArray(), StandardCharsets.UTF_8);
-      BaseTestHarness.validateXPath(response,
+      BaseTestHarness.validateXPath(
+          response,
           "/lst/lst[@name='responseHeader']/int[@name='status'][.=1]",
           "/lst/lst[@name='response']/int[@name=numFound][.=10]",
           "/lst/lst[@name='response']/arr[@name='docs'][0]/lst/int[@name='id'][.=1]",
           "/lst/lst[@name='response']/arr[@name='docs'][1]/lst/int[@name='id'][.=2]",
-          "/lst/lst[@name='response']/arr[@name='docs'][2]/lst/int[@name='id'][.=3]"
-      );
+          "/lst/lst[@name='response']/arr[@name='docs'][2]/lst/int[@name='id'][.=3]");
     }
   }
 
   protected void checkValues(Map<Object, Object> m) {
-    assertEquals(0, ((Number)Utils.getObjectByPath(m, true, "responseHeader/status")).intValue());
-    assertEquals(10, ((Number)Utils.getObjectByPath(m, true, "response/numFound")).intValue());
-    assertEquals(1, ((Number)Utils.getObjectByPath(m, true, "response/docs[0]/id")).intValue());
-    assertEquals(2, ((Number)Utils.getObjectByPath(m, true, "response/docs[1]/id")).intValue());
-    assertEquals(3, ((Number)Utils.getObjectByPath(m, true, "response/docs[2]/id")).intValue());
+    assertEquals(0, ((Number) Utils.getObjectByPath(m, true, "responseHeader/status")).intValue());
+    assertEquals(10, ((Number) Utils.getObjectByPath(m, true, "response/numFound")).intValue());
+    assertEquals(1, ((Number) Utils.getObjectByPath(m, true, "response/docs[0]/id")).intValue());
+    assertEquals(2, ((Number) Utils.getObjectByPath(m, true, "response/docs[1]/id")).intValue());
+    assertEquals(3, ((Number) Utils.getObjectByPath(m, true, "response/docs[2]/id")).intValue());
   }
 
   protected void writeData(PushWriter pw) throws IOException {
-    pw.writeMap(m -> {
-      m.put("responseHeader", singletonMap("status", 0))
-          .put("response", (MapWriter) m1 -> {
-            m1.put("numFound", 10)
-                .put("docs", (IteratorWriter) w -> {
-                  w.add((MapWriter) m3 -> m3.put("id", 1))
-                      .add(singletonMap("id", 2))
-                      .add(singletonMap("id", 3));
-                }); }); });
+    pw.writeMap(
+        m -> {
+          m.put("responseHeader", singletonMap("status", 0))
+              .put(
+                  "response",
+                  (MapWriter)
+                      m1 -> {
+                        m1.put("numFound", 10)
+                            .put(
+                                "docs",
+                                (IteratorWriter)
+                                    w -> {
+                                      w.add((MapWriter) m3 -> m3.put("id", 1))
+                                          .add(singletonMap("id", 2))
+                                          .add(singletonMap("id", 3));
+                                    });
+                      });
+        });
     pw.close();
   }
 
   protected void writeData(String name, TextWriter pw) throws IOException {
-    pw.writeMap(name, m -> {
-      m.put("responseHeader", singletonMap("status", 0))
-          .put("response", (MapWriter) m1 -> {
-            m1.put("numFound", 10)
-                .put("docs", (IteratorWriter) w -> {
-                  w.add((MapWriter) m3 -> m3.put("id", 1))
-                      .add(singletonMap("id", 2))
-                      .add(singletonMap("id", 3));
-                }); }); });
+    pw.writeMap(
+        name,
+        m -> {
+          m.put("responseHeader", singletonMap("status", 0))
+              .put(
+                  "response",
+                  (MapWriter)
+                      m1 -> {
+                        m1.put("numFound", 10)
+                            .put(
+                                "docs",
+                                (IteratorWriter)
+                                    w -> {
+                                      w.add((MapWriter) m3 -> m3.put("id", 1))
+                                          .add(singletonMap("id", 2))
+                                          .add(singletonMap("id", 3));
+                                    });
+                      });
+        });
     pw.close();
   }
 }

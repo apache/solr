@@ -16,41 +16,41 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Collection;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
+import java.util.Collection;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
-
 /**
- * Base class for processors that want to mutate selected fields to only 
- * keep a subset of the original values.
+ * Base class for processors that want to mutate selected fields to only keep a subset of the
+ * original values.
+ *
  * @see #pickSubset
  * @since 4.0.0
  */
-public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
+public abstract class FieldValueSubsetUpdateProcessorFactory
+    extends FieldMutatingUpdateProcessorFactory {
 
   @Override
-  public final UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                                  SolrQueryResponse rsp,
-                                                  UpdateRequestProcessor next) {
-    return mutator(getSelector(), next, src -> {
-      if (src.getValueCount() <= 1) return src;
+  public final UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return mutator(
+        getSelector(),
+        next,
+        src -> {
+          if (src.getValueCount() <= 1) return src;
 
-      SolrInputField result = new SolrInputField(src.getName());
-      result.setValue(pickSubset(src.getValues()));
-      return result;
-    });
+          SolrInputField result = new SolrInputField(src.getName());
+          result.setValue(pickSubset(src.getValues()));
+          return result;
+        });
   }
 
   /**
-   * Method subclasses must override to specify which values should be kept.  
-   * This method will not be called unless the collection contains more then 
-   * one value.
+   * Method subclasses must override to specify which values should be kept. This method will not be
+   * called unless the collection contains more then one value.
    */
   protected abstract <T> Collection<T> pickSubset(Collection<T> values);
-  
 }
-

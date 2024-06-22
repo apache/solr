@@ -1,0 +1,58 @@
+= Document Analysis in Solr
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The following sections describe how Solr breaks down and works with textual data.
+There are three main concepts to understand: analyzers, tokenizers, and filters.
+
+* xref:analyzers.adoc[Field analyzers] are used both during ingestion, when a document is indexed, and at query time.
+An analyzer examines the text of fields and generates a token stream.
+Analyzers may be a single class or they may be composed of a series of tokenizer and filter classes.
+* xref:tokenizers.adoc[] break field data into lexical units, or _tokens_.
+* xref:filters.adoc[] examine a stream of tokens and keep them, transform or discard them, or create new ones.
+Tokenizers and filters may be combined to form pipelines, or _chains_, where the output of one is input to the next.
+Such a sequence of tokenizers and filters is called an _analyzer_ and the resulting output of an analyzer is used to match query results or build indices.
+
+== Using Analyzers, Tokenizers, and Filters
+
+Although the analysis process is used for both indexing and querying, it is not required to use the same analysis process for both operations.
+For indexing, you often want to simplify, or normalize, words.
+For example, setting all letters to lowercase, eliminating punctuation and accents, mapping words to their stems, and so on.
+Doing so can increase recall because, for example, "ram", "Ram" and "RAM" would all match a query for "ram".
+To increase query-time precision, a filter could narrow the matches by, for example, ignoring all-cap acronyms if you're interested in male sheep, but not Random Access Memory.
+
+The tokens output by the analysis process define the values, or _terms_, of that field and are used either to build an index of those terms when a new document is added, or to identify which documents contain the terms you are querying for.
+
+=== For More Information
+
+These sections will show you how to configure field analyzers and also serves as a reference for the details of configuring each of the available tokenizer and filter classes.
+It also serves as a guide so that you can configure your own analysis classes if you have special needs that cannot be met with the included filters or tokenizers.
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::analysis-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| xref:analyzers.adoc[]: Overview of Solr analyzers.
+| xref:tokenizers.adoc[]: Tokenizers and tokenizer factory classes.
+| xref:filters.adoc[]: Filters and filter factory classes.
+| xref:charfilters.adoc[]: Filters for pre-processing input characters.
+| xref:language-analysis.adoc[]: Tokenizers and filters for character set conversion and specific languages.
+| xref:analysis-screen.adoc[]: Admin UI for testing field analysis.
+|===
+// end::analysis-sections[]
+****

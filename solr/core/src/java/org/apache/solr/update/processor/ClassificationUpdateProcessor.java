@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.document.DocumentClassifier;
@@ -30,6 +29,7 @@ import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassif
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -39,11 +39,10 @@ import org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Alg
 
 /**
  * This Class is a Request Update Processor to classify the document in input and add a field
- * containing the class to the Document.
- * It uses the Lucene Document Classification module, see {@link DocumentClassifier}.
+ * containing the class to the Document. It uses the Lucene Document Classification module, see
+ * {@link DocumentClassifier}.
  */
-class ClassificationUpdateProcessor
-    extends UpdateRequestProcessor {
+class ClassificationUpdateProcessor extends UpdateRequestProcessor {
 
   private final String trainingClassField;
   private final String predictedClassField;
@@ -54,11 +53,15 @@ class ClassificationUpdateProcessor
    * Sole constructor
    *
    * @param classificationParams classification advanced params
-   * @param next            next update processor in the chain
-   * @param indexReader     index reader
-   * @param schema          schema
+   * @param next next update processor in the chain
+   * @param indexReader index reader
+   * @param schema schema
    */
-  public ClassificationUpdateProcessor(ClassificationUpdateProcessorParams classificationParams, UpdateRequestProcessor next, IndexReader indexReader, IndexSchema schema) {
+  public ClassificationUpdateProcessor(
+      ClassificationUpdateProcessorParams classificationParams,
+      UpdateRequestProcessor next,
+      IndexReader indexReader,
+      IndexSchema schema) {
     super(next);
     this.trainingClassField = classificationParams.getTrainingClassField();
     this.predictedClassField = classificationParams.getPredictedClassField();
@@ -75,10 +78,29 @@ class ClassificationUpdateProcessor
     }
     switch (classificationAlgorithm) {
       case KNN:
-        classifier = new KNearestNeighborDocumentClassifier(indexReader, null, classificationParams.getTrainingFilterQuery(), classificationParams.getK(), classificationParams.getMinDf(), classificationParams.getMinTf(), trainingClassField, field2analyzer, inputFieldNamesWithBoost);
+        try {
+          classifier =
+              new KNearestNeighborDocumentClassifier(
+                  indexReader,
+                  null,
+                  classificationParams.getTrainingFilterQuery(),
+                  classificationParams.getK(),
+                  classificationParams.getMinDf(),
+                  classificationParams.getMinTf(),
+                  trainingClassField,
+                  field2analyzer,
+                  inputFieldNamesWithBoost);
+        } catch (IOException e) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "IOException occurred while instantiating KNearestNeighborDocumentClassifier",
+              e);
+        }
         break;
       case BAYES:
-        classifier = new SimpleNaiveBayesDocumentClassifier(indexReader, null, trainingClassField, field2analyzer, inputFieldNamesWithBoost);
+        classifier =
+            new SimpleNaiveBayesDocumentClassifier(
+                indexReader, null, trainingClassField, field2analyzer, inputFieldNamesWithBoost);
         break;
     }
   }
@@ -98,13 +120,14 @@ class ClassificationUpdateProcessor
    * @throws IOException If there is a low-level I/O error
    */
   @Override
-  public void processAdd(AddUpdateCommand cmd)
-      throws IOException {
+  public void processAdd(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
     Object documentClass = doc.getFieldValue(trainingClassField);
     if (documentClass == null) {
-      Document luceneDocument = DocumentBuilder.toDocument(doc, cmd.getReq().getSchema(), false, true);
-      List<ClassificationResult<BytesRef>> assignedClassifications = classifier.getClasses(luceneDocument, maxOutputClasses);
+      Document luceneDocument =
+          DocumentBuilder.toDocument(doc, cmd.getReq().getSchema(), false, true);
+      List<ClassificationResult<BytesRef>> assignedClassifications =
+          classifier.getClasses(luceneDocument, maxOutputClasses);
       if (assignedClassifications != null) {
         for (ClassificationResult<BytesRef> singleClassification : assignedClassifications) {
           String assignedClass = singleClassification.getAssignedClass().utf8ToString();

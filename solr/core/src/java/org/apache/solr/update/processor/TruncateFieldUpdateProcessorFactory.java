@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -24,29 +27,25 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-import static org.apache.solr.update.processor.FieldValueMutatingUpdateProcessor.valueMutator;
-
 /**
- * Truncates any CharSequence values found in fields matching the specified 
- * conditions to a maximum character length.
- * <p>
- * By default this processor matches no fields
- * </p>
+ * Truncates any CharSequence values found in fields matching the specified conditions to a maximum
+ * character length.
  *
- * <p>For example, with the configuration listed below any documents 
- * containing a String in any field declared in the schema using 
- * <code>StrField</code> will be truncated to no more then 100 characters
- * </p>
+ * <p>By default this processor matches no fields
+ *
+ * <p>For example, with the configuration listed below any documents containing a String in any
+ * field declared in the schema using <code>StrField</code> will be truncated to no more then 100
+ * characters
+ *
  * <pre class="prettyprint">
  * &lt;processor class="solr.TruncateFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="typeClass"&gt;solr.StrField&lt;/str&gt;
  *   &lt;int name="maxLength"&gt;100&lt;/int&gt;
  * &lt;/processor&gt;</pre>
+ *
  * @since 4.0.0
  */
-public final class TruncateFieldUpdateProcessorFactory 
-  extends FieldMutatingUpdateProcessorFactory {
+public final class TruncateFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
   private static final String MAX_LENGTH_PARAM = "maxLength";
 
@@ -57,21 +56,22 @@ public final class TruncateFieldUpdateProcessorFactory
 
     Object lengthParam = args.remove(MAX_LENGTH_PARAM);
     if (null == lengthParam) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-                              "Missing required init parameter: " + 
-                              MAX_LENGTH_PARAM);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Missing required init parameter: " + MAX_LENGTH_PARAM);
     }
-    if ( ! (lengthParam instanceof Number) ) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-                              "Init param " + MAX_LENGTH_PARAM + 
-                              "must be a number; found: \"" +
-                              lengthParam.toString());
+    if (!(lengthParam instanceof Number)) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Init param "
+              + MAX_LENGTH_PARAM
+              + "must be a number; found: \""
+              + lengthParam.toString());
     }
-    maxLength = ((Number)lengthParam).intValue();
+    maxLength = ((Number) lengthParam).intValue();
     if (maxLength < 0) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-                              "Init param " + MAX_LENGTH_PARAM + 
-                              "must be >= 0; found: " + maxLength);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Init param " + MAX_LENGTH_PARAM + "must be >= 0; found: " + maxLength);
     }
 
     super.init(args);
@@ -81,20 +81,21 @@ public final class TruncateFieldUpdateProcessorFactory
   public FieldNameSelector getDefaultSelector(final SolrCore core) {
     return SELECT_NO_FIELDS;
   }
-  
+
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                            SolrQueryResponse rsp,
-                                            UpdateRequestProcessor next) {
-    return valueMutator(getSelector(), next, src -> {
-      if (src instanceof CharSequence) {
-        CharSequence s = (CharSequence) src;
-        if (maxLength < s.length()) {
-          return s.subSequence(0, maxLength);
-        }
-      }
-      return src;
-    });
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return valueMutator(
+        getSelector(),
+        next,
+        src -> {
+          if (src instanceof CharSequence) {
+            CharSequence s = (CharSequence) src;
+            if (maxLength < s.length()) {
+              return s.subSequence(0, maxLength);
+            }
+          }
+          return src;
+        });
   }
 }
-

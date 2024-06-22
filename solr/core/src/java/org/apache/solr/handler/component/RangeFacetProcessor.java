@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams.FacetRangeMethod;
@@ -39,19 +38,17 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SyntaxError;
 
-/**
- * Processor for Range Facets
- */
+/** Processor for Range Facets */
 public class RangeFacetProcessor extends SimpleFacets {
 
-  public RangeFacetProcessor(SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {
+  public RangeFacetProcessor(
+      SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {
     super(req, docs, params, rb);
   }
 
   /**
-   * Returns a list of value constraints and the associated facet
-   * counts for each facet numerical field, range, and interval
-   * specified in the SolrParams
+   * Returns a list of value constraints and the associated facet counts for each facet numerical
+   * field, range, and interval specified in the SolrParams
    *
    * @see org.apache.solr.common.params.FacetParams#FACET_RANGE
    */
@@ -63,7 +60,9 @@ public class RangeFacetProcessor extends SimpleFacets {
       FacetComponent.FacetContext facetContext = FacetComponent.FacetContext.getFacetContext(req);
       rangeFacetRequests = facetContext.getAllRangeFacetRequests();
     } catch (IllegalStateException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to compute facet ranges, facet context is not set");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unable to compute facet ranges, facet context is not set");
     }
 
     if (rangeFacetRequests.isEmpty()) return resOuter;
@@ -75,8 +74,8 @@ public class RangeFacetProcessor extends SimpleFacets {
   }
 
   /**
-   * Returns a list of value constraints and the associated facet counts
-   * for each facet range specified by the given {@link RangeFacetRequest}
+   * Returns a list of value constraints and the associated facet counts for each facet range
+   * specified by the given {@link RangeFacetRequest}
    */
   public void getFacetRangeCounts(RangeFacetRequest rangeFacetRequest, NamedList<Object> resOuter)
       throws IOException, SyntaxError {
@@ -182,24 +181,46 @@ public class RangeFacetProcessor extends SimpleFacets {
         switch (range.other) {
           case BEFORE:
             assert range.lower == null;
-            intervals.set(0, new IntervalFacets.FacetInterval(sf, "*", range.upper, range.includeLower,
-                range.includeUpper, FacetRangeOther.BEFORE.toString()));
+            intervals.set(
+                0,
+                new IntervalFacets.FacetInterval(
+                    sf,
+                    "*",
+                    range.upper,
+                    range.includeLower,
+                    range.includeUpper,
+                    FacetRangeOther.BEFORE.toString()));
             break;
           case AFTER:
             assert range.upper == null;
-            after = new IntervalFacets.FacetInterval(sf, range.lower, "*",
-                range.includeLower, range.includeUpper, FacetRangeOther.AFTER.toString());
+            after =
+                new IntervalFacets.FacetInterval(
+                    sf,
+                    range.lower,
+                    "*",
+                    range.includeLower,
+                    range.includeUpper,
+                    FacetRangeOther.AFTER.toString());
             break;
           case BETWEEN:
-            intervals.set(includeBefore ? 1 : 0, new IntervalFacets.FacetInterval(sf, range.lower, range.upper,
-                range.includeLower, range.includeUpper, FacetRangeOther.BETWEEN.toString()));
+            intervals.set(
+                includeBefore ? 1 : 0,
+                new IntervalFacets.FacetInterval(
+                    sf,
+                    range.lower,
+                    range.upper,
+                    range.includeLower,
+                    range.includeUpper,
+                    FacetRangeOther.BETWEEN.toString()));
             break;
           case ALL:
           case NONE:
             break;
         }
       } else {
-        intervals.add(new IntervalFacets.FacetInterval(sf, range.lower, range.upper, range.includeLower, range.includeUpper, range.lower));
+        intervals.add(
+            new IntervalFacets.FacetInterval(
+                sf, range.lower, range.upper, range.includeLower, range.includeUpper, range.lower));
       }
     }
 
@@ -208,7 +229,8 @@ public class RangeFacetProcessor extends SimpleFacets {
       intervals.add(after);
     }
 
-    IntervalFacets.FacetInterval[] intervalsArray = intervals.toArray(new IntervalFacets.FacetInterval[intervals.size()]);
+    IntervalFacets.FacetInterval[] intervalsArray =
+        intervals.toArray(new IntervalFacets.FacetInterval[0]);
     // don't use the ArrayList anymore
     intervals = null;
 
@@ -216,15 +238,16 @@ public class RangeFacetProcessor extends SimpleFacets {
 
     int intervalIndex = 0;
     int lastIntervalIndex = intervalsArray.length - 1;
-    // if the user requested "BEFORE", it will be the first of the intervals. Needs to be added to the
-    // response named list instead of with the counts
+    // if the user requested "BEFORE", it will be the first of the intervals. Needs to be added to
+    // the response named list instead of with the counts
     if (includeBefore) {
       res.add(intervalsArray[intervalIndex].getKey(), intervalsArray[intervalIndex].getCount());
       intervalIndex++;
     }
 
-    // if the user requested "BETWEEN", it will be the first or second of the intervals (depending on if
-    // "BEFORE" was also requested). Needs to be added to the response named list instead of with the counts
+    // if the user requested "BETWEEN", it will be the first or second of the intervals (depending
+    // on if "BEFORE" was also requested). Needs to be added to the response named list instead of
+    // with the counts
     if (includeBetween) {
       res.add(intervalsArray[intervalIndex].getKey(), intervalsArray[intervalIndex].getCount());
       intervalIndex++;
@@ -233,7 +256,8 @@ public class RangeFacetProcessor extends SimpleFacets {
     // if the user requested "AFTER", it will be the last of the intervals.
     // Needs to be added to the response named list instead of with the counts
     if (includeAfter) {
-      res.add(intervalsArray[lastIntervalIndex].getKey(), intervalsArray[lastIntervalIndex].getCount());
+      res.add(
+          intervalsArray[lastIntervalIndex].getKey(), intervalsArray[lastIntervalIndex].getCount());
       lastIntervalIndex--;
     }
     // now add all other intervals to the counts NL
@@ -256,15 +280,17 @@ public class RangeFacetProcessor extends SimpleFacets {
    * @see org.apache.solr.search.SolrIndexSearcher#numDocs
    * @see org.apache.lucene.search.TermRangeQuery
    */
-  protected int rangeCount(DocSet subset, RangeFacetRequest rfr, RangeFacetRequest.FacetRange fr) throws IOException, SyntaxError {
+  protected int rangeCount(DocSet subset, RangeFacetRequest rfr, RangeFacetRequest.FacetRange fr)
+      throws IOException, SyntaxError {
     SchemaField schemaField = rfr.getSchemaField();
-    Query rangeQ = schemaField.getType().getRangeQuery(null, schemaField, fr.lower, fr.upper, fr.includeLower, fr.includeUpper);
+    Query rangeQ =
+        schemaField
+            .getType()
+            .getRangeQuery(null, schemaField, fr.lower, fr.upper, fr.includeLower, fr.includeUpper);
     if (rfr.isGroupFacet()) {
       return getGroupedFacetQueryCount(rangeQ, subset);
     } else {
       return searcher.numDocs(rangeQ, subset);
     }
   }
-
 }
-

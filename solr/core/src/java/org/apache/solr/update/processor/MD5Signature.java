@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 package org.apache.solr.update.processor;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class MD5Signature extends Signature {
-  private static ThreadLocal<MessageDigest> DIGESTER_FACTORY = new ThreadLocal<MessageDigest>() {
-    @Override
-    protected MessageDigest initialValue() {
-      try {
-        return MessageDigest.getInstance("MD5");
-      } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  };
+  private static ThreadLocal<MessageDigest> DIGESTER_FACTORY =
+      new ThreadLocal<MessageDigest>() {
+        @Override
+        protected MessageDigest initialValue() {
+          try {
+            return MessageDigest.getInstance("MD5");
+          } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
   private MessageDigest digester;
 
   public MD5Signature() {

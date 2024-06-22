@@ -17,22 +17,13 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -44,11 +35,9 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }
-  
+
   @After
   public void teardownCluster() throws Exception {
     shutdownCluster();
@@ -68,83 +57,54 @@ public class DeleteShardTest extends SolrCloudTestCase {
     assertEquals(State.ACTIVE, state.getSlice("shard2").getState());
 
     // Can't delete an ACTIVE shard
-    expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
-    });
+    expectThrows(
+        Exception.class,
+        () ->
+            CollectionAdminRequest.deleteShard(collection, "shard1")
+                .process(cluster.getSolrClient()));
 
     setSliceState(collection, "shard1", Slice.State.INACTIVE);
 
-    // Can delete an INATIVE shard
+    // Can delete an INACTIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
-    waitForState("Expected 'shard1' to be removed", collection, (n, c) -> {
-      return c.getSlice("shard1") == null;
-    });
+    waitForState(
+        "Expected 'shard1' to be removed", collection, (n, c) -> c.getSlice("shard1") == null);
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
-    waitForState("Expected 'shard2' to be removed", collection, (n, c) -> {
-      return c.getSlice("shard2") == null;
-    });
-
-  }
-
-  protected void setSliceState(String collection, String slice, State state) throws Exception {
-
-    CloudSolrClient client = cluster.getSolrClient();
-
-    // TODO can this be encapsulated better somewhere?
-    Map<String, Object> propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-    propMap.put(slice, state.toString());
-    propMap.put(ZkStateReader.COLLECTION_PROP, collection);
-    ZkNodeProps m = new ZkNodeProps(propMap);
-
-    final Overseer overseer = cluster.getOpenOverseer();
-    if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      overseer.getDistributedClusterStateUpdater().doSingleStateUpdate(
-          DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, m,
-          cluster.getOpenOverseer().getSolrCloudManager(),
-          cluster.getOpenOverseer().getZkStateReader());
-    } else {
-      DistributedQueue inQueue = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
-      inQueue.offer(Utils.toJSON(m));
-    }
-
-    waitForState("Expected shard " + slice + " to be in state " + state.toString(), collection, (n, c) -> {
-      return c.getSlice(slice).getState() == state;
-    });
-
+    waitForState(
+        "Expected 'shard2' to be removed", collection, (n, c) -> c.getSlice("shard2") == null);
   }
 
   @Test
-  // commented 4-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
-  public void testDirectoryCleanupAfterDeleteShard() throws InterruptedException, IOException, SolrServerException {
+  public void testDirectoryCleanupAfterDeleteShard() throws IOException, SolrServerException {
 
     final String collection = "deleteshard_test";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", 1)
         .process(cluster.getSolrClient());
-    
+
     cluster.waitForActiveCollection(collection, 3, 3);
 
     // Get replica details
     Replica leader = getCollectionState(collection).getLeader("a");
 
     CoreStatus coreStatus = getCoreStatus(leader);
-    assertTrue("Instance directory doesn't exist", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
+    assertTrue(
+        "Instance directory doesn't exist",
+        FileUtils.fileExists(coreStatus.getInstanceDirectory()));
     assertTrue("Data directory doesn't exist", FileUtils.fileExists(coreStatus.getDataDirectory()));
 
     assertEquals(3, getCollectionState(collection).getActiveSlices().size());
 
     // Delete shard 'a'
     CollectionAdminRequest.deleteShard(collection, "a").process(cluster.getSolrClient());
-    
-    waitForState("Expected 'a' to be removed", collection, (n, c) -> {
-      return c.getSlice("a") == null;
-    });
+
+    waitForState("Expected 'a' to be removed", collection, (n, c) -> c.getSlice("a") == null);
 
     assertEquals(2, getCollectionState(collection).getActiveSlices().size());
-    assertFalse("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
+    assertFalse(
+        "Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
     assertFalse("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
 
     leader = getCollectionState(collection).getLeader("b");
@@ -156,12 +116,20 @@ public class DeleteShardTest extends SolrCloudTestCase {
         .setDeleteInstanceDir(false)
         .process(cluster.getSolrClient());
 
-    waitForState("Expected 'b' to be removed", collection, (n, c) -> {
-      return c.getSlice("b") == null;
-    });
-    
+    waitForState("Expected 'b' to be removed", collection, (n, c) -> c.getSlice("b") == null);
+
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
-    assertTrue("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
+    assertTrue(
+        "Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
     assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+  }
+
+  private void setSliceState(String collectionName, String shardId, Slice.State state)
+      throws Exception {
+    ShardTestUtil.setSliceState(cluster, collectionName, shardId, state);
+    waitForState(
+        "Expected shard " + shardId + " to be in state " + state,
+        collectionName,
+        (n, c) -> c.getSlice(shardId).getState() == state);
   }
 }

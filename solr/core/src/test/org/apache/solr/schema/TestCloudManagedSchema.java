@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
-import org.apache.solr.client.solrj.SolrServerException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -26,10 +30,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
 
@@ -55,22 +55,29 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
     int which = r.nextInt(clients.size());
-    HttpSolrClient client = (HttpSolrClient)clients.get(which);
-    String previousBaseURL = client.getBaseURL();
-    // Strip /collection1 step from baseURL - requests fail otherwise
-    client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
-    NamedList<?> namedListResponse = client.request(request);
-    client.setBaseURL(previousBaseURL); // Restore baseURL 
-    NamedList<?> status = (NamedList<?>)namedListResponse.get("status");
-    NamedList<?> collectionStatus = (NamedList<?>)status.getVal(0);
-    String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
-    // Make sure the upgrade to managed schema happened
-    assertEquals("Schema resource name differs from expected name", "managed-schema.xml", collectionSchema);
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 30000);
-    try {
+    // create a client that does not have the /collection1 as part of the URL.
+    try (SolrClient rootClient =
+        new HttpSolrClient.Builder(buildUrl(jettys.get(which).getLocalPort())).build()) {
+      NamedList<?> namedListResponse = rootClient.request(request);
+      NamedList<?> status = (NamedList<?>) namedListResponse.get("status");
+      NamedList<?> collectionStatus = (NamedList<?>) status.getVal(0);
+      String collectionSchema = (String) collectionStatus.get(CoreAdminParams.SCHEMA);
+      // Make sure the upgrade to managed schema happened
+      assertEquals(
+          "Schema resource name differs from expected name",
+          "managed-schema.xml",
+          collectionSchema);
+    }
+
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       // Make sure "DO NOT EDIT" is in the content of the managed schema
-      String fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
+      String fileContent =
+          getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/managed-schema.xml");
       assertTrue("Managed schema is missing", fileContent.contains("DO NOT EDIT"));
 
       // Make sure the original non-managed schema is no longer in ZooKeeper
@@ -79,26 +86,28 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
       // Make sure the renamed non-managed schema is present in ZooKeeper
       fileContent = getFileContentFromZooKeeper(zkClient, "/solr/configs/conf1/schema.xml.bak");
       assertTrue("schema file doesn't contain '<schema'", fileContent.contains("<schema"));
-    } finally {
-      if (zkClient != null) {
-        zkClient.close();
-      }
     }
   }
-  
+
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
-      throws IOException, SolrServerException, KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
 
     return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
-
   }
-  protected final void assertFileNotInZooKeeper(SolrZkClient zkClient, String parent, String fileName) throws Exception {
+
+  protected final void assertFileNotInZooKeeper(
+      SolrZkClient zkClient, String parent, String fileName) throws Exception {
     List<String> kids = zkClient.getChildren(parent, null, true);
     for (String kid : kids) {
       if (kid.equalsIgnoreCase(fileName)) {
-        String rawContent = new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
-        fail("File '" + fileName + "' was unexpectedly found in ZooKeeper.  Content starts with '"
-            + rawContent.substring(0, 100) + " [...]'");
+        String rawContent =
+            new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
+        fail(
+            "File '"
+                + fileName
+                + "' was unexpectedly found in ZooKeeper.  Content starts with '"
+                + rawContent.substring(0, 100)
+                + " [...]'");
       }
     }
   }

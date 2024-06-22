@@ -17,16 +17,16 @@
 
 package org.apache.solr.response.transform;
 
+import static org.apache.solr.response.transform.ChildDocTransformerFactory.NUM_SEP_CHAR;
+import static org.apache.solr.response.transform.ChildDocTransformerFactory.PATH_SEP_CHAR;
+import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -50,10 +50,6 @@ import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.response.transform.ChildDocTransformerFactory.NUM_SEP_CHAR;
-import static org.apache.solr.response.transform.ChildDocTransformerFactory.PATH_SEP_CHAR;
-import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
-
 class ChildDocTransformer extends DocTransformer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -65,44 +61,53 @@ class ChildDocTransformer extends DocTransformer {
   private final int limit;
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
-  private String[] extraRequestedFields;
+  private final String[] extraRequestedFields;
 
-  ChildDocTransformer(String name, BitSetProducer parentsFilter, DocSet childDocSet,
-                      SolrReturnFields returnFields, boolean isNestedSchema, int limit,
-                      String uniqueKeyField) {
+  ChildDocTransformer(
+      String name,
+      BitSetProducer parentsFilter,
+      DocSet childDocSet,
+      SolrReturnFields returnFields,
+      boolean isNestedSchema,
+      int limit,
+      String uniqueKeyField) {
     this.name = name;
     this.parentsFilter = parentsFilter;
     this.childDocSet = childDocSet;
     this.limit = limit;
     this.isNestedSchema = isNestedSchema;
-    this.childReturnFields = returnFields!=null? returnFields: new SolrReturnFields();
-    this.extraRequestedFields = parentsFilter == null ? new String[]{uniqueKeyField} : null;
+    this.childReturnFields = returnFields != null ? returnFields : new SolrReturnFields();
+    this.extraRequestedFields = parentsFilter == null ? new String[] {uniqueKeyField} : null;
   }
 
   @Override
-  public String getName()  {
+  public String getName() {
     return name;
   }
 
   @Override
-  public boolean needsSolrIndexSearcher() { return true; }
+  public boolean needsSolrIndexSearcher() {
+    return true;
+  }
 
   @Override
   public String[] getExtraRequestFields() {
     return extraRequestedFields;
   }
 
-  private int getPrevRootGivenFilter(LeafReaderContext leafReaderContext, int segRootId) throws IOException {
+  private int getPrevRootGivenFilter(LeafReaderContext leafReaderContext, int segRootId)
+      throws IOException {
     final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
     if (segParentsBitSet != null) {
       return segRootId == 0 ? -1 : segParentsBitSet.prevSetBit(segRootId - 1);
     }
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
         "Parent filter '" + parentsFilter + "' doesn't match any parent documents");
   }
 
-  private int getPrevRootGivenId(LeafReaderContext leafReaderContext, int segRootId,
-                                 BytesRef idBytes) throws IOException {
+  private int getPrevRootGivenId(
+      LeafReaderContext leafReaderContext, int segRootId, BytesRef idBytes) throws IOException {
     final LeafReader reader = leafReaderContext.reader();
     final Terms terms = reader.terms(IndexSchema.ROOT_FIELD_NAME); // never returns null here
     final TermsEnum iterator = terms.iterator();
@@ -141,8 +146,8 @@ class ChildDocTransformer extends DocTransformer {
         final IndexSchema schema = searcher.getSchema();
         final String idStr = schema.printableUniqueKey(rootDoc);
         if (idStr == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "[child] requires fl to include the ID");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "[child] requires fl to include the ID");
         }
         final BytesRef idBytes = schema.indexableUniqueKey(idStr);
         segPrevRootId = getPrevRootGivenId(leafReaderContext, rootDocId, idBytes);
@@ -154,15 +159,19 @@ class ChildDocTransformer extends DocTransformer {
       }
 
       // we'll need this soon...
-      final SortedDocValues segPathDocValues = DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME);
-      // passing a different SortedDocValues obj since the child documents which come after are of smaller docIDs,
-      // and the iterator can not be reversed.
-      // The root doc is the input document to be transformed, and is not necessarily the root doc of the block of docs.
-      final String rootDocPath = getPathByDocId(segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
+      final SortedDocValues segPathDocValues =
+          DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME);
+      // passing a different SortedDocValues obj since the child documents which come after are of
+      // smaller docIDs, and the iterator can not be reversed. The root doc is the input document to
+      // be transformed, and is not necessarily the root doc of the block of docs.
+      final String rootDocPath =
+          getPathByDocId(
+              segRootId, DocValues.getSorted(leafReaderContext.reader(), NEST_PATH_FIELD_NAME));
 
-      // the key in the Map is the document's ancestors key (one above the parent), while the key in the intermediate
-      // MultiMap is the direct child document's key(of the parent document)
-      final Map<String, Multimap<String, SolrDocument>> pendingParentPathsToChildren = new HashMap<>();
+      // the key in the Map is the document's ancestors key (one above the parent), while the key in
+      // the intermediate Map is the direct child document's key(of the parent document)
+      final Map<String, Map<String, List<SolrDocument>>> pendingParentPathsToChildren =
+          new HashMap<>();
 
       final int firstChildId = segBaseId + segPrevRootId + 1;
       int matches = 0;
@@ -176,7 +185,8 @@ class ChildDocTransformer extends DocTransformer {
           continue;
         }
 
-        // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
+        // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty
+        // string if blank)
         final String fullDocPath = getPathByDocId(segDocId, segPathDocValues);
 
         if (isNestedSchema && !fullDocPath.startsWith(rootDocPath)) {
@@ -198,8 +208,8 @@ class ChildDocTransformer extends DocTransformer {
 
           // load the doc
           SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
-          if(childReturnFields.getTransformer() != null) {
-            if(childReturnFields.getTransformer().context == null) {
+          if (childReturnFields.getTransformer() != null) {
+            if (childReturnFields.getTransformer().context == null) {
               childReturnFields.getTransformer().setContext(context);
             }
             childReturnFields.getTransformer().transform(doc, docId);
@@ -207,7 +217,8 @@ class ChildDocTransformer extends DocTransformer {
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
-            addChildrenToParent(doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
+            addChildrenToParent(
+                doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
           }
 
           // get parent path
@@ -216,11 +227,13 @@ class ChildDocTransformer extends DocTransformer {
           // put into pending:
           // trim path if the doc was inside array, see trimPathIfArrayDoc()
           // e.g. toppings#1/ingredients#1 -> outer map key toppings#1
-          // -> inner MultiMap key ingredients
+          // -> inner Map key ingredients
           // or lonely#/lonelyGrandChild# -> outer map key lonely#
-          // -> inner MultiMap key lonelyGrandChild#
-          pendingParentPathsToChildren.computeIfAbsent(parentDocPath, x -> ArrayListMultimap.create())
-              .put(trimLastPoundIfArray(lastPath), doc); // multimap add (won't replace)
+          // -> inner Map key lonelyGrandChild#
+          pendingParentPathsToChildren
+              .computeIfAbsent(parentDocPath, x -> new HashMap<>())
+              .computeIfAbsent(trimLastPoundIfArray(lastPath), k -> new ArrayList<>())
+              .add(doc);
         }
       }
 
@@ -236,19 +249,21 @@ class ChildDocTransformer extends DocTransformer {
       addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
 
     } catch (IOException e) {
-      //TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
+      // TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
       log.warn("Could not fetch child documents", e);
       rootDoc.put(getName(), "Could not fetch child documents");
     }
   }
 
-  private static void addChildrenToParent(SolrDocument parent, Multimap<String, SolrDocument> children) {
-    for (String childLabel : children.keySet()) {
-      addChildrenToParent(parent, children.get(childLabel), childLabel);
+  private static void addChildrenToParent(
+      SolrDocument parent, Map<String, List<SolrDocument>> children) {
+    for (Map.Entry<String, List<SolrDocument>> entry : children.entrySet()) {
+      addChildrenToParent(parent, entry.getValue(), entry.getKey());
     }
   }
 
-  private static void addChildrenToParent(SolrDocument parent, Collection<SolrDocument> children, String cDocsPath) {
+  private static void addChildrenToParent(
+      SolrDocument parent, List<SolrDocument> children, String cDocsPath) {
     // if no paths; we do not need to add the child document's relation to its parent document.
     if (cDocsPath.equals(ANON_CHILD_KEY)) {
       parent.addChildDocuments(children);
@@ -257,19 +272,20 @@ class ChildDocTransformer extends DocTransformer {
     // lookup leaf key for these children using path
     // depending on the label, add to the parent at the right key/label
     String trimmedPath = trimLastPound(cDocsPath);
-    // if the child doc's path does not end with #, it is an array(same string is returned by ChildDocTransformer#trimLastPound)
-    if (!parent.containsKey(trimmedPath) && (trimmedPath == cDocsPath)) {
+    // if the child doc's path does not end with #, it is an array(same string is returned by
+    // ChildDocTransformer#trimLastPound)
+    if (!parent.containsKey(trimmedPath) && (trimmedPath.equals(cDocsPath))) {
       List<SolrDocument> list = new ArrayList<>(children);
       parent.setField(trimmedPath, list);
       return;
     }
     // is single value
-    parent.setField(trimmedPath, ((List)children).get(0));
+    parent.setField(trimmedPath, children.get(0));
   }
 
   private static String getLastPath(String path) {
     int lastIndexOfPathSepChar = path.lastIndexOf(PATH_SEP_CHAR);
-    if(lastIndexOfPathSepChar == -1) {
+    if (lastIndexOfPathSepChar == -1) {
       return path;
     }
     return path.substring(lastIndexOfPathSepChar + 1);
@@ -284,7 +300,7 @@ class ChildDocTransformer extends DocTransformer {
     }
     int lastIndex = path.length() - 1;
     boolean singleDocVal = indexOfSepChar == lastIndex;
-    return singleDocVal ? path: path.substring(0, indexOfSepChar);
+    return singleDocVal ? path : path.substring(0, indexOfSepChar);
   }
 
   private static String trimLastPound(String path) {
@@ -293,10 +309,7 @@ class ChildDocTransformer extends DocTransformer {
     return lastIndex == -1 ? path : path.substring(0, lastIndex);
   }
 
-  /**
-   * Returns the *parent* path for this document.
-   * Children of the root will yield null.
-   */
+  /** Returns the *parent* path for this document. Children of the root will yield null. */
   private static String getParentPath(String currDocPath) {
     // chop off leaf (after last '/')
     // if child of leaf then return null (special value)
@@ -304,14 +317,15 @@ class ChildDocTransformer extends DocTransformer {
     return lastPathIndex == -1 ? null : currDocPath.substring(0, lastPathIndex);
   }
 
-  /** Looks up the nest path.  If there is none, returns {@link #ANON_CHILD_KEY}. */
+  /** Looks up the nest path. If there is none, returns {@link #ANON_CHILD_KEY}. */
   private String getPathByDocId(int segDocId, SortedDocValues segPathDocValues) throws IOException {
     if (!isNestedSchema) {
       return ANON_CHILD_KEY;
     }
-    int numToAdvance = segPathDocValues.docID() == -1 ? segDocId : segDocId - (segPathDocValues.docID());
+    int numToAdvance =
+        segPathDocValues.docID() == -1 ? segDocId : segDocId - (segPathDocValues.docID());
     assert numToAdvance >= 0;
     boolean advanced = segPathDocValues.advanceExact(segDocId);
-    return advanced ? segPathDocValues.lookupOrd(segPathDocValues.ordValue()).utf8ToString(): "";
+    return advanced ? segPathDocValues.lookupOrd(segPathDocValues.ordValue()).utf8ToString() : "";
   }
 }

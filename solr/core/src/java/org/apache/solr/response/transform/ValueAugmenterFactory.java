@@ -25,7 +25,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DateMathParser;
 
 /**
- *
  * @since solr 4.0
  */
 public class ValueAugmenterFactory extends TransformerFactory {
@@ -48,8 +47,7 @@ public class ValueAugmenterFactory extends TransformerFactory {
         if ("float".equals(type)) return Float.valueOf(val);
         if ("date".equals(type)) return DateMathParser.parseMath(null, val);
       } catch (Exception ex) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-                "Unable to parse " + type + "=" + val, ex);
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to parse " + type + "=" + val, ex);
       }
     }
     return val;
@@ -66,17 +64,17 @@ public class ValueAugmenterFactory extends TransformerFactory {
         val = getObjectFrom(v, params.get("t"));
       }
       if (val == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-                "ValueAugmenter is missing a value -- should be defined in solrconfig or inline");
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "ValueAugmenter is missing a value -- should be defined in solrconfig or inline");
       }
     }
     return new ValueAugmenter(field, val);
   }
 
-
-  static class ValueAugmenter extends DocTransformer {
-    final String name;
-    final Object value;
+  public static class ValueAugmenter extends DocTransformer {
+    private final String name;
+    protected final Object value;
 
     public ValueAugmenter(String name, Object value) {
       this.name = name;
@@ -94,4 +92,3 @@ public class ValueAugmenterFactory extends TransformerFactory {
     }
   }
 }
-

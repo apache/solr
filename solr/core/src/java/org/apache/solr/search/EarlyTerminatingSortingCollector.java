@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
@@ -34,22 +33,18 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 
 /**
- * A {@link Collector} that early terminates collection of documents on a
- * per-segment basis, if the segment was sorted according to the given
- * {@link Sort}.
+ * A {@link Collector} that early terminates collection of documents on a per-segment basis, if the
+ * segment was sorted according to the given {@link Sort}.
  *
- * <p>
- * <b>NOTE:</b> the {@code Collector} detects segments sorted according to a
- * an {@link IndexWriterConfig#setIndexSort}. Also, it collects up to a specified
- * {@code numDocsToCollect} from each segment, and therefore is mostly suitable
- * for use in conjunction with collectors such as {@link TopDocsCollector}, and
- * not e.g. {@link TotalHitCountCollector}.
- * <p>
- * <b>NOTE</b>: If you wrap a {@code TopDocsCollector} that sorts in the same
- * order as the index order, the returned {@link TopDocsCollector#topDocs() TopDocs}
- * will be correct. However the total of {@link TopDocsCollector#getTotalHits()
- * hit count} will be vastly underestimated since not all matching documents will have
- * been collected.
+ * <p><b>NOTE:</b> the {@code Collector} detects segments sorted according to a an {@link
+ * IndexWriterConfig#setIndexSort}. Also, it collects up to a specified {@code numDocsToCollect}
+ * from each segment, and therefore is mostly suitable for use in conjunction with collectors such
+ * as {@link TopDocsCollector}, and not e.g. {@link TotalHitCountCollector}.
+ *
+ * <p><b>NOTE</b>: If you wrap a {@code TopDocsCollector} that sorts in the same order as the index
+ * order, the returned {@link TopDocsCollector#topDocs() TopDocs} will be correct. However the total
+ * of {@link TopDocsCollector#getTotalHits() hit count} will be vastly underestimated since not all
+ * matching documents will have been collected.
  *
  * @deprecated Use {@link TopFieldCollector} and set trackTotalHits to false.
  * @lucene.experimental
@@ -57,9 +52,10 @@ import org.apache.lucene.search.TotalHitCountCollector;
 @Deprecated
 final class EarlyTerminatingSortingCollector extends FilterCollector {
 
-  /** Returns whether collection can be early-terminated if it sorts with the
-   *  provided {@link Sort} and if segments are merged with the provided
-   *  {@link Sort}. */
+  /**
+   * Returns whether collection can be early-terminated if it sorts with the provided {@link Sort}
+   * and if segments are merged with the provided {@link Sort}.
+   */
   public static boolean canEarlyTerminate(Sort searchSort, Sort mergePolicySort) {
     final SortField[] fields1 = searchSort.getSort();
     final SortField[] fields2 = mergePolicySort.getSort();
@@ -71,29 +67,28 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
   }
 
   /** Sort used to sort the search results */
-  protected final Sort sort;
+  private final Sort sort;
+
   /** Number of documents to collect in each segment */
-  protected final int numDocsToCollect;
+  private final int numDocsToCollect;
+
   private final AtomicBoolean terminatedEarly = new AtomicBoolean(false);
 
   /**
    * Create a new {@link EarlyTerminatingSortingCollector} instance.
    *
-   * @param in
-   *          the collector to wrap
-   * @param sort
-   *          the sort you are sorting the search results on
-   * @param numDocsToCollect
-   *          the number of documents to collect on each segment. When wrapping
-   *          a {@link TopDocsCollector}, this number should be the number of
-   *          hits.
-   * @throws IllegalArgumentException if the sort order doesn't allow for early
-   *          termination with the given merge policy.
+   * @param in the collector to wrap
+   * @param sort the sort you are sorting the search results on
+   * @param numDocsToCollect the number of documents to collect on each segment. When wrapping a
+   *     {@link TopDocsCollector}, this number should be the number of hits.
+   * @throws IllegalArgumentException if the sort order doesn't allow for early termination with the
+   *     given merge policy.
    */
   public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect) {
     super(in);
     if (numDocsToCollect <= 0) {
-      throw new IllegalArgumentException("numDocsToCollect must always be > 0, got " + numDocsToCollect);
+      throw new IllegalArgumentException(
+          "numDocsToCollect must always be > 0, got " + numDocsToCollect);
     }
     this.sort = sort;
     this.numDocsToCollect = numDocsToCollect;
@@ -103,7 +98,11 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     Sort segmentSort = context.reader().getMetaData().getSort();
     if (segmentSort != null && canEarlyTerminate(sort, segmentSort) == false) {
-      throw new IllegalStateException("Cannot early terminate with sort order " + sort + " if segments are sorted with " + segmentSort);
+      throw new IllegalStateException(
+          "Cannot early terminate with sort order "
+              + sort
+              + " if segments are sorted with "
+              + segmentSort);
     }
 
     if (segmentSort != null) {
@@ -119,7 +118,6 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
             throw new CollectionTerminatedException();
           }
         }
-
       };
     } else {
       return super.getLeafCollector(context);

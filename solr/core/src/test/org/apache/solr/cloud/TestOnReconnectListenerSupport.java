@@ -17,24 +17,23 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBase {
@@ -65,7 +64,6 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "shard1";
     createCollectionRetry(testCollectionName, "conf1", 1, 1);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
@@ -78,8 +76,8 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     String leaderCoreName = leader.getStr(CORE_NAME_PROP);
     String leaderCoreId;
     try (SolrCore leaderCore = cores.getCore(leaderCoreName)) {
-      assertNotNull("SolrCore for "+leaderCoreName+" not found!", leaderCore);
-      leaderCoreId = leaderCore.getName()+":"+leaderCore.getStartNanoTime();
+      assertNotNull("SolrCore for " + leaderCoreName + " not found!", leaderCore);
+      leaderCoreId = leaderCore.getName() + ":" + leaderCore.getStartNanoTime();
     }
 
     // verify the ZkIndexSchemaReader is a registered OnReconnect listener
@@ -88,29 +86,36 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     ZkIndexSchemaReader expectedListener = null;
     for (OnReconnect listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader) {
-        ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
+        ZkIndexSchemaReader reader = (ZkIndexSchemaReader) listener;
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;
         }
       }
     }
-    assertNotNull("ZkIndexSchemaReader for core " + leaderCoreName +
-        " not registered as an OnReconnect listener and should be", expectedListener);
+    assertNotNull(
+        "ZkIndexSchemaReader for core "
+            + leaderCoreName
+            + " not registered as an OnReconnect listener and should be",
+        expectedListener);
 
     // reload the collection
     boolean wasReloaded = reloadCollection(leader, testCollectionName);
-    assertTrue("Collection '" + testCollectionName + "' failed to reload within a reasonable amount of time!",
+    assertTrue(
+        "Collection '"
+            + testCollectionName
+            + "' failed to reload within a reasonable amount of time!",
         wasReloaded);
 
-    // after reload, the new core should be registered as an OnReconnect listener and the old should not be
+    // after reload, the new core should be registered as an OnReconnect listener and the old should
+    // not be
     String reloadedLeaderCoreId;
     try (SolrCore leaderCore = cores.getCore(leaderCoreName)) {
-      reloadedLeaderCoreId = leaderCore.getName()+":"+leaderCore.getStartNanoTime();
+      reloadedLeaderCoreId = leaderCore.getName() + ":" + leaderCore.getStartNanoTime();
     }
 
     // they shouldn't be equal after reload
-    assertTrue(!leaderCoreId.equals(reloadedLeaderCoreId));
+    assertNotEquals(leaderCoreId, reloadedLeaderCoreId);
 
     listeners = zkController.getCurrentOnReconnectListeners();
     assertNotNull("ZkController returned null OnReconnect listeners", listeners);
@@ -118,10 +123,13 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     expectedListener = null; // reset
     for (OnReconnect listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader) {
-        ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
+        ZkIndexSchemaReader reader = (ZkIndexSchemaReader) listener;
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
-          fail("Previous core "+leaderCoreId+
-              " should no longer be a registered OnReconnect listener! Current listeners: "+listeners);
+          fail(
+              "Previous core "
+                  + leaderCoreId
+                  + " should no longer be a registered OnReconnect listener! Current listeners: "
+                  + listeners);
         } else if (reloadedLeaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;
@@ -129,8 +137,11 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
       }
     }
 
-    assertNotNull("ZkIndexSchemaReader for core "+reloadedLeaderCoreId+
-        " not registered as an OnReconnect listener and should be", expectedListener);
+    assertNotNull(
+        "ZkIndexSchemaReader for core "
+            + reloadedLeaderCoreId
+            + " not registered as an OnReconnect listener and should be",
+        expectedListener);
 
     // try to clean up
     try {
@@ -143,10 +154,12 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     listeners = zkController.getCurrentOnReconnectListeners();
     for (OnReconnect listener : listeners) {
       if (listener instanceof ZkIndexSchemaReader) {
-        ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
+        ZkIndexSchemaReader reader = (ZkIndexSchemaReader) listener;
         if (reloadedLeaderCoreId.equals(reader.getUniqueCoreId())) {
-          fail("Previous core "+reloadedLeaderCoreId+
-              " should no longer be a registered OnReconnect listener after collection delete!");
+          fail(
+              "Previous core "
+                  + reloadedLeaderCoreId
+                  + " should no longer be a registered OnReconnect listener after collection delete!");
         }
       }
     }

@@ -17,30 +17,36 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkFailoverTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private ZkTestServer zkTestServer;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
   }
 
   @AfterClass
-  public static void resetWaitForZk(){
+  public static void resetWaitForZk() {
     System.setProperty("waitForZk", "30");
   }
 
@@ -51,7 +57,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(coll, new SolrInputDocument("id", "1"));
     zkTestServer = cluster.getZkServer();
 
-    // This attempt will fail since it will timeout after 1 second
+    // This attempt will fail since it will time out after 1 second
     System.setProperty("waitForZk", "1");
     restartSolrAndZk();
     waitForLiveNodes(0);
@@ -59,15 +65,15 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     // This attempt will succeed since there will be enough time to connect
     System.setProperty("waitForZk", "20");
     restartSolrAndZk();
-    waitForLiveNodes(2);
+    waitForLiveNodes(cluster.getJettySolrRunners().size());
     waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
-    QueryResponse rsp = new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
+    QueryResponse rsp =
+        new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
     assertEquals(1, rsp.getResults().getNumFound());
     zkTestServer.shutdown();
   }
 
-  private void restartSolrAndZk()
-      throws Exception {
+  private void restartSolrAndZk() throws Exception {
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       runner.stop();
     }
@@ -75,13 +81,15 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     Thread[] threads = new Thread[cluster.getJettySolrRunners().size()];
     for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
       final JettySolrRunner runner = cluster.getJettySolrRunner(i);
-      threads[i] = new Thread(() -> {
-        try {
-          runner.start();
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        });
+      threads[i] =
+          new Thread(
+              () -> {
+                try {
+                  runner.start();
+                } catch (Exception e) {
+                  log.error("error starting runner", e);
+                }
+              });
       threads[i].start();
     }
     Thread.sleep(2500);
@@ -93,7 +101,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
   }
 
   private void waitForLiveNodes(int numNodes) throws InterruptedException, KeeperException {
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getZkStateReader();
     for (int i = 0; i < 100; i++) {
       zkStateReader.updateLiveNodes();
       if (zkStateReader.getClusterState().getLiveNodes().size() == numNodes) return;

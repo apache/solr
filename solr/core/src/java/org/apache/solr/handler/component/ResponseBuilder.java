@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -50,11 +50,9 @@ import org.apache.solr.util.RTimer;
 /**
  * This class is experimental and will be changing in the future.
  *
- *
  * @since solr 1.3
  */
-public class ResponseBuilder
-{
+public class ResponseBuilder {
   public SolrQueryRequest req;
   public SolrQueryResponse rsp;
   public boolean doHighlights;
@@ -62,7 +60,6 @@ public class ResponseBuilder
   public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
-  public boolean doAnalytics;
   public MergeStrategy mergeFieldHandler;
 
   public String queryID;
@@ -70,14 +67,14 @@ public class ResponseBuilder
   private boolean needDocList = false;
   private boolean needDocSet = false;
   private int fieldFlags = 0;
-  //private boolean debug = false;
+  // private boolean debug = false;
   private boolean debugTimings, debugQuery, debugResults, debugTrack;
 
   private boolean isCancellation;
   private String cancellationUUID;
-
   private String taskStatusCheckUUID;
   private boolean isTaskListRequest;
+  private boolean isDistribStatsDisabled;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -91,7 +88,6 @@ public class ResponseBuilder
   private List<MergeStrategy> mergeStrategies;
   private RankQuery rankQuery;
 
-
   private DocListAndSet results = null;
   private NamedList<Object> debugInfo = null;
   private RTimer timer = null;
@@ -102,8 +98,8 @@ public class ResponseBuilder
 
   SolrRequestInfo requestInfo;
 
-  public ResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components)
-  {
+  public ResponseBuilder(
+      SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     this.req = req;
     this.rsp = rsp;
     this.components = components;
@@ -121,44 +117,39 @@ public class ResponseBuilder
   public static final String IDS = "ids";
 
   /**
-   * public static final String NUMDOCS = "nd";
-   * public static final String DOCFREQS = "tdf";
-   * public static final String TERMS = "terms";
-   * public static final String EXTRACT_QUERY_TERMS = "eqt";
-   * public static final String LOCAL_SHARD = "local";
-   * public static final String DOC_QUERY = "dq";
+   * public static final String NUMDOCS = "nd"; public static final String DOCFREQS = "tdf"; public
+   * static final String TERMS = "terms"; public static final String EXTRACT_QUERY_TERMS = "eqt";
+   * public static final String LOCAL_SHARD = "local"; public static final String DOC_QUERY = "dq";
    * *
    */
-
   public static int STAGE_START = 0;
+
   public static int STAGE_PARSE_QUERY = 1000;
   public static int STAGE_TOP_GROUPS = 1500;
   public static int STAGE_EXECUTE_QUERY = 2000;
   public static int STAGE_GET_FIELDS = 3000;
   public static int STAGE_DONE = Integer.MAX_VALUE;
 
-  public int stage;  // What stage is this current request at?
+  public int stage; // What stage is this current request at?
 
-  //The address of the Shard
+  // The address of the Shard
   boolean isDistrib; // is this a distributed search?
   public String[] shards;
   public String[] slices; // the optional logical ids of the shards
   public int shards_rows = -1;
   public int shards_start = -1;
-  public List<ShardRequest> outgoing;  // requests to be sent
-  public List<ShardRequest> finished;  // requests that have received responses from all shards
+  public List<ShardRequest> outgoing; // requests to be sent
+  public List<ShardRequest> finished; // requests that have received responses from all shards
   public String shortCircuitedURL;
 
-  /**
-   * This function will return true if this was a distributed search request.
-   */
+  /** This function will return true if this was a distributed search request. */
   public boolean isDistributed() {
     return this.isDistrib;
   }
 
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {
-      if (shards[i] == shard || shards[i].equals(shard)) return i;
+      if (Objects.equals(shards[i], shard)) return i;
     }
     return -1;
   }
@@ -189,42 +180,41 @@ public class ResponseBuilder
   StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
   SimpleOrderedMap<List<NamedList<Object>>> _pivots;
-  Object _analyticsRequestManager;
-  boolean _isOlapAnalytics;
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<>();
   public final Map<String, Integer> mergedGroupCounts = new HashMap<>();
-  public final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> searchGroupToShards = new HashMap<>();
+  public final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> searchGroupToShards =
+      new HashMap<>();
   public final Map<String, TopGroups<BytesRef>> mergedTopGroups = new HashMap<>();
   public final Map<String, QueryCommandResult> mergedQueryCommandResults = new HashMap<>();
   public final Map<Object, SolrDocument> retrievedDocuments = new HashMap<>();
   public int totalHitCount; // Hit count used when distributed grouping is performed.
-  // Used for timeAllowed parameter. First phase elapsed time is subtracted from the time allowed for the second phase.
+  // Used for timeAllowed parameter. First phase elapsed time is subtracted from the time allowed
+  // for the second phase.
   public int firstPhaseElapsedTime;
 
   /**
-   * Utility function to add debugging info.  This will make sure a valid
-   * debugInfo exists before adding to it.
+   * Utility function to add debugging info. This will make sure a valid debugInfo exists before
+   * adding to it.
    */
-  public void addDebugInfo( String name, Object val )
-  {
-    if( debugInfo == null ) {
+  public void addDebugInfo(String name, Object val) {
+    if (debugInfo == null) {
       debugInfo = new SimpleOrderedMap<>();
     }
-    debugInfo.add( name, val );
+    debugInfo.add(name, val);
   }
 
   public void addDebug(Object val, String... path) {
-    if( debugInfo == null ) {
+    if (debugInfo == null) {
       debugInfo = new SimpleOrderedMap<>();
     }
 
     NamedList<Object> target = debugInfo;
-    for (int i=0; i<path.length-1; i++) {
+    for (int i = 0; i < path.length - 1; i++) {
       String elem = path[i];
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> newTarget = (NamedList<Object>)debugInfo.get(elem);
+      NamedList<Object> newTarget = (NamedList<Object>) debugInfo.get(elem);
       if (newTarget == null) {
         newTarget = new SimpleOrderedMap<>();
         target.add(elem, newTarget);
@@ -232,25 +222,24 @@ public class ResponseBuilder
       target = newTarget;
     }
 
-    target.add(path[path.length-1], val);
+    target.add(path[path.length - 1], val);
   }
 
-  //-------------------------------------------------------------------------
-  //-------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
 
   public boolean isDebug() {
     return debugQuery || debugTimings || debugResults || debugTrack;
   }
 
   /**
-   *
    * @return true if all debugging options are on
    */
-  public boolean isDebugAll(){
+  public boolean isDebugAll() {
     return debugQuery && debugTimings && debugResults && debugTrack;
   }
 
-  public void setDebug(boolean dbg){
+  public void setDebug(boolean dbg) {
     debugQuery = dbg;
     debugTimings = dbg;
     debugResults = dbg;
@@ -258,7 +247,7 @@ public class ResponseBuilder
   }
 
   public void addMergeStrategy(MergeStrategy mergeStrategy) {
-    if(mergeStrategies == null) {
+    if (mergeStrategies == null) {
       mergeStrategies = new ArrayList<>();
     }
 
@@ -280,7 +269,7 @@ public class ResponseBuilder
   public void setResponseDocs(SolrDocumentList _responseDocs) {
     this._responseDocs = _responseDocs;
   }
-  
+
   public SolrDocumentList getResponseDocs() {
     return this._responseDocs;
   }
@@ -426,53 +415,55 @@ public class ResponseBuilder
   }
 
   /**
-   * Creates a SolrIndexSearcher.QueryCommand from this
-   * ResponseBuilder.  TimeAllowed is left unset.
+   * Creates a SolrIndexSearcher.QueryCommand from this ResponseBuilder. TimeAllowed is left unset.
    */
   public QueryCommand createQueryCommand() {
     QueryCommand cmd = new QueryCommand();
     cmd.setQuery(wrap(getQuery()))
-            .setFilterList(getFilters())
-            .setSort(getSortSpec().getSort())
-            .setOffset(getSortSpec().getOffset())
-            .setLen(getSortSpec().getCount())
-            .setFlags(getFieldFlags())
-            .setNeedDocSet(isNeedDocSet())
-            .setCursorMark(getCursorMark());
+        .setFilterList(getFilters())
+        .setSort(getSortSpec().getSort())
+        .setOffset(getSortSpec().getOffset())
+        .setLen(getSortSpec().getCount())
+        .setFlags(getFieldFlags())
+        .setNeedDocSet(isNeedDocSet())
+        .setCursorMark(getCursorMark());
     return cmd;
   }
 
-  /** Calls {@link RankQuery#wrap(Query)} if there's a rank query, otherwise just returns the query. */
+  /**
+   * Calls {@link RankQuery#wrap(Query)} if there's a rank query, otherwise just returns the query.
+   */
   public Query wrap(Query q) {
-    if(this.rankQuery != null) {
+    if (this.rankQuery != null) {
       return this.rankQuery.wrap(q);
     } else {
       return q;
     }
   }
 
-  /**
-   * Sets results from a SolrIndexSearcher.QueryResult.
-   */
+  /** Sets results from a SolrIndexSearcher.QueryResult. */
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
-      rsp.getResponseHeader().asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      if(getResults() != null && getResults().docList==null) {
-        getResults().docList = new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
+      rsp.setPartialResults();
+      if (getResults() != null && getResults().docList == null) {
+        getResults().docList =
+            new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
       }
     }
     final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
     if (segmentTerminatedEarly != null) {
-      rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, segmentTerminatedEarly);
+      rsp.getResponseHeader()
+          .add(
+              SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
+              segmentTerminatedEarly);
     }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
       this.setNextCursorMark(result.getNextCursorMark());
     }
   }
-  
+
   public long getNumberDocumentsFound() {
     if (_responseDocs == null) {
       return 0;
@@ -483,6 +474,7 @@ public class ResponseBuilder
   public CursorMark getCursorMark() {
     return cursorMark;
   }
+
   public void setCursorMark(CursorMark cursorMark) {
     this.cursorMark = cursorMark;
   }
@@ -490,32 +482,9 @@ public class ResponseBuilder
   public CursorMark getNextCursorMark() {
     return nextCursorMark;
   }
+
   public void setNextCursorMark(CursorMark nextCursorMark) {
     this.nextCursorMark = nextCursorMark;
-  }
-
-  public void setAnalytics(boolean doAnalytics) {
-    this.doAnalytics = doAnalytics;
-  }
-
-  public boolean isAnalytics() {
-    return this.doAnalytics;
-  }
-
-  public void setAnalyticsRequestManager(Object analyticsRequestManager) {
-    this._analyticsRequestManager = analyticsRequestManager;
-  }
-
-  public Object getAnalyticsRequestManager() {
-    return this._analyticsRequestManager;
-  }
-
-  public void setOlapAnalytics(boolean isOlapAnalytics) {
-    this._isOlapAnalytics = isOlapAnalytics;
-  }
-
-  public boolean isOlapAnalytics() {
-    return this._isOlapAnalytics;
   }
 
   public void setCancellation(boolean isCancellation) {
@@ -548,5 +517,13 @@ public class ResponseBuilder
 
   public String getTaskStatusCheckUUID() {
     return taskStatusCheckUUID;
+  }
+
+  public void setDistribStatsDisabled(boolean isEnableDistribStats) {
+    this.isDistribStatsDisabled = isEnableDistribStats;
+  }
+
+  public boolean isDistribStatsDisabled() {
+    return isDistribStatsDisabled;
   }
 }

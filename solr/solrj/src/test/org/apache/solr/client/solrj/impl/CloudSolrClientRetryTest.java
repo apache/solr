@@ -36,7 +36,14 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
     configureCluster(NODE_COUNT)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(
+            "conf",
+            getFile("solrj")
+                .toPath()
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
         .configure();
   }
 
@@ -44,14 +51,14 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
     CloudSolrClient solrClient = cluster.getSolrClient();
-    CollectionAdminRequest.createCollection(collectionName, 1, 1)
-        .process(solrClient);
+    CollectionAdminRequest.createCollection(collectionName, 1, 1).process(solrClient);
 
     solrClient.add(collectionName, new SolrInputDocument("id", "1"));
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/admin/metrics");
-    String updateRequestCountKey = "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
+    String updateRequestCountKey =
+        "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
     params.set("key", updateRequestCountKey);
     params.set("indent", "true");
 
@@ -64,8 +71,10 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
 
     TestInjection.failUpdateRequests = "true:100";
     try {
-      expectThrows(CloudSolrClient.RouteException.class,
-          "Expected an exception on the client when failure is injected during updates", () -> {
+      expectThrows(
+          CloudSolrClient.RouteException.class,
+          "Expected an exception on the client when failure is injected during updates",
+          () -> {
             solrClient.add(collectionName, new SolrInputDocument("id", "2"));
           });
     } finally {

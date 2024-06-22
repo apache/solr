@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -40,8 +39,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
     XmlDoc docs = new XmlDoc();
     for (int i = 0; i < atLeast(10); i++) {
-      docs.xml += doc("id", "" + i,
-          "name_s", "" + i);
+      docs.xml += doc("id", "" + i, "name_s", "" + i);
     }
     assertU(add(docs));
     assertU(commit());
@@ -51,18 +49,24 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
   public void testParallelReloadAndStats() throws Exception {
 
     Random random = random();
-    
+
     for (int i = 0; i < atLeast(random, 2); i++) {
 
       int asyncId = taskNum.incrementAndGet();
 
-     
-      h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
-          CommonParams.QT, "/admin/cores",
-          CoreAdminParams.ACTION,
-          CoreAdminParams.CoreAdminAction.RELOAD.toString(),
-          CoreAdminParams.CORE, DEFAULT_TEST_CORENAME,
-          "async", "" + asyncId), new SolrQueryResponse());
+      h.getCoreContainer()
+          .getMultiCoreHandler()
+          .handleRequest(
+              req(
+                  CommonParams.QT,
+                  "/admin/cores",
+                  CoreAdminParams.ACTION,
+                  CoreAdminParams.CoreAdminAction.RELOAD.toString(),
+                  CoreAdminParams.CORE,
+                  DEFAULT_TEST_CORENAME,
+                  "async",
+                  "" + asyncId),
+              new SolrQueryResponse());
 
       boolean isCompleted;
       do {
@@ -72,36 +76,46 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           requestCoreStatus();
         }
 
-        isCompleted = checkReloadComlpetion(asyncId);
+        isCompleted = checkReloadCompletion(asyncId);
       } while (!isCompleted);
       requestMetrics(false);
     }
   }
 
-  private void requestCoreStatus() throws Exception {
+  private void requestCoreStatus() {
     SolrQueryResponse rsp = new SolrQueryResponse();
-    h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
-        CoreAdminParams.ACTION,
-        CoreAdminParams.CoreAdminAction.STATUS.toString(),
-        "core", DEFAULT_TEST_CORENAME), rsp);
-    assertNull(""+rsp.getException(),rsp.getException());
-
+    h.getCoreContainer()
+        .getMultiCoreHandler()
+        .handleRequest(
+            req(
+                CoreAdminParams.ACTION,
+                CoreAdminParams.CoreAdminAction.STATUS.toString(),
+                "core",
+                DEFAULT_TEST_CORENAME),
+            rsp);
+    assertNull("" + rsp.getException(), rsp.getException());
   }
 
-  private boolean checkReloadComlpetion(int asyncId) {
+  private boolean checkReloadCompletion(int asyncId) {
     boolean isCompleted;
     SolrQueryResponse rsp = new SolrQueryResponse();
-    h.getCoreContainer().getMultiCoreHandler().handleRequest(req(
-        CoreAdminParams.ACTION,
-        CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
-        CoreAdminParams.REQUESTID, "" + asyncId), rsp);
-    
+    h.getCoreContainer()
+        .getMultiCoreHandler()
+        .handleRequest(
+            req(
+                CoreAdminParams.ACTION,
+                CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
+                CoreAdminParams.REQUESTID,
+                "" + asyncId),
+            rsp);
+
     List<Object> statusLog = rsp.getValues().getAll(CoreAdminAction.STATUS.name());
 
-    assertFalse("expect status check w/o error, got:" + statusLog,
-                              statusLog.contains(CoreAdminHandler.FAILED));
+    assertFalse(
+        "expect status check w/o error, got:" + statusLog,
+        statusLog.contains(CoreAdminHandler.CoreAdminAsyncTracker.FAILED));
 
-    isCompleted = statusLog.contains(CoreAdminHandler.COMPLETED);
+    isCompleted = statusLog.contains(CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED);
     return isCompleted;
   }
 
@@ -112,14 +126,15 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     boolean found = false;
     int count = 10;
     while (!found && count-- > 0) {
-      h.getCoreContainer().getRequestHandler("/admin/metrics").handleRequest(
-          req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
+      h.getCoreContainer()
+          .getRequestHandler("/admin/metrics")
+          .handleRequest(req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
 
       NamedList<?> values = rsp.getValues();
       // this is not guaranteed to exist right away after core reload - there's a
-      // small window between core load and before searcher metrics are registered
+      // small window between core load and before searcher metrics are registered,
       // so we may have to check a few times, and then fail softly if reload is not complete yet
-      NamedList<?> metrics = (NamedList<?>)values.get("metrics");
+      NamedList<?> metrics = (NamedList<?>) values.get("metrics");
       if (metrics == null) {
         if (softFail) {
           return;
@@ -127,7 +142,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
           fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
         }
       }
-      metrics = (NamedList<?>)metrics.get(registry);
+      metrics = (NamedList<?>) metrics.get(registry);
       if (metrics.get(key) != null) {
         found = true;
         assertTrue(metrics.get(key) instanceof Long);
@@ -141,5 +156,4 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     }
     assertTrue("Key " + key + " not found in registry " + registry, found);
   }
-
 }

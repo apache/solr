@@ -16,33 +16,31 @@
  */
 package org.apache.solr.logging.jul;
 
-
 import java.util.logging.LogRecord;
-
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.logging.LogWatcher;
 
 @SuppressForbidden(reason = "class is specific to java.util.logging")
 public final class RecordHandler extends java.util.logging.Handler {
   final LogWatcher<LogRecord> framework;
-  
+
   public RecordHandler(LogWatcher<LogRecord> framework) {
     this.framework = framework;
   }
-  
+
   @Override
   public void close() throws SecurityException {
-    //history.reset();
+    // history.reset();
   }
-  
+
   @Override
   public void flush() {
     // nothing
   }
-  
+
   @Override
   public void publish(LogRecord r) {
-    if(isLoggable(r)) {
+    if (isLoggable(r)) {
       framework.add(r, r.getMillis());
     }
   }

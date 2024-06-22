@@ -24,7 +24,7 @@ import java.util.Map;
 public class MapWriterMap implements MapWriter {
   private final Map<String, Object> delegate;
 
-  public MapWriterMap(Map<String,Object> delegate) {
+  public MapWriterMap(Map<String, Object> delegate) {
     this.delegate = delegate;
   }
 
@@ -45,14 +45,13 @@ public class MapWriterMap implements MapWriter {
     return MapWriter.super._get(path, def);
   }
 
-
   @Override
   public int _size() {
     return delegate.size();
   }
 
   @Override
-  public Map<String,Object> toMap(Map<String, Object> map) {
+  public Map<String, Object> toMap(Map<String, Object> map) {
     return delegate;
   }
 }

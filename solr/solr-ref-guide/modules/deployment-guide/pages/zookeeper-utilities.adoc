@@ -1,0 +1,76 @@
+= ZooKeeper Utilities
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Solr Command Line Interface (CLI) script is available to allow you to interact directly with Solr configuration files stored in ZooKeeper.
+
+While Solr's Admin UI includes pages dedicated to the state of your SolrCloud cluster, it does not allow you to download or modify related configuration files.
+
+TIP: See the section xref:cloud-screens.adoc[] for more information about using the Admin UI screens.
+
+The ZooKeeper specific commands are provided by the xref:solr-control-script-reference.adoc[Solr Control Script].
+
+== Using Solr's CLI with ZooKeeper
+
+Use the `help` option to get a list of available ZooKeeper specifc commands from the script itself, as in `bin/solr zk -h`.
+
+== Solr CLI Examples
+
+Below are some examples of using the `bin/solr` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud -noprompt`)
+
+=== Upload a Configuration Directory
+
+[source,bash]
+----
+bin/solr zk upconfig -z 127.0.0.1:9983 -n my_new_config -d server/solr/configsets/_default/conf
+----
+
+=== Put a Local File into a New ZooKeeper File
+
+[source,bash]
+----
+./bin/solr zk cp ./my_local_file.txt zk:/my_zk_file.txt -z 127.0.0.1:9983
+----
+
+=== Link a Collection to a Configset
+
+[source,bash]
+----
+./bin/solr zk linkconfig --confname my_new_config -c gettingstarted -z 127.0.0.1:9983
+----
+
+=== Create a New ZooKeeper Path
+
+This can be useful to create a chroot path in ZooKeeper before first cluster start.
+
+[source,bash]
+----
+bin/solr zk mkroot /solr -z 127.0.0.1:9983
+----
+
+=== Set a Cluster Property
+
+This command will add or modify a single cluster property in `clusterprops.json`.
+
+Unlike the xref:cluster-node-management.adoc#clusterprop[CLUSTERPROP] command on the Collections API, this command does *not* require a running Solr cluster.
+
+[source,bash]
+----
+bin/solr cluster --property urlScheme --value https -z 127.0.0.1:9983
+----
+
+NOTE: This command is not nested under `bin/solr zk` like the others.

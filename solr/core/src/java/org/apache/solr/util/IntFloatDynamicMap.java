@@ -17,11 +17,10 @@
 
 package org.apache.solr.util;
 
-import java.util.Arrays;
-
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.cursors.FloatCursor;
 import com.carrotsearch.hppc.procedures.IntFloatProcedure;
+import java.util.Arrays;
 import org.apache.lucene.util.ArrayUtil;
 
 public class IntFloatDynamicMap implements DynamicMap {
@@ -32,9 +31,9 @@ public class IntFloatDynamicMap implements DynamicMap {
   private int threshold;
 
   /**
-   * Create map with expected max value of key.
-   * Although the map will automatically do resizing to be able to hold key {@code >= expectedKeyMax}.
-   * But putting key much larger than {@code expectedKeyMax} is discourage since it can leads to use LOT OF memory.
+   * Create map with expected max value of key. Although the map will automatically do resizing to
+   * be able to hold key {@code >= expectedKeyMax}. But putting key much larger than {@code
+   * expectedKeyMax} is discourage since it can leads to use LOT OF memory.
    */
   public IntFloatDynamicMap(int expectedKeyMax, float emptyValue) {
     this.threshold = threshold(expectedKeyMax);
@@ -77,7 +76,7 @@ public class IntFloatDynamicMap implements DynamicMap {
       keyValues[key] = value;
     } else {
       this.hashMap.put(key, value);
-      this.maxSize = Math.max(key+1, maxSize);
+      this.maxSize = Math.max(key + 1, maxSize);
       if (this.hashMap.size() >= threshold) {
         upgradeToArray();
       }
@@ -109,8 +108,7 @@ public class IntFloatDynamicMap implements DynamicMap {
 
   public void remove(int key) {
     if (keyValues != null) {
-      if (key < keyValues.length)
-        keyValues[key] = emptyValue;
+      if (key < keyValues.length) keyValues[key] = emptyValue;
     } else {
       hashMap.remove(key);
     }

@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Factories for various built-in Lucene ranking models. 
- * <p>
- * See {@link org.apache.lucene.search.similarities} for more additional details.
+
+/**
+ * Factories for various built-in Lucene ranking models.
+ *
+ * <p>See {@link org.apache.lucene.search.similarities} for more additional details.
  */
 package org.apache.solr.search.similarities;
-
-

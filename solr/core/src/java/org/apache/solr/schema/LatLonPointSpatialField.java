@@ -17,11 +17,12 @@
 
 package org.apache.solr.schema;
 
+import static java.math.RoundingMode.CEILING;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
@@ -36,6 +37,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -50,15 +52,15 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
-import static java.math.RoundingMode.CEILING;
-
 /**
- * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}. The
- * first is based on Lucene's "Points" API, which is a BKD Index.  This field type is strictly limited to
- * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter (1.042cm).
+ * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}.
+ * The first is based on Lucene's "Points" API, which is a BKD Index. This field type is strictly
+ * limited to coordinates in lat/lon decimal degrees. The accuracy is about a centimeter (1.042cm).
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
-public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPointSpatialField.LatLonPointSpatialStrategy> implements SchemaAware {
+public class LatLonPointSpatialField
+    extends AbstractSpatialFieldType<LatLonPointSpatialField.LatLonPointSpatialStrategy>
+    implements SchemaAware {
   private IndexSchema schema;
 
   // TODO handle polygons
@@ -74,8 +76,10 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
 
   @Override
   protected LatLonPointSpatialStrategy newSpatialStrategy(String fieldName) {
-    SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
-    return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
+    SchemaField schemaField =
+        schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
+    return new LatLonPointSpatialStrategy(
+        ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
   }
 
   @Override
@@ -88,22 +92,25 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
 
   /**
    * Decodes the docValues number into latitude and longitude components, formatting as "lat,lon".
-   * The encoding is governed by {@code LatLonDocValuesField}.  The decimal output representation is reflective
-   * of the available precision.
+   * The encoding is governed by {@code LatLonDocValuesField}. The decimal output representation is
+   * reflective of the available precision.
+   *
    * @param value Non-null; stored location field data
    * @return Non-null; "lat, lon"
    */
   public static String decodeDocValueToString(long value) {
     final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
     final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
-    // This # decimal places gets us close to our available precision to 1.40cm; we have a test for it.
-    // CEILING round-trips (decode then re-encode then decode to get identical results). Others did not. It also
-    //   reverses the "floor" that occurred when we encoded.
+    // This # decimal places gets us close to our available precision to 1.40cm; we have a test for
+    // it. CEILING round-trips (decode then re-encode then decode to get identical results). Others
+    // did not. It also reverses the "floor" that occurred when we encoded.
     final int DECIMAL_PLACES = 7;
     final RoundingMode ROUND_MODE = CEILING;
     BigDecimal latitudeDecoded = BigDecimal.valueOf(latDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
-    BigDecimal longitudeDecoded = BigDecimal.valueOf(lonDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
-    return latitudeDecoded.stripTrailingZeros().toPlainString() + ","
+    BigDecimal longitudeDecoded =
+        BigDecimal.valueOf(lonDouble).setScale(DECIMAL_PLACES, ROUND_MODE);
+    return latitudeDecoded.stripTrailingZeros().toPlainString()
+        + ","
         + longitudeDecoded.stripTrailingZeros().toPlainString();
     // return ((float)latDouble) + "," + ((float)lonDouble);  crude but not quite as accurate
   }
@@ -114,7 +121,8 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
     private final boolean indexed; // for query/filter
     private final boolean docValues; // for sort. Can be used to query/filter.
 
-    public LatLonPointSpatialStrategy(SpatialContext ctx, String fieldName, boolean indexed, boolean docValues) {
+    public LatLonPointSpatialStrategy(
+        SpatialContext ctx, String fieldName, boolean indexed, boolean docValues) {
       super(ctx, fieldName);
       if (!ctx.isGeo()) {
         throw new IllegalArgumentException("ctx must be geo=true: " + ctx);
@@ -126,7 +134,8 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
     @Override
     public Field[] createIndexableFields(Shape shape) {
       if (!(shape instanceof Point)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             getClass().getSimpleName() + " only supports indexing points; got: " + shape);
       }
       Point point = (Point) shape;
@@ -156,7 +165,8 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
       } else if (docValues) {
         return makeQueryFromDocValues(shape);
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             getFieldName() + " needs indexed (preferred) or docValues to support search");
       }
     }
@@ -167,24 +177,23 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
       if (shape instanceof Circle) {
         Circle circle = (Circle) shape;
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
-        return LatLonPoint.newDistanceQuery(getFieldName(),
-            circle.getCenter().getY(), circle.getCenter().getX(),
-            radiusMeters);
+        return LatLonPoint.newDistanceQuery(
+            getFieldName(), circle.getCenter().getY(), circle.getCenter().getX(), radiusMeters);
       } else if (shape instanceof Rectangle) {
         Rectangle rect = (Rectangle) shape;
-        return LatLonPoint.newBoxQuery(getFieldName(),
-            rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
+        return LatLonPoint.newBoxQuery(
+            getFieldName(), rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
       } else if (shape instanceof Point) {
         Point point = (Point) shape;
-        return LatLonPoint.newDistanceQuery(getFieldName(),
-            point.getY(), point.getX(), 0);
+        return LatLonPoint.newDistanceQuery(getFieldName(), point.getY(), point.getX(), 0);
       } else {
-        throw new UnsupportedOperationException("Shape " + shape.getClass() + " is not supported by " + getClass());
+        throw new UnsupportedOperationException(
+            "Shape " + shape.getClass() + " is not supported by " + getClass());
       }
-//      } else if (shape instanceof LucenePolygonShape) {
-//        // TODO support multi-polygon
-//        Polygon poly = ((LucenePolygonShape)shape).lucenePolygon;
-//        return LatLonPoint.newPolygonQuery(getFieldName(), poly);
+      //      } else if (shape instanceof LucenePolygonShape) {
+      //        // TODO support multi-polygon
+      //        Polygon poly = ((LucenePolygonShape)shape).lucenePolygon;
+      //        return LatLonPoint.newPolygonQuery(getFieldName(), poly);
     }
 
     // Uses DocValuesField  (otherwise identical to above)
@@ -193,40 +202,42 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
       if (shape instanceof Circle) {
         Circle circle = (Circle) shape;
         double radiusMeters = circle.getRadius() * DistanceUtils.DEG_TO_KM * 1000;
-        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
-            circle.getCenter().getY(), circle.getCenter().getX(),
-            radiusMeters);
+        return LatLonDocValuesField.newSlowDistanceQuery(
+            getFieldName(), circle.getCenter().getY(), circle.getCenter().getX(), radiusMeters);
       } else if (shape instanceof Rectangle) {
         Rectangle rect = (Rectangle) shape;
-        return LatLonDocValuesField.newSlowBoxQuery(getFieldName(),
-            rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
+        return LatLonDocValuesField.newSlowBoxQuery(
+            getFieldName(), rect.getMinY(), rect.getMaxY(), rect.getMinX(), rect.getMaxX());
       } else if (shape instanceof Point) {
         Point point = (Point) shape;
-        return LatLonDocValuesField.newSlowDistanceQuery(getFieldName(),
-            point.getY(), point.getX(), 0);
+        return LatLonDocValuesField.newSlowDistanceQuery(
+            getFieldName(), point.getY(), point.getX(), 0);
       } else {
-        throw new UnsupportedOperationException("Shape " + shape.getClass() + " is not supported by " + getClass());
+        throw new UnsupportedOperationException(
+            "Shape " + shape.getClass() + " is not supported by " + getClass());
       }
-//      } else if (shape instanceof LucenePolygonShape) {
-//        // TODO support multi-polygon
-//        Polygon poly = ((LucenePolygonShape)shape).lucenePolygon;
-//        return LatLonPoint.newPolygonQuery(getFieldName(), poly);
+      //      } else if (shape instanceof LucenePolygonShape) {
+      //        // TODO support multi-polygon
+      //        Polygon poly = ((LucenePolygonShape)shape).lucenePolygon;
+      //        return LatLonPoint.newPolygonQuery(getFieldName(), poly);
     }
 
     @Override
     public DoubleValuesSource makeDistanceValueSource(Point queryPoint, double multiplier) {
       if (!docValues) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             getFieldName() + " must have docValues enabled to support this feature");
       }
-      // Internally, the distance from LatLonPointSortField/Comparator is in meters. So we must also go from meters to
-      //  degrees, which is what Lucene spatial-extras is oriented around.
-      return new DistanceSortValueSource(getFieldName(), queryPoint,
-          DistanceUtils.KM_TO_DEG / 1000.0 * multiplier);
+      // Internally, the distance from LatLonPointSortField/Comparator is in meters. So we must also
+      // go from meters to degrees, which is what Lucene spatial-extras is oriented around.
+      return new DistanceSortValueSource(
+          getFieldName(), queryPoint, DistanceUtils.KM_TO_DEG / 1000.0 * multiplier);
     }
 
     /**
-     * A {@link ValueSource} based around {@code LatLonDocValuesField#newDistanceSort(String, double, double)}.
+     * A {@link ValueSource} based around {@code LatLonDocValuesField#newDistanceSort(String,
+     * double, double)}.
      */
     private static class DistanceSortValueSource extends DoubleValuesSource {
       private final String fieldName;
@@ -242,11 +253,11 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
       @Override
       public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof DistanceSortValueSource)) return false;
         DistanceSortValueSource that = (DistanceSortValueSource) o;
-        return Double.compare(that.multiplier, multiplier) == 0 &&
-            Objects.equals(fieldName, that.fieldName) &&
-            Objects.equals(queryPoint, that.queryPoint);
+        return Double.compare(that.multiplier, multiplier) == 0
+            && Objects.equals(fieldName, that.fieldName)
+            && Objects.equals(queryPoint, that.queryPoint);
       }
 
       @Override
@@ -260,7 +271,8 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
 
           @SuppressWarnings("unchecked")
           final FieldComparator<Double> comparator =
-              (FieldComparator<Double>) getSortField(false).getComparator(1, 1);
+              (FieldComparator<Double>) getSortField(false).getComparator(1, Pruning.NONE);
+
           final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
           final double mult = multiplier; // so it's a local field
 
@@ -305,11 +317,9 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType<LatLonPoin
         if (reverse) {
           return super.getSortField(true); // will use an impl that calls getValues
         }
-        return LatLonDocValuesField.newDistanceSort(fieldName, queryPoint.getY(), queryPoint.getX());
+        return LatLonDocValuesField.newDistanceSort(
+            fieldName, queryPoint.getY(), queryPoint.getX());
       }
-
     }
-
   }
-
 }

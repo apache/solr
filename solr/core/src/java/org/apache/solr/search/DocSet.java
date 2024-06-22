@@ -18,18 +18,17 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
- * An immutable ordered set of Lucene Document Ids.
- * It's similar to a Lucene {@link org.apache.lucene.search.DocIdSet}.
+ * An immutable ordered set of Lucene Document Ids. It's similar to a Lucene {@link
+ * org.apache.lucene.search.DocIdSet}. Solr never puts a deleted document into a DocSet.
  *
- * <p>
- * WARNING: Any DocSet returned from SolrIndexSearcher should <b>not</b> be modified as it may have been retrieved from
- * a cache and could be shared.
- * </p>
+ * <p>WARNING: Any DocSet returned from SolrIndexSearcher should <b>not</b> be modified as it may
+ * have been retrieved from a cache and could be shared.
  */
 public abstract class DocSet implements Accountable, Cloneable /* extends Collection<Integer> */ {
 
@@ -38,7 +37,8 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
     assert this instanceof BitDocSet || this instanceof SortedIntDocSet;
   }
 
-  // can't use a trivial static initializer "EMPTY = new SortedIntDocSet" because it can lead to classloader deadlock
+  // can't use a trivial static initializer "EMPTY = new SortedIntDocSet" because it can lead to
+  // classloader deadlock
   private static class EmptyLazyHolder {
     static final DocSet INSTANCE = new SortedIntDocSet(new int[0]);
   }
@@ -48,39 +48,40 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
     return EmptyLazyHolder.INSTANCE;
   }
 
-  /**
-   * Returns the number of documents in the set.
-   */
+  /** Returns the number of documents in the set. */
   public abstract int size();
 
   /**
-   * Returns true if a document is in the DocSet.
-   * If you want to be guaranteed fast random access, use {@link #getBits()} instead.
+   * Returns true if a document is in the DocSet. If you want to be guaranteed fast random access,
+   * use {@link #getBits()} instead.
    */
   public abstract boolean exists(int docid);
 
   /**
-   * Returns an ordered iterator of the documents in the set.  Any scoring information is meaningless.
+   * Returns an ordered iterator of the documents in the set. Any scoring information is
+   * meaningless.
    */
-  //TODO switch to DocIdSetIterator in Solr 9?
+  // TODO switch to DocIdSetIterator in Solr 9?
   public abstract DocIterator iterator();
 
   /**
-   * Returns an ordered iterator of the documents in the set for the specified {@link LeafReaderContext}.
-   * <b>NOTE:</b> may return null if there are no matching documents for this leaf.
+   * Returns an ordered iterator of the documents in the set for the specified {@link
+   * LeafReaderContext}. <b>NOTE:</b> may return null if there are no matching documents for this
+   * leaf.
    */
   public abstract DocIdSetIterator iterator(LeafReaderContext ctx);
 
   /**
-   * Returns the intersection of this set with another set.  Neither set is modified - a new DocSet is
-   * created and returned.
+   * Returns the intersection of this set with another set. Neither set is modified - a new DocSet
+   * is created and returned.
+   *
    * @return a DocSet representing the intersection
    */
   public abstract DocSet intersection(DocSet other);
 
   /**
-   * Returns the number of documents of the intersection of this set with another set.
-   * May be more efficient than actually creating the intersection and then getting its size.
+   * Returns the number of documents of the intersection of this set with another set. May be more
+   * efficient than actually creating the intersection and then getting its size.
    */
   public abstract int intersectionSize(DocSet other);
 
@@ -88,54 +89,52 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
   public abstract boolean intersects(DocSet other);
 
   /**
-   * Returns the union of this set with another set.  Neither set is modified - a new DocSet is
+   * Returns the union of this set with another set. Neither set is modified - a new DocSet is
    * created and returned.
+   *
    * @return a DocSet representing the union
    */
   public abstract DocSet union(DocSet other);
 
   /**
-   * Returns the number of documents of the union of this set with another set.
-   * May be more efficient than actually creating the union and then getting its size.
+   * Returns the number of documents of the union of this set with another set. May be more
+   * efficient than actually creating the union and then getting its size.
    */
   public int unionSize(DocSet other) {
     return this.size() + other.size() - this.intersectionSize(other);
   }
 
   /**
-   * Returns the documents in this set that are not in the other set. Neither set is modified - a new DocSet is
-   * created and returned.
+   * Returns the documents in this set that are not in the other set. Neither set is modified - a
+   * new DocSet is created and returned.
+   *
    * @return a DocSet representing this AND NOT other
    */
   public abstract DocSet andNot(DocSet other);
 
-  /**
-   * Returns the number of documents in this set that are not in the other set.
-   */
+  /** Returns the number of documents in this set that are not in the other set. */
   public int andNotSize(DocSet other) {
     return this.size() - this.intersectionSize(other);
   }
 
   /**
-   * Returns a Filter for use in Lucene search methods, assuming this DocSet
-   * was generated from the top-level MultiReader that the Lucene search
-   * methods will be invoked with.
+   * Returns a Query matching these documents with a score of 1. Note that DocSets do not refer to
+   * deleted docs.
    */
-  public abstract Filter getTopFilter();
+  public abstract Query makeQuery();
 
   /**
-   * Adds all the docs from this set to the target. The target should be
-   * sized large enough to accommodate all of the documents before calling this
-   * method.
+   * Adds all the docs from this set to the target. The target should be sized large enough to
+   * accommodate all of the documents before calling this method.
    */
   public abstract void addAllTo(FixedBitSet target);
 
-
+  @Override
   public abstract DocSet clone();
 
   /**
-   * A {@link Bits} that has fast random access (as is generally required of Bits).
-   * It may be necessary to do work to build this.
+   * A {@link Bits} that has fast random access (as is generally required of Bits). It may be
+   * necessary to do work to build this.
    */
   public abstract Bits getBits();
 
@@ -144,5 +143,4 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
 
   // internal only
   protected abstract FixedBitSet getFixedBitSetClone();
-
 }

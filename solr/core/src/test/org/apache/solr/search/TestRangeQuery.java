@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import com.carrotsearch.hppc.IntHashSet;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,9 +29,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import com.carrotsearch.hppc.IntHashSet;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -51,9 +50,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestRangeQuery extends SolrTestCaseJ4 {
-  
-  private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
-  private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
+
+  private static final long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
+  private final SimpleDateFormat dateFormat =
+      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -79,11 +79,11 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   void addInt(SolrInputDocument doc, int l, int u, String... fields) {
-    int v=0;
-    if (0==l && l==u) {
-      v=random().nextInt();
+    int v = 0;
+    if (0 == l && l == u) {
+      v = random().nextInt();
     } else {
-      v=random().nextInt(u-l)+l;
+      v = random().nextInt(u - l) + l;
     }
     for (String field : fields) {
       doc.addField(field, v);
@@ -95,9 +95,9 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   public void createIndex(int nDocs, DocProcessor proc) {
-    for (int i=0; i<nDocs; i++) {
+    for (int i = 0; i < nDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", ""+i);
+      doc.addField("id", "" + i);
       if (proc != null) {
         proc.process(doc);
       }
@@ -107,23 +107,31 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRangeQueries() throws Exception {
-    // ensure that we aren't losing precision on any fields in addition to testing other non-numeric fields
-    // that aren't tested in testRandomRangeQueries()
+  public void testRangeQueries() {
+    // ensure that we aren't losing precision on any fields in addition to testing other non-numeric
+    // fields that aren't tested in testRandomRangeQueries()
 
-    int i=2000000000;
-    long l=500000000000000000L;
-    double d=0.3333333333333333;
+    int i = 2000000000;
+    long l = 500000000000000000L;
+    double d = 0.3333333333333333;
 
     // first 3 values will be indexed, the last two won't be
-    String[] ints = {""+(i-1), ""+(i), ""+(i+1),   ""+(i-2), ""+(i+2)};
-    String[] longs = {""+(l-1), ""+(l), ""+(l+1),  ""+(l-2), ""+(l+2)};
-    String[] doubles = {""+(d-1e-16), ""+(d), ""+(d+1e-16),   ""+(d-2e-16), ""+(d+2e-16)};
-    String[] strings = {"aaa","bbb","ccc",  "aa","cccc" };
-    String[] dates = {"0299-12-31T23:59:59.999Z","2000-01-01T00:00:00.000Z","2000-01-01T00:00:00.001Z",  "0299-12-31T23:59:59.998Z","2000-01-01T00:00:00.002Z" };
+    String[] ints = {"" + (i - 1), "" + (i), "" + (i + 1), "" + (i - 2), "" + (i + 2)};
+    String[] longs = {"" + (l - 1), "" + (l), "" + (l + 1), "" + (l - 2), "" + (l + 2)};
+    String[] doubles = {
+      "" + (d - 1e-16), "" + (d), "" + (d + 1e-16), "" + (d - 2e-16), "" + (d + 2e-16)
+    };
+    String[] strings = {"aaa", "bbb", "ccc", "aa", "cccc"};
+    String[] dates = {
+      "0299-12-31T23:59:59.999Z",
+      "2000-01-01T00:00:00.000Z",
+      "2000-01-01T00:00:00.001Z",
+      "0299-12-31T23:59:59.998Z",
+      "2000-01-01T00:00:00.002Z"
+    };
 
     // fields that normal range queries should work on
-    Map<String,String[]> norm_fields = new HashMap<>();
+    Map<String, String[]> norm_fields = new HashMap<>();
     norm_fields.put("foo_i", ints);
     norm_fields.put("foo_l", longs);
     norm_fields.put("foo_d", doubles);
@@ -136,9 +144,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     norm_fields.put("foo_s", strings);
     norm_fields.put("foo_dt", dates);
 
-
     // fields that frange queries should work on
-    Map<String,String[]> frange_fields = new HashMap<>();
+    Map<String, String[]> frange_fields = new HashMap<>();
     frange_fields.put("foo_i", ints);
     frange_fields.put("foo_l", longs);
     frange_fields.put("foo_d", doubles);
@@ -151,19 +158,19 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     frange_fields.put("foo_s", strings);
     frange_fields.put("foo_dt", dates);
 
-    Map<String,String[]> all_fields = new HashMap<>();
+    Map<String, String[]> all_fields = new HashMap<>();
     all_fields.putAll(norm_fields);
     all_fields.putAll(frange_fields);
 
-    for (int j=0; j<ints.length-2; j++) {
+    for (int j = 0; j < ints.length - 2; j++) {
       List<String> fields = new ArrayList<>();
       fields.add("id");
-      fields.add(""+j);
-      for (Map.Entry<String,String[]> entry : all_fields.entrySet()) {
+      fields.add("" + j);
+      for (Map.Entry<String, String[]> entry : all_fields.entrySet()) {
         fields.add(entry.getKey());
         fields.add(entry.getValue()[j]);
       }
-      assertU(adoc(fields.toArray(new String[fields.size()])));
+      assertU(adoc(fields.toArray(new String[0])));
     }
 
     assertU(commit());
@@ -173,63 +180,68 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     assertQ(req("{!frange l=0 u=2}product(id_i,2)"), "*[count(//doc)=2]");
     assertQ(req("{!frange l=100 u=102}sum(id_i,100)"), "*[count(//doc)=3]");
 
-
-    for (Map.Entry<String,String[]> entry : norm_fields.entrySet()) {
+    for (Map.Entry<String, String[]> entry : norm_fields.entrySet()) {
       String f = entry.getKey();
       String[] v = entry.getValue();
 
-      assertQ(req(f + ":[* TO *]" ), "*[count(//doc)=3]");
-      assertQ(req(f + ":["+v[0]+" TO "+v[2]+"]"), "*[count(//doc)=3]");
-      assertQ(req(f + ":["+v[1]+" TO "+v[2]+"]"), "*[count(//doc)=2]");
-      assertQ(req(f + ":["+v[0]+" TO "+v[1]+"]"), "*[count(//doc)=2]");
-      assertQ(req(f + ":["+v[0]+" TO "+v[0]+"]"), "*[count(//doc)=1]");
-      assertQ(req(f + ":["+v[1]+" TO "+v[1]+"]"), "*[count(//doc)=1]");
-      assertQ(req(f + ":["+v[2]+" TO "+v[2]+"]"), "*[count(//doc)=1]");
-      assertQ(req(f + ":["+v[3]+" TO "+v[3]+"]"), "*[count(//doc)=0]");
-      assertQ(req(f + ":["+v[4]+" TO "+v[4]+"]"), "*[count(//doc)=0]");
+      assertQ(req(f + ":[* TO *]"), "*[count(//doc)=3]");
+      assertQ(req(f + ":[" + v[0] + " TO " + v[2] + "]"), "*[count(//doc)=3]");
+      assertQ(req(f + ":[" + v[1] + " TO " + v[2] + "]"), "*[count(//doc)=2]");
+      assertQ(req(f + ":[" + v[0] + " TO " + v[1] + "]"), "*[count(//doc)=2]");
+      assertQ(req(f + ":[" + v[0] + " TO " + v[0] + "]"), "*[count(//doc)=1]");
+      assertQ(req(f + ":[" + v[1] + " TO " + v[1] + "]"), "*[count(//doc)=1]");
+      assertQ(req(f + ":[" + v[2] + " TO " + v[2] + "]"), "*[count(//doc)=1]");
+      assertQ(req(f + ":[" + v[3] + " TO " + v[3] + "]"), "*[count(//doc)=0]");
+      assertQ(req(f + ":[" + v[4] + " TO " + v[4] + "]"), "*[count(//doc)=0]");
 
-      assertQ(req(f + ":{"+v[0]+" TO "+v[2]+"}"), "*[count(//doc)=1]");
-      assertQ(req(f + ":{"+v[1]+" TO "+v[2]+"}"), "*[count(//doc)=0]");
-      assertQ(req(f + ":{"+v[0]+" TO "+v[1]+"}"), "*[count(//doc)=0]");
-      assertQ(req(f + ":{"+v[3]+" TO "+v[4]+"}"), "*[count(//doc)=3]");
+      assertQ(req(f + ":{" + v[0] + " TO " + v[2] + "}"), "*[count(//doc)=1]");
+      assertQ(req(f + ":{" + v[1] + " TO " + v[2] + "}"), "*[count(//doc)=0]");
+      assertQ(req(f + ":{" + v[0] + " TO " + v[1] + "}"), "*[count(//doc)=0]");
+      assertQ(req(f + ":{" + v[3] + " TO " + v[4] + "}"), "*[count(//doc)=3]");
     }
 
-    for (Map.Entry<String,String[]> entry : frange_fields.entrySet()) {
+    for (Map.Entry<String, String[]> entry : frange_fields.entrySet()) {
       String f = entry.getKey();
       String[] v = entry.getValue();
 
-      assertQ(req("{!frange}"+f ), "*[count(//doc)=3]");
-      assertQ(req("{!frange" + " l="+v[0]+"}"+f ), "*[count(//doc)=3]");
-      assertQ(req("{!frange" + " l="+v[1]+"}"+f ), "*[count(//doc)=2]");
-      assertQ(req("{!frange" + " l="+v[2]+"}"+f ), "*[count(//doc)=1]");
-      assertQ(req("{!frange" + " l="+v[3]+"}"+f ), "*[count(//doc)=3]");
-      assertQ(req("{!frange" + " l="+v[4]+"}"+f ), "*[count(//doc)=0]");
+      assertQ(req("{!frange}" + f), "*[count(//doc)=3]");
+      assertQ(req("{!frange" + " l=" + v[0] + "}" + f), "*[count(//doc)=3]");
+      assertQ(req("{!frange" + " l=" + v[1] + "}" + f), "*[count(//doc)=2]");
+      assertQ(req("{!frange" + " l=" + v[2] + "}" + f), "*[count(//doc)=1]");
+      assertQ(req("{!frange" + " l=" + v[3] + "}" + f), "*[count(//doc)=3]");
+      assertQ(req("{!frange" + " l=" + v[4] + "}" + f), "*[count(//doc)=0]");
 
-      assertQ(req("{!frange" + " u="+v[0]+"}"+f ), "*[count(//doc)=1]");
-      assertQ(req("{!frange" + " u="+v[1]+"}"+f ), "*[count(//doc)=2]");
-      assertQ(req("{!frange" + " u="+v[2]+"}"+f ), "*[count(//doc)=3]");
-      assertQ(req("{!frange" + " u="+v[3]+"}"+f ), "*[count(//doc)=0]");
-      assertQ(req("{!frange" + " u="+v[4]+"}"+f ), "*[count(//doc)=3]");
+      assertQ(req("{!frange" + " u=" + v[0] + "}" + f), "*[count(//doc)=1]");
+      assertQ(req("{!frange" + " u=" + v[1] + "}" + f), "*[count(//doc)=2]");
+      assertQ(req("{!frange" + " u=" + v[2] + "}" + f), "*[count(//doc)=3]");
+      assertQ(req("{!frange" + " u=" + v[3] + "}" + f), "*[count(//doc)=0]");
+      assertQ(req("{!frange" + " u=" + v[4] + "}" + f), "*[count(//doc)=3]");
 
-      assertQ(req("{!frange incl=false" + " l="+v[0]+"}"+f ), "*[count(//doc)=2]");
-      assertQ(req("{!frange incl=false" + " l="+v[1]+"}"+f ), "*[count(//doc)=1]");
-      assertQ(req("{!frange incl=false" + " l="+v[2]+"}"+f ), "*[count(//doc)=0]");
-      assertQ(req("{!frange incl=false" + " l="+v[3]+"}"+f ), "*[count(//doc)=3]");
-      assertQ(req("{!frange incl=false" + " l="+v[4]+"}"+f ), "*[count(//doc)=0]");
+      assertQ(req("{!frange incl=false" + " l=" + v[0] + "}" + f), "*[count(//doc)=2]");
+      assertQ(req("{!frange incl=false" + " l=" + v[1] + "}" + f), "*[count(//doc)=1]");
+      assertQ(req("{!frange incl=false" + " l=" + v[2] + "}" + f), "*[count(//doc)=0]");
+      assertQ(req("{!frange incl=false" + " l=" + v[3] + "}" + f), "*[count(//doc)=3]");
+      assertQ(req("{!frange incl=false" + " l=" + v[4] + "}" + f), "*[count(//doc)=0]");
 
-      assertQ(req("{!frange incu=false" + " u="+v[0]+"}"+f ), "*[count(//doc)=0]");
-      assertQ(req("{!frange incu=false" + " u="+v[1]+"}"+f ), "*[count(//doc)=1]");
-      assertQ(req("{!frange incu=false" + " u="+v[2]+"}"+f ), "*[count(//doc)=2]");
-      assertQ(req("{!frange incu=false" + " u="+v[3]+"}"+f ), "*[count(//doc)=0]");
-      assertQ(req("{!frange incu=false" + " u="+v[4]+"}"+f ), "*[count(//doc)=3]");
+      assertQ(req("{!frange incu=false" + " u=" + v[0] + "}" + f), "*[count(//doc)=0]");
+      assertQ(req("{!frange incu=false" + " u=" + v[1] + "}" + f), "*[count(//doc)=1]");
+      assertQ(req("{!frange incu=false" + " u=" + v[2] + "}" + f), "*[count(//doc)=2]");
+      assertQ(req("{!frange incu=false" + " u=" + v[3] + "}" + f), "*[count(//doc)=0]");
+      assertQ(req("{!frange incu=false" + " u=" + v[4] + "}" + f), "*[count(//doc)=3]");
 
-      assertQ(req("{!frange incl=true incu=true" + " l=" +v[0] +" u="+v[2]+"}"+f ), "*[count(//doc)=3]");
-      assertQ(req("{!frange incl=false incu=false" + " l=" +v[0] +" u="+v[2]+"}"+f ), "*[count(//doc)=1]");
-      assertQ(req("{!frange incl=false incu=false" + " l=" +v[3] +" u="+v[4]+"}"+f ), "*[count(//doc)=3]");
+      assertQ(
+          req("{!frange incl=true incu=true" + " l=" + v[0] + " u=" + v[2] + "}" + f),
+          "*[count(//doc)=3]");
+      assertQ(
+          req("{!frange incl=false incu=false" + " l=" + v[0] + " u=" + v[2] + "}" + f),
+          "*[count(//doc)=1]");
+      assertQ(
+          req("{!frange incl=false incu=false" + " l=" + v[3] + " u=" + v[4] + "}" + f),
+          "*[count(//doc)=3]");
     }
 
     // now pick a random range to use to delete (some of) the docs...
-    
+
     final boolean incl = random().nextBoolean();
     final boolean incu = random().nextBoolean();
     final int expected = 0 + (incl ? 0 : 1) + (incu ? 0 : 1);
@@ -241,90 +253,109 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     } else { // frange
       String field = randomKey(frange_fields);
       String[] values = frange_fields.get(field);
-      dbq = "{!frange incl=" + incl + " incu=" + incu + " l=" + values[0] + " u=" + values[2] + "}" + field;
+      dbq =
+          "{!frange incl="
+              + incl
+              + " incu="
+              + incu
+              + " l="
+              + values[0]
+              + " u="
+              + values[2]
+              + "}"
+              + field;
     }
     if (random().nextBoolean()) {
       // wrap in a BQ
       String field = randomKey(norm_fields);
       String value = norm_fields.get(field)[1];
-      // wraping shouldn't affect expected
-      dbq = "("+field+":\""+value+"\" OR " + dbq + ")";
-    }    
-      
+      // wrapping shouldn't affect expected
+      dbq = "(" + field + ":\"" + value + "\" OR " + dbq + ")";
+    }
+
     assertU(delQ(dbq));
     assertU(commit());
-    assertQ(req("q","*:*","_trace_dbq",dbq),
-            "*[count(//doc)=" + expected + "]");
-    
+    assertQ(req("q", "*:*", "_trace_dbq", dbq), "*[count(//doc)=" + expected + "]");
   }
 
   @Test
   public void testRandomRangeQueries() throws Exception {
-    String handler="";
-    final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d",
-                             "foo_ti","foo_tl","foo_tf","foo_td" };
-    
+    String handler = "";
+    final String[] fields = {
+      "foo_s", "foo_i", "foo_l", "foo_f", "foo_d", "foo_ti", "foo_tl", "foo_tf", "foo_td"
+    };
+
     // NOTE: foo_s supports ranges, but for the arrays below we are only
     // interested in fields that support *equivalent* ranges -- strings
     // are not ordered the same as ints/longs, so we can't test the ranges
-    // for equivilence across diff fields.
+    // for equivalence across diff fields.
     //
     // fields that a normal range query will work correctly on
-    String[] norm_fields = {"foo_i","foo_l","foo_f","foo_d",
-                            "foo_ti","foo_tl","foo_tf","foo_td" };
+    String[] norm_fields = {
+      "foo_i", "foo_l", "foo_f", "foo_d",
+      "foo_ti", "foo_tl", "foo_tf", "foo_td"
+    };
     // fields that a value source range query should work on
-    String[] frange_fields = {"foo_i","foo_l","foo_f","foo_d"};
+    String[] frange_fields = {"foo_i", "foo_l", "foo_f", "foo_d"};
 
-    final int l= -1 * atLeast(50);
-    final int u= atLeast(250);
+    final int l = -1 * atLeast(50);
+    final int u = atLeast(250);
 
     // sometimes a very small index, sometimes a very large index
     final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
-    createIndex(numDocs, doc -> {
-      // 10% of the docs have missing values
-      if (random().nextInt(10)!=0) addInt(doc, l,u, fields);
-    });
+    createIndex(
+        numDocs,
+        doc -> {
+          // 10% of the docs have missing values
+          if (random().nextInt(10) != 0) addInt(doc, l, u, fields);
+        });
 
     final int numIters = atLeast(1000);
-    for (int i=0; i < numIters; i++) {
+    for (int i = 0; i < numIters; i++) {
       int lower = TestUtil.nextInt(random(), 2 * l, u);
       int upper = TestUtil.nextInt(random(), lower, 2 * u);
-      boolean lowerMissing = random().nextInt(10)==1;
-      boolean upperMissing = random().nextInt(10)==1;
+      boolean lowerMissing = random().nextInt(10) == 1;
+      boolean upperMissing = random().nextInt(10) == 1;
       boolean inclusive = lowerMissing || upperMissing || random().nextBoolean();
 
-      // lower=2; upper=2; inclusive=true;      
-      // inclusive=true; lowerMissing=true; upperMissing=true;    
+      // lower=2; upper=2; inclusive=true;
+      // inclusive=true; lowerMissing=true; upperMissing=true;
 
       List<String> qs = new ArrayList<>();
       for (String field : norm_fields) {
-        String q = field + ':' + (inclusive?'[':'{')
-                + (lowerMissing?"*":lower)
+        String q =
+            field
+                + ':'
+                + (inclusive ? '[' : '{')
+                + (lowerMissing ? "*" : lower)
                 + " TO "
-                + (upperMissing?"*":upper)
-                + (inclusive?']':'}');
+                + (upperMissing ? "*" : upper)
+                + (inclusive ? ']' : '}');
         qs.add(q);
       }
       for (String field : frange_fields) {
-        String q = "{!frange v="+field
-                + (lowerMissing?"":(" l="+lower))
-                + (upperMissing?"":(" u="+upper))
-                + (inclusive?"":" incl=false")
-                + (inclusive?"":" incu=false")
+        String q =
+            "{!frange v="
+                + field
+                + (lowerMissing ? "" : (" l=" + lower))
+                + (upperMissing ? "" : (" u=" + upper))
+                + (inclusive ? "" : " incl=false")
+                + (inclusive ? "" : " incu=false")
                 + "}";
         qs.add(q);
       }
       String lastQ = null;
-      SolrQueryResponse last=null;
+      SolrQueryResponse last = null;
       for (String q : qs) {
         // System.out.println("QUERY="+q);
-        SolrQueryRequest req = req("q",q,"rows",""+numDocs);
+        SolrQueryRequest req = req("q", q, "rows", "" + numDocs);
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
         if (last != null) {
-          // we only test if the same docs matched since some queries will include factors like idf, etc.
-          DocList rA = ((ResultContext)qr.getResponse()).getDocList();
-          DocList rB = ((ResultContext)last.getResponse()).getDocList();
-          sameDocs(q + " vs " + lastQ, rA, rB );
+          // we only test if the same docs matched since some queries will include factors like idf,
+          // etc.
+          DocList rA = ((ResultContext) qr.getResponse()).getDocList();
+          DocList rB = ((ResultContext) last.getResponse()).getDocList();
+          sameDocs(q + " vs " + lastQ, rA, rB);
         }
         req.close();
         last = qr;
@@ -332,43 +363,48 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       }
     }
 
-    // now build some random queries (against *any* field) and validate that using it in a DBQ changes
-    // the index by the expected number of docs
+    // now build some random queries (against *any* field) and validate that using it in a DBQ
+    // changes the index by the expected number of docs
     long numDocsLeftInIndex = numDocs;
-    final int numDBQs= atLeast(10);
-    for (int i=0; i < numDBQs; i++) {
+    final int numDBQs = atLeast(10);
+    for (int i = 0; i < numDBQs; i++) {
       int lower = TestUtil.nextInt(random(), 2 * l, u);
       int upper = TestUtil.nextInt(random(), lower, 2 * u);
-      boolean lowerMissing = random().nextInt(10)==1;
-      boolean upperMissing = random().nextInt(10)==1;
+      boolean lowerMissing = random().nextInt(10) == 1;
+      boolean upperMissing = random().nextInt(10) == 1;
       boolean inclusive = lowerMissing || upperMissing || random().nextBoolean();
-      
+
       String dbq = null;
       if (random().nextBoolean()) { // regular range
         String field = fields[random().nextInt(fields.length)];
-        dbq = field + ':' + (inclusive?'[':'{')
-          + (lowerMissing?"*":lower)
-          + " TO "
-          + (upperMissing?"*":upper)
-          + (inclusive?']':'}');
-       } else { // frange
+        dbq =
+            field
+                + ':'
+                + (inclusive ? '[' : '{')
+                + (lowerMissing ? "*" : lower)
+                + " TO "
+                + (upperMissing ? "*" : upper)
+                + (inclusive ? ']' : '}');
+      } else { // frange
         String field = frange_fields[random().nextInt(frange_fields.length)];
-        dbq = "{!frange v="+field
-          + (lowerMissing?"":(" l="+lower))
-          + (upperMissing?"":(" u="+upper))
-          + (inclusive?"":" incl=false")
-          + (inclusive?"":" incu=false")
-          + "}";
+        dbq =
+            "{!frange v="
+                + field
+                + (lowerMissing ? "" : (" l=" + lower))
+                + (upperMissing ? "" : (" u=" + upper))
+                + (inclusive ? "" : " incl=false")
+                + (inclusive ? "" : " incu=false")
+                + "}";
       }
-      try (SolrQueryRequest req = req("q",dbq,"rows","0")) {
+      try (SolrQueryRequest req = req("q", dbq, "rows", "0")) {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
-        numDocsLeftInIndex -= ((ResultContext)qr.getResponse()).getDocList().matches();
+        numDocsLeftInIndex -= ((ResultContext) qr.getResponse()).getDocList().matches();
       }
       assertU(delQ(dbq));
       assertU(commit());
-      try (SolrQueryRequest req = req("q","*:*","rows","0","_trace_after_dbq",dbq)) {
+      try (SolrQueryRequest req = req("q", "*:*", "rows", "0", "_trace_after_dbq", dbq)) {
         SolrQueryResponse qr = h.queryAndResponse(handler, req);
-        final long allDocsFound = ((ResultContext)qr.getResponse()).getDocList().matches();
+        final long allDocsFound = ((ResultContext) qr.getResponse()).getDocList().matches();
         assertEquals(dbq, numDocsLeftInIndex, allDocsFound);
       }
     }
@@ -379,18 +415,27 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // sometimes a very small index, sometimes a very large index
     // final int numDocs = random().nextBoolean() ? random().nextInt(50) : atLeast(1000);
     final int numDocs = 99;
-    createIndex(numDocs, doc -> {
-      addInt(doc, 0, 0, "foo_i");
-    });
+    createIndex(
+        numDocs,
+        doc -> {
+          addInt(doc, 0, 0, "foo_i");
+        });
 
-    // ensure delay comes after createIndex - so we don't affect/count any cache warming from queries left over by other test methods
-    TestInjection.delayBeforeCreatingNewDocSet = TEST_NIGHTLY ? 50 : 500; // Run more queries nightly, so use shorter delay
+    // ensure delay comes after createIndex - so we don't affect/count any cache warming from
+    // queries left over by other test methods
+    TestInjection.delayBeforeCreatingNewDocSet =
+        TEST_NIGHTLY ? 50 : 500; // Run more queries nightly, so use shorter delay
 
-    final int MAX_QUERY_RANGE = 222;                            // Arbitrary number in the middle of the value range
-    final int QUERY_START = TEST_NIGHTLY ? 1 : MAX_QUERY_RANGE; // Either run queries for the full range, or just the last one
+    final int MAX_QUERY_RANGE = 222; // Arbitrary number in the middle of the value range
+    final int QUERY_START =
+        TEST_NIGHTLY
+            ? 1
+            : MAX_QUERY_RANGE; // Either run queries for the full range, or just the last one
     final int NUM_QUERIES = TEST_NIGHTLY ? 101 : 10;
-    for (int j = QUERY_START ; j <= MAX_QUERY_RANGE; j++) {
-      ExecutorService queryService = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("TestRangeQuery-" + j));
+    for (int j = QUERY_START; j <= MAX_QUERY_RANGE; j++) {
+      ExecutorService queryService =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              4, new SolrNamedThreadFactory("TestRangeQuery-" + j));
       try (SolrCore core = h.getCoreInc()) {
         SolrRequestHandler defaultHandler = core.getRequestHandler("");
 
@@ -398,23 +443,28 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         params.set("q", "*:*");
         params.add("fq", "id:[0 TO " + j + "]"); // These should all come from FilterCache
 
-        // Regular: 10 threads with 4 executors would be enough for 3 waves, or approximately 1500ms of delay
+        // Regular: 10 threads with 4 executors would be enough for 3 waves, or approximately 1500ms
+        // of delay
         // Nightly: 101 threads with 4 executors is 26 waves, approximately 1300ms delay
         CountDownLatch atLeastOnceCompleted = new CountDownLatch(TEST_NIGHTLY ? 30 : 1);
         for (int i = 0; i < NUM_QUERIES; i++) {
-          queryService.submit(() -> {
-            try (SolrQueryRequest req = req(params)) {
-              core.execute(defaultHandler, req, new SolrQueryResponse());
-            }
-            atLeastOnceCompleted.countDown();
-          });
+          queryService.submit(
+              () -> {
+                try (SolrQueryRequest req = req(params)) {
+                  core.execute(defaultHandler, req, new SolrQueryResponse());
+                }
+                atLeastOnceCompleted.countDown();
+              });
         }
 
         queryService.shutdown(); // No more requests will be queued up
         atLeastOnceCompleted.await(); // Wait for the first batch of queries to complete
-        assertTrue(queryService.awaitTermination(1, TimeUnit.SECONDS)); // All queries after should be very fast
+        assertTrue(
+            queryService.awaitTermination(
+                1, TimeUnit.SECONDS)); // All queries after should be very fast
 
-        assertEquals("Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
+        assertEquals(
+            "Create only one DocSet outside of cache", 1, TestInjection.countDocSetDelays.get());
       }
       TestInjection.countDocSetDelays.set(0);
     }
@@ -422,30 +472,60 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   @Test
   public void testRangeQueryEndpointTO() throws Exception {
-    assertEquals("[to TO to]", QParser.getParser("[to TO to]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO to]", QParser.getParser("[to TO TO]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO to]", QParser.getParser("[TO TO to]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO to]", QParser.getParser("[TO TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[to TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[to TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[TO TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[TO TO TO]", req("df", "text")).getQuery().toString("text"));
 
-    assertEquals("[to TO to]", QParser.getParser("[\"TO\" TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO to]", QParser.getParser("[\"TO\" TO TO]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO to]", QParser.getParser("[TO TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[\"TO\" TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[\"TO\" TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO to]",
+        QParser.getParser("[TO TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
 
-    assertEquals("[to TO xx]", QParser.getParser("[to TO xx]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO xx]", QParser.getParser("[\"TO\" TO xx]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[to TO xx]", QParser.getParser("[TO TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO xx]",
+        QParser.getParser("[to TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO xx]",
+        QParser.getParser("[\"TO\" TO xx]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[to TO xx]",
+        QParser.getParser("[TO TO xx]", req("df", "text")).getQuery().toString("text"));
 
-    assertEquals("[xx TO to]", QParser.getParser("[xx TO to]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[xx TO to]", QParser.getParser("[xx TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[xx TO to]", QParser.getParser("[xx TO TO]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[xx TO to]",
+        QParser.getParser("[xx TO to]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[xx TO to]",
+        QParser.getParser("[xx TO \"TO\"]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[xx TO to]",
+        QParser.getParser("[xx TO TO]", req("df", "text")).getQuery().toString("text"));
   }
 
   @Test
   public void testRangeQueryRequiresTO() throws Exception {
-    assertEquals("{a TO b}", QParser.getParser("{A TO B}", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[a TO b}", QParser.getParser("[A TO B}", req("df", "text")).getQuery().toString("text"));
-    assertEquals("{a TO b]", QParser.getParser("{A TO B]", req("df", "text")).getQuery().toString("text"));
-    assertEquals("[a TO b]", QParser.getParser("[A TO B]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "{a TO b}", QParser.getParser("{A TO B}", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[a TO b}", QParser.getParser("[A TO B}", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "{a TO b]", QParser.getParser("{A TO B]", req("df", "text")).getQuery().toString("text"));
+    assertEquals(
+        "[a TO b]", QParser.getParser("[A TO B]", req("df", "text")).getQuery().toString("text"));
 
     // " TO " is required between range endpoints
     expectThrows(SyntaxError.class, () -> QParser.getParser("{A B}", req("df", "text")).getQuery());
@@ -453,47 +533,140 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     expectThrows(SyntaxError.class, () -> QParser.getParser("{A B]", req("df", "text")).getQuery());
     expectThrows(SyntaxError.class, () -> QParser.getParser("[A B]", req("df", "text")).getQuery());
 
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{TO B]", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[TO B]", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("{TO B}", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("[TO B}", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("{TO B]", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("[TO B]", req("df", "text")).getQuery());
 
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO}", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("{A TO]", req("df", "text")).getQuery());
-    expectThrows(SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("{A TO}", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("[A TO}", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("{A TO]", req("df", "text")).getQuery());
+    expectThrows(
+        SyntaxError.class, () -> QParser.getParser("[A TO]", req("df", "text")).getQuery());
   }
 
   @Test
   public void testCompareTypesRandomRangeQueries() throws Exception {
     int cardinality = 10000;
-    Map<NumberType,String[]> types = new HashMap<>(); //single and multivalued field types
-    Map<NumberType,String[]> typesMv = new HashMap<>(); // multivalued field types only
-    types.put(NumberType.INTEGER, new String[]{"ti", "ti_dv", "ti_ni_dv", "i_p", "i_ni_p", "i_ndv_p", "tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
-    types.put(NumberType.LONG, new String[]{"tl", "tl_dv", "tl_ni_dv", "l_p", "l_ni_p", "l_ndv_p", "tls", "tls_dv", "tls_ni_dv", "ls_p", "ls_ni_p", "ls_ndv_p"});
-    types.put(NumberType.FLOAT, new String[]{"tf", "tf_dv", "tf_ni_dv", "f_p", "f_ni_p", "f_ndv_p", "tfs", "tfs_dv", "tfs_ni_dv", "fs_p", "fs_ni_p", "fs_ndv_p"});
-    types.put(NumberType.DOUBLE, new String[]{"td", "td_dv", "td_ni_dv", "d_p", "d_ni_p", "d_ndv_p", "tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
-    types.put(NumberType.DATE, new String[]{"tdt", "tdt_dv", "tdt_ni_dv", "dt_p", "dt_ni_p", "dt_ndv_p", "tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
-    typesMv.put(NumberType.INTEGER, new String[]{"tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
-    typesMv.put(NumberType.LONG, new String[]{"tls", "tls_dv", "tls_ni_dv", "ls_p", "ls_ni_p", "ls_ndv_p"});
-    typesMv.put(NumberType.FLOAT, new String[]{"tfs", "tfs_dv", "tfs_ni_dv", "fs_p", "fs_ni_p", "fs_ndv_p"});
-    typesMv.put(NumberType.DOUBLE, new String[]{"tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
-    typesMv.put(NumberType.DATE, new String[]{"tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
+    Map<NumberType, String[]> types = new HashMap<>(); // single and multivalued field types
+    Map<NumberType, String[]> typesMv = new HashMap<>(); // multivalued field types only
+    types.put(
+        NumberType.INTEGER,
+        new String[] {
+          "ti",
+          "ti_dv",
+          "ti_ni_dv",
+          "i_p",
+          "i_ni_p",
+          "i_ndv_p",
+          "tis",
+          "tis_dv",
+          "tis_ni_dv",
+          "is_p",
+          "is_ni_p",
+          "is_ndv_p"
+        });
+    types.put(
+        NumberType.LONG,
+        new String[] {
+          "tl",
+          "tl_dv",
+          "tl_ni_dv",
+          "l_p",
+          "l_ni_p",
+          "l_ndv_p",
+          "tls",
+          "tls_dv",
+          "tls_ni_dv",
+          "ls_p",
+          "ls_ni_p",
+          "ls_ndv_p"
+        });
+    types.put(
+        NumberType.FLOAT,
+        new String[] {
+          "tf",
+          "tf_dv",
+          "tf_ni_dv",
+          "f_p",
+          "f_ni_p",
+          "f_ndv_p",
+          "tfs",
+          "tfs_dv",
+          "tfs_ni_dv",
+          "fs_p",
+          "fs_ni_p",
+          "fs_ndv_p"
+        });
+    types.put(
+        NumberType.DOUBLE,
+        new String[] {
+          "td",
+          "td_dv",
+          "td_ni_dv",
+          "d_p",
+          "d_ni_p",
+          "d_ndv_p",
+          "tds",
+          "tds_dv",
+          "tds_ni_dv",
+          "ds_p",
+          "ds_ni_p",
+          "ds_ndv_p"
+        });
+    types.put(
+        NumberType.DATE,
+        new String[] {
+          "tdt",
+          "tdt_dv",
+          "tdt_ni_dv",
+          "dt_p",
+          "dt_ni_p",
+          "dt_ndv_p",
+          "tdts",
+          "tdts_dv",
+          "tdts_ni_dv",
+          "dts_p",
+          "dts_ni_p",
+          "dts_ndv_p"
+        });
+    typesMv.put(
+        NumberType.INTEGER,
+        new String[] {"tis", "tis_dv", "tis_ni_dv", "is_p", "is_ni_p", "is_ndv_p"});
+    typesMv.put(
+        NumberType.LONG,
+        new String[] {"tls", "tls_dv", "tls_ni_dv", "ls_p", "ls_ni_p", "ls_ndv_p"});
+    typesMv.put(
+        NumberType.FLOAT,
+        new String[] {"tfs", "tfs_dv", "tfs_ni_dv", "fs_p", "fs_ni_p", "fs_ndv_p"});
+    typesMv.put(
+        NumberType.DOUBLE,
+        new String[] {"tds", "tds_dv", "tds_ni_dv", "ds_p", "ds_ni_p", "ds_ndv_p"});
+    typesMv.put(
+        NumberType.DATE,
+        new String[] {"tdts", "tdts_dv", "tdts_ni_dv", "dts_p", "dts_ni_p", "dts_ndv_p"});
 
     for (int i = 0; i < atLeast(500); i++) {
       if (random().nextInt(50) == 0) {
-        //have some empty docs
+        // have some empty docs
         assertU(adoc("id", String.valueOf(i)));
         continue;
       }
 
       if (random().nextInt(100) == 0 && i > 0) {
-        //delete some docs
+        // delete some docs
         assertU(delI(String.valueOf(i - 1)));
       }
       SolrInputDocument document = new SolrInputDocument();
       document.setField("id", i);
-      for (Map.Entry<NumberType,String[]> entry:types.entrySet()) {
+      for (Map.Entry<NumberType, String[]> entry : types.entrySet()) {
         NumberType type = entry.getKey();
         String val = null;
         List<String> vals = null;
@@ -520,15 +693,14 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
             break;
           default:
             throw new AssertionError();
-
         }
         // SingleValue
-        for (String fieldSuffix:entry.getValue()) {
+        for (String fieldSuffix : entry.getValue()) {
           document.setField("field_sv_" + fieldSuffix, val);
         }
         //  MultiValue
-        for (String fieldSuffix:typesMv.get(type)) {
-          for (String value:vals) {
+        for (String fieldSuffix : typesMv.get(type)) {
+          for (String value : vals) {
             document.addField("field_mv_" + fieldSuffix, value);
           }
         }
@@ -552,22 +724,44 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   private void doTestQuery(int cardinality, boolean mv, String[] types) throws Exception {
-    String[] startOptions = new String[]{"{", "["};
-    String[] endOptions = new String[]{"}", "]"};
+    String[] startOptions = new String[] {"{", "["};
+    String[] endOptions = new String[] {"}", "]"};
     String[] qRange = getRandomRange(cardinality, types[0]);
     String start = pickRandom(startOptions);
     String end = pickRandom(endOptions);
     long expectedHits = doRangeQuery(mv, start, end, types[0], qRange);
     for (int i = 1; i < types.length; i++) {
-      assertEquals("Unexpected results from query when comparing " + types[0] + " with " + types[i] + " and query: " +
-          start + qRange[0] + " TO " + qRange[1] + end + "\n", 
-          expectedHits, doRangeQuery(mv, start, end, types[i], qRange));
+      assertEquals(
+          "Unexpected results from query when comparing "
+              + types[0]
+              + " with "
+              + types[i]
+              + " and query: "
+              + start
+              + qRange[0]
+              + " TO "
+              + qRange[1]
+              + end
+              + "\n",
+          expectedHits,
+          doRangeQuery(mv, start, end, types[i], qRange));
     }
   }
 
-  private long doRangeQuery(boolean mv, String start, String end, String field, String[] qRange) throws Exception {
+  private long doRangeQuery(boolean mv, String start, String end, String field, String[] qRange)
+      throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("q", "field_" + (mv?"mv_":"sv_") + field + ":" + start + qRange[0] + " TO " + qRange[1] + end);
+    params.set(
+        "q",
+        "field_"
+            + (mv ? "mv_" : "sv_")
+            + field
+            + ":"
+            + start
+            + qRange[0]
+            + " TO "
+            + qRange[1]
+            + end);
     try (SolrQueryRequest req = req(params)) {
       return (long) h.queryAndResponse("", req).getToLog().get("hits");
     }
@@ -577,7 +771,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     Number[] values = new Number[2];
     FieldType ft = h.getCore().getLatestSchema().getField("field_" + fieldName).getType();
     if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
+      assertTrue(ft instanceof StrField);
       values[0] = randomInt(max);
       values[1] = randomInt(max);
       Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
@@ -605,9 +799,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
           break;
         default:
           throw new AssertionError("Unexpected number type");
-
       }
-      if (random().nextInt(100) >= 1) {// sometimes don't sort the values. Should result in 0 hits
+      if (random().nextInt(100) >= 1) { // sometimes don't sort the values. Should result in 0 hits
         Arrays.sort(values);
       }
     }
@@ -633,7 +826,6 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     return stringValues;
   }
 
-
   // Helper methods
   private String randomDate(int cardinality) {
     return dateFormat.format(new Date(randomMs(cardinality)));
@@ -641,7 +833,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   private List<String> getRandomDates(int numValues, int cardinality) {
     List<String> vals = new ArrayList<>(numValues);
-    for (int i = 0; i < numValues;i++) {
+    for (int i = 0; i < numValues; i++) {
       vals.add(randomDate(cardinality));
     }
     return vals;
@@ -649,31 +841,31 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   private List<Double> getRandomDoubles(int numValues, int cardinality) {
     List<Double> vals = new ArrayList<>(numValues);
-    for (int i = 0; i < numValues;i++) {
+    for (int i = 0; i < numValues; i++) {
       vals.add(randomDouble(cardinality));
     }
     return vals;
   }
-  
+
   private List<Float> getRandomFloats(int numValues, int cardinality) {
     List<Float> vals = new ArrayList<>(numValues);
-    for (int i = 0; i < numValues;i++) {
+    for (int i = 0; i < numValues; i++) {
       vals.add(randomFloat(cardinality));
     }
     return vals;
   }
-  
+
   private List<Integer> getRandomInts(int numValues, int cardinality) {
     List<Integer> vals = new ArrayList<>(numValues);
-    for (int i = 0; i < numValues;i++) {
+    for (int i = 0; i < numValues; i++) {
       vals.add(randomInt(cardinality));
     }
     return vals;
   }
-  
+
   private List<Long> getRandomLongs(int numValues, int cardinality) {
     List<Long> vals = new ArrayList<>(numValues);
-    for (int i = 0; i < numValues;i++) {
+    for (int i = 0; i < numValues; i++) {
       vals.add(randomLong(cardinality));
     }
     return vals;
@@ -681,14 +873,15 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   <T> List<String> toStringList(List<T> input) {
     List<String> newList = new ArrayList<>(input.size());
-    for (T element:input) {
+    for (T element : input) {
       newList.add(String.valueOf(element));
     }
     return newList;
   }
 
   long randomMs(int cardinality) {
-    return DATE_START_TIME_RANDOM_TEST + random().nextInt(cardinality) * 1000 * (random().nextBoolean()?1:-1);
+    return DATE_START_TIME_RANDOM_TEST
+        + random().nextInt(cardinality) * 1000 * (random().nextBoolean() ? 1 : -1);
   }
 
   double randomDouble(int cardinality) {
@@ -707,7 +900,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     while (d.isNaN()) {
       d = random().nextDouble();
     }
-    return d * cardinality * (random().nextBoolean()?1:-1);
+    return d * cardinality * (random().nextBoolean() ? 1 : -1);
   }
 
   float randomFloat(int cardinality) {
@@ -726,7 +919,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     while (f.isNaN()) {
       f = random().nextFloat();
     }
-    return f * cardinality * (random().nextBoolean()?1:-1);
+    return f * cardinality * (random().nextBoolean() ? 1 : -1);
   }
 
   int randomInt(int cardinality) {
@@ -735,7 +928,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       if (num == 0) return Integer.MAX_VALUE;
       if (num == 1) return Integer.MIN_VALUE;
     }
-    return random().nextInt(cardinality) * (random().nextBoolean()?1:-1);
+    return random().nextInt(cardinality) * (random().nextBoolean() ? 1 : -1);
   }
 
   long randomLong(int cardinality) {
@@ -764,8 +957,8 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     return true;
   }
 
-  private static <X extends Comparable<? super X>,Y> X randomKey(Map<X,Y> map) {
-    assert ! map.isEmpty();
+  private static <X extends Comparable<? super X>, Y> X randomKey(Map<X, Y> map) {
+    assertFalse(map.isEmpty());
     List<X> sortedKeys = new ArrayList<>(map.keySet());
     Collections.sort(sortedKeys);
     return sortedKeys.get(random().nextInt(sortedKeys.size()));

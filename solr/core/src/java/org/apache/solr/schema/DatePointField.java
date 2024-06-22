@@ -17,14 +17,20 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
-
+import java.util.Map;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -32,8 +38,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
-import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
@@ -41,60 +47,53 @@ import org.apache.solr.util.DateMathParser;
 
 /**
  * FieldType that can represent any Date/Time with millisecond precision.
- * <p>
- * Date Format for the XML, incoming and outgoing:
- * </p>
- * <blockquote>
- * A date field shall be of the form 1995-12-31T23:59:59Z
- * The trailing "Z" designates UTC time and is mandatory
- * (See below for an explanation of UTC).
- * Optional fractional seconds are allowed, as long as they do not end
- * in a trailing 0 (but any precision beyond milliseconds will be ignored).
- * All other parts are mandatory.
- * </blockquote>
- * <p>
- * This format was derived to be standards compliant (ISO 8601) and is a more
- * restricted form of the
- * <a href="http://www.w3.org/TR/xmlschema-2/#dateTime-canonical-representation">canonical
- * representation of dateTime</a> from XML schema part 2.  Examples...
- * </p>
- * <ul>
- *   <li>1995-12-31T23:59:59Z</li>
- *   <li>1995-12-31T23:59:59.9Z</li>
- *   <li>1995-12-31T23:59:59.99Z</li>
- *   <li>1995-12-31T23:59:59.999Z</li>
- * </ul>
- * <p>
- * Note that <code>DatePointField</code> is lenient with regards to parsing fractional
- * seconds that end in trailing zeros and will ensure that those values
- * are indexed in the correct canonical format.
- * </p>
- * <p>
- * This FieldType also supports incoming "Date Math" strings for computing
- * values by adding/rounding internals of time relative either an explicit
- * datetime (in the format specified above) or the literal string "NOW",
- * ie: "NOW+1YEAR", "NOW/DAY", "1995-12-31T23:59:59.999Z+5MINUTES", etc...
- * -- see {@link DateMathParser} for more examples.
- * </p>
- * <p>
- * <b>NOTE:</b> Although it is possible to configure a <code>DatePointField</code>
- * instance with a default value of "<code>NOW</code>" to compute a timestamp
- * of when the document was indexed, this is not advisable when using SolrCloud
- * since each replica of the document may compute a slightly different value.
- * {@link TimestampUpdateProcessorFactory} is recommended instead.
- * </p>
  *
- * <p>
- * Explanation of "UTC"...
- * </p>
+ * <p>Date Format for the XML, incoming and outgoing:
+ *
  * <blockquote>
- * "In 1970 the Coordinated Universal Time system was devised by an
- * international advisory group of technical experts within the International
- * Telecommunication Union (ITU).  The ITU felt it was best to designate a
- * single abbreviation for use in all languages in order to minimize
- * confusion.  Since unanimous agreement could not be achieved on using
- * either the English word order, CUT, or the French word order, TUC, the
- * acronym UTC was chosen as a compromise."
+ *
+ * A date field shall be of the form 1995-12-31T23:59:59Z The trailing "Z" designates UTC time and
+ * is mandatory (See below for an explanation of UTC). Optional fractional seconds are allowed, as
+ * long as they do not end in a trailing 0 (but any precision beyond milliseconds will be ignored).
+ * All other parts are mandatory.
+ *
+ * </blockquote>
+ *
+ * <p>This format was derived to be standards compliant (ISO 8601) and is a more restricted form of
+ * the <a href="http://www.w3.org/TR/xmlschema-2/#dateTime-canonical-representation">canonical
+ * representation of dateTime</a> from XML schema part 2. Examples...
+ *
+ * <ul>
+ *   <li>1995-12-31T23:59:59Z
+ *   <li>1995-12-31T23:59:59.9Z
+ *   <li>1995-12-31T23:59:59.99Z
+ *   <li>1995-12-31T23:59:59.999Z
+ * </ul>
+ *
+ * <p>Note that <code>DatePointField</code> is lenient with regards to parsing fractional seconds
+ * that end in trailing zeros and will ensure that those values are indexed in the correct canonical
+ * format.
+ *
+ * <p>This FieldType also supports incoming "Date Math" strings for computing values by
+ * adding/rounding internals of time relative either an explicit datetime (in the format specified
+ * above) or the literal string "NOW", ie: "NOW+1YEAR", "NOW/DAY",
+ * "1995-12-31T23:59:59.999Z+5MINUTES", etc... -- see {@link DateMathParser} for more examples.
+ *
+ * <p><b>NOTE:</b> Although it is possible to configure a <code>DatePointField</code> instance with
+ * a default value of "<code>NOW</code>" to compute a timestamp of when the document was indexed,
+ * this is not advisable when using SolrCloud since each replica of the document may compute a
+ * slightly different value. {@link TimestampUpdateProcessorFactory} is recommended instead.
+ *
+ * <p>Explanation of "UTC"...
+ *
+ * <blockquote>
+ *
+ * "In 1970 the Coordinated Universal Time system was devised by an international advisory group of
+ * technical experts within the International Telecommunication Union (ITU). The ITU felt it was
+ * best to designate a single abbreviation for use in all languages in order to minimize confusion.
+ * Since unanimous agreement could not be achieved on using either the English word order, CUT, or
+ * the French word order, TUC, the acronym UTC was chosen as a compromise."
+ *
  * </blockquote>
  *
  * @see PointField
@@ -105,7 +104,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
     type = NumberType.DATE;
   }
 
-
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof CharSequence) {
@@ -115,7 +113,13 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
-  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  public Query getPointRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
+      boolean maxInclusive) {
     long actualMin, actualMax;
     if (min == null) {
       actualMin = Long.MIN_VALUE;
@@ -155,7 +159,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(field.getName(), DateMathParser.parseMath(null, externalVal).getTime());
+    return LongPoint.newExactQuery(
+        field.getName(), DateMathParser.parseMath(null, externalVal).getTime());
   }
 
   @Override
@@ -166,16 +171,21 @@ public class DatePointField extends PointField implements DateValueFieldType {
     }
     long[] values = new long[externalVals.size()];
     int i = 0;
-    for (String val:externalVals) {
+    for (String val : externalVals) {
       values[i] = DateMathParser.parseMath(null, val).getTime();
       i++;
     }
-    return LongPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return LongField.newSetQuery(field.getName(), values);
+    } else {
+      return LongPoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override
   protected String indexedToReadable(BytesRef indexedForm) {
-    return Instant.ofEpochMilli(LongPoint.decodeDimension(indexedForm.bytes, indexedForm.offset)).toString();
+    return Instant.ofEpochMilli(LongPoint.decodeDimension(indexedForm.bytes, indexedForm.offset))
+        .toString();
   }
 
   @Override
@@ -208,9 +218,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    Date date = (value instanceof Date)
-        ? ((Date)value)
-        : DateMathParser.parseMath(null, value.toString());
+    Date date =
+        (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
     return new LongPoint(field.getName(), date.getTime());
   }
 
@@ -231,11 +240,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
     }
 
     @Override
-    protected MutableValueLong newMutableValueLong() {
-      return new MutableValueDate();
-    }
-
-    @Override
     public Date longToObject(long val) {
       return new Date(val);
     }
@@ -249,6 +253,84 @@ public class DatePointField extends PointField implements DateValueFieldType {
     public long externalToLong(String extVal) {
       return DateMathParser.parseMath(null, extVal).getTime();
     }
+
+    // Override this whole method, everything is copied from LongFieldSource except:
+    // -- externalToLong uses DPFS.externalToLong
+    // -- ValueFiller is changed to have MutableValueDate
+    @Override
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
+      final NumericDocValues arr = getNumericDocValues(context, readerContext);
+
+      return new LongDocValues(this) {
+        int lastDocID;
+
+        @Override
+        public long longVal(int doc) throws IOException {
+          if (exists(doc)) {
+            return arr.longValue();
+          } else {
+            return 0;
+          }
+        }
+
+        @Override
+        public boolean exists(int doc) throws IOException {
+          if (doc < lastDocID) {
+            throw new IllegalArgumentException(
+                "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+          }
+          lastDocID = doc;
+          int curDocID = arr.docID();
+          if (doc > curDocID) {
+            curDocID = arr.advance(doc);
+          }
+          return doc == curDocID;
+        }
+
+        @Override
+        public Object objectVal(int doc) throws IOException {
+          if (exists(doc)) {
+            long value = longVal(doc);
+            return longToObject(value);
+          } else {
+            return null;
+          }
+        }
+
+        @Override
+        public String strVal(int doc) throws IOException {
+          if (exists(doc)) {
+            long value = longVal(doc);
+            return longToString(value);
+          } else {
+            return null;
+          }
+        }
+
+        @Override
+        protected long externalToLong(String extVal) {
+          return DatePointFieldSource.this.externalToLong(extVal);
+        }
+
+        @Override
+        public ValueFiller getValueFiller() {
+          return new ValueFiller() {
+            private final MutableValueDate mval = new MutableValueDate();
+
+            @Override
+            public MutableValue getValue() {
+              return mval;
+            }
+
+            @Override
+            public void fillValue(int doc) throws IOException {
+              mval.value = longVal(doc);
+              mval.exists = exists(doc);
+            }
+          };
+        }
+      };
+    }
   }
 }
-

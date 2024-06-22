@@ -20,8 +20,6 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -38,7 +36,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,105 +60,147 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
     log.info(
         "Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}, onlyIfLeaderActive: {}",
-        coreNodeName, waitForState, checkLive, onlyIfLeader, onlyIfLeaderActive);
+        coreNodeName,
+        waitForState,
+        checkLive,
+        onlyIfLeader,
+        onlyIfLeaderActive);
 
     String collectionName;
     CloudDescriptor cloudDescriptor;
     try (SolrCore core = coreContainer.getCore(cname)) {
-      if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+      if (core == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
       collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-      cloudDescriptor = core.getCoreDescriptor()
-          .getCloudDescriptor();
+      cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
     }
-    AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collectionName, conflictWaitMs, TimeUnit.MILLISECONDS, (n, c) -> {
-        if (c == null)
-          return false;
+      coreContainer
+          .getZkController()
+          .getZkStateReader()
+          .waitForState(
+              collectionName,
+              conflictWaitMs,
+              TimeUnit.MILLISECONDS,
+              (n, c) -> {
+                if (c == null) return false;
 
-        try (SolrCore core = coreContainer.getCore(cname)) {
-          if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
-          if (onlyIfLeader != null && onlyIfLeader) {
-            if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "We are not the leader");
-            }
-          }
-        }
+                try (SolrCore core = coreContainer.getCore(cname)) {
+                  if (core == null)
+                    throw new SolrException(
+                        SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
+                  if (onlyIfLeader != null && onlyIfLeader) {
+                    if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+                      throw new SolrException(
+                          SolrException.ErrorCode.BAD_REQUEST, "We are not the leader");
+                    }
+                  }
+                }
 
-        // wait until we are sure the recovering node is ready
-        // to accept updates
-        Replica.State state = null;
-        boolean live = false;
-        Slice slice = c.getSlice(cloudDescriptor.getShardId());
-        if (slice != null) {
-          final Replica replica = slice.getReplicasMap().get(coreNodeName);
-          if (replica != null) {
-            state = replica.getState();
-            live = n.contains(nodeName);
+                // wait until we are sure the recovering node is ready
+                // to accept updates
+                Replica.State state = null;
+                boolean live = false;
+                Slice slice = c.getSlice(cloudDescriptor.getShardId());
+                if (slice != null) {
+                  final Replica replica = slice.getReplicasMap().get(coreNodeName);
+                  if (replica != null) {
+                    state = replica.getState();
+                    live = n.contains(nodeName);
 
-            final Replica.State localState = cloudDescriptor.getLastPublished();
+                    final Replica.State localState = cloudDescriptor.getLastPublished();
 
-            // TODO: This is funky but I've seen this in testing where the replica asks the
-            // leader to be in recovery? Need to track down how that happens ... in the meantime,
-            // this is a safeguard
-            boolean leaderDoesNotNeedRecovery = (onlyIfLeader != null &&
-                onlyIfLeader &&
-                cname.equals(replica.getStr("core")) &&
-                waitForState == Replica.State.RECOVERING &&
-                localState == Replica.State.ACTIVE &&
-                state == Replica.State.ACTIVE);
+                    // TODO: This is funky but I've seen this in testing where the replica asks the
+                    // leader to be in recovery? Need to track down how that happens ... in the
+                    // meantime, this is a safeguard
+                    boolean leaderDoesNotNeedRecovery =
+                        (onlyIfLeader != null
+                            && onlyIfLeader
+                            && cname.equals(replica.getStr("core"))
+                            && waitForState == Replica.State.RECOVERING
+                            && localState == Replica.State.ACTIVE
+                            && state == Replica.State.ACTIVE);
 
-            if (leaderDoesNotNeedRecovery) {
-              log.warn("Leader {} ignoring request to be in the recovering state because it is live and active.", cname);
-            }
+                    if (leaderDoesNotNeedRecovery) {
+                      log.warn(
+                          "Leader {} ignoring request to be in the recovering state because it is live and active.",
+                          cname);
+                    }
 
-            ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
-            // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-            if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName)
-                && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
-              // The replica changed it term, then published itself as RECOVERING.
-              // This core already see replica as RECOVERING
-              // so it is guarantees that a live-fetch will be enough for this core to see max term published
-              shardTerms.refreshTerms();
-            }
+                    ZkShardTerms shardTerms =
+                        coreContainer
+                            .getZkController()
+                            .getShardTerms(collectionName, slice.getName());
+                    // if the replica is waiting for leader to see recovery state, the leader should
+                    // refresh its terms
+                    if (waitForState == Replica.State.RECOVERING
+                        && shardTerms.registered(coreNodeName)
+                        && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
+                      // The replica changed it term, then published itself as RECOVERING. This core
+                      // already see replica as RECOVERING so it is guarantees that a live-fetch
+                      // will be enough for this core to see max term published
+                      shardTerms.refreshTerms();
+                    }
 
-            boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive
-                && localState != Replica.State.ACTIVE;
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "In WaitForState(" + waitForState + "): collection=" + collectionName + ", shard=" + slice.getName() +
-                      ", thisCore=" + cname + ", leaderDoesNotNeedRecovery=" + leaderDoesNotNeedRecovery +
-                      ", isLeader? " + cloudDescriptor.isLeader() +
-                      ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state
-                      + ", localState=" + localState + ", nodeName=" + nodeName +
-                      ", coreNodeName=" + coreNodeName + ", onlyIfActiveCheckResult=" + onlyIfActiveCheckResult
-                      + ", nodeProps: " + replica); //nowarn
-            }
-            if (!onlyIfActiveCheckResult && replica != null && (state == waitForState || leaderDoesNotNeedRecovery)) {
-              if (checkLive == null) {
-                return true;
-              } else if (checkLive && live) {
-                return true;
-              } else if (!checkLive && !live) {
-                return true;
-              }
-            }
-          }
-        }
+                    boolean onlyIfActiveCheckResult =
+                        onlyIfLeaderActive != null
+                            && onlyIfLeaderActive
+                            && localState != Replica.State.ACTIVE;
+                    if (log.isInfoEnabled()) {
+                      log.info(
+                          "In WaitForState("
+                              + waitForState
+                              + "): collection="
+                              + collectionName
+                              + ", shard="
+                              + slice.getName()
+                              + ", thisCore="
+                              + cname
+                              + ", leaderDoesNotNeedRecovery="
+                              + leaderDoesNotNeedRecovery
+                              + ", isLeader? "
+                              + cloudDescriptor.isLeader()
+                              + ", live="
+                              + live
+                              + ", checkLive="
+                              + checkLive
+                              + ", currentState="
+                              + state
+                              + ", localState="
+                              + localState
+                              + ", nodeName="
+                              + nodeName
+                              + ", coreNodeName="
+                              + coreNodeName
+                              + ", onlyIfActiveCheckResult="
+                              + onlyIfActiveCheckResult
+                              + ", nodeProps: "
+                              + replica); // nowarn
+                    }
+                    if (!onlyIfActiveCheckResult
+                        && replica != null
+                        && (state == waitForState || leaderDoesNotNeedRecovery)) {
+                      if (checkLive == null) {
+                        return true;
+                      } else if (checkLive && live) {
+                        return true;
+                      } else if (!checkLive && !live) {
+                        return true;
+                      }
+                    }
+                  }
+                }
 
-        if (coreContainer.isShutDown()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Solr is shutting down");
-        }
+                if (coreContainer.isShutDown()) {
+                  throw new SolrException(
+                      SolrException.ErrorCode.BAD_REQUEST, "Solr is shutting down");
+                }
 
-        return false;
-      });
+                return false;
+              });
     } catch (TimeoutException | InterruptedException e) {
-      String error = errorMessage.get();
-      if (error == null)
-        error = "Timeout waiting for collection state.";
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+      throw new NotInClusterStateException(
+          ErrorCode.SERVER_ERROR, "Timeout waiting for collection state.");
     }
-
   }
 }

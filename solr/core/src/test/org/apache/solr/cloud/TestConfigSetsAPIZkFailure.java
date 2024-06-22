@@ -16,20 +16,21 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
+import static org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.jute.InputArchive;
 import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
@@ -42,6 +43,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.Watcher;
@@ -60,12 +62,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE;
-
 /**
- * Test the ConfigSets API under ZK failure.  In particular,
- * if create fails, ensure proper cleanup occurs so we aren't
- * left with a partially created ConfigSet.
+ * Test the ConfigSets API under ZK failure. In particular, if create fails, ensure proper cleanup
+ * occurs, so we aren't left with a partially created ConfigSet.
  */
 public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   private MiniSolrCloudCluster solrCluster;
@@ -81,9 +80,16 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     final Path zkDir = testDir.resolve("zookeeper/server1/data");
     zkTestServer = new ZkTestServer(zkDir);
     zkTestServer.run();
-    zkTestServer.setZKDatabase(new FailureDuringCopyZKDatabase(zkTestServer.getZKDatabase(), zkTestServer));
-    solrCluster = new MiniSolrCloudCluster(1, testDir,
-        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML, buildJettyConfig("/solr"), zkTestServer, true);
+    zkTestServer.setZKDatabase(
+        new FailureDuringCopyZKDatabase(zkTestServer.getZKDatabase(), zkTestServer));
+    solrCluster =
+        new MiniSolrCloudCluster(
+            1,
+            testDir,
+            MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
+            JettyConfig.builder().build(),
+            zkTestServer,
+            true);
   }
 
   @Override
@@ -104,20 +110,26 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   public void testCreateZkFailure() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final ConfigSetService configSetService = solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
+    final ConfigSetService configSetService =
+        solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 
-    final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
+    final Map<String, String> oldProps = Map.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
 
-    SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(solrCluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     try {
 
       assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
 
       Create create = new Create();
       create.setBaseConfigSetName(BASE_CONFIGSET_NAME).setConfigSetName(CONFIGSET_NAME);
-      RemoteSolrException se = expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
+      RemoteSolrException se =
+          expectThrows(RemoteSolrException.class, () -> create.process(solrClient));
       // partial creation should have been cleaned up
       assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
       assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, se.code());
@@ -128,17 +140,25 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     solrClient.close();
   }
 
-  private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps) throws Exception {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
-    tmpConfigDir.deleteOnExit();
-    FileUtils.copyDirectory(configDir, tmpConfigDir);
+  private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
+      throws Exception {
+    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path tmpConfigDir = createTempDir();
+    tmpConfigDir.toFile().deleteOnExit();
+    PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
-      FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
-          getConfigSetProps(oldProps), StandardCharsets.UTF_8);
+      Files.writeString(
+          tmpConfigDir.resolve(ConfigSetProperties.DEFAULT_FILENAME),
+          getConfigSetProps(oldProps),
+          StandardCharsets.UTF_8);
     }
-    solrCluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
-    solrCluster.getZkClient().setData("/configs/" + baseConfigSetName, "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8), true);
+    solrCluster.uploadConfigSet(tmpConfigDir, baseConfigSetName);
+    solrCluster
+        .getZkClient()
+        .setData(
+            "/configs/" + baseConfigSetName,
+            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8),
+            true);
   }
 
   private StringBuilder getConfigSetProps(Map<String, String> map) {
@@ -154,17 +174,19 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public byte[] getData(String path, Stat stat, Watcher watcher) throws KeeperException.NoNodeException {
+    public byte[] getData(String path, Stat stat, Watcher watcher)
+        throws KeeperException.NoNodeException {
       // we know we are doing a copy when we are getting data from the base config set and
       // the new config set (partially) exists
       String zkAddress = zkTestServer.getZkAddress();
-      String chroot = zkAddress.substring(zkAddress.lastIndexOf("/"));
+      String chroot = zkAddress.substring(zkAddress.lastIndexOf('/'));
       if (path.startsWith(chroot + CONFIGS_ZKNODE + "/" + BASE_CONFIGSET_NAME)
           && !path.contains(ConfigSetProperties.DEFAULT_FILENAME)) {
         List<String> children = null;
         try {
           children = getChildren(chroot + CONFIGS_ZKNODE + "/" + CONFIGSET_NAME, null, null);
-        } catch (KeeperException.NoNodeException e) {}
+        } catch (KeeperException.NoNodeException e) {
+        }
         if (children != null && children.size() > 0) {
           throw new RuntimeException("sample zookeeper error");
         }
@@ -277,7 +299,8 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public Stat statNode(String path, ServerCnxn serverCnxn) throws KeeperException.NoNodeException {
+    public Stat statNode(String path, ServerCnxn serverCnxn)
+        throws KeeperException.NoNodeException {
       return zkdb.statNode(path, serverCnxn);
     }
 
@@ -293,20 +316,28 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
     @Override
     public byte[] getData(String path, Stat stat, Watcher watcher)
-    throws KeeperException.NoNodeException {
+        throws KeeperException.NoNodeException {
       return zkdb.getData(path, stat, watcher);
     }
 
     @Override
-    public void setWatches(long relativeZxid, List<String> dataWatches,
-                           List<String> existWatches, List<String> childWatches,
-                           List<String> persistentWatches,
-                           List<String> persistentRecursiveWatches,
-                           Watcher watcher) {
-      zkdb.setWatches(relativeZxid, dataWatches, existWatches, childWatches,
-              persistentWatches, persistentRecursiveWatches, watcher);
-
-      }
+    public void setWatches(
+        long relativeZxid,
+        List<String> dataWatches,
+        List<String> existWatches,
+        List<String> childWatches,
+        List<String> persistentWatches,
+        List<String> persistentRecursiveWatches,
+        Watcher watcher) {
+      zkdb.setWatches(
+          relativeZxid,
+          dataWatches,
+          existWatches,
+          childWatches,
+          persistentWatches,
+          persistentRecursiveWatches,
+          watcher);
+    }
 
     @Override
     public List<ACL> getACL(String path, Stat stat) throws NoNodeException {
@@ -315,7 +346,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
     @Override
     public List<String> getChildren(String path, Stat stat, Watcher watcher)
-    throws KeeperException.NoNodeException {
+        throws KeeperException.NoNodeException {
       return zkdb.getChildren(path, stat, watcher);
     }
 
@@ -340,8 +371,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void serializeSnapshot(OutputArchive oa) throws IOException,
-    InterruptedException {
+    public void serializeSnapshot(OutputArchive oa) throws IOException, InterruptedException {
       zkdb.serializeSnapshot(oa);
     }
 
@@ -364,6 +394,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     public void close() throws IOException {
       zkdb.close();
     }
+
     @Override
     public int getTxnCount() {
       return zkdb.getTxnCount();
@@ -373,6 +404,5 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     public long getTxnSize() {
       return zkdb.getTxnSize();
     }
-
   }
 }

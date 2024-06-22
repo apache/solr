@@ -16,14 +16,14 @@
  */
 package org.apache.solr.logging.log4j2;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.base.Throwables;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,10 +45,10 @@ import org.apache.solr.logging.LoggerInfo;
 @SuppressForbidden(reason = "class is specific to log4j2")
 public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
-  private final static String LOG4J2_WATCHER_APPENDER = "Log4j2WatcherAppender";
+  private static final String LOG4J2_WATCHER_APPENDER = "Log4j2WatcherAppender";
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Appender extends AbstractAppender {
+  protected static class Log4j2Appender extends AbstractAppender {
 
     private Log4j2Watcher watcher;
     private ThresholdFilter filter;
@@ -61,6 +61,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
       this.threshold = threshold;
     }
 
+    @Override
     public void append(LogEvent logEvent) {
       watcher.add(logEvent, logEvent.getTimeMillis());
     }
@@ -78,17 +79,20 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   }
 
   @SuppressForbidden(reason = "class is specific to log4j2")
-  protected class Log4j2Info extends LoggerInfo {
-    final Level level;
-
-    Log4j2Info(String name, Level level) {
+  protected static class Log4j2Info extends LoggerInfo {
+    public Log4j2Info(String name, Level level, boolean isSet) {
       super(name);
-      this.level = level;
+      if (level != null) {
+        this.level = level.toString();
+      }
+      this.isSet = isSet;
     }
+
+    private final boolean isSet;
 
     @Override
     public String getLevel() {
-      return (level != null) ? level.toString() : null;
+      return (level != null) ? level : null;
     }
 
     @Override
@@ -98,7 +102,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
     @Override
     public boolean isSet() {
-      return (level != null) ? true : false;
+      return isSet;
     }
   }
 
@@ -114,14 +118,14 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   @Override
   public List<String> getAllLevels() {
     return Arrays.asList(
-      Level.ALL.toString(),
-      Level.TRACE.toString(),
-      Level.DEBUG.toString(),
-      Level.INFO.toString(),
-      Level.WARN.toString(),
-      Level.ERROR.toString(),
-      Level.FATAL.toString(),
-      Level.OFF.toString());
+        Level.ALL.toString(),
+        Level.TRACE.toString(),
+        Level.DEBUG.toString(),
+        Level.INFO.toString(),
+        Level.WARN.toString(),
+        Level.ERROR.toString(),
+        Level.FATAL.toString(),
+        Level.OFF.toString());
   }
 
   @Override
@@ -133,22 +137,21 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     LoggerConfig loggerConfig = getLoggerConfig(ctx, loggerName);
     assert loggerConfig != null;
     boolean madeChanges = false;
-    if (loggerName.equals(loggerConfig.getName()) || isRootLogger(loggerName)) {
-      if (level == null || "unset".equals(level) || "null".equals(level)) {
-        level = Level.OFF.toString();
-        loggerConfig.setLevel(Level.OFF);
-        madeChanges = true;
-      } else {
-        try {
-          loggerConfig.setLevel(Level.valueOf(level));
-          madeChanges = true;
-        } catch (IllegalArgumentException iae) {
-          log.error("{} is not a valid log level! Valid values are: {}", level, getAllLevels());
-        }
+
+    Level _level = null;
+    if (!(level == null || "unset".equals(level) || "null".equals(level))) {
+      try {
+        _level = Level.valueOf(level);
+      } catch (IllegalArgumentException iae) {
+        log.error("{} is not a valid log level! Valid values are: {}", level, getAllLevels());
       }
+    }
+    if (loggerName.equals(loggerConfig.getName()) || isRootLogger(loggerName)) {
+      loggerConfig.setLevel(_level);
+      madeChanges = true;
     } else {
-      //It doesn't have its own logger yet so let's create one
-      LoggerConfig explicitConfig = new LoggerConfig(loggerName, Level.valueOf(level), true);
+      // It doesn't have its own logger config yet so let's create one
+      LoggerConfig explicitConfig = new LoggerConfig(loggerName, _level, true);
       explicitConfig.setParent(loggerConfig);
       config.addLogger(loggerName, explicitConfig);
       madeChanges = true;
@@ -157,10 +160,9 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     if (madeChanges) {
       ctx.updateLoggers();
       if (log.isInfoEnabled()) {
-        log.info("Setting log level to '{}' for logger: {}", level, loggerName);
+        log.info("Setting log level to '{}' for logger: {}", _level, loggerName);
       }
     }
-
   }
 
   protected boolean isRootLogger(String loggerName) {
@@ -169,44 +171,62 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
   protected LoggerConfig getLoggerConfig(LoggerContext ctx, String loggerName) {
     Configuration config = ctx.getConfiguration();
-    return isRootLogger(loggerName) ? config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME)
-                                  : config.getLoggerConfig(loggerName);
+    return isRootLogger(loggerName)
+        ? config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME)
+        : config.getLoggerConfig(loggerName);
   }
 
   @Override
   public Collection<LoggerInfo> getAllLoggers() {
     Logger root = LogManager.getRootLogger();
-    LoggerContext ctx = (LoggerContext)LogManager.getContext(false);
-    Map<String,LoggerInfo> map = new HashMap<>(ctx.getLoggers().size());
+    LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    LoggerConfig rootConfig = ctx.getConfiguration().getRootLogger();
+    Map<String, LoggerInfo> map = new HashMap<>(ctx.getLoggers().size());
 
-    //First let's get the explicitly configured loggers
-    Map<String, LoggerConfig> loggers = ctx.getConfiguration().getLoggers();
-    for(Map.Entry<String, LoggerConfig> logger : loggers.entrySet()) {
-      String name = logger.getKey();
+    // First add the ROOT loger with the ROOT level
+    map.put(
+        LoggerInfo.ROOT_NAME,
+        new Log4j2Info(
+            LoggerInfo.ROOT_NAME, root.getLevel(), null != rootConfig.getExplicitLevel()));
+
+    // Next get the explicitly configured loggers
+    Map<String, LoggerConfig> configs = ctx.getConfiguration().getLoggers();
+    for (Map.Entry<String, LoggerConfig> config : configs.entrySet()) {
+      final String name = config.getKey();
+      final Logger logger = ctx.getLogger(name);
 
       if (logger == root || root.equals(logger) || isRootLogger(name) || "".equals(name)) {
         continue;
       }
-      map.put(name, new Log4j2Info(name, logger.getValue().getLevel()));
+
+      // NOTE: just because we have an explicit configuration, doesn't mean we have an explitly set
+      // level
+      // (Configuration might be for some other property, and level is still inherited)
+      map.putIfAbsent(
+          name,
+          new Log4j2Info(name, logger.getLevel(), null != config.getValue().getExplicitLevel()));
     }
 
-    for (org.apache.logging.log4j.core.Logger logger : ctx.getLoggers()) {
+    // Now add any "in use" loggers (that aren't already explicitly configured) and their parents
+    for (Logger logger : ctx.getLoggers()) {
       String name = logger.getName();
-      if (logger == root || root.equals(logger) || isRootLogger(name))
+
+      if (logger == root || root.equals(logger) || isRootLogger(name) || "".equals(name)) {
         continue;
+      }
 
-      map.put(name, new Log4j2Info(name, logger.getLevel()));
+      // If we didn't already see a LoggerConfig for these loggers, then their level is
+      // not (explicitly) set
+      map.putIfAbsent(name, new Log4j2Info(name, logger.getLevel(), false));
       while (true) {
-        int dot = name.lastIndexOf(".");
-        if (dot < 0)
-          break;
+        int dot = name.lastIndexOf('.');
+        if (dot < 0) break;
 
-          name = name.substring(0, dot);
-          if (!map.containsKey(name))
-            map.put(name, new Log4j2Info(name, null));
+        name = name.substring(0, dot);
+        map.putIfAbsent(name, new Log4j2Info(name, logger.getLevel(), false));
       }
     }
-    map.put(LoggerInfo.ROOT_NAME, new Log4j2Info(LoggerInfo.ROOT_NAME, root.getLevel()));
+
     return map.values();
   }
 
@@ -219,7 +239,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     LoggerConfig config = getLoggerConfig(ctx, LoggerInfo.ROOT_NAME);
     config.removeAppender(app.getName());
     config.addAppender(app, app.getThreshold(), app.getFilter());
-    ((LoggerContext)LogManager.getContext(false)).updateLoggers();
+    ((LoggerContext) LogManager.getContext(false)).updateLoggers();
     if (log.isInfoEnabled()) {
       log.info("Updated watcher threshold from {} to {} ", current, level);
     }
@@ -232,19 +252,20 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
   protected Log4j2Appender getAppender() {
     if (appender == null)
-      throw new IllegalStateException("No appenders configured! Must call registerListener(ListenerConfig) first.");
+      throw new IllegalStateException(
+          "No appenders configured! Must call registerListener(ListenerConfig) first.");
     return appender;
   }
 
   @Override
   public void registerListener(ListenerConfig cfg) {
-    if (history != null)
-      throw new IllegalStateException("History already registered");
+    if (history != null) throw new IllegalStateException("History already registered");
 
-    history = new CircularList<LogEvent>(cfg.size);
+    history = new CircularList<>(cfg.size);
 
     Level threshold = (cfg.threshold != null) ? Level.toLevel(cfg.threshold) : Level.WARN;
-    ThresholdFilter filter = ThresholdFilter.createFilter(threshold, Filter.Result.ACCEPT, Filter.Result.DENY);
+    ThresholdFilter filter =
+        ThresholdFilter.createFilter(threshold, Filter.Result.ACCEPT, Filter.Result.DENY);
 
     // If there's already an appender like this, remove it
     LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
@@ -254,16 +275,10 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
     config.removeAppender(appender.getName());
 
-    if (!appender.isStarted())
-      appender.start();
+    if (!appender.isStarted()) appender.start();
 
     config.addAppender(appender, threshold, filter);
     ctx.updateLoggers();
-  }
-
-  @Override
-  public long getTimestamp(LogEvent event) {
-    return event.getTimeMillis();
   }
 
   @Override
@@ -275,10 +290,13 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     Message message = event.getMessage();
     doc.setField("message", message.getFormattedMessage());
     Throwable t = message.getThrowable();
-    if (t != null)
-      doc.setField("trace", Throwables.getStackTraceAsString(t));
+    if (t != null) {
+      StringWriter trace = new StringWriter();
+      t.printStackTrace(new PrintWriter(trace));
+      doc.setField("trace", trace.toString());
+    }
 
-    Map<String,String> contextMap = event.getContextMap();
+    Map<String, String> contextMap = event.getContextMap();
     if (contextMap != null) {
       for (Map.Entry<String, String> entry : contextMap.entrySet())
         doc.setField(entry.getKey(), entry.getValue());
@@ -290,4 +308,3 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     return doc;
   }
 }
-

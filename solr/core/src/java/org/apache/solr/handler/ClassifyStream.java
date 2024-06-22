@@ -17,12 +17,13 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.Locale;
-
+import java.util.Map;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -37,32 +38,37 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.lucene.analysis.*;
 
 /**
- *  The classify expression retrieves a model trained by the train expression and uses it to classify documents from a stream
- *  Syntax:
- *  classif(model(...), anyStream(...), field="body")
+ * The classify expression retrieves a model trained by the train expression and uses it to classify
+ * documents from a stream Syntax: classif(model(...), anyStream(...), field="body")
+ *
  * @since 6.3.0
- **/
-
+ */
 public class ClassifyStream extends TupleStream implements Expressible {
-  private TupleStream docStream;
-  private TupleStream modelStream;
+  private final TupleStream docStream;
+  private final TupleStream modelStream;
 
-  private String field;
+  private final String field;
   private String analyzerField;
-  private Tuple  modelTuple;
+  private Tuple modelTuple;
 
   Analyzer analyzer;
-  private Map<CharSequence, Integer> termToIndex;
+  private Map<String, Integer> termToIndex;
   private List<Double> idfs;
   private List<Double> modelWeights;
 
   public ClassifyStream(StreamExpression expression, StreamFactory factory) throws IOException {
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     if (streamExpressions.size() != 2) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting two stream but found %d",expression, streamExpressions.size()));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - expecting two stream but found %d",
+              expression,
+              streamExpressions.size()));
     }
 
     modelStream = factory.constructStream(streamExpressions.get(0));
@@ -70,11 +76,17 @@ public class ClassifyStream extends TupleStream implements Expressible {
 
     StreamExpressionNamedParameter fieldParameter = factory.getNamedOperand(expression, "field");
     if (fieldParameter == null) {
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - field parameter must be specified",expression, streamExpressions.size()));
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "Invalid expression %s - field parameter must be specified - %s",
+              expression,
+              streamExpressions.size()));
     }
     analyzerField = field = fieldParameter.getParameter().toString();
 
-    StreamExpressionNamedParameter analyzerFieldParameter = factory.getNamedOperand(expression, "analyzerField");
+    StreamExpressionNamedParameter analyzerFieldParameter =
+        factory.getNamedOperand(expression, "analyzerField");
     if (analyzerFieldParameter != null) {
       analyzerField = analyzerFieldParameter.getParameter().toString();
     }
@@ -83,10 +95,13 @@ public class ClassifyStream extends TupleStream implements Expressible {
   @Override
   public void setStreamContext(StreamContext context) {
     Object solrCoreObj = context.get("solr-core");
-    if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore) ) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "StreamContext must have SolrCore in solr-core key");
+    if (!(solrCoreObj instanceof SolrCore)) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE,
+          "StreamContext must have SolrCore in solr-core key");
     }
-    analyzer = ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
+    analyzer =
+        ((SolrCore) solrCoreObj).getLatestSchema().getFieldType(analyzerField).getIndexAnalyzer();
 
     this.docStream.setStreamContext(context);
     this.modelStream.setStreamContext(context);
@@ -138,7 +153,7 @@ public class ClassifyStream extends TupleStream implements Expressible {
 
     String text = docTuple.getString(field);
 
-    double tfs[] = new double[termToIndex.size()];
+    double[] tfs = new double[termToIndex.size()];
 
     TokenStream tokenStream = analyzer.tokenStream(analyzerField, text);
     CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
@@ -173,13 +188,13 @@ public class ClassifyStream extends TupleStream implements Expressible {
     double positiveProb = sigmoid(total);
 
     docTuple.put("probability_d", positiveProb);
-    docTuple.put("score_d",  score);
+    docTuple.put("score_d", score);
 
     return docTuple;
   }
 
   private double sigmoid(double in) {
-    double d = 1.0 / (1+Math.exp(-in));
+    double d = 1.0 / (1 + Math.exp(-in));
     return d;
   }
 
@@ -193,16 +208,18 @@ public class ClassifyStream extends TupleStream implements Expressible {
     return toExpression(factory, true);
   }
 
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
     if (includeStreams) {
       if (docStream instanceof Expressible && modelStream instanceof Expressible) {
-        expression.addParameter(((Expressible)modelStream).toExpression(factory));
-        expression.addParameter(((Expressible)docStream).toExpression(factory));
+        expression.addParameter(((Expressible) modelStream).toExpression(factory));
+        expression.addParameter(((Expressible) docStream).toExpression(factory));
       } else {
-        throw new IOException("This ClassifyStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+        throw new IOException(
+            "This ClassifyStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
     }
 

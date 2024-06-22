@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.facet;
 
+import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
+
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,8 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import com.google.common.collect.Sets;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -32,17 +32,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.join.GraphQueryParser;
 import org.apache.solr.util.RTimer;
 
-import static org.apache.solr.search.facet.FacetRequest.RefineMethod.NONE;
-
 /**
- * A request to do facets/stats that might itself be composed of sub-FacetRequests.
- * This is a cornerstone of the facet module.
+ * A request to do facets/stats that might itself be composed of sub-FacetRequests. This is a
+ * cornerstone of the facet module.
  *
  * @see #parse(SolrQueryRequest, Map)
  */
@@ -52,39 +50,48 @@ public abstract class FacetRequest {
   public static final class FacetSort {
     final String sortVariable;
     final SortDirection sortDirection;
+
     public FacetSort(final String sortVariable, final SortDirection sortDirection) {
       assert null != sortVariable;
       assert null != sortDirection;
-      
+
       this.sortVariable = sortVariable;
       this.sortDirection = sortDirection;
     }
+
+    @Override
     public boolean equals(Object other) {
       if (other instanceof FacetSort) {
-        final FacetSort that = (FacetSort)other;
+        final FacetSort that = (FacetSort) other;
         return this.sortVariable.equals(that.sortVariable)
-          && this.sortDirection.equals(that.sortDirection);
+            && this.sortDirection.equals(that.sortDirection);
       }
       return false;
     }
+
+    @Override
     public int hashCode() {
       return Objects.hash(sortVariable, sortDirection);
     }
+
+    @Override
     public String toString() {
       return sortVariable + " " + sortDirection;
     }
-    
+
     /** Commonly Re-used "count desc" (default) */
     public static final FacetSort COUNT_DESC = new FacetSort("count", SortDirection.desc);
+
     /** Commonly Re-used "index asc" (index order / streaming) */
     public static final FacetSort INDEX_ASC = new FacetSort("index", SortDirection.asc);
   }
-  
+
   public static enum SortDirection {
     asc(-1),
     desc(1);
 
     private final int multiplier;
+
     private SortDirection(int multiplier) {
       this.multiplier = multiplier;
     }
@@ -96,10 +103,13 @@ public abstract class FacetRequest {
       }
 
       switch (direction.toString()) {
-        case "asc": return asc;
-        case "desc": return desc;
+        case "asc":
+          return asc;
+        case "desc":
+          return desc;
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown Sort direction '" + direction + "'");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Unknown Sort direction '" + direction + "'");
       }
     }
 
@@ -112,54 +122,63 @@ public abstract class FacetRequest {
   public static enum RefineMethod {
     NONE,
     SIMPLE;
+
     // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
-      if (method instanceof  Boolean) {
-        return ((Boolean)method) ? SIMPLE : NONE;
+      if (method instanceof Boolean) {
+        return ((Boolean) method) ? SIMPLE : NONE;
       }
       if ("simple".equals(method)) {
         return SIMPLE;
       } else if ("none".equals(method)) {
         return NONE;
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown RefineMethod method " + method);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unknown RefineMethod method " + method);
       }
     }
   }
 
-
-  protected Map<String,AggValueSource> facetStats;  // per-bucket statistics
-  protected Map<String,FacetRequest> subFacets;     // per-bucket sub-facets
+  protected Map<String, AggValueSource> facetStats; // per-bucket statistics
+  protected Map<String, FacetRequest> subFacets; // per-bucket sub-facets
   protected boolean processEmpty;
   protected Domain domain;
 
   // domain changes
   public static class Domain {
-    /** 
-     * An explicit query domain, <em>ignoring all parent context</em>, expressed in JSON query format.
-     * Mutually exclusive to {@link #excludeTags}
+    /**
+     * An explicit query domain, <em>ignoring all parent context</em>, expressed in JSON query
+     * format. Mutually exclusive to {@link #excludeTags}
      */
     public List<Object> explicitQueries; // list of symbolic filters (JSON query format)
+
     /**
-     * Specifies query/filter tags that should be excluded to re-compute the domain from the parent context.
-     * Mutually exclusive to {@link #explicitQueries}
+     * Specifies query/filter tags that should be excluded to re-compute the domain from the parent
+     * context. Mutually exclusive to {@link #explicitQueries}
      */
     public List<String> excludeTags;
+
     public JoinField joinField;
     public GraphField graphField;
     public boolean toParent;
     public boolean toChildren;
-    public String parents; // identifies the parent filter... the full set of parent documents for any block join operation
+    // identifies the parent filter... the full set of parent documents for any block join operation
+    public String parents;
     public List<Object> filters; // list of symbolic filters (JSON query format)
 
-    // True if a starting set of documents can be mapped onto a different set of documents not originally in the starting set.
+    // True if a starting set of documents can be mapped onto a different set of documents not
+    // originally in the starting set.
     public boolean canTransformDomain() {
-      return toParent || toChildren
-        || (explicitQueries != null) || (excludeTags != null) || (joinField != null);
+      return toParent
+          || toChildren
+          || (explicitQueries != null)
+          || (excludeTags != null)
+          || (joinField != null);
     }
 
-    // Can this domain become non-empty if the input domain is empty?  This does not check any sub-facets (see canProduceFromEmpty for that)
+    // Can this domain become non-empty if the input domain is empty?  This does not check any
+    // sub-facets (see canProduceFromEmpty for that)
     public boolean canBecomeNonEmpty() {
       return (explicitQueries != null) || (excludeTags != null);
     }
@@ -169,7 +188,8 @@ public abstract class FacetRequest {
       private static final String FROM_PARAM = "from";
       private static final String TO_PARAM = "to";
       private static final String METHOD_PARAM = "method";
-      private static final Set<String> SUPPORTED_JOIN_PROPERTIES = Sets.newHashSet(FROM_PARAM, TO_PARAM, METHOD_PARAM);
+      private static final Set<String> SUPPORTED_JOIN_PROPERTIES =
+          Set.of(FROM_PARAM, TO_PARAM, METHOD_PARAM);
 
       public final String from;
       public final String to;
@@ -190,32 +210,41 @@ public abstract class FacetRequest {
        * validates if a '<code>join</code>' is specified, and if so creates a <code>JoinField</code>
        * and sets it on the <code>Domain</code>.
        *
-       * (params must not be null)
+       * <p>(params must not be null)
        */
-      public static void createJoinField(FacetRequest.Domain domain, Map<String,Object> domainMap) {
+      public static void createJoinField(
+          FacetRequest.Domain domain, Map<String, Object> domainMap) {
         assert null != domain;
         assert null != domainMap;
 
         final Object queryJoin = domainMap.get("join");
         if (null != queryJoin) {
-          // TODO: maybe allow simple string (instead of map) to mean "self join on this field name" ?
-          if (! (queryJoin instanceof Map)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          // TODO: maybe allow simple string (instead of map) to mean "self join on this field name"
+          if (!(queryJoin instanceof Map)) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
                 "'join' domain change requires a map containing the 'from' and 'to' fields");
           }
           @SuppressWarnings({"unchecked"})
-          final Map<String,String> join = (Map<String,String>) queryJoin;
-          if (! (join.containsKey(FROM_PARAM) && join.containsKey(TO_PARAM) &&
-              null != join.get(FROM_PARAM) && null != join.get(TO_PARAM)) ) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          final Map<String, String> join = (Map<String, String>) queryJoin;
+          if (!(join.containsKey(FROM_PARAM)
+              && join.containsKey(TO_PARAM)
+              && null != join.get(FROM_PARAM)
+              && null != join.get(TO_PARAM))) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
                 "'join' domain change requires non-null 'from' and 'to' field names");
           }
 
           for (String providedKey : join.keySet()) {
-            if (! SUPPORTED_JOIN_PROPERTIES.contains(providedKey)) {
+            if (!SUPPORTED_JOIN_PROPERTIES.contains(providedKey)) {
               final String supportedPropsStr = String.join(", ", SUPPORTED_JOIN_PROPERTIES);
-              final String message = String.format(Locale.ROOT,
-                  "'join' domain change contains unexpected key [%s], only %s supported", providedKey, supportedPropsStr);
+              final String message =
+                  String.format(
+                      Locale.ROOT,
+                      "'join' domain change contains unexpected key [%s], only %s supported",
+                      providedKey,
+                      supportedPropsStr);
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
             }
           }
@@ -226,22 +255,23 @@ public abstract class FacetRequest {
       }
 
       /**
-       * Creates a Query that can be used to recompute the new "base" for this domain, relative to the
-       * current base of the FacetContext.
+       * Creates a Query that can be used to recompute the new "base" for this domain, relative to
+       * the current base of the FacetContext.
        */
-      public Query createDomainQuery(FacetContext fcontext) throws IOException {
+      public Query createDomainQuery(FacetContext fcontext) {
         // NOTE: this code lives here, instead of in FacetProcessor.handleJoin, in order to minimize
         // the number of classes that have to know about the number of possible settings on the join
         // (ie: if we add a score mode, or some other modifier to how the joins are done)
 
-        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
-        // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
-        fromQuery.setCache(false);
+        final Query fromQuery = fcontext.base.makeQuery();
+        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery);
 
-        return JoinQParserPlugin.createJoinQuery(fromQuery, this.from, this.to, this.method);
+        // this shouldn't matter once we're wrapped in a join query, but just in case it ever
+        // does...
+        wrappedFromQuery.setCache(false);
+
+        return JoinQParserPlugin.createJoinQuery(wrappedFromQuery, this.from, this.to, this.method);
       }
-
-
     }
 
     /** Are we doing a query time graph across other documents */
@@ -256,27 +286,32 @@ public abstract class FacetRequest {
 
       /**
        * Given a <code>Domain</code>, and a (JSON) map specifying the configuration for that Domain,
-       * validates if a '<code>graph</code>' is specified, and if so creates a <code>GraphField</code>
-       * and sets it on the <code>Domain</code>.
+       * validates if a '<code>graph</code>' is specified, and if so creates a <code>GraphField
+       * </code> and sets it on the <code>Domain</code>.
        *
-       * (params must not be null)
+       * <p>(params must not be null)
        */
-      public static void createGraphField(FacetRequest.Domain domain, Map<String,Object> domainMap) {
+      public static void createGraphField(
+          FacetRequest.Domain domain, Map<String, Object> domainMap) {
         assert null != domain;
         assert null != domainMap;
-        
+
         final Object queryGraph = domainMap.get("graph");
         if (null != queryGraph) {
-          if (! (queryGraph instanceof Map)) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'graph' domain change requires a map containing the 'from' and 'to' fields");
+          if (!(queryGraph instanceof Map)) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "'graph' domain change requires a map containing the 'from' and 'to' fields");
           }
           @SuppressWarnings({"unchecked"})
-          final Map<String,String> graph = (Map<String,String>) queryGraph;
-          if (! (graph.containsKey("from") && graph.containsKey("to") &&
-                 null != graph.get("from") && null != graph.get("to")) ) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "'graph' domain change requires non-null 'from' and 'to' field names");
+          final Map<String, String> graph = (Map<String, String>) queryGraph;
+          if (!(graph.containsKey("from")
+              && graph.containsKey("to")
+              && null != graph.get("from")
+              && null != graph.get("to"))) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "'graph' domain change requires non-null 'from' and 'to' field names");
           }
 
           domain.graphField = new GraphField(FacetParser.jsonToSolrParams(graph));
@@ -284,32 +319,34 @@ public abstract class FacetRequest {
       }
 
       /**
-       * Creates a Query that can be used to recompute the new "base" for this domain, relative to the
-       * current base of the FacetContext.
+       * Creates a Query that can be used to recompute the new "base" for this domain, relative to
+       * the current base of the FacetContext.
        */
-      public Query createDomainQuery(FacetContext fcontext) throws IOException {
-        final SolrConstantScoreQuery fromQuery = new SolrConstantScoreQuery(fcontext.base.getTopFilter());
-        // this shouldn't matter once we're wrapped in a join query, but just in case it ever does...
-        fromQuery.setCache(false);
+      public Query createDomainQuery(FacetContext fcontext) {
+        final Query fromQuery = fcontext.base.makeQuery();
+        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery);
+
+        // this shouldn't matter once we're wrapped in a join query, but just in case it ever
+        // does...
+        wrappedFromQuery.setCache(false);
 
         GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
         try {
-          GraphQuery graphQuery = (GraphQuery)graphParser.parse();
-          graphQuery.setQ(fromQuery);
+          GraphQuery graphQuery = (GraphQuery) graphParser.parse();
+          graphQuery.setQ(wrappedFromQuery);
           return graphQuery;
         } catch (SyntaxError syntaxError) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
         }
       }
-
-
     }
-    
   }
 
   /**
-   * Factory method to parse a facet request tree.  The outer keys are arbitrary labels and their values are
-   * facet request specifications. Will throw a {@link SolrException} if it fails to parse.
+   * Factory method to parse a facet request tree. The outer keys are arbitrary labels and their
+   * values are facet request specifications. Will throw a {@link SolrException} if it fails to
+   * parse.
+   *
    * @param req the overall request
    * @param params a typed parameter structure (unlike SolrParams which are all string values).
    */
@@ -322,12 +359,14 @@ public abstract class FacetRequest {
     }
   }
 
-  //TODO it would be nice if there was no distinction.  If the top level request had "type" as special then there wouldn't be a need.
+  // TODO it would be nice if there was no distinction.  If the top level request had "type" as
+  // special then there wouldn't be a need.
 
   /**
-   * Factory method to parse out a rooted facet request tree that would normally go one level below a label.
-   * The params must contain a "type".
-   * This is intended to be useful externally, such as by {@link org.apache.solr.request.SimpleFacets}.
+   * Factory method to parse out a rooted facet request tree that would normally go one level below
+   * a label. The params must contain a "type". This is intended to be useful externally, such as by
+   * {@link org.apache.solr.request.SimpleFacets}.
+   *
    * @param req the overall request
    * @param params a typed parameter structure (unlike SolrParams which are all string values).
    */
@@ -360,11 +399,12 @@ public abstract class FacetRequest {
   }
 
   public boolean doRefine() {
-    return !(getRefineMethod()==null || getRefineMethod()==NONE);
+    return !(getRefineMethod() == null || getRefineMethod() == NONE);
   }
 
-  /** Returns true if this facet can return just some of the facet buckets that match all the criteria.
-   * This is normally true only for facets with a limit.
+  /**
+   * Returns true if this facet can return just some of the facet buckets that match all the
+   * criteria. This is normally true only for facets with a limit.
    */
   public boolean returnsPartial() {
     // TODO: should the default impl check processEmpty ?
@@ -400,13 +440,14 @@ public abstract class FacetRequest {
   }
 
   /**
-   * Process this facet request against the given domain of docs.
-   * Note: this is currently used externally by {@link org.apache.solr.request.SimpleFacets}.
+   * Process this facet request against the given domain of docs. Note: this is currently used
+   * externally by {@link org.apache.solr.request.SimpleFacets}.
    */
   public final Object process(SolrQueryRequest req, DocSet domain) throws IOException {
-    //TODO check for FacetDebugInfo?  and if so set on fcontext
+    // TODO check for FacetDebugInfo?  and if so set on fcontext
     //  rb.req.getContext().get("FacetDebugInfo");
-    //TODO should the SolrQueryRequest be held on the FacetRequest?  It was created from parse(req,...) so is known.
+    // TODO should the SolrQueryRequest be held on the FacetRequest?  It was created from
+    // parse(req,...) so is known.
     FacetContext fcontext = new FacetContext();
     fcontext.base = domain;
     fcontext.req = req;
@@ -433,22 +474,18 @@ public abstract class FacetRequest {
       RTimer timer = new RTimer();
       try {
         facetProcessor.process();
-      }finally {
+      } finally {
         debugInfo.setElapse((long) timer.getTime());
       }
     }
 
-    return facetProcessor.getResponse(); 
+    return facetProcessor.getResponse();
   }
 
-  public abstract FacetProcessor<? extends FacetRequest> createFacetProcessor(FacetContext fcontext);
+  public abstract FacetProcessor<? extends FacetRequest> createFacetProcessor(
+      FacetContext fcontext);
 
   public abstract FacetMerger createFacetMerger(Object prototype);
-  
+
   public abstract Map<String, Object> getFacetDescription();
-
-
 }
-
-
-

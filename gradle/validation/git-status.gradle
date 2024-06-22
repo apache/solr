@@ -103,17 +103,16 @@ configure(rootProject) {
           files.collect {file -> "  - ${file} ${fileStatus}" }
         }.sort()
 
-        if (offenders) {
-          def checkProp = "validation.git.failOnModified"
-          def shouldFail = Boolean.valueOf(propertyOrDefault(checkProp, true))
-          def message = "Working copy is not a clean git checkout" + 
-            (shouldFail ? " (skip with -P${checkProp}=false)" : "") +
-            ", offending files:\n${offenders.join("\n")}"
+        if (offenders ) {
+          def propName = "validation.git.failOnModified"
+          def shouldFail = Boolean.valueOf(propertyOrDefault(propName, isCIBuild))
+          def msg = "Working copy is not a clean git checkout" +
+                  (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${offenders.join("\n")}"
 
           if (shouldFail) {
-            throw new GradleException(message)
+            throw new GradleException(msg)
           } else {
-            logger.lifecycle("NOTE: ${message}")
+            logger.warn("NOTE: ${msg}")
           }
         }
       }

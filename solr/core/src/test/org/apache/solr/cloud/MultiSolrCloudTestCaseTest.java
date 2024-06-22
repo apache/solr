@@ -34,19 +34,19 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
     numClouds = random().nextInt(4); //  0..3
     final String[] clusterIds = new String[numClouds];
-    for (int ii=0; ii<numClouds; ++ii) {
-      clusterIds[ii] = "cloud"+(ii+1);
+    for (int ii = 0; ii < numClouds; ++ii) {
+      clusterIds[ii] = "cloud" + (ii + 1);
     }
 
     numCollectionsPerCloud = random().nextInt(3); //  0..2
     final String[] collections = new String[numCollectionsPerCloud];
-    for (int ii=0; ii<numCollectionsPerCloud; ++ii) {
-      collections[ii] = "collection"+(ii+1);
+    for (int ii = 0; ii < numCollectionsPerCloud; ++ii) {
+      collections[ii] = "collection" + (ii + 1);
     }
 
-    numShards = 1+random().nextInt(2);
-    numReplicas = 1+random().nextInt(2);
-    nodesPerCluster = numShards*numReplicas;
+    numShards = 1 + random().nextInt(2);
+    numReplicas = 1 + random().nextInt(2);
+    nodesPerCluster = numShards * numReplicas;
 
     doSetupClusters(
         clusterIds,
@@ -61,9 +61,11 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
           public void accept(String clusterId, MiniSolrCloudCluster cluster) {
             for (final String collection : collections) {
               if (random().nextBoolean()) {
-                doAccept(collection, cluster); // same collection name in different clouds
+                // same collection name in different clouds
+                doAccept(collection, cluster);
               } else {
-                doAccept(collection+"_in_"+clusterId, cluster); // globally unique collection name
+                // globally unique collection name
+                doAccept(collection + "_in_" + clusterId, cluster);
               }
             }
           }
@@ -71,8 +73,7 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     assertEquals("numClouds", numClouds, clusterId2cluster.size());
   }
-
 }

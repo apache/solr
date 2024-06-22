@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.DocValues;
@@ -41,39 +40,28 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.StringHelper;
 
 /**
- * This class enables fast access to multiple term ords for
- * a specified field across all docIDs.
+ * This class enables fast access to multiple term ords for a specified field across all docIDs.
  *
- * Like FieldCache, it uninverts the index and holds a
- * packed data structure in RAM to enable fast access.
- * Unlike FieldCache, it can handle multi-valued fields,
- * and, it does not hold the term bytes in RAM.  Rather, you
- * must obtain a TermsEnum from the {@link #getOrdTermsEnum}
- * method, and then seek-by-ord to get the term's bytes.
+ * <p>Like FieldCache, it uninverts the index and holds a packed data structure in RAM to enable
+ * fast access. Unlike FieldCache, it can handle multi-valued fields, and, it does not hold the term
+ * bytes in RAM. Rather, you must obtain a TermsEnum from the {@link #getOrdTermsEnum} method, and
+ * then seek-by-ord to get the term's bytes.
  *
- * While normally term ords are type long, in this API they are
- * int as the internal representation here cannot address
- * more than MAX_INT unique terms.  Also, typically this
- * class is used on fields with relatively few unique terms
- * vs the number of documents. A previous internal limit (16 MB)
- * on how many bytes each chunk of documents may consume has been
- * increased to 2 GB.
+ * <p>While normally term ords are type long, in this API they are int as the internal
+ * representation here cannot address more than MAX_INT unique terms. Also, typically this class is
+ * used on fields with relatively few unique terms vs the number of documents. A previous internal
+ * limit (16 MB) on how many bytes each chunk of documents may consume has been increased to 2 GB.
  *
- * Deleted documents are skipped during uninversion, and if
- * you look them up you'll get 0 ords.
+ * <p>Deleted documents are skipped during uninversion, and if you look them up you'll get 0 ords.
  *
- * The returned per-document ords do not retain their
- * original order in the document.  Instead they are returned
- * in sorted (by ord, ie term's BytesRef comparator) order.  They
- * are also de-dup'd (ie if doc has same term more than once
- * in this field, you'll only get that ord back once).
+ * <p>The returned per-document ords do not retain their original order in the document. Instead
+ * they are returned in sorted (by ord, ie term's BytesRef comparator) order. They are also de-dup'd
+ * (ie if doc has same term more than once in this field, you'll only get that ord back once).
  *
- * This class will create its own term index internally, allowing to
- * create a wrapped TermsEnum that can handle ord.
- * The {@link #getOrdTermsEnum} method then provides this wrapped
- * enum.
+ * <p>This class will create its own term index internally, allowing to create a wrapped TermsEnum
+ * that can handle ord. The {@link #getOrdTermsEnum} method then provides this wrapped enum.
  *
- * The RAM consumption of this class can be high!
+ * <p>The RAM consumption of this class can be high!
  *
  * @lucene.experimental
  */
@@ -115,10 +103,11 @@ public class DocTermOrds implements Accountable {
 
   // Term ords are shifted by this, internally, to reserve
   // values 0 (end term) and 1 (index is a pointer into byte array)
-  private final static int TNUM_OFFSET = 2;
+  private static final int TNUM_OFFSET = 2;
 
   /** Every 128th term is indexed, by default. */
-  public final static int DEFAULT_INDEX_INTERVAL_BITS = 7; // decrease to a low number like 2 for testing
+  public static final int DEFAULT_INDEX_INTERVAL_BITS =
+      7; // decrease to a low number like 2 for testing
 
   private int indexIntervalBits;
   private int indexIntervalMask;
@@ -135,6 +124,7 @@ public class DocTermOrds implements Accountable {
 
   /** Total number of references to term numbers. */
   protected long termInstances;
+
   private long memsz;
 
   /** Total time to uninvert the field. */
@@ -149,7 +139,7 @@ public class DocTermOrds implements Accountable {
   /** Holds term ords for documents. */
   protected byte[][] tnums = new byte[256][];
 
-  /** Total bytes (sum of term lengths) for all indexed terms.*/
+  /** Total bytes (sum of term lengths) for all indexed terms. */
   protected long sizeOfIndexedStrings;
 
   /** Holds the indexed (by default every 128th) terms. */
@@ -158,20 +148,22 @@ public class DocTermOrds implements Accountable {
   // This would also increase data locality for binarySearch lookups, potentially making it faster.
   protected BytesRef[] indexedTermsArray = new BytesRef[0];
 
-  /** If non-null, only terms matching this prefix were
-   *  indexed. */
+  /** If non-null, only terms matching this prefix were indexed. */
   protected BytesRef prefix;
 
-  /** Ordinal of the first term in the field, or 0 if the
-   *  {@link PostingsFormat} does not implement {@link
-   *  TermsEnum#ord}. */
+  /**
+   * Ordinal of the first term in the field, or 0 if the {@link PostingsFormat} does not implement
+   * {@link TermsEnum#ord}.
+   */
   protected int ordBase;
 
   /** Used while uninverting. */
   protected PostingsEnum postingsEnum;
 
-  /** If true, check and throw an exception if the field has docValues enabled.
-   * Normally, docValues should be used in preference to DocTermOrds. */
+  /**
+   * If true, check and throw an exception if the field has docValues enabled. Normally, docValues
+   * should be used in preference to DocTermOrds.
+   */
   protected boolean checkForDocValues = true;
 
   // TODO: Why is indexedTermsArray not part of this?
@@ -179,16 +171,15 @@ public class DocTermOrds implements Accountable {
   @Override
   public long ramBytesUsed() {
     // can cache the mem size since it shouldn't change
-    if (memsz!=0) return memsz;
-    long sz = 8*8 + 32; // local fields
-    if (index != null) sz += index.length * 4;
-    if (tnums!=null) {
-      for (byte[] arr : tnums)
-        if (arr != null) sz += arr.length;
+    if (memsz != 0) return memsz;
+    long sz = 8 * 8 + 32; // local fields
+    if (index != null) sz += index.length * 4L;
+    if (tnums != null) {
+      for (byte[] arr : tnums) if (arr != null) sz += arr.length;
     }
     if (indexedTermsArray != null) {
       // assume 8 byte references?
-      sz += 8+8+8+8+(indexedTermsArray.length<<3)+sizeOfIndexedStrings;
+      sz += 8 + 8 + 8 + 8 + ((long) indexedTermsArray.length << 3) + sizeOfIndexedStrings;
     }
     memsz = sz;
     return sz;
@@ -198,59 +189,67 @@ public class DocTermOrds implements Accountable {
   public DocTermOrds(LeafReader reader, Bits liveDocs, String field) throws IOException {
     this(reader, liveDocs, field, null, Integer.MAX_VALUE);
   }
-  
+
   // TODO: instead of all these ctors and options, take termsenum!
 
   /** Inverts only terms starting w/ prefix */
-  public DocTermOrds(LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix) throws IOException {
+  public DocTermOrds(LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix)
+      throws IOException {
     this(reader, liveDocs, field, termPrefix, Integer.MAX_VALUE);
   }
 
-  /** Inverts only terms starting w/ prefix, and only terms
-   *  whose docFreq (not taking deletions into account) is
-   *  &lt;=  maxTermDocFreq */
-  public DocTermOrds(LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq) throws IOException {
+  /**
+   * Inverts only terms starting w/ prefix, and only terms whose docFreq (not taking deletions into
+   * account) is &lt;= maxTermDocFreq
+   */
+  public DocTermOrds(
+      LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq)
+      throws IOException {
     this(reader, liveDocs, field, termPrefix, maxTermDocFreq, DEFAULT_INDEX_INTERVAL_BITS);
   }
 
-  /** Inverts only terms starting w/ prefix, and only terms
-   *  whose docFreq (not taking deletions into account) is
-   *  &lt;=  maxTermDocFreq, with a custom indexing interval
-   *  (default is every 128nd term). */
-  public DocTermOrds(LeafReader reader, Bits liveDocs, String field, BytesRef termPrefix, int maxTermDocFreq, int indexIntervalBits) throws IOException {
+  /**
+   * Inverts only terms starting w/ prefix, and only terms whose docFreq (not taking deletions into
+   * account) is &lt;= maxTermDocFreq, with a custom indexing interval (default is every 128nd
+   * term).
+   */
+  public DocTermOrds(
+      LeafReader reader,
+      Bits liveDocs,
+      String field,
+      BytesRef termPrefix,
+      int maxTermDocFreq,
+      int indexIntervalBits)
+      throws IOException {
     this(field, maxTermDocFreq, indexIntervalBits);
     uninvert(reader, liveDocs, termPrefix);
   }
 
-  /** Subclass inits w/ this, but be sure you then call
-   *  uninvert, only once */
+  /** Subclass inits w/ this, but be sure you then call uninvert, only once */
   protected DocTermOrds(String field, int maxTermDocFreq, int indexIntervalBits) {
-    //System.out.println("DTO init field=" + field + " maxTDFreq=" + maxTermDocFreq);
+    // System.out.println("DTO init field=" + field + " maxTDFreq=" + maxTermDocFreq);
     this.field = field;
     this.maxTermDocFreq = maxTermDocFreq;
     this.indexIntervalBits = indexIntervalBits;
-    indexIntervalMask = 0xffffffff >>> (32-indexIntervalBits);
+    indexIntervalMask = 0xffffffff >>> (32 - indexIntervalBits);
     indexInterval = 1 << indexIntervalBits;
   }
 
-  /** 
+  /**
    * Returns a TermsEnum that implements ord, or null if no terms in field.
-   * <p>
-   *  we build a "private" terms
-   *  index internally (WARNING: consumes RAM) and use that
-   *  index to implement ord.  This also enables ord on top
-   *  of a composite reader.  The returned TermsEnum is
-   *  unpositioned.  This returns null if there are no terms.
-   * </p>
-   *  <p><b>NOTE</b>: you must pass the same reader that was
-   *  used when creating this class 
+   *
+   * <p>we build a "private" terms index internally (WARNING: consumes RAM) and use that index to
+   * implement ord. This also enables ord on top of a composite reader. The returned TermsEnum is
+   * unpositioned. This returns null if there are no terms.
+   *
+   * <p><b>NOTE</b>: you must pass the same reader that was used when creating this class
    */
   public TermsEnum getOrdTermsEnum(LeafReader reader) throws IOException {
     // NOTE: see LUCENE-6529 before attempting to optimize this method to
     // return a TermsEnum directly from the reader if it already supports ord().
 
     assert null != indexedTermsArray;
-    
+
     if (0 == indexedTermsArray.length) {
       return null;
     } else {
@@ -258,44 +257,44 @@ public class DocTermOrds implements Accountable {
     }
   }
 
-  /**
-   * Returns the number of terms in this field
-   */
+  /** Returns the number of terms in this field */
   public int numTerms() {
     return numTermsInField;
   }
 
-  /**
-   * Returns {@code true} if no terms were indexed.
-   */
+  /** Returns {@code true} if no terms were indexed. */
   public boolean isEmpty() {
     return index == null;
   }
 
   /** Subclass can override this */
-  protected void visitTerm(TermsEnum te, int termNum) throws IOException {
-  }
+  protected void visitTerm(TermsEnum te, int termNum) throws IOException {}
 
-  /** Invoked during {@link #uninvert(org.apache.lucene.index.LeafReader,Bits,BytesRef)}
-   *  to record the document frequency for each uninverted
-   *  term. */
-  protected void setActualDocFreq(int termNum, int df) throws IOException {
-  }
+  /**
+   * Invoked during {@link #uninvert(org.apache.lucene.index.LeafReader,Bits,BytesRef)} to record
+   * the document frequency for each uninverted term.
+   */
+  protected void setActualDocFreq(int termNum, int df) throws IOException {}
 
   /** Call this only once (if you subclass!) */
-  protected void uninvert(final LeafReader reader, Bits liveDocs, final BytesRef termPrefix) throws IOException {
+  protected void uninvert(final LeafReader reader, Bits liveDocs, final BytesRef termPrefix)
+      throws IOException {
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (checkForDocValues && info != null && info.getDocValuesType() != DocValuesType.NONE) {
-      throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
+      throw new IllegalStateException(
+          "Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     }
-    //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
+    // System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
     final long startTime = System.nanoTime();
     prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);
 
     final int maxDoc = reader.maxDoc();
-    final int[] index = new int[maxDoc];       // immediate term numbers, or the index into the byte[] representing the last number
-    final int[] lastTerm = new int[maxDoc];    // last term we saw for this document
-    final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
+    // immediate term numbers, or the index into the byte[] representing the last number
+    final int[] index = new int[maxDoc];
+    // last term we saw for this document
+    final int[] lastTerm = new int[maxDoc];
+    // list of term numbers for the doc (delta encoded vInts)
+    final byte[][] bytes = new byte[maxDoc][];
 
     final Terms terms = reader.terms(field);
     if (terms == null) {
@@ -305,7 +304,7 @@ public class DocTermOrds implements Accountable {
 
     final TermsEnum te = terms.iterator();
     final BytesRef seekStart = termPrefix != null ? termPrefix : new BytesRef();
-    //System.out.println("seekStart=" + seekStart.utf8ToString());
+    // System.out.println("seekStart=" + seekStart.utf8ToString());
     if (te.seekCeil(seekStart) == TermsEnum.SeekStatus.END) {
       // No terms match
       return;
@@ -340,12 +339,12 @@ public class DocTermOrds implements Accountable {
 
     // Loop begins with te positioned to first term (we call
     // seek above):
-    for (;;) {
+    for (; ; ) {
       final BytesRef t = te.term();
       if (t == null || (termPrefix != null && !StringHelper.startsWith(t, termPrefix))) {
         break;
       }
-      //System.out.println("visit term=" + t.utf8ToString() + " " + t + " termNum=" + termNum);
+      // System.out.println("visit term=" + t.utf8ToString() + " " + t + " termNum=" + termNum);
 
       visitTerm(te, termNum);
 
@@ -367,17 +366,17 @@ public class DocTermOrds implements Accountable {
         // dF, but takes deletions into account
         int actualDF = 0;
 
-        for (;;) {
+        for (; ; ) {
           int doc = postingsEnum.nextDoc();
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
-          //System.out.println("  chunk=" + chunk + " docs");
+          // System.out.println("  chunk=" + chunk + " docs");
 
-          actualDF ++;
+          actualDF++;
           termInstances++;
-          
-          //System.out.println("    docID=" + doc);
+
+          // System.out.println("    docID=" + doc);
           // add TNUM_OFFSET to the term number to make room for special reserved values:
           // 0 (end term) and 1 (index into byte array follows)
           int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
@@ -389,54 +388,56 @@ public class DocTermOrds implements Accountable {
             int pos = val & 0x7fffffff;
             int ilen = vIntSize(delta);
             byte[] arr = bytes[doc];
-            int newend = pos+ilen;
+            int newend = pos + ilen;
             if (newend > arr.length) {
               // We avoid a doubling strategy to lower memory usage.
               // this faceting method isn't for docs with many terms.
-              // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit boundary.
-              // TODO: figure out what array lengths we can round up to w/o actually using more memory
+              // In hotspot, objects have 2 words of overhead, then fields, rounded up to a 64-bit
+              // boundary.
+              // TODO: figure out what array lengths we can round up to w/o actually using more
+              // memory
               // (how much space does a byte[] take up?  Is data preceded by a 32 bit length only?
               // It should be safe to round up to the nearest 32 bits in any case.
-              int newLen = (newend + 3) & 0xfffffffc;  // 4 byte alignment
+              int newLen = (newend + 3) & 0xfffffffc; // 4 byte alignment
               byte[] newarr = new byte[newLen];
               System.arraycopy(arr, 0, newarr, 0, pos);
               arr = newarr;
               bytes[doc] = newarr;
             }
             pos = writeInt(delta, arr, pos);
-            index[doc] = pos | 0x80000000;  // update pointer to end index in byte[]
+            index[doc] = pos | 0x80000000; // update pointer to end index in byte[]
           } else {
             // OK, this int has data in it... find the end (a zero starting byte - not
             // part of another number, hence not following a byte with the high bit set).
             int ipos;
-            if (val==0) {
-              ipos=0;
-            } else if ((val & 0x0000ff80)==0) {
-              ipos=1;
-            } else if ((val & 0x00ff8000)==0) {
-              ipos=2;
-            } else if ((val & 0xff800000)==0) {
-              ipos=3;
+            if (val == 0) {
+              ipos = 0;
+            } else if ((val & 0x0000ff80) == 0) {
+              ipos = 1;
+            } else if ((val & 0x00ff8000) == 0) {
+              ipos = 2;
+            } else if ((val & 0xff800000) == 0) {
+              ipos = 3;
             } else {
-              ipos=4;
+              ipos = 4;
             }
 
-            //System.out.println("      ipos=" + ipos);
+            // System.out.println("      ipos=" + ipos);
 
             int endPos = writeInt(delta, tempArr, ipos);
-            //System.out.println("      endpos=" + endPos);
+            // System.out.println("      endpos=" + endPos);
             if (endPos <= 4) {
-              //System.out.println("      fits!");
+              // System.out.println("      fits!");
               // value will fit in the integer... move bytes back
-              for (int j=ipos; j<endPos; j++) {
-                val |= (tempArr[j] & 0xff) << (j<<3);
+              for (int j = ipos; j < endPos; j++) {
+                val |= (tempArr[j] & 0xff) << (j << 3);
               }
               index[doc] = val;
             } else {
               // value won't fit... move integer into byte[]
-              for (int j=0; j<ipos; j++) {
-                tempArr[j] = (byte)val;
-                val >>>=8;
+              for (int j = 0; j < ipos; j++) {
+                tempArr[j] = (byte) val;
+                val >>>= 8;
               }
               // point at the end index in the byte[]
               index[doc] = endPos | 0x80000000;
@@ -472,9 +473,9 @@ public class DocTermOrds implements Accountable {
       // increasing the memory footprint.
       //
 
-      for (int pass = 0; pass<256; pass++) {
+      for (int pass = 0; pass < 256; pass++) {
         byte[] target = tnums[pass];
-        int pos=0;  // end in target;
+        int pos = 0; // end in target;
         if (target != null) {
           pos = target.length;
         } else {
@@ -484,15 +485,15 @@ public class DocTermOrds implements Accountable {
         // loop over documents, 0x00ppxxxx, 0x01ppxxxx, 0x02ppxxxx
         // where pp is the pass (which array we are building), and xx is all values.
         // each pass shares the same byte[] for termNumber lists.
-        for (int docbase = pass<<16; docbase<maxDoc; docbase+=(1<<24)) {
-          int lim = Math.min(docbase + (1<<16), maxDoc);
-          for (int doc=docbase; doc<lim; doc++) {
-            //System.out.println("  pass=" + pass + " process docID=" + doc);
+        for (int docbase = pass << 16; docbase < maxDoc; docbase += (1 << 24)) {
+          int lim = Math.min(docbase + (1 << 16), maxDoc);
+          for (int doc = docbase; doc < lim; doc++) {
+            // System.out.println("  pass=" + pass + " process docID=" + doc);
             int val = index[doc];
             if ((val & 0x80000000) != 0) {
               int len = val & 0x7fffffff;
-              //System.out.println("    ptr pos=" + pos);
-              //index[doc] = (pos<<8)|1; // change index to point to start of array
+              // System.out.println("    ptr pos=" + pos);
+              // index[doc] = (pos<<8)|1; // change index to point to start of array
               index[doc] = pos | 0x80000000; // change index to point to start of array
               byte[] arr = bytes[doc];
               /*
@@ -500,15 +501,19 @@ public class DocTermOrds implements Accountable {
                 //System.out.println("      b=" + Integer.toHexString((int) b));
               }
               */
-              bytes[doc] = null;        // IMPORTANT: allow GC to avoid OOM
+              bytes[doc] = null; // IMPORTANT: allow GC to avoid OOM
               if (target.length <= pos + len) {
                 int newlen = target.length;
                 while (newlen <= pos + len) {
-                  if ((newlen<<=1) < 0) { // Double until overflow
-                    newlen = Integer.MAX_VALUE - 16; // ArrayList.MAX_ARRAY_SIZE says 8. We double that to be sure
+                  if ((newlen <<= 1) < 0) { // Double until overflow
+                    newlen =
+                        Integer.MAX_VALUE
+                            - 16; // ArrayList.MAX_ARRAY_SIZE says 8. We double that to be sure
                     if (newlen <= pos + len) {
                       throw new IllegalStateException(
-                          "Too many terms (> Integer.MAX_VALUE-16) to uninvert field '" + field + "'");
+                          "Too many terms (> Integer.MAX_VALUE-16) to uninvert field '"
+                              + field
+                              + "'");
                     }
                   }
                 }
@@ -517,7 +522,7 @@ public class DocTermOrds implements Accountable {
                 target = newtarget;
               }
               System.arraycopy(arr, 0, target, pos, len);
-              pos += len + 1;  // skip single byte at end and leave it 0 for terminator
+              pos += len + 1; // skip single byte at end and leave it 0 for terminator
             }
           }
         }
@@ -528,80 +533,85 @@ public class DocTermOrds implements Accountable {
           System.arraycopy(target, 0, newtarget, 0, pos);
           target = newtarget;
         }
-        
+
         tnums[pass] = target;
 
-        if ((pass << 16) > maxDoc)
-          break;
+        if ((pass << 16) > maxDoc) break;
       }
-
     }
-    indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
+    indexedTermsArray = indexedTerms.toArray(new BytesRef[0]);
 
     long endTime = System.nanoTime();
 
-    total_time = (int) TimeUnit.MILLISECONDS.convert(endTime-startTime, TimeUnit.NANOSECONDS);
-    phase1_time = (int) TimeUnit.MILLISECONDS.convert(midPoint-startTime, TimeUnit.NANOSECONDS);
+    total_time = (int) TimeUnit.MILLISECONDS.convert(endTime - startTime, TimeUnit.NANOSECONDS);
+    phase1_time = (int) TimeUnit.MILLISECONDS.convert(midPoint - startTime, TimeUnit.NANOSECONDS);
   }
 
   /** Number of bytes to represent an unsigned int as a vint. */
   private static int vIntSize(int x) {
-    // Tests outside of this code base shows that the previous conditional-based vIntSize is fairly slow until
-    // JITted and still about 1/3 slower after JIT than the numberOfLeadingZeros version below.
+    // Tests outside of this code base shows that the previous conditional-based vIntSize is fairly
+    // slow until JITted and still about 1/3 slower after JIT than the numberOfLeadingZeros version
+    // below.
     return BLOCK7[Integer.numberOfLeadingZeros(x)]; // Intrinsic on modern CPUs
   }
-  private final static byte[] BLOCK7 = new byte[]{
-          5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1};
+
+  private static final byte[] BLOCK7 =
+      new byte[] {
+        5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
+        1, 1
+      };
 
   // todo: if we know the size of the vInt already, we could do
   // a single switch on the size
 
   /**
-   * Write the x value as vInt at pos in arr, returning the new endPos. This requires arr to be capable of holding the
-   * bytes needed to represent x. Array length checking should be performed beforehand.
-   * @param x   the value to write as vInt.
+   * Write the x value as vInt at pos in arr, returning the new endPos. This requires arr to be
+   * capable of holding the bytes needed to represent x. Array length checking should be performed
+   * beforehand.
+   *
+   * @param x the value to write as vInt.
    * @param arr the array holding vInt-values.
    * @param pos the position in arr where the vInt representation of x should be written.
    * @return the new end position after writing x at pos.
    */
   private static int writeInt(int x, byte[] arr, int pos) {
     int a;
-    a = (x >>> (7*4));
+    a = (x >>> (7 * 4));
     if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
+      arr[pos++] = (byte) (a | 0x80);
     }
-    a = (x >>> (7*3));
+    a = (x >>> (7 * 3));
     if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
+      arr[pos++] = (byte) (a | 0x80);
     }
-    a = (x >>> (7*2));
+    a = (x >>> (7 * 2));
     if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
+      arr[pos++] = (byte) (a | 0x80);
     }
-    a = (x >>> (7*1));
+    a = (x >>> (7 * 1));
     if (a != 0) {
-      arr[pos++] = (byte)(a | 0x80);
+      arr[pos++] = (byte) (a | 0x80);
     }
-    arr[pos++] = (byte)(x & 0x7f);
+    arr[pos++] = (byte) (x & 0x7f);
     return pos;
   }
 
-  /** 
-   * "wrap" our own terms index around the original IndexReader. 
-   * Only valid if there are terms for this field rom the original reader
+  /**
+   * "wrap" our own terms index around the original IndexReader. Only valid if there are terms for
+   * this field rom the original reader
    */
   private final class OrdWrappedTermsEnum extends BaseTermsEnum {
     private final TermsEnum termsEnum;
     private BytesRef term;
-    private long ord = -indexInterval-1;          // force "real" seek
-    
+    private long ord = -indexInterval - 1L; // force "real" seek
+
     public OrdWrappedTermsEnum(LeafReader reader) throws IOException {
       assert indexedTermsArray != null;
       assert 0 != indexedTermsArray.length;
       termsEnum = reader.terms(field).iterator();
     }
 
-    @Override    
+    @Override
     public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       return termsEnum.postings(reuse, flags);
     }
@@ -625,7 +635,7 @@ public class DocTermOrds implements Accountable {
         term = null;
         return null;
       }
-      return setTerm();  // this is extra work if we know we are in bounds...
+      return setTerm(); // this is extra work if we know we are in bounds...
     }
 
     @Override
@@ -657,15 +667,15 @@ public class DocTermOrds implements Accountable {
         // we hit the term exactly... lucky us!
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(target);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
-        ord = startIdx << indexIntervalBits;
+        ord = (long) startIdx << indexIntervalBits;
         setTerm();
         assert term != null;
         return SeekStatus.FOUND;
       }
 
       // we didn't hit the term exactly
-      startIdx = -startIdx-1;
-    
+      startIdx = -startIdx - 1;
+
       if (startIdx == 0) {
         // our target occurs *before* the first term
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(target);
@@ -686,9 +696,9 @@ public class DocTermOrds implements Accountable {
         // seek to the right block
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(indexedTermsArray[startIdx]);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
-        ord = startIdx << indexIntervalBits;
+        ord = (long) startIdx << indexIntervalBits;
         setTerm();
-        assert term != null;  // should be non-null since it's in the index
+        assert term != null; // should be non-null since it's in the index
       }
 
       while (term != null && term.compareTo(target) < 0) {
@@ -708,21 +718,22 @@ public class DocTermOrds implements Accountable {
     public boolean seekExact(BytesRef text) throws IOException {
       return seekCeil(text) == SeekStatus.FOUND;
     }
-    
+
     @Override
     public void seekExact(long targetOrd) throws IOException {
       int delta = (int) (targetOrd - ordBase - ord);
-      //System.out.println("  seek(ord) targetOrd=" + targetOrd + " delta=" + delta + " ord=" + ord + " ii=" + indexInterval);
+      // System.out.println("  seek(ord) targetOrd=" + targetOrd + " delta=" + delta + " ord=" + ord
+      // + " ii=" + indexInterval);
       if (delta < 0 || delta > indexInterval) {
         final int idx = (int) (targetOrd >>> indexIntervalBits);
         final BytesRef base = indexedTermsArray[idx];
-        //System.out.println("  do seek term=" + base.utf8ToString());
-        ord = idx << indexIntervalBits;
+        // System.out.println("  do seek term=" + base.utf8ToString());
+        ord = (long) idx << indexIntervalBits;
         delta = (int) (targetOrd - ord);
         final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
       } else {
-        //System.out.println("seek w/in block");
+        // System.out.println("seek w/in block");
       }
 
       while (--delta >= 0) {
@@ -740,7 +751,8 @@ public class DocTermOrds implements Accountable {
 
     private BytesRef setTerm() throws IOException {
       term = termsEnum.term();
-      //System.out.println("  setTerm() term=" + term.utf8ToString() + " vs prefix=" + (prefix == null ? "null" : prefix.utf8ToString()));
+      // System.out.println("  setTerm() term=" + term.utf8ToString() + " vs prefix=" + (prefix ==
+      // null ? "null" : prefix.utf8ToString()));
       if (prefix != null && !StringHelper.startsWith(term, prefix)) {
         term = null;
       }
@@ -748,13 +760,12 @@ public class DocTermOrds implements Accountable {
     }
   }
 
-  /** Returns the term ({@link BytesRef}) corresponding to
-   *  the provided ordinal. */
+  /** Returns the term ({@link BytesRef}) corresponding to the provided ordinal. */
   public BytesRef lookupTerm(TermsEnum termsEnum, int ord) throws IOException {
     termsEnum.seekExact(ord);
     return termsEnum.term();
   }
-  
+
   /** Returns a SortedSetDocValues view of this instance */
   public SortedSetDocValues iterator(LeafReader reader) throws IOException {
     if (isEmpty()) {
@@ -763,27 +774,27 @@ public class DocTermOrds implements Accountable {
       return new Iterator(reader);
     }
   }
-  
+
   private class Iterator extends SortedSetDocValues {
     final LeafReader reader;
-    final TermsEnum te;  // used internally for lookupOrd() and lookupTerm()
+    final TermsEnum te; // used internally for lookupOrd() and lookupTerm()
     final int maxDoc;
     // currently we read 5 at a time (using the logic of the old iterator)
     final int buffer[] = new int[5];
     int bufferUpto;
     int bufferLength;
-    
+
     private int doc = -1;
     private int tnum;
     private int upto;
     private byte[] arr;
-    
+
     Iterator(LeafReader reader) throws IOException {
       this.reader = reader;
       this.maxDoc = reader.maxDoc();
       this.te = termsEnum();
     }
-    
+
     @Override
     public long nextOrd() {
       while (bufferUpto == bufferLength) {
@@ -796,43 +807,67 @@ public class DocTermOrds implements Accountable {
       }
       return buffer[bufferUpto++];
     }
-    
-    /** Buffer must be at least 5 ints long.  Returns number
-     *  of term ords placed into buffer; if this count is
-     *  less than buffer.length then that is the end. */
+
+    @Override
+    public int docValueCount() {
+      if (arr == null) {
+        // This value was inlined, and then read into a single buffer
+        return bufferLength;
+      } else {
+        // scan logic taken from read()
+        int start = index[doc] & 0x7fffffff;
+        int cursor = start;
+        for (; ; ) {
+          int delta = 0;
+          for (; ; ) {
+            byte b = arr[cursor++];
+            delta = (delta << 7) | (b & 0x7f);
+            if ((b & 0x80) == 0) break;
+          }
+          if (delta == 0) break;
+        }
+
+        return cursor - start - 1;
+      }
+    }
+
+    /**
+     * Buffer must be at least 5 ints long. Returns number of term ords placed into buffer; if this
+     * count is less than buffer.length then that is the end.
+     */
     int read(int[] buffer) {
       int bufferUpto = 0;
       if (arr == null) {
         // code is inlined into upto
-        //System.out.println("inlined");
+        // System.out.println("inlined");
         int code = upto;
         int delta = 0;
-        for (;;) {
+        for (; ; ) {
           delta = (delta << 7) | (code & 0x7f);
-          if ((code & 0x80)==0) {
-            if (delta==0) break;
+          if ((code & 0x80) == 0) {
+            if (delta == 0) break;
             tnum += delta - TNUM_OFFSET;
-            buffer[bufferUpto++] = ordBase+tnum;
-            //System.out.println("  tnum=" + tnum);
+            buffer[bufferUpto++] = ordBase + tnum;
+            // System.out.println("  tnum=" + tnum);
             delta = 0;
           }
           code >>>= 8;
         }
       } else {
-        // code is a pointer
-        for(;;) {
+        // upto is a pointer into the array
+        for (; ; ) {
           int delta = 0;
-          for(;;) {
+          for (; ; ) {
             byte b = arr[upto++];
             delta = (delta << 7) | (b & 0x7f);
-            //System.out.println("    cycle: upto=" + upto + " delta=" + delta + " b=" + b);
+            // System.out.println("    cycle: upto=" + upto + " delta=" + delta + " b=" + b);
             if ((b & 0x80) == 0) break;
           }
-          //System.out.println("  delta=" + delta);
+          // System.out.println("  delta=" + delta);
           if (delta == 0) break;
           tnum += delta - TNUM_OFFSET;
-          //System.out.println("  tnum=" + tnum);
-          buffer[bufferUpto++] = ordBase+tnum;
+          // System.out.println("  tnum=" + tnum);
+          buffer[bufferUpto++] = ordBase + tnum;
           if (bufferUpto == buffer.length) {
             break;
           }
@@ -849,11 +884,11 @@ public class DocTermOrds implements Accountable {
       if ((code & 0x80000000) != 0) {
         // a pointer
         upto = code & 0x7fffffff;
-        //System.out.println("    pointer!  upto=" + upto);
+        // System.out.println("    pointer!  upto=" + upto);
         int whichArray = (docID >>> 16) & 0xff;
         arr = tnums[whichArray];
       } else {
-        //System.out.println("    inline!");
+        // System.out.println("    inline!");
         arr = null;
         upto = code;
       }
@@ -910,22 +945,22 @@ public class DocTermOrds implements Accountable {
     public long lookupTerm(BytesRef key) {
       try {
         switch (te.seekCeil(key)) {
-          case FOUND:           
+          case FOUND:
             assert te.ord() >= 0;
             return te.ord();
           case NOT_FOUND:
             assert te.ord() >= 0;
-            return -te.ord()-1;
+            return -te.ord() - 1;
           default: /* END */
-            return -numTerms()-1;
+            return -numTerms() - 1L;
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
-    
+
     @Override
-    public TermsEnum termsEnum() {    
+    public TermsEnum termsEnum() {
       try {
         return getOrdTermsEnum(reader);
       } catch (IOException e) {

@@ -16,6 +16,7 @@
  */
 
 /**
- * This package contains components that support {@link org.apache.solr.metrics.reporters.SolrJmxReporter}.
+ * This package contains components that support {@link
+ * org.apache.solr.metrics.reporters.SolrJmxReporter}.
  */
 package org.apache.solr.metrics.reporters.jmx;

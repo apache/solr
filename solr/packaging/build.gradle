@@ -15,64 +15,44 @@
  * limitations under the License.
  */
 
+import org.apache.tools.ant.util.TeeOutputStream
+
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
 plugins {
   id 'base'
   id 'distribution'
-  id 'signing'
 }
 
 description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
+  slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
+  slimDevDir = file("$buildDir/dev-slim")
 }
 
 configurations {
-  distSolr {
-    transitive = false
-  }
-  distSolrj
-  contrib
+  modules
   example
+  prometheusExporter
   server
   docs
   docker
-  solrTgz
-  solrTgzSignature
-  solrZip
-}
-
-artifacts {
-  solrTgz(distTar)
-  solrZip(distZip)
+  solrFullTgz
+  solrSlimTgz
+  solrFullTgzSignature
+  solrSlimTgzSignature
 }
 
 dependencies {
-  distSolrj project(":solr:solrj")
-
-  [":solr:contrib:analysis-extras",
-   ":solr:contrib:analytics",
-   ":solr:contrib:extraction",
-   ":solr:contrib:clustering",
-   ":solr:contrib:gcs-repository",
-   ":solr:contrib:jaegertracer-configurator",
-   ":solr:contrib:langid",
-   ":solr:contrib:ltr",
-   ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:s3-repository",
-   ":solr:contrib:scripting"
-  ].each { contribName ->
-    distSolr project(contribName)
-    contrib  project(path: contribName, configuration: "packaging")
+  project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
+    modules project(path: module, configuration: "packaging")
   }
 
-  distSolr project(":solr:core")
-  distSolr project(":solr:server")
-  distSolr project(":solr:solrj")
+  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -81,55 +61,40 @@ dependencies {
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
+
+  solrFullTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signFullBinaryTgz"
+  }
+
+  solrSlimTgzSignature files("$buildDir/distributions/solr-${version}-slim.tgz.asc") {
+    builtBy ":solr:distribution:signSlimBinaryTgz"
+  }
 }
 
 distributions {
-  main {
+  slim {
     distributionBaseName = 'solr'
+    distributionClassifier = "slim"
     contents {
-      // TODO: This is missing module README files, as compared to 8x
 
-      // Manually correct posix permissions (matters when packaging on Windows).
-      filesMatching([
-          "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
-          "**/bin/solr",
-          "**/bin/init.d/solr",
-          "**/bin/solr-exporter",
-          "**/docker/scripts/*",
-      ]) { copy ->
-        copy.setMode(0755)
-      }
+      from(rootDir, {
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+      })
 
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
         include "CHANGES.txt"
-        include "LICENSE.txt"
-        include "NOTICE.txt"
-        include "README.md"
       })
 
-      // Should we include Lucene changes?
-      /*
-        from(project(":lucene").projectDir, {
-          include "CHANGES.txt"
-          rename { file -> 'LUCENE_CHANGES.txt' }
-        })
-      */
-
-      from(configurations.contrib, {
-        into "contrib"
+      from(projectDir, {
+        include "README.txt"
       })
 
-      from(configurations.distSolr, {
-        into "dist"
-      })
-
-      from(configurations.distSolrj - configurations.distSolr, {
-        into "dist/solrj-lib"
+      from ('static/lib', {
+        into 'lib'
       })
 
       from(configurations.example, {
@@ -146,66 +111,192 @@ distributions {
 
       from(configurations.docker, {
         into "docker"
+        filesMatching([
+            "scripts/**",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
       })
 
+      // Manually correct posix permissions (matters when packaging on Windows).
+      filesMatching([
+          "**/*.sh",
+          "**/bin/solr",
+          "**/bin/systemd/solr.service",
+      ]) { copy ->
+        copy.setMode(0755)
+      }
+
+    }
+  }
+  full {
+    distributionBaseName = 'solr'
+    contents {
+      // Build on-top of the slim distribution
+      with(distributions.slim.getContents())
+
+      from(configurations.modules, {
+        into "modules"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
+        filesMatching([
+            "bin/*",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
     }
   }
 }
 
-installDist {
+installFullDist {
   into distDir
 }
 
-task dev(type: Copy) {
-  description "Assemble Solr distribution into 'development' folder at ${devDir}"
+installSlimDist {
+  into slimDistDir
+}
+
+assembleDist {
+  dependsOn tasks.assembleFullDist
+  dependsOn tasks.assembleSlimDist
+}
+
+installDist {
+  dependsOn tasks.installFullDist
+  dependsOn tasks.installSlimDist
+}
+
+task devFull(type: Copy) {
+  description "Assemble Full Solr distribution into 'development' folder at ${devDir}"
   group "build"
 
-  from installDist.outputs
+  from installFullDist.outputs
   into devDir
 }
 
-assemble.dependsOn installDist
+task devSlim(type: Copy) {
+  description "Assemble Slim Solr distribution into 'development' folder at ${slimDevDir}"
+  group "build"
 
-
-// NOTE: we don't use the convinence DSL of the 'signing' extension to define our 'Sign' tasks because
-// that (by default) adds our signature files to the 'archives' configuration -- which is what
-// assemble & installDist try to copy/sync, so they wouldn't work w/o GPG installed (which would be bad).
-//
-// We also want to hook in our own property check dependency since the default error message from Sign task
-// refers to the wrong (internal only) property name ("signatory.keyId")
-signing {
-  useGpgCmd() // so gpg-agent can be used
+  from installSlimDist.outputs
+  into slimDevDir
 }
-task failUnlessGpgKeyProperty {
-  // placeholder that can be depended on by any task needing GPG key which will 'fail fast' if it's not set.
-  def propName = 'signing.gnupg.keyName'
 
-  // This explicitly checks the taskGraph (instead of a simple 'doFirst') so it can fail the user's gradle
-  // invocation immediately before any unrelated build tasks may run in parallel
-  if ( ! project.hasProperty(propName) ) {
-    gradle.taskGraph.whenReady { graph ->
-      if ( graph.hasTask(failUnlessGpgKeyProperty) ) {
-        // TODO: it would be really nice if taskGraph was an actual graph and we could report what tasks in (transitive) depend on us
-        throw new GradleException("'$propName' property must be set for GPG signing, please see help/gpgSigning.txt")
-      }
+task dev {
+  description "Assemble Solr distributions into 'development' folders at ${devDir} and ${slimDevDir}"
+  group "build"
+
+  dependsOn tasks.devFull
+  dependsOn tasks.devSlim
+}
+
+fullDistTar {
+  compression = Compression.GZIP
+}
+
+slimDistTar {
+  compression = Compression.GZIP
+}
+
+distTar.dependsOn tasks.fullDistTar
+distTar.dependsOn tasks.slimDistTar
+
+fullDistZip.enabled = false
+slimDistZip.enabled = false
+
+assemble.dependsOn tasks.installDist
+assemble.dependsOn tasks.installSlimDist
+
+artifacts {
+  solrFullTgz(fullDistTar)
+  solrSlimTgz(slimDistTar)
+}
+
+task downloadBats(type: NpmTask) {
+  group = 'Build Dependency Download'
+  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
+                     "https://github.com/bats-core/bats-assert#v2.0.0",
+                     "https://github.com/bats-core/bats-file#v0.3.0",
+  ]
+
+  inputs.files("${project.ext.nodeProjectDir}/package.json")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-support")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-assert")
+  outputs.dir("${project.ext.nodeProjectDir}/node_modules/bats-file")
+}
+
+task integrationTests(type: BatsTask) {
+  dependsOn installFullDist
+  dependsOn downloadBats
+
+  def integrationTestOutput = "$buildDir/test-output"
+  def solrHome = "$integrationTestOutput/solr-home"
+  def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
+  var solrPort = Integer.parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
+  while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
+    try (ServerSocket s = new ServerSocket(0)) {
+      solrPort = s.getLocalPort()
+    } catch (Exception e) {
+      println("WARN: Could not assign random port for Bats tests. Using default port 8983.")
+      solrPort = 8983
     }
   }
-}
-task signDistTar(type: Sign) {
-  dependsOn failUnlessGpgKeyProperty
-  sign configurations.solrTgz
-}
-dependencies {
-  solrTgzSignature files(tasks.signDistTar.signatureFiles.singleFile) {
-    builtBy signDistTar
+
+  inputs.dir(distDir)
+  outputs.dir(integrationTestOutput)
+
+  doFirst {
+    delete integrationTestOutput
+    mkdir integrationTestOutput
+    mkdir solrHome
+    mkdir solrTestFailuresDir
+
+    // TODO - if quiet then don't tee
+    standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+    println("Running BATS tests with Solr base port ${solrPort}")
   }
+
+  environment SOLR_TIP: distDir.toString()
+  environment SOLR_HOME: solrHome
+  environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT: solrPort
+  environment SOLR2_PORT: solrPort + 1
+  environment SOLR3_PORT: solrPort + 2
+  environment ZK_PORT: solrPort + 1000
+  environment SOLR_EXPORTER_PORT: solrPort + 100
+  environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_OUTPUT_DIR: integrationTestOutput
+  environment TEST_FAILURE_DIR: solrTestFailuresDir
+  environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
-task signDistZip(type: Sign) {
-  dependsOn failUnlessGpgKeyProperty
-  sign configurations.solrZip
-}
-task signDist {
-  group = 'Distribution'
-  description = 'GPG Signs the main distributions'
-  dependsOn signDistTar, signDistZip
+
+class BatsTask extends Exec {
+  @InputDirectory
+  String testDir = 'test'
+
+  @Input
+  var testFiles = []
+
+  @Option(option = "tests", description = "Sets test cases to be included")
+  public void setTestNamePatterns(List<String> tests) {
+    // TODO: bats --filter <regex>
+    tests.each { testFiles << "$testDir/$it" }
+  }
+
+  @Override
+  @TaskAction
+  protected void exec() {
+    executable "$project.ext.nodeProjectDir/node_modules/bats/bin/bats"
+
+    // Note: tests to run must be listed after all other arguments
+    // Additional debugging output: -x, --verbose-run
+    setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
+
+    super.exec()
+  }
 }

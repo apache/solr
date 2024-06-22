@@ -16,17 +16,15 @@
  */
 package org.apache.solr;
 
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.handler.component.TrackingShardHandlerFactory;
-import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
-import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
-
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
+import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 
 /**
- * super simple sanity check that SimpleTrackingShardHandler can be used in a 
- * {@link BaseDistributedSearchTestCase} subclass
+ * super simple sanity check that SimpleTrackingShardHandler can be used in a {@link
+ * BaseDistributedSearchTestCase} subclass
  */
 public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCase {
 
@@ -37,12 +35,13 @@ public class TestSimpleTrackingShardHandler extends BaseDistributedSearchTestCas
 
   public void testSolrXmlOverrideAndCorrectShardHandler() throws Exception {
     RequestTrackingQueue trackingQueue = new RequestTrackingQueue();
-    
+
     TrackingShardHandlerFactory.setTrackingQueue(jettys, trackingQueue);
     // sanity check that our control jetty has the correct configs as well
-    TrackingShardHandlerFactory.setTrackingQueue(Collections.singletonList(controlJetty), trackingQueue);
-    
-    QueryResponse ignored = query("q","*:*", "fl", "id", "sort", "id asc");
+    TrackingShardHandlerFactory.setTrackingQueue(
+        Collections.singletonList(controlJetty), trackingQueue);
+
+    query("q", "*:*", "fl", "id", "sort", "id asc");
 
     int numShardRequests = 0;
     for (List<ShardRequestAndParams> shard : trackingQueue.getAllRequests().values()) {

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
@@ -24,10 +27,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
@@ -52,20 +51,21 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-
 public class SolrIndexWriter extends IndexWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  
-  /** Stored into each Lucene commit to record the
-   *  System.currentTimeMillis() when commit was called. */
+
+  /**
+   * Stored into each Lucene commit to record the System.currentTimeMillis() when commit was called.
+   */
   public static final String COMMIT_TIME_MSEC_KEY = "commitTimeMSec";
+
   public static final String COMMIT_COMMAND_VERSION = "commitCommandVer";
 
   private final Object CLOSE_LOCK = new Object();
-  
+
   String name;
   private DirectoryFactory directoryFactory;
   private InfoStream infoStream;
@@ -92,17 +92,26 @@ public class SolrIndexWriter extends IndexWriter {
   // merge diagnostics.
   private final Map<String, Long> runningMerges = new ConcurrentHashMap<>();
 
-  public static SolrIndexWriter create(SolrCore core, String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
+  public static SolrIndexWriter create(
+      SolrCore core,
+      String name,
+      String path,
+      DirectoryFactory directoryFactory,
+      boolean create,
+      IndexSchema schema,
+      SolrIndexConfig config,
+      IndexDeletionPolicy delPolicy,
+      Codec codec)
+      throws IOException {
 
     SolrIndexWriter w = null;
     final Directory d = directoryFactory.get(path, DirContext.DEFAULT, config.lockType);
     try {
-      w = new SolrIndexWriter(core, name, path, d, create, schema, 
-                              config, delPolicy, codec);
+      w = new SolrIndexWriter(core, name, path, d, create, schema, config, delPolicy, codec);
       w.setDirectoryFactory(directoryFactory);
       return w;
     } finally {
-      if (null == w && null != d) { 
+      if (null == w && null != d) {
         directoryFactory.doneWithDirectory(d);
         directoryFactory.release(d);
       }
@@ -122,12 +131,25 @@ public class SolrIndexWriter extends IndexWriter {
     solrMetricsContext = null;
   }
 
-  private SolrIndexWriter(SolrCore core, String name, String path, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
-    super(directory,
-          config.toIndexWriterConfig(core).
-          setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-          setIndexDeletionPolicy(delPolicy).setCodec(codec)
-          );
+  private SolrIndexWriter(
+      SolrCore core,
+      String name,
+      String path,
+      Directory directory,
+      boolean create,
+      IndexSchema schema,
+      SolrIndexConfig config,
+      IndexDeletionPolicy delPolicy,
+      Codec codec)
+      throws IOException {
+    super(
+        directory,
+        config
+            .toIndexWriterConfig(core)
+            .setOpenMode(
+                create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND)
+            .setIndexDeletionPolicy(delPolicy)
+            .setCodec(codec));
     log.debug("Opened Writer {}", name);
     this.name = name;
     infoStream = getConfig().getInfoStream();
@@ -157,33 +179,84 @@ public class SolrIndexWriter extends IndexWriter {
       }
       if (mergeDetails) {
         mergeTotals = true; // override
-        majorMergedDocs = solrMetricsContext.meter("docs", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
-        majorDeletedDocs = solrMetricsContext.meter("deletedDocs", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
+        majorMergedDocs =
+            solrMetricsContext.meter(
+                "docs", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
+        majorDeletedDocs =
+            solrMetricsContext.meter(
+                "deletedDocs", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
       }
       if (mergeTotals) {
-        minorMerge = solrMetricsContext.timer("minor", SolrInfoBean.Category.INDEX.toString(), "merge");
-        majorMerge = solrMetricsContext.timer("major", SolrInfoBean.Category.INDEX.toString(), "merge");
-        mergeErrors = solrMetricsContext.counter("errors", SolrInfoBean.Category.INDEX.toString(), "merge");
+        minorMerge =
+            solrMetricsContext.timer("minor", SolrInfoBean.Category.INDEX.toString(), "merge");
+        majorMerge =
+            solrMetricsContext.timer("major", SolrInfoBean.Category.INDEX.toString(), "merge");
+        mergeErrors =
+            solrMetricsContext.counter("errors", SolrInfoBean.Category.INDEX.toString(), "merge");
         String tag = core.getMetricTag();
-        solrMetricsContext.gauge(() -> runningMajorMerges.get(), true, "running", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
-        solrMetricsContext.gauge(() -> runningMinorMerges.get(), true, "running", SolrInfoBean.Category.INDEX.toString(), "merge", "minor");
-        solrMetricsContext.gauge(() -> runningMajorMergesDocs.get(), true, "running.docs", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
-        solrMetricsContext.gauge(() -> runningMinorMergesDocs.get(), true, "running.docs", SolrInfoBean.Category.INDEX.toString(), "merge", "minor");
-        solrMetricsContext.gauge(() -> runningMajorMergesSegments.get(), true, "running.segments", SolrInfoBean.Category.INDEX.toString(), "merge", "major");
-        solrMetricsContext.gauge(() -> runningMinorMergesSegments.get(), true, "running.segments", SolrInfoBean.Category.INDEX.toString(), "merge", "minor");
+        solrMetricsContext.gauge(
+            () -> runningMajorMerges.get(),
+            true,
+            "running",
+            SolrInfoBean.Category.INDEX.toString(),
+            "merge",
+            "major");
+        solrMetricsContext.gauge(
+            () -> runningMinorMerges.get(),
+            true,
+            "running",
+            SolrInfoBean.Category.INDEX.toString(),
+            "merge",
+            "minor");
+        solrMetricsContext.gauge(
+            () -> runningMajorMergesDocs.get(),
+            true,
+            "running.docs",
+            SolrInfoBean.Category.INDEX.toString(),
+            "merge",
+            "major");
+        solrMetricsContext.gauge(
+            () -> runningMinorMergesDocs.get(),
+            true,
+            "running.docs",
+            SolrInfoBean.Category.INDEX.toString(),
+            "merge",
+            "minor");
+        solrMetricsContext.gauge(
+            () -> runningMajorMergesSegments.get(),
+            true,
+            "running.segments",
+            SolrInfoBean.Category.INDEX.toString(),
+            "merge",
+            "major");
+        solrMetricsContext.gauge(
+            () -> runningMinorMergesSegments.get(),
+            true,
+            "running.segments",
+            SolrInfoBean.Category.INDEX.toString(),
+            "merge",
+            "minor");
         flushMeter = solrMetricsContext.meter("flush", SolrInfoBean.Category.INDEX.toString());
       }
     }
   }
 
-  @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
-      " but currently suspiciously used for replication as well")
-  public static void setCommitData(IndexWriter iw, long commitCommandVersion) {
-    log.debug("Calling setCommitData with IW:{} commitCommandVersion:{}", iw, commitCommandVersion);
-    final Map<String,String> commitData = new HashMap<>();
-    commitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
-    commitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
-    iw.setLiveCommitData(commitData.entrySet());
+  @SuppressForbidden(
+      reason =
+          "Need currentTimeMillis, commit time should be used only for debugging purposes, "
+              + " but currently suspiciously used for replication as well")
+  public static void setCommitData(
+      IndexWriter iw, long commitCommandVersion, Map<String, String> commitData) {
+    log.debug(
+        "Calling setCommitData with IW:{} commitCommandVersion:{} commitData:{}",
+        iw,
+        commitCommandVersion,
+        commitData);
+    Map<String, String> finalCommitData =
+        commitData == null ? new HashMap<>(4) : new HashMap<>(commitData);
+    finalCommitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
+    finalCommitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
+    iw.setLiveCommitData(finalCommitData.entrySet());
   }
 
   private void setDirectoryFactory(DirectoryFactory factory) {
@@ -254,41 +327,42 @@ public class SolrIndexWriter extends IndexWriter {
   @Override
   protected void doAfterFlush() throws IOException {
     if (flushMeter != null) { // this is null when writer is used only for snapshot cleanup
-      flushMeter.mark();      // or if mergeTotals == false
+      flushMeter.mark(); // or if mergeTotals == false
     }
     super.doAfterFlush();
   }
 
-  /**
-   * use DocumentBuilder now...
-   * private final void addField(Document doc, String name, String val) {
-   * SchemaField ftype = schema.getField(name);
-   * <p/>
-   * // we don't check for a null val ourselves because a solr.FieldType
-   * // might actually want to map it to something.  If createField()
-   * // returns null, then we don't store the field.
-   * <p/>
-   * Field field = ftype.createField(val, boost);
-   * if (field != null) doc.add(field);
-   * }
-   * <p/>
-   * <p/>
-   * public void addRecord(String[] fieldNames, String[] fieldValues) throws IOException {
-   * Document doc = new Document();
-   * for (int i=0; i<fieldNames.length; i++) {
-   * String name = fieldNames[i];
-   * String val = fieldNames[i];
-   * <p/>
-   * // first null is end of list.  client can reuse arrays if they want
-   * // and just write a single null if there is unused space.
-   * if (name==null) break;
-   * <p/>
-   * addField(doc,name,val);
-   * }
-   * addDocument(doc);
-   * }
-   * ****
-   */
+  // use DocumentBuilder now...
+  //  private final void addField(Document doc, String name, String val) {
+  //    SchemaField ftype = schema.getField(name);
+  //
+  //    // we don't check for a null val ourselves because a solr.FieldType
+  //    // might actually want to map it to something.  If createField()
+  //    // returns null, then we don't store the field.
+  //
+  //    Field field = ftype.createField(val, boost);
+  //    if (field != null) {
+  //      doc.add(field);
+  //    }
+  //  }
+  //
+  //  public void addRecord(String[] fieldNames, String[] fieldValues) throws IOException {
+  //    Document doc = new Document();
+  //    for (int i = 0; i < fieldNames.length; i++) {
+  //      String name = fieldNames[i];
+  //      String val = fieldNames[i];
+  //
+  //      // first null is end of list.  client can reuse arrays if they want
+  //      // and just write a single null if there is unused space.
+  //      if (name == null) {
+  //        break;
+  //      }
+  //
+  //      addField(doc, name, val);
+  //    }
+  //    addDocument(doc);
+  //  }
+
   private volatile boolean isClosed = false;
 
   @Override
@@ -333,7 +407,7 @@ public class SolrIndexWriter extends IndexWriter {
       }
     }
     if (doClose) {
-      
+
       if (infoStream != null) {
         IOUtils.closeQuietly(infoStream);
       }
@@ -347,5 +421,4 @@ public class SolrIndexWriter extends IndexWriter {
       }
     }
   }
-
 }

@@ -21,12 +21,11 @@ import org.apache.lucene.index.UpgradeIndexMergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
-/**
- * A {@link MergePolicyFactory} for {@link UpgradeIndexMergePolicy} objects.
- */
+/** A {@link MergePolicyFactory} for {@link UpgradeIndexMergePolicy} objects. */
 public class UpgradeIndexMergePolicyFactory extends WrapperMergePolicyFactory {
 
-  public UpgradeIndexMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  public UpgradeIndexMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
   }
 
@@ -35,5 +34,4 @@ public class UpgradeIndexMergePolicyFactory extends WrapperMergePolicyFactory {
     final MergePolicy mp = new UpgradeIndexMergePolicy(wrappedMP);
     return mp;
   }
-
 }

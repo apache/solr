@@ -16,13 +16,13 @@
  */
 package org.apache.solr.search.facet;
 
+import static org.apache.solr.common.util.Utils.fromJSONString;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -30,6 +30,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -41,8 +42,6 @@ import org.apache.solr.search.QueryContext;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.util.Utils.fromJSONString;
-
 public class FacetModule extends SearchComponent {
 
   public static final String COMPONENT_NAME = "facet_module";
@@ -51,20 +50,18 @@ public class FacetModule extends SearchComponent {
   // The largest current flag in ShardRequest is 0x00002000
   // We'll put our bits in the middle to avoid future ones in ShardRequest and
   // custom ones that may start at the top.
-  public final static int PURPOSE_GET_JSON_FACETS = 0x00100000;
-  public final static int PURPOSE_REFINE_JSON_FACETS = 0x00200000;
+  public static final int PURPOSE_GET_JSON_FACETS = 0x00100000;
+  public static final int PURPOSE_REFINE_JSON_FACETS = 0x00200000;
 
   // Internal information passed down from the top level to shards for distributed faceting.
-  private final static String FACET_INFO = "_facet_";
-  private final static String FACET_REFINE = "refine";
-
+  private static final String FACET_INFO = "_facet_";
+  private static final String FACET_REFINE = "refine";
 
   public FacetComponentState getFacetComponentState(ResponseBuilder rb) {
     // TODO: put a map on ResponseBuilder?
     // rb.componentInfo.get(FacetComponentState.class);
     return (FacetComponentState) rb.req.getContext().get(FacetComponentState.class);
   }
-
 
   @Override
   @SuppressWarnings({"unchecked"})
@@ -82,8 +79,12 @@ public class FacetModule extends SearchComponent {
       if (jsonObj instanceof Map) {
         jsonFacet = (Map<String, Object>) jsonObj;
       } else if (jsonObj != null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Expected Map for 'facet', received " + jsonObj.getClass().getSimpleName() + "=" + jsonObj);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Expected Map for 'facet', received "
+                + jsonObj.getClass().getSimpleName()
+                + "="
+                + jsonObj);
       }
     }
     if (jsonFacet == null) return;
@@ -117,7 +118,6 @@ public class FacetModule extends SearchComponent {
     rb.req.getContext().put(FacetComponentState.class, fcState);
   }
 
-
   @Override
   @SuppressWarnings({"unchecked"})
   public void process(ResponseBuilder rb) throws IOException {
@@ -136,10 +136,15 @@ public class FacetModule extends SearchComponent {
     fcontext.cache = cache;
     if (isShard) {
       fcontext.flags |= FacetContext.IS_SHARD;
-      fcontext.facetInfo = facetState.facetInfo.isEmpty() ? null : (Map<String, Object>) facetState.facetInfo.get(FACET_REFINE);
+      fcontext.facetInfo =
+          facetState.facetInfo.isEmpty()
+              ? null
+              : (Map<String, Object>) facetState.facetInfo.get(FACET_REFINE);
       if (fcontext.facetInfo != null) {
         fcontext.flags |= FacetContext.IS_REFINEMENT;
-        fcontext.flags |= FacetContext.SKIP_FACET; // the root bucket should have been received from all shards previously
+        fcontext.flags |=
+            FacetContext
+                .SKIP_FACET; // the root bucket should have been received from all shards previously
       }
     }
     if (rb.isDebug()) {
@@ -153,16 +158,15 @@ public class FacetModule extends SearchComponent {
     rb.rsp.add("facets", results);
   }
 
-
   private void clearFaceting(List<ShardRequest> outgoing) {
     // turn off faceting for requests not marked as being for faceting refinements
     for (ShardRequest sreq : outgoing) {
       if ((sreq.purpose & PURPOSE_REFINE_JSON_FACETS) != 0) continue;
-      sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_INFO is enough to control the faceting
+      // this just saves space. FACET_INFO is enough to control the faceting
+      sreq.params.remove("json.facet");
       sreq.params.remove(FACET_INFO);
     }
   }
-
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
@@ -174,7 +178,8 @@ public class FacetModule extends SearchComponent {
     }
 
     // Check if there are any refinements possible
-    if ((facetState.mcontext == null) || facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
+    if ((facetState.mcontext == null)
+        || facetState.mcontext.getSubsWithRefinement(facetState.facetRequest).isEmpty()) {
       clearFaceting(rb.outgoing);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -201,7 +206,11 @@ public class FacetModule extends SearchComponent {
       // If nshards becomes too great, we may want to move to hashing for
       // better scalability.
       for (ShardRequest sreq : rb.outgoing) {
-        if ((sreq.purpose & (ShardRequest.PURPOSE_GET_FIELDS | ShardRequest.PURPOSE_REFINE_FACETS | ShardRequest.PURPOSE_REFINE_PIVOT_FACETS)) != 0
+        if ((sreq.purpose
+                    & (ShardRequest.PURPOSE_GET_FIELDS
+                        | ShardRequest.PURPOSE_REFINE_FACETS
+                        | ShardRequest.PURPOSE_REFINE_PIVOT_FACETS))
+                != 0
             && sreq.shards != null
             && sreq.shards.length == 1
             && sreq.shards[0].equals(shard)) {
@@ -215,7 +224,7 @@ public class FacetModule extends SearchComponent {
         // so create one ourselves.
         newRequest = true;
         shardsRefineRequest = new ShardRequest();
-        shardsRefineRequest.shards = new String[]{shard};
+        shardsRefineRequest.shards = new String[] {shard};
         shardsRefineRequest.params = new ModifiableSolrParams(rb.req.getParams());
         // don't request any documents
         shardsRefineRequest.params.remove(CommonParams.START);
@@ -225,23 +234,25 @@ public class FacetModule extends SearchComponent {
 
       shardsRefineRequest.purpose |= PURPOSE_REFINE_JSON_FACETS;
 
-      Map<String, Object> finfo = new HashMap<>(1);
+      Map<String, Object> finfo = CollectionUtil.newHashMap(1);
       finfo.put(FACET_REFINE, refinement);
 
-      // String finfoStr = JSONUtil.toJSON(finfo, -1);  // this doesn't handle formatting of Date objects the way we want
+      // String finfoStr = JSONUtil.toJSON(finfo, -1);  // this doesn't handle formatting of Date
+      // objects the way we want
       CharArr out = new CharArr();
-      JSONWriter jsonWriter = new JSONWriter(out, -1) {
-        @Override
-        public void handleUnknownClass(Object o) {
-          // handle date formatting correctly
-          if (o instanceof Date) {
-            String s = ((Date) o).toInstant().toString();
-            writeString(s);
-            return;
-          }
-          super.handleUnknownClass(o);
-        }
-      };
+      JSONWriter jsonWriter =
+          new JSONWriter(out, -1) {
+            @Override
+            public void handleUnknownClass(Object o) {
+              // handle date formatting correctly
+              if (o instanceof Date) {
+                String s = ((Date) o).toInstant().toString();
+                writeString(s);
+                return;
+              }
+              super.handleUnknownClass(o);
+            }
+          };
       jsonWriter.write(finfo);
       String finfoStr = out.toString();
       // System.err.println("##################### REFINE=" + finfoStr);
@@ -263,13 +274,15 @@ public class FacetModule extends SearchComponent {
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       sreq.purpose |= FacetModule.PURPOSE_GET_JSON_FACETS;
-      sreq.params.set(FACET_INFO, "{}"); // The presence of FACET_INFO (_facet_) turns on json faceting
+      // The presence of FACET_INFO (_facet_) turns on json faceting
+      sreq.params.set(FACET_INFO, "{}");
     } else {
       // turn off faceting on other requests
-      /*** distributedProcess will need to use other requests for refinement
-       sreq.params.remove("json.facet");  // this just saves space... the presence of FACET_INFO really control the faceting
-       sreq.params.remove(FACET_INFO);
-       **/
+      /* distributedProcess will need to use other requests for refinement
+      // this just saves space... the presence of FACET_INFO really control the faceting
+      sreq.params.remove("json.facet");
+      sreq.params.remove(FACET_INFO);
+      */
     }
   }
 
@@ -281,12 +294,16 @@ public class FacetModule extends SearchComponent {
     for (ShardResponse shardRsp : sreq.responses) {
       SolrResponse rsp = shardRsp.getSolrResponse();
       NamedList<Object> top = rsp.getResponse();
-      if (top == null) continue; // shards.tolerant=true will cause this to happen on exceptions/errors
+      if (top == null)
+        continue; // shards.tolerant=true will cause this to happen on exceptions/errors
       Object facet = top.get("facets");
       if (facet == null) {
-        SimpleOrderedMap<?> shardResponseHeader = (SimpleOrderedMap<?>) rsp.getResponse().get("responseHeader");
-        if (Boolean.TRUE.equals(shardResponseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        SimpleOrderedMap<?> shardResponseHeader =
+            (SimpleOrderedMap<?>) rsp.getResponse().get("responseHeader");
+        if (Boolean.TRUE.equals(
+            shardResponseHeader.getBooleanArg(
+                SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          rb.rsp.setPartialResults();
         }
         continue;
       }
@@ -299,7 +316,7 @@ public class FacetModule extends SearchComponent {
         // System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
         // call merge again with a diff flag set on the context???
         facetState.mcontext.root = facet;
-        facetState.mcontext.setShard(shardRsp.getShard());  // TODO: roll newShard into setShard?
+        facetState.mcontext.setShard(shardRsp.getShard()); // TODO: roll newShard into setShard?
         facetState.merger.merge(facet, facetState.mcontext);
         return;
       }
@@ -334,16 +351,16 @@ public class FacetModule extends SearchComponent {
     return Category.QUERY;
   }
 
-
   // TODO: perhaps factor out some sort of root/parent facet object that doesn't depend
-// on stuff like ResponseBuilder, but contains request parameters,
-// root filter lists (for filter exclusions), etc?
-  class FacetComponentState {
+  // on stuff like ResponseBuilder, but contains request parameters,
+  // root filter lists (for filter exclusions), etc?
+  static class FacetComponentState {
     ResponseBuilder rb;
     Map<String, Object> facetCommands;
     FacetRequest facetRequest;
     boolean isShard;
-    Map<String, Object> facetInfo; // _facet_ param: contains out-of-band facet info, mainly for refinement requests
+    Map<String, Object>
+        facetInfo; // _facet_ param: contains out-of-band facet info, mainly for refinement requests
 
     //
     // Only used for distributed search
@@ -354,8 +371,7 @@ public class FacetModule extends SearchComponent {
 
   // base class for facet functions that can be used in a sort
   abstract static class FacetSortableMerger extends FacetMerger {
-    public void prepareSort() {
-    }
+    public void prepareSort() {}
 
     @Override
     public void finish(Context mcontext) {
@@ -363,8 +379,9 @@ public class FacetModule extends SearchComponent {
     }
 
     /**
-     * Return the normal comparison sort order.  The sort direction is only to be used in special circumstances (such as making NaN sort
-     * last regardless of sort order.)  Normal sorters do not need to pay attention to direction.
+     * Return the normal comparison sort order. The sort direction is only to be used in special
+     * circumstances (such as making NaN sort last regardless of sort order.) Normal sorters do not
+     * need to pay attention to direction.
      */
     public abstract int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction);
   }
@@ -380,26 +397,24 @@ public class FacetModule extends SearchComponent {
       return getDouble();
     }
 
-
     @Override
     public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return compare(getDouble(), ((FacetDoubleMerger) other).getDouble(), direction);
     }
 
-
     public static int compare(double a, double b, FacetRequest.SortDirection direction) {
       if (a < b) return -1;
       if (a > b) return 1;
 
-      if (a != a) {  // a==NaN
-        if (b != b) {
-          return 0;  // both NaN
+      if (Double.isNaN(a)) {
+        if (Double.isNaN(b)) {
+          return 0; // both NaN
         }
-        return -1 * direction.getMultiplier();  // asc==-1, so this will put NaN at end of sort
+        return -1 * direction.getMultiplier(); // asc==-1, so this will put NaN at end of sort
       }
 
-      if (b != b) { // b is NaN so a is greater
-        return 1 * direction.getMultiplier();  // if sorting asc, make a less so NaN is at end
+      if (Double.isNaN(b)) { // b is NaN so a is greater
+        return 1 * direction.getMultiplier(); // if sorting asc, make a less so NaN is at end
       }
 
       // consider +-0 to be equal
@@ -426,7 +441,6 @@ public class FacetModule extends SearchComponent {
     }
   }
 
-
   // base class for facets that create buckets (and can hence have sub-facets)
   abstract static class FacetBucketMerger<FacetRequestT extends FacetRequest> extends FacetMerger {
     FacetRequestT freq;
@@ -436,7 +450,8 @@ public class FacetModule extends SearchComponent {
     }
 
     /**
-     * Bucketval is the representative value for the bucket.  Only applicable to terms and range queries to distinguish buckets.
+     * Bucketval is the representative value for the bucket. Only applicable to terms and range
+     * queries to distinguish buckets.
      */
     FacetBucket newBucket(@SuppressWarnings("rawtypes") Comparable bucketVal, Context mcontext) {
       return new FacetBucket(this, bucketVal, mcontext);
@@ -463,10 +478,10 @@ public class FacetModule extends SearchComponent {
         return subStat.createFacetMerger(val);
       }
 
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no merger for key=" + key + " , val=" + val);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "no merger for key=" + key + " , val=" + val);
     }
   }
-
 
   static class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
     FacetBucket bucket;
@@ -487,7 +502,8 @@ public class FacetModule extends SearchComponent {
     public Map<String, Object> getRefinement(Context mcontext) {
       Collection<String> tags;
       if (mcontext.bucketWasMissing()) {
-        // if this bucket was missing, we need to get all subfacets that have partials (that need to list values for refinement)
+        // if this bucket was missing, we need to get all subfacets that have partials (that need to
+        // list values for refinement)
         tags = mcontext.getSubsWithPartial(freq);
       } else {
         tags = mcontext.getSubsWithRefinement(freq);
@@ -497,7 +513,6 @@ public class FacetModule extends SearchComponent {
 
       return refinement;
     }
-
 
     @Override
     public void finish(Context mcontext) {
@@ -510,6 +525,3 @@ public class FacetModule extends SearchComponent {
     }
   }
 }
-
-
-

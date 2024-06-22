@@ -23,7 +23,7 @@
          xmlns:asfext="http://projects.apache.org/ns/asfext#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/">
 <!--
-  This file's canonical URL is: http://lucene.apache.org/solr/doap.rdf
+  This file's canonical URL is: https://solr.apache.org/doap.rdf
 
   Note that the canonical URL may redirect to other non-canonical locations.
 -->
@@ -68,6 +68,118 @@
     </maintainer>
 
     <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
+    <release>
+         <Version>
+           <name>solr-9.6.1</name>
+           <created>2024-05-29</created>
+           <revision>9.6.1</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.6.0</name>
+           <created>2024-04-27</created>
+           <revision>9.6.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.5.0</name>
+           <created>2024-02-12</created>
+           <revision>9.5.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.4.1</name>
+           <created>2024-01-18</created>
+           <revision>9.4.1</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.4.0</name>
+           <created>2023-10-14</created>
+           <revision>9.4.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.3.0</name>
+           <created>2023-07-21</created>
+           <revision>9.3.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.2.1</name>
+           <created>2023-05-01</created>
+           <revision>9.2.1</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.2.0</name>
+           <created>2023-03-24</created>
+           <revision>9.2.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.1.1</name>
+           <created>2023-01-25</created>
+           <revision>9.1.1</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.1.0</name>
+           <created>2022-11-20</created>
+           <revision>9.1.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.0.0</name>
+           <created>2022-05-12</created>
+           <revision>9.0.0</revision>
+         </Version>
+    </release>
+    <release>
+       <Version>
+         <name>solr-8.11.3</name>
+         <created>2024-02-08</created>
+         <revision>8.11.3</revision>
+       </Version>
+    </release>
+    <release>
+       <Version>
+         <name>solr-8.11.2</name>
+         <created>2022-06-17</created>
+         <revision>8.11.2</revision>
+       </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-8.11.1</name>
+           <created>2021-12-16</created>
+           <revision>8.11.1</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-8.11.0</name>
+           <created>2021-11-16</created>
+           <revision>8.11.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-8.10.1</name>
+           <created>2021-10-18</created>
+           <revision>8.10.1</revision>
+         </Version>
+    </release>
     <release>
          <Version>
            <name>solr-8.10.0</name>

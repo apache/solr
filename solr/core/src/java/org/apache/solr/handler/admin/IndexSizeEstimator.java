@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.index.BinaryDocValues;
@@ -63,9 +62,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Estimates the raw size of all uncompressed indexed data by scanning term, docValues and
- * stored fields data. This utility also provides detailed statistics about term, docValues,
- * postings and stored fields distributions.
+ * Estimates the raw size of all uncompressed indexed data by scanning term, docValues and stored
+ * fields data. This utility also provides detailed statistics about term, docValues, postings and
+ * stored fields distributions.
  */
 public class IndexSizeEstimator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -99,7 +98,11 @@ public class IndexSizeEstimator {
     private final Map<String, Object> summary;
     private final Map<String, Object> details;
 
-    public Estimate(Map<String, Long> fieldsBySize, Map<String, Long> typesBySize, Map<String, Object> summary, Map<String, Object> details) {
+    public Estimate(
+        Map<String, Long> fieldsBySize,
+        Map<String, Long> typesBySize,
+        Map<String, Object> summary,
+        Map<String, Object> details) {
       Objects.requireNonNull(fieldsBySize);
       Objects.requireNonNull(typesBySize);
       this.fieldsBySize = fieldsBySize;
@@ -118,13 +121,15 @@ public class IndexSizeEstimator {
 
     public Map<String, String> getHumanReadableFieldsBySize() {
       LinkedHashMap<String, String> result = new LinkedHashMap<>();
-      fieldsBySize.forEach((field, size) -> result.put(field, RamUsageEstimator.humanReadableUnits(size)));
+      fieldsBySize.forEach(
+          (field, size) -> result.put(field, RamUsageEstimator.humanReadableUnits(size)));
       return result;
     }
 
     public Map<String, String> getHumanReadableTypesBySize() {
       LinkedHashMap<String, String> result = new LinkedHashMap<>();
-      typesBySize.forEach((field, size) -> result.put(field, RamUsageEstimator.humanReadableUnits(size)));
+      typesBySize.forEach(
+          (field, size) -> result.put(field, RamUsageEstimator.humanReadableUnits(size)));
       return result;
     }
 
@@ -149,7 +154,8 @@ public class IndexSizeEstimator {
     }
   }
 
-  public IndexSizeEstimator(IndexReader reader, int topN, int maxLength, boolean withSummary, boolean withDetails) {
+  public IndexSizeEstimator(
+      IndexReader reader, int topN, int maxLength, boolean withSummary, boolean withDetails) {
     this.reader = reader;
     this.topN = topN;
     this.maxLength = maxLength;
@@ -158,10 +164,12 @@ public class IndexSizeEstimator {
   }
 
   /**
-   * Set the sampling threshold. If the index has more documents than this threshold
-   * then only some values will be sampled and the totals will be extrapolated.
-   * @param threshold size threshold (number of documents). Default value is {@link #DEFAULT_SAMPLING_THRESHOLD}.
-   *                  Setting this to values &lt;= 0 means no threshold (and no sampling).
+   * Set the sampling threshold. If the index has more documents than this threshold then only some
+   * values will be sampled and the totals will be extrapolated.
+   *
+   * @param threshold size threshold (number of documents). Default value is {@link
+   *     #DEFAULT_SAMPLING_THRESHOLD}. Setting this to values &lt;= 0 means no threshold (and no
+   *     sampling).
    */
   public void setSamplingThreshold(int threshold) {
     if (threshold <= 0) {
@@ -172,11 +180,12 @@ public class IndexSizeEstimator {
 
   /**
    * Sampling percent (a number greater than 0 and less or equal to 100). When index size exceeds
-   * the threshold then approximately only this percent of data will be retrieved from the index and the
-   * totals will be extrapolated.
+   * the threshold then approximately only this percent of data will be retrieved from the index and
+   * the totals will be extrapolated.
+   *
    * @param percent sample percent. Default value is {@link #DEFAULT_SAMPLING_PERCENT}.
-   * @throws IllegalArgumentException when value is less than or equal to 0.0 or greater than 100.0, or
-   *        the sampling percent is so small that less than 10 documents would be sampled.
+   * @throws IllegalArgumentException when value is less than or equal to 0.0 or greater than 100.0,
+   *     or the sampling percent is so small that less than 10 documents would be sampled.
    */
   public void setSamplingPercent(float percent) throws IllegalArgumentException {
     if (percent <= 0 || percent > 100) {
@@ -185,10 +194,18 @@ public class IndexSizeEstimator {
     if (reader.maxDoc() > samplingThreshold) {
       samplingStep = Math.round(100.0f / samplingPercent);
       if (log.isInfoEnabled()) {
-        log.info("- number of documents {} larger than {}, sampling percent is {} and sampling step {}", reader.maxDoc(), samplingThreshold, samplingPercent, samplingStep);
+        log.info(
+            "- number of documents {} larger than {}, sampling percent is {} and sampling step {}",
+            reader.maxDoc(),
+            samplingThreshold,
+            samplingPercent,
+            samplingStep);
       }
       if (reader.maxDoc() / samplingStep < 10) {
-        throw new IllegalArgumentException("Out of " + reader.maxDoc() + " less than 10 documents would be sampled, which is too unreliable. Increase the samplingPercent.");
+        throw new IllegalArgumentException(
+            "Out of "
+                + reader.maxDoc()
+                + " less than 10 documents would be sampled, which is too unreliable. Increase the samplingPercent.");
       }
     }
     this.samplingPercent = percent;
@@ -210,39 +227,47 @@ public class IndexSizeEstimator {
       details.put("samplingStep", samplingStep);
     }
     ItemPriorityQueue fieldSizeQueue = new ItemPriorityQueue(summary.size());
-    summary.forEach((field, perField) -> {
-      long size = ((AtomicLong)((Map<String, Object>)perField).get("totalSize")).get();
-      if (size > 0) {
-        fieldSizeQueue.insertWithOverflow(new Item(field, size));
-      }
-    });
+    summary.forEach(
+        (field, perField) -> {
+          long size = ((AtomicLong) ((Map<String, Object>) perField).get("totalSize")).get();
+          if (size > 0) {
+            fieldSizeQueue.insertWithOverflow(new Item(field, size));
+          }
+        });
     Map<String, Long> fieldsBySize = new LinkedHashMap<>();
-    fieldSizeQueue._forEachEntry((k, v) -> fieldsBySize.put((String)k, (Long)v));
+    fieldSizeQueue._forEachEntry((k, v) -> fieldsBySize.put((String) k, (Long) v));
     Map<String, AtomicLong> typeSizes = new HashMap<>();
-    summary.forEach((field, perField) -> {
-      Map<String, Object> perType = (Map<String, Object>)((Map<String, Object>)perField).get("perType");
-      perType.forEach((type, size) -> {
-        if (type.contains("_lengths")) {
-          AtomicLong totalSize = typeSizes.computeIfAbsent(type.replace("_lengths", ""), t -> new AtomicLong());
-          totalSize.addAndGet(((AtomicLong)size).get());
-        }
-      });
-    });
+    summary.forEach(
+        (field, perField) -> {
+          Map<String, Object> perType =
+              (Map<String, Object>) ((Map<String, Object>) perField).get("perType");
+          perType.forEach(
+              (type, size) -> {
+                if (type.contains("_lengths")) {
+                  AtomicLong totalSize =
+                      typeSizes.computeIfAbsent(
+                          type.replace("_lengths", ""), t -> new AtomicLong());
+                  totalSize.addAndGet(((AtomicLong) size).get());
+                }
+              });
+        });
     ItemPriorityQueue typesSizeQueue = new ItemPriorityQueue(typeSizes.size());
-    typeSizes.forEach((type, size) -> {
-      if (size.get() > 0) {
-        typesSizeQueue.insertWithOverflow(new Item(type, size.get()));
-      }
-    });
+    typeSizes.forEach(
+        (type, size) -> {
+          if (size.get() > 0) {
+            typesSizeQueue.insertWithOverflow(new Item(type, size.get()));
+          }
+        });
     Map<String, Long> typesBySize = new LinkedHashMap<>();
-    typesSizeQueue._forEachEntry((k, v) -> typesBySize.put((String)k, (Long)v));
+    typesSizeQueue._forEachEntry((k, v) -> typesBySize.put((String) k, (Long) v));
     // sort summary by field size
     Map<String, Object> newSummary = new LinkedHashMap<>();
     fieldsBySize.keySet().forEach(k -> newSummary.put(String.valueOf(k), summary.get(k)));
     // convert everything to maps and primitives
     convert(newSummary);
     convert(details);
-    return new Estimate(fieldsBySize, typesBySize, withSummary ? newSummary : null, withDetails ? details : null);
+    return new Estimate(
+        fieldsBySize, typesBySize, withSummary ? newSummary : null, withDetails ? details : null);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -250,20 +275,20 @@ public class IndexSizeEstimator {
     for (Map.Entry<String, Object> entry : result.entrySet()) {
       Object value = entry.getValue();
       if (value instanceof ItemPriorityQueue) {
-        ItemPriorityQueue queue = (ItemPriorityQueue)value;
+        ItemPriorityQueue queue = (ItemPriorityQueue) value;
         Map<String, Object> map = new LinkedHashMap<>();
         queue.toMap(map);
         entry.setValue(map);
       } else if (value instanceof MapWriterSummaryStatistics) {
-        MapWriterSummaryStatistics stats = (MapWriterSummaryStatistics)value;
+        MapWriterSummaryStatistics stats = (MapWriterSummaryStatistics) value;
         Map<String, Object> map = new LinkedHashMap<>();
         stats.toMap(map);
         entry.setValue(map);
       } else if (value instanceof AtomicLong) {
-        entry.setValue(((AtomicLong)value).longValue());
+        entry.setValue(((AtomicLong) value).longValue());
       } else if (value instanceof Map) {
         // recurse
-        convert((Map<String, Object>)value);
+        convert((Map<String, Object>) value);
       }
     }
   }
@@ -271,23 +296,38 @@ public class IndexSizeEstimator {
   @SuppressWarnings({"unchecked"})
   private void estimateSummary(Map<String, Object> details, Map<String, Object> summary) {
     log.info("- preparing summary...");
-    details.forEach((type, perType) -> {
-      ((Map<String, Object>)perType).forEach((field, perField) -> {
-        Map<String, Object> perFieldSummary = (Map<String, Object>)summary.computeIfAbsent(field, f -> new HashMap<>());
-        ((Map<String, Object>)perField).forEach((k, val) -> {
-          if (val instanceof SummaryStatistics) {
-            SummaryStatistics stats = (SummaryStatistics)val;
-            if (k.startsWith("lengths")) {
-              AtomicLong total = (AtomicLong)perFieldSummary.computeIfAbsent("totalSize", kt -> new AtomicLong());
-              total.addAndGet((long)stats.getSum());
-            }
-            Map<String, Object> perTypeSummary = (Map<String, Object>)perFieldSummary.computeIfAbsent("perType", pt -> new HashMap<>());
-            AtomicLong total = (AtomicLong)perTypeSummary.computeIfAbsent(type + "_" + k, t -> new AtomicLong());
-            total.addAndGet((long)stats.getSum());
-          }
+    details.forEach(
+        (type, perType) -> {
+          ((Map<String, Object>) perType)
+              .forEach(
+                  (field, perField) -> {
+                    Map<String, Object> perFieldSummary =
+                        (Map<String, Object>) summary.computeIfAbsent(field, f -> new HashMap<>());
+                    ((Map<String, Object>) perField)
+                        .forEach(
+                            (k, val) -> {
+                              if (val instanceof SummaryStatistics) {
+                                SummaryStatistics stats = (SummaryStatistics) val;
+                                if (k.startsWith("lengths")) {
+                                  AtomicLong total =
+                                      (AtomicLong)
+                                          perFieldSummary.computeIfAbsent(
+                                              "totalSize", kt -> new AtomicLong());
+                                  total.addAndGet((long) stats.getSum());
+                                }
+                                Map<String, Object> perTypeSummary =
+                                    (Map<String, Object>)
+                                        perFieldSummary.computeIfAbsent(
+                                            "perType", pt -> new HashMap<>());
+                                AtomicLong total =
+                                    (AtomicLong)
+                                        perTypeSummary.computeIfAbsent(
+                                            type + "_" + k, t -> new AtomicLong());
+                                total.addAndGet((long) stats.getSum());
+                              }
+                            });
+                  });
         });
-      });
-    });
   }
 
   private void estimateNorms(Map<String, Object> result) throws IOException {
@@ -302,7 +342,9 @@ public class IndexSizeEstimator {
           continue;
         }
         Map<String, Object> perField = stats.computeIfAbsent(info.name, n -> new HashMap<>());
-        SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
+        SummaryStatistics lengthSummary =
+            (SummaryStatistics)
+                perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
         while (norms.advance(norms.docID() + samplingStep) != DocIdSetIterator.NO_MORE_DOCS) {
           for (int i = 0; i < samplingStep; i++) {
             lengthSummary.addValue(8);
@@ -325,8 +367,12 @@ public class IndexSizeEstimator {
           continue;
         }
         Map<String, Object> perField = stats.computeIfAbsent(info.name, n -> new HashMap<>());
-        SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
-        lengthSummary.addValue(values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions());
+        SummaryStatistics lengthSummary =
+            (SummaryStatistics)
+                perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
+        lengthSummary.addValue(
+            (double)
+                (values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions()));
       }
     }
     result.put(POINTS, stats);
@@ -366,55 +412,82 @@ public class IndexSizeEstimator {
       FieldInfos fieldInfos = leafReader.getFieldInfos();
       for (FieldInfo info : fieldInfos) {
         // binary
-        countDocValues(stats, info.name, "binary", leafReader.getBinaryDocValues(info.name), values -> {
-          try {
-            BytesRef value = ((BinaryDocValues) values).binaryValue();
-            return value.length;
-          } catch (IOException e) {
-            // ignore
-          }
-          return 0;
-        });
+        countDocValues(
+            stats,
+            info.name,
+            "binary",
+            leafReader.getBinaryDocValues(info.name),
+            values -> {
+              try {
+                BytesRef value = ((BinaryDocValues) values).binaryValue();
+                return value.length;
+              } catch (IOException e) {
+                // ignore
+              }
+              return 0;
+            });
         // numeric
-        countDocValues(stats, info.name, "numeric", leafReader.getNumericDocValues(info.name), values -> 8);
-        countDocValues(stats, info.name, "sorted", leafReader.getSortedDocValues(info.name), values -> {
-          try {
-            TermsEnum termsEnum = ((SortedDocValues) values).termsEnum();
-            BytesRef term;
-            while ((term = termsEnum.next()) != null) {
-              return term.length;
-            }
-          } catch (IOException e) {
-            // ignore
-          }
-          return 0;
-        });
-        countDocValues(stats, info.name, "sortedNumeric", leafReader.getSortedNumericDocValues(info.name),
+        countDocValues(
+            stats, info.name, "numeric", leafReader.getNumericDocValues(info.name), values -> 8);
+        countDocValues(
+            stats,
+            info.name,
+            "sorted",
+            leafReader.getSortedDocValues(info.name),
+            values -> {
+              try {
+                TermsEnum termsEnum = ((SortedDocValues) values).termsEnum();
+                BytesRef term;
+                while ((term = termsEnum.next()) != null) {
+                  return term.length;
+                }
+              } catch (IOException e) {
+                // ignore
+              }
+              return 0;
+            });
+        countDocValues(
+            stats,
+            info.name,
+            "sortedNumeric",
+            leafReader.getSortedNumericDocValues(info.name),
             values -> ((SortedNumericDocValues) values).docValueCount() * 8);
-        countDocValues(stats, info.name, "sortedSet", leafReader.getSortedSetDocValues(info.name), values -> {
-          try {
-            TermsEnum termsEnum = ((SortedSetDocValues) values).termsEnum();
-            BytesRef term;
-            while ((term = termsEnum.next()) != null) {
-              return term.length;
-            }
-          } catch (IOException e) {
-            // ignore
-          }
-          return 0;
-        });
+        countDocValues(
+            stats,
+            info.name,
+            "sortedSet",
+            leafReader.getSortedSetDocValues(info.name),
+            values -> {
+              try {
+                TermsEnum termsEnum = ((SortedSetDocValues) values).termsEnum();
+                BytesRef term;
+                while ((term = termsEnum.next()) != null) {
+                  return term.length;
+                }
+              } catch (IOException e) {
+                // ignore
+              }
+              return 0;
+            });
       }
     }
     result.put(DOC_VALUES, stats);
   }
 
-  private void countDocValues(Map<String, Map<String, Object>> stats, String field, String type, DocIdSetIterator values,
-                              Function<DocIdSetIterator, Integer> valueLength) throws IOException {
+  private void countDocValues(
+      Map<String, Map<String, Object>> stats,
+      String field,
+      String type,
+      DocIdSetIterator values,
+      Function<DocIdSetIterator, Integer> valueLength)
+      throws IOException {
     if (values == null) {
       return;
     }
     Map<String, Object> perField = stats.computeIfAbsent(field, n -> new HashMap<>());
-    SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_" + type, s -> new MapWriterSummaryStatistics());
+    SummaryStatistics lengthSummary =
+        (SummaryStatistics)
+            perField.computeIfAbsent("lengths_" + type, s -> new MapWriterSummaryStatistics());
     while (values.advance(values.docID() + samplingStep) != DocIdSetIterator.NO_MORE_DOCS) {
       int len = valueLength.apply(values);
       for (int i = 0; i < samplingStep; i++) {
@@ -440,19 +513,34 @@ public class IndexSizeEstimator {
     result.put(TERMS, stats);
   }
 
-  private void estimateTermStats(String field, Terms terms, Map<String, Map<String, Object>> stats, boolean isSampling) throws IOException {
+  private void estimateTermStats(
+      String field, Terms terms, Map<String, Map<String, Object>> stats, boolean isSampling)
+      throws IOException {
     Map<String, Object> perField = stats.computeIfAbsent(field, n -> new HashMap<>());
-    SummaryStatistics lengthSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_terms", s -> new MapWriterSummaryStatistics());
-    SummaryStatistics docFreqSummary = (SummaryStatistics)perField.computeIfAbsent("docFreqs", s -> new MapWriterSummaryStatistics());
-    SummaryStatistics totalFreqSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_postings", s -> new MapWriterSummaryStatistics());
+    SummaryStatistics lengthSummary =
+        (SummaryStatistics)
+            perField.computeIfAbsent("lengths_terms", s -> new MapWriterSummaryStatistics());
+    SummaryStatistics docFreqSummary =
+        (SummaryStatistics)
+            perField.computeIfAbsent("docFreqs", s -> new MapWriterSummaryStatistics());
+    SummaryStatistics totalFreqSummary =
+        (SummaryStatistics)
+            perField.computeIfAbsent("lengths_postings", s -> new MapWriterSummaryStatistics());
     // TODO: add this at some point
-    //SummaryStatistics impactsSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_impacts", s -> new MapWriterSummaryStatistics());
+    // SummaryStatistics impactsSummary =
+    // (SummaryStatistics)perField.computeIfAbsent("lengths_impacts", s -> new
+    // MapWriterSummaryStatistics());
     SummaryStatistics payloadSummary = null;
     if (terms.hasPayloads()) {
-      payloadSummary = (SummaryStatistics)perField.computeIfAbsent("lengths_payloads", s -> new MapWriterSummaryStatistics());
+      payloadSummary =
+          (SummaryStatistics)
+              perField.computeIfAbsent("lengths_payloads", s -> new MapWriterSummaryStatistics());
     }
-    ItemPriorityQueue topLen = (ItemPriorityQueue)perField.computeIfAbsent("topLen", s -> new ItemPriorityQueue(topN));
-    ItemPriorityQueue topTotalFreq = (ItemPriorityQueue)perField.computeIfAbsent("topTotalFreq", s -> new ItemPriorityQueue(topN));
+    ItemPriorityQueue topLen =
+        (ItemPriorityQueue) perField.computeIfAbsent("topLen", s -> new ItemPriorityQueue(topN));
+    ItemPriorityQueue topTotalFreq =
+        (ItemPriorityQueue)
+            perField.computeIfAbsent("topTotalFreq", s -> new ItemPriorityQueue(topN));
     TermsEnum termsEnum = terms.iterator();
     BytesRef term;
     PostingsEnum postings = null;
@@ -461,12 +549,12 @@ public class IndexSizeEstimator {
         for (int i = 0; i < samplingStep; i++) {
           lengthSummary.addValue(term.length);
           docFreqSummary.addValue(termsEnum.docFreq());
-          totalFreqSummary.addValue(termsEnum.totalTermFreq());
+          totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
         }
       } else {
         lengthSummary.addValue(term.length);
         docFreqSummary.addValue(termsEnum.docFreq());
-        totalFreqSummary.addValue(termsEnum.totalTermFreq());
+        totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
       }
       if (terms.hasPayloads()) {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);
@@ -498,7 +586,6 @@ public class IndexSizeEstimator {
     }
   }
 
-
   private void estimateStoredFields(Map<String, Object> result) throws IOException {
     log.info("- estimating stored fields...");
     Map<String, Map<String, Object>> stats = new HashMap<>();
@@ -507,7 +594,7 @@ public class IndexSizeEstimator {
       EstimatingVisitor visitor = new EstimatingVisitor(stats, topN, maxLength, samplingStep);
       Bits liveDocs = leafReader.getLiveDocs();
       if (leafReader instanceof CodecReader) {
-        CodecReader codecReader = (CodecReader)leafReader;
+        CodecReader codecReader = (CodecReader) leafReader;
         StoredFieldsReader storedFieldsReader = codecReader.getFieldsReader();
         // this instance may be faster for a full sequential pass
         StoredFieldsReader mergeInstance = storedFieldsReader.getMergeInstance();
@@ -515,7 +602,7 @@ public class IndexSizeEstimator {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          mergeInstance.visitDocument(docId, visitor);
+          mergeInstance.document(docId, visitor);
         }
         if (mergeInstance != storedFieldsReader) {
           mergeInstance.close();
@@ -541,6 +628,7 @@ public class IndexSizeEstimator {
       this.size = size;
     }
 
+    @Override
     public String toString() {
       return "size=" + size + ", value=" + value;
     }
@@ -576,6 +664,7 @@ public class IndexSizeEstimator {
       return a.size < b.size;
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       Iterator<Item> it = iterator();
@@ -609,16 +698,20 @@ public class IndexSizeEstimator {
     final int maxLength;
     final int samplingStep;
 
-    EstimatingVisitor(Map<String, Map<String, Object>> stats, int topN, int maxLength, int samplingStep) {
+    EstimatingVisitor(
+        Map<String, Map<String, Object>> stats, int topN, int maxLength, int samplingStep) {
       this.stats = stats;
       this.topN = topN;
       this.maxLength = maxLength;
       this.samplingStep = samplingStep;
     }
 
-    /** Process a binary field.
+    /**
+     * Process a binary field.
+     *
      * @param value newly allocated byte array with the binary contents.
      */
+    @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
       // trim the value if needed
       int len = value != null ? value.length : 0;
@@ -632,6 +725,7 @@ public class IndexSizeEstimator {
     }
 
     /** Process a string field. */
+    @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       // trim the value if needed
       int len = value != null ? UnicodeUtil.calcUTF16toUTF8Length(value, 0, value.length()) : 0;
@@ -642,32 +736,39 @@ public class IndexSizeEstimator {
     }
 
     /** Process a int numeric field. */
+    @Override
     public void intField(FieldInfo fieldInfo, int value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 4);
     }
 
     /** Process a long numeric field. */
+    @Override
     public void longField(FieldInfo fieldInfo, long value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 8);
     }
 
     /** Process a float numeric field. */
+    @Override
     public void floatField(FieldInfo fieldInfo, float value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 4);
     }
 
     /** Process a double numeric field. */
+    @Override
     public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 8);
     }
 
     private void countItem(String field, Object value, int size) {
       Map<String, Object> perField = stats.computeIfAbsent(field, n -> new HashMap<>());
-      SummaryStatistics summary = (SummaryStatistics)perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
+      SummaryStatistics summary =
+          (SummaryStatistics)
+              perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
       for (int i = 0; i < samplingStep; i++) {
         summary.addValue(size);
       }
-      ItemPriorityQueue topNqueue = (ItemPriorityQueue)perField.computeIfAbsent("topLen", s-> new ItemPriorityQueue(topN));
+      ItemPriorityQueue topNqueue =
+          (ItemPriorityQueue) perField.computeIfAbsent("topLen", s -> new ItemPriorityQueue(topN));
       topNqueue.insertWithOverflow(new Item(value, size));
     }
 
@@ -680,7 +781,10 @@ public class IndexSizeEstimator {
   @SuppressForbidden(reason = "System.err and System.out required for a command-line utility")
   public static void main(String[] args) throws Exception {
     if (args.length == 0) {
-      System.err.println("Usage: " + IndexSizeEstimator.class.getName() + " [-topN NUM] [-maxLen NUM] [-summary] [-details] <indexDir>");
+      System.err.println(
+          "Usage: "
+              + IndexSizeEstimator.class.getName()
+              + " [-topN NUM] [-maxLen NUM] [-summary] [-details] <indexDir>");
       System.err.println();
       System.err.println("\t<indexDir>\tpath to the index (parent path of 'segments_N' file)");
       System.err.println("\t-topN NUM\tnumber of top largest items to collect");

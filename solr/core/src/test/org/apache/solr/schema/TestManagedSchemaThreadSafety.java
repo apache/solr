@@ -17,13 +17,16 @@
 
 package org.apache.solr.schema;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -47,21 +50,22 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   private static final class SuspendingZkClient extends SolrZkClient {
+    private static final int ZK_CLIENT_TIMEOUT = 30000;
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
-    private SuspendingZkClient(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+    private SuspendingZkClient(String zkServerAddress) {
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS));
     }
 
-    boolean isSlowpoke(){
+    boolean isSlowpoke() {
       Thread youKnow;
-      if ((youKnow = slowpoke.get())!=null) {
+      if ((youKnow = slowpoke.get()) != null) {
         return youKnow == Thread.currentThread();
       } else {
         return slowpoke.compareAndSet(null, Thread.currentThread());
@@ -76,7 +80,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
         data = super.getData(path, watcher, stat, retryOnConnLoss);
       } catch (NoNodeException e) {
         if (isSlowpoke()) {
-          //System.out.println("suspending "+Thread.currentThread()+" on " + path);
+          // System.out.println("suspending "+Thread.currentThread()+" on " + path);
           Thread.sleep(500);
         }
         throw e;
@@ -108,16 +112,16 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
   @LogLevel("org.apache.solr.common.cloud.SolrZkClient=debug")
   public void testThreadSafety() throws Exception {
 
-    final String configsetName = "managed-config";//
+    final String configsetName = "managed-config"; //
 
-    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost())) {
       // we can pick any to load configs, I suppose, but here we check
       client.upConfig(configset("cloud-managed-upgrade"), configsetName);
     }
 
     ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
-    
-    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
+
+    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost())) {
 
       ZkController zkController = createZkController(raceJudge);
 
@@ -129,62 +133,65 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
       for (Future<?> future : futures) {
         future.get();
       }
-    }
-    finally {
+    } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
   }
 
-  private ZkController createZkController(SolrZkClient client) throws KeeperException, InterruptedException {
+  private ZkController createZkController(SolrZkClient client)
+      throws KeeperException, InterruptedException {
     assumeWorkingMockito();
-    
-    CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class, 
-        Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
-    when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
-    
-    
-    ZkController zkController = mock(ZkController.class,
-        Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+
+    CoreContainer mockAlwaysUpCoreContainer =
+        mock(CoreContainer.class, Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+    when(mockAlwaysUpCoreContainer.isShutDown())
+        .thenReturn(Boolean.FALSE); // Allow retry on session expiry
+
+    ZkController zkController =
+        mock(ZkController.class, Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
 
     when(zkController.getCoreContainer()).thenReturn(mockAlwaysUpCoreContainer);
 
     when(zkController.getZkClient()).thenReturn(client);
-    Mockito.doAnswer(new Answer<Boolean>() {
-      volatile boolean sessionExpired=false;
-      
-      @Override
-      public Boolean answer(InvocationOnMock invocation) throws Throwable {
-        String path = (String) invocation.getArguments()[0];
-        perhapsExpired();
-        Boolean exists = client.exists(path, true);
-        perhapsExpired();
-        return exists;
-      }
+    Mockito.doAnswer(
+            new Answer<Boolean>() {
+              volatile boolean sessionExpired = false;
 
-      private void perhapsExpired() throws SessionExpiredException {
-        if (!sessionExpired && rarely()) {
-          sessionExpired = true;
-          throw new KeeperException.SessionExpiredException();
-        }
-      }
-    }).when(zkController).pathExists(Mockito.anyString());
+              @Override
+              public Boolean answer(InvocationOnMock invocation) throws Throwable {
+                String path = (String) invocation.getArguments()[0];
+                perhapsExpired();
+                Boolean exists = client.exists(path, true);
+                perhapsExpired();
+                return exists;
+              }
+
+              private void perhapsExpired() throws SessionExpiredException {
+                if (!sessionExpired && rarely()) {
+                  sessionExpired = true;
+                  throw new KeeperException.SessionExpiredException();
+                }
+              }
+            })
+        .when(zkController)
+        .pathExists(Mockito.anyString());
     return zkController;
   }
 
   private Runnable indexSchemaLoader(String configsetName, final ZkController zkController) {
     return () -> {
       try {
-        SolrResourceLoader loader = new ZkSolrResourceLoader(loaderPath, configsetName, null, zkController);
-        SolrConfig solrConfig = SolrConfig.readFromResourceLoader(loader, "solrconfig.xml", true, null);
+        SolrResourceLoader loader =
+            new ZkSolrResourceLoader(loaderPath, configsetName, null, zkController);
+        SolrConfig solrConfig =
+            SolrConfig.readFromResourceLoader(loader, "solrconfig.xml", true, null);
 
         ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
         factory.init(new NamedList<>());
         factory.create("schema.xml", solrConfig, null);
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         throw new RuntimeException(e);
       }
     };
   }
-
 }

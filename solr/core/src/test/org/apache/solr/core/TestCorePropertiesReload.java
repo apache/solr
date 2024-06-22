@@ -16,14 +16,13 @@
  */
 package org.apache.solr.core;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
-import java.io.BufferedWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
@@ -46,9 +45,9 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     String testProp = coreDescriptor.getCoreProperty("test", null);
-    assertTrue(testProp.equals("Before reload"));
+    assertEquals("Before reload", testProp);
 
-    //Re-write the properties file
+    // Re-write the properties file
     Properties props = new Properties();
     props.setProperty("test", "After reload");
     writeProperties(props);
@@ -58,15 +57,18 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     coreDescriptor = core.getCoreDescriptor();
 
     testProp = coreDescriptor.getCoreProperty("test", null);
-    assertTrue(testProp.equals("After reload"));
+    assertEquals("After reload", testProp);
   }
 
   private void writeProperties(Properties props) throws Exception {
     Writer out = null;
     try {
       File confDir = new File(new File(solrHomeDirectory, "collection1"), "conf");
-      out = new BufferedWriter(new OutputStreamWriter(
-          new FileOutputStream(new File(confDir, "solrcore.properties")), StandardCharsets.UTF_8));
+      out =
+          new BufferedWriter(
+              new OutputStreamWriter(
+                  new FileOutputStream(new File(confDir, "solrcore.properties")),
+                  StandardCharsets.UTF_8));
       props.store(out, "Reload Test");
 
     } finally {

@@ -1,0 +1,559 @@
+= User-Managed Index Replication
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+User-Managed index replication distributes complete copies of a leader index to one or more follower replicas.
+The leader continues to manage updates to the index.
+All querying is handled by the followers.
+This division of labor enables Solr to scale to provide adequate responsiveness to queries against large search volumes.
+
+The figure below shows a Solr configuration using index replication.
+The leader server's index is replicated on the followers.
+
+.A Solr index can be replicated across multiple follower servers, which then process requests.
+image::user-managed-index-replication/user-managed-replication.png[]
+
+
+== Index Replication in Solr
+
+Solr includes index replication that works over HTTP:
+
+* The configuration affecting replication is controlled by a single file, `solrconfig.xml`.
+* Supports the replication of configuration files as well as index files.
+* Works across platforms with same configuration.
+* No reliance on OS-dependent file system features (e.g., hard links).
+* Tightly integrated with Solr; an admin page offers fine-grained control of each aspect of replication.
+* The Java-based replication feature is implemented as a request handler.
+Configuring replication is therefore similar to any normal request handler.
+
+.Replication In SolrCloud
+[NOTE]
+====
+Although there is no explicit concept of leader or follower nodes in a xref:cluster-types.adoc#solrcloud-mode[SolrCloud cluster], the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
+
+When using SolrCloud, the `ReplicationHandler` must be available via the `/replication` path.
+Solr does this implicitly unless overridden explicitly in your `solrconfig.xml`.
+If you wish to override the default behavior, make certain that you do not set any of the "leader" or "follower" configuration options mentioned below, or they will interfere with normal SolrCloud operation.
+====
+
+== Configuring the ReplicationHandler
+
+In addition to `ReplicationHandler` configuration options specific to the leader and follower roles described below, there are a few special configuration options that are generally supported (even when using SolrCloud).
+
+* `maxNumberOfBackups` an integer value dictating the maximum number of backups this node will keep on disk as it receives `backup` commands.
+* Similar to most other request handlers in Solr you may configure a set of xref:configuration-guide:requesthandlers-searchcomponents.adoc#search-handlers[defaults, invariants, and/or appends] parameters corresponding with any request parameters supported by the `ReplicationHandler` when <<HTTP API Commands for the ReplicationHandler,processing commands>>.
+
+=== Configuring a Leader Server
+
+Before running a replication, you should set the following parameters on initialization of the handler:
+
+`replicateAfter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+String specifying action after which replication should occur.
+Valid values are:
++
+* `commit`: Triggers replication whenever a commit is performed on the leader index.
+* `optimize`: Triggers replication whenever the leader index is optimized.
+* `startup`: Triggers replication whenever the leader index starts up.
+
++
+There can be multiple values for this parameter, as in:
++
+[source,xml]
+----
+<str name="replicateAfter">startup</str>
+<str name="replicateAfter">commit</str>
+<str name="replicateAfter">optimize</str>
+----
++
+If you use `startup`, you should have a `commit` and/or `optimize` entry also if you want to trigger replication on future commits or optimizes.
+
+`backupAfter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+String specifying action after which a backup should occur.
+Valid values are `commit`, `optimize`, or `startup`.
+There can be multiple values for this parameter.
+It is not required for replication, it just makes a backup.
+
+`maxNumberOfBackups`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Integer specifying how many backups to keep.
+This can be used to delete all but the most recent _N_ backups.
+
+`confFiles`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The configuration files to replicate to the follower, separated by a comma.
+These should be files such as the schema, stopwords, and similar configuration files that may change on the leader and need to be updated on the follower to use when serving queries.
++
+If `solrconfig.xml` should be copied, special care needs to be taken so the configuration of the leader does not overwrite the configuration of the follower.
+A line like the following would ensure that the local configuration `solrconfig_follower.xml` will be saved as `solrconfig.xml` on the follower:
++
+[source,xml]
+----
+<str name="confFiles">solrconfig_follower.xml:solrconfig.xml,managed-schema.xml,stopwords.txt</str>
+----
++
+On the leader server, the file name of the follower configuration file can be anything, as long as the name is correctly identified in the `confFiles` string; then it will be saved as whatever file name appears after the colon ':'.
+In the above example, all other files would be saved with their original names.
+
+`commitReserveDuration`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `00:00:10`
+|===
++
+If your commits are very frequent and your network is slow, you can tweak this parameter to increase the amount of time expected to be required to transfer data.
+The default is `00:00:10`, or 10 seconds.
+
+The example below shows a possible 'leader' configuration for the `ReplicationHandler`, including a fixed number of backups and an invariant setting for the `maxWriteMBPerSec` request parameter to prevent followers from saturating its network interface
+
+[source,xml]
+----
+<requestHandler name="/replication" class="solr.ReplicationHandler">
+  <lst name="leader">
+    <str name="replicateAfter">optimize</str>
+    <str name="backupAfter">optimize</str>
+    <str name="confFiles">schema.xml,stopwords.txt,elevate.xml</str>
+  </lst>
+  <int name="maxNumberOfBackups">2</int>
+  <str name="commitReserveDuration">00:00:10</str>
+  <lst name="invariants">
+    <str name="maxWriteMBPerSec">16</str>
+  </lst>
+</requestHandler>
+----
+
+=== Configuring a Follower Server
+
+A follower configuration needs to be different from the leader because in this approach, the follower initiates the request to the leader for updated index and other files.
+
+We use the following parameters:
+
+`leaderUrl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A fully qualified url for the replication handler of leader.
++
+This parameter must be defined in order to fetch new index and configuration files from the leader, but it does not need to be defined in `solrconfig.xml`.
+It can be passed as a request parameter for the <<HTTP API Commands for the ReplicationHandler,`fetchindex`>> command.
+
+`pollInterval`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Interval in which the follower should poll leader.
+Format is `HH:mm:ss`.
+If this is absent follower does not poll automatically.
++
+If not configured, a fetchindex can be triggered from the Admin UI or the <<HTTP API Commands for the ReplicationHandler,HTTP API>>.
+
+`compression`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Enables compression while transferring the index files.
+The possible values are `internal` or `external`.
+If the value is `external` make sure that your leader Solr has the settings to honor the Accept-Encoding header.
+If this is set to `internal` everything will be taken care of automatically.
++
+While this parameter may seem like a good idea for general use, it's usually only required if the bandwidth between leader and follower nodes is consistently low.
+
+`httpConnTimeout`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `5000`
+|===
++
+The length of time in milliseconds to wait for a connection to the leader.
+This can usually be left to the default unless bandwidth is extremely low or if there is an extremely high latency.
+
+`httpReadTimeout`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10000`
+|===
++
+The length of time in milliseconds to wait for reading the index files.
+Like `httpConnTimeout`, this can usually be left to the default unless bandwidth is extremely low or if there is an extremely high latency.
+
+`httpBasicAuthUser`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The username to use if the leader has been configured with HTTP Basic authentication.
+
+`httpBasicAuthPassword`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The password to use if the leader has been configured with HTTP Basic authentication.
+
+The following example shows a ReplicationHandler configuration on a follower:
+
+[source,xml]
+----
+<requestHandler name="/replication" class="solr.ReplicationHandler">
+  <lst name="follower">
+    <str name="leaderUrl">http://remote_host:port/solr/core_name/replication</str>
+    <str name="pollInterval">00:00:20</str>
+
+    <!-- THE FOLLOWING PARAMETERS ARE USUALLY NOT REQUIRED-->
+    <str name="compression">internal</str>
+    <str name="httpConnTimeout">5000</str>
+    <str name="httpReadTimeout">10000</str>
+    <str name="httpBasicAuthUser">username</str>
+    <str name="httpBasicAuthPassword">password</str>
+  </lst>
+</requestHandler>
+----
+
+=== Setting Up a Repeater with the ReplicationHandler
+
+A leader may be able to serve only so many followers without affecting performance.
+Some organizations have deployed follower servers across multiple data centers.
+If each follower downloads the index from a remote data center, the resulting download may consume too much network bandwidth.
+To avoid performance degradation in cases like this, you can configure one or more followers as repeaters.
+A repeater is simply a node that acts as both a leader and a follower.
+
+To configure a server as a repeater, the definition of the Replication `requestHandler` in the `solrconfig.xml` file must include file lists of use for both leaders and followers.
+
+Be sure to set the `replicateAfter` parameter to `commit`, even if `replicateAfter` is set to `optimize` on the main leader.
+This is because on a repeater (or any follower), a commit is called only after the index is downloaded.
+The optimize command is never called on followers.
+
+Optionally, one can configure the repeater to fetch compressed files from the leader through the `compression` parameter to reduce the index download time.
+
+Here is an example of a ReplicationHandler configuration for a repeater:
+
+[source,xml]
+----
+<requestHandler name="/replication" class="solr.ReplicationHandler">
+  <lst name="leader">
+    <str name="replicateAfter">commit</str>
+    <str name="confFiles">schema.xml,stopwords.txt,synonyms.txt</str>
+  </lst>
+  <lst name="follower">
+    <str name="leaderUrl">http://leader.solr.company.com:8983/solr/core_name/replication</str>
+    <str name="pollInterval">00:00:60</str>
+  </lst>
+</requestHandler>
+----
+
+== Replication Screen
+
+The Replication screen shows you the current replication state for the core you have specified.
+
+This screen will only appear if you are not running Solr in SolrCloud mode.
+
+If you are using Leader-Follower index replication, you can use this screen to:
+
+. View the replicatable index state (on a leader node)
+. View the current replication status (on a follower node)
+. Disable replication (on a leader node)
+
+image::user-managed-index-replication/replication.png[image,width=412,height=250]
+
+== Follower Replication
+
+The leader is totally unaware of the followers.
+
+The follower continuously polls the leader (depending on the `pollInterval` parameter) to check the current index version of the leader.
+If a follower discovers that the leader has a newer version of the index it initiates the replication process.
+
+The steps are as follows:
+
+* The follower issues a `filelist` command to get the list of the files.
+This command returns the names of the files as well as some metadata (for example, size, a last modified timestamp, an alias if any, etc.).
+
+* The follower checks if it has any of those files in the local index.
+It then runs the `filecontent` command to download the missing files.
+This uses a custom format (akin to the HTTP chunked encoding) to download the full content or a part of each file.
+If the connection breaks in between, the download resumes from the point it failed.
+At any point, the follower tries 5 times before giving up a replication altogether.
+
+* The files are downloaded to a temp directory, so if either the follower or the leader crashes during the download process, no files will be corrupted.
+Instead, the current replication will simply abort.
+
+* After the download completes, the new files are moved to the live index directory and the file's timestamp is same as its counterpart on the leader.
+
+* A commit command is issued on the follower by the follower's ReplicationHandler and the new index is loaded.
+
+=== Replicating Configuration Files
+
+To replicate configuration files, define them with the `confFiles` parameter.
+Only files found in the `conf` directory of the leader's Solr instance will be replicated.
+
+Solr replicates configuration files only when the index itself is replicated.
+That means even if a configuration file is changed on the leader, that file will be replicated only after there is a new commit or optimize on the leader's index.
+
+Unlike the index files, where the timestamp is good enough to figure out if they are identical, configuration files are compared against their checksum.
+Schema files (on leader and follower) are judged to be identical if their checksums are identical.
+
+As a precaution when replicating configuration files, Solr copies configuration files to a temporary directory before moving them into their ultimate location in the conf directory.
+The old configuration files are then renamed and kept in the same `conf/` directory.
+The ReplicationHandler does not automatically clean up these old files.
+
+If a replication involved downloading of at least one configuration file, the ReplicationHandler issues a core-reload command instead of a commit command.
+
+=== Resolving Corruption Issues on Follower Servers
+
+If documents are added to the follower, then the follower is no longer in sync with its leader.
+However, the follower will not undertake any action to put itself in sync until the leader has new index data.
+
+When a commit operation takes place on the leader, the index version of the leader becomes different from that of the follower.
+The follower then fetches the list of files and finds that some of the files present on the leader are also present in the local index but with different sizes and timestamps.
+This means that the leader and follower have incompatible indexes.
+
+To correct this problem, the follower then copies all the index files from leader to a new index directory and asks the core to load the fresh index from the new directory.
+
+== HTTP API Commands for the ReplicationHandler
+
+You can use the HTTP commands below to control the ReplicationHandler's operations.
+
+`enablereplication`::
+Enable replication on the "leader" for all its followers.
++
+[source,bash]
+http://_leader_host:port_/solr/_core_name_/replication?command=enablereplication
+
+`disablereplication`::
+Disable replication on the leader for all its followers.
++
+[source,bash]
+http://_leader_host:port_/solr/_core_name_/replication?command=disablereplication
+
+`indexversion`::
+Return the version of the latest replicatable index on the specified leader or follower.
++
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://_host:port_/solr/_core_name_/replication?command=indexversion
+
+----
+====
++
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+http://_host:port_/api/cores/_core_name_/replication/indexversion
+
+----
+====
+
+`fetchindex`::
+Force the specified follower to fetch a copy of the index from its leader.
++
+[source.bash]
+http://_follower_host:port_/solr/_core_name_/replication?command=fetchindex
++
+You can pass an extra attribute such as `leaderUrl` or `compression` (or any other parameter described in <<Configuring a Follower Server>>) to do a one time replication from a leader.
+This removes the need for hard-coding the leader URL in the follower configuration.
+
+`abortfetch`::
+Abort copying an index from a leader to the specified follower.
++
+[source,bash]
+http://_follower_host:port_/solr/_core_name_/replication?command=abortfetch
+
+`enablepoll`::
+Enable the specified follower to poll for changes on the leader.
++
+[source,bash]
+http://_follower_host:port_/solr/_core_name_/replication?command=enablepoll
+
+`disablepoll`::
+Disable the specified follower from polling for changes on the leader.
++
+[source,bash]
+http://_follower_host:port_/solr/_core_name_/replication?command=disablepoll
+
+`details`::
+Retrieve configuration details and current status.
++
+[source,bash]
+http://_follower_host:port_/solr/_core_name_/replication?command=details
+
+`filelist`::
+Retrieve a list of Lucene files present in the specified host's index.
+
++
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_generation-number_>
+
+----
+====
++
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+http://_host:port_/api/cores/_core_name_/replication/files?generation=<_generation-number_>
+
+----
+====
++
+You can discover the generation number of the index by running the `indexversion` command.
+
+`backup`::
+Create a backup on leader if there are committed index data in the server; otherwise, does nothing.
++
+[source,bash]
+http://_leader_host:port_/solr/_core_name_/replication?command=backup
++
+This command is useful for making periodic backups.
+There are several supported request parameters:
+
+`numberToKeep:`::: This can be used with the backup command unless the `maxNumberOfBackups` initialization parameter has been specified on the handler – in which case `maxNumberOfBackups` is always used and attempts to use the `numberToKeep` request parameter will cause an error.
+
+`name`::: (optional) Backup name.
+The snapshot will be created in a directory called `snapshot.<name>` within the data directory of the core.
+By default the name is generated using date in `yyyyMMddHHmmssSSS` format.
+If the `location` parameter is passed, that would be used instead of the data directory.
+
+`repository`::: The name of the backup repository to use
+ When not specified, it defaults to local file system.
+
+`location`::: Backup location.
+The value depends on the repository in use.
+For file system repository, location defaults to the core's dataDir (data directory), and if specified, it needs to be within `SOLR_HOME`, `SOLR_DATA_HOME` or the paths specified by `solr.xml` `allowPaths` parameter.
+
+`restore`::
+Restore a backup from a backup repository.
++
+[source,bash]
+http://_leader_host:port_/solr/_core_name_/replication?command=restore
++
+This command is used to restore a backup.
+There are several supported request parameters:
+
+`name`::: (optional) Backup name.
+The name of the backed up index snapshot to be restored.
+If the name is not provided, it looks for backups with snapshot.<timestamp> format in the location directory.
+It would choose the latest timestamp backup in that case.
+
+`repository`::: The name of the backup repository where the backup resides.
+When not specified, it defaults to local file system.
+
+`location`::: Backup location.
+The value depends on the repository in use.
+For file system repository, location defaults to core's dataDir (data directory), and if specified, it needs to be within `SOLR_HOME`, `SOLR_DATA_HOME` or the paths specified by `solr.xml` `allowPaths` parameter.
+
+`restorestatus`::
+Check the status of a running restore operation.
++
+[source,bash]
+http://_leader_host:port_/solr/_core_name_/replication?command=restorestatus
++
+This command is used to check the status of a restore operation.
+This command takes no parameters.
++
+The status value can be "In Progress", "success", or "failed".
+If it failed then an "exception" will also be sent in the response.
+
+`deletebackup`::
+Delete any backup created using the `backup` command.
++
+[source,bash]
+http://_leader_host:port_ /solr/_core_name_/replication?command=deletebackup
++
+There are two supported parameters:
+
+`name`::: The name of the snapshot.
+A snapshot with the name `snapshot._name_` must exist or an error will be returned.
+
+`location`::: The location where the snapshot is created.
+
+
+== Optimizing Distributed Indexes
+
+Optimizing an index is not something most users should generally worry about - but in particular users should be aware of the impacts of optimizing an index when using the `ReplicationHandler`.
+
+The time required to optimize a leader index can vary dramatically.
+A small index may be optimized in minutes.
+A very large index may take hours.
+The variables include the size of the index and the speed of the hardware.
+
+Distributing a newly optimized index may take only a few minutes or up to an hour or more, again depending on the size of the index and the performance capabilities of network connections and disks.
+During optimization the machine is under load and will not process queries very well.
+Given a schedule of updates being driven a few times an hour to the followers, we cannot run an optimize with every committed snapshot.
+
+Copying an optimized index means that the *entire* index will need to be transferred during the next `snappull`.
+This is a large expense, but not nearly as huge as running the optimize everywhere.
+
+Consider this example: on a three-follower one-leader configuration, distributing a newly-optimized index takes approximately 80 seconds _total_.
+Rolling the change across a tier would require approximately ten minutes per machine (or machine group).
+If this optimize were rolled across the query tier, and if each follower node being optimized were disabled and not receiving queries, a rollout would take at least twenty minutes and potentially as long as an hour and a half.
+Additionally, the files would need to be synchronized so that _following_ the optimize, `snappull` would not think that the independently optimized files were different in any way.
+This would also leave the door open to independent corruption of indexes instead of each being a perfect copy of the leader.
+
+Optimizing on the leader allows for a straight-forward optimization operation.
+No query followers need to be taken out of service.
+The optimized index can be distributed in the background as queries are being normally serviced.
+The optimization can occur at any time convenient to the application providing index updates.
+
+While optimizing may have some benefits in some situations, a rapidly changing index will not retain those benefits for long, and since optimization is an intensive process, it may be better to consider other options, such as lowering the merge factor (discussed in the section on xref:configuration-guide:index-segments-merging.adoc#merge-factors[Controlling Segment Sizes]).
+
+TIP: Do not elect to optimize your index unless you have tangible evidence that it will significantly improve your search performance.

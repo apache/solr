@@ -21,27 +21,24 @@ import org.apache.solr.common.SolrDocument;
 /**
  * Simple Augmenter that adds the score
  *
- *
  * @since solr 4.0
  */
 public class ScoreAugmenter extends DocTransformer {
   final String name;
 
-  public ScoreAugmenter( String display )
-  {
+  public ScoreAugmenter(String display) {
     this.name = display;
   }
 
   @Override
-  public String getName()
-  {
+  public String getName() {
     return name;
   }
 
   @Override
   public void transform(SolrDocument doc, int docid, float score) {
-    if( context != null && context.wantsScores() ) {
-        doc.setField( name, score );
+    if (context != null && context.wantsScores()) {
+      doc.setField(name, score);
     }
   }
 

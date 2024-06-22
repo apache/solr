@@ -17,17 +17,16 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.solr.SolrTestCase;
 
-
 class MemWriter extends FastWriter {
-  public List<char[]> buffers = new LinkedList<>();
+  public List<char[]> buffers = new ArrayList<>();
 
   Random r;
+
   public MemWriter(char[] tempBuffer, Random r) {
     super(null, tempBuffer, 0);
     this.r = r;
@@ -35,9 +34,9 @@ class MemWriter extends FastWriter {
 
   @Override
   public void flush(char[] arr, int offset, int len) throws IOException {
-    if (arr == buf && offset==0 && len==buf.length) {
-      buffers.add(buf);  // steal the buffer
-      buf = new char[r.nextInt(9000)+1];
+    if (arr == buf && offset == 0 && len == buf.length) {
+      buffers.add(buf); // steal the buffer
+      buf = new char[r.nextInt(9000) + 1];
     } else if (len > 0) {
       char[] newBuf = new char[len];
       System.arraycopy(arr, offset, newBuf, 0, len);
@@ -48,11 +47,9 @@ class MemWriter extends FastWriter {
   @Override
   public void flush(String str, int offset, int len) throws IOException {
     if (len == 0) return;
-    buffers.add( str.substring(offset, offset+len).toCharArray() );
+    buffers.add(str.substring(offset, offset + len).toCharArray());
   }
 }
-
-
 
 public class TestFastWriter extends SolrTestCase {
 
@@ -64,32 +61,28 @@ public class TestFastWriter extends SolrTestCase {
     rand = random();
 
     arr = new char[20000];
-    for (int i=0; i<arr.length; i++) {
-      arr[i] = (char)rand.nextInt();
+    for (int i = 0; i < arr.length; i++) {
+      arr[i] = (char) rand.nextInt();
     }
     s = new String(arr);
 
-    for (int i=0; i<1000; i++) {
+    for (int i = 0; i < 1000; i++) {
       doRandomWrites();
     }
   }
 
-
   public void doRandomWrites() throws Exception {
-    int bufSize = ( rand.nextBoolean() ? rand.nextInt(10) : rand.nextInt(20000) )+1;
+    int bufSize = (rand.nextBoolean() ? rand.nextInt(10) : rand.nextInt(20000)) + 1;
     MemWriter out = new MemWriter(new char[bufSize], rand);
 
     int hash = 0;
     long written = 0;
-    int iter = rand.nextInt(20)+1;
-    for (int i=0; i<iter; i++) {
+    int iter = rand.nextInt(20) + 1;
+    for (int i = 0; i < iter; i++) {
       int which = rand.nextInt(3);
-
 
       int off = rand.nextInt(arr.length);
       int len = off < arr.length ? rand.nextInt(arr.length - off) : 0;
-
-
 
       if (which == 0) {
         out.write(arr, off, len);
@@ -114,12 +107,10 @@ public class TestFastWriter extends SolrTestCase {
     assertEquals(hash, hash2);
   }
 
-
   public int incHash(int hash, char[] arr, int off, int len) {
-    for (int i=off; i<off+len; i++) {
+    for (int i = off; i < off + len; i++) {
       hash = hash * 31 + arr[i];
     }
     return hash;
   }
 }
-

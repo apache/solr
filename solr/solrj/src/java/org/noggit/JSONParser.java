@@ -22,81 +22,77 @@ package org.noggit;
 import java.io.IOException;
 import java.io.Reader;
 
-
 public class JSONParser {
 
-  /**
-   * Event indicating a JSON string value, including member names of objects
-   */
+  /** Event indicating a JSON string value, including member names of objects */
   public static final int STRING = 1;
-  /**
-   * Event indicating a JSON number value which fits into a signed 64 bit integer
-   */
+
+  /** Event indicating a JSON number value which fits into a signed 64 bit integer */
   public static final int LONG = 2;
+
   /**
-   * Event indicating a JSON number value which has a fractional part or an exponent
-   * and with string length &lt;= 23 chars not including sign.  This covers
-   * all representations of normal values for Double.toString().
+   * Event indicating a JSON number value which has a fractional part or an exponent and with string
+   * length &lt;= 23 chars not including sign. This covers all representations of normal values for
+   * Double.toString().
    */
   public static final int NUMBER = 3;
+
   /**
-   * Event indicating a JSON number value that was not produced by toString of any
-   * Java primitive numerics such as Double or Long.  It is either
-   * an integer outside the range of a 64 bit signed integer, or a floating
-   * point value with a string representation of more than 23 chars.
+   * Event indicating a JSON number value that was not produced by toString of any Java primitive
+   * numerics such as Double or Long. It is either an integer outside the range of a 64 bit signed
+   * integer, or a floating point value with a string representation of more than 23 chars.
    */
   public static final int BIGNUMBER = 4;
-  /**
-   * Event indicating a JSON boolean
-   */
+
+  /** Event indicating a JSON boolean */
   public static final int BOOLEAN = 5;
-  /**
-   * Event indicating a JSON null
-   */
+
+  /** Event indicating a JSON null */
   public static final int NULL = 6;
-  /**
-   * Event indicating the start of a JSON object
-   */
+
+  /** Event indicating the start of a JSON object */
   public static final int OBJECT_START = 7;
-  /**
-   * Event indicating the end of a JSON object
-   */
+
+  /** Event indicating the end of a JSON object */
   public static final int OBJECT_END = 8;
-  /**
-   * Event indicating the start of a JSON array
-   */
+
+  /** Event indicating the start of a JSON array */
   public static final int ARRAY_START = 9;
-  /**
-   * Event indicating the end of a JSON array
-   */
+
+  /** Event indicating the end of a JSON array */
   public static final int ARRAY_END = 10;
-  /**
-   * Event indicating the end of input has been reached
-   */
+
+  /** Event indicating the end of input has been reached */
   public static final int EOF = 11;
 
-
-  /**
-   * Flags to control parsing behavior
-   */
+  /** Flags to control parsing behavior */
   public static final int ALLOW_COMMENTS = 1 << 0;
+
   public static final int ALLOW_SINGLE_QUOTES = 1 << 1;
   public static final int ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER = 1 << 2;
   public static final int ALLOW_UNQUOTED_KEYS = 1 << 3;
   public static final int ALLOW_UNQUOTED_STRING_VALUES = 1 << 4;
+
   /**
-   * ALLOW_EXTRA_COMMAS causes any number of extra commas in arrays and objects to be ignored
-   * Note that a trailing comma in [] would be [,] (hence calling the feature "trailing" commas
-   * is either limiting or misleading.  Since trailing commas is fundamentally incompatible with any future
-   * "fill-in-missing-values-with-null", it was decided to extend this feature to handle any
-   * number of extra commas.
+   * ALLOW_EXTRA_COMMAS causes any number of extra commas in arrays and objects to be ignored Note
+   * that a trailing comma in [] would be [,] (hence calling the feature "trailing" commas is either
+   * limiting or misleading. Since trailing commas is fundamentally incompatible with any future
+   * "fill-in-missing-values-with-null", it was decided to extend this feature to handle any number
+   * of extra commas.
    */
   public static final int ALLOW_EXTRA_COMMAS = 1 << 5;
+
   public static final int ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT = 1 << 6;
   public static final int OPTIONAL_OUTER_BRACES = 1 << 7;
 
   public static final int FLAGS_STRICT = 0;
-  public static final int FLAGS_DEFAULT = ALLOW_COMMENTS | ALLOW_SINGLE_QUOTES | ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER | ALLOW_UNQUOTED_KEYS | ALLOW_UNQUOTED_STRING_VALUES | ALLOW_EXTRA_COMMAS;
+  public static final int FLAGS_DEFAULT =
+      ALLOW_COMMENTS
+          | ALLOW_SINGLE_QUOTES
+          | ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER
+          | ALLOW_UNQUOTED_KEYS
+          | ALLOW_UNQUOTED_STRING_VALUES
+          | ALLOW_EXTRA_COMMAS;
 
   public static class ParseException extends RuntimeException {
     public ParseException(String msg) {
@@ -136,16 +132,17 @@ public class JSONParser {
 
   protected int flags = FLAGS_DEFAULT;
 
-  protected final char[] buf;  // input buffer with JSON text in it
-  protected int start;         // current position in the buffer
-  protected int end;           // end position in the buffer (one past last valid index)
-  protected final Reader in;   // optional reader to obtain data from
+  protected final char[] buf; // input buffer with JSON text in it
+  protected int start; // current position in the buffer
+  protected int end; // end position in the buffer (one past last valid index)
+  protected final Reader in; // optional reader to obtain data from
   protected boolean eof = false; // true if the end of the stream was reached.
-  protected long gpos;          // global position = gpos + start
+  protected long gpos; // global position = gpos + start
 
-  protected int event;         // last event read
+  protected int event; // last event read
 
-  protected int stringTerm;    // The terminator for the last string we read: single quote, double quote, or 0 for unterminated.
+  // The terminator for the last string we read: single quote, double quote, or 0 for unterminated.
+  protected int stringTerm;
 
   protected boolean missingOpeningBrace = false;
 
@@ -198,15 +195,15 @@ public class JSONParser {
   // We need to keep some state in order to (at a minimum) know if
   // we should skip ',' or ':'.
   private byte[] stack = new byte[16];
-  private int ptr = 0;     // pointer into the stack of parser states
-  private byte state = 0;  // current parser state
+  private int ptr = 0; // pointer into the stack of parser states
+  private byte state = 0; // current parser state
 
   // parser states stored in the stack
-  private static final byte DID_OBJSTART = 1;  // '{' just read
-  private static final byte DID_ARRSTART = 2;  // '[' just read
-  private static final byte DID_ARRELEM = 3;   // array element just read
-  private static final byte DID_MEMNAME = 4;   // object member name (map key) just read
-  private static final byte DID_MEMVAL = 5;    // object member value (map val) just read
+  private static final byte DID_OBJSTART = 1; // '{' just read
+  private static final byte DID_ARRSTART = 2; // '[' just read
+  private static final byte DID_ARRELEM = 3; // array element just read
+  private static final byte DID_MEMNAME = 4; // object member name (map key) just read
+  private static final byte DID_MEMVAL = 5; // object member value (map val) just read
 
   // info about value that was just read (or is in the middle of being read)
   private int valstate;
@@ -258,87 +255,86 @@ public class JSONParser {
   }
 
   /**
-   * Returns true if the given character is considered to be whitespace.
-   * One difference between Java's Character.isWhitespace() is that this method
-   * considers a hard space (non-breaking space, or nbsp) to be whitespace.
+   * Returns true if the given character is considered to be whitespace. One difference between
+   * Java's Character.isWhitespace() is that this method considers a hard space (non-breaking space,
+   * or nbsp) to be whitespace.
    */
   protected static final boolean isWhitespace(int ch) {
     return (Character.isWhitespace(ch) || ch == 0x00a0);
   }
 
-  private static final long WS_MASK = (1L << ' ') | (1L << '\t') | (1L << '\r') | (1L << '\n') | (1L << '#') | (1L << '/') | (0x01); // set 1 bit so 0xA0 will be flagged as whitespace
+  private static final long WS_MASK =
+      (1L << ' ')
+          | (1L << '\t')
+          | (1L << '\r')
+          | (1L << '\n')
+          | (1L << '#')
+          | (1L << '/')
+          | (0x01); // set 1 bit so 0xA0 will be flagged as whitespace
 
   protected int getCharNWS() throws IOException {
     for (; ; ) {
       int ch = getChar();
       // getCharNWS is normally called in the context of expecting certain JSON special characters
-      // such as ":}"],"
-      // all of these characters are below 64 (including comment chars '/' and '#', so we can make this the fast path
-      // even w/o checking the range first.  We'll only get some false-positives while using bare strings (chars "IJMc")
+      // such as ":}"]," all of these characters are below 64 (including comment chars '/' and '#',
+      // so we can make this the fast path even w/o checking the range first.  We'll only get some
+      // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
         return ch;
-      } else if (ch <= ' ') {   // this will only be true if one of the whitespace bits was set
+      } else if (ch <= ' ') {
+        // this will only be true if one of the whitespace bits was set
         continue;
       } else if (ch == '/') {
         getSlashComment();
       } else if (ch == '#') {
         getNewlineComment();
-      } else if (!isWhitespace(ch)) { // we'll only reach here with certain bare strings, errors, or strange whitespace like 0xa0
+      } else if (!isWhitespace(ch)) {
+        // we'll only reach here with certain bare strings, errors, or strange whitespace like 0xa0
         return ch;
       }
 
-      /***
-       // getCharNWS is normally called in the context of expecting certain JSON special characters
-       // such as ":}"],"
-       // all of these characters are below 64 (including comment chars '/' and '#', so we can make this the fast path
-       if (ch < 64) {
-       if (((WS_MASK >> ch) & 0x01) == 0) return ch;
-       if (ch <= ' ') continue;  // whitespace below a normal space
-       if (ch=='/') {
-       getSlashComment();
-       } else if (ch=='#') {
-       getNewlineComment();
-       }
-       } else if (!isWhitespace(ch)) {  // check for higher whitespace like 0xA0
-       return ch;
-       }
-       ***/
+      /*
+      // getCharNWS is normally called in the context of expecting certain JSON special characters
+      // such as ":}"],"
+      // all of these characters are below 64 (including comment chars '/' and '#', so we can make this the fast path
+      if (ch < 64) {
+        if (((WS_MASK >> ch) & 0x01) == 0) return ch;
+        if (ch <= ' ') continue;  // whitespace below a normal space
+        if (ch=='/') {
+          getSlashComment();
+        } else if (ch=='#') {
+          getNewlineComment();
+        }
+      } else if (!isWhitespace(ch)) {  // check for higher whitespace like 0xA0
+        return ch;
+      }
+      */
 
-      /** older code
-       switch (ch) {
-       case ' ' :
-       case '\t' :
-       case '\r' :
-       case '\n' :
-       continue outer;
-       case '#' :
-       getNewlineComment();
-       continue outer;
-       case '/' :
-       getSlashComment();
-       continue outer;
-       default:
-       return ch;
-       }
-       **/
+      /* older code
+      switch (ch) { case ' ' : case '\t' : case '\r' : case '\n' : continue outer;
+      case '#' : getNewlineComment(); continue outer; case '/' : getSlashComment(); continue
+      outer; default: return ch; }
+      */
     }
   }
 
   protected int getCharNWS(int ch) throws IOException {
     for (; ; ) {
       // getCharNWS is normally called in the context of expecting certain JSON special characters
-      // such as ":}"],"
-      // all of these characters are below 64 (including comment chars '/' and '#', so we can make this the fast path
-      // even w/o checking the range first.  We'll only get some false-positives while using bare strings (chars "IJMc")
+      // such as ":}"]," all of these characters are below 64 (including comment chars '/' and '#',
+      // so we can make this the fast path even w/o checking the range first.  We'll only get some
+      // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
         return ch;
-      } else if (ch <= ' ') {   // this will only be true if one of the whitespace bits was set
-        // whitespace... get new char at bottom of loop
+      } else if (ch <= ' ') {
+        // this will only be true if one of the whitespace bits was set whitespace... get new char
+        // at bottom of loop
       } else if (ch == '/') {
         getSlashComment();
       } else if (ch == '#') {
         getNewlineComment();
-      } else if (!isWhitespace(ch)) { // we'll only reach here with certain bare strings, errors, or strange whitespace like 0xa0
+      } else if (!isWhitespace(ch)) {
+        // we'll only reach here with certain bare strings, errors, or strange whitespace like 0xa0
         return ch;
       }
       ch = getChar();
@@ -395,7 +391,6 @@ public class JSONParser {
     }
   }
 
-
   protected boolean matchBareWord(char[] arr) throws IOException {
     for (int i = 1; i < arr.length; i++) {
       int ch = getChar();
@@ -414,8 +409,8 @@ public class JSONParser {
       }
     }
 
-    // if we don't allow bare strings, we don't need to check that the string actually terminates... just
-    // let things fail as the parser tries to continue
+    // if we don't allow bare strings, we don't need to check that the string actually terminates...
+    // just let things fail as the parser tries to continue
     if ((flags & ALLOW_UNQUOTED_STRING_VALUES) == 0) {
       return true;
     }
@@ -441,7 +436,7 @@ public class JSONParser {
     // We can't tell if EOF was hit by comparing start<=end
     // because the illegal char could have been the last in the buffer
     // or in the stream.  To deal with this, the "eof" var was introduced
-    if (!eof && start > 0) start--;  // backup one char
+    if (!eof && start > 0) start--; // backup one char
     String chs = "char=" + ((start >= end) ? "(EOF)" : "" + buf[start]);
     String pos = "position=" + (gpos + start);
     String tot = chs + ',' + pos + getContext();
@@ -469,22 +464,21 @@ public class JSONParser {
     return new String(buf, a, b - a).replaceAll("\\s+", " ");
   }
 
-
   private boolean bool; // boolean value read
-  private long lval;    // long value read
-  private int nstate;   // current state while reading a number
-  private static final int HAS_FRACTION = 0x01;  // nstate flag, '.' already read
-  private static final int HAS_EXPONENT = 0x02;  // nstate flag, '[eE][+-]?[0-9]' already read
+  private long lval; // long value read
+  private int nstate; // current state while reading a number
+  private static final int HAS_FRACTION = 0x01; // nstate flag, '.' already read
+  private static final int HAS_EXPONENT = 0x02; // nstate flag, '[eE][+-]?[0-9]' already read
 
   /**
-   * Returns the long read... only significant if valstate==LONG after
-   * this call.  firstChar should be the first numeric digit read.
+   * Returns the long read... only significant if valstate==LONG after this call. firstChar should
+   * be the first numeric digit read.
    */
   private long readNumber(int firstChar, boolean isNeg) throws IOException {
-    out.unsafeWrite(firstChar);   // unsafe OK since we know output is big enough
+    out.unsafeWrite(firstChar); // unsafe OK since we know output is big enough
     // We build up the number in the negative plane since it's larger (by one) than
     // the positive plane.
-    long v = '0' - firstChar;
+    long v = (long) '0' - firstChar;
     // can't overflow a long in 18 decimal digits (i.e. 17 additional after the first).
     // we also need 22 additional to handle double so we'll handle in 2 separate loops.
     int i;
@@ -518,7 +512,7 @@ public class JSONParser {
         default:
           // return the number, relying on nextEvent() to return an error
           // for invalid chars following the number.
-          if (ch != -1) --start;   // push back last char if not EOF
+          if (ch != -1) --start; // push back last char if not EOF
 
           valstate = LONG;
           return isNeg ? v : -v;
@@ -542,7 +536,8 @@ public class JSONParser {
         case '7':
         case '8':
         case '9':
-          if (v < (0x8000000000000000L / 10)) overflow = true;  // can't multiply by 10 w/o overflowing
+          if (v < (0x8000000000000000L / 10))
+            overflow = true; // can't multiply by 10 w/o overflowing
           v *= 10;
           int digit = ch - '0';
           if (v < maxval + digit) overflow = true; // can't add digit w/o overflowing
@@ -562,23 +557,21 @@ public class JSONParser {
         default:
           // return the number, relying on nextEvent() to return an error
           // for invalid chars following the number.
-          if (ch != -1) --start;   // push back last char if not EOF
+          if (ch != -1) --start; // push back last char if not EOF
 
           valstate = overflow ? BIGNUMBER : LONG;
           return isNeg ? v : -v;
       }
     }
 
-
     nstate = 0;
     valstate = BIGNUMBER;
     return 0;
   }
 
-
   // read digits right of decimal point
   private int readFrac(CharArr arr, int lim) throws IOException {
-    nstate = HAS_FRACTION;  // deliberate set instead of '|'
+    nstate = HAS_FRACTION; // deliberate set instead of '|'
     while (--lim >= 0) {
       int ch = getChar();
       if (ch >= '0' && ch <= '9') {
@@ -593,7 +586,6 @@ public class JSONParser {
     }
     return BIGNUMBER;
   }
-
 
   // call after 'e' or 'E' has been seen to read the rest of the exponent
   private int readExp(CharArr arr, int lim) throws IOException {
@@ -661,7 +653,6 @@ public class JSONParser {
     }
   }
 
-
   private int hexval(int hexdig) {
     if (hexdig >= '0' && hexdig <= '9') {
       return hexdig - '0';
@@ -696,8 +687,8 @@ public class JSONParser {
       case 'b':
         return '\b';
       case 'u':
-        return (char) (
-            (hexval(getChar()) << 12)
+        return (char)
+            ((hexval(getChar()) << 12)
                 | (hexval(getChar()) << 8)
                 | (hexval(getChar()) << 4)
                 | (hexval(getChar())));
@@ -723,7 +714,7 @@ public class JSONParser {
     for (i = start; i < end; i++) {
       char c = buf[i];
       if (c == terminator) {
-        tmp.set(buf, start, i);  // directly use input buffer
+        tmp.set(buf, start, i); // directly use input buffer
         start = i + 1; // advance past last '"'
         return tmp;
       } else if (c == '\\') {
@@ -734,7 +725,6 @@ public class JSONParser {
     readStringChars2(out, i);
     return out;
   }
-
 
   // middle is the pointer to the middle of a buffer to start scanning for a non-string
   // character ('"' or "/").  start<=middle<end
@@ -796,7 +786,6 @@ public class JSONParser {
     }
   }
 
-
   // isName==true if this is a field name (as opposed to a value)
   protected void handleNonDoubleQuoteString(int ch, boolean isName) throws IOException {
     if (ch == '\'') {
@@ -805,8 +794,8 @@ public class JSONParser {
         throw err("Single quoted strings not allowed");
       }
     } else {
-      if (isName && (flags & ALLOW_UNQUOTED_KEYS) == 0
-          || !isName && (flags & ALLOW_UNQUOTED_STRING_VALUES) == 0
+      if ((isName && (flags & ALLOW_UNQUOTED_KEYS) == 0)
+          || (!isName && (flags & ALLOW_UNQUOTED_STRING_VALUES) == 0)
           || eof) {
         if (isName) {
           throw err("Expected quoted string");
@@ -819,7 +808,7 @@ public class JSONParser {
         throw err(null);
       }
 
-      stringTerm = 0;  // signal for unquoted string
+      stringTerm = 0; // signal for unquoted string
       out.reset();
       out.unsafeWrite(ch);
     }
@@ -832,77 +821,75 @@ public class JSONParser {
   // What characters are allowed to continue an unquoted string
   // once we know we are in one.
   private static boolean isUnquotedStringChar(int ch) {
-    return Character.isJavaIdentifierPart(ch)
-        || ch == '.'
-        || ch == '-'
-        || ch == '/';
+    return Character.isJavaIdentifierPart(ch) || ch == '.' || ch == '-' || ch == '/';
 
     // would checking for a-z first speed up the common case?
 
     // possibly much more liberal unquoted string handling...
-    /***
-     switch (ch) {
-     case -1:
-     case ' ':
-     case '\t':
-     case '\r':
-     case '\n':
-     case '}':
-     case ']':
-     case ',':
-     case ':':
-     case '=':   // reserved for future use
-     case '\\':  // check for backslash should come after this function call
-     return false;
-     }
-     return true;
-     ***/
+    /*
+    switch (ch) {
+      case -1:
+      case ' ':
+      case '\t':
+      case '\r':
+      case '\n':
+      case '}':
+      case ']':
+      case ',':
+      case ':':
+      case '=':   // reserved for future use
+      case '\\':  // check for backslash should come after this function call
+      return false;
+    }
+    return true;
+    */
   }
 
+  /* alternate implementation
+  // middle is the pointer to the middle of a buffer to start scanning for a non-string
+  // character ('"' or "/").  start<=middle<end
+  private void readStringChars2a(CharArr arr, int middle) throws IOException {
+    int ch = 0;
+    for (; ; ) {
+      // find the next non-string char
+      for (; middle < end; middle++) {
+        ch = buf[middle];
+        if (ch == '"' || ch == '\\') break;
+      }
 
-  /*** alternate implementation
-   // middle is the pointer to the middle of a buffer to start scanning for a non-string
-   // character ('"' or "/").  start<=middle<end
-   private void readStringChars2a(CharArr arr, int middle) throws IOException {
-   int ch=0;
-   for(;;) {
-   // find the next non-string char
-   for (; middle<end; middle++) {
-   ch = buf[middle];
-   if (ch=='"' || ch=='\\') break;
-   }
-
-   arr.write(buf,start,middle-start);
-   if (middle>=end) {
-   getMore();
-   middle=start;
-   } else {
-   start = middle+1;   // set buffer pointer to correct spot
-   if (ch=='"') {
-   valstate=0;
-   return;
-   } else if (ch=='\\') {
-   arr.write(readEscapedChar());
-   if (start>=end) getMore();
-   middle=start;
-   }
-   }
-   }
-   }
-   ***/
-
+      arr.write(buf, start, middle - start);
+      if (middle >= end) {
+        getMore();
+        middle = start;
+      } else {
+        start = middle + 1; // set buffer pointer to correct spot
+        if (ch == '"') {
+          valstate = 0;
+          return;
+        } else if (ch == '\\') {
+          arr.write(readEscapedChar());
+          if (start >= end) getMore();
+          middle = start;
+        }
+      }
+    }
+  }
+  */
 
   // return the next event when parser is in a neutral state (no
   // map separators or array element separators to read
   private int next(int ch) throws IOException {
-    // TODO: try my own form of indirect jump... look up char class and index directly into handling implementation?
+    // TODO: try my own form of indirect jump... look up char class and index directly into handling
+    // implementation?
     for (; ; ) {
       switch (ch) {
-        case ' ': // this is not the exclusive list of whitespace chars... the rest are handled in default:
+          // this is not the exclusive list of whitespace chars... the rest are handled in default:
+        case ' ':
         case '\t':
         case '\r':
         case '\n':
-          ch = getCharNWS(); // calling getCharNWS here seems faster than letting the switch handle it
+          // calling getCharNWS here seems faster than letting the switch handle it
+          ch = getCharNWS();
           break;
         case '"':
           stringTerm = '"';
@@ -925,7 +912,7 @@ public class JSONParser {
           return ARRAY_START;
         case '0':
           out.reset();
-          //special case '0'?  If next char isn't '.' val=0
+          // special case '0'?  If next char isn't '.' val=0
           ch = getChar();
           if (ch == '.') {
             start--;
@@ -996,13 +983,13 @@ public class JSONParser {
           getNewlineComment();
           ch = getChar();
           break;
-        case ']':  // This only happens with a trailing comma (or an error)
+        case ']': // This only happens with a trailing comma (or an error)
           if (state != DID_ARRELEM || (flags & ALLOW_EXTRA_COMMAS) == 0) {
             throw err("Unexpected array closer ]");
           }
           pop();
           return event = ARRAY_END;
-        case '}':  // This only happens with a trailing comma (or an error)
+        case '}': // This only happens with a trailing comma (or an error)
           if (state != DID_MEMVAL || (flags & ALLOW_EXTRA_COMMAS) == 0) {
             throw err("Unexpected object closer }");
           }
@@ -1020,15 +1007,14 @@ public class JSONParser {
         default:
           // Handle unusual unicode whitespace like no-break space (0xA0)
           if (isWhitespace(ch)) {
-            ch = getChar();  // getCharNWS() would also work
+            ch = getChar(); // getCharNWS() would also work
             break;
           }
           handleNonDoubleQuoteString(ch, false);
           valstate = STRING;
           return STRING;
-        // throw err(null);
+          // throw err(null);
       }
-
     }
   }
 
@@ -1037,22 +1023,22 @@ public class JSONParser {
     return "start=" + start + ",end=" + end + ",state=" + state + "valstate=" + valstate;
   }
 
-
   /**
    * Returns the next event encountered in the JSON stream, one of
+   *
    * <ul>
-   * <li>{@link #STRING}</li>
-   * <li>{@link #LONG}</li>
-   * <li>{@link #NUMBER}</li>
-   * <li>{@link #BIGNUMBER}</li>
-   * <li>{@link #BOOLEAN}</li>
-   * <li>{@link #NULL}</li>
-   * <li>{@link #OBJECT_START}</li>
-   * <li>{@link #OBJECT_END}</li>
-   * <li>{@link #OBJECT_END}</li>
-   * <li>{@link #ARRAY_START}</li>
-   * <li>{@link #ARRAY_END}</li>
-   * <li>{@link #EOF}</li>
+   *   <li>{@link #STRING}
+   *   <li>{@link #LONG}
+   *   <li>{@link #NUMBER}
+   *   <li>{@link #BIGNUMBER}
+   *   <li>{@link #BOOLEAN}
+   *   <li>{@link #NULL}
+   *   <li>{@link #OBJECT_START}
+   *   <li>{@link #OBJECT_END}
+   *   <li>{@link #OBJECT_END}
+   *   <li>{@link #ARRAY_START}
+   *   <li>{@link #ARRAY_END}
+   *   <li>{@link #EOF}
    * </ul>
    */
   public int nextEvent() throws IOException {
@@ -1098,13 +1084,14 @@ public class JSONParser {
         case DID_MEMNAME:
           ch = getCharExpected(':');
           if (ch != ':') {
-            if ((ch == '{' || ch == '[') && (flags & ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT) != 0) {
+            if ((ch == '{' || ch == '[')
+                && (flags & ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT) != 0) {
               start--;
             } else {
               throw err("Expected key,value separator ':'");
             }
           }
-          state = DID_MEMVAL;  // set state first because it might be pushed...
+          state = DID_MEMVAL; // set state first because it might be pushed...
           return event = next(getChar());
         case DID_MEMVAL:
           ch = getCharExpected(',');
@@ -1112,7 +1099,8 @@ public class JSONParser {
             pop();
             return event = OBJECT_END;
           } else if (ch != ',') {
-            if ((flags & ALLOW_EXTRA_COMMAS) != 0 && (ch == '\'' || ch == '"' || Character.isLetter(ch))) {
+            if ((flags & ALLOW_EXTRA_COMMAS) != 0
+                && (ch == '\'' || ch == '"' || Character.isLetter(ch))) {
               start--;
             } else if (missingOpeningBrace && ch == -1 && (flags & OPTIONAL_OUTER_BRACES) != 0) {
               missingOpeningBrace = false;
@@ -1139,7 +1127,7 @@ public class JSONParser {
             pop();
             return event = ARRAY_END;
           }
-          state = DID_ARRELEM;  // set state first, might be pushed...
+          state = DID_ARRELEM; // set state first, might be pushed...
           return event = next(ch);
         case DID_ARRELEM:
           ch = getCharExpected(',');
@@ -1150,7 +1138,8 @@ public class JSONParser {
             pop();
             return event = ARRAY_END;
           } else {
-            if ((ch == '{' || ch == '[') && (flags & ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT) != 0) {
+            if ((ch == '{' || ch == '[')
+                && (flags & ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT) != 0) {
               return event = next(ch);
             } else {
               throw err("Expected ',' or ']'");
@@ -1168,15 +1157,13 @@ public class JSONParser {
     return state == DID_MEMNAME;
   }
 
-
   private void goTo(int what) throws IOException {
     if (valstate == what) {
       valstate = 0;
       return;
     }
     if (valstate == 0) {
-      /*int ev = */
-      nextEvent();      // TODO
+      /*int ev = */ nextEvent(); // TODO
       if (valstate != what) {
         throw err("type mismatch");
       }
@@ -1186,57 +1173,50 @@ public class JSONParser {
     }
   }
 
-  /**
-   * Returns the JSON string value, decoding any escaped characters.
-   */
+  /** Returns the JSON string value, decoding any escaped characters. */
   public String getString() throws IOException {
     return getStringChars().toString();
   }
 
   /**
-   * Returns the characters of a JSON string value, decoding any escaped characters.
-   * The underlying buffer of the returned <code>CharArr</code> should *not* be
-   * modified as it may be shared with the input buffer.
-   * The returned <code>CharArr</code> will only be valid up until
-   * the next JSONParser method is called.  Any required data should be
-   * read before that point.
+   * Returns the characters of a JSON string value, decoding any escaped characters. The underlying
+   * buffer of the returned <code>CharArr</code> should *not* be modified as it may be shared with
+   * the input buffer. The returned <code>CharArr</code> will only be valid up until the next
+   * JSONParser method is called. Any required data should be read before that point.
    */
   public CharArr getStringChars() throws IOException {
     goTo(STRING);
     return readStringChars();
   }
 
-  /**
-   * Reads a JSON string into the output, decoding any escaped characters.
-   */
+  /** Reads a JSON string into the output, decoding any escaped characters. */
   public void getString(CharArr output) throws IOException {
     goTo(STRING);
     readStringChars2(output, start);
   }
 
   /**
-   * Reads a number from the input stream and parses it as a long, only if
-   * the value will in fact fit into a signed 64 bit integer.
+   * Reads a number from the input stream and parses it as a long, only if the value will in fact
+   * fit into a signed 64 bit integer.
    */
   public long getLong() throws IOException {
     goTo(LONG);
     return lval;
   }
 
-  /**
-   * Reads a number from the input stream and parses it as a double
-   */
+  /** Reads a number from the input stream and parses it as a double */
   public double getDouble() throws IOException {
     return Double.parseDouble(getNumberChars().toString());
   }
 
   /**
    * Returns the characters of a JSON numeric value.
-   * <p>The underlying buffer of the returned <code>CharArr</code> should *not* be
-   * modified as it may be shared with the input buffer.
-   * <p>The returned <code>CharArr</code> will only be valid up until
-   * the next JSONParser method is called.  Any required data should be
-   * read before that point.
+   *
+   * <p>The underlying buffer of the returned <code>CharArr</code> should *not* be modified as it
+   * may be shared with the input buffer.
+   *
+   * <p>The returned <code>CharArr</code> will only be valid up until the next JSONParser method is
+   * called. Any required data should be read before that point.
    */
   public CharArr getNumberChars() throws IOException {
     int ev = 0;
@@ -1254,9 +1234,7 @@ public class JSONParser {
     }
   }
 
-  /**
-   * Reads a JSON numeric value into the output.
-   */
+  /** Reads a JSON numeric value into the output. */
   public void getNumberChars(CharArr output) throws IOException {
     int ev = 0;
     if (valstate == 0) ev = nextEvent();
@@ -1269,17 +1247,13 @@ public class JSONParser {
     valstate = 0;
   }
 
-  /**
-   * Reads a boolean value
-   */
+  /** Reads a boolean value */
   public boolean getBoolean() throws IOException {
     goTo(BOOLEAN);
     return bool;
   }
 
-  /**
-   * Reads a null value
-   */
+  /** Reads a null value */
   public void getNull() throws IOException {
     goTo(NULL);
   }

@@ -17,7 +17,6 @@
 package org.apache.solr.response.transform;
 
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.QueryElevationComponent;
@@ -27,15 +26,15 @@ import org.apache.solr.schema.SchemaField;
 
 /**
  * Used to mark whether a document has been elevated or not
+ *
  * @since solr 4.0
  */
-public class ElevatedMarkerFactory extends TransformerFactory
-{
+public class ElevatedMarkerFactory extends TransformerFactory {
   @Override
   public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
     SchemaField uniqueKeyField = req.getSchema().getUniqueKeyField();
     String idfield = uniqueKeyField.getName();
-    return new MarkTransformer(field,idfield, uniqueKeyField.getType());
+    return new MarkTransformer(field, idfield, uniqueKeyField.getType());
   }
 }
 
@@ -51,4 +50,3 @@ class MarkTransformer extends BaseEditorialTransformer {
     return (Set<BytesRef>) context.getRequest().getContext().get(QueryElevationComponent.BOOSTED);
   }
 }
-

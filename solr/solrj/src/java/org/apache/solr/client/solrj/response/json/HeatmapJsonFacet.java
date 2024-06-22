@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.response.json;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +27,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Represents the result of a "heatmap" JSON facet.
  *
- * Allows access to all top-level facet properties (e.g. {@code minX}, {@code maxY}, etc.) as well as the heatmap data
- * itself in one of two forms.
+ * <p>Allows access to all top-level facet properties (e.g. {@code minX}, {@code maxY}, etc.) as
+ * well as the heatmap data itself in one of two forms.
  */
 public class HeatmapJsonFacet {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -66,7 +65,7 @@ public class HeatmapJsonFacet {
 
   private int getNumCols(List<List<Integer>> grid) {
     for (List<Integer> row : grid) {
-      if (row !=null ) return row.size();
+      if (row != null) return row.size();
     }
     throw new IllegalStateException("All rows in heatmap grid were null!");
   }
@@ -79,21 +78,42 @@ public class HeatmapJsonFacet {
     return countEncodedAsBase64PNG;
   }
 
-  public int getGridLevel() { return gridLevel; }
-  public int getNumColumns() { return columns; }
-  public int getNumRows() { return rows; }
-  public double getMinX() { return minX; }
-  public double getMaxX() { return maxX; }
-  public double getMinY() { return minY; }
-  public double getMaxY() { return maxY; }
+  public int getGridLevel() {
+    return gridLevel;
+  }
+
+  public int getNumColumns() {
+    return columns;
+  }
+
+  public int getNumRows() {
+    return rows;
+  }
+
+  public double getMinX() {
+    return minX;
+  }
+
+  public double getMaxX() {
+    return maxX;
+  }
+
+  public double getMinY() {
+    return minY;
+  }
+
+  public double getMaxY() {
+    return maxY;
+  }
 
   /**
    * A NamedList is a proper "heatmap" response if it contains <i>all</i> expected properties
    *
-   * We try to be rather strict in determining whether {@code potentialHeatmapValues} is a "heatmap".  Users can name
-   * subfacets arbitrarily, so having some names match those expected in a "heatmap" response could just be coincidence.
-   * <p>
-   * Heatmap facets do not support subfacets.
+   * <p>We try to be rather strict in determining whether {@code potentialHeatmapValues} is a
+   * "heatmap". Users can name subfacets arbitrarily, so having some names match those expected in a
+   * "heatmap" response could just be coincidence.
+   *
+   * <p>Heatmap facets do not support subfacets.
    */
   public static boolean isHeatmapFacet(NamedList<?> potentialHeatmapValues) {
     boolean hasGridLevel = false;
@@ -118,14 +138,21 @@ public class HeatmapJsonFacet {
         hasMaxX = true;
       } else if ("minY".equals(key)) {
         hasMinY = true;
-      } else if ("maxY".equals(key)){
+      } else if ("maxY".equals(key)) {
         hasMaxY = true;
       } else if (key != null && key.startsWith("counts_")) {
         hasCountGrid = true;
       }
     }
 
-    return potentialHeatmapValues.size() == 8 && hasGridLevel && hasColumns && hasRows && hasMinX && hasMaxX && hasMinY
-        && hasMaxY && hasCountGrid;
+    return potentialHeatmapValues.size() == 8
+        && hasGridLevel
+        && hasColumns
+        && hasRows
+        && hasMinX
+        && hasMaxX
+        && hasMinY
+        && hasMaxY
+        && hasCountGrid;
   }
 }

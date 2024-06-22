@@ -20,53 +20,55 @@ package org.apache.solr.core.backup;
 /**
  * Represents the ID of a particular backup.
  *
- * Backup IDs are used to track different backup points stored at the same backup-location under the same backup-name.
+ * <p>Backup IDs are used to track different backup points stored at the same backup-location under
+ * the same backup-name.
  *
- * Incremental backups can have any non-negative integer as an ID, and ID's are expected to increase sequentially.
+ * <p>Incremental backups can have any non-negative integer as an ID, and ID's are expected to
+ * increase sequentially.
  *
- * Traditional (now-deprecated) 'full-snapshot' backups only support a single backup point per name per location.  So
- * these all have the same ID value of {@link #TRADITIONAL_BACKUP}
+ * <p>Traditional (now-deprecated) 'full-snapshot' backups only support a single backup point per
+ * name per location. So these all have the same ID value of {@link #TRADITIONAL_BACKUP}
  */
-public class BackupId implements Comparable<BackupId>{
-    public static final int TRADITIONAL_BACKUP = -1;
+public class BackupId implements Comparable<BackupId> {
+  public static final int TRADITIONAL_BACKUP = -1;
 
-    public final int id;
+  public final int id;
 
-    public BackupId(int id) {
-        this.id = id;
-    }
+  public BackupId(int id) {
+    this.id = id;
+  }
 
-    public static BackupId zero() {
-        return new BackupId(0);
-    }
+  public static BackupId zero() {
+    return new BackupId(0);
+  }
 
-    public static BackupId traditionalBackup() {
-        return new BackupId(TRADITIONAL_BACKUP);
-    }
+  public static BackupId traditionalBackup() {
+    return new BackupId(TRADITIONAL_BACKUP);
+  }
 
-    public BackupId nextBackupId() {
-        return new BackupId(id+1);
-    }
+  public BackupId nextBackupId() {
+    return new BackupId(id + 1);
+  }
 
-    public int getId() {
-        return id;
-    }
+  public int getId() {
+    return id;
+  }
 
-    @Override
-    public int compareTo(BackupId o) {
-        return Integer.compare(this.id, o.id);
-    }
+  @Override
+  public int compareTo(BackupId o) {
+    return Integer.compare(this.id, o.id);
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BackupId backupId = (BackupId) o;
-        return id == backupId.id;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof BackupId)) return false;
+    BackupId backupId = (BackupId) o;
+    return id == backupId.id;
+  }
 
-    @Override
-    public int hashCode() {
-        return id;
-    }
+  @Override
+  public int hashCode() {
+    return id;
+  }
 }

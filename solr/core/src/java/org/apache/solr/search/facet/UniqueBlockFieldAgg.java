@@ -17,7 +17,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-
 import org.apache.solr.schema.SchemaField;
 
 public class UniqueBlockFieldAgg extends UniqueBlockAgg {
@@ -27,16 +26,17 @@ public class UniqueBlockFieldAgg extends UniqueBlockAgg {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     final String fieldName = getArg();
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(fieldName);
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-      throw new IllegalArgumentException(name+"("+fieldName+
-          ") doesn't allow multivalue fields, got " + sf);
+      throw new IllegalArgumentException(
+          name + "(" + fieldName + ") doesn't allow multivalue fields, got " + sf);
     } else {
       if (sf.getType().getNumberType() != null) {
-        throw new IllegalArgumentException(name+"("+fieldName+
-            ") not yet support numbers " + sf);
+        throw new IllegalArgumentException(
+            name + "(" + fieldName + ") not yet support numbers " + sf);
       } else {
         return new UniqueBlockSlotAcc(fcontext, sf, numSlots);
       }

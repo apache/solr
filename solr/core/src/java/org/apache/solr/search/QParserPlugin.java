@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -29,7 +28,10 @@ import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.search.join.FiltersQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
+import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
+import org.apache.solr.search.neural.KnnQParserPlugin;
+import org.apache.solr.search.neural.VectorSimilarityQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
@@ -37,11 +39,10 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   public static final String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
   /**
-   * Internal use - name to parser for the builtin parsers.
-   * Each query parser plugin extending {@link QParserPlugin} has own instance of standardPlugins.
-   * This leads to cyclic dependencies of static fields and to case when NAME field is not yet initialized.
-   * This result to NPE during initialization.
-   * For every plugin, listed here, NAME field has to be final and static.
+   * Internal use - name to parser for the builtin parsers. Each query parser plugin extending
+   * {@link QParserPlugin} has own instance of standardPlugins. This leads to cyclic dependencies of
+   * static fields and to case when NAME field is not yet initialized. This result to NPE during
+   * initialization. For every plugin, listed here, NAME field has to be final and static.
    */
   public static final Map<String, QParserPlugin> standardPlugins;
 
@@ -74,6 +75,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(ReRankQParserPlugin.NAME, new ReRankQParserPlugin());
     map.put(ExportQParserPlugin.NAME, new ExportQParserPlugin());
     map.put(MLTQParserPlugin.NAME, new MLTQParserPlugin());
+    map.put(MLTContentQParserPlugin.NAME, new MLTContentQParserPlugin());
     map.put(HashQParserPlugin.NAME, new HashQParserPlugin());
     map.put(GraphQParserPlugin.NAME, new GraphQParserPlugin());
     map.put(XmlQParserPlugin.NAME, new XmlQParserPlugin());
@@ -87,12 +89,15 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(MinHashQParserPlugin.NAME, new MinHashQParserPlugin());
     map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
     map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
+    map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
+    map.put(VectorSimilarityQParserPlugin.NAME, new VectorSimilarityQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }
 
   /** return a {@link QParser} */
-  public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
+  public abstract QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
 
   @Override
   public String getName() {
@@ -103,7 +108,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
 
   @Override
   public String getDescription() {
-    return "";  // UI required non-null to work
+    return ""; // UI required non-null to work
   }
 
   @Override
@@ -122,5 +127,3 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     return null;
   }
 }
-
-

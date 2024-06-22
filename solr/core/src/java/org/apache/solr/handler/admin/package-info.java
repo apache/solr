@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * {@link org.apache.solr.request.SolrRequestHandler} implementations for powering he Solr Admin UI
  */
 package org.apache.solr.handler.admin;
-
-

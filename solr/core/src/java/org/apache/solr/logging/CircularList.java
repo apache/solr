@@ -22,37 +22,34 @@ import java.util.List;
 
 /**
  * FIFO Circular List.
- * 
- * Once the size is reached, it will overwrite previous entries
- * 
+ *
+ * <p>Once the size is reached, it will overwrite previous entries
  */
-public class CircularList<T> implements Iterable<T>
-{
+public class CircularList<T> implements Iterable<T> {
   private T[] data;
-  private int head=0;
-  private int tail=0;
-  private int size=0;
+  private int head = 0;
+  private int tail = 0;
+  private int size = 0;
 
   @SuppressWarnings("unchecked")
   public CircularList(int size) {
-    data = (T[])new Object[size];
+    data = (T[]) new Object[size];
   }
 
   @SuppressWarnings("unchecked")
   public synchronized void resize(int newsize) {
-    if(newsize==this.size) return;
-    
-    T[] vals = (T[])new Object[newsize];
+    if (newsize == this.size) return;
+
+    T[] vals = (T[]) new Object[newsize];
     int i = 0;
-    if(newsize>size) {
-      for(i=0; i<size; i++) {
+    if (newsize > size) {
+      for (i = 0; i < size; i++) {
         vals[i] = data[convert(i)];
       }
-    }
-    else {
-      int off=size-newsize;
-      for(i=0; i<newsize; i++) {
-        vals[i] = data[convert(i+off)];
+    } else {
+      int off = size - newsize;
+      for (i = 0; i < newsize; i++) {
+        vals[i] = data[convert(i + off)];
       }
     }
     data = vals;
@@ -71,14 +68,14 @@ public class CircularList<T> implements Iterable<T>
   public int size() {
     return size;
   }
-  
+
   public int getBufferSize() {
     return data.length;
   }
 
   private void checkIndex(int index) {
     if (index >= size || index < 0)
-      throw new IndexOutOfBoundsException("Index: "+index+", Size: "+size);
+      throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
   }
 
   public T get(int index) {
@@ -88,60 +85,58 @@ public class CircularList<T> implements Iterable<T>
 
   public synchronized void add(T o) {
     data[tail] = o;
-    tail = (tail+1)%data.length;
-    if( size == data.length ) {
-      head = (head+1)%data.length;
+    tail = (tail + 1) % data.length;
+    if (size == data.length) {
+      head = (head + 1) % data.length;
     }
     size++;
-    if( size > data.length ) {
+    if (size > data.length) {
       size = data.length;
     }
   }
 
   public synchronized void clear() {
-    for( int i=0; i<data.length; i++ ) {
-      data[i] = null;  // for GC
+    for (int i = 0; i < data.length; i++) {
+      data[i] = null; // for GC
     }
     head = tail = size = 0;
   }
 
-  public List<T> toList()
-  {
-    ArrayList<T> list = new ArrayList<>( size );
-    for( int i=0; i<size; i++ ) {
-      list.add( data[convert(i)] );
+  public List<T> toList() {
+    ArrayList<T> list = new ArrayList<>(size);
+    for (int i = 0; i < size; i++) {
+      list.add(data[convert(i)]);
     }
     return list;
   }
 
   @Override
-  public String toString()
-  {
+  public String toString() {
     StringBuilder str = new StringBuilder();
-    str.append( "[" );
-    for( int i=0; i<size; i++ ) {
-      if( i > 0 ) {
-        str.append( "," );
+    str.append("[");
+    for (int i = 0; i < size; i++) {
+      if (i > 0) {
+        str.append(",");
       }
-      str.append( data[convert(i)] );
+      str.append(data[convert(i)]);
     }
-    str.append( "]" );
+    str.append("]");
     return str.toString();
   }
 
   @Override
   public Iterator<T> iterator() {
-    return new Iterator<T>() {
+    return new Iterator<>() {
       int idx = 0;
 
       @Override
       public boolean hasNext() {
-        return idx<size;
+        return idx < size;
       }
 
       @Override
       public T next() {
-        return get( idx++ );
+        return get(idx++);
       }
 
       @Override

@@ -17,43 +17,52 @@
 package org.apache.solr.util;
 
 import java.io.File;
-import java.net.URL;
 
 /**
- * Some tests need to reach outside the classpath to get certain resources (e.g. the example configuration).
- * This class provides some paths to allow them to do this.
+ * Some tests need to reach outside the classpath to get certain resources (e.g. the example
+ * configuration). This class provides some paths to allow them to do this.
+ *
  * @lucene.internal
  */
 public class ExternalPaths {
 
   /**
-   * <p>
-   * The main directory path for the solr source being built if it can be determined.  If it 
-   * can not be determined -- possily because the current context is a client code base 
-   * using hte test frameowrk -- then this variable will be null.
-   * </p>
-   * <p>
-   * Note that all other static paths available in this class are derived from the source 
-   * home, and if it is null, those paths will just be relative to 'null' and may not be 
-   * meaningful.
+   * The main directory path for the solr source being built if it can be determined. If it can not
+   * be determined -- possily because the current context is a client code base using hte test
+   * frameowrk -- then this variable will be null.
+   *
+   * <p>Note that all other static paths available in this class are derived from the source home,
+   * and if it is null, those paths will just be relative to 'null' and may not be meaningful.
    */
   public static final String SOURCE_HOME = determineSourceHome();
-  /** @see #SOURCE_HOME */
+
+  /**
+   * @see #SOURCE_HOME
+   */
   public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
-  /** @see #SOURCE_HOME */
+
+  /**
+   * @see #SOURCE_HOME
+   */
   public static String DEFAULT_CONFIGSET =
       new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
-  /** @see #SOURCE_HOME */
-  public static String TECHPRODUCTS_CONFIGSET =
-      new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf").getAbsolutePath();
 
-  /** @see #SOURCE_HOME */
+  /**
+   * @see #SOURCE_HOME
+   */
+  public static String TECHPRODUCTS_CONFIGSET =
+      new File(SOURCE_HOME, "server/solr/configsets/sample_techproducts_configs/conf")
+          .getAbsolutePath();
+
+  /**
+   * @see #SOURCE_HOME
+   */
   public static String SERVER_HOME = new File(SOURCE_HOME, "server/solr").getAbsolutePath();
 
   /**
-   * Ugly, ugly hack to determine the example home without depending on the CWD
-   * this is needed for example/multicore tests which reside outside the classpath.
-   * if the source home can't be determined, this method returns null.
+   * Ugly, ugly hack to determine the example home without depending on the CWD this is needed for
+   * example/multicore tests which reside outside the classpath. if the source home can't be
+   * determined, this method returns null.
    */
   static String determineSourceHome() {
     try {
@@ -65,6 +74,7 @@ public class ExternalPaths {
         if(resourceUrl != null) {
           file = new File(resourceUrl.toURI());
         } else {
+          // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
           file = new File(System.getProperty("tests.src.home", "."));
         }
       }

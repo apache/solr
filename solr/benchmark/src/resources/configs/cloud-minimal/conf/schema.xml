@@ -18,15 +18,15 @@
 <schema name="minimal" version="1.1">
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldType name="string" class="solr.StrField" docValues="true"/>
-    <fieldType name="int" class="org.apache.solr.schema.IntPointField" docValues="true" omitNorms="true"
+    <fieldType name="int" class="org.apache.solr.schema.IntPointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
-    <fieldType name="long" class="org.apache.solr.schema.LongPointField" docValues="true" omitNorms="true"
+    <fieldType name="long" class="org.apache.solr.schema.LongPointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
-    <fieldType name="float" class="org.apache.solr.schema.FloatPointField" docValues="true" omitNorms="true"
+    <fieldType name="float" class="org.apache.solr.schema.FloatPointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
-    <fieldType name="double" class="org.apache.solr.schema.DoublePointField" docValues="true" omitNorms="true"
+    <fieldType name="double" class="org.apache.solr.schema.DoublePointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
-    <fieldType name="date" class="org.apache.solr.schema.DatePointField" docValues="true" omitNorms="true"
+    <fieldType name="date" class="org.apache.solr.schema.DatePointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
     <fieldType name="text" class="solr.TextField">
         <analyzer>
@@ -44,11 +44,18 @@
     <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
     <dynamicField name="*_s" type="string" indexed="true" stored="false"/>
     <dynamicField name="*_t" type="text" indexed="true" stored="false"/>
-    <dynamicField name="*_i" type="int" indexed="false" stored="false"/>
-    <dynamicField name="*_l" type="long" indexed="false" stored="false"/>
-    <dynamicField name="*_f" type="float" indexed="false" stored="false"/>
-    <dynamicField name="*_d" type="double" indexed="false" stored="false"/>
-    <dynamicField name="*_dt" type="date" indexed="false" stored="false"/>
+    <dynamicField name="*_ts" type="text" indexed="true" stored="true"/>
+    <dynamicField name="*_i" type="int" indexed="true" stored="false"/>
+    <dynamicField name="*_i_dv" type="int" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_is" type="int" indexed="false" stored="true"/>
+    <dynamicField name="*_l" type="long" indexed="true" stored="false"/>
+    <dynamicField name="*_l_dv" type="long" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_f" type="float" indexed="true" stored="false"/>
+    <dynamicField name="*_f_dv" type="float" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_d" type="double" indexed="true" stored="false"/>
+    <dynamicField name="*_d_dv" type="double" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_dt" type="date" indexed="true" stored="false"/>
+    <dynamicField name="*_dt_dv" type="date" indexed="true" docValues="true" stored="false"/>
 
     <uniqueKey>id</uniqueKey>
 </schema>

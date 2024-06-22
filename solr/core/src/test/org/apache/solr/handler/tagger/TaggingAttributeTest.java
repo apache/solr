@@ -26,9 +26,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test the {@link TaggerRequestHandler} with
- * a Analyzer chain that does use the {@link TaggingAttribute}. See the test
- * configuration under 'taggingattribute'.
+ * Test the {@link TaggerRequestHandler} with an Analyzer chain that does use the {@link
+ * TaggingAttribute}. See the test configuration under 'taggingattribute'.
  */
 public class TaggingAttributeTest extends TaggerTestCase {
 
@@ -38,36 +37,47 @@ public class TaggingAttributeTest extends TaggerTestCase {
   }
 
   /**
-   * Whole matching, no sub-tags. Links only words with &gt; 3 letters.
-   * Because of that "San" is not used to start tags
-   *
+   * Whole matching, no sub-tags. Links only words with &gt; 3 letters. Because of that "San" is not
+   * used to start tags
    */
   @Test
   public void testTaggingAttribute() throws Exception {
-    baseParams.set("field", "name_tagAttribute"); // has WordLengthTaggingFilter using the TaggingAttribute
-    // this test is based on the longest dominant right test, so we use the
+    baseParams.set(
+        "field", "name_tagAttribute"); // has WordLengthTaggingFilter using the TaggingAttribute
+    // this test is based on the longest dominant right test, so we use
     // the same TagClusterReducer setting
     baseParams.set("overlaps", "LONGEST_DOMINANT_RIGHT");
 
-    buildNames("in", "San", "in San", "Francisco", "San Francisco",
-        "San Francisco State College", "College of California",
-        "Clayton", "Clayton North", "North Carolina");
+    buildNames(
+        "in",
+        "San",
+        "in San",
+        "Francisco",
+        "San Francisco",
+        "San Francisco State College",
+        "College of California",
+        "Clayton",
+        "Clayton North",
+        "North Carolina");
 
-    assertTags("He lived in San Francisco.",
-        //"in", "San Francisco"); //whis would be expected without taggable
-        "Francisco");// this are the expected results with taggable
+    assertTags(
+        "He lived in San Francisco.",
+        // "in", "San Francisco"); //this would be expected without taggable
+        "Francisco"); // this is the expected result with taggable
 
-    assertTags("He enrolled in San Francisco State College of California",
-        //"in", "San Francisco State College"); //without taggable enabled
-        "Francisco", "College of California");// With taggable
-    //NOTE this also tests that started tags are advanced for non-taggable
+    assertTags(
+        "He enrolled in San Francisco State College of California",
+        // "in", "San Francisco State College"); //without taggable enabled
+        "Francisco",
+        "College of California"); // With taggable
+    // NOTE this also tests that started tags are advanced for non-taggable
     //     tokens, as otherwise 'College of California' would not be
     //     suggested.
 
-    assertTags("He lived in Clayton North Carolina",
-        //"in", "Clayton", "North Carolina");
-        "Clayton", "North Carolina");
-
+    assertTags(
+        "He lived in Clayton North Carolina",
+        // "in", "Clayton", "North Carolina");
+        "Clayton",
+        "North Carolina");
   }
-
 }

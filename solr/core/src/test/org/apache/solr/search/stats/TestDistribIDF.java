@@ -18,13 +18,11 @@ package org.apache.solr.search.stats;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -34,6 +32,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
@@ -72,7 +73,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleQuery() throws Exception {
-    //3 shards. 3rd shard won't have any data.
+    // 3 shards. 3rd shard won't have any data.
     createCollection("onecollection", "conf1", ImplicitDocRouter.NAME);
     createCollection("onecollection_local", "conf2", ImplicitDocRouter.NAME);
 
@@ -91,13 +92,14 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     solrCluster.getSolrClient().add("onecollection_local", doc);
 
     int nDocs = TestUtil.nextInt(random(), 10, 100);
-    for (int i=0; i<nDocs; i++) {
+    for (int i = 0; i < nDocs; i++) {
       doc = new SolrInputDocument();
       doc.setField("id", "" + (3 + i));
       String cat = TestUtil.randomSimpleString(random());
-      if (!cat.equals("football")) { //Making sure no other document has the query term in it.
+      if (!cat.equals("football")) { // Making sure no other document has the query term in it.
         doc.setField("cat", cat);
-        if (rarely()) { //Put most documents in shard b so that 'football' becomes 'rare' in shard b
+        // Put most documents in shard b so that 'football' becomes 'rare' in shard b
+        if (rarely()) {
           doc.addField(ShardParams._ROUTE_, "a");
         } else {
           doc.addField(ShardParams._ROUTE_, "b");
@@ -110,10 +112,11 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     solrCluster.getSolrClient().commit("onecollection");
     solrCluster.getSolrClient().commit("onecollection_local");
 
-    //Test against all nodes
+    // Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
       try (SolrClient solrClient = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
-        try (SolrClient solrClient_local = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+        try (SolrClient solrClient_local =
+            getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
 
           SolrQuery query = new SolrQuery("cat:football");
           query.setFields("*,score");
@@ -121,7 +124,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           assertEquals(2, queryResponse.getResults().getNumFound());
           float score1 = (float) queryResponse.getResults().get(0).get("score");
           float score2 = (float) queryResponse.getResults().get(1).get("score");
-          assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
+          assertEquals(
+              "Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
 
           query = new SolrQuery("cat:football");
           query.setShowDebugInfo(true);
@@ -132,7 +136,9 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           assertEquals("1", queryResponse.getResults().get(1).get("id"));
           float score1_local = (float) queryResponse.getResults().get(0).get("score");
           float score2_local = (float) queryResponse.getResults().get(1).get("score");
-          assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
+          assertEquals(
+              "Doc1 score=" + score1_local + " Doc2 score=" + score2_local,
+              1,
               Float.compare(score1_local, score2_local));
         }
       }
@@ -140,17 +146,15 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   }
 
   @Test
-  // commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void testMultiCollectionQuery() throws Exception {
     // collection1 and collection2 are collections which have distributed idf enabled
     // collection1_local and collection2_local don't have distributed idf available
     // Only one doc has cat:football in each collection
     // When doing queries across collections we want to test that the query takes into account
     // distributed idf for the collection=collection1,collection2 query.
-    // The way we verify is that score should be the same when querying across collection1 and collection2
-    // But should be different when querying across collection1_local and collection2_local
-    // since the idf is calculated per shard
+    // The way we verify is that score should be the same when querying across collection1 and
+    // collection2. But should be different when querying across collection1_local and
+    // collection2_local since the idf is calculated per shard
 
     createCollection("collection1", "conf1");
     createCollection("collection1_local", "conf2");
@@ -159,19 +163,21 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     addDocsRandomly();
 
-    //Test against all nodes
+    // Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
 
       try (SolrClient solrClient = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
 
-        try (SolrClient solrClient_local = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+        try (SolrClient solrClient_local =
+            getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
           SolrQuery query = new SolrQuery("cat:football");
           query.setFields("*,score").add("collection", "collection1,collection2");
           QueryResponse queryResponse = solrClient.query("collection1", query);
           assertEquals(2, queryResponse.getResults().getNumFound());
           float score1 = (float) queryResponse.getResults().get(0).get("score");
           float score2 = (float) queryResponse.getResults().get(1).get("score");
-          assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
+          assertEquals(
+              "Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
 
           query = new SolrQuery("cat:football");
           query.setFields("*,score").add("collection", "collection1_local,collection2_local");
@@ -181,13 +187,13 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           assertEquals("1", queryResponse.getResults().get(1).get("id"));
           float score1_local = (float) queryResponse.getResults().get(0).get("score");
           float score2_local = (float) queryResponse.getResults().get(1).get("score");
-          assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
+          assertEquals(
+              "Doc1 score=" + score1_local + " Doc2 score=" + score2_local,
+              1,
               Float.compare(score1_local, score2_local));
         }
-
       }
     }
-    
   }
 
   private void createCollection(String name, String config) throws Exception {
@@ -197,17 +203,20 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   private void createCollection(String name, String config, String router) throws Exception {
     CollectionAdminResponse response;
     if (router.equals(ImplicitDocRouter.NAME)) {
-      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
+      CollectionAdminRequest.Create create =
+          CollectionAdminRequest.createCollectionWithImplicitRouter(name, config, "a,b,c", 1);
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 3, 3);
     } else {
-      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
+      CollectionAdminRequest.Create create =
+          CollectionAdminRequest.createCollection(name, config, 2, 1)
+              .setPerReplicaState(SolrCloudTestCase.isPRS());
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 2, 2);
     }
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
+      fail("Could not create collection. Response" + response);
     }
   }
 
@@ -227,13 +236,14 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     int nDocs = TestUtil.nextInt(random(), 10, 100);
     int collection1Count = 1;
     int collection2Count = 1;
-    for (int i=0; i<nDocs; i++) {
+    for (int i = 0; i < nDocs; i++) {
       doc = new SolrInputDocument();
       doc.setField("id", 3 + i);
       String cat = TestUtil.randomSimpleString(random());
-      if (!cat.equals("football")) { //Making sure no other document has the query term in it.
+      if (!cat.equals("football")) { // Making sure no other document has the query term in it.
         doc.setField("cat", cat);
-        if (rarely()) { //Put most documents in collection2* so that 'football' becomes 'rare' in collection2*
+        // Put most documents in collection2* so that 'football' becomes 'rare' in collection2*
+        if (rarely()) {
           solrCluster.getSolrClient().add("collection1", doc);
           solrCluster.getSolrClient().add("collection1_local", doc);
           collection1Count++;
@@ -244,11 +254,66 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
         }
       }
     }
-    log.info("numDocs={}. collection1Count={} collection2Count={}", nDocs, collection1Count, collection2Count);
+    log.info(
+        "numDocs={}. collection1Count={} collection2Count={}",
+        nDocs,
+        collection1Count,
+        collection2Count);
 
     solrCluster.getSolrClient().commit("collection1");
     solrCluster.getSolrClient().commit("collection2");
     solrCluster.getSolrClient().commit("collection1_local");
     solrCluster.getSolrClient().commit("collection2_local");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testDisableDistribStats() throws Exception {
+
+    // single collection with implicit router
+    final String COLLECTION = "collection1";
+    createCollection(COLLECTION, "conf1", ImplicitDocRouter.NAME);
+    SolrClient client = solrCluster.getSolrClient();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("cat", "tv");
+    doc.addField(ShardParams._ROUTE_, "a");
+    client.add(COLLECTION, doc);
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "2");
+    doc.setField("cat", "ipad");
+    doc.addField(ShardParams._ROUTE_, "b");
+    client.add(COLLECTION, doc);
+
+    client.commit(COLLECTION);
+    // distributed stats implicitly enabled by default
+    SolrQuery query =
+        new SolrQuery(
+            "q", "cat:tv",
+            "fl", "id,score",
+            "debug", "track");
+    QueryResponse rsp = client.query(COLLECTION, query);
+    NamedList<Object> track = (NamedList<Object>) rsp.getDebugMap().get("track");
+    assertNotNull(track);
+    assertNotNull("stats cache hit", track.get("PARSE_QUERY"));
+
+    // distributed stats explicitly disabled
+    query.set("distrib.statsCache", "false");
+    query.set("q", "{!terms f=id}1,2");
+    rsp = client.query(COLLECTION, query);
+    track = (NamedList<Object>) rsp.getDebugMap().get("track");
+    assertNotNull(track);
+    assertNull("NO stats cache hit", track.get("PARSE_QUERY"));
+    assertNotNull("just search", track.get("EXECUTE_QUERY"));
+
+    // distributed stats explicitly enabled
+    query.set("distrib.statsCache", "true");
+    query.set("q", "name:ipad"); // trick around LRUStatsCache
+    rsp = client.query(COLLECTION, query);
+    track = (NamedList<Object>) rsp.getDebugMap().get("track");
+    assertNotNull(track);
+    assertNotNull("stats cache hit:" + track, track.get("PARSE_QUERY"));
   }
 }

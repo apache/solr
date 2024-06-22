@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
@@ -33,7 +32,39 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
+import org.apache.lucene.queries.function.valuesource.ConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DefFunction;
+import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
+import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DualFloatFunction;
+import org.apache.lucene.queries.function.valuesource.IDFValueSource;
+import org.apache.lucene.queries.function.valuesource.IfFunction;
+import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.LinearFloatFunction;
+import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
+import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
+import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MultiBoolFunction;
+import org.apache.lucene.queries.function.valuesource.MultiValueSource;
+import org.apache.lucene.queries.function.valuesource.NormValueSource;
+import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
+import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
+import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
+import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SimpleBoolFunction;
+import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SingleFunction;
+import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.TFValueSource;
+import org.apache.lucene.queries.function.valuesource.TermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.TotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
@@ -71,6 +102,7 @@ import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
+import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.EqualFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
@@ -89,31 +121,31 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
- * A factory that parses user queries to generate ValueSource instances.
- * Intended usage is to create pluggable, named functions for use in function queries.
+ * A factory that parses user queries to generate ValueSource instances. Intended usage is to create
+ * pluggable, named functions for use in function queries.
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {
-  /**
-   * Parse the user input into a ValueSource.
-   */
+  /** Parse the user input into a ValueSource. */
   public abstract ValueSource parse(FunctionQParser fp) throws SyntaxError;
 
   /** standard functions supported by default, filled in static class initialization */
   private static final Map<String, ValueSourceParser> standardVSParsers = new HashMap<>();
-  
-  /** standard functions supported by default */
-  public static final Map<String, ValueSourceParser> standardValueSourceParsers
-    = Collections.unmodifiableMap(standardVSParsers);
 
-  /** Adds a new parser for the name and returns any existing one that was overridden.
-   *  This is not thread safe.
+  /** standard functions supported by default */
+  public static final Map<String, ValueSourceParser> standardValueSourceParsers =
+      Collections.unmodifiableMap(standardVSParsers);
+
+  /**
+   * Adds a new parser for the name and returns any existing one that was overridden. This is not
+   * thread safe.
    */
   private static ValueSourceParser addParser(String name, ValueSourceParser p) {
     return standardVSParsers.put(name, p);
   }
 
-  /** Adds a new parser for the name and returns any existing one that was overridden.
-   *  This is not thread safe.
+  /**
+   * Adds a new parser for the name and returns any existing one that was overridden. This is not
+   * thread safe.
    */
   private static ValueSourceParser addParser(NamedParser p) {
     return standardVSParsers.put(p.name(), p);
@@ -124,974 +156,1212 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   }
 
   static {
-    addParser("testfunc", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        final ValueSource source = fp.parseValueSource();
-        return new TestValueSource(source);
-      }
-    });
-    addParser("ord", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        String field = fp.parseId();
-        return new OrdFieldSource(field);
-      }
-    });
-    addParser("literal", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new LiteralValueSource(fp.parseArg());
-      }
-    });
-    addParser("threadid", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new LongConstValueSource(Thread.currentThread().getId());
-      }
-    });
-    addParser("sleep", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        int ms = fp.parseInt();
-        ValueSource source = fp.parseValueSource();
-        try {
-          Thread.sleep(ms);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-        return source;
-      }
-    });
-    addParser("rord", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        String field = fp.parseId();
-        return new ReverseOrdFieldSource(field);
-      }
-    });
-    addParser("top", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        // top(vs) is now a no-op
-        ValueSource source = fp.parseValueSource();
-        return source;
-      }
-    });
-    addParser("linear", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource source = fp.parseValueSource();
-        float slope = fp.parseFloat();
-        float intercept = fp.parseFloat();
-        return new LinearFloatFunction(source, slope, intercept);
-      }
-    });
-    addParser("recip", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource source = fp.parseValueSource();
-        float m = fp.parseFloat();
-        float a = fp.parseFloat();
-        float b = fp.parseFloat();
-        return new ReciprocalFloatFunction(source, m, a, b);
-      }
-    });
-    addParser("scale", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource source = fp.parseValueSource();
-        float min = fp.parseFloat();
-        float max = fp.parseFloat();
-        return new ScaleFloatFunction(source, min, max);
-      }
-    });
-    addParser("div", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource a = fp.parseValueSource();
-        ValueSource b = fp.parseValueSource();
-        return new DivFloatFunction(a, b);
-      }
-    });
-    addParser("mod", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource a = fp.parseValueSource();
-        ValueSource b = fp.parseValueSource();
-        return new DualFloatFunction(a, b) {
+    addParser(
+        "testfunc",
+        new ValueSourceParser() {
           @Override
-          protected String name() {
-            return "mod";
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            final ValueSource source = fp.parseValueSource();
+            return new TestValueSource(source);
           }
+        });
+    addParser(
+        "ord",
+        new ValueSourceParser() {
           @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return aVals.floatVal(doc) % bVals.floatVal(doc);
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            String field = fp.parseId();
+            return new OrdFieldSource(field);
           }
-        };
-      }
-    });
-    addParser("map", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource source = fp.parseValueSource();
-        float min = fp.parseFloat();
-        float max = fp.parseFloat();
-        ValueSource target = fp.parseValueSource();
-        ValueSource def = fp.hasMoreArguments() ? fp.parseValueSource() : null;
-        return new RangeMapFloatFunction(source, min, max, target, def);
-      }
-    });
+        });
+    addParser(
+        "literal",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new LiteralValueSource(fp.parseArg());
+          }
+        });
+    addParser(
+        "threadid",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new LongConstValueSource(Thread.currentThread().getId());
+          }
+        });
+    addParser(
+        "sleep",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            int ms = fp.parseInt();
+            ValueSource source = fp.parseValueSource();
+            try {
+              Thread.sleep(ms);
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+            return source;
+          }
+        });
+    addParser(
+        "rord",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            String field = fp.parseId();
+            return new ReverseOrdFieldSource(field);
+          }
+        });
+    addParser(
+        "top",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            // top(vs) is now a no-op
+            ValueSource source = fp.parseValueSource();
+            return source;
+          }
+        });
+    addParser(
+        "linear",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource source = fp.parseValueSource();
+            float slope = fp.parseFloat();
+            float intercept = fp.parseFloat();
+            return new LinearFloatFunction(source, slope, intercept);
+          }
+        });
+    addParser(
+        "recip",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource source = fp.parseValueSource();
+            float m = fp.parseFloat();
+            float a = fp.parseFloat();
+            float b = fp.parseFloat();
+            return new ReciprocalFloatFunction(source, m, a, b);
+          }
+        });
+    addParser(
+        "scale",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource source = fp.parseValueSource();
+            float min = fp.parseFloat();
+            float max = fp.parseFloat();
+            return new ScaleFloatFunction(source, min, max);
+          }
+        });
+    addParser(
+        "div",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource a = fp.parseValueSource();
+            ValueSource b = fp.parseValueSource();
+            return new DivFloatFunction(a, b);
+          }
+        });
+    addParser(
+        "mod",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource a = fp.parseValueSource();
+            ValueSource b = fp.parseValueSource();
+            return new DualDoubleFunction(a, b) {
+              @Override
+              protected String name() {
+                return "mod";
+              }
 
-    addParser("abs", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource source = fp.parseValueSource();
-        return new SimpleFloatFunction(source) {
-          @Override
-          protected String name() {
-            return "abs";
+              @Override
+              protected double func(int doc, FunctionValues aVals, FunctionValues bVals)
+                  throws IOException {
+                return aVals.doubleVal(doc) % bVals.doubleVal(doc);
+              }
+            };
           }
-
+        });
+    addParser(
+        "map",
+        new ValueSourceParser() {
           @Override
-          protected float func(int doc, FunctionValues vals) throws IOException {
-            return Math.abs(vals.floatVal(doc));
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource source = fp.parseValueSource();
+            float min = fp.parseFloat();
+            float max = fp.parseFloat();
+            ValueSource target = fp.parseValueSource();
+            ValueSource def = fp.hasMoreArguments() ? fp.parseValueSource() : null;
+            return new RangeMapFloatFunction(source, min, max, target, def);
           }
-        };
-      }
-    });
-    addParser("cscore", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new CollapseScoreFunction();
-      }
-    });
-    addParser("sum", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-    alias("sum","add");    
+        });
 
-    addParser("product", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-    alias("product","mul");
-
-    addParser("sub", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource a = fp.parseValueSource();
-        ValueSource b = fp.parseValueSource();
-        return new DualFloatFunction(a, b) {
+    addParser(
+        "abs",
+        new ValueSourceParser() {
           @Override
-          protected String name() {
-            return "sub";
-          }
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource source = fp.parseValueSource();
+            return new SimpleFloatFunction(source) {
+              @Override
+              protected String name() {
+                return "abs";
+              }
 
-          @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
-            return aVals.floatVal(doc) - bVals.floatVal(doc);
+              @Override
+              protected float func(int doc, FunctionValues vals) throws IOException {
+                return Math.abs(vals.floatVal(doc));
+              }
+            };
           }
-        };
-      }
-    });
-    addParser("vector", new ValueSourceParser(){
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new VectorValueSource(fp.parseValueSourceList());
-      }
-    });
-    addParser("query", new ValueSourceParser() {
-      // boost(query($q),rating)
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        Query q = fp.parseNestedQuery();
-        float defVal = 0.0f;
-        if (fp.hasMoreArguments()) {
-          defVal = fp.parseFloat();
-        }
-        return new QueryValueSource(q, defVal);
-      }
-    });
-    addParser("boost", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        Query q = fp.parseNestedQuery();
-        ValueSource vs = fp.parseValueSource();
-        return new QueryValueSource(FunctionScoreQuery.boostByValue(q, vs.asDoubleValuesSource()), 0.0f);
-      }
-    });
-    addParser("joindf", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        String f0 = fp.parseArg();
-        String qf = fp.parseArg();
-        return new JoinDocFreqValueSource( f0, qf );
-      }
-    });
+        });
+    addParser(
+        "cscore",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new CollapseScoreFunction();
+          }
+        });
+    addParser(
+        "sum",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new SumFloatFunction(sources.toArray(new ValueSource[0]));
+          }
+        });
+    alias("sum", "add");
+    addParser("vectorSimilarity", new VectorSimilaritySourceParser());
+    addParser(
+        "product",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new ProductFloatFunction(sources.toArray(new ValueSource[0]));
+          }
+        });
+    alias("product", "mul");
+
+    addParser(
+        "sub",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource a = fp.parseValueSource();
+            ValueSource b = fp.parseValueSource();
+            return new DualFloatFunction(a, b) {
+              @Override
+              protected String name() {
+                return "sub";
+              }
+
+              @Override
+              protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+                  throws IOException {
+                return aVals.floatVal(doc) - bVals.floatVal(doc);
+              }
+            };
+          }
+        });
+    addParser(
+        "vector",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new VectorValueSource(fp.parseValueSourceList());
+          }
+        });
+    addParser(
+        "query",
+        new ValueSourceParser() {
+          // boost(query($q),rating)
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            Query q = fp.parseNestedQuery();
+            float defVal = 0.0f;
+            if (fp.hasMoreArguments()) {
+              defVal = fp.parseFloat();
+            }
+            return new QueryValueSource(q, defVal);
+          }
+        });
+    addParser(
+        "boost",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            Query q = fp.parseNestedQuery();
+            ValueSource vs = fp.parseValueSource();
+            return new QueryValueSource(
+                FunctionScoreQuery.boostByValue(q, vs.asDoubleValuesSource()), 0.0f);
+          }
+        });
+    addParser(
+        "joindf",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            String f0 = fp.parseArg();
+            String qf = fp.parseArg();
+            return new JoinDocFreqValueSource(f0, qf);
+          }
+        });
 
     addParser("geodist", new GeoDistValueSourceParser());
 
-    addParser("hsin", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+    addParser(
+        "hsin",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
-        double radius = fp.parseDouble();
-        //SOLR-2114, make the convert flag required, since the parser doesn't support much in the way of lookahead or the ability to convert a String into a ValueSource
-        boolean convert = Boolean.parseBoolean(fp.parseArg());
-        
-        MultiValueSource pv1;
-        MultiValueSource pv2;
+            double radius = fp.parseDouble();
+            // SOLR-2114, make the convert flag required, since the parser doesn't support much in
+            // the way of lookahead or the ability to convert a String into a ValueSource
+            boolean convert = Boolean.parseBoolean(fp.parseArg());
 
-        ValueSource one = fp.parseValueSource();
-        ValueSource two = fp.parseValueSource();
-        if (fp.hasMoreArguments()) {
-          pv1 = new VectorValueSource(Arrays.asList(one, two));//x1, y1
-          pv2 = new VectorValueSource(Arrays.asList(fp.parseValueSource(), fp.parseValueSource()));//x2, y2
-        } else {
-          //check to see if we have multiValue source
-          if (one instanceof MultiValueSource && two instanceof MultiValueSource){
-            pv1 = (MultiValueSource) one;
-            pv2 = (MultiValueSource) two;
-          } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            MultiValueSource pv1;
+            MultiValueSource pv2;
+
+            ValueSource one = fp.parseValueSource();
+            ValueSource two = fp.parseValueSource();
+            if (fp.hasMoreArguments()) {
+              pv1 = new VectorValueSource(Arrays.asList(one, two)); // x1, y1
+              pv2 =
+                  new VectorValueSource(
+                      Arrays.asList(fp.parseValueSource(), fp.parseValueSource())); // x2, y2
+            } else {
+              // check to see if we have multiValue source
+              if (one instanceof MultiValueSource && two instanceof MultiValueSource) {
+                pv1 = (MultiValueSource) one;
+                pv2 = (MultiValueSource) two;
+              } else {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
                     "Input must either be 2 MultiValueSources, or there must be 4 ValueSources");
+              }
+            }
+
+            return new HaversineFunction(pv1, pv2, radius, convert);
           }
-        }
+        });
 
-        return new HaversineFunction(pv1, pv2, radius, convert);
-      }
-    });
+    addParser(
+        "ghhsin",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            double radius = fp.parseDouble();
 
-    addParser("ghhsin", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        double radius = fp.parseDouble();
+            ValueSource gh1 = fp.parseValueSource();
+            ValueSource gh2 = fp.parseValueSource();
 
-        ValueSource gh1 = fp.parseValueSource();
-        ValueSource gh2 = fp.parseValueSource();
-
-        return new GeohashHaversineFunction(gh1, gh2, radius);
-      }
-    });
-
-    addParser("geohash", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-
-        ValueSource lat = fp.parseValueSource();
-        ValueSource lon = fp.parseValueSource();
-
-        return new GeohashFunction(lat, lon);
-      }
-    });
-    addParser("strdist", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-
-        ValueSource str1 = fp.parseValueSource();
-        ValueSource str2 = fp.parseValueSource();
-        String distClass = fp.parseArg();
-
-        StringDistance dist = null;
-        if (distClass.equalsIgnoreCase("jw")) {
-          dist = new JaroWinklerDistance();
-        } else if (distClass.equalsIgnoreCase("edit")) {
-          dist = new LevenshteinDistance();
-        } else if (distClass.equalsIgnoreCase("ngram")) {
-          int ngram = 2;
-          if (fp.hasMoreArguments()) {
-            ngram = fp.parseInt();
+            return new GeohashHaversineFunction(gh1, gh2, radius);
           }
-          dist = new NGramDistance(ngram);
-        } else {
-          dist = fp.req.getCore().getResourceLoader().newInstance(distClass, StringDistance.class);
-        }
-        return new StringDistanceFunction(str1, str2, dist);
-      }
-    });
-    addParser("field", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        });
 
-        String fieldName = fp.parseArg();
-        SchemaField f = fp.getReq().getSchema().getField(fieldName);
-        if (fp.hasMoreArguments()) {
-          // multivalued selector option
-          String s = fp.parseArg();
-          FieldType.MultiValueSelector selector = FieldType.MultiValueSelector.lookup(s);
-          if (null == selector) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "Multi-Valued field selector '"+s+"' not supported");
+    addParser(
+        "geohash",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+
+            ValueSource lat = fp.parseValueSource();
+            ValueSource lon = fp.parseValueSource();
+
+            return new GeohashFunction(lat, lon);
           }
-          return f.getType().getSingleValueSource(selector, f, fp);
-        }
-        // simple field ValueSource
-        return f.getType().getValueSource(f, fp);
-      }
-    });
-    addParser("currency", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        });
+    addParser(
+        "strdist",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
-        String fieldName = fp.parseArg();
-        SchemaField f = fp.getReq().getSchema().getField(fieldName);
-        if (! (f.getType() instanceof CurrencyFieldType)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                  "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
-        }
-        CurrencyFieldType ft = (CurrencyFieldType) f.getType();
-        String code = fp.hasMoreArguments() ? fp.parseArg() : null;
-        return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
-      }
-    });
+            ValueSource str1 = fp.parseValueSource();
+            ValueSource str2 = fp.parseValueSource();
+            String distClass = fp.parseArg();
 
-    addParser(new DoubleParser("rad") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return vals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
-      }
-    });
-    addParser(new DoubleParser("deg") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return vals.doubleVal(doc) * DistanceUtils.RADIANS_TO_DEGREES;
-      }
-    });
-    addParser(new DoubleParser("sqrt") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.sqrt(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("cbrt") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.cbrt(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("log") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.log10(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("ln") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.log(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("exp") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.exp(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("sin") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.sin(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("cos") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.cos(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("tan") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.tan(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("asin") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.asin(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("acos") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.acos(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("atan") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.atan(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("sinh") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.sinh(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("cosh") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.cosh(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("tanh") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.tanh(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("ceil") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.ceil(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("floor") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.floor(vals.doubleVal(doc));
-      }
-    });
-    addParser(new DoubleParser("rint") {
-      @Override
-      public double func(int doc, FunctionValues vals) throws IOException {
-        return Math.rint(vals.doubleVal(doc));
-      }
-    });
-    addParser(new Double2Parser("pow") {
-      @Override
-      public double func(int doc, FunctionValues a, FunctionValues b) throws IOException {
-        return Math.pow(a.doubleVal(doc), b.doubleVal(doc));
-      }
-    });
-    addParser(new Double2Parser("hypot") {
-      @Override
-      public double func(int doc, FunctionValues a, FunctionValues b) throws IOException {
-        return Math.hypot(a.doubleVal(doc), b.doubleVal(doc));
-      }
-    });
-    addParser(new Double2Parser("atan2") {
-      @Override
-      public double func(int doc, FunctionValues a, FunctionValues b) throws IOException {
-        return Math.atan2(a.doubleVal(doc), b.doubleVal(doc));
-      }
-    });
-    addParser("max", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new MaxFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-    addParser("min", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
+            StringDistance dist = null;
+            if (distClass.equalsIgnoreCase("jw")) {
+              dist = new JaroWinklerDistance();
+            } else if (distClass.equalsIgnoreCase("edit")) {
+              dist = new LevenshteinDistance();
+            } else if (distClass.equalsIgnoreCase("ngram")) {
+              int ngram = 2;
+              if (fp.hasMoreArguments()) {
+                ngram = fp.parseInt();
+              }
+              dist = new NGramDistance(ngram);
+            } else {
+              dist =
+                  fp.req.getCore().getResourceLoader().newInstance(distClass, StringDistance.class);
+            }
+            return new StringDistanceFunction(str1, str2, dist);
+          }
+        });
+    addParser(
+        "field",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
-    addParser("sqedist", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        MVResult mvr = getMultiValueSources(sources);
+            String fieldName = fp.parseArg();
+            SchemaField f = fp.getReq().getSchema().getField(fieldName);
+            if (fp.hasMoreArguments()) {
+              // multivalued selector option
+              String s = fp.parseArg();
+              FieldType.MultiValueSelector selector = FieldType.MultiValueSelector.lookup(s);
+              if (null == selector) {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "Multi-Valued field selector '" + s + "' not supported");
+              }
+              return f.getType().getSingleValueSource(selector, f, fp);
+            }
+            // simple field ValueSource
+            return f.getType().getValueSource(f, fp);
+          }
+        });
+    addParser(
+        "currency",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
-        return new SquaredEuclideanFunction(mvr.mv1, mvr.mv2);
-      }
-    });
+            String fieldName = fp.parseArg();
+            SchemaField f = fp.getReq().getSchema().getField(fieldName);
+            if (!(f.getType() instanceof CurrencyFieldType)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
+            }
+            CurrencyFieldType ft = (CurrencyFieldType) f.getType();
+            String code = fp.hasMoreArguments() ? fp.parseArg() : null;
+            return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
+          }
+        });
 
-    addParser("dist", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        float power = fp.parseFloat();
-        List<ValueSource> sources = fp.parseValueSourceList();
-        MVResult mvr = getMultiValueSources(sources);
-        return new VectorDistanceFunction(power, mvr.mv1, mvr.mv2);
-      }
-    });
+    addParser(
+        new DoubleParser("rad") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return vals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
+          }
+        });
+    addParser(
+        new DoubleParser("deg") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return vals.doubleVal(doc) * DistanceUtils.RADIANS_TO_DEGREES;
+          }
+        });
+    addParser(
+        new DoubleParser("sqrt") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.sqrt(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("cbrt") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.cbrt(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("log") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.log10(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("ln") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.log(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("exp") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.exp(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("sin") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.sin(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("cos") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.cos(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("tan") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.tan(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("asin") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.asin(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("acos") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.acos(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("atan") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.atan(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("sinh") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.sinh(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("cosh") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.cosh(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("tanh") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.tanh(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("ceil") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.ceil(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("floor") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.floor(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new DoubleParser("rint") {
+          @Override
+          public double func(int doc, FunctionValues vals) throws IOException {
+            return Math.rint(vals.doubleVal(doc));
+          }
+        });
+    addParser(
+        new Double2Parser("pow") {
+          @Override
+          public double func(int doc, FunctionValues a, FunctionValues b) throws IOException {
+            return Math.pow(a.doubleVal(doc), b.doubleVal(doc));
+          }
+        });
+    addParser(
+        new Double2Parser("hypot") {
+          @Override
+          public double func(int doc, FunctionValues a, FunctionValues b) throws IOException {
+            return Math.hypot(a.doubleVal(doc), b.doubleVal(doc));
+          }
+        });
+    addParser(
+        new Double2Parser("atan2") {
+          @Override
+          public double func(int doc, FunctionValues a, FunctionValues b) throws IOException {
+            return Math.atan2(a.doubleVal(doc), b.doubleVal(doc));
+          }
+        });
+    addParser(
+        "max",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new MaxFloatFunction(sources.toArray(new ValueSource[0]));
+          }
+        });
+    addParser(
+        "min",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new MinFloatFunction(sources.toArray(new ValueSource[0]));
+          }
+        });
+
+    addParser(
+        "sqedist",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            MVResult mvr = getMultiValueSources(sources);
+
+            return new SquaredEuclideanFunction(mvr.mv1, mvr.mv2);
+          }
+        });
+
+    addParser(
+        "dist",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            float power = fp.parseFloat();
+            List<ValueSource> sources = fp.parseValueSourceList();
+            MVResult mvr = getMultiValueSources(sources);
+            return new VectorDistanceFunction(power, mvr.mv1, mvr.mv2);
+          }
+        });
     addParser("ms", new DateValueSourceParser());
 
-    
-    addParser("pi", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) {
-        return new DoubleConstValueSource(Math.PI);
-      }
-    });
-    addParser("e", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) {
-        return new DoubleConstValueSource(Math.E);
-      }
-    });
-
-
-    addParser("docfreq", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        TInfo tinfo = parseTerm(fp);
-        return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
-      }
-    });
-
-    addParser("totaltermfreq", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        TInfo tinfo = parseTerm(fp);
-        return new TotalTermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
-      }
-    });
-    alias("totaltermfreq","ttf");
-
-    addParser("sumtotaltermfreq", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        String field = fp.parseArg();
-        return new SumTotalTermFreqValueSource(field);
-      }
-    });
-    alias("sumtotaltermfreq","sttf");
-
-    addParser("idf", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        TInfo tinfo = parseTerm(fp);
-        return new IDFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
-      }
-    });
-
-    addParser("termfreq", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        TInfo tinfo = parseTerm(fp);
-        return new TermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
-      }
-    });
-
-    addParser("tf", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        TInfo tinfo = parseTerm(fp);
-        return new TFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
-      }
-    });
-
-    addParser("norm", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        String field = fp.parseArg();
-        return new NormValueSource(field);
-      }
-    });
-
-    addParser("maxdoc", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) {
-        return new MaxDocValueSource();
-      }
-    });
-
-    addParser("numdocs", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) {
-        return new NumDocsValueSource();
-      }
-    });
-
-    addParser("payload", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        // payload(field,value[,default, ['min|max|average|first']])
-        //   defaults to "average" and 0.0 default value
-
-        TInfo tinfo = parseTerm(fp); // would have made this parser a new separate class and registered it, but this handy method is private :/
-
-        ValueSource defaultValueSource;
-        if (fp.hasMoreArguments()) {
-          defaultValueSource = fp.parseValueSource();
-        } else {
-          defaultValueSource = new ConstValueSource(0.0f);
-        }
-
-        PayloadFunction payloadFunction = null;
-        String func = "average";
-        if (fp.hasMoreArguments()) {
-          func = fp.parseArg();
-        }
-        payloadFunction = PayloadUtils.getPayloadFunction(func);
-
-        // Support func="first" by payloadFunction=null
-        if(payloadFunction == null && !"first".equals(func)) {
-          // not "first" (or average, min, or max)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
-        }
-
-        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
-        PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
-
-        if (decoder==null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No payload decoder found for field: " + tinfo.field);
-        }
-
-        return new FloatPayloadValueSource(
-            tinfo.field,
-            tinfo.val,
-            tinfo.indexedField,
-            tinfo.indexedBytes.get(),
-            decoder,
-            payloadFunction,
-            defaultValueSource);
-      }
-    });
-
-    addParser("true", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) {
-        return BoolConstValueSource.TRUE;
-      }
-    });
-
-    addParser("false", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) {
-        return BoolConstValueSource.FALSE;
-      }
-    });
-
-    addParser("exists", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource vs = fp.parseValueSource();
-        return new SimpleBoolFunction(vs) {
+    addParser(
+        "pi",
+        new ValueSourceParser() {
           @Override
-          protected String name() {
-            return "exists";
+          public ValueSource parse(FunctionQParser fp) {
+            return new DoubleConstValueSource(Math.PI);
           }
+        });
+    addParser(
+        "e",
+        new ValueSourceParser() {
           @Override
-          protected boolean func(int doc, FunctionValues vals) throws IOException {
-            return vals.exists(doc);
+          public ValueSource parse(FunctionQParser fp) {
+            return new DoubleConstValueSource(Math.E);
           }
-        };
-      }
-    });
+        });
 
-    addParser("not", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource vs = fp.parseValueSource();
-        return new SimpleBoolFunction(vs) {
+    addParser(
+        "docfreq",
+        new ValueSourceParser() {
           @Override
-          protected boolean func(int doc, FunctionValues vals) throws IOException {
-            return !vals.boolVal(doc);
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            TInfo tinfo = parseTerm(fp);
+            return new DocFreqValueSource(
+                tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
           }
-          @Override
-          protected String name() {
-            return "not";
-          }
-        };
-      }
-    });
+        });
 
+    addParser(
+        "totaltermfreq",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            TInfo tinfo = parseTerm(fp);
+            return new TotalTermFreqValueSource(
+                tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+          }
+        });
+    alias("totaltermfreq", "ttf");
 
-    addParser("and", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new MultiBoolFunction(sources) {
+    addParser(
+        "sumtotaltermfreq",
+        new ValueSourceParser() {
           @Override
-          protected String name() {
-            return "and";
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            String field = fp.parseArg();
+            return new SumTotalTermFreqValueSource(field);
           }
-          @Override
-          protected boolean func(int doc, FunctionValues[] vals) throws IOException {
-            for (FunctionValues dv : vals)
-              if (!dv.boolVal(doc)) return false;
-            return true;
-          }
-        };
-      }
-    });
+        });
+    alias("sumtotaltermfreq", "sttf");
 
-    addParser("or", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new MultiBoolFunction(sources) {
+    addParser(
+        "idf",
+        new ValueSourceParser() {
           @Override
-          protected String name() {
-            return "or";
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            TInfo tinfo = parseTerm(fp);
+            return new IDFValueSource(
+                tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
           }
-          @Override
-          protected boolean func(int doc, FunctionValues[] vals) throws IOException {
-            for (FunctionValues dv : vals)
-              if (dv.boolVal(doc)) return true;
-            return false;
-          }
-        };
-      }
-    });
+        });
 
-    addParser("xor", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new MultiBoolFunction(sources) {
+    addParser(
+        "termfreq",
+        new ValueSourceParser() {
           @Override
-          protected String name() {
-            return "xor";
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            TInfo tinfo = parseTerm(fp);
+            return new TermFreqValueSource(
+                tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
           }
+        });
+
+    addParser(
+        "tf",
+        new ValueSourceParser() {
           @Override
-          protected boolean func(int doc, FunctionValues[] vals) throws IOException {
-            int nTrue=0, nFalse=0;
-            for (FunctionValues dv : vals) {
-              if (dv.boolVal(doc)) nTrue++;
-              else nFalse++;
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            TInfo tinfo = parseTerm(fp);
+            return new TFValueSource(
+                tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
+          }
+        });
+
+    addParser(
+        "norm",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            String field = fp.parseArg();
+            return new NormValueSource(field);
+          }
+        });
+
+    addParser(
+        "maxdoc",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) {
+            return new MaxDocValueSource();
+          }
+        });
+
+    addParser(
+        "numdocs",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) {
+            return new NumDocsValueSource();
+          }
+        });
+
+    addParser(
+        "payload",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            // payload(field,value[,default, ['min|max|average|first']])
+            //   defaults to "average" and 0.0 default value
+
+            // would have made this parser a new separate class and registered it, but
+            // this handy method is private :/
+            TInfo tinfo = parseTerm(fp);
+
+            ValueSource defaultValueSource;
+            if (fp.hasMoreArguments()) {
+              defaultValueSource = fp.parseValueSource();
+            } else {
+              defaultValueSource = new ConstValueSource(0.0f);
             }
-            return nTrue != 0 && nFalse != 0;
+
+            PayloadFunction payloadFunction = null;
+            String func = "average";
+            if (fp.hasMoreArguments()) {
+              func = fp.parseArg();
+            }
+            payloadFunction = PayloadUtils.getPayloadFunction(func);
+
+            // Support func="first" by payloadFunction=null
+            if (payloadFunction == null && !"first".equals(func)) {
+              // not "first" (or average, min, or max)
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
+            }
+
+            IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+            PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
+
+            if (decoder == null) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "No payload decoder found for field: " + tinfo.field);
+            }
+
+            return new FloatPayloadValueSource(
+                tinfo.field,
+                tinfo.val,
+                tinfo.indexedField,
+                tinfo.indexedBytes.get(),
+                decoder,
+                payloadFunction,
+                defaultValueSource);
           }
-        };
-      }
-    });
+        });
 
-    addParser("if", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource ifValueSource = fp.parseValueSource();
-        ValueSource trueValueSource = fp.parseValueSource();
-        ValueSource falseValueSource = fp.parseValueSource();
-
-        return new IfFunction(ifValueSource, trueValueSource, falseValueSource);
-      }
-    });
-
-    addParser("gt", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhsValSource = fp.parseValueSource();
-        ValueSource rhsValSource = fp.parseValueSource();
-
-        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "gt", (cmp) -> cmp > 0);
-      }
-    });
-
-    addParser("lt", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhsValSource = fp.parseValueSource();
-        ValueSource rhsValSource = fp.parseValueSource();
-
-        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "lt", (cmp) -> cmp < 0);
-      }
-    });
-
-    addParser("gte", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhsValSource = fp.parseValueSource();
-        ValueSource rhsValSource = fp.parseValueSource();
-
-        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "gte", (cmp) -> cmp >= 0);
-
-      }
-    });
-
-    addParser("lte", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhsValSource = fp.parseValueSource();
-        ValueSource rhsValSource = fp.parseValueSource();
-
-        return new SolrComparisonBoolFunction(lhsValSource, rhsValSource, "lte", (cmp) -> cmp <= 0);
-      }
-    });
-
-    addParser("eq", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        ValueSource lhsValSource = fp.parseValueSource();
-        ValueSource rhsValSource = fp.parseValueSource();
-
-        return new EqualFunction(lhsValSource, rhsValSource, "eq");
-      }
-    });
-
-    addParser("def", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new DefFunction(fp.parseValueSourceList());
-      }
-    });
-
-    addParser("concat", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<ValueSource> sources = fp.parseValueSourceList();
-        return new ConcatStringFunction(sources.toArray(new ValueSource[sources.size()]));
-      }
-    });
-
-
-    addParser("agg", new ValueSourceParser() {
-      @Override
-      public AggValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return fp.parseAgg(FunctionQParser.FLAG_DEFAULT);
-      }
-    });
-
-    addParser("agg_count", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new CountAgg();
-      }
-    });
-
-    addParser("agg_unique", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new UniqueAgg(fp.parseArg());
-      }
-    });
-
-    addParser("agg_uniqueBlock", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        if (fp.sp.peek() == QueryParsing.LOCALPARAM_START.charAt(0) ) {
-          return new UniqueBlockQueryAgg(fp.parseNestedQuery());
-        }
-        return new UniqueBlockFieldAgg(fp.parseArg());
-      }
-    });
-
-    addParser("agg_hll", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new HLLAgg(fp.parseArg());
-      }
-    });
-
-    addParser("agg_sum", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new SumAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_avg", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new AvgAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_sumsq", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new SumsqAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_variance", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new VarianceAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-    
-    addParser("agg_stddev", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new StddevAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_missing", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MissingAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_countvals", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new CountValsAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-    
-    /***
-     addParser("agg_multistat", new ValueSourceParser() {
-    @Override
-    public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-    return null;
-    }
-    });
-     ***/
-
-    addParser("agg_min", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MinMaxAgg("min", fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_max", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new MinMaxAgg("max", fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
-      }
-    });
-
-    addParser("agg_percentile", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        List<Double> percentiles = new ArrayList<>();
-        ValueSource vs = fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE);
-        while (fp.hasMoreArguments()) {
-          double val = fp.parseDouble();
-          if (val<0 || val>100) {
-            throw new SyntaxError("requested percentile must be between 0 and 100.  got " + val);
+    addParser(
+        "true",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) {
+            return BoolConstValueSource.TRUE;
           }
-          percentiles.add(val);
-        }
+        });
 
-        if (percentiles.isEmpty()) {
-          throw new SyntaxError("expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
-        }
+    addParser(
+        "false",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) {
+            return BoolConstValueSource.FALSE;
+          }
+        });
 
-        return new PercentileAgg(vs, percentiles);
-      }
-    });
-    
-    addParser("agg_" + RelatednessAgg.NAME, new ValueSourceParser() {
+    addParser(
+        "exists",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource vs = fp.parseValueSource();
+            return new SimpleBoolFunction(vs) {
+              @Override
+              protected String name() {
+                return "exists";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues vals) throws IOException {
+                return vals.exists(doc);
+              }
+            };
+          }
+        });
+
+    addParser(
+        "isnan",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource vs = fp.parseValueSource();
+            return new SimpleBoolFunction(vs) {
+              @Override
+              protected String name() {
+                return "isnan";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues vals) throws IOException {
+                return Float.isNaN(vals.floatVal(doc));
+              }
+            };
+          }
+        });
+
+    addParser(
+        "not",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource vs = fp.parseValueSource();
+            return new SimpleBoolFunction(vs) {
+              @Override
+              protected boolean func(int doc, FunctionValues vals) throws IOException {
+                return !vals.boolVal(doc);
+              }
+
+              @Override
+              protected String name() {
+                return "not";
+              }
+            };
+          }
+        });
+
+    addParser(
+        "and",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new MultiBoolFunction(sources) {
+              @Override
+              protected String name() {
+                return "and";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+                for (FunctionValues dv : vals) if (!dv.boolVal(doc)) return false;
+                return true;
+              }
+            };
+          }
+        });
+
+    addParser(
+        "or",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new MultiBoolFunction(sources) {
+              @Override
+              protected String name() {
+                return "or";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+                for (FunctionValues dv : vals) if (dv.boolVal(doc)) return true;
+                return false;
+              }
+            };
+          }
+        });
+
+    addParser(
+        "xor",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new MultiBoolFunction(sources) {
+              @Override
+              protected String name() {
+                return "xor";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+                int nTrue = 0, nFalse = 0;
+                for (FunctionValues dv : vals) {
+                  if (dv.boolVal(doc)) nTrue++;
+                  else nFalse++;
+                }
+                return nTrue != 0 && nFalse != 0;
+              }
+            };
+          }
+        });
+
+    addParser(
+        "if",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource ifValueSource = fp.parseValueSource();
+            ValueSource trueValueSource = fp.parseValueSource();
+            ValueSource falseValueSource = fp.parseValueSource();
+
+            return new IfFunction(ifValueSource, trueValueSource, falseValueSource);
+          }
+        });
+
+    addParser(
+        "gt",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource lhsValSource = fp.parseValueSource();
+            ValueSource rhsValSource = fp.parseValueSource();
+
+            return new SolrComparisonBoolFunction(
+                lhsValSource, rhsValSource, "gt", (cmp) -> cmp > 0);
+          }
+        });
+
+    addParser(
+        "lt",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource lhsValSource = fp.parseValueSource();
+            ValueSource rhsValSource = fp.parseValueSource();
+
+            return new SolrComparisonBoolFunction(
+                lhsValSource, rhsValSource, "lt", (cmp) -> cmp < 0);
+          }
+        });
+
+    addParser(
+        "gte",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource lhsValSource = fp.parseValueSource();
+            ValueSource rhsValSource = fp.parseValueSource();
+
+            return new SolrComparisonBoolFunction(
+                lhsValSource, rhsValSource, "gte", (cmp) -> cmp >= 0);
+          }
+        });
+
+    addParser(
+        "lte",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource lhsValSource = fp.parseValueSource();
+            ValueSource rhsValSource = fp.parseValueSource();
+
+            return new SolrComparisonBoolFunction(
+                lhsValSource, rhsValSource, "lte", (cmp) -> cmp <= 0);
+          }
+        });
+
+    addParser(
+        "eq",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource lhsValSource = fp.parseValueSource();
+            ValueSource rhsValSource = fp.parseValueSource();
+
+            return new EqualFunction(lhsValSource, rhsValSource, "eq");
+          }
+        });
+
+    addParser(
+        "def",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new DefFunction(fp.parseValueSourceList());
+          }
+        });
+
+    addParser(
+        "concat",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<ValueSource> sources = fp.parseValueSourceList();
+            return new ConcatStringFunction(sources.toArray(new ValueSource[0]));
+          }
+        });
+
+    addParser(
+        "agg",
+        new ValueSourceParser() {
+          @Override
+          public AggValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return fp.parseAgg(FunctionQParser.FLAG_DEFAULT);
+          }
+        });
+
+    addParser(
+        "agg_count",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new CountAgg();
+          }
+        });
+
+    addParser(
+        "agg_unique",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new UniqueAgg(fp.parseArg());
+          }
+        });
+
+    addParser(
+        "agg_uniqueBlock",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            if (fp.sp.peek() == QueryParsing.LOCALPARAM_START.charAt(0)) {
+              return new UniqueBlockQueryAgg(fp.parseNestedQuery());
+            }
+            return new UniqueBlockFieldAgg(fp.parseArg());
+          }
+        });
+
+    addParser(
+        "agg_hll",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new HLLAgg(fp.parseArg());
+          }
+        });
+
+    addParser(
+        "agg_sum",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new SumAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_avg",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new AvgAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_sumsq",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new SumsqAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_variance",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new VarianceAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_stddev",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new StddevAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_missing",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new MissingAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_countvals",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new CountValsAgg(
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    /*
+    addParser("agg_multistat", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        // TODO: (fore & back)-ground should be optional -- use hasMoreArguments
-        // if only one arg, assume it's the foreground
-        // (background is the one that will most commonly just be "*:*")
-        // see notes in RelatednessAgg constructor about why we don't do this yet
-        RelatednessAgg agg = new RelatednessAgg(fp.parseNestedQuery(), fp.parseNestedQuery());
-        agg.setOpts(fp);
-        return agg;
+        return null;
       }
     });
-    
+    */
+
+    addParser(
+        "agg_min",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new MinMaxAgg(
+                "min",
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_max",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            return new MinMaxAgg(
+                "max",
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+          }
+        });
+
+    addParser(
+        "agg_percentile",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            List<Double> percentiles = new ArrayList<>();
+            ValueSource vs =
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE);
+            while (fp.hasMoreArguments()) {
+              double val = fp.parseDouble();
+              if (val < 0 || val > 100) {
+                throw new SyntaxError(
+                    "requested percentile must be between 0 and 100.  got " + val);
+              }
+              percentiles.add(val);
+            }
+
+            if (percentiles.isEmpty()) {
+              throw new SyntaxError(
+                  "expected percentile(valsource,percent1[,percent2]*)  EXAMPLE:percentile(myfield,50)");
+            }
+
+            return new PercentileAgg(vs, percentiles);
+          }
+        });
+
+    addParser(
+        "agg_" + RelatednessAgg.NAME,
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            // TODO: (fore & back)-ground should be optional -- use hasMoreArguments
+            // if only one arg, assume it's the foreground
+            // (background is the one that will most commonly just be "*:*")
+            // see notes in RelatednessAgg constructor about why we don't do this yet
+            RelatednessAgg agg = new RelatednessAgg(fp.parseNestedQuery(), fp.parseNestedQuery());
+            agg.setOpts(fp);
+            return agg;
+          }
+        });
+
     addParser("childfield", new ChildFieldValueSourceParser());
   }
 
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-
 
   private static TInfo parseTerm(FunctionQParser fp) throws SyntaxError {
     TInfo tinfo = new TInfo();
@@ -1106,9 +1376,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     if (ft instanceof TextField) {
       // need to do analysis on the term
       String indexedVal = tinfo.val;
-      Query q = ft.getFieldQuery(fp, fp.getReq().getSchema().getFieldOrNull(tinfo.field), tinfo.val);
+      Query q =
+          ft.getFieldQuery(fp, fp.getReq().getSchema().getFieldOrNull(tinfo.field), tinfo.val);
       if (q instanceof TermQuery) {
-        Term term = ((TermQuery)q).getTerm();
+        Term term = ((TermQuery) q).getTerm();
         tinfo.indexedField = term.field();
         indexedVal = term.text();
       }
@@ -1120,12 +1391,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     return tinfo;
   }
 
-  private static void splitSources(int dim, List<ValueSource> sources, List<ValueSource> dest1, List<ValueSource> dest2) {
-    //Get dim value sources for the first vector
+  private static void splitSources(
+      int dim, List<ValueSource> sources, List<ValueSource> dest1, List<ValueSource> dest2) {
+    // Get dim value sources for the first vector
     for (int i = 0; i < dim; i++) {
       dest1.add(sources.get(i));
     }
-    //Get dim value sources for the second vector
+    // Get dim value sources for the second vector
     for (int i = dim; i < sources.size(); i++) {
       dest2.add(sources.get(i));
     }
@@ -1134,20 +1406,23 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   private static MVResult getMultiValueSources(List<ValueSource> sources) {
     MVResult mvr = new MVResult();
     if (sources.size() % 2 != 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Illegal number of sources.  There must be an even number of sources");
     }
     if (sources.size() == 2) {
 
-      //check to see if these are MultiValueSource
+      // check to see if these are MultiValueSource
       boolean s1MV = sources.get(0) instanceof MultiValueSource;
       boolean s2MV = sources.get(1) instanceof MultiValueSource;
       if (s1MV && s2MV) {
         mvr.mv1 = (MultiValueSource) sources.get(0);
         mvr.mv2 = (MultiValueSource) sources.get(1);
-      } else if (s1MV ||
-              s2MV) {
-        //if one is a MultiValueSource, than the other one needs to be too.
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
+      } else if (s1MV || s2MV) {
+        // if one is a MultiValueSource, than the other one needs to be too.
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Illegal number of sources.  There must be an even number of sources");
       } else {
         mvr.mv1 = new VectorValueSource(Collections.singletonList(sources.get(0)));
         mvr.mv2 = new VectorValueSource(Collections.singletonList(sources.get(1)));
@@ -1156,7 +1431,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       int dim = sources.size() / 2;
       List<ValueSource> sources1 = new ArrayList<>(dim);
       List<ValueSource> sources2 = new ArrayList<>(dim);
-      //Get dim value sources for the first vector
+      // Get dim value sources for the first vector
       splitSources(dim, sources, sources1, sources2);
       mvr.mv1 = new VectorValueSource(sources1);
       mvr.mv2 = new VectorValueSource(sources2);
@@ -1182,7 +1457,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       if (arg == null) return null;
       // check character index 1 to be a digit.  Index 0 might be a +/-.
       if (arg.startsWith("NOW") || (arg.length() > 1 && Character.isDigit(arg.charAt(1)))) {
-        Date now = null;//TODO pull from params?
+        Date now = null; // TODO pull from params?
         return DateMathParser.parseMath(now, arg);
       }
       return null;
@@ -1227,7 +1502,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return v1;
       }
 
-
       // "dv"
       if (d1 != null && v2 != null)
         return new DualFloatFunction(new LongConstValueSource(ms1), v2) {
@@ -1237,7 +1511,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
 
           @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+          protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              throws IOException {
             return ms1 - bVals.longVal(doc);
           }
         };
@@ -1251,7 +1526,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
 
           @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+          protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              throws IOException {
             return aVals.longVal(doc) - ms2;
           }
         };
@@ -1265,14 +1541,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
 
           @Override
-          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException {
+          protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              throws IOException {
             return aVals.longVal(doc) - bVals.longVal(doc);
           }
         };
 
       return null; // shouldn't happen
     }
-
   }
 
   // Private for now - we need to revisit how to handle typing in function queries
@@ -1293,8 +1569,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context
-            , LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       return new LongDocValues(this) {
         @Override
         public float floatVal(int doc) {
@@ -1330,14 +1606,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (LongConstValueSource.class != o.getClass()) return false;
+      if (!(o instanceof LongConstValueSource)) return false;
       LongConstValueSource other = (LongConstValueSource) o;
       return this.constant == other.constant;
     }
 
     @Override
     public int getInt() {
-      return (int)constant;
+      return (int) constant;
     }
 
     @Override
@@ -1368,9 +1644,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
   abstract static class NamedParser extends ValueSourceParser {
     private final String name;
+
     public NamedParser(String name) {
       this.name = name;
     }
+
     public String name() {
       return name;
     }
@@ -1399,13 +1677,15 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-        final FunctionValues vals =  source.getValues(context, readerContext);
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+          throws IOException {
+        final FunctionValues vals = source.getValues(context, readerContext);
         return new DoubleDocValues(this) {
           @Override
           public double doubleVal(int doc) throws IOException {
             return func(doc, vals);
           }
+
           @Override
           public String toString(int doc) throws IOException {
             return name() + '(' + vals.toString(doc) + ')';
@@ -1431,9 +1711,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       private final ValueSource a;
       private final ValueSource b;
 
-     /**
-       * @param   a  the base.
-       * @param   b  the exponent.
+      /**
+       * @param a the base.
+       * @param b the exponent.
        */
       public Function(ValueSource a, ValueSource b) {
         this.a = a;
@@ -1446,14 +1726,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-        final FunctionValues aVals =  a.getValues(context, readerContext);
-        final FunctionValues bVals =  b.getValues(context, readerContext);
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+          throws IOException {
+        final FunctionValues aVals = a.getValues(context, readerContext);
+        final FunctionValues bVals = b.getValues(context, readerContext);
         return new DoubleDocValues(this) {
           @Override
           public double doubleVal(int doc) throws IOException {
             return func(doc, aVals, bVals);
           }
+
           @Override
           public String toString(int doc) throws IOException {
             return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
@@ -1462,8 +1744,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
       @Override
-      public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
-      }
+      public void createWeight(Map<Object, Object> context, IndexSearcher searcher)
+          throws IOException {}
 
       @Override
       public int hashCode() {
@@ -1477,13 +1759,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (this.getClass() != o.getClass()) return false;
-        Function other = (Function)o;
-        return this.a.equals(other.a)
-            && this.b.equals(other.b);
+        if (!(o instanceof Function)) return false;
+        Function other = (Function) o;
+        return this.a.equals(other.a) && this.b.equals(other.b);
       }
     }
-
   }
 
   static class BoolConstValueSource extends ConstNumberSource {
@@ -1502,8 +1782,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context,
-                                    LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       return new BoolDocValues(this) {
         @Override
         public boolean boolVal(int doc) {
@@ -1519,7 +1799,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (BoolConstValueSource.class != o.getClass()) return false;
+      if (!(o instanceof BoolConstValueSource)) return false;
       BoolConstValueSource other = (BoolConstValueSource) o;
       return this.constant == other.constant;
     }
@@ -1563,18 +1843,23 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context
-            , LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       if (context.get(this) == null) {
         SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "testfunc: unweighted value source detected.  delegate="+source + " request=" + (requestInfo==null ? "null" : requestInfo.getReq()));
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "testfunc: unweighted value source detected.  delegate="
+                + source
+                + " request="
+                + (requestInfo == null ? "null" : requestInfo.getReq()));
       }
       return source.getValues(context, readerContext);
     }
 
     @Override
     public boolean equals(Object o) {
-      return o instanceof TestValueSource && source.equals(((TestValueSource)o).source);
+      return o instanceof TestValueSource && source.equals(((TestValueSource) o).source);
     }
 
     @Override
@@ -1588,7 +1873,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
 
     @Override
-    public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
+    public void createWeight(Map<Object, Object> context, IndexSearcher searcher)
+        throws IOException {
       context.put(this, this);
     }
 
@@ -1598,5 +1884,3 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
   }
 }
-
-

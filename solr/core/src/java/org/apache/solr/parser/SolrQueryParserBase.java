@@ -16,22 +16,24 @@
  */
 package org.apache.solr.parser;
 
+import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
+
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-
-import com.google.common.base.Strings;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -57,6 +59,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.parser.QueryParser.Operator;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
@@ -65,60 +68,57 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
-import org.apache.lucene.queryparser.charstream.CharStream;
-import org.apache.lucene.queryparser.charstream.FastCharStream;
 
-import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
-
-/** This class is overridden by QueryParser in QueryParser.jj
- * and acts to separate the majority of the Java code from the .jj grammar file.
+/**
+ * This class is overridden by QueryParser in QueryParser.jj and acts to separate the majority of
+ * the Java code from the .jj grammar file.
  */
 public abstract class SolrQueryParserBase extends QueryBuilder {
 
-  protected static final String REVERSE_WILDCARD_LOWER_BOUND = new String(new char[]{ReverseStringFilter.START_OF_HEADING_MARKER + 1});
+  protected static final String REVERSE_WILDCARD_LOWER_BOUND =
+      new String(new char[] {ReverseStringFilter.START_OF_HEADING_MARKER + 1});
 
-  public static final int TERMS_QUERY_THRESHOLD = 16;   // @lucene.internal Set to a low value temporarily for better test coverage
+  // @lucene.internal Set to a low value temporarily for better test coverage
+  public static final int TERMS_QUERY_THRESHOLD = 16;
 
-  static final int CONJ_NONE   = 0;
-  static final int CONJ_AND    = 1;
-  static final int CONJ_OR     = 2;
+  static final int CONJ_NONE = 0;
+  static final int CONJ_AND = 1;
+  static final int CONJ_OR = 2;
 
-  static final int MOD_NONE    = 0;
-  static final int MOD_NOT     = 10;
-  static final int MOD_REQ     = 11;
+  static final int MOD_NONE = 0;
+  static final int MOD_NOT = 10;
+  static final int MOD_REQ = 11;
 
   protected SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
 
   /**
-   *  Query strategy when analyzed query terms overlap the same position (ie synonyms)
-   *  consider if pants and khakis are query time synonyms
+   * Query strategy when analyzed query terms overlap the same position (ie synonyms) consider if
+   * pants and khakis are query time synonyms
    *
-   *  {@link #AS_SAME_TERM}
-   *  {@link #PICK_BEST}
-   *  {@link #AS_DISTINCT_TERMS}
+   * <p>{@link #AS_SAME_TERM} {@link #PICK_BEST} {@link #AS_DISTINCT_TERMS}
    */
   public static enum SynonymQueryStyle {
-    /** (default) synonym terms share doc freq
-     *  so if "pants" has df 500, and "khakis" a df of 50, uses 500 df when scoring both terms
-     *  appropriate for exact synonyms
-     *  see {@link org.apache.lucene.search.SynonymQuery}
-     * */
+    /**
+     * (default) synonym terms share doc freq so if "pants" has df 500, and "khakis" a df of 50,
+     * uses 500 df when scoring both terms appropriate for exact synonyms see {@link
+     * org.apache.lucene.search.SynonymQuery}
+     */
     AS_SAME_TERM,
 
-    /** highest scoring term match chosen (ie dismax)
-     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher
-     *  appropriate when more specific synonyms should score higher
-     * */
+    /**
+     * highest scoring term match chosen (ie dismax) so if "pants" has df 500, and "khakis" a df of
+     * 50, khakis matches are scored higher appropriate when more specific synonyms should score
+     * higher
+     */
     PICK_BEST,
 
-    /** each synonym scored indepedently, then added together (ie boolean query)
-     *  so if "pants" has df 500, and "khakis" a df of 50, khakis matches are scored higher but
-     *  summed with any "pants" matches
-     *  appropriate when more specific synonyms should score higher, but we don't want to ignore
-     *  less specific synonyms
-     * */
+    /**
+     * each synonym scored indepedently, then added together (ie boolean query) so if "pants" has df
+     * 500, and "khakis" a df of 50, khakis matches are scored higher but summed with any "pants"
+     * matches appropriate when more specific synonyms should score higher, but we don't want to
+     * ignore less specific synonyms
+     */
     AS_DISTINCT_TERMS
   }
 
@@ -126,6 +126,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   // the nested class:
   /** Alternative form of QueryParser.Operator.AND */
   public static final Operator AND_OPERATOR = Operator.AND;
+
   /** Alternative form of QueryParser.Operator.OR */
   public static final Operator OR_OPERATOR = Operator.OR;
 
@@ -136,7 +137,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   boolean allowLeadingWildcard = true;
 
   String defaultField;
-  int phraseSlop = 0;     // default slop for phrase queries
+  int phraseSlop = 0; // default slop for phrase queries
   float fuzzyMinSim = FuzzyQuery.defaultMaxEdits;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
 
@@ -150,29 +151,30 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   // implementation detail - caching ReversedWildcardFilterFactory based on type
   private Map<FieldType, ReversedWildcardFilterFactory> leadingWildcards;
 
-  /**
-   * Identifies the list of all known "magic fields" that trigger
-   * special parsing behavior
-   */
+  /** Identifies the list of all known "magic fields" that trigger special parsing behavior */
   public static enum MagicFieldName {
-    VAL("_val_", "func"), QUERY("_query_", null);
+    VAL("_val_", "func"),
+    QUERY("_query_", null);
 
     public final String field;
     public final String subParser;
+
     MagicFieldName(final String field, final String subParser) {
       this.field = field;
       this.subParser = subParser;
     }
+
     @Override
     public String toString() {
       return field;
     }
-    private final static Map<String,MagicFieldName> lookup
-        = new HashMap<>();
+
+    private static final Map<String, MagicFieldName> lookup = new HashMap<>();
+
     static {
-      for(MagicFieldName s : EnumSet.allOf(MagicFieldName.class))
-        lookup.put(s.toString(), s);
+      for (MagicFieldName s : EnumSet.allOf(MagicFieldName.class)) lookup.put(s.toString(), s);
     }
+
     public static MagicFieldName get(final String field) {
       return lookup.get(field);
     }
@@ -229,21 +231,19 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected SolrQueryParserBase() {
     super(null);
   }
+
   // the generated parser will create these in QueryParser
   public abstract void ReInit(CharStream stream);
-  public abstract Query TopLevelQuery(String field) throws ParseException, SyntaxError;
 
+  public abstract Query TopLevelQuery(String field) throws ParseException, SyntaxError;
 
   public void init(String defaultField, QParser parser) {
     if ((parser == null) || (parser.getReq() == null) || (parser.getReq().getSchema() == null)) {
-      throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                      "query parser is null or invalid");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "query parser is null or invalid");
     }
     if ((defaultField != null) && (defaultField.isEmpty())) {
-      throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                      "default field name is empty");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "default field name is empty");
     }
     this.schema = parser.getReq().getSchema();
     this.parser = parser;
@@ -263,23 +263,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     flags = flagsToRestore;
   }
 
-    /** Parses a query string, returning a {@link org.apache.lucene.search.Query}.
-    *  @param query  the query string to be parsed.
-    */
+  /**
+   * Parses a query string, returning a {@link org.apache.lucene.search.Query}.
+   *
+   * @param query the query string to be parsed.
+   */
   public Query parse(String query) throws SyntaxError {
     ReInit(new FastCharStream(new StringReader(query)));
     try {
       // TopLevelQuery is a Query followed by the end-of-input (EOF)
-      Query res = TopLevelQuery(null);  // pass null so we can tell later if an explicit field was provided or not
-      return res!=null ? res : newBooleanQuery().build();
-    }
-    catch (ParseException | TokenMgrError tme) {
-      throw new SyntaxError("Cannot parse '" +query+ "': " + tme.getMessage(), tme);
+      // pass null so we can tell later if an explicit field was provided or not
+      Query res = TopLevelQuery(null);
+      return res != null ? res : newBooleanQuery().build();
+    } catch (ParseException | TokenMgrError tme) {
+      throw new SyntaxError("Cannot parse '" + query + "': " + tme.getMessage(), tme);
     } catch (IndexSearcher.TooManyClauses tmc) {
-      throw new SyntaxError("Cannot parse '" +query+ "': too many boolean clauses", tmc);
+      throw new SyntaxError("Cannot parse '" + query + "': too many boolean clauses", tmc);
     }
   }
-
 
   /**
    * @return Returns the default field.
@@ -289,13 +290,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected String explicitField;
+
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return !Strings.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
+    return StrUtils.isNotNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
-  /** For a fielded query, returns the actual field specified (i.e. null if default is being used)
+  /**
+   * For a fielded query, returns the actual field specified (i.e. null if default is being used)
    * myfield:A or myfield:(A B C) will both return "myfield"
    */
   public String getExplicitField() {
@@ -310,35 +313,29 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
-   * Set to true if phrase queries will be automatically generated
-   * when the analyzer returns more than one term from whitespace
-   * delimited text.
-   * NOTE: this behavior may not be suitable for all languages.
-   * <p>
-   * Set to false if phrase queries should only be generated when
-   * surrounded by double quotes.
+   * Set to true if phrase queries will be automatically generated when the analyzer returns more
+   * than one term from whitespace delimited text. NOTE: this behavior may not be suitable for all
+   * languages.
+   *
+   * <p>Set to false if phrase queries should only be generated when surrounded by double quotes.
    */
   public final void setAutoGeneratePhraseQueries(boolean value) {
     this.autoGeneratePhraseQueries = value;
   }
 
-   /**
-   * Get the minimal similarity for fuzzy queries.
-   */
+  /** Get the minimal similarity for fuzzy queries. */
   public float getFuzzyMinSim() {
-      return fuzzyMinSim;
+    return fuzzyMinSim;
+  }
+
+  /** Set the minimum similarity for fuzzy queries. Default is 2f. */
+  public void setFuzzyMinSim(float fuzzyMinSim) {
+    this.fuzzyMinSim = fuzzyMinSim;
   }
 
   /**
-   * Set the minimum similarity for fuzzy queries.
-   * Default is 2f.
-   */
-  public void setFuzzyMinSim(float fuzzyMinSim) {
-      this.fuzzyMinSim = fuzzyMinSim;
-  }
-
-   /**
    * Get the prefix length for fuzzy queries.
+   *
    * @return Returns the fuzzyPrefixLength.
    */
   public int getFuzzyPrefixLength() {
@@ -347,6 +344,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   /**
    * Set the prefix length for fuzzy queries. Default is 0.
+   *
    * @param fuzzyPrefixLength The fuzzyPrefixLength to set.
    */
   public void setFuzzyPrefixLength(int fuzzyPrefixLength) {
@@ -354,32 +352,30 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
-   * Sets the default slop for phrases.  If zero, then exact phrase matches
-   * are required.  Default value is zero.
+   * Sets the default slop for phrases. If zero, then exact phrase matches are required. Default
+   * value is zero.
    */
   public void setPhraseSlop(int phraseSlop) {
     this.phraseSlop = phraseSlop;
   }
 
-  /**
-   * Gets the default slop for phrases.
-   */
+  /** Gets the default slop for phrases. */
   public int getPhraseSlop() {
     return phraseSlop;
   }
 
-  /** @see #setAllowLeadingWildcard(boolean) */
+  /**
+   * @see #setAllowLeadingWildcard(boolean)
+   */
   public boolean isAllowSubQueryParsing() {
     return allowSubQueryParsing;
   }
 
   /**
-   * Set to enable subqueries to be parsed. If now allowed, the default, a {@link SyntaxError}
-   * will likely be thrown.
-   * Here is the preferred syntax using local-params:
-   *   <code>{!prefix f=field v=foo}</code>
-   * and here is the older one, using a magic field name:
-   *   <code>_query_:"{!prefix f=field v=foo}"</code>.
+   * Set to enable subqueries to be parsed. If now allowed, the default, a {@link SyntaxError} will
+   * likely be thrown. Here is the preferred syntax using local-params: <code>
+   * {!prefix f=field v=foo}</code> and here is the older one, using a magic field name: <code>
+   * _query_:"{!prefix f=field v=foo}"</code>.
    */
   public void setAllowSubQueryParsing(boolean allowSubQueryParsing) {
     this.allowSubQueryParsing = allowSubQueryParsing;
@@ -388,25 +384,25 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /**
    * Set how overlapping query terms (ie synonyms) should be scored, as if they're the same term,
    * picking highest scoring term, or OR'ing them together
+   *
    * @param synonymQueryStyle how to score terms that overlap see {{@link SynonymQueryStyle}}
    */
-  public void setSynonymQueryStyle(SynonymQueryStyle synonymQueryStyle) {this.synonymQueryStyle = synonymQueryStyle;}
+  public void setSynonymQueryStyle(SynonymQueryStyle synonymQueryStyle) {
+    this.synonymQueryStyle = synonymQueryStyle;
+  }
 
-  /**
-   * Gets how overlapping query terms should be scored
-   */
-  public SynonymQueryStyle getSynonymQueryStyle() {return this.synonymQueryStyle;}
-
+  /** Gets how overlapping query terms should be scored */
+  public SynonymQueryStyle getSynonymQueryStyle() {
+    return this.synonymQueryStyle;
+  }
 
   /**
    * Set to <code>true</code> to allow leading wildcard characters.
-   * <p>
-   * When set, <code>*</code> or <code>?</code> are allowed as
-   * the first character of a PrefixQuery and WildcardQuery.
-   * Note that this can produce very slow
-   * queries on big indexes.
-   * <p>
-   * Default: false.
+   *
+   * <p>When set, <code>*</code> or <code>?</code> are allowed as the first character of a
+   * PrefixQuery and WildcardQuery. Note that this can produce very slow queries on big indexes.
+   *
+   * <p>Default: false.
    */
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     this.allowLeadingWildcard = allowLeadingWildcard;
@@ -420,41 +416,33 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
-   * Sets the boolean operator of the QueryParser.
-   * In default mode (<code>OR_OPERATOR</code>) terms without any modifiers
-   * are considered optional: for example <code>capital of Hungary</code> is equal to
-   * <code>capital OR of OR Hungary</code>.<br>
-   * In <code>AND_OPERATOR</code> mode terms are considered to be in conjunction: the
-   * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
+   * Sets the boolean operator of the QueryParser. In default mode (<code>OR_OPERATOR</code>) terms
+   * without any modifiers are considered optional: for example <code>capital of Hungary</code> is
+   * equal to <code>capital OR of OR Hungary</code>.<br>
+   * In <code>AND_OPERATOR</code> mode terms are considered to be in conjunction: the above
+   * mentioned query is parsed as <code>capital AND of AND Hungary</code>
    */
   public void setDefaultOperator(Operator op) {
     this.operator = op;
   }
 
-
-  /**
-   * Gets implicit operator setting, which will be either AND_OPERATOR
-   * or OR_OPERATOR.
-   */
+  /** Gets implicit operator setting, which will be either AND_OPERATOR or OR_OPERATOR. */
   public Operator getDefaultOperator() {
     return operator;
   }
 
-
   /**
-   * By default QueryParser uses {@link org.apache.lucene.search.MultiTermQuery#CONSTANT_SCORE_REWRITE}
-   * when creating a PrefixQuery, WildcardQuery or RangeQuery. This implementation is generally preferable because it
-   * a) Runs faster b) Does not have the scarcity of terms unduly influence score
-   * c) avoids any "TooManyBooleanClauses" exception.
-   * However, if your application really needs to use the
-   * old-fashioned BooleanQuery expansion rewriting and the above
-   * points are not relevant then use this to change
-   * the rewrite method.
+   * By default QueryParser uses {@link
+   * org.apache.lucene.search.MultiTermQuery#CONSTANT_SCORE_REWRITE} when creating a PrefixQuery,
+   * WildcardQuery or RangeQuery. This implementation is generally preferable because it a) Runs
+   * faster b) Does not have the scarcity of terms unduly influence score c) avoids any
+   * "TooManyBooleanClauses" exception. However, if your application really needs to use the
+   * old-fashioned BooleanQuery expansion rewriting and the above points are not relevant then use
+   * this to change the rewrite method.
    */
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
     multiTermRewriteMethod = method;
   }
-
 
   /**
    * @see #setMultiTermRewriteMethod
@@ -463,14 +451,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return multiTermRewriteMethod;
   }
 
-
   protected void addClause(List<BooleanClause> clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
     // If this term is introduced by AND, make the preceding term required,
     // unless it's already prohibited
     if (clauses.size() > 0 && conj == CONJ_AND) {
-      BooleanClause c = clauses.get(clauses.size()-1);
+      BooleanClause c = clauses.get(clauses.size() - 1);
       if (!c.isProhibited())
         clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.MUST));
     }
@@ -480,15 +467,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
       // notice if the input is a OR b, first term is parsed as required; without
       // this modification a OR b would parsed as +a OR b
-      BooleanClause c = clauses.get(clauses.size()-1);
+      BooleanClause c = clauses.get(clauses.size() - 1);
       if (!c.isProhibited())
-        clauses.set(clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.SHOULD));
+        clauses.set(
+            clauses.size() - 1, new BooleanClause(c.getQuery(), BooleanClause.Occur.SHOULD));
     }
 
     // We might have been passed a null query; the term might have been
     // filtered away by the analyzer.
-    if (q == null)
-      return;
+    if (q == null) return;
 
     if (operator == OR_OPERATOR) {
       // We set REQUIRED if we're introduced by AND or +; PROHIBITED if
@@ -502,21 +489,18 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       // We set PROHIBITED if we're introduced by NOT or -; We set REQUIRED
       // if not PROHIBITED and not introduced by OR
       prohibited = (mods == MOD_NOT);
-      required   = (!prohibited && conj != CONJ_OR);
+      required = (!prohibited && conj != CONJ_OR);
     }
-    if (required && !prohibited)
-      clauses.add(newBooleanClause(q, BooleanClause.Occur.MUST));
-    else if (!required && !prohibited)
-      clauses.add(newBooleanClause(q, BooleanClause.Occur.SHOULD));
+    if (required && !prohibited) clauses.add(newBooleanClause(q, BooleanClause.Occur.MUST));
+    else if (!required && !prohibited) clauses.add(newBooleanClause(q, BooleanClause.Occur.SHOULD));
     else if (!required && prohibited)
       clauses.add(newBooleanClause(q, BooleanClause.Occur.MUST_NOT));
-    else
-      throw new RuntimeException("Clause cannot be both required and prohibited");
+    else throw new RuntimeException("Clause cannot be both required and prohibited");
   }
 
   /**
-   * Called from QueryParser's MultiTerm rule.
-   * Assumption: no conjunction or modifiers (conj == CONJ_NONE and mods == MOD_NONE)
+   * Called from QueryParser's MultiTerm rule. Assumption: no conjunction or modifiers (conj ==
+   * CONJ_NONE and mods == MOD_NONE)
    */
   protected void addMultiTermClause(List<BooleanClause> clauses, Query q) {
     // We might have been passed a null query; the term might have been
@@ -524,33 +508,42 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     if (q == null) {
       return;
     }
-    clauses.add(newBooleanClause(q, operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD));
+    clauses.add(
+        newBooleanClause(
+            q, operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD));
   }
 
-  protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
-                                SynonymQueryStyle synonymQueryStyle)
+  protected Query newFieldQuery(
+      Analyzer analyzer,
+      String field,
+      String queryText,
+      boolean quoted,
+      boolean fieldAutoGenPhraseQueries,
+      boolean fieldEnableGraphQueries,
+      SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
-    BooleanClause.Occur occur = operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+    BooleanClause.Occur occur =
+        operator == Operator.AND ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
     setEnableGraphQueries(fieldEnableGraphQueries);
     setSynonymQueryStyle(synonymQueryStyle);
-    Query query = createFieldQuery(analyzer, occur, field, queryText,
-        quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries, phraseSlop);
+    Query query =
+        createFieldQuery(
+            analyzer,
+            occur,
+            field,
+            queryText,
+            quoted || fieldAutoGenPhraseQueries || autoGeneratePhraseQueries,
+            phraseSlop);
     setEnableGraphQueries(true); // reset back to default
     setSynonymQueryStyle(AS_SAME_TERM);
     return query;
   }
 
-
-
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,String,boolean,boolean)}.
-   * This method may be overridden, for example, to return
-   * a SpanNearQuery instead of a PhraseQuery.
-   *
+   * Base implementation delegates to {@link #getFieldQuery(String,String,boolean,boolean)}. This
+   * method may be overridden, for example, to return a SpanNearQuery instead of a PhraseQuery.
    */
-  protected Query getFieldQuery(String field, String queryText, int slop)
-        throws SyntaxError {
+  protected Query getFieldQuery(String field, String queryText, int slop) throws SyntaxError {
     Query query = getFieldQuery(field, queryText, true, false);
 
     // only set slop of the phrase query was a result of this parser
@@ -567,7 +560,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         builder.setSlop(slop);
         query = builder.build();
       } else if (query instanceof MultiPhraseQuery) {
-        MultiPhraseQuery mpq = (MultiPhraseQuery)query;
+        MultiPhraseQuery mpq = (MultiPhraseQuery) query;
 
         if (slop != mpq.getSlop()) {
           query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
@@ -578,28 +571,31 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return query;
   }
 
- /**
-  * Builds a new BooleanClause instance
-  * @param q sub query
-  * @param occur how this clause should occur when matching documents
-  * @return new BooleanClause instance
-  */
+  /**
+   * Builds a new BooleanClause instance
+   *
+   * @param q sub query
+   * @param occur how this clause should occur when matching documents
+   * @return new BooleanClause instance
+   */
   protected BooleanClause newBooleanClause(Query q, BooleanClause.Occur occur) {
     return new BooleanClause(q, occur);
   }
 
   /**
    * Builds a new PrefixQuery instance
+   *
    * @param prefix Prefix term
    * @return new PrefixQuery instance
    */
-  protected Query newPrefixQuery(Term prefix){
+  protected Query newPrefixQuery(Term prefix) {
     SchemaField sf = schema.getField(prefix.field());
     return sf.getType().getPrefixQuery(parser, sf, prefix.text());
   }
 
   /**
    * Builds a new RegexpQuery instance
+   *
    * @param regexp Regexp term
    * @return new RegexpQuery instance
    */
@@ -613,44 +609,51 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   @Override
   protected Query newGraphSynonymQuery(Iterator<Query> sidePathQueriesIterator) {
     switch (synonymQueryStyle) {
-      case PICK_BEST: {
-        List<Query> sidePathSynonymQueries = new LinkedList<>();
-        sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
-        return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
-      }
+      case PICK_BEST:
+        {
+          List<Query> sidePathSynonymQueries = new ArrayList<>();
+          sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
+          return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
+        }
       case AS_SAME_TERM:
-      case AS_DISTINCT_TERMS:{
-        return super.newGraphSynonymQuery(sidePathQueriesIterator);}
+      case AS_DISTINCT_TERMS:
+        {
+          return super.newGraphSynonymQuery(sidePathQueriesIterator);
+        }
       default:
-        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+        throw new AssertionError(
+            "unrecognized synonymQueryStyle passed when creating newSynonymQuery");
     }
   }
 
   @Override
-  protected Query newSynonymQuery(TermAndBoost[] terms) {
+  protected Query newSynonymQuery(String field, TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
-        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
+        List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(term.term, term.boost));
+          currPosnClauses.add(newTermQuery(new Term(field, term.term), term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
-          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
+          builder.add(
+              newTermQuery(new Term(field, term.term), term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
-        return super.newSynonymQuery(terms);
+        return super.newSynonymQuery(field, terms);
       default:
-        throw new AssertionError("unrecognized synonymQueryStyle passed when creating newSynonymQuery");
+        throw new AssertionError(
+            "unrecognized synonymQueryStyle passed when creating newSynonymQuery");
     }
   }
 
   /**
    * Builds a new FuzzyQuery instance
+   *
    * @param term Term
    * @param minimumSimilarity minimum similarity
    * @param prefixLength prefix length
@@ -659,13 +662,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
     // FuzzyQuery doesn't yet allow constant score rewrite
     String text = term.text();
-    int numEdits = FuzzyQuery.floatToEdits(minimumSimilarity,
-        text.codePointCount(0, text.length()));
-    return new FuzzyQuery(term,numEdits,prefixLength);
+    int numEdits =
+        FuzzyQuery.floatToEdits(minimumSimilarity, text.codePointCount(0, text.length()));
+    return new FuzzyQuery(term, numEdits, prefixLength);
   }
 
   /**
    * Builds a new MatchAllDocsQuery instance
+   *
    * @return new MatchAllDocsQuery instance
    */
   protected Query newMatchAllDocsQuery() {
@@ -674,6 +678,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   /**
    * Builds a new WildcardQuery instance
+   *
    * @param t wildcard term
    * @return new WildcardQuery instance
    */
@@ -685,20 +690,17 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
+   * Factory method for generating query, given a set of clauses. By default creates a boolean query
+   * composed of clauses passed in.
    *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
+   * <p>Can be overridden by extending classes, to modify query being returned.
    *
-   * @param clauses List that contains {@link org.apache.lucene.search.BooleanClause} instances
-   *    to join.
-   *
+   * @param clauses List that contains {@link org.apache.lucene.search.BooleanClause} instances to
+   *     join.
    * @return Resulting {@link org.apache.lucene.search.Query} object.
    */
-  protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError
-  {
-    if (clauses.size()==0) {
+  protected Query getBooleanQuery(List<BooleanClause> clauses) throws SyntaxError {
+    if (clauses.size() == 0) {
       return null; // all clause words were filtered away by the analyzer.
     }
 
@@ -709,12 +711,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     int allRawQueriesTermCount = 0;
     for (BooleanClause clause : clauses) {
       if (clause.getQuery() instanceof RawQuery) {
-        allRawQueriesTermCount += ((RawQuery)clause.getQuery()).getTermCount();
+        allRawQueriesTermCount += ((RawQuery) clause.getQuery()).getTermCount();
       } else {
         onlyRawQueries = false;
       }
     }
-    boolean useTermsQuery = (flags & QParser.FLAG_FILTER)!=0 && allRawQueriesTermCount > TERMS_QUERY_THRESHOLD;
+    boolean useTermsQuery =
+        (flags & QParser.FLAG_FILTER) != 0 && allRawQueriesTermCount > TERMS_QUERY_THRESHOLD;
 
     BooleanQuery.Builder booleanBuilder = newBooleanQuery();
     Map<SchemaField, List<RawQuery>> fmap = new HashMap<>();
@@ -725,18 +728,18 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         if (clause.getOccur() != BooleanClause.Occur.SHOULD) {
           // We only collect optional terms for set queries.  Since this isn't optional,
           // convert the raw query to a normal query and handle as usual.
-          clause = new BooleanClause( rawToNormal(subq), clause.getOccur() );
+          clause = new BooleanClause(rawToNormal(subq), clause.getOccur());
         } else {
           // Optional raw query.
           RawQuery rawq = (RawQuery) subq;
 
           // only look up fmap and type info on a field change
-          if (sfield != rawq.sfield) {
+          if (!Objects.equals(sfield, rawq.sfield)) {
             sfield = rawq.sfield;
             fieldValues = fmap.get(sfield);
-            // If this field isn't indexed, or if it is indexed and we want to use TermsQuery, then collect this value.
-            // We are currently relying on things like PointField not being marked as indexed in order to bypass
-            // the "useTermQuery" check.
+            // If this field isn't indexed, or if it is indexed and we want to use TermsQuery, then
+            // collect this value. We are currently relying on things like PointField not being
+            // marked as indexed in order to bypass the "useTermQuery" check.
             if ((fieldValues == null && useTermsQuery) || !sfield.indexed()) {
               fieldValues = new ArrayList<>(2);
               fmap.put(sfield, fieldValues);
@@ -748,36 +751,45 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             continue;
           }
 
-          clause = new BooleanClause( rawToNormal(subq), clause.getOccur() );
+          clause = new BooleanClause(rawToNormal(subq), clause.getOccur());
         }
       }
 
       booleanBuilder.add(clause);
     }
 
-
-    for (Map.Entry<SchemaField,List<RawQuery>> entry : fmap.entrySet()) {
+    for (Map.Entry<SchemaField, List<RawQuery>> entry : fmap.entrySet()) {
       sfield = entry.getKey();
       fieldValues = entry.getValue();
       FieldType ft = sfield.getType();
 
-      // TODO: pull more of this logic out to FieldType?  We would need to be able to add clauses to our existing booleanBuilder.
+      // TODO: pull more of this logic out to FieldType?  We would need to be able to add clauses to
+      // our existing booleanBuilder.
       int termCount = fieldValues.stream().mapToInt(RawQuery::getTermCount).sum();
       if ((sfield.indexed() && termCount < TERMS_QUERY_THRESHOLD) || termCount == 1) {
         // use boolean query instead
         for (RawQuery rawq : fieldValues) {
           Query subq;
           if (ft.isTokenized() && sfield.indexed()) {
-            boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
-            boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+            boolean fieldAutoGenPhraseQueries =
+                ft instanceof TextField && ((TextField) ft).getAutoGeneratePhraseQueries();
+            boolean fieldEnableGraphQueries =
+                ft instanceof TextField && ((TextField) ft).getEnableGraphQueries();
 
             SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
             if (ft instanceof TextField) {
-              synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
+              synonymQueryStyle = ((TextField) (ft)).getSynonymQueryStyle();
             }
 
-            subq = newFieldQuery(getAnalyzer(), sfield.getName(), rawq.getJoinedExternalVal(),
-                false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
+            subq =
+                newFieldQuery(
+                    getAnalyzer(),
+                    sfield.getName(),
+                    rawq.getJoinedExternalVal(),
+                    false,
+                    fieldAutoGenPhraseQueries,
+                    fieldEnableGraphQueries,
+                    synonymQueryStyle);
             booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
           } else {
             for (String externalVal : rawq.getExternalVals()) {
@@ -787,15 +799,18 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           }
         }
       } else {
-        List<String> externalVals
-            = fieldValues.stream().flatMap(rawq -> rawq.getExternalVals().stream()).collect(Collectors.toList());
+        List<String> externalVals =
+            fieldValues.stream()
+                .flatMap(rawq -> rawq.getExternalVals().stream())
+                .collect(Collectors.toList());
         Query subq = ft.getSetQuery(this.parser, sfield, externalVals);
-        if (onlyRawQueries && termCount == allRawQueriesTermCount) return subq; // if this is everything, don't wrap in a boolean query
+        if (onlyRawQueries && termCount == allRawQueriesTermCount)
+          return subq; // if this is everything, don't wrap in a boolean query
         booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
       }
     }
 
-    BooleanQuery bq = QueryUtils.build(booleanBuilder,parser);
+    BooleanQuery bq = QueryUtils.build(booleanBuilder, parser);
     if (bq.clauses().size() == 1) { // Unwrap single SHOULD query
       BooleanClause clause = bq.clauses().iterator().next();
       if (clause.getOccur() == BooleanClause.Occur.SHOULD) {
@@ -805,33 +820,42 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return bq;
   }
 
-
-   // called from parser
-  Query handleBareTokenQuery(String qfield, Token term, Token fuzzySlop, boolean prefix, boolean wildcard, boolean fuzzy, boolean regexp) throws SyntaxError {
+  // called from parser
+  Query handleBareTokenQuery(
+      String qfield,
+      Token term,
+      Token fuzzySlop,
+      boolean prefix,
+      boolean wildcard,
+      boolean fuzzy,
+      boolean regexp)
+      throws SyntaxError {
     Query q;
 
     if (wildcard) {
       q = getWildcardQuery(qfield, term.image);
     } else if (prefix) {
-      q = getPrefixQuery(qfield,
-          discardEscapeChar(term.image.substring
-              (0, term.image.length()-1)));
+      q =
+          getPrefixQuery(
+              qfield, discardEscapeChar(term.image.substring(0, term.image.length() - 1)));
     } else if (regexp) {
-      q = getRegexpQuery(qfield, term.image.substring(1, term.image.length()-1));
+      q = getRegexpQuery(qfield, term.image.substring(1, term.image.length() - 1));
     } else if (fuzzy) {
       float fms = fuzzyMinSim;
       try {
         fms = Float.parseFloat(fuzzySlop.image.substring(1));
-      } catch (Exception ignored) { }
-      if(fms < 0.0f){
-        throw new SyntaxError("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
+      } catch (Exception ignored) {
+      }
+      if (fms < 0.0f) {
+        throw new SyntaxError(
+            "Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");
       } else if (fms >= 1.0f && fms != (int) fms) {
         throw new SyntaxError("Fractional edit distances are not allowed!");
       }
-      String termImage=discardEscapeChar(term.image);
+      String termImage = discardEscapeChar(term.image);
       q = getFuzzyQuery(qfield, termImage, fms);
     } else {
-      String termImage=discardEscapeChar(term.image);
+      String termImage = discardEscapeChar(term.image);
       q = getFieldQuery(qfield, termImage, false, true);
     }
     return q;
@@ -839,53 +863,48 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
 
   // called from parser
   Query handleQuotedTerm(String qfield, Token term, Token fuzzySlop) throws SyntaxError {
-    int s = phraseSlop;  // default
+    int s = phraseSlop; // default
     if (fuzzySlop != null) {
       try {
-        s = (int)Float.parseFloat(fuzzySlop.image.substring(1));
+        s = (int) Float.parseFloat(fuzzySlop.image.substring(1));
+      } catch (Exception ignored) {
       }
-      catch (Exception ignored) { }
     }
 
-    String raw = discardEscapeChar(term.image.substring(1, term.image.length()-1));
+    String raw = discardEscapeChar(term.image.substring(1, term.image.length() - 1));
     return getFieldQuery(qfield, raw, s);
   }
-
-
 
   // Called from parser
   // Raw queries are transformed to normal queries before wrapping in a BoostQuery
   Query handleBoost(Query q, Token boost) {
     // q==null check is to avoid boosting null queries, such as those caused by stop words
-    if (boost == null || boost.image.length()==0 || q == null) {
+    if (boost == null || boost.image.length() == 0 || q == null) {
       return q;
     }
     if (boost.image.startsWith("=")) {
       // syntax looks like foo:x^=3
       float val = Float.parseFloat(boost.image.substring(1));
       Query newQ = q;
-      if (q instanceof ConstantScoreQuery || q instanceof SolrConstantScoreQuery) {
+      if (q instanceof ConstantScoreQuery) {
         // skip
       } else {
-        newQ = new ConstantScoreQuery( rawToNormal(q) );
+        newQ = new ConstantScoreQuery(rawToNormal(q));
       }
       return new BoostQuery(newQ, val);
     }
 
     float boostVal = Float.parseFloat(boost.image);
 
-    return new BoostQuery( rawToNormal(q), boostVal);
+    return new BoostQuery(rawToNormal(q), boostVal);
   }
 
-
-
   /**
-   * Returns a String where the escape char has been
-   * removed, or kept only once if there was a double escape.
+   * Returns a String where the escape char has been removed, or kept only once if there was a
+   * double escape.
    *
-   * Supports escaped unicode characters, e. g. translates
-   * <code>\\u0041</code> to <code>A</code>.
-   *
+   * <p>Supports escaped unicode characters, e. g. translates <code>\\u0041</code> to <code>A</code>
+   * .
    */
   String discardEscapeChar(String input) throws SyntaxError {
     int start = input.indexOf('\\');
@@ -912,13 +931,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     int codePoint = 0;
 
     // start after the first escape char
-    for (int i = start+1; i < input.length(); i++) {
+    for (int i = start + 1; i < input.length(); i++) {
       char curChar = input.charAt(i);
       if (codePointMultiplier > 0) {
         codePoint += hexToInt(curChar) * codePointMultiplier;
         codePointMultiplier >>>= 4;
         if (codePointMultiplier == 0) {
-          output[length++] = (char)codePoint;
+          output[length++] = (char) codePoint;
           codePoint = 0;
         }
       } else if (lastCharWasEscapeChar) {
@@ -956,7 +975,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   static final int hexToInt(char c) throws SyntaxError {
     if ('0' <= c && c <= '9') {
       return c - '0';
-    } else if ('a' <= c && c <= 'f'){
+    } else if ('a' <= c && c <= 'f') {
       return c - 'a' + 10;
     } else if ('A' <= c && c <= 'F') {
       return c - 'A' + 10;
@@ -966,8 +985,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   /**
-   * Returns a String where those characters that QueryParser
-   * expects to be escaped are escaped by a preceding <code>\</code>.
+   * Returns a String where those characters that QueryParser expects to be escaped are escaped by a
+   * preceding <code>\</code>.
    */
   public static String escape(String s) {
     StringBuilder sb = new StringBuilder();
@@ -975,15 +994,14 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       char c = s.charAt(i);
       // These characters are part of the query syntax and must be escaped
       if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')' || c == ':'
-        || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
-        || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
+          || c == '^' || c == '[' || c == ']' || c == '\"' || c == '{' || c == '}' || c == '~'
+          || c == '*' || c == '?' || c == '|' || c == '&' || c == '/') {
         sb.append('\\');
       }
       sb.append(c);
     }
     return sb.toString();
   }
-
 
   protected ReversedWildcardFilterFactory getReversedWildcardFilterFactory(FieldType fieldType) {
     if (leadingWildcards == null) leadingWildcards = new HashMap<>();
@@ -995,11 +1013,11 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     Analyzer a = fieldType.getIndexAnalyzer();
     if (a instanceof TokenizerChain) {
       // examine the indexing analysis chain if it supports leading wildcards
-      TokenizerChain tc = (TokenizerChain)a;
+      TokenizerChain tc = (TokenizerChain) a;
       TokenFilterFactory[] factories = tc.getTokenFilterFactories();
       for (TokenFilterFactory factory : factories) {
         if (factory instanceof ReversedWildcardFilterFactory) {
-          fac = (ReversedWildcardFilterFactory)factory;
+          fac = (ReversedWildcardFilterFactory) factory;
           break;
         }
       }
@@ -1009,25 +1027,26 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return fac;
   }
 
-
   private void checkNullField(String field) throws SolrException {
-    if (Strings.isNullOrEmpty(field) && Strings.isNullOrEmpty(defaultField)) {
-      throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-              "no field name specified in query and no default specified via 'df' param");
+    if (StrUtils.isNullOrEmpty(field) && StrUtils.isNullOrEmpty(defaultField)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "no field name specified in query and no default specified via 'df' param");
     }
   }
 
   protected String analyzeIfMultitermTermText(String field, String part, FieldType fieldType) {
 
-    if (part == null || ! (fieldType instanceof TextField) || ((TextField)fieldType).getMultiTermAnalyzer() == null) return part;
+    if (part == null
+        || !(fieldType instanceof TextField)
+        || ((TextField) fieldType).getMultiTermAnalyzer() == null) return part;
 
     SchemaField sf = schema.getFieldOrNull((field));
-    if (sf == null || ! (fieldType instanceof TextField)) return part;
-    BytesRef out = TextField.analyzeMultiTerm(field, part, ((TextField)fieldType).getMultiTermAnalyzer());
+    if (sf == null || !(fieldType instanceof TextField)) return part;
+    BytesRef out =
+        TextField.analyzeMultiTerm(field, part, ((TextField) fieldType).getMultiTermAnalyzer());
     return out == null ? part : out.utf8ToString();
   }
-
 
   private QParser subQParser = null;
 
@@ -1035,9 +1054,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   Query rawToNormal(Query q) {
     Query normal = q;
     if (q instanceof RawQuery) {
-      RawQuery rawq = (RawQuery)q;
+      RawQuery rawq = (RawQuery) q;
       if (rawq.sfield.getType().isTokenized()) {
-        normal = rawq.sfield.getType().getFieldQuery(parser, rawq.sfield, rawq.getJoinedExternalVal());
+        normal =
+            rawq.sfield.getType().getFieldQuery(parser, rawq.sfield, rawq.getJoinedExternalVal());
       } else {
         FieldType ft = rawq.sfield.getType();
         if (rawq.getTermCount() == 1) {
@@ -1063,15 +1083,17 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   private String lastFieldName;
   private SchemaField lastField;
 
-  // if raw==true, then it's possible for this method to return a RawQuery that will need to be transformed
-  // further before using.
-  protected Query getFieldQuery(String field, String queryText, boolean quoted, boolean raw) throws SyntaxError {
+  // if raw==true, then it's possible for this method to return a RawQuery that will need to be
+  // transformed further before using.
+  protected Query getFieldQuery(String field, String queryText, boolean quoted, boolean raw)
+      throws SyntaxError {
     checkNullField(field);
 
     SchemaField sf;
     if (field.equals(lastFieldName)) {
-      // only look up the SchemaField on a field change... this helps with memory allocation of dynamic fields
-      // and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed "foo_i" each time.
+      // only look up the SchemaField on a field change... this helps with memory allocation of
+      // dynamic fields and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed
+      // "foo_i" each time.
       sf = lastField;
     } else {
       // intercept magic field name of "_" to use as a hook for our
@@ -1092,13 +1114,22 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       FieldType ft = sf.getType();
       // delegate to type for everything except tokenized fields
       if (ft.isTokenized() && sf.indexed()) {
-        boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
-        boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+        boolean fieldAutoGenPhraseQueries =
+            ft instanceof TextField && ((TextField) ft).getAutoGeneratePhraseQueries();
+        boolean fieldEnableGraphQueries =
+            ft instanceof TextField && ((TextField) ft).getEnableGraphQueries();
         SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
         if (ft instanceof TextField) {
-          synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
+          synonymQueryStyle = ((TextField) (ft)).getSynonymQueryStyle();
         }
-        return newFieldQuery(getAnalyzer(), field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
+        return newFieldQuery(
+            getAnalyzer(),
+            field,
+            queryText,
+            quoted,
+            fieldAutoGenPhraseQueries,
+            fieldEnableGraphQueries,
+            synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryText);
@@ -1113,13 +1144,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   // Assumption: quoted is always false
-  protected Query getFieldQuery(String field, List<String> queryTerms, boolean raw) throws SyntaxError {
+  protected Query getFieldQuery(String field, List<String> queryTerms, boolean raw)
+      throws SyntaxError {
     checkNullField(field);
 
     SchemaField sf;
     if (field.equals(lastFieldName)) {
-      // only look up the SchemaField on a field change... this helps with memory allocation of dynamic fields
-      // and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed "foo_i" each time.
+      // only look up the SchemaField on a field change... this helps with memory allocation of
+      // dynamic fields and large queries like foo_i:(1 2 3 4 5 6 7 8 9 10) when we are passed
+      // "foo_i" each time.
       sf = lastField;
     } else {
       // intercept magic field name of "_" to use as a hook for our
@@ -1140,15 +1173,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       FieldType ft = sf.getType();
       // delegate to type for everything except tokenized fields
       if (ft.isTokenized() && sf.indexed()) {
-        String queryText = queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
-        boolean fieldAutoGenPhraseQueries = ft instanceof TextField && ((TextField)ft).getAutoGeneratePhraseQueries();
-        boolean fieldEnableGraphQueries = ft instanceof TextField && ((TextField)ft).getEnableGraphQueries();
+        String queryText =
+            queryTerms.size() == 1 ? queryTerms.get(0) : String.join(" ", queryTerms);
+        boolean fieldAutoGenPhraseQueries =
+            ft instanceof TextField && ((TextField) ft).getAutoGeneratePhraseQueries();
+        boolean fieldEnableGraphQueries =
+            ft instanceof TextField && ((TextField) ft).getEnableGraphQueries();
         SynonymQueryStyle synonymQueryStyle = AS_SAME_TERM;
         if (ft instanceof TextField) {
-          synonymQueryStyle = ((TextField)(ft)).getSynonymQueryStyle();
+          synonymQueryStyle = ((TextField) (ft)).getSynonymQueryStyle();
         }
-        return newFieldQuery
-            (getAnalyzer(), field, queryText, false, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
+        return newFieldQuery(
+            getAnalyzer(),
+            field,
+            queryText,
+            false,
+            fieldAutoGenPhraseQueries,
+            fieldEnableGraphQueries,
+            synonymQueryStyle);
       } else {
         if (raw) {
           return new RawQuery(sf, queryTerms);
@@ -1160,19 +1202,20 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
             for (String queryTerm : queryTerms) {
               try {
                 subqs.add(ft.getFieldQuery(parser, sf, queryTerm));
-              } catch (Exception e) { // assumption: raw = false only when called from ExtendedDismaxQueryParser.getQuery()
-                // ExtendedDismaxQueryParser is a lenient query parser 
-                // This happens when a field tries to parse a query term that has a type incompatible with the field
-                // e.g.
-                // a numerical field trying to parse a textual query term
+              } catch (Exception e) {
+                // assumption: raw = false only when called from
+                // ExtendedDismaxQueryParser.getQuery(). ExtendedDismaxQueryParser is a lenient
+                // query parser. This happens when a field tries to parse a query term that has a
+                // type incompatible with the field e.g. a numerical field trying to parse a textual
+                // query term
                 subqs.add(new MatchNoDocsQuery());
               }
             }
             if (subqs.size() == 1) {
               return subqs.get(0);
             } else { // delay building boolean query until we must
-              final BooleanClause.Occur occur
-                  = operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+              final BooleanClause.Occur occur =
+                  operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
               BooleanQuery.Builder booleanBuilder = newBooleanQuery();
               subqs.forEach(subq -> booleanBuilder.add(subq, occur));
               return booleanBuilder.build();
@@ -1187,33 +1230,45 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     return newFieldQuery(getAnalyzer(), field, queryText, false, false, true, AS_SAME_TERM);
   }
 
-  protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1){
-   checkNullField(field);
-   SchemaField sf = schema.getField(field);
+  protected boolean isRangeShouldBeProtectedFromReverse(String field, String part1) {
+    checkNullField(field);
+    SchemaField sf = schema.getField(field);
 
-   return part1 == null && getReversedWildcardFilterFactory(sf.getType())!=null;
- }
-
-  // called from parser
-  protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws SyntaxError {
-    boolean reverse = isRangeShouldBeProtectedFromReverse(field, part1);
-    return getRangeQueryImpl(field, reverse ? REVERSE_WILDCARD_LOWER_BOUND : part1, part2, startInclusive || reverse, endInclusive);
+    return part1 == null && getReversedWildcardFilterFactory(sf.getType()) != null;
   }
 
-  protected Query getRangeQueryImpl(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws SyntaxError {
+  // called from parser
+  protected Query getRangeQuery(
+      String field, String part1, String part2, boolean startInclusive, boolean endInclusive)
+      throws SyntaxError {
+    boolean reverse = isRangeShouldBeProtectedFromReverse(field, part1);
+    return getRangeQueryImpl(
+        field,
+        reverse ? REVERSE_WILDCARD_LOWER_BOUND : part1,
+        part2,
+        startInclusive || reverse,
+        endInclusive);
+  }
+
+  protected Query getRangeQueryImpl(
+      String field, String part1, String part2, boolean startInclusive, boolean endInclusive)
+      throws SyntaxError {
     checkNullField(field);
     SchemaField sf = schema.getField(field);
     return sf.getType().getRangeQuery(parser, sf, part1, part2, startInclusive, endInclusive);
   }
+
   // called from parser
   protected Query getPrefixQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
 
     termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
 
-    // Solr has always used constant scoring for prefix queries.  This should return constant scoring by default.
+    // Solr has always used constant scoring for prefix queries.  This should return constant
+    // scoring by default.
     return newPrefixQuery(new Term(field, termStr));
   }
+
   // called from parser
   protected Query getExistenceQuery(String field) {
     checkNullField(field);
@@ -1250,11 +1305,12 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       } else {
         // reverse wildcardfilter is active: remove false positives
         // fsa representing false positives (markerChar*)
-        Automaton falsePositives = Operations.concatenate(
-            Automata.makeChar(factory.getMarkerChar()),
-            Automata.makeAnyString());
+        Automaton falsePositives =
+            Operations.concatenate(
+                Automata.makeChar(factory.getMarkerChar()), Automata.makeAnyString());
         // subtract these away
-        automaton = Operations.minus(automaton, falsePositives, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
+        automaton =
+            Operations.minus(automaton, falsePositives, Operations.DEFAULT_DETERMINIZE_WORK_LIMIT);
       }
       return new AutomatonQuery(term, automaton) {
         // override toString so it's completely transparent
@@ -1271,19 +1327,20 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       };
     }
 
-    // Solr has always used constant scoring for wildcard queries.  This should return constant scoring by default.
+    // Solr has always used constant scoring for wildcard queries.  This should return constant
+    // scoring by default.
     return newWildcardQuery(new Term(field, termStr));
   }
 
   // called from parser
-  protected Query getRegexpQuery(String field, String termStr) throws SyntaxError
-  {
+  protected Query getRegexpQuery(String field, String termStr) throws SyntaxError {
     termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
     return newRegexpQuery(new Term(field, termStr));
   }
 
   // called from parser
-  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws SyntaxError {
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity)
+      throws SyntaxError {
     termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
     Term t = new Term(field, termStr);
     return newFuzzyQuery(t, minSimilarity, getFuzzyPrefixLength());
@@ -1302,5 +1359,4 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   Query getFilter(Query q) {
     return new FilterQuery(q);
   }
-
 }

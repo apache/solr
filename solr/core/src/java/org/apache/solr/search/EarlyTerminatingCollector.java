@@ -17,17 +17,15 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.LeafCollector;
+
 /**
- * <p>
- *  A wrapper {@link Collector} that throws {@link EarlyTerminatingCollectorException})
- *  once a specified maximum number of documents are collected.
- * </p>
+ * A wrapper {@link Collector} that throws {@link EarlyTerminatingCollectorException}) once a
+ * specified maximum number of documents are collected.
  */
 public class EarlyTerminatingCollector extends FilterCollector {
 
@@ -38,13 +36,11 @@ public class EarlyTerminatingCollector extends FilterCollector {
   private int currentReaderSize = 0;
 
   /**
-   * <p>
-   *  Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException}
-   *  once the specified maximum is reached.
-   * </p>
+   * Wraps a {@link Collector}, throwing {@link EarlyTerminatingCollectorException} once the
+   * specified maximum is reached.
+   *
    * @param delegate - the Collector to wrap.
    * @param maxDocsToCollect - the maximum number of documents to Collect
-   *
    */
   public EarlyTerminatingCollector(Collector delegate, int maxDocsToCollect) {
     super(delegate);
@@ -55,8 +51,7 @@ public class EarlyTerminatingCollector extends FilterCollector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(LeafReaderContext context)
-      throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     prevReaderCumulativeSize += currentReaderSize; // not current any more
     currentReaderSize = context.reader().maxDoc() - 1;
 
@@ -67,12 +62,10 @@ public class EarlyTerminatingCollector extends FilterCollector {
         super.collect(doc);
         numCollected++;
         if (maxDocsToCollect <= numCollected) {
-          throw new EarlyTerminatingCollectorException
-            (numCollected, prevReaderCumulativeSize + (doc + 1));
+          throw new EarlyTerminatingCollectorException(
+              numCollected, prevReaderCumulativeSize + (doc + 1));
         }
       }
-
     };
   }
-
 }

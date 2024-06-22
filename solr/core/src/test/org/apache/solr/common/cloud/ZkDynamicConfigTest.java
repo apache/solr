@@ -24,13 +24,15 @@ import org.junit.Test;
 public class ZkDynamicConfigTest extends SolrTestCaseJ4 {
   @Test
   public void parseLines() {
-    ZkDynamicConfig parsed = ZkDynamicConfig.parseLines(
-        "ignored-line\n" +
-            "server.1=zoo1:2780:2783:participant;0.0.0.0:2181\n" +
-            "server.2=zoo2:2781:2784:participant|zoo3:2783;2181\n" +
-            "server.3=zoo3:2782:2785;zoo3-client:2181\n" +
-            "server.4=zoo4:2783:2786:participant\n" + // this assumes clientPort specified in static config
-            "version=400000003");
+    ZkDynamicConfig parsed =
+        ZkDynamicConfig.parseLines(
+            "ignored-line\n"
+                + "server.1=zoo1:2780:2783:participant;0.0.0.0:2181\n"
+                + "server.2=zoo2:2781:2784:participant|zoo3:2783;2181\n"
+                + "server.3=zoo3:2782:2785;zoo3-client:2181\n"
+                + "server.4=zoo4:2783:2786:participant\n"
+                + // this assumes clientPort specified in static config
+                "version=400000003");
     assertEquals(4, parsed.size());
 
     assertEquals("zoo1", parsed.getServers().get(0).address);
@@ -54,16 +56,17 @@ public class ZkDynamicConfigTest extends SolrTestCaseJ4 {
 
     // client address/port optional if clientPort specified in static config file (back-compat mode)
     assertEquals("participant", parsed.getServers().get(3).role);
-    assertEquals(null, parsed.getServers().get(3).clientPortAddress);
+    assertNull(parsed.getServers().get(3).clientPortAddress);
     assertEquals("zoo4", parsed.getServers().get(3).resolveClientPortAddress());
-    assertEquals(null, parsed.getServers().get(3).clientPort);
+    assertNull(parsed.getServers().get(3).clientPort);
   }
 
   @Test(expected = SolrException.class)
   public void parseLinesInvalid() {
     ZkDynamicConfig.parseLines(
-        "server.1=zoo2:2781:2784:participant|zoo3:2783;0.0.0.0:2181\n" +
-            "server.2=zoo3:2782\n" + // This line fails as it lacks mandatory parts
+        "server.1=zoo2:2781:2784:participant|zoo3:2783;0.0.0.0:2181\n"
+            + "server.2=zoo3:2782\n"
+            + // This line fails as it lacks mandatory parts
             "version=400000003");
   }
 }

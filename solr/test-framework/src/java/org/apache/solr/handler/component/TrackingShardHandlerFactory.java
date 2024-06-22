@@ -16,15 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -34,29 +32,30 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.embedded.JettySolrRunner;
 
 /**
- * A ShardHandlerFactory that extends HttpShardHandlerFactory and
- * tracks requests made to nodes/shards such that interested parties
- * can watch such requests and make assertions inside tests
- * <p>
- * This is a test helper only and should *not* be used for production.
+ * A ShardHandlerFactory that extends HttpShardHandlerFactory and tracks requests made to
+ * nodes/shards such that interested parties can watch such requests and make assertions inside
+ * tests
+ *
+ * <p>This is a test helper only and should *not* be used for production.
  */
 public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
   private Queue<ShardRequestAndParams> queue;
 
   /**
-   * Set the tracking queue for this factory. All the ShardHandler instances
-   * created from this factory will share the queue and call {@link java.util.Queue#offer(Object)}
-   * with a {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
-   * instance whenever
-   * {@link org.apache.solr.handler.component.ShardHandler#submit(ShardRequest, String, org.apache.solr.common.params.ModifiableSolrParams)}
-   * is called before the request is actually submitted to the
-   * wrapped {@link org.apache.solr.handler.component.HttpShardHandlerFactory} instance.
-   * <p>
-   * If a tracking queue is already set then this call will overwrite and replace the
-   * previous queue with this one.
+   * Set the tracking queue for this factory. All the ShardHandler instances created from this
+   * factory will share the queue and call {@link java.util.Queue#offer(Object)} with a {@link
+   * org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams} instance
+   * whenever {@link org.apache.solr.handler.component.ShardHandler#submit(ShardRequest, String,
+   * org.apache.solr.common.params.ModifiableSolrParams)} is called before the request is actually
+   * submitted to the wrapped {@link org.apache.solr.handler.component.HttpShardHandlerFactory}
+   * instance.
+   *
+   * <p>If a tracking queue is already set then this call will overwrite and replace the previous
+   * queue with this one.
    *
    * @param queue the {@link java.util.Queue} to be used for tracking shard requests
    */
@@ -65,16 +64,15 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   }
 
   /**
-   * @return the {@link java.util.Queue} being used for tracking, null if none
-   * has been set
+   * @return the {@link java.util.Queue} being used for tracking, null if none has been set
    */
   public synchronized Queue<ShardRequestAndParams> getTrackingQueue() {
     return queue;
   }
 
   /**
-   * @return true if a tracking queue has been set through
-   * {@link #setTrackingQueue(java.util.List, java.util.Queue)}, false otherwise
+   * @return true if a tracking queue has been set through {@link #setTrackingQueue(java.util.List,
+   *     java.util.Queue)}, false otherwise
    */
   public synchronized boolean isTracking() {
     return queue != null;
@@ -130,13 +128,16 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   /**
    * Sets the tracking queue for all nodes participating in this cluster. Once this method returns,
    * all search and core admin requests distributed to shards will be submitted to the given queue.
-   * <p>
-   * This is equivalent to calling:
-   * <code>TrackingShardHandlerFactory.setTrackingQueue(cluster.getJettySolrRunners(), queue)</code>
    *
-   * @see org.apache.solr.handler.component.TrackingShardHandlerFactory#setTrackingQueue(java.util.List, java.util.Queue)
+   * <p>This is equivalent to calling: <code>
+   * TrackingShardHandlerFactory.setTrackingQueue(cluster.getJettySolrRunners(), queue)</code>
+   *
+   * @see
+   *     org.apache.solr.handler.component.TrackingShardHandlerFactory#setTrackingQueue(java.util.List,
+   *     java.util.Queue)
    */
-  public static void setTrackingQueue(MiniSolrCloudCluster cluster, Queue<ShardRequestAndParams> queue) {
+  public static void setTrackingQueue(
+      MiniSolrCloudCluster cluster, Queue<ShardRequestAndParams> queue) {
     setTrackingQueue(cluster.getJettySolrRunners(), queue);
   }
 
@@ -144,20 +145,22 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
    * Sets the tracking queue for all nodes participating in this cluster. Once this method returns,
    * all search and core admin requests distributed to shards will be submitted to the given queue.
    *
-   * @param runners a list of {@link org.apache.solr.client.solrj.embedded.JettySolrRunner} nodes
-   * @param queue   an implementation of {@link java.util.Queue} which
-   *                accepts {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
-   *                instances
+   * @param runners a list of {@link org.apache.solr.embedded.JettySolrRunner} nodes
+   * @param queue an implementation of {@link java.util.Queue} which accepts {@link
+   *     org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
+   *     instances
    */
-  public static void setTrackingQueue(List<JettySolrRunner> runners, Queue<ShardRequestAndParams> queue) {
+  public static void setTrackingQueue(
+      List<JettySolrRunner> runners, Queue<ShardRequestAndParams> queue) {
     for (JettySolrRunner runner : runners) {
       CoreContainer container = runner.getCoreContainer();
       if (container != null) {
         ShardHandlerFactory factory = container.getShardHandlerFactory();
-        assert factory instanceof TrackingShardHandlerFactory : "not a TrackingShardHandlerFactory: "
-            + factory.getClass();
+        assert factory instanceof TrackingShardHandlerFactory
+            : "not a TrackingShardHandlerFactory: " + factory.getClass();
         @SuppressWarnings("resource")
-        TrackingShardHandlerFactory trackingShardHandlerFactory = (TrackingShardHandlerFactory) factory;
+        TrackingShardHandlerFactory trackingShardHandlerFactory =
+            (TrackingShardHandlerFactory) factory;
         trackingShardHandlerFactory.setTrackingQueue(queue);
       }
     }
@@ -176,20 +179,26 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
 
     @Override
     public String toString() {
-      return "ShardRequestAndParams{" +
-          "shard='" + shard + '\'' +
-          ", sreq=" + sreq +
-          ", params=" + params +
-          '}';
+      return "ShardRequestAndParams{"
+          + "shard='"
+          + shard
+          + '\''
+          + ", sreq="
+          + sreq
+          + ", params="
+          + params
+          + '}';
     }
   }
 
   /**
    * A queue having helper methods to select requests by shard and purpose.
    *
-   * @see org.apache.solr.handler.component.TrackingShardHandlerFactory#setTrackingQueue(java.util.List, java.util.Queue)
+   * @see
+   *     org.apache.solr.handler.component.TrackingShardHandlerFactory#setTrackingQueue(java.util.List,
+   *     java.util.Queue)
    */
-  public static class RequestTrackingQueue extends LinkedList<ShardRequestAndParams> {
+  public static class RequestTrackingQueue extends ArrayDeque<ShardRequestAndParams> {
     private final Map<String, List<ShardRequestAndParams>> requests = new ConcurrentHashMap<>();
 
     @Override
@@ -209,18 +218,25 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
     }
 
     /**
-     * Retrieve request recorded by this queue which were sent to given collection, shard and purpose
+     * Retrieve request recorded by this queue which were sent to given collection, shard and
+     * purpose
      *
-     * @param zkStateReader  the {@link org.apache.solr.common.cloud.ZkStateReader} from which cluster state is read
+     * @param zkStateReader the {@link org.apache.solr.common.cloud.ZkStateReader} from which
+     *     cluster state is read
      * @param collectionName the given collection name for which requests have to be extracted
-     * @param shardId        the given shard name for which requests have to be extracted
-     * @param purpose        the shard purpose
-     * @return instance of {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
-     * or null if none is found
-     * @throws java.lang.RuntimeException if more than one request is found to the same shard with the same purpose
+     * @param shardId the given shard name for which requests have to be extracted
+     * @param purpose the shard purpose
+     * @return instance of {@link
+     *     org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams} or
+     *     null if none is found
+     * @throws java.lang.RuntimeException if more than one request is found to the same shard with
+     *     the same purpose
      */
-    public ShardRequestAndParams getShardRequestByPurpose(ZkStateReader zkStateReader, String collectionName, String shardId, int purpose) throws RuntimeException {
-      List<TrackingShardHandlerFactory.ShardRequestAndParams> shardRequests = getShardRequests(zkStateReader, collectionName, shardId);
+    public ShardRequestAndParams getShardRequestByPurpose(
+        ZkStateReader zkStateReader, String collectionName, String shardId, int purpose)
+        throws RuntimeException {
+      List<TrackingShardHandlerFactory.ShardRequestAndParams> shardRequests =
+          getShardRequests(zkStateReader, collectionName, shardId);
       List<TrackingShardHandlerFactory.ShardRequestAndParams> result = new ArrayList<>(1);
       for (TrackingShardHandlerFactory.ShardRequestAndParams request : shardRequests) {
         if ((request.sreq.purpose & purpose) != 0) {
@@ -228,7 +244,9 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
         }
       }
       if (result.size() > 1) {
-        throw new RuntimeException("Multiple requests to the same shard with the same purpose were found. Requests: " + result);
+        throw new RuntimeException(
+            "Multiple requests to the same shard with the same purpose were found. Requests: "
+                + result);
       }
       return result.isEmpty() ? null : result.get(0);
     }
@@ -236,13 +254,16 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
     /**
      * Retrieve all requests recorded by this queue which were sent to given collection and shard
      *
-     * @param zkStateReader  the {@link org.apache.solr.common.cloud.ZkStateReader} from which cluster state is read
+     * @param zkStateReader the {@link org.apache.solr.common.cloud.ZkStateReader} from which
+     *     cluster state is read
      * @param collectionName the given collection name for which requests have to be extracted
-     * @param shardId        the given shard name for which requests have to be extracted
-     * @return a list of {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
-     * or empty list if none are found
+     * @param shardId the given shard name for which requests have to be extracted
+     * @return a list of {@link
+     *     org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams} or
+     *     empty list if none are found
      */
-    public List<ShardRequestAndParams> getShardRequests(ZkStateReader zkStateReader, String collectionName, String shardId) {
+    public List<ShardRequestAndParams> getShardRequests(
+        ZkStateReader zkStateReader, String collectionName, String shardId) {
       DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
       assert collection != null;
       Slice slice = collection.getSlice(shardId);
@@ -264,8 +285,9 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
     /**
      * Retrieves all core admin requests distributed to nodes by Collection API commands
      *
-     * @return a list of {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
-     * or empty if none found
+     * @return a list of {@link
+     *     org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams} or
+     *     empty if none found
      */
     public List<ShardRequestAndParams> getCoreAdminRequests() {
       List<ShardRequestAndParams> results = new ArrayList<>();
@@ -281,11 +303,13 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
     }
 
     /**
-     * Retrieves all requests recorded by this collection as a Map of shard address (string url)
-     * to a list of {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
+     * Retrieves all requests recorded by this collection as a Map of shard address (string url) to
+     * a list of {@link
+     * org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
      *
-     * @return a {@link java.util.concurrent.ConcurrentHashMap} of url strings to {@link org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams} objects
-     * or empty map if none have been recorded
+     * @return a {@link java.util.concurrent.ConcurrentHashMap} of url strings to {@link
+     *     org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
+     *     objects or empty map if none have been recorded
      */
     public Map<String, List<ShardRequestAndParams>> getAllRequests() {
       return requests;

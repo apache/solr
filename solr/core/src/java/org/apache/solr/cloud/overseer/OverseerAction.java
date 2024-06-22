@@ -21,8 +21,8 @@ import java.util.Locale;
 /**
  * Enum of actions supported by the overseer only.
  *
- * There are other actions supported which are public and defined
- * in {@link org.apache.solr.common.params.CollectionParams.CollectionAction}
+ * <p>There are other actions supported which are public and defined in {@link
+ * org.apache.solr.common.params.CollectionParams.CollectionAction}
  */
 public enum OverseerAction {
   LEADER,
@@ -52,4 +52,3 @@ public enum OverseerAction {
     return toString().toLowerCase(Locale.ROOT);
   }
 }
-

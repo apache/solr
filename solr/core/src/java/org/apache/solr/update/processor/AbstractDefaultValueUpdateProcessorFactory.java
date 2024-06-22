@@ -16,31 +16,27 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
+import java.io.IOException;
 import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.*;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.AddUpdateCommand;
 
 /**
- * <p>
- * Base class that can be extended by any
- * <code>UpdateRequestProcessorFactory</code> designed to add a default value 
- * to the document in an <code>AddUpdateCommand</code> when that field is not 
+ * Base class that can be extended by any <code>UpdateRequestProcessorFactory</code> designed to add
+ * a default value to the document in an <code>AddUpdateCommand</code> when that field is not
  * already specified.
- * </p>
- * <p>
- * This base class handles initialization of the <code>fieldName</code> init 
- * param, and provides an {@link AbstractDefaultValueUpdateProcessorFactory.DefaultValueUpdateProcessor} that Factory 
- * subclasses may choose to return from their <code>getInstance</code> 
- * implementation.
- * </p>
+ *
+ * <p>This base class handles initialization of the <code>fieldName</code> init param, and provides
+ * an {@link AbstractDefaultValueUpdateProcessorFactory.DefaultValueUpdateProcessor} that Factory
+ * subclasses may choose to return from their <code>getInstance</code> implementation.
+ *
  * @since 4.0.0
  */
 public abstract class AbstractDefaultValueUpdateProcessorFactory
-  extends UpdateRequestProcessorFactory {
+    extends UpdateRequestProcessorFactory {
 
   protected String fieldName = null;
 
@@ -49,33 +45,28 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
 
     Object obj = args.remove("fieldName");
     if (null == obj && null == fieldName) {
-      throw new SolrException
-        (SERVER_ERROR, "'fieldName' init param must be specified and non-null"); 
+      throw new SolrException(
+          SERVER_ERROR, "'fieldName' init param must be specified and non-null");
     } else {
       fieldName = obj.toString();
     }
 
     if (0 < args.size()) {
-      throw new SolrException(SERVER_ERROR, 
-                              "Unexpected init param(s): '" + 
-                              args.getName(0) + "'");
+      throw new SolrException(SERVER_ERROR, "Unexpected init param(s): '" + args.getName(0) + "'");
     }
-    
+
     super.init(args);
   }
 
   /**
-   * A simple processor that adds the results of {@link #getDefaultValue} 
-   * to any document which does not already have a value in 
-   * <code>fieldName</code>
+   * A simple processor that adds the results of {@link #getDefaultValue} to any document which does
+   * not already have a value in <code>fieldName</code>
    */
-  static abstract class DefaultValueUpdateProcessor
-    extends UpdateRequestProcessor {
+  abstract static class DefaultValueUpdateProcessor extends UpdateRequestProcessor {
 
     final String fieldName;
 
-    public DefaultValueUpdateProcessor(final String fieldName,
-                                       final UpdateRequestProcessor next) {
+    public DefaultValueUpdateProcessor(final String fieldName, final UpdateRequestProcessor next) {
       super(next);
       this.fieldName = fieldName;
     }
@@ -84,16 +75,13 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       final SolrInputDocument doc = cmd.getSolrInputDocument();
 
-      if (! doc.containsKey(fieldName)) {
+      if (!doc.containsKey(fieldName)) {
         doc.addField(fieldName, getDefaultValue());
       }
 
       super.processAdd(cmd);
     }
-    
+
     public abstract Object getDefaultValue();
   }
 }
-
-
-

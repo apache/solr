@@ -19,9 +19,9 @@ package org.apache.solr.util;
 
 /**
  * An efficient map for storing keys as integer in range from 0..n with n can be estimated up-front.
- * By automatically switching from a hashMap (which is memory efficient) to an array (which is faster)
- * on increasing number of keys.
- * So it SHOULD not be used for other cases where key can be any arbitrary integer.
+ * By automatically switching from a hashMap (which is memory efficient) to an array (which is
+ * faster) on increasing number of keys. So it SHOULD not be used for other cases where key can be
+ * any arbitrary integer.
  */
 public interface DynamicMap {
 
@@ -37,15 +37,14 @@ public interface DynamicMap {
     return expectedKeyMax < (1 << 12);
   }
 
-  /**
-   * Compute threshold for switching from hashMap based to array
-   */
+  /** Compute threshold for switching from hashMap based to array */
   default int threshold(int expectedKeyMax) {
     return expectedKeyMax >>> 6;
   }
 
   /**
-   * Compute expected elements for hppc maps, so resizing won't happen if we store less elements than {@code threshold}
+   * Compute expected elements for hppc maps, so resizing won't happen if we store less elements
+   * than {@code threshold}
    */
   default int mapExpectedElements(int expectedKeyMax) {
     // hppc's expectedElements <= first hppc's resizeAt.

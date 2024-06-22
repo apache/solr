@@ -20,7 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 { 
+public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 {
 
   private static final String noReverseText = "three";
   private static final String withOriginal = "one";
@@ -28,85 +28,78 @@ public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema-reversed.xml");
+    initCore("solrconfig.xml", "schema-reversed.xml");
     assertU(doc123(1, "one ever"));
     assertU(doc123(2, "once forever"));
-                      
+
     assertU(doc123(7, "once slope forever"));
     assertU(doc123(8, "once again slope forever"));
     assertU(doc123(9, "forever once"));
     assertU(commit());
   }
-  
+
   @Test
-  public void testReverseWithOriginal() throws Exception {
+  public void testReverseWithOriginal() {
     checkField(withOriginal);
-    
   }
 
   // prefix query won't match without original tokens
   @Test
-  public void testReverseWithoutOriginal() throws Exception {
-    assertQ( "prefix query doesn't work without original term",
-        req("q","{!complexphrase inOrder=true}\"on* for*\"",
-            "df",withoutOriginal),
+  public void testReverseWithoutOriginal() {
+    assertQ(
+        "prefix query doesn't work without original term",
+        req("q", "{!complexphrase inOrder=true}\"on* for*\"", "df", withoutOriginal),
         expect());
-    
-    assertQ("postfix query works fine even without original",
-        req("q","{!complexphrase inOrder=true}\"*nce *ver\"",
-            "df",withoutOriginal),
+
+    assertQ(
+        "postfix query works fine even without original",
+        req("q", "{!complexphrase inOrder=true}\"*nce *ver\"", "df", withoutOriginal),
         expect("2"));
   }
-  
+
   @Test
-  public void testWithoutReverse() throws Exception {
+  public void testWithoutReverse() {
     checkField(noReverseText);
   }
 
   private void checkField(String field) {
     assertQ(
-        req("q","{!complexphrase inOrder=true}\"on* *ver\"",
-            "df",field,
-            "indent","on",
+        req(
+            "q", "{!complexphrase inOrder=true}\"on* *ver\"",
+            "df", field,
+            "indent", "on",
             "debugQuery", "true"),
-        expect("1","2"));
-    
+        expect("1", "2"));
+
+    assertQ(req("q", "{!complexphrase inOrder=true}\"ON* *VER\"", "df", field), expect("1", "2"));
+
+    assertQ(req("q", "{!complexphrase inOrder=true}\"ON* *ver\"", "df", field), expect("1", "2"));
+
     assertQ(
-        req("q","{!complexphrase inOrder=true}\"ON* *VER\"",
-            "df",field), 
-        expect("1","2"));
-    
+        req("q", "{!complexphrase inOrder=true}\"on* *ver\"~1", "df", field),
+        expect("1", "2", "7"));
+
     assertQ(
-        req("q","{!complexphrase inOrder=true}\"ON* *ver\"",
-            "df",field), 
-        expect("1","2"));
-    
-    assertQ(
-        req("q","{!complexphrase inOrder=true}\"on* *ver\"~1",
-            "df",field),
-        expect("1","2","7"));
-    
-    assertQ("range works if reverse doesn't mess",
-        req("q","{!complexphrase inOrder=true}\"on* [* TO a]\"",
-            "df",field),
+        "range works if reverse doesn't mess",
+        req("q", "{!complexphrase inOrder=true}\"on* [* TO a]\"", "df", field),
         expect());
 
-    assertQ("range works if reverse doesn't mess",
-        req("q","{!complexphrase inOrder=true}\"[on TO onZ] for*\"",
-            "df",field),
+    assertQ(
+        "range works if reverse doesn't mess",
+        req("q", "{!complexphrase inOrder=true}\"[on TO onZ] for*\"", "df", field),
         expect("2"));
-  } 
-  
-  private static String doc123(int id, String text){
-    return adoc("id",""+id, withOriginal, text, withoutOriginal, text, noReverseText, text);
   }
-  
-  private static String [] expect(String ...ids) {
-    String[] xpathes = new String[ids.length+1];
-    xpathes[0]= "//result[@numFound=" +ids.length+ "]";
-    int i=1;
-    for(String id : ids) {
-      xpathes[i++] = "//doc/str[@name='id' and text()='"+id+"']";
+
+  private static String doc123(int id, String text) {
+    return adoc("id", "" + id, withOriginal, text, withoutOriginal, text, noReverseText, text);
+  }
+
+  private static String[] expect(String... ids) {
+    String[] xpathes = new String[ids.length + 1];
+    xpathes[0] = "//result[@numFound=" + ids.length + "]";
+    int i = 1;
+    for (String id : ids) {
+      xpathes[i++] = "//doc/str[@name='id' and text()='" + id + "']";
     }
     return xpathes;
   }

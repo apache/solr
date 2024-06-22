@@ -19,12 +19,13 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
@@ -42,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ChildFieldValueSourceParser extends ValueSourceParser {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final class BlockJoinSortFieldValueSource extends ValueSource {
@@ -66,7 +67,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       @Override
       public String value(int slot) {
         final BytesRef value = byteRefs.value(slot);
-        return value!=null ? value.utf8ToString() : null;
+        return value != null ? value.utf8ToString() : null;
       }
 
       @Override
@@ -79,13 +80,12 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     private final BitSetProducer parentFilter;
     private final SchemaField childField;
 
-    private BlockJoinSortFieldValueSource(BitSetProducer childFilter, BitSetProducer parentFilter,
-        SchemaField childField) {
+    private BlockJoinSortFieldValueSource(
+        BitSetProducer childFilter, BitSetProducer parentFilter, SchemaField childField) {
       this.childFilter = childFilter;
       this.parentFilter = parentFilter;
       this.childField = childField;
     }
-
 
     @Override
     public int hashCode() {
@@ -97,61 +97,57 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       return result;
     }
 
-
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof BlockJoinSortFieldValueSource)) return false;
       BlockJoinSortFieldValueSource other = (BlockJoinSortFieldValueSource) obj;
-      if (childField == null) {
-        if (other.childField != null) return false;
-      } else if (!childField.equals(other.childField)) return false;
-      if (childFilter == null) {
-        if (other.childFilter != null) return false;
-      } else if (!childFilter.equals(other.childFilter)) return false;
-      if (parentFilter == null) {
-        if (other.parentFilter != null) return false;
-      } else if (!parentFilter.equals(other.parentFilter)) return false;
-      return true;
+      return Objects.equals(childField, other.childField)
+          && Objects.equals(childFilter, other.childFilter)
+          && Objects.equals(parentFilter, other.parentFilter);
     }
-    
 
     @Override
     public String toString() {
-      return "BlockJoinSortFieldValueSource [childFilter=" + childFilter + ", parentFilter=" + parentFilter
-          + ", childField=" + childField + "]";
+      return "BlockJoinSortFieldValueSource [childFilter="
+          + childFilter
+          + ", parentFilter="
+          + parentFilter
+          + ", childField="
+          + childField
+          + "]";
     }
 
     @Override
     public SortField getSortField(boolean reverse) {
       final Type type = childField.getSortField(reverse).getType();
-        return new ToParentBlockJoinSortField(childField.getName(), 
-            type, reverse, 
-            parentFilter, childFilter) {
-          @SuppressWarnings("unchecked")
-          @Override
-          public FieldComparator<?> getComparator(int numHits, int sortPos) {
-            final FieldComparator<?> comparator = super.getComparator(numHits, sortPos);
-            return type ==Type.STRING ?  new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
-                : comparator;
-          }
-        };
+      return new ToParentBlockJoinSortField(
+          childField.getName(), type, reverse, parentFilter, childFilter) {
+        @SuppressWarnings("unchecked")
+        @Override
+        public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
+          final FieldComparator<?> comparator = super.getComparator(numHits, pruning);
+          return type == Type.STRING
+              ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
+              : comparator;
+        }
+      };
     }
 
     @Override
     public String description() {
-      return NAME + " for " + childField.getName() +" of "+ query(childFilter);
+      return NAME + " for " + childField.getName() + " of " + query(childFilter);
     }
 
     private String query(BitSetProducer bits) {
-      return (bits instanceof QueryBitSetProducer) ? ((QueryBitSetProducer) bits).getQuery().toString()
+      return (bits instanceof QueryBitSetProducer)
+          ? ((QueryBitSetProducer) bits).getQuery().toString()
           : bits.toString();
     }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context,
-        LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       throw new UnsupportedOperationException(this + " is only for sorting");
     }
   }
@@ -160,37 +156,42 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
 
   @Override
   public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-    
+
     final String sortFieldName = fp.parseArg();
     final Query query;
-    if (fp.hasMoreArguments()){
+    if (fp.hasMoreArguments()) {
       query = fp.parseNestedQuery();
     } else {
       query = fp.subQuery(fp.getParam(CommonParams.Q), null).getQuery();
     }
-    
+
     BitSetProducer parentFilter;
     BitSetProducer childFilter;
     SchemaField sf;
     try {
       AllParentsAware bjQ;
       if (!(query instanceof AllParentsAware)) {
-        throw new SyntaxError("expect a reference to block join query "+
-              AllParentsAware.class.getSimpleName()+" in "+fp.getString());
+        throw new SyntaxError(
+            "expect a reference to block join query "
+                + AllParentsAware.class.getSimpleName()
+                + " in "
+                + fp.getString());
       }
       bjQ = (AllParentsAware) query;
-      
-      parentFilter = BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getParentQuery());
-      childFilter = BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
 
-      if (sortFieldName==null || sortFieldName.equals("")) {
-        throw new SyntaxError ("field is omitted in "+fp.getString());
+      parentFilter =
+          BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getParentQuery());
+      childFilter =
+          BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
+
+      if (sortFieldName == null || sortFieldName.isEmpty()) {
+        throw new SyntaxError("field is omitted in " + fp.getString());
       }
-      
+
       sf = fp.getReq().getSchema().getFieldOrNull(sortFieldName);
       if (null == sf) {
-        throw new SyntaxError
-          (NAME+" sort param field \""+ sortFieldName+"\" can't be found in schema");
+        throw new SyntaxError(
+            NAME + " sort param field \"" + sortFieldName + "\" can't be found in schema");
       }
     } catch (SyntaxError e) {
       log.error("can't parse {}", fp.getString(), e);

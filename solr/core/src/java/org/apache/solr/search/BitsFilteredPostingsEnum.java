@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.FilterLeafReader.FilterPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.Bits;

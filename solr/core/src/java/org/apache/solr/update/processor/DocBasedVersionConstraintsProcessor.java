@@ -64,20 +64,22 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private final SolrCore core;
   private final NamedList<Object> tombstoneConfig;
 
-  private final DistributedUpdateProcessor distribProc;  // the distributed update processor following us
+  // the distributed update processor following us
+  private final DistributedUpdateProcessor distribProc;
   private final DistributedUpdateProcessor.DistribPhase phase;
   private final boolean useFieldCache;
 
-  private long oldSolrVersion;  // current _version_ of the doc in the index/update log
+  private long oldSolrVersion; // current _version_ of the doc in the index/update log
 
-  public DocBasedVersionConstraintsProcessor(List<String> versionFields,
-                                             boolean ignoreOldUpdates,
-                                             List<String> deleteVersionParamNames,
-                                             boolean supportMissingVersionOnOldDocs,
-                                             boolean useFieldCache,
-                                             NamedList<Object> tombstoneConfig,
-                                             SolrQueryRequest req,
-                                             UpdateRequestProcessor next ) {
+  public DocBasedVersionConstraintsProcessor(
+      List<String> versionFields,
+      boolean ignoreOldUpdates,
+      List<String> deleteVersionParamNames,
+      boolean supportMissingVersionOnOldDocs,
+      boolean useFieldCache,
+      NamedList<Object> tombstoneConfig,
+      SolrQueryRequest req,
+      UpdateRequestProcessor next) {
     super(next);
     this.ignoreOldUpdates = ignoreOldUpdates;
     this.deleteVersionParamNames = deleteVersionParamNames.toArray(EMPTY_STR_ARR);
@@ -94,25 +96,29 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
 
     this.distribProc = getDistributedUpdateProcessor(next);
 
-    this.phase = DistributedUpdateProcessor.DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
+    this.phase =
+        DistributedUpdateProcessor.DistribPhase.parseParam(
+            req.getParams().get(DISTRIB_UPDATE_PARAM));
     this.tombstoneConfig = tombstoneConfig;
   }
 
-  private static DistributedUpdateProcessor getDistributedUpdateProcessor(UpdateRequestProcessor next) {
+  private static DistributedUpdateProcessor getDistributedUpdateProcessor(
+      UpdateRequestProcessor next) {
     for (UpdateRequestProcessor proc = next; proc != null; proc = proc.next) {
       if (proc instanceof DistributedUpdateProcessor) {
-        return (DistributedUpdateProcessor)proc;
+        return (DistributedUpdateProcessor) proc;
       }
     }
 
-    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "DistributedUpdateProcessor must follow DocBasedVersionConstraintsProcessor");
+    throw new SolrException(
+        SolrException.ErrorCode.SERVER_ERROR,
+        "DistributedUpdateProcessor must follow DocBasedVersionConstraintsProcessor");
   }
 
   /**
-   * Inspects a raw field value (which may come from a doc in the index, or a
-   * doc in the UpdateLog that still has String values, or a String sent by
-   * the user as a param) and if it is a String, asks the versionField FieldType
-   * to convert it to an Object suitable for comparison.
+   * Inspects a raw field value (which may come from a doc in the index, or a doc in the UpdateLog
+   * that still has String values, or a String sent by the user as a param) and if it is a String,
+   * asks the versionField FieldType to convert it to an Object suitable for comparison.
    */
   private static Object convertFieldValueUsingType(final Object rawValue, SchemaField field) {
     if (rawValue instanceof CharSequence) {
@@ -120,7 +126,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       // but in that case trust it to do an identity conversion...
       FieldType fieldType = field.getType();
       BytesRefBuilder term = new BytesRefBuilder();
-      fieldType.readableToIndexed((CharSequence)rawValue, term);
+      fieldType.readableToIndexed((CharSequence) rawValue, term);
       return fieldType.toObject(field, term.get());
     }
     // else...
@@ -136,16 +142,14 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   }
 
   /**
-   * Returns true if the specified new version values are greater the the ones
-   * already known to exist for the document, or if the document does not already
-   * exist.
-   * Returns false if the specified new versions are not high enough but the
-   * processor has been configured with ignoreOldUpdates=true
-   * Throws a SolrException if the version is not high enough and
+   * Returns true if the specified new version values are greater the the ones already known to
+   * exist for the document, or if the document does not already exist. Returns false if the
+   * specified new versions are not high enough but the processor has been configured with
+   * ignoreOldUpdates=true Throws a SolrException if the version is not high enough and
    * ignoreOldUpdates=false
    */
-  private boolean isVersionNewEnough(BytesRef indexedDocId,
-                                     Object[] newUserVersions) throws IOException {
+  private boolean isVersionNewEnough(BytesRef indexedDocId, Object[] newUserVersions)
+      throws IOException {
     assert null != indexedDocId;
     assert null != newUserVersions;
 
@@ -164,12 +168,14 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     }
     final Object[] oldUserVersions = docFoundAndOldUserVersions.oldUserVersions;
 
-    validateUserVersions(oldUserVersions, versionFieldNames, "Doc exists in index, but has null versionField: ");
+    validateUserVersions(
+        oldUserVersions, versionFieldNames, "Doc exists in index, but has null versionField: ");
 
     return versionInUpdateIsAcceptable(newUserVersions, oldUserVersions);
   }
 
-  private void validateUserVersions(Object[] userVersions, String[] fieldNames, String errorMessage) {
+  private void validateUserVersions(
+      Object[] userVersions, String[] fieldNames, String errorMessage) {
     assert userVersions.length == fieldNames.length;
     for (int i = 0; i < userVersions.length; i++) {
       Object userVersion = userVersions[i];
@@ -183,8 +189,11 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     }
   }
 
-  private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromFieldCache(BytesRef indexedDocId) {
-    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId, null, null, true);
+  private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromFieldCache(
+      BytesRef indexedDocId) {
+    SolrInputDocument oldDoc =
+        RealTimeGetComponent.getInputDocumentFromTlog(
+            core, indexedDocId, null, null, RealTimeGetComponent.Resolution.DOC);
     if (oldDoc == RealTimeGetComponent.DELETED) {
       return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
     }
@@ -198,16 +207,20 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
           // doc not in index either...
           return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
         }
-        final LeafReaderContext segmentContext = searcher.getTopReaderContext().leaves().get((int)(lookup>>32));
-        final int docIdInSegment = (int)lookup;
+        final LeafReaderContext segmentContext =
+            searcher.getTopReaderContext().leaves().get((int) (lookup >> 32));
+        final int docIdInSegment = (int) lookup;
 
-        long oldSolrVersion = getFunctionValues(segmentContext, solrVersionField, searcher).longVal(docIdInSegment);
-        Object[] oldUserVersions = getObjectValues(segmentContext, userVersionFields, searcher, docIdInSegment);
+        long oldSolrVersion =
+            getFunctionValues(segmentContext, solrVersionField, searcher).longVal(docIdInSegment);
+        Object[] oldUserVersions =
+            getObjectValues(segmentContext, userVersionFields, searcher, docIdInSegment);
         return new DocFoundAndOldUserAndSolrVersions(oldUserVersions, oldSolrVersion);
       } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading version from index", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Error reading version from index", e);
       } finally {
-        if (newestSearcher != null) { //TODO can this ever be null?
+        if (newestSearcher != null) { // TODO can this ever be null?
           newestSearcher.decref();
         }
       }
@@ -216,9 +229,12 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     }
   }
 
-  private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromStored(BytesRef indexedDocId) throws IOException {
+  private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromStored(BytesRef indexedDocId)
+      throws IOException {
     // stored fields only...
-    SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(core, indexedDocId, RealTimeGetComponent.Resolution.DOC);
+    SolrInputDocument oldDoc =
+        RealTimeGetComponent.getInputDocument(
+            core, indexedDocId, indexedDocId, null, null, RealTimeGetComponent.Resolution.DOC);
     if (null == oldDoc) {
       return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
     } else {
@@ -227,7 +243,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   }
 
   private static final class DocFoundAndOldUserAndSolrVersions {
-    private static final DocFoundAndOldUserAndSolrVersions NOT_FOUND = new DocFoundAndOldUserAndSolrVersions();
+    private static final DocFoundAndOldUserAndSolrVersions NOT_FOUND =
+        new DocFoundAndOldUserAndSolrVersions();
     private final boolean found;
     private final Object[] oldUserVersions;
     private final long oldSolrVersion;
@@ -245,14 +262,16 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     }
   }
 
-  private DocFoundAndOldUserAndSolrVersions getUserVersionAndSolrVersionFromDocument(SolrInputDocument oldDoc) {
+  private DocFoundAndOldUserAndSolrVersions getUserVersionAndSolrVersionFromDocument(
+      SolrInputDocument oldDoc) {
     Object[] oldUserVersions = getUserVersionsFromDocument(oldDoc);
 
     Object o = oldDoc.getFieldValue(solrVersionField.getName());
     if (o == null) {
       throw new SolrException(SERVER_ERROR, "No _version_ for document " + oldDoc);
     }
-    long solrVersion = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
+    long solrVersion =
+        o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
 
     return new DocFoundAndOldUserAndSolrVersions(oldUserVersions, solrVersion);
   }
@@ -270,72 +289,84 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return versions;
   }
 
-
-
   /**
-   * Returns whether or not the versions in the command are acceptable to be indexed.
-   * If the instance is set to ignoreOldUpdates==false, it will throw a SolrException
-   * with CONFLICT in the event the version is not acceptable rather than return false.
+   * Returns whether or not the versions in the command are acceptable to be indexed. If the
+   * instance is set to ignoreOldUpdates==false, it will throw a SolrException with CONFLICT in the
+   * event the version is not acceptable rather than return false.
    *
    * @param newUserVersions New versions in update request
    * @param oldUserVersions Old versions currently in solr index
    * @return True if acceptable, false if not (or will throw exception)
    */
-  protected boolean versionInUpdateIsAcceptable(Object[] newUserVersions,
-                                                Object[] oldUserVersions) {
+  protected boolean versionInUpdateIsAcceptable(
+      Object[] newUserVersions, Object[] oldUserVersions) {
 
     for (int i = 0; i < oldUserVersions.length; i++) {
       Object oldUserVersion = oldUserVersions[i];
       Object newUserVersion = newUserVersions[i];
 
       if (!(oldUserVersion instanceof Comparable && newUserVersion instanceof Comparable)) {
-        throw new SolrException(BAD_REQUEST,
-            "old version and new version are not comparable: " +
-                oldUserVersion.getClass() + " vs " + newUserVersion.getClass());
+        throw new SolrException(
+            BAD_REQUEST,
+            "old version and new version are not comparable: "
+                + oldUserVersion.getClass()
+                + " vs "
+                + newUserVersion.getClass());
       }
       try {
         @SuppressWarnings({"unchecked", "rawtypes"})
-        boolean passes = newUpdateComparePasses((Comparable) newUserVersion, (Comparable) oldUserVersion, versionFieldNames[i]);
+        boolean passes =
+            newUpdateComparePasses(
+                (Comparable) newUserVersion, (Comparable) oldUserVersion, versionFieldNames[i]);
         if (passes) {
           return true;
         }
       } catch (ClassCastException e) {
-        throw new SolrException(BAD_REQUEST,
-            "old version and new version are not comparable: " +
-                oldUserVersion.getClass() + " vs " + newUserVersion.getClass() +
-                ": " + e.getMessage(), e);
-
+        throw new SolrException(
+            BAD_REQUEST,
+            "old version and new version are not comparable: "
+                + oldUserVersion.getClass()
+                + " vs "
+                + newUserVersion.getClass()
+                + ": "
+                + e.getMessage(),
+            e);
       }
     }
     if (ignoreOldUpdates) {
       if (log.isDebugEnabled()) {
-        log.debug("Dropping update since user version is not high enough: {}; old user version={}",
-            Arrays.toString(newUserVersions), Arrays.toString(oldUserVersions));
+        log.debug(
+            "Dropping update since user version is not high enough: {}; old user version={}",
+            Arrays.toString(newUserVersions),
+            Arrays.toString(oldUserVersions));
       }
       return false;
     } else {
-      throw new SolrException(CONFLICT,
-          "user version is not high enough: " + Arrays.toString(newUserVersions));
+      throw new SolrException(
+          CONFLICT, "user version is not high enough: " + Arrays.toString(newUserVersions));
     }
   }
 
   /**
-   * Given two comparable user versions, returns whether the new version is acceptable
-   * to replace the old version.
+   * Given two comparable user versions, returns whether the new version is acceptable to replace
+   * the old version.
+   *
    * @param newUserVersion User-specified version on the new version of the document
    * @param oldUserVersion User-specified version on the old version of the document
    * @param userVersionFieldName Field name of the user versions being compared
    * @return True if acceptable, false if not.
    */
-  protected <T extends Comparable<? super T>> boolean newUpdateComparePasses(T newUserVersion,
-                                           T oldUserVersion, String userVersionFieldName) {
+  protected <T extends Comparable<? super T>> boolean newUpdateComparePasses(
+      T newUserVersion, T oldUserVersion, String userVersionFieldName) {
     return oldUserVersion.compareTo(newUserVersion) < 0;
   }
 
-  private static Object[] getObjectValues(LeafReaderContext segmentContext,
-                                          SchemaField[] fields,
-                                          SolrIndexSearcher searcher,
-                                          int docIdInSegment) throws IOException {
+  private static Object[] getObjectValues(
+      LeafReaderContext segmentContext,
+      SchemaField[] fields,
+      SolrIndexSearcher searcher,
+      int docIdInSegment)
+      throws IOException {
     FunctionValues[] functionValues = getManyFunctionValues(segmentContext, fields, searcher);
     Object[] objectValues = new Object[functionValues.length];
     for (int i = 0; i < functionValues.length; i++) {
@@ -344,9 +375,9 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     return objectValues;
   }
 
-  private static FunctionValues[] getManyFunctionValues(LeafReaderContext segmentContext,
-                                                SchemaField[] fields,
-                                                SolrIndexSearcher searcher) throws IOException {
+  private static FunctionValues[] getManyFunctionValues(
+      LeafReaderContext segmentContext, SchemaField[] fields, SolrIndexSearcher searcher)
+      throws IOException {
     FunctionValues[] values = new FunctionValues[fields.length];
     for (int i = 0; i < fields.length; i++) {
       values[i] = getFunctionValues(segmentContext, fields[i], searcher);
@@ -355,9 +386,9 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   }
 
   @SuppressWarnings({"unchecked"})
-  private static FunctionValues getFunctionValues(LeafReaderContext segmentContext,
-                                          SchemaField field,
-                                          SolrIndexSearcher searcher) throws IOException {
+  private static FunctionValues getFunctionValues(
+      LeafReaderContext segmentContext, SchemaField field, SolrIndexSearcher searcher)
+      throws IOException {
     ValueSource vs = field.getType().getValueSource(field, null);
     @SuppressWarnings({"rawtypes"})
     Map context = ValueSource.newContext(searcher);
@@ -388,7 +419,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     Object[] newVersions = getUserVersionsFromDocument(newDoc);
     validateUserVersions(newVersions, versionFieldNames, "Doc does not have versionField: ");
 
-    for (int i=0; ;i++) {
+    for (int i = 0; ; i++) {
       logOverlyFailedRetries(i, cmd);
 
       if (!isVersionNewEnough(cmd.getIndexedId(), newVersions)) {
@@ -397,22 +428,22 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       }
 
       try {
-        cmd.setVersion(oldSolrVersion);  // use optimistic concurrency to ensure that the doc has not changed in the meantime
+        // use optimistic concurrency to ensure that the doc has not changed in the meantime
+        cmd.setVersion(oldSolrVersion);
         super.processAdd(cmd);
         return;
       } catch (SolrException e) {
         if (e.code() == 409) {
-          continue;  // if a version conflict, retry
+          continue; // if a version conflict, retry
         }
-        throw e;  // rethrow
+        throw e; // rethrow
       }
-
     }
   }
 
   private static void logOverlyFailedRetries(int i, UpdateCommand cmd) {
     // Log a warning every 256 retries.... even a few retries should normally be very unusual.
-    if ((i&0xff) == 0xff) {
+    if ((i & 0xff) == 0xff) {
       log.warn("Unusual number of optimistic concurrency retries: retries={} cmd={}", i, cmd);
     }
   }
@@ -425,7 +456,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       return;
     }
 
-    if ( ! cmd.isDeleteById() ) {
+    if (!cmd.isDeleteById()) {
       // nothing to do
       super.processDelete(cmd);
       return;
@@ -434,11 +465,16 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     String[] deleteParamValues = getDeleteParamValuesFromRequest(cmd);
     validateDeleteParamValues(deleteParamValues);
 
-
     if (isNotLeader(cmd)) {
       // transform delete to add earlier rather than later
 
-      SolrInputDocument newDoc = createTombstoneDocument(core.getLatestSchema(), cmd.getId(), versionFieldNames, deleteParamValues, this.tombstoneConfig);
+      SolrInputDocument newDoc =
+          createTombstoneDocument(
+              core.getLatestSchema(),
+              cmd.getId(),
+              versionFieldNames,
+              deleteParamValues,
+              this.tombstoneConfig);
 
       AddUpdateCommand newCmd = new AddUpdateCommand(cmd.getReq());
       newCmd.solrDoc = newDoc;
@@ -447,8 +483,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       return;
     }
 
-
-    for (int i=0; ;i++) {
+    for (int i = 0; ; i++) {
 
       logOverlyFailedRetries(i, cmd);
 
@@ -464,42 +499,57 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
         // drop the delete, and instead propagate an AddDoc that
         // replaces the doc with a new "empty" one that records the deleted version
 
-        SolrInputDocument newDoc = createTombstoneDocument(core.getLatestSchema(), cmd.getId(), versionFieldNames, deleteParamValues, this.tombstoneConfig);
+        SolrInputDocument newDoc =
+            createTombstoneDocument(
+                core.getLatestSchema(),
+                cmd.getId(),
+                versionFieldNames,
+                deleteParamValues,
+                this.tombstoneConfig);
 
         AddUpdateCommand newCmd = new AddUpdateCommand(cmd.getReq());
         newCmd.solrDoc = newDoc;
         newCmd.commitWithin = cmd.commitWithin;
 
-        newCmd.setVersion(oldSolrVersion);  // use optimistic concurrency to ensure that the doc has not changed in the meantime
+        // use optimistic concurrency to ensure that the doc has not changed in the meantime
+        newCmd.setVersion(oldSolrVersion);
         super.processAdd(newCmd);
         return;
       } catch (SolrException e) {
         if (e.code() == 409) {
-          continue;  // if a version conflict, retry
+          continue; // if a version conflict, retry
         }
-        throw e;  // rethrow
+        throw e; // rethrow
       }
-
     }
   }
-  
+
   /**
-   * Creates a tombstone document, that will be used to update a document that's being deleted by ID. The returned document will contain:
+   * Creates a tombstone document, that will be used to update a document that's being deleted by
+   * ID. The returned document will contain:
+   *
    * <ul>
-   * <li>uniqueKey</li>
-   * <li>versions (All the fields configured as in the {@code versionField} parameter)</li>
-   * <li>All the fields set in the {@code tombstoneConfig} parameter</li>
+   *   <li>uniqueKey
+   *   <li>versions (All the fields configured as in the {@code versionField} parameter)
+   *   <li>All the fields set in the {@code tombstoneConfig} parameter
    * </ul>
-   * 
-   * Note that if the schema contains required fields (other than version fields or uniqueKey), they should be populated by the {@code tombstoneConfig}, 
-   * otherwise this tombstone will fail when indexing (and consequently the delete will fail). Alternatively, required fields must be populated by some
-   * other means (like {@code DocBasedVersionConstraintsProcessorFactory} or similar) 
+   *
+   * Note that if the schema contains required fields (other than version fields or uniqueKey), they
+   * should be populated by the {@code tombstoneConfig}, otherwise this tombstone will fail when
+   * indexing (and consequently the delete will fail). Alternatively, required fields must be
+   * populated by some other means (like {@code DocBasedVersionConstraintsProcessorFactory} or
+   * similar)
    */
-  protected SolrInputDocument createTombstoneDocument(IndexSchema schema, String id, String[] versionFieldNames, String[] deleteParamValues, NamedList<Object> tombstoneConfig) {
+  protected SolrInputDocument createTombstoneDocument(
+      IndexSchema schema,
+      String id,
+      String[] versionFieldNames,
+      String[] deleteParamValues,
+      NamedList<Object> tombstoneConfig) {
     final SolrInputDocument newDoc = new SolrInputDocument();
-    
+
     if (tombstoneConfig != null) {
-      tombstoneConfig.forEach((k,v) -> newDoc.addField(k, v));
+      tombstoneConfig.forEach((k, v) -> newDoc.addField(k, v));
     }
     newDoc.setField(schema.getUniqueKeyField().getName(), id);
     setDeleteParamValues(newDoc, versionFieldNames, deleteParamValues);
@@ -522,20 +572,18 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       String deleteParamValue = values[i];
       if (null == deleteParamValue) {
         String deleteVersionParamName = deleteVersionParamNames[i];
-        throw new SolrException(BAD_REQUEST,
-            "Delete by ID must specify doc version param: " +
-                deleteVersionParamName);
+        throw new SolrException(
+            BAD_REQUEST, "Delete by ID must specify doc version param: " + deleteVersionParamName);
       }
     }
   }
 
-  private static void setDeleteParamValues(SolrInputDocument doc, String[] versionFieldNames, String[] values) {
+  private static void setDeleteParamValues(
+      SolrInputDocument doc, String[] versionFieldNames, String[] values) {
     for (int i = 0; i < values.length; i++) {
       String versionFieldName = versionFieldNames[i];
       String value = values[i];
       doc.setField(versionFieldName, value);
     }
   }
-
-
 }

@@ -16,56 +16,33 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.CoreContainer;
+import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import junit.framework.Assert;
-import org.apache.solr.core.SolrCore;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class TestEmbeddedSolrServer extends SolrTestCase {
 
-public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
-
-  @Rule
-  public TestRule solrTestRules =
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Override
-  protected EmbeddedSolrServer getSolrCore1() {
-    return new EmbeddedSolrServer(cores, "core1");
-  }
-
-  public void testGetCoreContainer() {
-    Assert.assertEquals(cores, ((EmbeddedSolrServer)getSolrCore0()).getCoreContainer());
-    Assert.assertEquals(cores, (getSolrCore1()).getCoreContainer());
+  @BeforeClass
+  public static void beforeClass() {
+    SolrTestCaseJ4.assumeWorkingMockito();
   }
 
   public void testClose() throws IOException {
-
-    EmbeddedSolrServer solrServer = (EmbeddedSolrServer) getSolrCore0();
-
-    Assert.assertEquals(3, cores.getCores().size());
-    List<SolrCore> solrCores = new ArrayList<>();
-    for (SolrCore solrCore : cores.getCores()) {
-      Assert.assertEquals(false, solrCore.isClosed());
-      solrCores.add(solrCore);
-    }
-
+    // create a CoreContainer first then pass to EmbeddedSolrServer.
+    CoreContainer cores = mock(CoreContainer.class);
+    EmbeddedSolrServer solrServer = new EmbeddedSolrServer(cores, null);
     solrServer.close();
 
-    Assert.assertEquals(3, cores.getCores().size());
+    verify(cores, never()).shutdown();
 
-    for (SolrCore solrCore : solrCores) {
-      Assert.assertEquals(false, solrCore.isClosed());
-    }
+    // We could test the reverse, that if EmbeddedSolrServer is created without a
+    // CoreContainer passed in that it propagates the shutdown, but honestly tons of
+    // tests would fail, so we're covered.
   }
-
 }

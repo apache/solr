@@ -30,8 +30,6 @@
 
 <config>
 
-  <jmx />
-
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->
@@ -261,7 +259,7 @@
       <str name="name">freq</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellcheckerFreq</str>
-      <!-- comparatorClass be one of:
+      <!-- comparatorClass can be one of:
         1. score (default)
         2. freq (Frequency first, then score)
         3. A fully qualified class name
@@ -426,15 +424,11 @@
   </searchComponent>
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
   </requestDispatcher>
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
 
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
@@ -491,4 +485,3 @@
   </initParams>
 
 </config>
-

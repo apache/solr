@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,21 +29,14 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.github.benmanes.caffeine.cache.RemovalCause;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Test;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-
-/**
- * Test for {@link CaffeineCache}.
- */
+/** Test for {@link CaffeineCache}. */
 public class TestCaffeineCache extends SolrTestCase {
 
   SolrMetricManager metricManager = new SolrMetricManager();
@@ -48,7 +44,7 @@ public class TestCaffeineCache extends SolrTestCase {
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
-  public void testSimple() throws IOException {
+  public void testSimple() {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
@@ -69,13 +65,13 @@ public class TestCaffeineCache extends SolrTestCase {
     }
     assertEquals("15", lfuCache.get(15));
     assertEquals("75", lfuCache.get(75));
-    assertEquals(null, lfuCache.get(110));
+    assertNull(lfuCache.get(110));
     Map<String, Object> nl = lfuCache.getMetricsMap().getValue();
     assertEquals(3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
     assertEquals(101L, nl.get("inserts"));
 
-    assertEquals(null, lfuCache.get(1));  // first item put in should be the first out
+    assertNull(lfuCache.get(1)); // first item put in should be the first out
 
     // Test autowarming
     newLFUCache.init(params, initObj, regenerator);
@@ -85,7 +81,7 @@ public class TestCaffeineCache extends SolrTestCase {
     newLFUCache.put(103, "103");
     assertEquals("15", newLFUCache.get(15));
     assertEquals("75", newLFUCache.get(75));
-    assertEquals(null, newLFUCache.get(50));
+    assertNull(newLFUCache.get(50));
     nl = newLFUCache.getMetricsMap().getValue();
     assertEquals(3L, nl.get("lookups"));
     assertEquals(2L, nl.get("hits"));
@@ -99,10 +95,8 @@ public class TestCaffeineCache extends SolrTestCase {
 
   @Test
   public void testTimeDecay() {
-    Cache<Integer, String> cacheDecay = Caffeine.newBuilder()
-        .executor(Runnable::run)
-        .maximumSize(20)
-        .build();
+    Cache<Integer, String> cacheDecay =
+        Caffeine.newBuilder().executor(Runnable::run).maximumSize(20).build();
     for (int i = 1; i < 21; i++) {
       cacheDecay.put(i, Integer.toString(i));
     }
@@ -120,8 +114,9 @@ public class TestCaffeineCache extends SolrTestCase {
     cacheDecay.put(24, "24");
     cacheDecay.put(25, "25");
     itemsDecay = cacheDecay.policy().eviction().get().hottest(10);
-    // 13 - 17 should be in cache, but 11 and 18 (among others) should not. Testing that elements before and
-    // after the ones with increased counts are removed, and all the increased count ones are still in the cache
+    // 13 - 17 should be in cache, but 11 and 18 (among others) should not. Testing that elements
+    // before and after the ones with increased counts are removed, and all the increased count ones
+    // are still in the cache
     assertNull(itemsDecay.get(11));
     assertNull(itemsDecay.get(18));
     assertNotNull(itemsDecay.get(13));
@@ -130,12 +125,11 @@ public class TestCaffeineCache extends SolrTestCase {
     assertNotNull(itemsDecay.get(16));
     assertNotNull(itemsDecay.get(17));
 
-
     // Testing that all the elements in front of the ones with increased counts are gone
     for (int idx = 26; idx < 32; ++idx) {
       cacheDecay.put(idx, Integer.toString(idx));
     }
-    //Surplus count should be at 0
+    // Surplus count should be at 0
     itemsDecay = cacheDecay.policy().eviction().get().hottest(10);
     assertNull(itemsDecay.get(20));
     assertNull(itemsDecay.get(24));
@@ -151,14 +145,15 @@ public class TestCaffeineCache extends SolrTestCase {
     int IDLE_TIME_SEC = 5;
     CountDownLatch removed = new CountDownLatch(1);
     AtomicReference<RemovalCause> removalCause = new AtomicReference<>();
-    CaffeineCache<String, String> cache = new CaffeineCache<>() {
-      @Override
-      public void onRemoval(String key, String value, RemovalCause cause) {
-        super.onRemoval(key, value, cause);
-        removalCause.set(cause);
-        removed.countDown();
-      }
-    };
+    CaffeineCache<String, String> cache =
+        new CaffeineCache<>() {
+          @Override
+          public void onRemoval(String key, String value, RemovalCause cause) {
+            super.onRemoval(key, value, cause);
+            removalCause.set(cause);
+            removed.countDown();
+          }
+        };
     Map<String, String> params = new HashMap<>();
     params.put("size", "6");
     params.put("maxIdleTime", "" + IDLE_TIME_SEC);
@@ -182,49 +177,56 @@ public class TestCaffeineCache extends SolrTestCase {
     List<RemovalCause> removalCauses = new ArrayList<>();
     List<String> removedKeys = new ArrayList<>();
     Set<String> allKeys = new HashSet<>();
-    CaffeineCache<String, Accountable> cache = new CaffeineCache<>() {
-      @Override
-      public Accountable put(String key, Accountable val) {
-        allKeys.add(key);
-        return super.put(key, val);
-      }
+    CaffeineCache<String, Accountable> cache =
+        new CaffeineCache<>() {
+          @Override
+          public Accountable put(String key, Accountable val) {
+            allKeys.add(key);
+            return super.put(key, val);
+          }
 
-      @Override
-      public void onRemoval(String key, Accountable value, RemovalCause cause) {
-        super.onRemoval(key, value, cause);
-        removalCauses.add(cause);
-        removedKeys.add(key);
-        removed.get().countDown();
-      }
-    };
+          @Override
+          public void onRemoval(String key, Accountable value, RemovalCause cause) {
+            super.onRemoval(key, value, cause);
+            removalCauses.add(cause);
+            removedKeys.add(key);
+            removed.get().countDown();
+          }
+        };
     Map<String, String> params = new HashMap<>();
     params.put("size", "5");
     cache.init(params, null, new NoOpRegenerator());
 
     for (int i = 0; i < 5; i++) {
-      cache.put("foo-" + i, new Accountable() {
-        @Override
-        public long ramBytesUsed() {
-          return 1024 * 1024;
-        }
-      });
+      cache.put(
+          "foo-" + i,
+          new Accountable() {
+            @Override
+            public long ramBytesUsed() {
+              return 1024 * 1024;
+            }
+          });
     }
     assertEquals(5, cache.size());
     // no evictions yet
     assertEquals(2, removed.get().getCount());
 
-    cache.put("abc1", new Accountable() {
-      @Override
-      public long ramBytesUsed() {
-        return 1;
-      }
-    });
-    cache.put("abc2", new Accountable() {
-      @Override
-      public long ramBytesUsed() {
-        return 2;
-      }
-    });
+    cache.put(
+        "abc1",
+        new Accountable() {
+          @Override
+          public long ramBytesUsed() {
+            return 1;
+          }
+        });
+    cache.put(
+        "abc2",
+        new Accountable() {
+          @Override
+          public long ramBytesUsed() {
+            return 2;
+          }
+        });
     boolean await = removed.get().await(30, TimeUnit.SECONDS);
     assertTrue("did not evict entries in in time", await);
     assertEquals(5, cache.size());
@@ -242,12 +244,14 @@ public class TestCaffeineCache extends SolrTestCase {
     removedKeys.clear();
     // trim down by item count
     cache.setMaxSize(3);
-    cache.put("abc3",  new Accountable() {
-      @Override
-      public long ramBytesUsed() {
-        return 3;
-      }
-    });
+    cache.put(
+        "abc3",
+        new Accountable() {
+          @Override
+          public long ramBytesUsed() {
+            return 3;
+          }
+        });
     await = removed.get().await(30, TimeUnit.SECONDS);
     assertTrue("did not evict entries in in time", await);
     assertEquals(3, cache.size());
@@ -284,5 +288,71 @@ public class TestCaffeineCache extends SolrTestCase {
     assertTrue("total ram bytes should be greater than 0", total > 0);
     assertTrue("total ram bytes exceeded limit", total < 1024 * 1024);
     cache.close();
+  }
+
+  @Test
+  public void testRamBytesSync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.FALSE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
+  }
+
+  @Test
+  public void testRamBytesAsync() throws IOException {
+    CaffeineCache<Integer, String> cache = new CaffeineCache<>();
+    Map<String, String> params =
+        Map.of(
+            SolrCache.SIZE_PARAM, "100",
+            SolrCache.INITIAL_SIZE_PARAM, "10",
+            SolrCache.ASYNC_PARAM, Boolean.TRUE.toString());
+    cache.init(params, null, new NoOpRegenerator());
+
+    long emptySize = cache.ramBytesUsed();
+
+    // noop rm
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(0, "test");
+    long nonEmptySize = cache.ramBytesUsed();
+    cache.put(0, "test");
+    assertEquals(nonEmptySize, cache.ramBytesUsed());
+
+    cache.remove(0);
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test2");
+    cache.clear();
+    assertEquals(emptySize, cache.ramBytesUsed());
+
+    cache.put(1, "test3");
+    cache.close();
+    assertEquals(emptySize, cache.ramBytesUsed());
   }
 }

@@ -16,26 +16,24 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.commons.io.IOUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringWriter;
-
 /**
- * Simply puts the entire response into an entry in a NamedList.
- * This parser isn't parse response into a QueryResponse.
+ * Simply puts the entire response into an entry in a NamedList. This parser isn't parse response
+ * into a QueryResponse.
  */
 public class NoOpResponseParser extends ResponseParser {
 
   private String writerType = "xml";
 
-  public NoOpResponseParser() {
-  }
+  public NoOpResponseParser() {}
 
   public NoOpResponseParser(String writerType) {
     this.writerType = writerType;
@@ -54,7 +52,7 @@ public class NoOpResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(Reader reader) {
     try {
       StringWriter writer = new StringWriter();
-      IOUtils.copy(reader, writer);
+      reader.transferTo(writer);
       String output = writer.toString();
       NamedList<Object> list = new NamedList<>();
       list.add("response", output);
@@ -68,7 +66,7 @@ public class NoOpResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       StringWriter writer = new StringWriter();
-      IOUtils.copy(body, writer, encoding);
+      new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
       String output = writer.toString();
       NamedList<Object> list = new NamedList<>();
       list.add("response", output);
@@ -77,6 +75,4 @@ public class NoOpResponseParser extends ResponseParser {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
   }
-
 }
-

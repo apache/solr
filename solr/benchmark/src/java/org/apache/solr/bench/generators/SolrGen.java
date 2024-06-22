@@ -78,6 +78,7 @@ public class SolrGen<T> implements Gen<T> {
   private String description;
 
   private String collectKey;
+
   /** The constant COUNTS. */
   public static final Map<String, RandomDataHistogram.Counts> COUNTS = new NonBlockingHashMap<>(64);
 

@@ -19,13 +19,13 @@ package org.apache.solr.client.solrj.response.json;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Represents an individual bucket result of a "term" or "range" facet.
  *
- * Allows access to JSON like:
+ * <p>Allows access to JSON like:
+ *
  * <pre>
  *   {
  *     "val": "termX",
@@ -33,8 +33,8 @@ import org.apache.solr.common.util.NamedList;
  *     "subfacetName": ...
  *   }
  * </pre>
- * <p>
- * Buckets may contain nested facets of any type.
+ *
+ * <p>Buckets may contain nested facets of any type.
  */
 public class BucketJsonFacet extends NestableJsonFacet {
   private Object val;
@@ -48,7 +48,8 @@ public class BucketJsonFacet extends NestableJsonFacet {
   /**
    * Retrieves the value (sometimes called the "key") of this bucket.
    *
-   * The type of this object depends on the type of field being faceted on.  Usually a Date, Double, Integer, or String
+   * <p>The type of this object depends on the type of field being faceted on. Usually a Date,
+   * Double, Integer, or String
    */
   public Object getVal() {
     return val;

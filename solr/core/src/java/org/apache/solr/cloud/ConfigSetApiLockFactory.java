@@ -16,11 +16,13 @@
  */
 
 package org.apache.solr.cloud;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class implements a higher level locking abstraction for the Config Set API using lower level read and write locks.
+ * This class implements a higher level locking abstraction for the Config Set API using lower level
+ * read and write locks.
  */
 public class ConfigSetApiLockFactory {
 
@@ -31,17 +33,19 @@ public class ConfigSetApiLockFactory {
   }
 
   /**
-   * For the {@link org.apache.solr.common.params.CollectionParams.LockLevel} of the passed {@code action}, obtains the
-   * required locks (if any) and returns.<p>
+   * For the {@link org.apache.solr.common.params.CollectionParams.LockLevel} of the passed {@code
+   * action}, obtains the required locks (if any) and returns.
    *
-   * This method obtains a write lock on {@code configSetName} as well as (when not {@code null}), a read lock on {@code baseConfigSetName}.
+   * <p>This method obtains a write lock on {@code configSetName} as well as (when not {@code
+   * null}), a read lock on {@code baseConfigSetName}.
    *
-   * @return a lock that once {@link DistributedMultiLock#isAcquired()} guarantees the corresponding Config Set API command
-   * can execute safely.
-   * The returned lock <b>MUST</b> be {@link DistributedMultiLock#release()} no matter what once no longer needed as otherwise it would
-   * prevent other threads from locking.
+   * @return a lock that once {@link DistributedMultiLock#isAcquired()} guarantees the corresponding
+   *     Config Set API command can execute safely. The returned lock <b>MUST</b> be {@link
+   *     DistributedMultiLock#release()} no matter what once no longer needed as otherwise it would
+   *     prevent other threads from locking.
    */
-  public DistributedMultiLock createConfigSetApiLock(String configSetName, String baseConfigSetName) {
+  public DistributedMultiLock createConfigSetApiLock(
+      String configSetName, String baseConfigSetName) {
     List<DistributedLock> locks = new ArrayList<>(2);
 
     locks.add(lockFactory.createLock(true, configSetName));

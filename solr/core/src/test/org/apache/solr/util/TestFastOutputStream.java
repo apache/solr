@@ -16,10 +16,9 @@
  */
 package org.apache.solr.util;
 
+import java.util.Random;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.update.MemOutputStream;
-
-import java.util.Random;
 
 public class TestFastOutputStream extends SolrTestCase {
 
@@ -30,24 +29,23 @@ public class TestFastOutputStream extends SolrTestCase {
     rand = random();
 
     arr = new byte[20000];
-    for (int i=0; i<arr.length; i++) {
-      arr[i] = (byte)rand.nextInt();
+    for (int i = 0; i < arr.length; i++) {
+      arr[i] = (byte) rand.nextInt();
     }
 
-    for (int i=0; i<1000; i++) {
+    for (int i = 0; i < 1000; i++) {
       doRandomWrites();
     }
-
   }
 
   public void doRandomWrites() throws Exception {
-    int bufSize = ( rand.nextBoolean() ? rand.nextInt(10) : rand.nextInt(20000) )+1;
+    int bufSize = (rand.nextBoolean() ? rand.nextInt(10) : rand.nextInt(20000)) + 1;
     MemOutputStream out = new MemOutputStream(new byte[bufSize]);
 
     int hash = 0;
     long written = 0;
-    int iter = rand.nextInt(10)+1;
-    for (int i=0; i<iter; i++) {
+    int iter = rand.nextInt(10) + 1;
+    for (int i = 0; i < iter; i++) {
       int off = rand.nextInt(arr.length);
       int len = off < arr.length ? rand.nextInt(arr.length - off) : 0;
       out.write(arr, off, len);
@@ -72,12 +70,10 @@ public class TestFastOutputStream extends SolrTestCase {
     assertEquals(written, out.size());
   }
 
-
   public int incHash(int hash, byte[] arr, int off, int len) {
-    for (int i=off; i<off+len; i++) {
+    for (int i = off; i < off + len; i++) {
       hash = hash * 31 + arr[i];
     }
     return hash;
   }
 }
-

@@ -20,10 +20,7 @@ import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 import org.apache.solr.common.params.SolrParams;
 
-/**
- * Use the {@link org.apache.lucene.search.highlight.SimpleHTMLEncoder}
- *
- */
+/** Use the {@link org.apache.lucene.search.highlight.SimpleHTMLEncoder} */
 public class HtmlEncoder extends HighlightingPluginBase implements SolrEncoder {
 
   @Override

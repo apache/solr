@@ -1,0 +1,39 @@
+@defaultMessage Use InputStream.transferTo(OutputStream) or Reader.transferTo(Writer) instead
+org.apache.commons.io.IOUtils#copy(**)
+org.apache.commons.io.IOUtils#copyLarge(**)
+
+@defaultMessage Use java.nio.file.Files#copy(java.nio.file.Path, java.nio.file.Path) instead
+org.apache.commons.io.FileUtils#copyFile(java.io.File, java.io.File)
+
+@defaultMessage Use org.apache.commons.io.file.PathUtils#deleteDirectory(java.nio.file.Path) instead
+org.apache.commons.io.FileUtils#deleteDirectory(java.io.File)
+
+@defaultMessage Use Files.readString instead
+org.apache.commons.io.FileUtils#readFileToString(**)
+
+@defaultMessage Use Files.readAllBytes instead
+org.apache.commons.io.FileUtils#readFileToByteArray(**)
+
+@defaultMessage Use Files.readAllLines instead
+org.apache.commons.io.FileUtils#readLines(**)
+
+@defaultMessage Use Files.writeString instead
+org.apache.commons.io.FileUtils#write(**)
+org.apache.commons.io.FileUtils#writeLines(**)
+org.apache.commons.io.FileUtils#writeStringToFile(**)
+
+@defaultMessage Use OutputStream.nullOutputStream() instead
+org.apache.commons.io.output.NullPrintStream
+
+@defaultMessage Use org.apache.solr.common.util.IOUtils.closeQuietly or try-with-resources
+org.apache.commons.io.IOUtils#closeQuietly(**)
+
+@defaultMessage Use new String(inputstream.readAllBytes(), StandardCharsets.UTF_8)
+org.apache.commons.io.IOUtils#toString(java.io.InputStream, java.lang.String)
+
+@defaultMessage Use StrUtis.stringFromReader(reader)
+org.apache.commons.io.IOUtils#toString(java.io.Reader)
+
+@defaultMessage Use readAllBytes() method on InputStream
+org.apache.commons.io.IOUtils#toByteArray(java.io.InputStream)
+org.apache.commons.io.IOUtils#toByteArray(java.net.URL)

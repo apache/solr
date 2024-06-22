@@ -16,8 +16,9 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.util.Map;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -25,52 +26,46 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
+import org.apache.solr.security.AuthorizationContext;
 
 /**
  * @since solr 1.2
  */
-public class PluginInfoHandler extends RequestHandlerBase
-{
+public class PluginInfoHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
-  {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
-    
-    boolean stats = params.getBool( "stats", false );
-    rsp.add( "plugins", getSolrInfoBeans( req.getCore(), stats ) );
+
+    boolean stats = params.getBool("stats", false);
+    rsp.add("plugins", getSolrInfoBeans(req.getCore(), stats));
     rsp.setHttpCaching(false);
   }
-  
-  private static SimpleOrderedMap<Object> getSolrInfoBeans( SolrCore core, boolean stats )
-  {
+
+  private static SimpleOrderedMap<Object> getSolrInfoBeans(SolrCore core, boolean stats) {
     SimpleOrderedMap<Object> list = new SimpleOrderedMap<>();
-    for (SolrInfoBean.Category cat : SolrInfoBean.Category.values())
-    {
+    for (SolrInfoBean.Category cat : SolrInfoBean.Category.values()) {
       SimpleOrderedMap<Object> category = new SimpleOrderedMap<>();
-      list.add( cat.name(), category );
+      list.add(cat.name(), category);
       Map<String, SolrInfoBean> reg = core.getInfoRegistry();
-      for (Map.Entry<String,SolrInfoBean> entry : reg.entrySet()) {
+      for (Map.Entry<String, SolrInfoBean> entry : reg.entrySet()) {
         SolrInfoBean m = entry.getValue();
         if (m.getCategory() != cat) continue;
 
         String na = "Not Declared";
         SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-        category.add( entry.getKey(), info );
+        category.add(entry.getKey(), info);
 
-        info.add( NAME,          (m.getName()       !=null ? m.getName()        : na) );
-        info.add( "description", (m.getDescription()!=null ? m.getDescription() : na) );
+        info.add(NAME, (m.getName() != null ? m.getName() : na));
+        info.add("description", (m.getDescription() != null ? m.getDescription() : na));
 
         if (stats && m.getSolrMetricsContext() != null) {
-          info.add( "stats", m.getSolrMetricsContext().getMetricsSnapshot());
+          info.add("stats", m.getSolrMetricsContext().getMetricsSnapshot());
         }
       }
     }
     return list;
   }
-  
-  
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
@@ -81,5 +76,10 @@ public class PluginInfoHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 }

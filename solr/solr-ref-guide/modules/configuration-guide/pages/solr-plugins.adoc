@@ -1,0 +1,67 @@
+= Solr Plugins
+:page-children: libs, \
+    package-manager, \
+    cluster-plugins, \
+    replica-placement-plugins, \
+    solr-modules
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+One of Solr's strengths is providing a rich platform of functionality with the option of adding your own custom components running within Solr.
+
+Solr calls such components *plugins* when the implementation is configurable.
+Surely you have seen many already throughout Solr's configuration via the "class" reference.
+Common examples are Request Handlers, Search Components, and Query Parsers to process your searches, and Token Filters for processing text.
+
+Most apps don't need to create plugins because Solr offers a rich set of them built-in.
+However if you do, start by looking at the code for existing similar plugins.
+Writing your own is an advanced subject that is out of scope of the reference guide.
+One resource is the Solr Wiki documentation on plugins at https://cwiki.apache.org/confluence/display/solr/SolrPlugins[SolrPlugins], which is rather out-of-date but has some utility.
+
+== Types of Plugins ==
+
+There are essentially two types of plugins in Solr:
+
+* Collection level plugins.
+These are registered on individual collections, either by hand-editing the `solrconfig.xml` or schema files for the collection's configset or by using the xref:config-api.adoc[] or xref:indexing-guide:schema-api.adoc[].
+Examples of these are query parsers, request handlers, update request processors, value source parsers, response writers etc.
+
+* Cluster level (or Core Container level) plugins.
+These are plugins that are installed at a cluster level and every Solr node has one instance each of these plugins.
+Examples of these are xref:deployment-guide:authentication-and-authorization-plugins.adoc[], xref:deployment-guide:metrics-reporting.adoc#reporters[metrics reporters], https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers], etc.
+
+== Installing Plugins ==
+
+Many plugins are built-in to Solr core and there is nothing to install.
+However some plugins require installation step(s).
+Plugins are packaged into a Java jar file and may have other dependent jar files required to function.
+
+The next sections describe some installation options:
+
+****
+// This tags the below list so it can be used in the parent page section list
+// tag::plugin-sections[]
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| xref:libs.adoc[]: Plugins as libraries on the filesystem.
+| xref:solr-modules.adoc[]: Loading bundled modules.
+| xref:package-manager.adoc[]: Package-based plugins.
+| xref:cluster-plugins.adoc[]: Cluster-level plugins.
+| xref:replica-placement-plugins.adoc[]: Plugins specifically for replica placement.
+|===
+// end::plugin-sections[]
+****

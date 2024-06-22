@@ -15,27 +15,25 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.loader;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
-
 /**
  * Load a {@link org.apache.solr.common.util.ContentStream} into Solr
  *
- * This should be thread safe and can be called from multiple threads
+ * <p>This should be thread safe and can be called from multiple threads
  */
 public abstract class ContentStreamLoader {
 
-  /**
-   * This should be called once for each RequestHandler
-   */
+  /** This should be called once for each RequestHandler */
   public ContentStreamLoader init(SolrParams args) {
     return this;
   }
-  
+
   public String getDefaultWT() {
     return null;
   }
@@ -48,8 +46,10 @@ public abstract class ContentStreamLoader {
    * @param stream The {@link org.apache.solr.common.util.ContentStream} to add
    * @param processor The {@link UpdateRequestProcessor} to use
    */
-  public abstract void load(SolrQueryRequest req, 
-      SolrQueryResponse rsp, 
-      ContentStream stream, 
-      UpdateRequestProcessor processor) throws Exception;
+  public abstract void load(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      ContentStream stream,
+      UpdateRequestProcessor processor)
+      throws Exception;
 }

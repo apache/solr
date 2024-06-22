@@ -16,19 +16,19 @@
  */
 package org.apache.solr.cluster.events;
 
-import org.apache.solr.core.CoreContainer;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.solr.core.CoreContainer;
 
 /**
- * No-op implementation of {@link ClusterEventProducer}. This implementation doesn't
- * generate any events.
+ * No-op implementation of {@link ClusterEventProducer}. This implementation doesn't generate any
+ * events.
  */
 public final class NoOpProducer extends ClusterEventProducerBase {
 
-  public static final Set<ClusterEvent.EventType> ALL_EVENT_TYPES = new HashSet<>(Arrays.asList(ClusterEvent.EventType.values()));
+  public static final Set<ClusterEvent.EventType> ALL_EVENT_TYPES =
+      new HashSet<>(Arrays.asList(ClusterEvent.EventType.values()));
 
   public NoOpProducer(CoreContainer cc) {
     super(cc);

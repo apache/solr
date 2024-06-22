@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static java.util.Collections.singletonList;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -28,18 +31,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
@@ -48,15 +45,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonList;
-
 /**
- * 
  * Test for SOLR-9446
  *
- * This test is modeled after SyncSliceTest
+ * <p>This test is modeled after SyncSliceTest
  */
-@Slow
 public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -83,6 +76,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     fixShardCount(3);
   }
 
+  @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }
@@ -105,15 +99,21 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     try {
       CloudJettyRunner initialLeaderJetty = shardToLeaderJetty.get("shard1");
       List<CloudJettyRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
-      
-      log.info("Leader node_name: {},  url: {}", initialLeaderJetty.coreNodeName, initialLeaderJetty.url);
+
+      log.info(
+          "Leader node_name: {},  url: {}",
+          initialLeaderJetty.coreNodeName,
+          initialLeaderJetty.url);
       for (CloudJettyRunner cloudJettyRunner : otherJetties) {
-        log.info("Nonleader node_name: {},  url: {}", cloudJettyRunner.coreNodeName, cloudJettyRunner.url);
+        log.info(
+            "Non-leader node_name: {},  url: {}",
+            cloudJettyRunner.coreNodeName,
+            cloudJettyRunner.url);
       }
-      
+
       CloudJettyRunner secondNode = otherJetties.get(0);
       CloudJettyRunner freshNode = otherJetties.get(1);
-      
+
       // shutdown a node to simulate fresh start
       otherJetties.remove(freshNode);
       forceNodeFailures(singletonList(freshNode));
@@ -125,47 +125,54 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
       // index a few docs and commit
       for (int i = 0; i < 100; i++) {
-        indexDoc(id, docId, i1, 50, tlong, 50, t1,
-            "document number " + docId++);
+        indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
       }
       commit();
       waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
       checkShardConsistency(false, true);
-      
-      // bring down the other node and index a few docs; so the leader and other node segments diverge
+
+      // bring down the other node and index a few docs; so the leader and other node segments
+      // diverge
       forceNodeFailures(singletonList(secondNode));
       for (int i = 0; i < 10; i++) {
-        indexDoc(id, docId, i1, 50, tlong, 50, t1,
-            "document number " + docId++);
-        if(i % 2 == 0) {
+        indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+        if (i % 2 == 0) {
           commit();
         }
       }
       commit();
       restartNodes(singletonList(secondNode));
 
-      // start the freshNode 
+      // start the freshNode
       restartNodes(singletonList(freshNode));
       String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
-      String replicationProperties = freshNode.jetty.getSolrHome() + "/cores/" +  coreName + "/data/replication.properties";
+      String replicationProperties =
+          freshNode.jetty.getSolrHome() + "/cores/" + coreName + "/data/replication.properties";
       String md5 = DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties)));
-        
+
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", (Replica)initialLeaderJetty.client.info  , new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+      waitForNewLeader(
+          cloudClient,
+          "shard1",
+          (Replica) initialLeaderJetty.client.info,
+          new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
       waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
-      assertEquals("Node went into replication", md5, DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
-      
+      assertEquals(
+          "Node went into replication",
+          md5,
+          DigestUtils.md5Hex(Files.readAllBytes(Paths.get(replicationProperties))));
+
       success = true;
     } finally {
       System.clearProperty("solr.disableFingerprint");
     }
   }
-  
+
   private void restartNodes(List<CloudJettyRunner> nodesToRestart) throws Exception {
     for (CloudJettyRunner node : nodesToRestart) {
       node.jetty.start();
@@ -174,7 +181,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     waitTillNodesActive();
     checkShardConsistency(false, true);
   }
-
 
   private void forceNodeFailures(List<CloudJettyRunner> replicasToShutDown) throws Exception {
     for (CloudJettyRunner replicaToShutDown : replicasToShutDown) {
@@ -199,42 +205,24 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     nodesDown.addAll(replicasToShutDown);
   }
 
-  
-
   private void waitTillNodesActive() throws Exception {
-    for (int i = 0; i < 60; i++) {
-      Thread.sleep(3000);
-      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection collection1 = clusterState.getCollection("collection1");
-      Slice slice = collection1.getSlice("shard1");
-      Collection<Replica> replicas = slice.getReplicas();
-      boolean allActive = true;
+    ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
-      Collection<String> nodesDownNames = nodesDown.stream()
-          .map(n -> n.coreNodeName)
-          .collect(Collectors.toList());
-      
-      Collection<Replica> replicasToCheck = null;
-      replicasToCheck = replicas.stream()
-          .filter(r -> !nodesDownNames.contains(r.getName()))
-          .collect(Collectors.toList());
+    zkStateReader.waitForState(
+        "collection1",
+        3,
+        TimeUnit.MINUTES,
+        (n, c) -> {
+          Collection<String> nodesDownNames =
+              nodesDown.stream().map(runner -> runner.coreNodeName).collect(Collectors.toList());
 
-      for (Replica replica : replicasToCheck) {
-        if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
-          allActive = false;
-          break;
-        }
-      }
-      if (allActive) {
-        return;
-      }
-    }
-    printLayout();
-    fail("timeout waiting to see all nodes active");
+          Collection<Replica> replicas = c.getSlice("shard1").getReplicas();
+          return replicas.stream()
+              .filter(r -> !nodesDownNames.contains(r.getName()))
+              .allMatch(r -> r.getState() == Replica.State.ACTIVE && n.contains(r.getNodeName()));
+        });
   }
 
-  
   private List<CloudJettyRunner> getOtherAvailableJetties(CloudJettyRunner leader) {
     List<CloudJettyRunner> candidates = new ArrayList<>();
     candidates.addAll(shardToJetty.get("shard1"));
@@ -248,12 +236,14 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     return candidates;
   }
 
-  protected void indexDoc(Object... fields) throws IOException,
-      SolrServerException {
+  protected void indexDoc(Object... fields) throws IOException, SolrServerException {
     SolrInputDocument doc = new SolrInputDocument();
 
     addFields(doc, fields);
-    addFields(doc, "rnd_s", RandomStringUtils.random(random().nextInt(100) + 100));
+    addFields(
+        doc,
+        "rnd_s",
+        RandomStrings.randomAsciiLettersOfLength(random(), random().nextInt(100) + 100));
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
@@ -270,5 +260,4 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     addFields(doc, "rnd_b", true);
     indexDoc(doc);
   }
-
 }

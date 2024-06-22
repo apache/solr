@@ -24,21 +24,22 @@ import org.apache.solr.cluster.Cluster;
  */
 public interface PlacementContext {
   /**
-   * Initial state of the cluster. Note there are {@link java.util.Set}'s and {@link java.util.Map}'s
-   * accessible from the {@link Cluster} and other reachable instances. These collection will not change
-   * while the plugin is executing and will be thrown away once the plugin is done. The plugin code can
-   * therefore modify them if needed.
+   * Initial state of the cluster. Note there are {@link java.util.Set}'s and {@link
+   * java.util.Map}'s accessible from the {@link Cluster} and other reachable instances. These
+   * collection will not change while the plugin is executing and will be thrown away once the
+   * plugin is done. The plugin code can therefore modify them if needed.
    */
   Cluster getCluster();
 
   /**
-   * Factory used by the plugin to fetch additional attributes from the cluster nodes, such as
-   * count of cores, system properties etc..
+   * Factory used by the plugin to fetch additional attributes from the cluster nodes, such as count
+   * of cores, system properties etc..
    */
   AttributeFetcher getAttributeFetcher();
 
-  /**
-   * Factory used to create instances of {@link PlacementPlan} to return computed decision.
-   */
+  /** Factory used to create instances of {@link PlacementPlan} to return computed decision. */
   PlacementPlanFactory getPlacementPlanFactory();
+
+  /** Factory used to create instances of {@link BalancePlan} to return computed decision. */
+  BalancePlanFactory getBalancePlanFactory();
 }

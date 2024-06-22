@@ -21,13 +21,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.solr.common.SolrException;
 
-/** @lucene.internal */
 /**
- * This implementation uses lock and condition and will throw exception if it can't obtain the lock within
- * <code>lockTimeoutMs</code>.
+ * This implementation uses lock and condition and will throw exception if it can't obtain the lock
+ * within <code>lockTimeoutMs</code>.
+ *
+ * @lucene.internal
  */
 public class TimedVersionBucket extends VersionBucket {
 
@@ -35,27 +35,32 @@ public class TimedVersionBucket extends VersionBucket {
   private final Condition condition = lock.newCondition();
 
   /**
-   * This will run the function with the lock. It will throw exception if it can't obtain the lock within
-   * <code>lockTimeoutMs</code>.
+   * This will run the function with the lock. It will throw exception if it can't obtain the lock
+   * within <code>lockTimeoutMs</code>.
    */
   @Override
-  public <T,R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function) throws IOException {
+  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T, R> function)
+      throws IOException {
     if (tryLock(lockTimeoutMs)) {
       return function.apply();
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           "Unable to get version bucket lock in " + lockTimeoutMs + " ms");
     }
   }
 
+  @Override
   public void unlock() {
     lock.unlock();
   }
 
+  @Override
   public void signalAll() {
     condition.signalAll();
   }
 
+  @Override
   public void awaitNanos(long nanosTimeout) {
     try {
       if (nanosTimeout > 0) {

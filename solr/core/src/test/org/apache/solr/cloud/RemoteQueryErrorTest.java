@@ -16,26 +16,22 @@
  */
 package org.apache.solr.cloud;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.hamcrest.core.StringContains.containsString;
-
-/**
- * Verify that remote (proxied) queries return proper error messages
- */
+/** Verify that remote (proxied) queries return proper error messages */
 public class RemoteQueryErrorTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   // TODO add test for CloudSolrClient as well
@@ -43,16 +39,20 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
   @Test
   public void test() throws Exception {
 
-    CollectionAdminRequest.createCollection("collection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("collection", "conf", 2, 1)
+        .process(cluster.getSolrClient());
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try (SolrClient client = jetty.newClient()) {
-        SolrException e = expectThrows(SolrException.class, () -> {
-          client.add("collection", new SolrInputDocument());
-        });
-        assertThat(e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
+        SolrException e =
+            expectThrows(
+                SolrException.class,
+                () -> {
+                  client.add("collection", new SolrInputDocument());
+                });
+        assertThat(
+            e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
       }
     }
-
   }
 }

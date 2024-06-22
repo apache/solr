@@ -20,9 +20,7 @@ import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.LogLevel;
 
-/**
- *
- */
+/** */
 @LogLevel("org.apache.solr.search=DEBUG")
 public class TestLocalStatsCacheCloud extends TestBaseStatsCacheCloud {
 
@@ -38,9 +36,11 @@ public class TestLocalStatsCacheCloud extends TestBaseStatsCacheCloud {
 
   @Override
   protected void checkStatsCacheMetrics(StatsCache.StatsCacheMetrics statsCacheMetrics) {
-    assertTrue("LocalStatsCache should produce missing stats: " + statsCacheMetrics,
+    assertTrue(
+        "LocalStatsCache should produce missing stats: " + statsCacheMetrics,
         statsCacheMetrics.missingGlobalFieldStats.intValue() > 0);
-    assertTrue("LocalStatsCache should produce missing stats: " + statsCacheMetrics,
+    assertTrue(
+        "LocalStatsCache should produce missing stats: " + statsCacheMetrics,
         statsCacheMetrics.missingGlobalTermStats.intValue() > 0);
   }
 }

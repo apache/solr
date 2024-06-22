@@ -19,17 +19,17 @@ package org.apache.solr.schema;
 import java.util.Map;
 
 /**
- * Abstract class defining shared behavior for primitive types
- * Intended to be used as base class for non-analyzed fields like
- * int, float, string, date etc, and set proper defaults for them 
+ * Abstract class defining shared behavior for primitive types Intended to be used as base class for
+ * non-analyzed fields like int, float, string, date etc, and set proper defaults for them
  */
 public abstract class PrimitiveFieldType extends FieldType {
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
-    if(schema.getVersion() > 1.4F &&
-       // only override if it's not explicitly false
-       0 == (falseProperties & OMIT_NORMS)) {
+    if (schema.getVersion() > 1.4F
+        &&
+        // only override if it's not explicitly false
+        0 == (falseProperties & OMIT_NORMS)) {
       properties |= OMIT_NORMS;
     }
   }
@@ -39,7 +39,8 @@ public abstract class PrimitiveFieldType extends FieldType {
   }
 
   @Override
-  public MultiValueSelector getDefaultMultiValueSelectorForSort(SchemaField field, boolean reverse) {
+  public MultiValueSelector getDefaultMultiValueSelectorForSort(
+      SchemaField field, boolean reverse) {
     return reverse ? MultiValueSelector.MAX : MultiValueSelector.MIN;
   }
 }

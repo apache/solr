@@ -17,10 +17,10 @@
 
 package org.apache.solr.client.solrj.request.json;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
-
-import static org.hamcrest.core.StringContains.containsString;
 
 public class QueryFacetMapTest extends SolrTestCaseJ4 {
   @Test
@@ -31,9 +31,8 @@ public class QueryFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidQueryString() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final QueryFacetMap queryFacet = new QueryFacetMap(null);
-    });
+    final Throwable thrown =
+        expectThrows(IllegalArgumentException.class, () -> new QueryFacetMap(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 

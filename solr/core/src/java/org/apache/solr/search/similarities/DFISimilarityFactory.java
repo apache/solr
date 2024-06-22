@@ -27,16 +27,20 @@ import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link DFISimilarity}
- * <p>
- * You must specify the measure of divergence from independence ("independenceMeasure")
+ *
+ * <p>You must specify the measure of divergence from independence ("independenceMeasure")
+ *
  * <ul>
- *   <li>"Standardized": {@link IndependenceStandardized}</li>
- *   <li>"Saturated": {@link IndependenceSaturated}</li>
- *   <li>"ChiSquared": {@link IndependenceChiSquared}</li>
+ *   <li>"Standardized": {@link IndependenceStandardized}
+ *   <li>"Saturated": {@link IndependenceSaturated}
+ *   <li>"ChiSquared": {@link IndependenceChiSquared}
  * </ul>
+ *
  * Optional settings:
+ *
  * <ul>
- *  <li>discountOverlaps (bool): Sets {@link org.apache.lucene.search.similarities.SimilarityBase#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link
+ *       org.apache.lucene.search.similarities.SimilarityBase#setDiscountOverlaps(boolean)}
  * </ul>
  *
  * @lucene.experimental
@@ -59,7 +63,7 @@ public class DFISimilarityFactory extends SimilarityFactory {
     sim.setDiscountOverlaps(discountOverlaps);
     return sim;
   }
-  
+
   private Independence parseIndependenceMeasure(String expr) {
     if ("ChiSquared".equals(expr)) {
       return new IndependenceChiSquared();
@@ -72,4 +76,3 @@ public class DFISimilarityFactory extends SimilarityFactory {
     }
   }
 }
-

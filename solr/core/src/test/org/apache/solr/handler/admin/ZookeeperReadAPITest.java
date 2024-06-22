@@ -17,38 +17,45 @@
 
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
+import static org.apache.solr.common.util.StrUtils.split;
+import static org.apache.solr.common.util.Utils.getObjectByPath;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.util.Map;
-
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.util.StrUtils.split;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
+/** Integration tests for {@link ZookeeperReadAPI} */
 public class ZookeeperReadAPITest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
+
+  private URL baseUrl;
+  private String basezk;
+  private String basezkls;
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
+
+    baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
+
+    String baseUrlV2 = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
+    basezk = baseUrlV2 + "/cluster/zookeeper/data";
+    basezkls = baseUrlV2 + "/cluster/zookeeper/children";
   }
 
   @After
@@ -59,44 +66,97 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
 
   @Test
   public void testZkread() throws Exception {
-    URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/data";
-    String basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/ls";
-
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      Object o = Utils.executeGET(client.getHttpClient(),
-          basezk + "/security.json",
-          Utils.JSONCONSUMER);
+      Object o =
+          Utils.executeGET(client.getHttpClient(), basezk + "/security.json", Utils.JSONCONSUMER);
       assertNotNull(o);
-      o = Utils.executeGET(client.getHttpClient(),
-          basezkls + "/configs",
-          Utils.JSONCONSUMER);
-      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
-      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
+      o = Utils.executeGET(client.getHttpClient(), basezkls + "/configs", Utils.JSONCONSUMER);
+      assertEquals(
+          "0",
+          String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
+      assertEquals(
+          "0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split("/stat/version", '/'))));
 
-      o = Utils.executeGET(client.getHttpClient(),
-          basezk + "/configs",
-          Utils.JSONCONSUMER);
-      assertTrue(((Map)o).containsKey("/configs"));
-      assertNull(((Map)o).get("/configs"));
+      o = Utils.executeGET(client.getHttpClient(), basezk + "/configs", Utils.JSONCONSUMER);
+      assertTrue(((Map) o).containsKey("zkData"));
+      assertEquals("empty", ((Map) o).get("zkData"));
 
       byte[] bytes = new byte[1024 * 5];
       for (int i = 0; i < bytes.length; i++) {
         bytes[i] = (byte) random().nextInt(128);
       }
-      cluster.getZkClient().create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
-      Utils.executeGET(client.getHttpClient(),
-          basezk + "/configs/_default/testdata",
-          is -> {
-            byte[] newBytes = new byte[bytes.length];
-            is.read(newBytes);
-            for (int i = 0; i < newBytes.length; i++) {
-              assertEquals(bytes[i], newBytes[i]);
-            }
-            return null;
-          });
+      try {
+        cluster
+            .getZkClient()
+            .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
+        Utils.executeGET(
+            client.getHttpClient(),
+            basezk + "/configs/_default/testdata",
+            is -> {
+              byte[] newBytes = new byte[bytes.length];
+              is.read(newBytes);
+              for (int i = 0; i < newBytes.length; i++) {
+                assertEquals(bytes[i], newBytes[i]);
+              }
+              return null;
+            });
+      } finally {
+        cluster.getZkClient().delete("/configs/_default/testdata", -1, true);
+      }
     }
   }
 
+  @Test
+  public void testRequestingDataFromNonexistentNodeReturnsAnError() throws Exception {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+      final SolrException expected =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                Utils.executeGET(
+                    client.getHttpClient(),
+                    basezk + "/configs/_default/nonexistentnode",
+                    Utils.JSONCONSUMER);
+              });
+      assertEquals(404, expected.code());
+    }
+  }
+
+  @Test
+  public void testCanListChildNodes() throws Exception {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+      final ZookeeperReadAPI.ListZkChildrenResponse response =
+          Utils.executeGET(
+              client.getHttpClient(),
+              basezkls + "/configs/_default",
+              is -> {
+                return new ObjectMapper()
+                    .readValue(is, ZookeeperReadAPI.ListZkChildrenResponse.class);
+              });
+
+      // At the top level, the response contains a key with the value of the specified zkPath
+      assertEquals(1, response.unknownProperties().size());
+      assertEquals(
+          "/configs/_default",
+          response.unknownProperties().keySet().stream().collect(Collectors.toList()).get(0));
+
+      // Under the specified zkPath is a key for each child, with values being that stat for that
+      // node.
+      // The actual stat values vary a good bit so aren't very useful to assert on, so let's just
+      // make sure all of the expected child nodes were found.
+      final Map<String, ZookeeperReadAPI.AnnotatedStat> childStatsByPath =
+          response.unknownProperties().get("/configs/_default");
+      assertEquals(6, childStatsByPath.size());
+      assertThat(
+          childStatsByPath.keySet(),
+          containsInAnyOrder(
+              "protwords.txt",
+              "solrconfig.xml",
+              "synonyms.txt",
+              "stopwords.txt",
+              "managed-schema.xml",
+              "lang"));
+    }
+  }
 }

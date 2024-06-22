@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -31,11 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Watch for replicas to become {@link org.apache.solr.common.cloud.Replica.State#ACTIVE}. Watcher is
- * terminated (its {@link #onStateChanged(Set, DocCollection)} method returns false) when all listed
- * replicas become active.
- * <p>Additionally, the provided {@link SolrCloseableLatch} instance can be used to await
- * for all listed replicas to become active.</p>
+ * Watch for replicas to become {@link org.apache.solr.common.cloud.Replica.State#ACTIVE}. Watcher
+ * is terminated (its {@link #onStateChanged(Set, DocCollection)} method returns false) when all
+ * listed replicas become active.
+ *
+ * <p>Additionally, the provided {@link SolrCloseableLatch} instance can be used to await for all
+ * listed replicas to become active.
  */
 public class ActiveReplicaWatcher implements CollectionStateWatcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -50,13 +50,18 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
 
   /**
    * Construct the watcher. At least one replicaId or solrCoreName must be provided.
+   *
    * @param collection collection name
    * @param replicaIds list of replica id-s
    * @param solrCoreNames list of SolrCore names
-   * @param latch optional latch to await for all provided replicas to become active. This latch will be
-   *                       counted down by at most the number of provided replica id-s / SolrCore names.
+   * @param latch optional latch to await for all provided replicas to become active. This latch
+   *     will be counted down by at most the number of provided replica id-s / SolrCore names.
    */
-  public ActiveReplicaWatcher(String collection, List<String> replicaIds, List<String> solrCoreNames, SolrCloseableLatch latch) {
+  public ActiveReplicaWatcher(
+      String collection,
+      List<String> replicaIds,
+      List<String> solrCoreNames,
+      SolrCloseableLatch latch) {
     if (replicaIds == null && solrCoreNames == null) {
       throw new IllegalArgumentException("Either replicaId or solrCoreName must be provided.");
     }
@@ -73,57 +78,64 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
     this.latch = latch;
   }
 
-  /**
-   * Collection name.
-   */
+  /** Collection name. */
   public String getCollection() {
     return collection;
   }
 
-  /**
-   * Return the list of active replicas found so far.
-   */
+  /** Return the list of active replicas found so far. */
   public List<Replica> getActiveReplicas() {
     return activeReplicas;
   }
 
-  /**
-   * Return the list of replica id-s that are not active yet (or unverified).
-   */
+  /** Return the list of replica id-s that are not active yet (or unverified). */
   public List<String> getReplicaIds() {
     return replicaIds;
   }
 
-  /**
-   * Return a list of SolrCore names that are not active yet (or unverified).
-   */
+  /** Return a list of SolrCore names that are not active yet (or unverified). */
   public List<String> getSolrCoreNames() {
     return solrCoreNames;
   }
 
   @Override
   public String toString() {
-    return "ActiveReplicaWatcher@" + Long.toHexString(hashCode()) + "{" +
-        "collection='" + collection + '\'' +
-        ", replicaIds=" + replicaIds +
-        ", solrCoreNames=" + solrCoreNames +
-        ", latch=" + (latch != null ? latch.getCount() : "null") + "," +
-        ", activeReplicas=" + activeReplicas +
-        '}';
+    return "ActiveReplicaWatcher@"
+        + Long.toHexString(hashCode())
+        + "{"
+        + "collection='"
+        + collection
+        + '\''
+        + ", replicaIds="
+        + replicaIds
+        + ", solrCoreNames="
+        + solrCoreNames
+        + ", latch="
+        + (latch != null ? latch.getCount() : "null")
+        + ","
+        + ", activeReplicas="
+        + activeReplicas
+        + '}';
   }
 
   // synchronized due to SOLR-11535
+  // TODO: can we remove `synchronized`, now that SOLR-11535 is fixed?
   @Override
   public synchronized boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
     if (log.isDebugEnabled()) {
-      log.debug("-- onStateChanged@{}: replicaIds={}, solrCoreNames={} {}\ncollectionState {}"
-          , Long.toHexString(hashCode()), replicaIds, solrCoreNames
-          , (latch != null ? "\nlatch count=" + latch.getCount() : "")
-          , collectionState); // nowarn
+      log.debug(
+          "-- onStateChanged@{}: replicaIds={}, solrCoreNames={} {}\ncollectionState {}",
+          Long.toHexString(hashCode()),
+          replicaIds,
+          solrCoreNames,
+          (latch != null ? "\nlatch count=" + latch.getCount() : ""),
+          collectionState); // nowarn
     }
     if (collectionState == null) { // collection has been deleted - don't wait
       if (log.isDebugEnabled()) {
-        log.debug("-- collection deleted, decrementing latch by {} ", replicaIds.size() + solrCoreNames.size()); // nowarn
+        log.debug(
+            "-- collection deleted, decrementing latch by {} ",
+            replicaIds.size() + solrCoreNames.size()); // nowarn
       }
       if (latch != null) {
         for (int i = 0; i < replicaIds.size() + solrCoreNames.size(); i++) {

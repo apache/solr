@@ -41,7 +41,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     SolrCore core = h.getCore();
-    _parser = new SolrRequestParsers( null );
+    _parser = new SolrRequestParsers(null);
     SolrQueryResponse resp = null;
     parameters = new ModifiableSolrParams();
     parameters.set(RegexpBoostProcessor.BOOST_FILENAME_PARAM, "regex-boost-processor-test.txt");
@@ -52,9 +52,9 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory.init(parameters.toNamedList());
     reProcessor = (RegexpBoostProcessor) factory.getInstance(req, resp, null);
   }
-  
+
   @AfterClass
-  public static void tearDownAfterClass() throws Exception {
+  public static void tearDownAfterClass() {
     // null static members for gc
     reProcessor = null;
     _parser = null;
@@ -62,6 +62,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory = null;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     document = new SolrInputDocument();
@@ -72,55 +73,54 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
   public void testNoBoost() throws Exception {
     document.addField("id", "doc1");
     document.addField("url", "http://www.nomatch.no");
-    
+
     processAdd(document);
-    
+
     assertEquals(1.0d, document.getFieldValue("urlboost"));
   }
-  
+
   @Test
   public void testDeboostOld() throws Exception {
     document.addField("id", "doc1");
     document.addField("url", "http://www.somedomain.no/old/test.html");
-    
+
     processAdd(document);
-    
+
     assertEquals(0.1d, document.getFieldValue("urlboost"));
 
     // Test the other deboost rule
     document = new SolrInputDocument();
     document.addField("id", "doc1");
     document.addField("url", "http://www.somedomain.no/foo/index(1).html");
-    
+
     processAdd(document);
-    
+
     assertEquals(0.5d, document.getFieldValue("urlboost"));
-}
-  
+  }
+
   @Test
   public void testBoostGood() throws Exception {
     document.addField("id", "doc1");
     document.addField("url", "http://www.mydomain.no/fifty-percent-boost");
-    
+
     processAdd(document);
-    
+
     assertEquals(1.5d, document.getFieldValue("urlboost"));
   }
-  
+
   @Test
   public void testTwoRules() throws Exception {
     document.addField("id", "doc1");
     document.addField("url", "http://www.mydomain.no/old/test.html");
-    
+
     processAdd(document);
-    
+
     assertEquals(0.15d, document.getFieldValue("urlboost"));
   }
-  
+
   private void processAdd(SolrInputDocument doc) throws Exception {
     AddUpdateCommand addCommand = new AddUpdateCommand(null);
     addCommand.solrDoc = doc;
     reProcessor.processAdd(addCommand);
   }
-  
 }

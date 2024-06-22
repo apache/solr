@@ -24,10 +24,9 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.solr.client.solrj.util.Cancellable;
 
 /** Allows a query to be cancelled */
-public class CancellableCollector implements Collector, Cancellable {
+public class CancellableCollector implements Collector {
 
   /** Thrown when a query gets cancelled */
   public static class QueryCancelledException extends RuntimeException {}
@@ -36,7 +35,8 @@ public class CancellableCollector implements Collector, Cancellable {
   private final AtomicBoolean isQueryCancelled;
 
   public CancellableCollector(Collector collector) {
-    Objects.requireNonNull(collector, "Internal collector not provided but wrapper collector accessed");
+    Objects.requireNonNull(
+        collector, "Internal collector not provided but wrapper collector accessed");
 
     this.collector = collector;
     this.isQueryCancelled = new AtomicBoolean();
@@ -66,7 +66,6 @@ public class CancellableCollector implements Collector, Cancellable {
     return collector.scoreMode();
   }
 
-  @Override
   public void cancel() {
     isQueryCancelled.compareAndSet(false, true);
   }

@@ -25,7 +25,8 @@ import org.apache.solr.schema.IndexSchema;
 /** A {@link MergePolicyFactory} for {@link RandomForceMergePolicy}. */
 public final class RandomForceMergePolicyFactory extends MergePolicyFactory {
 
-  public RandomForceMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  public RandomForceMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(null, args, schema);
   }
 
@@ -33,5 +34,4 @@ public final class RandomForceMergePolicyFactory extends MergePolicyFactory {
   public MergePolicy getMergePolicy() {
     return new RandomForceMergePolicy();
   }
-
 }

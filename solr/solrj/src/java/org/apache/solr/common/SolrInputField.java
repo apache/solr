@@ -23,52 +23,47 @@ import java.util.Collections;
 import java.util.Iterator;
 
 /**
- *
  * @since solr 1.3
  */
-public class SolrInputField implements Iterable<Object>, Serializable
-{
+public class SolrInputField implements Iterable<Object>, Serializable {
   String name;
   Object value = null; // TODO SOLR-15532 investigate if this can be a Collection
 
-  public SolrInputField( String n )
-  {
+  public SolrInputField(String n) {
     this.name = n;
   }
 
-  //---------------------------------------------------------------
-  //---------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // ---------------------------------------------------------------
 
   /**
-   * Set the value for a field.  Arrays will be converted to a collection. If
-   * a collection is given, then that collection will be used as the backing
-   * collection for the values.
+   * Set the value for a field. Arrays will be converted to a collection. If a collection is given,
+   * then that collection will be used as the backing collection for the values.
    */
   public void setValue(Object v) {
-    if( v instanceof Object[] ) {
-      Object[] arr = (Object[])v;
-      Collection<Object> c = new ArrayList<>( arr.length );
-      for( Object o : arr ) {
-        c.add( o );
+    if (v instanceof Object[]) {
+      Object[] arr = (Object[]) v;
+      Collection<Object> c = new ArrayList<>(arr.length);
+      for (Object o : arr) {
+        c.add(o);
       }
       value = c;
-    }
-    else {
+    } else {
       value = v;
     }
   }
 
   /**
-   * Add values to a field.  If the added value is a collection, each value
-   * will be added individually.
+   * Add values to a field. If the added value is a collection, each value will be added
+   * individually.
    */
   @SuppressWarnings("unchecked")
   public void addValue(Object v) {
-    if( value == null ) {
-      if ( v instanceof Collection ) {
-        Collection<Object> c = new ArrayList<>( 3 );
-        for ( Object o : (Collection<Object>)v ) {
-          c.add( o );
+    if (value == null) {
+      if (v instanceof Collection) {
+        Collection<Object> c = new ArrayList<>(3);
+        for (Object o : (Collection<Object>) v) {
+          c.add(o);
         }
         setValue(c);
       } else {
@@ -77,35 +72,32 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
       return;
     }
-    
+
     Collection<Object> vals = null;
-    if( value instanceof Collection ) {
-      vals = (Collection<Object>)value;
-    }
-    else {
-      vals = new ArrayList<>( 3 );
-      vals.add( value );
+    if (value instanceof Collection) {
+      vals = (Collection<Object>) value;
+    } else {
+      vals = new ArrayList<>(3);
+      vals.add(value);
       value = vals;
     }
-    
+
     // Add the new values to a collection, if childDoc add as is without iteration
-    if( v instanceof Iterable && !(v instanceof SolrDocumentBase)) {
-      for( Object o : (Iterable<Object>)v ) {
-        vals.add( o );
+    if (v instanceof Iterable && !(v instanceof SolrDocumentBase)) {
+      for (Object o : (Iterable<Object>) v) {
+        vals.add(o);
       }
-    }
-    else if( v instanceof Object[] ) {
-      for( Object o : (Object[])v ) {
-        vals.add( o );
+    } else if (v instanceof Object[]) {
+      for (Object o : (Object[]) v) {
+        vals.add(o);
       }
-    }
-    else {
-      vals.add( v );
+    } else {
+      vals.add(v);
     }
   }
 
-  //---------------------------------------------------------------
-  //---------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // ---------------------------------------------------------------
 
   public Object getFirstValue() {
     if (value instanceof Collection) {
@@ -119,23 +111,22 @@ public class SolrInputField implements Iterable<Object>, Serializable
   }
 
   /**
-   * @return the value for this field.  If the field has multiple values, this
-   * will be a collection.
+   * @return the value for this field. If the field has multiple values, this will be a collection.
    */
   public Object getValue() {
     return value;
   }
 
   /**
-   * @return the values for this field.  This will return a collection even
-   * if the field is not multi-valued
+   * @return the values for this field. This will return a collection even if the field is not
+   *     multi-valued
    */
   @SuppressWarnings("unchecked")
   public Collection<Object> getValues() {
     if (value instanceof Collection) {
       return (Collection<Object>) value;
     }
-    if( value != null ) {
+    if (value != null) {
       Collection<Object> vals = new ArrayList<>(1);
       vals.add(value);
       return vals;
@@ -147,14 +138,14 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * @return the number of values for this field
    */
   public int getValueCount() {
-    if( value instanceof Collection ) {
-      return ((Collection<?>)value).size();
+    if (value instanceof Collection) {
+      return ((Collection<?>) value).size();
     }
     return (value == null) ? 0 : 1;
   }
-  
-  //---------------------------------------------------------------
-  //---------------------------------------------------------------
+
+  // ---------------------------------------------------------------
+  // ---------------------------------------------------------------
 
   public String getName() {
     return name;
@@ -170,14 +161,13 @@ public class SolrInputField implements Iterable<Object>, Serializable
     if (value == null) {
       return Collections.emptyIterator();
     } else if (value instanceof Collection) {
-      return ((Collection<Object>)value).iterator();
+      return ((Collection<Object>) value).iterator();
     }
     return Collections.singleton(value).iterator();
   }
 
   @Override
-  public String toString()
-  {
+  public String toString() {
     return name + "=" + value;
   }
 

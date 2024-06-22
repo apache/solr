@@ -17,12 +17,27 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import static java.util.Collections.singletonMap;
+import static org.hamcrest.Matchers.instanceOf;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
@@ -37,36 +52,29 @@ import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
-
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.util.Collections.singletonMap;
-
-/**
- * Test for {@link MinimizeCoresPlacementFactory} using a {@link MiniSolrCloudCluster}.
- */
+/** Test for {@link MinimizeCoresPlacementFactory} using a {@link MiniSolrCloudCluster}. */
 @LogLevel("org.apache.solr.cluster.placement.impl=DEBUG")
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
-  private static final String COLLECTION = PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
+  private static final String COLLECTION =
+      PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
+
+  @Rule
+  public TestRule sysPropRestore =
+      new TestRuleRestoreSystemProperties(
+          PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP);
 
   private static SolrCloudManager cloudManager;
   private static CoreContainer cc;
@@ -75,9 +83,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     // placement plugins need metrics
     System.setProperty("metricsEnabled", "true");
-    configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     cloudManager = cc.getZkController().getSolrCloudManager();
   }
@@ -85,19 +91,36 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   @After
   public void cleanup() throws Exception {
     cluster.deleteAllCollections();
-    V2Request req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .GET()
-        .build();
+    V2Request req = new V2Request.Builder("/cluster/plugin").forceV2(true).GET().build();
     V2Response rsp = req.process(cluster.getSolrClient());
     if (rsp._get(Arrays.asList("plugin", PlacementPluginFactory.PLUGIN_NAME), null) != null) {
-      req = new V2Request.Builder("/cluster/plugin")
-          .forceV2(true)
-          .POST()
-          .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
-          .build();
+      req =
+          new V2Request.Builder("/cluster/plugin")
+              .forceV2(true)
+              .POST()
+              .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
+              .build();
       req.process(cluster.getSolrClient());
     }
+  }
+
+  @Test
+  public void testDefaultConfiguration() {
+    CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
+    assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(SimplePlacementFactory.SimplePlacementPlugin.class));
+    cc.shutdown();
+  }
+
+  @Test
+  public void testConfigurationInSystemProps() {
+    System.setProperty(PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP, "random");
+    CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
+    assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(RandomPlacementFactory.RandomPlacementPlugin.class));
+    cc.shutdown();
   }
 
   @Test
@@ -105,27 +128,34 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = MinimizeCoresPlacementFactory.class.getName();
-    V2Request req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("add", plugin))
-        .build();
+    V2Request req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("add", plugin))
+            .build();
     req.process(cluster.getSolrClient());
 
-    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
-        .process(cluster.getSolrClient());
+    CollectionAdminResponse rsp =
+        CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+            .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
     // use Solr-specific API to verify the expected placements
-    ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = cloudManager.getClusterState();
     DocCollection collection = clusterState.getCollectionOrNull(COLLECTION);
     assertNotNull(collection);
     Map<String, AtomicInteger> coresByNode = new HashMap<>();
-    collection.forEachReplica((shard, replica) -> coresByNode.computeIfAbsent(replica.getNodeName(), n -> new AtomicInteger()).incrementAndGet());
+    collection.forEachReplica(
+        (shard, replica) ->
+            coresByNode
+                .computeIfAbsent(replica.getNodeName(), n -> new AtomicInteger())
+                .incrementAndGet());
     int maxCores = 0;
     int minCores = Integer.MAX_VALUE;
     for (Map.Entry<String, AtomicInteger> entry : coresByNode.entrySet()) {
-      assertTrue("too few cores on node " + entry.getKey() + ": " + entry.getValue(),
+      assertTrue(
+          "too few cores on node " + entry.getKey() + ": " + entry.getValue(),
           entry.getValue().get() > 0);
       if (entry.getValue().get() > maxCores) {
         maxCores = entry.getValue().get();
@@ -140,8 +170,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testDynamicReconfiguration() throws Exception {
-    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
-    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
+        cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
+    assertTrue(
+        "wrong type " + pluginFactory.getClass().getName(),
+        pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
     Phaser phaser = new Phaser();
     wrapper.setDelegationPhaser(phaser);
@@ -152,67 +186,81 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = MinimizeCoresPlacementFactory.class.getName();
-    V2Request req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("add", plugin))
-        .build();
+    V2Request req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("add", plugin))
+            .build();
     req.process(cluster.getSolrClient());
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
-    assertTrue("wrong type " + factory.getClass().getName(), factory instanceof MinimizeCoresPlacementFactory);
+    assertNotNull(factory);
+    assertTrue(
+        "wrong type " + factory.getClass().getName(),
+        factory instanceof MinimizeCoresPlacementFactory);
 
     // reconfigure
     plugin.klass = AffinityPlacementFactory.class.getName();
     plugin.config = new AffinityPlacementConfig(1, 2);
-    req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("update", plugin))
-        .build();
+    req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("update", plugin))
+            .build();
     req.process(cluster.getSolrClient());
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     factory = wrapper.getDelegate();
-    assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
+    assertNotNull(factory);
+    assertTrue(
+        "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     AffinityPlacementConfig config = ((AffinityPlacementFactory) factory).getConfig();
     assertEquals("minimalFreeDiskGB", 1, config.minimalFreeDiskGB);
     assertEquals("prioritizedFreeDiskGB", 2, config.prioritizedFreeDiskGB);
 
     // change plugin config
     plugin.config = new AffinityPlacementConfig(3, 4);
-    req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("update", plugin))
-        .build();
+    req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("update", plugin))
+            .build();
     req.process(cluster.getSolrClient());
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
-    assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
+    assertNotNull(factory);
+    assertTrue(
+        "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
     assertEquals("minimalFreeDiskGB", 3, config.minimalFreeDiskGB);
     assertEquals("prioritizedFreeDiskGB", 4, config.prioritizedFreeDiskGB);
 
     // add plugin of the right type but with the wrong name
     plugin.name = "myPlugin";
-    req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("add", plugin))
-        .build();
+    req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("add", plugin))
+            .build();
     req.process(cluster.getSolrClient());
     final int oldVersion = version;
-    expectThrows(TimeoutException.class, () -> phaser.awaitAdvanceInterruptibly(oldVersion, 5, TimeUnit.SECONDS));
+    expectThrows(
+        TimeoutException.class,
+        () -> phaser.awaitAdvanceInterruptibly(oldVersion, 5, TimeUnit.SECONDS));
     // remove plugin
-    req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
-        .build();
+    req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
+            .build();
     req.process(cluster.getSolrClient());
     phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
@@ -221,8 +269,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testWithCollectionIntegration() throws Exception {
-    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
-    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
+        cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
+    assertTrue(
+        "wrong type " + pluginFactory.getClass().getName(),
+        pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
     Phaser phaser = new Phaser();
     wrapper.setDelegationPhaser(phaser);
@@ -241,52 +293,66 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = AffinityPlacementFactory.class.getName();
-    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION), Map.of());
-    V2Request req = new V2Request.Builder("/cluster/plugin")
-        .forceV2(true)
-        .POST()
-        .withPayload(singletonMap("add", plugin))
-        .build();
+    plugin.config =
+        new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION), Map.of());
+    V2Request req =
+        new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("add", plugin))
+            .build();
     req.process(cluster.getSolrClient());
 
     phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
-        .process(cluster.getSolrClient());
+    CollectionAdminResponse rsp =
+        CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
+            .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(SECONDARY_COLLECTION, 1, 3);
-    DocCollection secondary = cloudManager.getClusterStateProvider().getClusterState().getCollection(SECONDARY_COLLECTION);
+    DocCollection secondary = cloudManager.getClusterState().getCollection(SECONDARY_COLLECTION);
     Set<String> secondaryNodes = new HashSet<>();
     secondary.forEachReplica((shard, replica) -> secondaryNodes.add(replica.getNodeName()));
 
-    rsp = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
-        .setCreateNodeSet(String.join(",", nodeSet))
-        .process(cluster.getSolrClient());
+    rsp =
+        CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+            .setCreateNodeSet(String.join(",", nodeSet))
+            .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
     // make sure the primary replicas were placed on the nodeset
-    DocCollection primary = cloudManager.getClusterStateProvider().getClusterState().getCollection(COLLECTION);
-    primary.forEachReplica((shard, replica) ->
-        assertTrue("primary replica not on secondary node!", nodeSet.contains(replica.getNodeName())));
+    DocCollection primary = cloudManager.getClusterState().getCollection(COLLECTION);
+    primary.forEachReplica(
+        (shard, replica) ->
+            assertTrue(
+                "primary replica not on secondary node!", nodeSet.contains(replica.getNodeName())));
 
     // try deleting secondary replica from node without the primary replica
-    Optional<String> onlySecondaryReplica = secondary.getReplicas().stream()
-        .filter(replica -> !nodeSet.contains(replica.getNodeName()))
-        .map(replica -> replica.getName()).findFirst();
+    Optional<String> onlySecondaryReplica =
+        secondary.getReplicas().stream()
+            .filter(replica -> !nodeSet.contains(replica.getNodeName()))
+            .map(replica -> replica.getName())
+            .findFirst();
     assertTrue("no secondary node without primary replica", onlySecondaryReplica.isPresent());
 
-    rsp = CollectionAdminRequest.deleteReplica(SECONDARY_COLLECTION, "shard1", onlySecondaryReplica.get())
-        .process(cluster.getSolrClient());
+    rsp =
+        CollectionAdminRequest.deleteReplica(
+                SECONDARY_COLLECTION, "shard1", onlySecondaryReplica.get())
+            .process(cluster.getSolrClient());
     assertTrue("delete of a lone secondary replica should succeed", rsp.isSuccess());
 
     // try deleting secondary replica from node WITH the primary replica - should fail
-    Optional<String> secondaryWithPrimaryReplica = secondary.getReplicas().stream()
-        .filter(replica -> nodeSet.contains(replica.getNodeName()))
-        .map(replica -> replica.getName()).findFirst();
+    Optional<String> secondaryWithPrimaryReplica =
+        secondary.getReplicas().stream()
+            .filter(replica -> nodeSet.contains(replica.getNodeName()))
+            .map(replica -> replica.getName())
+            .findFirst();
     assertTrue("no secondary node with primary replica", secondaryWithPrimaryReplica.isPresent());
     try {
-      rsp = CollectionAdminRequest.deleteReplica(SECONDARY_COLLECTION, "shard1", secondaryWithPrimaryReplica.get())
-          .process(cluster.getSolrClient());
+      rsp =
+          CollectionAdminRequest.deleteReplica(
+                  SECONDARY_COLLECTION, "shard1", secondaryWithPrimaryReplica.get())
+              .process(cluster.getSolrClient());
       fail("should have failed: " + rsp);
     } catch (Exception e) {
       assertTrue(e.toString(), e.toString().contains("co-located with replicas"));
@@ -294,11 +360,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     // try deleting secondary collection
     try {
-      rsp = CollectionAdminRequest.deleteCollection(SECONDARY_COLLECTION)
-          .process(cluster.getSolrClient());
+      rsp =
+          CollectionAdminRequest.deleteCollection(SECONDARY_COLLECTION)
+              .process(cluster.getSolrClient());
       fail("should have failed: " + rsp);
     } catch (Exception e) {
-      assertTrue(e.toString(), e.toString().contains("colocated collection"));
+      assertTrue(e.toString(), e.toString().contains("collocated collection"));
     }
   }
 
@@ -313,8 +380,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     String collectionName = "nodeTypeCollection";
 
-    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
-    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
+        cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
+    assertTrue(
+        "wrong type " + pluginFactory.getClass().getName(),
+        pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
     Phaser phaser = new Phaser();
     wrapper.setDelegationPhaser(phaser);
@@ -325,7 +396,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = AffinityPlacementFactory.class.getName();
     plugin.config = new AffinityPlacementConfig(1, 2, Map.of(), Map.of(collectionName, "type_0"));
-    V2Request req = new V2Request.Builder("/cluster/plugin")
+    V2Request req =
+        new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
             .POST()
             .withPayload(singletonMap("add", plugin))
@@ -335,15 +407,18 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     try {
-      CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+      CollectionAdminResponse rsp =
+          CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
               .process(cluster.getSolrClient());
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
-      assertTrue("should contain 'no nodes with types':" + e.toString(),
-              e.toString().contains("no nodes with types"));
+      assertTrue(
+          "should contain 'Not enough eligible nodes to place':" + e,
+          e.toString().contains("Not enough eligible nodes to place"));
     }
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
-    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+    CollectionAdminResponse rsp =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
             .process(cluster.getSolrClient());
 
     System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
@@ -351,8 +426,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testAttributeFetcherImpl() throws Exception {
-    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
-        .process(cluster.getSolrClient());
+    CollectionAdminResponse rsp =
+        CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+            .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
@@ -370,14 +446,21 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
         .requestNodeMetric(someMetricKey)
         .requestNodeSystemProperty(sysprop)
-        .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB, ReplicaMetricImpl.QUERY_RATE_1MIN, ReplicaMetricImpl.UPDATE_RATE_1MIN));
+        .requestCollectionMetrics(
+            collection,
+            Set.of(
+                ReplicaMetricImpl.INDEX_SIZE_GB,
+                ReplicaMetricImpl.QUERY_RATE_1MIN,
+                ReplicaMetricImpl.UPDATE_RATE_1MIN));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
       Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
       assertTrue("heap usage", doubleOpt.isPresent());
-      assertTrue("heap usage should be 0 < heapUsage < 100 but was " + doubleOpt, doubleOpt.get() > 0 && doubleOpt.get() < 100);
+      assertTrue(
+          "heap usage should be 0 < heapUsage < 100 but was " + doubleOpt,
+          doubleOpt.get() > 0 && doubleOpt.get() < 100);
       doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("total disk", doubleOpt.isPresent());
       assertTrue("total disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
@@ -387,8 +470,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
       assertTrue("cores", intOpt.isPresent());
       assertTrue("cores should be > 0", intOpt.get() > 0);
-      assertTrue("systemLoadAverage 2", attributeValues.getNodeMetric(node, NodeMetricImpl.SYSLOAD_AVG).isPresent());
-      assertTrue("availableProcessors", attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
+      assertTrue(
+          "systemLoadAverage 2",
+          attributeValues.getNodeMetric(node, NodeMetricImpl.SYSLOAD_AVG).isPresent());
+      assertTrue(
+          "availableProcessors",
+          attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
       Optional<String> userNameOpt = attributeValues.getNodeMetric(node, someMetricKey);
       assertTrue("user.name", userNameOpt.isPresent());
       assertEquals("userName", userName, userNameOpt.get());
@@ -398,22 +485,39 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     }
     assertTrue(attributeValues.getCollectionMetrics(COLLECTION).isPresent());
     CollectionMetrics collectionMetrics = attributeValues.getCollectionMetrics(COLLECTION).get();
-    collection.shards().forEach(shard -> {
-      Optional<ShardMetrics> shardMetricsOpt = collectionMetrics.getShardMetrics(shard.getShardName());
-      assertTrue("shard metrics", shardMetricsOpt.isPresent());
-      shard.replicas().forEach(replica -> {
-        Optional<ReplicaMetrics> replicaMetricsOpt = shardMetricsOpt.get().getReplicaMetrics(replica.getReplicaName());
-        assertTrue("replica metrics", replicaMetricsOpt.isPresent());
-        ReplicaMetrics replicaMetrics = replicaMetricsOpt.get();
-        Optional<Double> indexSizeOpt = replicaMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
-        assertTrue("indexSize", indexSizeOpt.isPresent());
-        assertTrue("wrong type, expected Double but was " + indexSizeOpt.get().getClass(), indexSizeOpt.get() instanceof Double);
-        assertTrue("indexSize should be > 0 but was " + indexSizeOpt.get(), indexSizeOpt.get() > 0);
-        assertTrue("indexSize should be < 0.01 but was " + indexSizeOpt.get(), indexSizeOpt.get() < 0.01);
+    collection
+        .shards()
+        .forEach(
+            shard -> {
+              Optional<ShardMetrics> shardMetricsOpt =
+                  collectionMetrics.getShardMetrics(shard.getShardName());
+              assertTrue("shard metrics", shardMetricsOpt.isPresent());
+              shard
+                  .replicas()
+                  .forEach(
+                      replica -> {
+                        Optional<ReplicaMetrics> replicaMetricsOpt =
+                            shardMetricsOpt.get().getReplicaMetrics(replica.getReplicaName());
+                        assertTrue("replica metrics", replicaMetricsOpt.isPresent());
+                        ReplicaMetrics replicaMetrics = replicaMetricsOpt.get();
+                        Optional<Double> indexSizeOpt =
+                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
+                        assertTrue("indexSize", indexSizeOpt.isPresent());
+                        indexSizeOpt.get();
+                        assertTrue(
+                            "indexSize should be > 0 but was " + indexSizeOpt.get(),
+                            indexSizeOpt.get() > 0);
+                        assertTrue(
+                            "indexSize should be < 0.01 but was " + indexSizeOpt.get(),
+                            indexSizeOpt.get() < 0.01);
 
-        assertNotNull("queryRate", replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
-        assertNotNull("updateRate", replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
-      });
-    });
+                        assertNotNull(
+                            "queryRate",
+                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
+                        assertNotNull(
+                            "updateRate",
+                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
+                      });
+            });
   }
 }

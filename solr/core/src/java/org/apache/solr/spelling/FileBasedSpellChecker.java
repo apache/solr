@@ -20,36 +20,32 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.solr.schema.IndexSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.PlainTextDictionary;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * <p>
  * A spell checker implementation that loads words from a text file (one word per line).
- * </p>
  *
  * @since solr 1.3
- **/
+ */
 public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -62,7 +58,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   @Override
   public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
-    characterEncoding = (String)config.get(SOURCE_FILE_CHAR_ENCODING);
+    characterEncoding = (String) config.get(SOURCE_FILE_CHAR_ENCODING);
     return name;
   }
 
@@ -76,9 +72,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
     spellChecker.indexDictionary(dictionary, new IndexWriterConfig(null), false);
   }
 
-  /**
-   * Override to return null, since there is no reader associated with a file based index
-   */
+  /** Override to return null, since there is no reader associated with a file based index */
   @Override
   protected IndexReader determineReader(IndexReader reader) {
     return null;
@@ -87,24 +81,25 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void loadExternalFileDictionary(SolrCore core, SolrIndexSearcher searcher) {
     try {
       IndexSchema schema = null == searcher ? core.getLatestSchema() : searcher.getSchema();
-      // Get the field's analyzer
-      if (fieldTypeName != null && schema.getFieldTypeNoEx(fieldTypeName) != null) {
-        FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
+      // Get the fieldType's analyzer
+      if (fieldTypeName != null && schema.getFieldTypeByName(fieldTypeName) != null) {
+        FieldType fieldType = schema.getFieldTypeByName(fieldTypeName);
         // Do index-time analysis using the given fieldType's analyzer
         Directory ramDir = new ByteBuffersDirectory();
 
         LogMergePolicy mp = new LogByteSizeMergePolicy();
         mp.setMergeFactor(300);
 
-        IndexWriter writer = new IndexWriter(
-            ramDir,
-            new IndexWriterConfig(fieldType.getIndexAnalyzer()).
-                setMaxBufferedDocs(150).
-                setMergePolicy(mp).
-                setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+        IndexWriter writer =
+            new IndexWriter(
+                ramDir,
+                new IndexWriterConfig(fieldType.getIndexAnalyzer())
+                    .setMaxBufferedDocs(150)
+                    .setMergePolicy(mp)
+                    .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
                 // TODO: if we enable this, codec gets angry since field won't exist in the schema
                 // .setCodec(core.getCodec())
-        );
+                );
 
         List<String> lines = core.getResourceLoader().getLines(sourceLocation, characterEncoding);
 
@@ -116,20 +111,23 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
         writer.forceMerge(1);
         writer.close();
 
-        dictionary = new HighFrequencyDictionary(DirectoryReader.open(ramDir),
-                WORD_FIELD_NAME, 0.0f);
+        dictionary =
+            new HighFrequencyDictionary(DirectoryReader.open(ramDir), WORD_FIELD_NAME, 0.0f);
       } else {
         // check if character encoding is defined
         if (characterEncoding == null) {
-          dictionary = new PlainTextDictionary(core.getResourceLoader().openResource(sourceLocation));
+          dictionary =
+              new PlainTextDictionary(core.getResourceLoader().openResource(sourceLocation));
         } else {
-          dictionary = new PlainTextDictionary(new InputStreamReader(core.getResourceLoader().openResource(sourceLocation), characterEncoding));
+          dictionary =
+              new PlainTextDictionary(
+                  new InputStreamReader(
+                      core.getResourceLoader().openResource(sourceLocation), characterEncoding));
         }
       }
 
-
     } catch (IOException e) {
-      log.error( "Unable to load spellings", e);
+      log.error("Unable to load spellings", e);
     }
   }
 

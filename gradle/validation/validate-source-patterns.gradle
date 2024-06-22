@@ -61,8 +61,8 @@ def extensions = [
     'xsl',
 ]
 
-// Create source validation task local for each project's files.
-subprojects {
+// Create source validation task local to each project
+allprojects {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
@@ -78,22 +78,38 @@ subprojects {
       }
 
       // default excludes.
-      exclude 'build/**'
+      exclude '/lucene/**'
+      exclude '**/build/**'
       exclude '**/.idea/**'
+      exclude '**/.gradle/**'
 
-      // ignore txt files in source resources and tests.
-      exclude 'src/**/*.txt'
+      // Exclude Eclipse
+      exclude ".metadata"
+      exclude ".settings"
+
+      if (project == rootProject) {
+        // ourselves :-)
+        exclude 'gradle/validation/validate-source-patterns.gradle'
+      } else {
+        // ignore txt files in source resources and tests.
+        exclude 'src/**/*.txt'
+      }
     }
   }
 
   // Add source validation to per-project checks as well.
   check.dependsOn validateSourcePatterns
+
+  // Ensure validation runs prior to any compilation task. This also means
+  // no executable code can leak out to other modules.
+  tasks.withType(JavaCompile).configureEach {
+    mustRunAfter validateSourcePatterns
+  }
 }
 
 configure(project(':solr:core')) {
   project.tasks.withType(ValidateSourcePatternsTask) {
     sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
   }
 }
 
@@ -103,37 +119,18 @@ configure(project(':solr:server')) {
   }
 }
 
-configure(rootProject) {
-  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
-    group = 'Verification'
-    description = 'Validate Source Patterns'
-
-    sourceFiles = fileTree(projectDir) {
-      extensions.each{
-        include "**/*.${it}"
-      }
-
-      // Don't go into child projects (scanned separately).
-      childProjects.keySet().each{
-        exclude "${it}/**"
-      }
-
-      // default excludes.
-      exclude '**/build/**'
-      exclude 'dev-tools/solr-missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
-
-      // ourselves :-)
-      exclude 'gradle/validation/validate-source-patterns.gradle'
-    }
+configure(project(':solr:solr-ref-guide')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'modules/indexing-guide/examples/stemdict.txt' // requires tabs
+    sourceFiles.exclude 'node_modules/**' // slightly hackish, this downloads all of the node deps
   }
-
-  check.dependsOn validateSourcePatterns
 }
 
 class ValidateSourcePatternsTask extends DefaultTask {
   private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileTree sourceFiles
 
   @Inject
@@ -148,6 +145,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/(?i)\bno(n|)commit\b/$) : 'nocommit',
       (~$/\bTOOD:/$) : 'TOOD instead TODO',
       (~$/\t/$) : 'tabs instead spaces',
+      (~$/[\u202A-\u202E\u2066-\u2069]/$) : 'misuse of RTL/LTR (https://trojansource.codes)',
       (~$/\Q/**\E((?:\s)|(?:\*))*\Q{@inheritDoc}\E((?:\s)|(?:\*))*\Q*/\E/$) : '{@inheritDoc} on its own is unnecessary',
       (~$/\$$(?:LastChanged)?Date\b/$) : 'svn keyword',
       (~$/\$$(?:(?:LastChanged)?Revision|Rev)\b/$) : 'svn keyword',
@@ -160,18 +158,14 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/import java\.lang\.\w+;/$) : 'java.lang import is unnecessary'
     ]
 
-    // Python and others merrily use var declarations, this is a problem _only_ in Java at least for 8x where we're forbidding var declarations
     def invalidJavaOnlyPatterns = [
       (~$/\n\s*var\s+.*=.*<>.*/$) : 'Diamond operators should not be used with var',
-      (~$/\n\s*var\s+/$) : 'var is not allowed in until we stop development on the 8x code line'
     ]
 
-    def found = 0;
     def violations = new TreeSet();
     def reportViolation = { f, name ->
       logger.error('{}: {}', name, f);
       violations.add(name);
-      found++;
     }
 
     def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
@@ -283,9 +277,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     }
     progress.completed()
 
-    if (found) {
-      throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-        found, violations.join(', ')));
-    }
+    def checkProp = "validation.sourcePatterns.failOnError"
+    project.failOrWarn(checkProp, "Found source pattern violations", violations)
   }
 }

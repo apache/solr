@@ -22,10 +22,9 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.junit.BeforeClass;
 
-
 /**
- * A subclass of SolrExampleTests that explicitly uses the binary 
- * codec for communication. 
+ * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the binary codec for
+ * communication.
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryTest extends SolrExampleTests {
@@ -35,22 +34,12 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
   }
 
   @Override
-  public SolrClient createNewSolrClient()
-  {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
-
-      // where the magic happens
-      client.setParser(new BinaryResponseParser());
-      client.setRequestWriter(new BinaryRequestWriter());
-
-      return client;
-    }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
+  public SolrClient createNewSolrClient() {
+    return new HttpSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .allowMultiPartPost(random().nextBoolean())
+        .withRequestWriter(new BinaryRequestWriter())
+        .withResponseParser(new BinaryResponseParser())
+        .build();
   }
 }

@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -38,7 +37,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -53,10 +51,11 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
@@ -81,7 +80,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     final Set<String> seen = new HashSet<>();
     final int maxLength = TestUtil.nextInt(random, 5, 100);
     if (VERBOSE) {
-      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
+      System.out.println(
+          "TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
     }
 
     int numDocs = 0;
@@ -114,7 +114,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         if (type == SortField.Type.STRING) {
           doc.add(new StringField("stringdv", s, Field.Store.NO));
         } else {
-          assert type == SortField.Type.STRING_VAL;
+          assertSame(type, SortField.Type.STRING_VAL);
           doc.add(new BinaryDocValuesField("stringdv", new BytesRef(s)));
         }
         docValues.add(new BytesRef(s));
@@ -138,7 +138,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       }
     }
 
-    Map<String,UninvertingReader.Type> mapping = new HashMap<>();
+    Map<String, UninvertingReader.Type> mapping = new HashMap<>();
     mapping.put("stringdv", Type.SORTED);
     mapping.put("id", Type.INTEGER_POINT);
     final IndexReader r = UninvertingReader.wrap(writer.getReader(), mapping);
@@ -146,10 +146,10 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     if (VERBOSE) {
       System.out.println("  reader=" + r);
     }
-    
+
     final IndexSearcher s = newSearcher(r, false);
     final int ITERS = atLeast(100);
-    for(int iter=0;iter<ITERS;iter++) {
+    for (int iter = 0; iter < ITERS; iter++) {
       final boolean reverse = random.nextBoolean();
 
       final TopFieldDocs hits;
@@ -163,7 +163,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       if (sortMissingLast) {
         sf.setMissingValue(SortField.STRING_LAST);
       }
-      
+
       final Sort sort;
       if (random.nextBoolean()) {
         sort = new Sort(sf);
@@ -174,40 +174,52 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       final RandomQuery f = new RandomQuery(random.nextLong(), random.nextFloat(), docValues);
       int queryType = random.nextInt(2);
       if (queryType == 0) {
-        hits = s.search(new ConstantScoreQuery(f),
-                        hitCount, sort, false);
+        hits = s.search(new ConstantScoreQuery(f), hitCount, sort, false);
       } else {
         hits = s.search(f, hitCount, sort, false);
       }
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " ; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
+        System.out.println(
+            "\nTEST: iter="
+                + iter
+                + " "
+                + hits.totalHits
+                + " ; topN="
+                + hitCount
+                + "; reverse="
+                + reverse
+                + "; sortMissingLast="
+                + sortMissingLast
+                + " sort="
+                + sort);
       }
 
       // Compute expected results:
-      Collections.sort(f.matchValues, new Comparator<BytesRef>() {
-          @Override
-          public int compare(BytesRef a, BytesRef b) {
-            if (a == null) {
-              if (b == null) {
-                return 0;
-              }
-              if (sortMissingLast) {
-                return 1;
+      f.matchValues.sort(
+          new Comparator<BytesRef>() {
+            @Override
+            public int compare(BytesRef a, BytesRef b) {
+              if (a == null) {
+                if (b == null) {
+                  return 0;
+                }
+                if (sortMissingLast) {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              } else if (b == null) {
+                if (sortMissingLast) {
+                  return -1;
+                } else {
+                  return 1;
+                }
               } else {
-                return -1;
+                return a.compareTo(b);
               }
-            } else if (b == null) {
-              if (sortMissingLast) {
-                return -1;
-              } else {
-                return 1;
-              }
-            } else {
-              return a.compareTo(b);
             }
-          }
-        });
+          });
 
       if (reverse) {
         Collections.reverse(f.matchValues);
@@ -215,28 +227,34 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       final List<BytesRef> expected = f.matchValues;
       if (VERBOSE) {
         System.out.println("  expected:");
-        for(int idx=0;idx<expected.size();idx++) {
+        for (int idx = 0; idx < expected.size(); idx++) {
           BytesRef br = expected.get(idx);
           if (br == null && missingIsNull == false) {
             br = new BytesRef();
           }
           System.out.println("    " + idx + ": " + (br == null ? "<missing>" : br.utf8ToString()));
-          if (idx == hitCount-1) {
+          if (idx == hitCount - 1) {
             break;
           }
         }
       }
-      
+
       if (VERBOSE) {
         System.out.println("  actual:");
-        for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
+        for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
           final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
           BytesRef br = (BytesRef) fd.fields[0];
 
-          System.out.println("    " + hitIDX + ": " + (br == null ? "<missing>" : br.utf8ToString()) + " id=" + s.doc(fd.doc).get("id"));
+          System.out.println(
+              "    "
+                  + hitIDX
+                  + ": "
+                  + (br == null ? "<missing>" : br.utf8ToString())
+                  + " id="
+                  + s.doc(fd.doc).get("id"));
         }
       }
-      for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
+      for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
         final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
         BytesRef br = expected.get(hitIDX);
         if (br == null && missingIsNull == false) {
@@ -253,7 +271,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         if (br2 == null && missingIsNull == false) {
           br2 = new BytesRef();
         }
-        
+
         assertEquals(br, br2);
       }
     }
@@ -261,12 +279,13 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     r.close();
     dir.close();
   }
-  
+
   private static class RandomQuery extends Query {
     private final long seed;
     private float density;
     private final List<BytesRef> docValues;
-    public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<BytesRef>());
+    public final List<BytesRef> matchValues =
+        Collections.synchronizedList(new ArrayList<BytesRef>());
 
     // density should be 0.0 ... 1.0
     public RandomQuery(long seed, float density, List<BytesRef> docValues) {
@@ -276,7 +295,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -285,16 +304,17 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
           final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
           assertNotNull(idSource);
           final FixedBitSet bits = new FixedBitSet(maxDoc);
-          for(int docID=0;docID<maxDoc;docID++) {
+          for (int docID = 0; docID < maxDoc; docID++) {
             if (random.nextFloat() <= density) {
               bits.set(docID);
-              //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+              // System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
               assertEquals(docID, idSource.advance(docID));
               matchValues.add(docValues.get((int) idSource.longValue()));
             }
           }
 
-          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(
+              this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override
@@ -305,9 +325,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
+    public void visit(QueryVisitor visitor) {}
 
     @Override
     public String toString(String field) {
@@ -316,14 +334,11 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(RandomQuery other) {
-      return seed == other.seed && 
-             docValues == other.docValues &&
-             density == other.density;
+      return seed == other.seed && docValues == other.docValues && density == other.density;
     }
 
     @Override

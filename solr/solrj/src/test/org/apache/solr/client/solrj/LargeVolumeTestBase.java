@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,30 +30,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * @since solr 1.3
  */
-public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
-{
+public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // for real load testing, make these numbers bigger
-  static final int numdocs = 100; //1000 * 1000;
+  static final int numdocs = 100; // 1000 * 1000;
   static final int threadCount = 5;
 
   @Test
   public void testMultiThreaded() throws Exception {
-    SolrClient client = this.getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
-    
+
     DocThread[] threads = new DocThread[threadCount];
-    for (int i=0; i<threadCount; i++) {
-      threads[i] = new DocThread( "T"+i+":" );
+    for (int i = 0; i < threadCount; i++) {
+      threads[i] = new DocThread("T" + i + ":");
       threads[i].setName("DocThread-" + i);
       threads[i].start();
       log.info("Started thread: {}", i);
     }
-    for (int i=0; i<threadCount; i++) {
+    for (int i = 0; i < threadCount; i++) {
       threads[i].join();
     }
 
@@ -62,30 +59,29 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
     // so do a final commit to make sure everything is visible.
     // This should no longer be true as of SOLR-9712 (Solr 6.4)
     // client.commit();
-    
+
     query(threadCount * numdocs);
     log.info("done");
   }
 
   private void query(int count) throws SolrServerException, IOException {
-    SolrClient client = this.getSolrClient();
+    SolrClient client = getSolrClient();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = client.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(count, response.getResults().getNumFound());
   }
 
-  public class DocThread extends Thread {
-    
+  public static class DocThread extends Thread {
+
     final SolrClient client;
     final String name;
-    
-    public DocThread( String name )
-    {
-      client = createNewSolrClient();
+
+    public DocThread(String name) {
+      client = getSolrClient();
       this.name = name;
     }
-    
+
     @Override
     public void run() {
       try {
@@ -105,7 +101,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
             assertEquals(0, resp.getStatus());
           }
           SolrInputDocument doc = new SolrInputDocument();
-          doc.addField("id", name+i );
+          doc.addField("id", name + i);
           doc.addField("cat", "foocat");
           docs.add(doc);
         }
@@ -113,10 +109,10 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         assertEquals(0, resp.getStatus());
 
         try {
-        resp = client.commit();
-        assertEquals(0, resp.getStatus());
-        resp = client.optimize();
-        assertEquals(0, resp.getStatus());
+          resp = client.commit();
+          assertEquals(0, resp.getStatus());
+          resp = client.optimize();
+          assertEquals(0, resp.getStatus());
         } catch (Exception e) {
           // a commit/optimize can fail with a too many warming searchers exception
           if (log.isInfoEnabled()) {
@@ -128,8 +124,8 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         }
 
       } catch (Exception e) {
-        e.printStackTrace();
-        fail( getName() + "---" + e.getMessage() );
+        log.error("{} failed", getName(), e);
+        fail(getName() + "---" + e.getMessage());
       }
     }
   }

@@ -24,15 +24,14 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 
-/**
- * Solr query parser that will handle parsing graph query requests.
- */
+/** Solr query parser that will handle parsing graph query requests. */
 public class GraphQueryParser extends QParser {
-  
-  public GraphQueryParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+
+  public GraphQueryParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
-  
+
   @Override
   public Query parse() throws SyntaxError {
     // grab query params and defaults
@@ -40,7 +39,8 @@ public class GraphQueryParser extends QParser {
 
     Query rootNodeQuery = subQuery(localParams.get(QueryParsing.V), null).getQuery();
     String traversalFilterS = localParams.get("traversalFilter");
-    Query traversalFilter = traversalFilterS == null ? null : subQuery(traversalFilterS, null).getQuery();
+    Query traversalFilter =
+        traversalFilterS == null ? null : subQuery(traversalFilterS, null).getQuery();
 
     // NOTE: the from/to are reversed from {!join}
     String fromField = localParams.get("from", "node_id");
@@ -85,15 +85,15 @@ public class GraphQueryParser extends QParser {
     }
 
     if (req.getSchema().getField(field).getType() instanceof StrField) {
-      if ((req.getSchema().getField(field).hasDocValues() || req.getSchema().getField(field).indexed())) {
+      if ((req.getSchema().getField(field).hasDocValues()
+          || req.getSchema().getField(field).indexed())) {
         return;
       } else {
-        throw new SyntaxError("string field " + field + " must have indexed=true or docValues=true");
+        throw new SyntaxError(
+            "string field " + field + " must have indexed=true or docValues=true");
       }
     }
 
     throw new SyntaxError("FieldType for field=" + field + " not supported");
-
   }
-  
 }

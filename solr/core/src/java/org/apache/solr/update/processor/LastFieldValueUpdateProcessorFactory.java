@@ -16,30 +16,25 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.SortedSet;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import java.util.Collections;
-import java.util.Collection;
-import java.util.List;
-import java.util.SortedSet;
-
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
 /**
- * Keeps only the last value of fields matching the specified 
- * conditions.  Correct behavior assumes that the SolrInputFields being mutated 
- * are either single valued, or use an ordered Collection (ie: not a Set).
- * <p>
- * By default, this processor matches no fields.
- * </p>
- * 
- * <p>
- * For example, in the configuration below, if a field named 
- * <code>primary_author</code> contained multiple values (ie: 
- * <code>"Adam Doe", "Bob Smith", "Carla Jones"</code>) then only the last 
- * value (ie:  <code>"Carla Jones"</code>) will be kept
- * </p>
+ * Keeps only the last value of fields matching the specified conditions. Correct behavior assumes
+ * that the SolrInputFields being mutated are either single valued, or use an ordered Collection
+ * (ie: not a Set).
+ *
+ * <p>By default, this processor matches no fields.
+ *
+ * <p>For example, in the configuration below, if a field named <code>primary_author</code>
+ * contained multiple values (ie: <code>"Adam Doe", "Bob Smith", "Carla Jones"</code>) then only the
+ * last value (ie: <code>"Carla Jones"</code>) will be kept
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.LastFieldValueUpdateProcessorFactory"&gt;
@@ -50,7 +45,8 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  * @see FirstFieldValueUpdateProcessorFactory
  * @since 4.0.0
  */
-public final class LastFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
+public final class LastFieldValueUpdateProcessorFactory
+    extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
   public <T> Collection<T> pickSubset(Collection<T> values) {
@@ -59,14 +55,16 @@ public final class LastFieldValueUpdateProcessorFactory extends FieldValueSubset
 
     if (values instanceof List) {
       // optimize index lookup
-      List<T> l = (List<T>)values;
-      result = l.get(l.size()-1);
+      List<T> l = (List<T>) values;
+      result = l.get(l.size() - 1);
     } else if (values instanceof SortedSet) {
       // optimize tail lookup
-      result = ((SortedSet<T>)values).last();
+      result = ((SortedSet<T>) values).last();
     } else {
       // trust the iterator
-      for (T o : values) { result = o; }
+      for (T o : values) {
+        result = o;
+      }
     }
 
     return Collections.singletonList(result);
@@ -76,6 +74,4 @@ public final class LastFieldValueUpdateProcessorFactory extends FieldValueSubset
   public FieldNameSelector getDefaultSelector(final SolrCore core) {
     return SELECT_NO_FIELDS;
   }
-  
 }
-

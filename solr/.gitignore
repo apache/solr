@@ -10,7 +10,6 @@
 /example/solr/logs
 /example/solr/zoo_data
 /example/work/*
-/example/exampledocs/post.jar
 
 /package
 

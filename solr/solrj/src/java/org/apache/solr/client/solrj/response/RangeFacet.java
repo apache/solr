@@ -19,9 +19,7 @@ package org.apache.solr.client.solrj.response;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Represents a range facet result
- */
+/** Represents a range facet result */
 public abstract class RangeFacet<B, G> {
 
   private final String name;
@@ -35,7 +33,8 @@ public abstract class RangeFacet<B, G> {
   private final Number after;
   private final Number between;
 
-  protected RangeFacet(String name, B start, B end, G gap, Number before, Number after, Number between) {
+  protected RangeFacet(
+      String name, B start, B end, G gap, Number before, Number after, Number between) {
     this.name = name;
     this.start = start;
     this.end = end;
@@ -83,22 +82,41 @@ public abstract class RangeFacet<B, G> {
 
   public static class Numeric extends RangeFacet<Number, Number> {
 
-    public Numeric(String name, Number start, Number end, Number gap, Number before, Number after, Number between) {
+    public Numeric(
+        String name,
+        Number start,
+        Number end,
+        Number gap,
+        Number before,
+        Number after,
+        Number between) {
       super(name, start, end, gap, before, after, between);
     }
-
   }
 
   public static class Date extends RangeFacet<java.util.Date, String> {
 
-    public Date(String name, java.util.Date start, java.util.Date end, String gap, Number before, Number after, Number between) {
+    public Date(
+        String name,
+        java.util.Date start,
+        java.util.Date end,
+        String gap,
+        Number before,
+        Number after,
+        Number between) {
       super(name, start, end, gap, before, after, between);
     }
-
   }
 
   public static class Currency extends RangeFacet<String, String> {
-    public Currency(String name, String start, String end, String gap, Number before, Number after, Number between) {
+    public Currency(
+        String name,
+        String start,
+        String end,
+        String gap,
+        Number before,
+        Number after,
+        Number between) {
       super(name, start, end, gap, before, after, between);
     }
   }
@@ -107,11 +125,11 @@ public abstract class RangeFacet<B, G> {
 
     private final String value;
     private final int count;
+
     @SuppressWarnings({"rawtypes"})
     private final RangeFacet rangeFacet;
 
-    public Count(String value, int count,
-                 @SuppressWarnings({"rawtypes"})RangeFacet rangeFacet) {
+    public Count(String value, int count, @SuppressWarnings({"rawtypes"}) RangeFacet rangeFacet) {
       this.value = value;
       this.count = count;
       this.rangeFacet = rangeFacet;
@@ -130,5 +148,4 @@ public abstract class RangeFacet<B, G> {
       return rangeFacet;
     }
   }
-
 }

@@ -16,19 +16,20 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
+import java.util.function.Function;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrDocument;
@@ -41,12 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
- *
  * @since solr 1.3
  */
-public class XMLResponseParser extends ResponseParser
-{
+public class XMLResponseParser extends ResponseParser {
   public static final String XML_CONTENT_TYPE = "application/xml; charset=UTF-8";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
@@ -54,6 +52,7 @@ public class XMLResponseParser extends ResponseParser
   // reuse the factory among all parser instances so things like string caches
   // won't be duplicated
   static final XMLInputFactory factory;
+
   static {
     factory = XMLInputFactory.newInstance();
     EmptyEntityResolver.configureXMLInputFactory(factory);
@@ -66,11 +65,10 @@ public class XMLResponseParser extends ResponseParser
       // All other known open-source stax parsers (and the bea ref impl)
       // have thread-safe factories.
       factory.setProperty("reuse-instance", Boolean.FALSE);
-    }
-    catch( IllegalArgumentException ex ) {
+    } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      log.debug( "Unable to set the 'reuse-instance' property for the input factory: {}", factory );
+      log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", factory);
     }
     factory.setXMLReporter(xmllog);
   }
@@ -78,8 +76,7 @@ public class XMLResponseParser extends ResponseParser
   public XMLResponseParser() {}
 
   @Override
-  public String getWriterType()
-  {
+  public String getWriterType() {
     return "xml";
   }
 
@@ -94,87 +91,110 @@ public class XMLResponseParser extends ResponseParser
     try {
       parser = factory.createXMLStreamReader(in);
     } catch (XMLStreamException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
 
     return processResponse(parser);
   }
 
   @Override
-  public NamedList<Object> processResponse(InputStream in, String encoding)
-  {
-     XMLStreamReader parser = null;
+  public NamedList<Object> processResponse(InputStream in, String encoding) {
+    XMLStreamReader parser = null;
     try {
       parser = factory.createXMLStreamReader(in, encoding);
     } catch (XMLStreamException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
     }
 
     return processResponse(parser);
   }
 
-  /**
-   * parse the text into a named list...
-   */
-  private NamedList<Object> processResponse(XMLStreamReader parser)
-  {
+  /** parse the text into a named list... */
+  private NamedList<Object> processResponse(XMLStreamReader parser) {
     try {
       NamedList<Object> response = null;
       for (int event = parser.next();
-       event != XMLStreamConstants.END_DOCUMENT;
-       event = parser.next())
-      {
+          event != XMLStreamConstants.END_DOCUMENT;
+          event = parser.next()) {
         switch (event) {
           case XMLStreamConstants.START_ELEMENT:
-
-            if( response != null ) {
-              throw new Exception( "already read the response!" );
+            if (response != null) {
+              throw new Exception("already read the response!");
             }
 
             // only top-level element is "response
             String name = parser.getLocalName();
-            if( name.equals( "response" ) || name.equals( "result" ) ) {
-              response = readNamedList( parser );
-            }
-            else if( name.equals( "solr" ) ) {
+            if (name.equals("response") || name.equals("result")) {
+              response = readNamedList(parser);
+            } else if (name.equals("solr")) {
               return new SimpleOrderedMap<>();
-            }
-            else {
-              throw new Exception( "really needs to be response or result.  " +
-                  "not:"+parser.getLocalName() );
+            } else {
+              throw new Exception(
+                  "really needs to be response or result.  " + "not:" + parser.getLocalName());
             }
             break;
         }
       }
       return response;
-    }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", ex );
-    }
-    finally {
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", ex);
+    } finally {
       try {
         parser.close();
+      } catch (Exception ex) {
       }
-      catch( Exception ex ){}
     }
   }
 
-
   protected enum KnownType {
-    STR    (true)  { @Override public String  read( String txt ) { return txt;                  } },
-    INT    (true)  { @Override public Integer read( String txt ) { return Integer.valueOf(txt); } },
-    FLOAT  (true)  { @Override public Float   read( String txt ) { return Float.valueOf(txt);   } },
-    DOUBLE (true)  { @Override public Double  read( String txt ) { return Double.valueOf(txt);  } },
-    LONG   (true)  { @Override public Long    read( String txt ) { return Long.valueOf(txt);    } },
-    BOOL   (true)  { @Override public Boolean read( String txt ) { return Boolean.valueOf(txt); } },
-    NULL   (true)  { @Override public Object  read( String txt ) { return null;                 } },
-    DATE   (true)  {
+    STR(true) {
       @Override
-      public Date read( String txt ) {
+      public String read(String txt) {
+        return txt;
+      }
+    },
+    INT(true) {
+      @Override
+      public Integer read(String txt) {
+        return Integer.valueOf(txt);
+      }
+    },
+    FLOAT(true) {
+      @Override
+      public Float read(String txt) {
+        return Float.valueOf(txt);
+      }
+    },
+    DOUBLE(true) {
+      @Override
+      public Double read(String txt) {
+        return Double.valueOf(txt);
+      }
+    },
+    LONG(true) {
+      @Override
+      public Long read(String txt) {
+        return Long.valueOf(txt);
+      }
+    },
+    BOOL(true) {
+      @Override
+      public Boolean read(String txt) {
+        return Boolean.valueOf(txt);
+      }
+    },
+    NULL(true) {
+      @Override
+      public Object read(String txt) {
+        return null;
+      }
+    },
+    DATE(true) {
+      @Override
+      public Date read(String txt) {
         try {
           return new Date(Instant.parse(txt).toEpochMilli());
-        }
-        catch( Exception ex ) {
+        } catch (Exception ex) {
           if (log.isInfoEnabled()) {
             log.info("Error reading date: {}", txt, ex);
           }
@@ -183,36 +203,59 @@ public class XMLResponseParser extends ResponseParser
       }
     },
 
-    ARR    (false) { @Override public Object read( String txt ) { return null; } },
-    LST    (false) { @Override public Object read( String txt ) { return null; } },
-    RESULT (false) { @Override public Object read( String txt ) { return null; } },
-    DOC    (false) { @Override public Object read( String txt ) { return null; } };
+    RAW(true) {
+      @Override
+      public Object read(String txt) {
+        return null;
+      }
+    },
+    ARR(false) {
+      @Override
+      public Object read(String txt) {
+        return null;
+      }
+    },
+    LST(false) {
+      @Override
+      public Object read(String txt) {
+        return null;
+      }
+    },
+    RESULT(false) {
+      @Override
+      public Object read(String txt) {
+        return null;
+      }
+    },
+    DOC(false) {
+      @Override
+      public Object read(String txt) {
+        return null;
+      }
+    };
 
     final boolean isLeaf;
 
-    KnownType( boolean isLeaf )
-    {
+    KnownType(boolean isLeaf) {
       this.isLeaf = isLeaf;
     }
 
-    public abstract Object read( String txt );
+    public abstract Object read(String txt);
 
-    public static KnownType get( String v )
-    {
-      if( v != null ) {
+    public static KnownType get(String v) {
+      if (v != null) {
         try {
-          return KnownType.valueOf( v.toUpperCase(Locale.ROOT) );
+          return KnownType.valueOf(v.toUpperCase(Locale.ROOT));
+        } catch (Exception ex) {
         }
-        catch( Exception ex ) {}
       }
       return null;
     }
   };
 
-  protected NamedList<Object> readNamedList( XMLStreamReader parser ) throws XMLStreamException
-  {
-    if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
-      throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
+  protected NamedList<Object> readNamedList(XMLStreamReader parser) throws XMLStreamException {
+    if (XMLStreamConstants.START_ELEMENT != parser.getEventType()) {
+      throw new RuntimeException("must be start element, not: " + parser.getEventType());
     }
 
     StringBuilder builder = new StringBuilder();
@@ -222,76 +265,87 @@ public class XMLResponseParser extends ResponseParser
 
     // just eat up the events...
     int depth = 0;
-    while( true )
-    {
+    while (true) {
       switch (parser.next()) {
-      case XMLStreamConstants.START_ELEMENT:
-        depth++;
-        builder.setLength( 0 ); // reset the text
-        type = KnownType.get( parser.getLocalName() );
-        if( type == null ) {
-          throw new RuntimeException( "this must be known type! not: "+parser.getLocalName() );
-        }
-
-        name = null;
-        int cnt = parser.getAttributeCount();
-        for( int i=0; i<cnt; i++ ) {
-          if( "name".equals( parser.getAttributeLocalName( i ) ) ) {
-            name = parser.getAttributeValue( i );
-            break;
+        case XMLStreamConstants.START_ELEMENT:
+          depth++;
+          builder.setLength(0); // reset the text
+          type = KnownType.get(parser.getLocalName());
+          if (type == null) {
+            throw new RuntimeException("this must be known type! not: " + parser.getLocalName());
           }
-        }
 
-        /** The name in a NamedList can actually be null
-        if( name == null ) {
-          throw new XMLStreamException( "requires 'name' attribute: "+parser.getLocalName(), parser.getLocation() );
-        }
-        **/
-
-        if( !type.isLeaf ) {
-          switch( type ) {
-          case LST:    nl.add( name, readNamedList( parser ) ); depth--; continue;
-          case ARR:    nl.add( name, readArray(     parser ) ); depth--; continue;
-          case RESULT: nl.add( name, readDocuments( parser ) ); depth--; continue;
-          case DOC:    nl.add( name, readDocument(  parser ) ); depth--; continue;
-          case BOOL:
-          case DATE:
-          case DOUBLE:
-          case FLOAT:
-          case INT:
-          case LONG:
-          case NULL:
-          case STR:
-            break;
+          name = null;
+          int cnt = parser.getAttributeCount();
+          for (int i = 0; i < cnt; i++) {
+            if ("name".equals(parser.getAttributeLocalName(i))) {
+              name = parser.getAttributeValue(i);
+              break;
+            }
           }
-          throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
-        }
-        break;
 
-      case XMLStreamConstants.END_ELEMENT:
-        if( --depth < 0 ) {
-          return nl;
-        }
-        //System.out.println( "NL:ELEM:"+type+"::"+name+"::"+builder );
-        nl.add( name, type.read( builder.toString().trim() ) );
-        break;
+          /*
+           * The name in a NamedList can actually be null if( name == null ) { throw new
+           * XMLStreamException( "requires 'name' attribute: "+parser.getLocalName(),
+           * parser.getLocation() ); }
+           */
+          if (!type.isLeaf) {
+            switch (type) {
+              case LST:
+                nl.add(name, readNamedList(parser));
+                depth--;
+                continue;
+              case ARR:
+                nl.add(name, readArray(parser));
+                depth--;
+                continue;
+              case RESULT:
+                nl.add(name, readDocuments(parser));
+                depth--;
+                continue;
+              case DOC:
+                nl.add(name, readDocument(parser));
+                depth--;
+                continue;
+              case BOOL:
+              case DATE:
+              case DOUBLE:
+              case FLOAT:
+              case INT:
+              case LONG:
+              case NULL:
+              case STR:
+              case RAW:
+                break;
+            }
+            throw new XMLStreamException("branch element not handled!", parser.getLocation());
+          }
+          break;
 
-      case XMLStreamConstants.SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
-      case XMLStreamConstants.CDATA:
-      case XMLStreamConstants.CHARACTERS:
-        builder.append( parser.getText() );
-        break;
+        case XMLStreamConstants.END_ELEMENT:
+          if (--depth < 0) {
+            return nl;
+          }
+          // System.out.println( "NL:ELEM:"+type+"::"+name+"::"+builder );
+          nl.add(name, type.read(builder.toString().trim()));
+          break;
+
+        case XMLStreamConstants.SPACE:
+          // TODO?  should this be trimmed? make sure it only gets one/two space?
+        case XMLStreamConstants.CDATA:
+        case XMLStreamConstants.CHARACTERS:
+          builder.append(parser.getText());
+          break;
       }
     }
   }
 
-  protected List<Object> readArray( XMLStreamReader parser ) throws XMLStreamException
-  {
-    if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
-      throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
+  protected List<Object> readArray(XMLStreamReader parser) throws XMLStreamException {
+    if (XMLStreamConstants.START_ELEMENT != parser.getEventType()) {
+      throw new RuntimeException("must be start element, not: " + parser.getEventType());
     }
-    if( !"arr".equals( parser.getLocalName().toLowerCase(Locale.ROOT) ) ) {
-      throw new RuntimeException( "must be 'arr', not: "+parser.getLocalName() );
+    if (!"arr".equals(parser.getLocalName().toLowerCase(Locale.ROOT))) {
+      throw new RuntimeException("must be 'arr', not: " + parser.getLocalName());
     }
 
     StringBuilder builder = new StringBuilder();
@@ -300,110 +354,119 @@ public class XMLResponseParser extends ResponseParser
     List<Object> vals = new ArrayList<>();
 
     int depth = 0;
-    while( true )
-    {
+    while (true) {
       switch (parser.next()) {
-      case XMLStreamConstants.START_ELEMENT:
-        depth++;
-        KnownType t = KnownType.get( parser.getLocalName() );
-        if( t == null ) {
-          throw new RuntimeException( "this must be known type! not: "+parser.getLocalName() );
-        }
-        if( type == null ) {
-          type = t;
-        }
-        /*** actually, there is no rule that arrays need the same type
-        else if( type != t && !(t == KnownType.NULL || type == KnownType.NULL)) {
-          throw new RuntimeException( "arrays must have the same type! ("+type+"!="+t+") "+parser.getLocalName() );
-        }
-        ***/
-        type = t;
-
-        builder.setLength( 0 ); // reset the text
-
-        if( !type.isLeaf ) {
-          switch( type ) {
-          case LST:    vals.add( readNamedList( parser ) ); depth--; continue;
-          case ARR:    vals.add( readArray( parser ) ); depth--; continue;
-          case RESULT: vals.add( readDocuments( parser ) ); depth--; continue;
-          case DOC:    vals.add( readDocument( parser ) ); depth--; continue;
-          case BOOL:
-          case DATE:
-          case DOUBLE:
-          case FLOAT:
-          case INT:
-          case LONG:
-          case NULL:
-          case STR:
-            break;
+        case XMLStreamConstants.START_ELEMENT:
+          depth++;
+          KnownType t = KnownType.get(parser.getLocalName());
+          if (t == null) {
+            throw new RuntimeException("this must be known type! not: " + parser.getLocalName());
           }
-          throw new XMLStreamException( "branch element not handled!", parser.getLocation() );
-        }
-        break;
+          if (type == null) {
+            type = t;
+          }
+          /* actually, there is no rule that arrays need the same type
+          else if( type != t && !(t == KnownType.NULL || type == KnownType.NULL)) {
+            throw new RuntimeException( "arrays must have the same type! ("+type+"!="+t+") "+parser.getLocalName() );
+          }
+          */
+          type = t;
 
-      case XMLStreamConstants.END_ELEMENT:
-        if( --depth < 0 ) {
-          return vals; // the last element is itself
-        }
-        //System.out.println( "ARR:"+type+"::"+builder );
-        Object val = type.read( builder.toString().trim() );
-        if( val == null && type != KnownType.NULL) {
-          throw new XMLStreamException( "error reading value:"+type, parser.getLocation() );
-        }
-        vals.add( val );
-        break;
+          builder.setLength(0); // reset the text
 
-      case XMLStreamConstants.SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
-      case XMLStreamConstants.CDATA:
-      case XMLStreamConstants.CHARACTERS:
-        builder.append( parser.getText() );
-        break;
-    }
+          if (!type.isLeaf) {
+            switch (type) {
+              case LST:
+                vals.add(readNamedList(parser));
+                depth--;
+                continue;
+              case ARR:
+                vals.add(readArray(parser));
+                depth--;
+                continue;
+              case RESULT:
+                vals.add(readDocuments(parser));
+                depth--;
+                continue;
+              case DOC:
+                vals.add(readDocument(parser));
+                depth--;
+                continue;
+              case BOOL:
+              case DATE:
+              case DOUBLE:
+              case FLOAT:
+              case INT:
+              case LONG:
+              case NULL:
+              case STR:
+              case RAW:
+                break;
+            }
+            throw new XMLStreamException("branch element not handled!", parser.getLocation());
+          }
+          break;
+
+        case XMLStreamConstants.END_ELEMENT:
+          if (--depth < 0) {
+            return vals; // the last element is itself
+          }
+          // System.out.println( "ARR:"+type+"::"+builder );
+          Object val = type.read(builder.toString().trim());
+          if (val == null && type != KnownType.NULL) {
+            throw new XMLStreamException("error reading value:" + type, parser.getLocation());
+          }
+          vals.add(val);
+          break;
+
+        case XMLStreamConstants.SPACE:
+          // TODO?  should this be trimmed? make sure it only gets one/two space?
+        case XMLStreamConstants.CDATA:
+        case XMLStreamConstants.CHARACTERS:
+          builder.append(parser.getText());
+          break;
+      }
     }
   }
 
-  protected SolrDocumentList readDocuments( XMLStreamReader parser ) throws XMLStreamException
-  {
+  protected SolrDocumentList readDocuments(XMLStreamReader parser) throws XMLStreamException {
     SolrDocumentList docs = new SolrDocumentList();
 
     // Parse the attributes
-    for( int i=0; i<parser.getAttributeCount(); i++ ) {
-      String n = parser.getAttributeLocalName( i );
-      String v = parser.getAttributeValue( i );
-      if( "numFound".equals( n ) ) {
-        docs.setNumFound( Long.parseLong( v ) );
-      }
-      else if( "start".equals( n ) ) {
-        docs.setStart( Long.parseLong( v ) );
-      }
-      else if( "maxScore".equals( n ) ) {
-        docs.setMaxScore( Float.parseFloat( v ) );
+    for (int i = 0; i < parser.getAttributeCount(); i++) {
+      String n = parser.getAttributeLocalName(i);
+      String v = parser.getAttributeValue(i);
+      if ("numFound".equals(n)) {
+        docs.setNumFound(Long.parseLong(v));
+      } else if ("start".equals(n)) {
+        docs.setStart(Long.parseLong(v));
+      } else if ("maxScore".equals(n)) {
+        docs.setMaxScore(Float.parseFloat(v));
       }
     }
 
     // Read through each document
     int event;
-    while( true ) {
+    while (true) {
       event = parser.next();
-      if( XMLStreamConstants.START_ELEMENT == event ) {
-        if( !"doc".equals( parser.getLocalName() ) ) {
-          throw new RuntimeException( "should be doc! "+parser.getLocalName() + " :: " + parser.getLocation() );
+      if (XMLStreamConstants.START_ELEMENT == event) {
+        if (!"doc".equals(parser.getLocalName())) {
+          throw new RuntimeException(
+              "should be doc! " + parser.getLocalName() + " :: " + parser.getLocation());
         }
-        docs.add( readDocument( parser ) );
-      }
-      else if ( XMLStreamConstants.END_ELEMENT == event ) {
-        return docs;  // only happens once
+        docs.add(readDocument(parser));
+      } else if (XMLStreamConstants.END_ELEMENT == event) {
+        return docs; // only happens once
       }
     }
   }
 
-  protected SolrDocument readDocument( XMLStreamReader parser ) throws XMLStreamException
-  {
-    if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
-      throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
+  protected SolrDocument readDocument(XMLStreamReader parser) throws XMLStreamException {
+    if (XMLStreamConstants.START_ELEMENT != parser.getEventType()) {
+      throw new RuntimeException("must be start element, not: " + parser.getEventType());
     }
-    if( !"doc".equals( parser.getLocalName().toLowerCase(Locale.ROOT) ) ) {
-      throw new RuntimeException( "must be 'lst', not: "+parser.getLocalName() );
+    if (!"doc".equals(parser.getLocalName().toLowerCase(Locale.ROOT))) {
+      throw new RuntimeException("must be 'lst', not: " + parser.getLocalName());
     }
 
     SolrDocument doc = new SolrDocument();
@@ -413,72 +476,109 @@ public class XMLResponseParser extends ResponseParser
 
     // just eat up the events...
     int depth = 0;
-    while( true )
-    {
+    while (true) {
       switch (parser.next()) {
-      case XMLStreamConstants.START_ELEMENT:
-        depth++;
-        builder.setLength( 0 ); // reset the text
-        type = KnownType.get( parser.getLocalName() );
-        if( type == null ) {
-          throw new RuntimeException( "this must be known type! not: "+parser.getLocalName() );
-        }
-
-        if ( type == KnownType.DOC) {
-          doc.addChildDocument(readDocument(parser));
-          depth--; // (nested) readDocument clears out the (nested) 'endElement'
-          continue; // may be more child docs, or other fields
-        }
-
-        // other then nested documents, all other possible nested elements require a name...
-
-        name = null;
-        int cnt = parser.getAttributeCount();
-        for( int i=0; i<cnt; i++ ) {
-          if( "name".equals( parser.getAttributeLocalName( i ) ) ) {
-            name = parser.getAttributeValue( i );
-            break;
+        case XMLStreamConstants.START_ELEMENT:
+          depth++;
+          builder.setLength(0); // reset the text
+          type = KnownType.get(parser.getLocalName());
+          if (type == null) {
+            throw new RuntimeException("this must be known type! not: " + parser.getLocalName());
           }
-        }
 
-        if( name == null ) {
-          throw new XMLStreamException( "requires 'name' attribute: "+parser.getLocalName(), parser.getLocation() );
-        }
-
-        // Handle multi-valued fields
-        if( type == KnownType.ARR ) {
-          for( Object val : readArray( parser ) ) {
-            doc.addField( name, val );
+          if (type == KnownType.DOC) {
+            doc.addChildDocument(readDocument(parser));
+            depth--; // (nested) readDocument clears out the (nested) 'endElement'
+            continue; // may be more child docs, or other fields
           }
-          depth--; // the array reading clears out the 'endElement'
-        } else if( type == KnownType.LST ) {
-            doc.addField( name, readNamedList( parser ) );
-          depth--;
-        } else if( !type.isLeaf ) {
-          throw new XMLStreamException( "must be value or array", parser.getLocation() );
-        }
-        break;
 
-      case XMLStreamConstants.END_ELEMENT:
-        if( --depth < 0 ) {
-          return doc;
-        }
-        //System.out.println( "FIELD:"+type+"::"+name+"::"+builder );
-        Object val = type.read( builder.toString().trim() );
-        if( val == null ) {
-          throw new XMLStreamException( "error reading value:"+type, parser.getLocation() );
-        }
-        doc.addField( name, val );
-        break;
+          // other then nested documents, all other possible nested elements require a name...
 
-      case XMLStreamConstants.SPACE: // TODO?  should this be trimmed? make sure it only gets one/two space?
-      case XMLStreamConstants.CDATA:
-      case XMLStreamConstants.CHARACTERS:
-        builder.append( parser.getText() );
-        break;
+          name = null;
+          int cnt = parser.getAttributeCount();
+          for (int i = 0; i < cnt; i++) {
+            if ("name".equals(parser.getAttributeLocalName(i))) {
+              name = parser.getAttributeValue(i);
+              break;
+            }
+          }
+
+          if (name == null) {
+            throw new XMLStreamException(
+                "requires 'name' attribute: " + parser.getLocalName(), parser.getLocation());
+          }
+
+          // Handle multi-valued fields
+          if (type == KnownType.ARR) {
+            for (Object val : readArray(parser)) {
+              doc.addField(name, val);
+            }
+            depth--; // the array reading clears out the 'endElement'
+          } else if (type == KnownType.LST) {
+            doc.addField(name, readNamedList(parser));
+            depth--;
+          } else if (type == KnownType.RESULT) {
+            // e.g., from the [subquery] doc transformer
+            doc.put(name, readDocuments(parser));
+            depth--;
+          } else if (type == KnownType.RAW) {
+            // e.g., from the raw [xml] doc transformer.
+            String raw = consumeRawContent(parser);
+            doc.addField(name, raw);
+            depth--;
+          } else if (!type.isLeaf) {
+            throw new XMLStreamException("must be value or array", parser.getLocation());
+          }
+          break;
+
+        case XMLStreamConstants.END_ELEMENT:
+          if (--depth < 0) {
+            return doc;
+          }
+          // System.out.println( "FIELD:"+type+"::"+name+"::"+builder );
+          Object val = type.read(builder.toString().trim());
+          if (val == null) {
+            throw new XMLStreamException("error reading value:" + type, parser.getLocation());
+          }
+          doc.addField(name, val);
+          break;
+
+        case XMLStreamConstants.SPACE:
+          // TODO?  should this be trimmed? make sure it only gets one/two space?
+        case XMLStreamConstants.CDATA:
+        case XMLStreamConstants.CHARACTERS:
+          builder.append(parser.getText());
+          break;
       }
     }
   }
 
+  /**
+   * This is a stub method for handling/validating "raw" xml field values in the context of tests.
+   * Before this stub method was present, "raw" content would have still thrown an exception, albeit
+   * a different, more inscrutable exception.
+   */
+  protected String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
+    throw new UnsupportedOperationException(
+        XMLResponseParser.class
+            + " is not capable of consuming field values serialized as raw XML");
+  }
 
+  /**
+   * Convenience method that converts raw String input (should be valid xml when wrapped in a root
+   * element) and converts it to a format compatible with how {@link XMLResponseParser} parses from
+   * raw xml fields. This method is intended for test validation.
+   *
+   * <p>The main reason this method exists is to provide a consistent way of configuring and
+   * creating and invoking the sub-parser
+   */
+  protected static String convertRawContent(
+      String raw, Function<XMLStreamReader, String> consumeRawContent) throws XMLStreamException {
+    XMLStreamReader subParser =
+        factory.createXMLStreamReader(new StringReader("<raw>" + raw + "</raw>"));
+    while (subParser.next() != XMLStreamConstants.START_ELEMENT) {
+      // consume any early stuff
+    }
+    return consumeRawContent.apply(subParser);
+  }
 }

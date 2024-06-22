@@ -1,0 +1,44 @@
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <!-- Solr Changes - Start -->
+      <img class="navbar-item" src="{{{uiRootPath}}}/img/solr-sunOnly-small.png" width="30" height="30">
+      <a class="navbar-item" href="{{{or site.url  siteRootPath}}}">{{site.title}}</a>
+      <!-- Solr Changes - End -->
+      {{#if env.SITE_SEARCH_ENABLED}}
+        <div class="navbar-item search hide-for-print">
+          <div id="search-field" class="field">
+            <input id="search-input" type="text" placeholder="Search the docs"{{#if page.home}} autofocus{{/if}}>
+          </div>
+        </div>
+      {{/if}}
+
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <!-- Solr Changes - Start -->
+        <a class="navbar-item" href="https://solr.apache.org/" target="_blank" rel="noreferrer nopener">Solr Website</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Resources</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="{{{page.attributes.solr-javadocs}}}/index.html" target="_blank" rel="noreferrer nopener">Solr Javadocs</a>
+            <a class="navbar-item" href="https://solr.apache.org/community.html#version-control" target="_blank" rel="noreferrer nopener">Source Code</a>
+            <a class="navbar-item" href="https://solr.apache.org/community.html" target="_blank" rel="noreferrer nopener">Community Links</a>
+            <a class="navbar-item" href="https://github.com/apache/solr/tree/main/dev-docs/ref-guide" target="_blank" rel="noreferrer nopener">Contribute</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="https://solr.apache.org/downloads.html" target="_blank" rel="noreferrer nopener">Download</a>
+          </span>
+        </div>
+        <!-- Solr Changes - End -->
+      </div>
+    </div>
+  </nav>
+</header>

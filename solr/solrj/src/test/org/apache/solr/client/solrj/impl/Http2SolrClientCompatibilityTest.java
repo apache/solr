@@ -22,7 +22,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -34,69 +34,71 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
-    try (Http2SolrClient client = new Http2SolrClient.Builder()
-        .build()) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder().build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
     }
     System.clearProperty("solr.http1");
-    try (Http2SolrClient client = new Http2SolrClient.Builder()
-        .build()) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder().build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
     }
   }
 
   public void testConnectToOldNodesUsingHttp1() throws Exception {
 
-    JettyConfig jettyConfig = JettyConfig.builder()
-        .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
-        .useOnlyHttp1(true)
-        .build();
+    JettyConfig jettyConfig =
+        JettyConfig.builder()
+            .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+            .useOnlyHttp1(true)
+            .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
-    try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-        .useHttp1_1(true)
-        .build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 
   public void testConnectToNewNodesUsingHttp1() throws Exception {
 
-    JettyConfig jettyConfig = JettyConfig.builder()
-        .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
-        .useOnlyHttp1(false)
-        .build();
+    JettyConfig jettyConfig =
+        JettyConfig.builder()
+            .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+            .useOnlyHttp1(false)
+            .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
-    try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-        .useHttp1_1(true)
-        .build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
+      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 
   public void testConnectToOldNodesUsingHttp2() throws Exception {
-    // if this test some how failure, this mean that Jetty client now be able to switch between HTTP/1
-    // and HTTP/2.2 protocol dynamically therefore rolling updates will be easier we should then notify this to users
-    JettyConfig jettyConfig = JettyConfig.builder()
-        .withServlet(new ServletHolder(Http2SolrClientTest.DebugServlet.class), "/debug/*")
-        .useOnlyHttp1(true)
-        .build();
+    // if this test some how failure, this mean that Jetty client now be able to switch between
+    // HTTP/1 and HTTP/2.2 protocol dynamically therefore rolling updates will be easier we should
+    // then notify this to users
+    JettyConfig jettyConfig =
+        JettyConfig.builder()
+            .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
+            .useOnlyHttp1(true)
+            .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
     System.clearProperty("solr.http1");
-    try (Http2SolrClient client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-        .build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
@@ -107,7 +109,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         // expected
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 }

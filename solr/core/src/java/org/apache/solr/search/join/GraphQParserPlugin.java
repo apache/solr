@@ -21,18 +21,16 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
-/**
- * Query parser plugin for solr to wrap the graph query parser.
- */
+/** Query parser plugin for solr to wrap the graph query parser. */
 public class GraphQParserPlugin extends QParserPlugin {
-  
+
   // Graph Query Parser parser name
   public static final String NAME = "graph";
-  
+
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     // return the graph query parser for this request.
     return new GraphQueryParser(qstr, localParams, params, req);
   }
-  
 }

@@ -218,6 +218,7 @@ class ValidateLogCallsTask extends DefaultTask {
   }
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileCollection sourceFiles
 
   @TaskAction

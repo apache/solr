@@ -16,6 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -46,30 +49,37 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-
 /**
- * Test the functionality (accuracy and failure) of the methods exposed by the classes
- * {@link SchemaRequest} and {@link SchemaResponse}.
+ * Test the functionality (accuracy and failure) of the methods exposed by the classes {@link
+ * SchemaRequest} and {@link SchemaResponse}.
  */
 public class SchemaTest extends RestTestBase {
   private static void assertValidSchemaResponse(SolrResponseBase schemaResponse) {
-    assertEquals("Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
-    assertNull("Response contained errors: " + schemaResponse.toString(), schemaResponse.getResponse().get("errors"));
-  }
-  
-  private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    BaseHttpSolrClient.RemoteExecutionException e = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
-    SimpleOrderedMap<?> errorMap = (SimpleOrderedMap<?>)e.getMetaData().get("error");
-    assertEquals("org.apache.solr.api.ApiBag$ExceptionWithErrObject",
-        ((NamedList)errorMap.get("metadata")).get("error-class"));
-    List<?> details = (List<?>)errorMap.get("details");
-    assertTrue(((List<?>)((Map<?,?>)details.get(0)).get("errorMessages")).get(0).toString().contains(expectedErrorMessage));
+    assertEquals(
+        "Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
+    assertNull(
+        "Response contained errors: " + schemaResponse.toString(),
+        schemaResponse.getResponse().get("errors"));
   }
 
-  private static void createStoredStringField(String fieldName, SolrClient solrClient) throws Exception {
+  private static void assertFailedSchemaResponse(
+      ThrowingRunnable runnable, String expectedErrorMessage) {
+    BaseHttpSolrClient.RemoteExecutionException e =
+        expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
+    SimpleOrderedMap<?> errorMap = (SimpleOrderedMap<?>) e.getMetaData().get("error");
+    assertEquals(
+        "org.apache.solr.api.ApiBag$ExceptionWithErrObject",
+        ((NamedList) errorMap.get("metadata")).get("error-class"));
+    List<?> details = (List<?>) errorMap.get("details");
+    assertTrue(
+        ((List<?>) ((Map<?, ?>) details.get(0)).get("errorMessages"))
+            .get(0)
+            .toString()
+            .contains(expectedErrorMessage));
+  }
+
+  private static void createStoredStringField(String fieldName, SolrClient solrClient)
+      throws Exception {
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
@@ -101,28 +111,30 @@ public class SchemaTest extends RestTestBase {
   @Before
   public void init() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
+    FileUtils.copyDirectory(
+        new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema.xml",
-        "/solr", true, extraServlets);
+    createJettyAndHarness(
+        tmpSolrHome.getAbsolutePath(),
+        "solrconfig-managed-schema.xml",
+        "schema.xml",
+        "/solr",
+        true,
+        extraServlets);
   }
 
   @After
-  public void cleanup() throws Exception  {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
+  public void cleanup() throws Exception {
+    solrClientTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }
     restTestHarness = null;
-
   }
 
   @Test
@@ -144,7 +156,8 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void testSchemaNameRequestAccuracy() throws Exception {
     SchemaRequest.SchemaName schemaNameRequest = new SchemaRequest.SchemaName();
-    SchemaResponse.SchemaNameResponse schemaNameResponse = schemaNameRequest.process(getSolrClient());
+    SchemaResponse.SchemaNameResponse schemaNameResponse =
+        schemaNameRequest.process(getSolrClient());
     assertValidSchemaResponse(schemaNameResponse);
     assertEquals("test", schemaNameResponse.getSchemaName());
   }
@@ -152,7 +165,8 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void testSchemaVersionRequestAccuracy() throws Exception {
     SchemaRequest.SchemaVersion schemaVersionRequest = new SchemaRequest.SchemaVersion();
-    SchemaResponse.SchemaVersionResponse schemaVersionResponse = schemaVersionRequest.process(getSolrClient());
+    SchemaResponse.SchemaVersionResponse schemaVersionResponse =
+        schemaVersionRequest.process(getSolrClient());
     assertValidSchemaResponse(schemaVersionResponse);
     assertEquals(1.6, schemaVersionResponse.getSchemaVersion(), 0.001);
   }
@@ -179,9 +193,9 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testGetDynamicFieldsAccuracy() throws Exception {
-    SchemaRequest.DynamicFields dynamicFieldsSchemaRequest =
-        new SchemaRequest.DynamicFields();
-    SchemaResponse.DynamicFieldsResponse dynamicFieldsResponse = dynamicFieldsSchemaRequest.process(getSolrClient());
+    SchemaRequest.DynamicFields dynamicFieldsSchemaRequest = new SchemaRequest.DynamicFields();
+    SchemaResponse.DynamicFieldsResponse dynamicFieldsResponse =
+        dynamicFieldsSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(dynamicFieldsResponse);
     List<Map<String, Object>> fields = dynamicFieldsResponse.getDynamicFields();
     assertThat(fields.isEmpty(), is(false));
@@ -192,7 +206,8 @@ public class SchemaTest extends RestTestBase {
     String dynamicFieldName = "*_i";
     SchemaRequest.DynamicField dynamicFieldSchemaRequest =
         new SchemaRequest.DynamicField(dynamicFieldName);
-    SchemaResponse.DynamicFieldResponse dynamicFieldResponse = dynamicFieldSchemaRequest.process(getSolrClient());
+    SchemaResponse.DynamicFieldResponse dynamicFieldResponse =
+        dynamicFieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(dynamicFieldResponse);
     Map<String, Object> dynamicFieldAttributes = dynamicFieldResponse.getDynamicField();
     assertThat(dynamicFieldName, is(equalTo(dynamicFieldAttributes.get("name"))));
@@ -201,9 +216,9 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testGetFieldTypesAccuracy() throws Exception {
-    SchemaRequest.FieldTypes fieldTypesRequest =
-        new SchemaRequest.FieldTypes();
-    SchemaResponse.FieldTypesResponse fieldTypesResponse = fieldTypesRequest.process(getSolrClient());
+    SchemaRequest.FieldTypes fieldTypesRequest = new SchemaRequest.FieldTypes();
+    SchemaResponse.FieldTypesResponse fieldTypesResponse =
+        fieldTypesRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldTypesResponse);
     List<FieldTypeRepresentation> fieldTypes = fieldTypesResponse.getFieldTypes();
     assertThat(fieldTypes.isEmpty(), is(false));
@@ -212,9 +227,9 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void testGetFieldTypeAccuracy() throws Exception {
     String fieldType = "string";
-    SchemaRequest.FieldType fieldTypeSchemaRequest =
-        new SchemaRequest.FieldType(fieldType);
-    SchemaResponse.FieldTypeResponse fieldTypeResponse = fieldTypeSchemaRequest.process(getSolrClient());
+    SchemaRequest.FieldType fieldTypeSchemaRequest = new SchemaRequest.FieldType(fieldType);
+    SchemaResponse.FieldTypeResponse fieldTypeResponse =
+        fieldTypeSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldTypeResponse);
     FieldTypeRepresentation fieldTypeDefinition = fieldTypeResponse.getFieldType();
     assertThat(fieldType, is(equalTo(fieldTypeDefinition.getAttributes().get("name"))));
@@ -223,9 +238,9 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testGetCopyFieldsAccuracy() throws Exception {
-    SchemaRequest.CopyFields copyFieldsRequest =
-        new SchemaRequest.CopyFields();
-    SchemaResponse.CopyFieldsResponse copyFieldsResponse = copyFieldsRequest.process(getSolrClient());
+    SchemaRequest.CopyFields copyFieldsRequest = new SchemaRequest.CopyFields();
+    SchemaResponse.CopyFieldsResponse copyFieldsResponse =
+        copyFieldsRequest.process(getSolrClient());
     assertValidSchemaResponse(copyFieldsResponse);
     List<Map<String, Object>> copyFieldsAttributes = copyFieldsResponse.getCopyFields();
     assertThat(copyFieldsAttributes.isEmpty(), is(false));
@@ -233,8 +248,7 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testGetUniqueKeyAccuracy() throws Exception {
-    SchemaRequest.UniqueKey uniqueKeyRequest =
-        new SchemaRequest.UniqueKey();
+    SchemaRequest.UniqueKey uniqueKeyRequest = new SchemaRequest.UniqueKey();
     SchemaResponse.UniqueKeyResponse uniqueKeyResponse = uniqueKeyRequest.process(getSolrClient());
     assertValidSchemaResponse(uniqueKeyResponse);
     assertEquals("id", uniqueKeyResponse.getUniqueKey());
@@ -242,18 +256,20 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testGetGlobalSimilarityAccuracy() throws Exception {
-    SchemaRequest.GlobalSimilarity globalSimilarityRequest =
-        new SchemaRequest.GlobalSimilarity();
-    SchemaResponse.GlobalSimilarityResponse globalSimilarityResponse = globalSimilarityRequest.process(getSolrClient());
+    SchemaRequest.GlobalSimilarity globalSimilarityRequest = new SchemaRequest.GlobalSimilarity();
+    SchemaResponse.GlobalSimilarityResponse globalSimilarityResponse =
+        globalSimilarityRequest.process(getSolrClient());
     assertValidSchemaResponse(globalSimilarityResponse);
-    assertEquals("org.apache.solr.search.similarities.SchemaSimilarityFactory",
+    assertEquals(
+        "org.apache.solr.search.similarities.SchemaSimilarityFactory",
         globalSimilarityResponse.getSimilarity().get("class"));
   }
 
   @Test
   public void testAddFieldAccuracy() throws Exception {
     SchemaRequest.Fields fieldsSchemaRequest = new SchemaRequest.Fields();
-    SchemaResponse.FieldsResponse initialFieldsResponse = fieldsSchemaRequest.process(getSolrClient());
+    SchemaResponse.FieldsResponse initialFieldsResponse =
+        fieldsSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(initialFieldsResponse);
     List<Map<String, Object>> initialFields = initialFieldsResponse.getFields();
 
@@ -267,14 +283,15 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("required", true);
     SchemaRequest.AddField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldResponse);
 
-    SchemaResponse.FieldsResponse currentFieldsResponse = fieldsSchemaRequest.process(getSolrClient());
+    SchemaResponse.FieldsResponse currentFieldsResponse =
+        fieldsSchemaRequest.process(getSolrClient());
     assertEquals(0, currentFieldsResponse.getStatus());
     List<Map<String, Object>> currentFields = currentFieldsResponse.getFields();
     assertEquals(initialFields.size() + 1, currentFields.size());
-
 
     SchemaRequest.Field fieldSchemaRequest = new SchemaRequest.Field(fieldName);
     SchemaResponse.FieldResponse newFieldResponse = fieldSchemaRequest.process(getSolrClient());
@@ -291,15 +308,17 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void addFieldShouldntBeCalledTwiceWithTheSameName() throws Exception {
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
-    String fieldName = "failureField"; 
+    String fieldName = "failureField";
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
     SchemaRequest.AddField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldFirstResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldFirstResponse =
+        addFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldFirstResponse);
 
-    assertFailedSchemaResponse(() -> addFieldUpdateSchemaRequest.process(getSolrClient()),
+    assertFailedSchemaResponse(
+        () -> addFieldUpdateSchemaRequest.process(getSolrClient()),
         "Field '" + fieldName + "' already exists.");
   }
 
@@ -311,7 +330,8 @@ public class SchemaTest extends RestTestBase {
     fieldAttributesRequest.put("type", "string");
     SchemaRequest.AddField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddField(fieldAttributesRequest);
-    SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldResponse);
 
     SchemaRequest.Field fieldSchemaRequest = new SchemaRequest.Field(fieldName);
@@ -320,8 +340,7 @@ public class SchemaTest extends RestTestBase {
     Map<String, Object> fieldAttributesResponse = initialFieldResponse.getField();
     assertThat(fieldName, is(equalTo(fieldAttributesResponse.get("name"))));
 
-    SchemaRequest.DeleteField deleteFieldRequest =
-        new SchemaRequest.DeleteField(fieldName);
+    SchemaRequest.DeleteField deleteFieldRequest = new SchemaRequest.DeleteField(fieldName);
     SchemaResponse.UpdateResponse deleteFieldResponse = deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteFieldResponse);
 
@@ -330,9 +349,10 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void deletingAFieldThatDoesntExistInTheSchemaShouldFail() {
-    String fieldName = "fieldToBeDeleted"; 
+    String fieldName = "fieldToBeDeleted";
     SchemaRequest.DeleteField deleteFieldRequest = new SchemaRequest.DeleteField(fieldName);
-    assertFailedSchemaResponse(() -> deleteFieldRequest.process(getSolrClient()),
+    assertFailedSchemaResponse(
+        () -> deleteFieldRequest.process(getSolrClient()),
         "The field '" + fieldName + "' is not present in this schema, and so cannot be deleted.");
   }
 
@@ -348,14 +368,17 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("required", true);
     SchemaRequest.AddField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldResponse);
 
     // When : update the field definition
     fieldAttributes.put("stored", true);
     fieldAttributes.put("indexed", false);
-    SchemaRequest.ReplaceField replaceFieldRequest = new SchemaRequest.ReplaceField(fieldAttributes);
-    SchemaResponse.UpdateResponse replaceFieldResponse = replaceFieldRequest.process(getSolrClient());
+    SchemaRequest.ReplaceField replaceFieldRequest =
+        new SchemaRequest.ReplaceField(fieldAttributes);
+    SchemaResponse.UpdateResponse replaceFieldResponse =
+        replaceFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(replaceFieldResponse);
 
     // Then
@@ -372,9 +395,9 @@ public class SchemaTest extends RestTestBase {
 
   @Test
   public void testAddDynamicFieldAccuracy() throws Exception {
-    SchemaRequest.DynamicFields dynamicFieldsSchemaRequest =
-        new SchemaRequest.DynamicFields();
-    SchemaResponse.DynamicFieldsResponse initialDFieldsResponse = dynamicFieldsSchemaRequest.process(getSolrClient());
+    SchemaRequest.DynamicFields dynamicFieldsSchemaRequest = new SchemaRequest.DynamicFields();
+    SchemaResponse.DynamicFieldsResponse initialDFieldsResponse =
+        dynamicFieldsSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(initialDFieldsResponse);
     List<Map<String, Object>> initialDFields = initialDFieldsResponse.getDynamicFields();
 
@@ -387,14 +410,15 @@ public class SchemaTest extends RestTestBase {
     // Dynamic fields cannot be required or have a default value
     SchemaRequest.AddDynamicField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldResponse);
 
-    SchemaResponse.DynamicFieldsResponse currentDFieldsResponse = dynamicFieldsSchemaRequest.process(getSolrClient());
+    SchemaResponse.DynamicFieldsResponse currentDFieldsResponse =
+        dynamicFieldsSchemaRequest.process(getSolrClient());
     assertEquals(0, currentDFieldsResponse.getStatus());
     List<Map<String, Object>> currentFields = currentDFieldsResponse.getDynamicFields();
     assertEquals(initialDFields.size() + 1, currentFields.size());
-
 
     SchemaRequest.DynamicField dFieldRequest = new SchemaRequest.DynamicField(dFieldName);
     SchemaResponse.DynamicFieldResponse newFieldResponse = dFieldRequest.process(getSolrClient());
@@ -415,10 +439,12 @@ public class SchemaTest extends RestTestBase {
     SchemaRequest.AddDynamicField addDFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
     SolrClient client = getSolrClient();
-    SchemaResponse.UpdateResponse addDFieldFirstResponse = addDFieldUpdateSchemaRequest.process(client);
+    SchemaResponse.UpdateResponse addDFieldFirstResponse =
+        addDFieldUpdateSchemaRequest.process(client);
     assertValidSchemaResponse(addDFieldFirstResponse);
 
-    assertFailedSchemaResponse(() -> addDFieldUpdateSchemaRequest.process(getSolrClient()),
+    assertFailedSchemaResponse(
+        () -> addDFieldUpdateSchemaRequest.process(getSolrClient()),
         "[schema.xml] Duplicate DynamicField definition for '" + dynamicFieldName + "'");
   }
 
@@ -430,19 +456,22 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("type", "string");
     SchemaRequest.AddDynamicField addFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
-    SchemaResponse.UpdateResponse addDynamicFieldResponse = addFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addDynamicFieldResponse =
+        addFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addDynamicFieldResponse);
 
     SchemaRequest.DynamicField dynamicFieldSchemaRequest =
         new SchemaRequest.DynamicField(dynamicFieldName);
-    SchemaResponse.DynamicFieldResponse initialDFieldResponse = dynamicFieldSchemaRequest.process(getSolrClient());
+    SchemaResponse.DynamicFieldResponse initialDFieldResponse =
+        dynamicFieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(initialDFieldResponse);
     Map<String, Object> fieldAttributesResponse = initialDFieldResponse.getDynamicField();
     assertThat(dynamicFieldName, is(equalTo(fieldAttributesResponse.get("name"))));
 
     SchemaRequest.DeleteDynamicField deleteFieldRequest =
         new SchemaRequest.DeleteDynamicField(dynamicFieldName);
-    SchemaResponse.UpdateResponse deleteDynamicFieldResponse = deleteFieldRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse deleteDynamicFieldResponse =
+        deleteFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteDynamicFieldResponse);
 
     expectThrows(SolrException.class, () -> dynamicFieldSchemaRequest.process(getSolrClient()));
@@ -451,9 +480,13 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void deletingADynamicFieldThatDoesntExistInTheSchemaShouldFail() throws Exception {
     String dynamicFieldName = "*_notexists";
-    SchemaRequest.DeleteDynamicField deleteDynamicFieldRequest = new SchemaRequest.DeleteDynamicField(dynamicFieldName);
-    assertFailedSchemaResponse(() -> deleteDynamicFieldRequest.process(getSolrClient()),
-        "The dynamic field '" + dynamicFieldName + "' is not present in this schema, and so cannot be deleted.");
+    SchemaRequest.DeleteDynamicField deleteDynamicFieldRequest =
+        new SchemaRequest.DeleteDynamicField(dynamicFieldName);
+    assertFailedSchemaResponse(
+        () -> deleteDynamicFieldRequest.process(getSolrClient()),
+        "The dynamic field '"
+            + dynamicFieldName
+            + "' is not present in this schema, and so cannot be deleted.");
   }
 
   @Test
@@ -467,7 +500,8 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("indexed", true);
     SchemaRequest.AddDynamicField addDFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldResponse = addDFieldUpdateSchemaRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addDFieldUpdateSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldResponse);
 
     // When : update the field definition
@@ -476,13 +510,15 @@ public class SchemaTest extends RestTestBase {
     replaceFieldAttributes.put("indexed", false);
     SchemaRequest.ReplaceDynamicField replaceFieldRequest =
         new SchemaRequest.ReplaceDynamicField(replaceFieldAttributes);
-    SchemaResponse.UpdateResponse replaceFieldResponse = replaceFieldRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse replaceFieldResponse =
+        replaceFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(replaceFieldResponse);
 
     // Then
     SchemaRequest.DynamicField dynamicFieldSchemaRequest =
         new SchemaRequest.DynamicField(fieldName);
-    SchemaResponse.DynamicFieldResponse newFieldResponse = dynamicFieldSchemaRequest.process(getSolrClient());
+    SchemaResponse.DynamicFieldResponse newFieldResponse =
+        dynamicFieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldResponse);
     Map<String, Object> newFieldAttributes = newFieldResponse.getDynamicField();
     assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
@@ -494,7 +530,8 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void testAddFieldTypeAccuracy() throws Exception {
     SchemaRequest.FieldTypes fieldTypesRequest = new SchemaRequest.FieldTypes();
-    SchemaResponse.FieldTypesResponse initialFieldTypesResponse = fieldTypesRequest.process(getSolrClient());
+    SchemaResponse.FieldTypesResponse initialFieldTypesResponse =
+        fieldTypesRequest.process(getSolrClient());
     assertValidSchemaResponse(initialFieldTypesResponse);
     List<FieldTypeRepresentation> initialFieldTypes = initialFieldTypesResponse.getFieldTypes();
 
@@ -523,10 +560,12 @@ public class SchemaTest extends RestTestBase {
 
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldTypeResponse =
+        addFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldTypeResponse);
 
-    SchemaResponse.FieldTypesResponse currentFieldTypesResponse = fieldTypesRequest.process(getSolrClient());
+    SchemaResponse.FieldTypesResponse currentFieldTypesResponse =
+        fieldTypesRequest.process(getSolrClient());
     assertEquals(0, currentFieldTypesResponse.getStatus());
     List<FieldTypeRepresentation> currentFieldTypes = currentFieldTypesResponse.getFieldTypes();
     assertEquals(initialFieldTypes.size() + 1, currentFieldTypes.size());
@@ -535,8 +574,7 @@ public class SchemaTest extends RestTestBase {
     String fieldName = "accuracyField";
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", fieldTypeName);
-    SchemaRequest.AddField addFieldRequest =
-        new SchemaRequest.AddField(fieldAttributes);
+    SchemaRequest.AddField addFieldRequest = new SchemaRequest.AddField(fieldAttributes);
     SchemaResponse.UpdateResponse addFieldResponse = addFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldResponse);
 
@@ -546,16 +584,20 @@ public class SchemaTest extends RestTestBase {
     dynamicFieldAttributes.put("type", fieldTypeName);
     SchemaRequest.AddDynamicField addDynamicFieldRequest =
         new SchemaRequest.AddDynamicField(dynamicFieldAttributes);
-    SchemaResponse.UpdateResponse addDynamicFieldResponse = addDynamicFieldRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addDynamicFieldResponse =
+        addDynamicFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(addDynamicFieldResponse);
 
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);
-    SchemaResponse.FieldTypeResponse newFieldTypeResponse = fieldTypeRequest.process(getSolrClient());
+    SchemaResponse.FieldTypeResponse newFieldTypeResponse =
+        fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation newFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
     assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
-    assertThat("solr.TextField", is(equalTo(newFieldTypeRepresentation.getAttributes().get("class"))));
-    assertThat(analyzerDefinition.getTokenizer().get("class"),
+    assertThat(
+        "solr.TextField", is(equalTo(newFieldTypeRepresentation.getAttributes().get("class"))));
+    assertThat(
+        analyzerDefinition.getTokenizer().get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getTokenizer().get("class"))));
   }
 
@@ -584,16 +626,20 @@ public class SchemaTest extends RestTestBase {
 
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldTypeResponse =
+        addFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldTypeResponse);
 
     // similarity is not shown by default for the fieldType
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);
-    SchemaResponse.FieldTypeResponse newFieldTypeResponse = fieldTypeRequest.process(getSolrClient());
+    SchemaResponse.FieldTypeResponse newFieldTypeResponse =
+        fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation newFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
     assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
-    assertThat(similarityAttributes.get("class"), is(equalTo(newFieldTypeRepresentation.getSimilarity().get("class"))));
+    assertThat(
+        similarityAttributes.get("class"),
+        is(equalTo(newFieldTypeRepresentation.getSimilarity().get("class"))));
   }
 
   @Test
@@ -612,18 +658,20 @@ public class SchemaTest extends RestTestBase {
     analyzerDefinition.setAttributes(analyzerAttributes);
     fieldTypeDefinition.setAnalyzer(analyzerDefinition);
 
-
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldTypeResponse =
+        addFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldTypeResponse);
 
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);
-    SchemaResponse.FieldTypeResponse newFieldTypeResponse = fieldTypeRequest.process(getSolrClient());
+    SchemaResponse.FieldTypeResponse newFieldTypeResponse =
+        fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation newFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
     assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
-    assertThat(analyzerAttributes.get("class"),
+    assertThat(
+        analyzerAttributes.get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getAttributes().get("class"))));
   }
 
@@ -632,17 +680,19 @@ public class SchemaTest extends RestTestBase {
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
     String fieldName = "failureInt";
     fieldTypeAttributes.put("name", fieldName);
-    fieldTypeAttributes.put("class",  RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
+    fieldTypeAttributes.put("class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
     fieldTypeAttributes.put("omitNorms", true);
     fieldTypeAttributes.put("positionIncrementGap", 0);
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
     fieldTypeDefinition.setAttributes(fieldTypeAttributes);
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeFirstResponse = addFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldTypeFirstResponse =
+        addFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldTypeFirstResponse);
 
-    assertFailedSchemaResponse(() -> addFieldTypeRequest.process(getSolrClient()),
+    assertFailedSchemaResponse(
+        () -> addFieldTypeRequest.process(getSolrClient()),
         "Field type '" + fieldName + "' already exists.");
   }
 
@@ -651,7 +701,7 @@ public class SchemaTest extends RestTestBase {
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
     String fieldTypeName = "delInt";
     fieldTypeAttributes.put("name", fieldTypeName);
-    fieldTypeAttributes.put("class",  RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
+    fieldTypeAttributes.put("class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
     fieldTypeAttributes.put("omitNorms", true);
     fieldTypeAttributes.put("positionIncrementGap", 0);
     FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
@@ -663,43 +713,54 @@ public class SchemaTest extends RestTestBase {
     assertValidSchemaResponse(addFieldTypeResponse);
 
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);
-    SchemaResponse.FieldTypeResponse initialFieldTypeResponse = fieldTypeRequest.process(getSolrClient());
+    SchemaResponse.FieldTypeResponse initialFieldTypeResponse =
+        fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(initialFieldTypeResponse);
-    FieldTypeRepresentation responseFieldTypeRepresentation = initialFieldTypeResponse.getFieldType();
-    assertThat(fieldTypeName, is(equalTo(responseFieldTypeRepresentation.getAttributes().get("name"))));
+    FieldTypeRepresentation responseFieldTypeRepresentation =
+        initialFieldTypeResponse.getFieldType();
+    assertThat(
+        fieldTypeName, is(equalTo(responseFieldTypeRepresentation.getAttributes().get("name"))));
 
     SchemaRequest.DeleteFieldType deleteFieldTypeRequest =
         new SchemaRequest.DeleteFieldType(fieldTypeName);
-    SchemaResponse.UpdateResponse deleteFieldTypeResponse = deleteFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse deleteFieldTypeResponse =
+        deleteFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(deleteFieldTypeResponse);
 
     try {
       fieldTypeRequest.process(getSolrClient());
-      fail(String.format(Locale.ROOT, "after removal, the field type %s shouldn't be anymore available over Schema API",
-          fieldTypeName));
+      fail(
+          String.format(
+              Locale.ROOT,
+              "after removal, the field type %s shouldn't be anymore available over Schema API",
+              fieldTypeName));
     } catch (SolrException e) {
-      //success
+      // success
     }
   }
 
   @Test
   public void deletingAFieldTypeThatDoesntExistInTheSchemaShouldFail() throws Exception {
-    String fieldType = "fieldTypeToBeDeleted"; 
-    SchemaRequest.DeleteFieldType deleteFieldTypeRequest = new SchemaRequest.DeleteFieldType(fieldType);
-    assertFailedSchemaResponse(() -> deleteFieldTypeRequest.process(getSolrClient()),
-        "The field type '" + fieldType + "' is not present in this schema, and so cannot be deleted.");
+    String fieldType = "fieldTypeToBeDeleted";
+    SchemaRequest.DeleteFieldType deleteFieldTypeRequest =
+        new SchemaRequest.DeleteFieldType(fieldType);
+    assertFailedSchemaResponse(
+        () -> deleteFieldTypeRequest.process(getSolrClient()),
+        "The field type '"
+            + fieldType
+            + "' is not present in this schema, and so cannot be deleted.");
   }
 
   @Test
   public void testReplaceFieldTypeAccuracy() throws Exception {
     // a fixed value for comparison after update, be contraian from the randomized 'default'
     final boolean useDv = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
-    
+
     // Given
     Map<String, Object> fieldTypeAttributes = new LinkedHashMap<>();
     String fieldTypeName = "replaceInt";
     fieldTypeAttributes.put("name", fieldTypeName);
-    fieldTypeAttributes.put("class",  RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
+    fieldTypeAttributes.put("class", RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class));
     fieldTypeAttributes.put("docValues", useDv);
     fieldTypeAttributes.put("omitNorms", true);
     fieldTypeAttributes.put("positionIncrementGap", 0);
@@ -707,7 +768,8 @@ public class SchemaTest extends RestTestBase {
     fieldTypeDefinition.setAttributes(fieldTypeAttributes);
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse addFieldTypeResponse =
+        addFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldTypeResponse);
 
     // When : update the field definition
@@ -717,18 +779,22 @@ public class SchemaTest extends RestTestBase {
     replaceFieldTypeDefinition.setAttributes(fieldTypeAttributes);
     SchemaRequest.ReplaceFieldType replaceFieldTypeRequest =
         new SchemaRequest.ReplaceFieldType(replaceFieldTypeDefinition);
-    SchemaResponse.UpdateResponse replaceFieldTypeResponse = replaceFieldTypeRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse replaceFieldTypeResponse =
+        replaceFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(replaceFieldTypeResponse);
 
     // Then
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);
-    SchemaResponse.FieldTypeResponse newFieldTypeResponse = fieldTypeRequest.process(getSolrClient());
+    SchemaResponse.FieldTypeResponse newFieldTypeResponse =
+        fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation replacedFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
-    Map<String, Object> replacedFieldTypeAttributes = replacedFieldTypeRepresentation.getAttributes();
+    Map<String, Object> replacedFieldTypeAttributes =
+        replacedFieldTypeRepresentation.getAttributes();
     assertThat(fieldTypeName, is(equalTo(replacedFieldTypeAttributes.get("name"))));
-    assertThat( RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class),
-                is(equalTo(replacedFieldTypeAttributes.get("class"))));
+    assertThat(
+        RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class),
+        is(equalTo(replacedFieldTypeAttributes.get("class"))));
     assertThat(false, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
     assertThat("42", is(equalTo(replacedFieldTypeAttributes.get("positionIncrementGap"))));
     // should be unchanged...
@@ -738,8 +804,10 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void testCopyFieldAccuracy() throws Exception {
     SchemaRequest.CopyFields copyFieldsSchemaRequest = new SchemaRequest.CopyFields();
-    SchemaResponse.CopyFieldsResponse initialCopyFieldsResponse = copyFieldsSchemaRequest.process(getSolrClient());
-    List<Map<String, Object>> initialCopyFieldsAttributes = initialCopyFieldsResponse.getCopyFields();
+    SchemaResponse.CopyFieldsResponse initialCopyFieldsResponse =
+        copyFieldsSchemaRequest.process(getSolrClient());
+    List<Map<String, Object>> initialCopyFieldsAttributes =
+        initialCopyFieldsResponse.getCopyFields();
 
     String srcFieldName = "copyfield";
     String destFieldName1 = "destField1", destFieldName2 = "destField2";
@@ -748,12 +816,13 @@ public class SchemaTest extends RestTestBase {
     createStoredStringField(destFieldName2, getSolrClient());
 
     SchemaRequest.AddCopyField addCopyFieldRequest =
-        new SchemaRequest.AddCopyField(srcFieldName,
-            Arrays.asList(destFieldName1, destFieldName2));
-    SchemaResponse.UpdateResponse addCopyFieldResponse = addCopyFieldRequest.process(getSolrClient());
+        new SchemaRequest.AddCopyField(srcFieldName, Arrays.asList(destFieldName1, destFieldName2));
+    SchemaResponse.UpdateResponse addCopyFieldResponse =
+        addCopyFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(addCopyFieldResponse);
 
-    SchemaResponse.CopyFieldsResponse currentCopyFieldsResponse = copyFieldsSchemaRequest.process(getSolrClient());
+    SchemaResponse.CopyFieldsResponse currentCopyFieldsResponse =
+        copyFieldsSchemaRequest.process(getSolrClient());
     List<Map<String, Object>> currentCopyFields = currentCopyFieldsResponse.getCopyFields();
     assertEquals(initialCopyFieldsAttributes.size() + 2, currentCopyFields.size());
   }
@@ -761,8 +830,10 @@ public class SchemaTest extends RestTestBase {
   @Test
   public void testCopyFieldWithMaxCharsAccuracy() throws Exception {
     SchemaRequest.CopyFields copyFieldsSchemaRequest = new SchemaRequest.CopyFields();
-    SchemaResponse.CopyFieldsResponse initialCopyFieldsResponse = copyFieldsSchemaRequest.process(getSolrClient());
-    List<Map<String, Object>> initialCopyFieldsAttributes = initialCopyFieldsResponse.getCopyFields();
+    SchemaResponse.CopyFieldsResponse initialCopyFieldsResponse =
+        copyFieldsSchemaRequest.process(getSolrClient());
+    List<Map<String, Object>> initialCopyFieldsAttributes =
+        initialCopyFieldsResponse.getCopyFields();
 
     String srcFieldName = "copyfield";
     String destFieldName1 = "destField1", destFieldName2 = "destField2";
@@ -770,22 +841,25 @@ public class SchemaTest extends RestTestBase {
     createStoredStringField(destFieldName1, getSolrClient());
     createStoredStringField(destFieldName2, getSolrClient());
 
-    Integer maxChars = 200;
+    int maxChars = 200;
     SchemaRequest.AddCopyField addCopyFieldRequest =
-        new SchemaRequest.AddCopyField(srcFieldName,
-            Arrays.asList(destFieldName1, destFieldName2), maxChars);
-    SchemaResponse.UpdateResponse addCopyFieldResponse = addCopyFieldRequest.process(getSolrClient());
+        new SchemaRequest.AddCopyField(
+            srcFieldName, Arrays.asList(destFieldName1, destFieldName2), maxChars);
+    SchemaResponse.UpdateResponse addCopyFieldResponse =
+        addCopyFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(addCopyFieldResponse);
 
-    SchemaResponse.CopyFieldsResponse currentCopyFieldsResponse = copyFieldsSchemaRequest.process(getSolrClient());
+    SchemaResponse.CopyFieldsResponse currentCopyFieldsResponse =
+        copyFieldsSchemaRequest.process(getSolrClient());
     List<Map<String, Object>> currentCopyFields = currentCopyFieldsResponse.getCopyFields();
     assertEquals(initialCopyFieldsAttributes.size() + 2, currentCopyFields.size());
     for (Map<String, Object> currentCopyField : currentCopyFields) {
       if (srcFieldName.equals(currentCopyField.get("source"))) {
         String currentDestFieldName = (String) currentCopyField.get("dest");
         int currentMaxChars = (Integer) currentCopyField.get("maxChars");
-        assertThat(currentDestFieldName, anyOf(is(equalTo(destFieldName1)), is(equalTo(destFieldName2))));
-        assertTrue(maxChars == currentMaxChars);
+        assertThat(
+            currentDestFieldName, anyOf(is(equalTo(destFieldName1)), is(equalTo(destFieldName2))));
+        assertEquals(maxChars, currentMaxChars);
       }
     }
   }
@@ -795,10 +869,13 @@ public class SchemaTest extends RestTestBase {
     String srcFieldName = "srcnotexist";
     String destFieldName1 = "destNotExist1", destFieldName2 = "destNotExist2";
 
-    SchemaRequest.AddCopyField addCopyFieldRequest 
-        = new SchemaRequest.AddCopyField(srcFieldName, Arrays.asList(destFieldName1, destFieldName2));
-    assertFailedSchemaResponse(() -> addCopyFieldRequest.process(getSolrClient()),
-        "copyField source :'" + srcFieldName + "' is not a glob and doesn't match any explicit field or dynamicField.");
+    SchemaRequest.AddCopyField addCopyFieldRequest =
+        new SchemaRequest.AddCopyField(srcFieldName, Arrays.asList(destFieldName1, destFieldName2));
+    assertFailedSchemaResponse(
+        () -> addCopyFieldRequest.process(getSolrClient()),
+        "copyField source :'"
+            + srcFieldName
+            + "' is not a glob and doesn't match any explicit field or dynamicField.");
   }
 
   @Test
@@ -810,9 +887,9 @@ public class SchemaTest extends RestTestBase {
     createStoredStringField(destFieldName2, getSolrClient());
 
     SchemaRequest.AddCopyField addCopyFieldRequest =
-        new SchemaRequest.AddCopyField(srcFieldName,
-            Arrays.asList(destFieldName1, destFieldName2));
-    SchemaResponse.UpdateResponse addCopyFieldResponse = addCopyFieldRequest.process(getSolrClient());
+        new SchemaRequest.AddCopyField(srcFieldName, Arrays.asList(destFieldName1, destFieldName2));
+    SchemaResponse.UpdateResponse addCopyFieldResponse =
+        addCopyFieldRequest.process(getSolrClient());
     System.out.println(addCopyFieldResponse);
     assertValidSchemaResponse(addCopyFieldResponse);
 
@@ -830,9 +907,10 @@ public class SchemaTest extends RestTestBase {
     String srcFieldName = "copyfield";
     String destFieldName1 = "destField1", destFieldName2 = "destField2";
     SchemaRequest.DeleteCopyField deleteCopyFieldsRequest =
-        new SchemaRequest.DeleteCopyField(srcFieldName,
-            Arrays.asList(destFieldName1, destFieldName2));
-    assertFailedSchemaResponse(() -> deleteCopyFieldsRequest.process(getSolrClient()),
+        new SchemaRequest.DeleteCopyField(
+            srcFieldName, Arrays.asList(destFieldName1, destFieldName2));
+    assertFailedSchemaResponse(
+        () -> deleteCopyFieldsRequest.process(getSolrClient()),
         "Copy field directive not found: '" + srcFieldName + "' -> '" + destFieldName1 + "'");
   }
 
@@ -857,12 +935,13 @@ public class SchemaTest extends RestTestBase {
     list.add(addFieldName1Request);
     list.add(addFieldName2Request);
     SchemaRequest.MultiUpdate multiUpdateRequest = new SchemaRequest.MultiUpdate(list);
-    SchemaResponse.UpdateResponse multipleUpdatesResponse = multiUpdateRequest.process(getSolrClient());
+    SchemaResponse.UpdateResponse multipleUpdatesResponse =
+        multiUpdateRequest.process(getSolrClient());
     assertValidSchemaResponse(multipleUpdatesResponse);
 
-    SchemaRequest.FieldType fieldTypeSchemaRequest =
-        new SchemaRequest.FieldType(fieldTypeName);
-    SchemaResponse.FieldTypeResponse fieldTypeResponse = fieldTypeSchemaRequest.process(getSolrClient());
+    SchemaRequest.FieldType fieldTypeSchemaRequest = new SchemaRequest.FieldType(fieldTypeName);
+    SchemaResponse.FieldTypeResponse fieldTypeResponse =
+        fieldTypeSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldTypeResponse);
     FieldTypeRepresentation fieldTypeRepresentation = fieldTypeResponse.getFieldType();
     assertThat(fieldTypeName, is(equalTo(fieldTypeRepresentation.getAttributes().get("name"))));

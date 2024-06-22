@@ -16,8 +16,6 @@
  */
 package org.apache.solr.response;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -34,11 +32,11 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-doctransformers.xml","schema.xml");
+    initCore("solrconfig-doctransformers.xml", "schema.xml");
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
@@ -47,19 +45,20 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
   public void testCustomTransformer() throws Exception {
     // Build a simple index
     int max = 10;
-    for(int i=0; i<max; i++) {
+    for (int i = 0; i < max; i++) {
       SolrInputDocument sdoc = new SolrInputDocument();
       sdoc.addField("id", i);
       sdoc.addField("subject", "xx");
-      sdoc.addField("title", "title_"+i);
+      sdoc.addField("title", "title_" + i);
       updateJ(jsonAdd(sdoc), null);
     }
     assertU(commit());
     assertQ(req("q", "*:*"), "//*[@numFound='" + max + "']");
-    
-    assertQ( req(
-        "q", "*:*", 
-        "fl", "id,out:[custom extra=subject,title]"), 
+
+    assertQ(
+        req(
+            "q", "*:*",
+            "fl", "id,out:[custom extra=subject,title]"),
         // Check that the concatenated fields make it in the results
         "//*[@numFound='" + max + "']",
         "//str[.='xx#title_0#']",
@@ -67,29 +66,29 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
         "//str[.='xx#title_2#']",
         "//str[.='xx#title_3#']");
   }
-  
+
   public static class CustomTransformerFactory extends TransformerFactory {
     @Override
     public DocTransformer create(String field, SolrParams params, SolrQueryRequest req) {
       String[] extra = null;
       String ext = params.get("extra");
-      if(ext!=null) {
+      if (ext != null) {
         extra = ext.split(",");
       }
       return new CustomTransformer(field, extra);
     }
   }
-  
+
   public static class CustomTransformer extends DocTransformer {
     final String name;
     final String[] extra;
     final StringBuilder str = new StringBuilder();
-    
+
     public CustomTransformer(String name, String[] extra) {
       this.name = name;
       this.extra = extra;
     }
-    
+
     @Override
     public String getName() {
       return "custom";
@@ -100,25 +99,24 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
       return extra;
     }
 
-    /**
-     * This transformer simply concatenates the values of multiple fields
-     */
+    /** This transformer simply concatenates the values of multiple fields */
     @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
+    public void transform(SolrDocument doc, int docid) {
       str.setLength(0);
-      for(String s : extra) {
+      for (String s : extra) {
         String v = getAsString(s, doc);
         str.append(v).append('#');
       }
-      System.out.println( "HELLO: "+str );
+      System.out.println("HELLO: " + str);
       doc.setField(name, str.toString());
     }
   }
+
   public static String getAsString(String field, SolrDocument doc) {
     Object v = doc.getFirstValue(field);
-    if(v != null) {
-      if(v instanceof IndexableField) {
-        return ((IndexableField)v).stringValue();
+    if (v != null) {
+      if (v instanceof IndexableField) {
+        return ((IndexableField) v).stringValue();
       }
       return v.toString();
     }

@@ -1,0 +1,163 @@
+import java.util.function.BiFunction
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Local Lucene development repository resolution:
+//   1) A "-Plucene.dev.version=[version]" property, resolving Lucene artifacts from a local Maven repository.
+//   2) A non-empty property "-Plucene.dev.path=[path]" pointing to a local path. Relative paths
+//      are resolved against the root project directory.
+//   3) An auto-wired 'lucene' subfolder, if present. To skip auto-wiring, pass
+//      a blank value in step 2: "-Plucene.dev.path=".
+
+
+// This script is applied in settings.gradle and later at build time: these two contexts
+// are distinctively different and have separate (and limited) APIs.
+def configuringSettings = (rootProject instanceof org.gradle.api.initialization.ProjectDescriptor)
+
+// Accessor for -P properties from settings or at build time.
+BiFunction<String, String, String> resolvePropertyValue = { propertyName, defValue ->
+  if (configuringSettings) {
+    return settings.ext.properties.getOrDefault(propertyName, defValue)
+  } else {
+    return project.properties.getOrDefault(propertyName, defValue)
+  }
+}
+
+def PROP_FORCE_VERSION="lucene.dev.version"
+def PROP_FORCE_PATH="lucene.dev.path"
+def READ_ACCESS_PROPERTY="lucene-dev-path.dir"
+
+
+def forcedLuceneVersion = resolvePropertyValue(PROP_FORCE_VERSION, null)
+if (forcedLuceneVersion != null) {
+  if (!configuringSettings) {
+    logger.lifecycle("Lucene version forced by -P${PROP_FORCE_VERSION}=${forcedLuceneVersion}")
+
+    allprojects {
+      repositories {
+        mavenLocal()
+      }
+
+      tasks.withType(Test) {
+        def userHome = System.properties.get('user.home')
+        systemProperty READ_ACCESS_PROPERTY, file("${userHome}/.m2/repository/org/apache/lucene").absolutePath
+      }
+
+      configurations.all {
+        resolutionStrategy.eachDependency {
+          if (requested.group == "org.apache.lucene") {
+            useVersion(forcedLuceneVersion)
+            because("Lucene version forced manually by 'lucene.dev.version' property.")
+          }
+        }
+      }
+    }
+  }
+
+  // Step 1: end resolution
+  return
+}
+
+def luceneDevRepo = null
+def defaultLuceneDevRepo = file("${rootDir}/lucene")
+String propertyValue = resolvePropertyValue(PROP_FORCE_PATH, null)
+if (propertyValue != null) {
+  // Step 2.
+  if (propertyValue.isBlank()) {
+    if (defaultLuceneDevRepo.exists() && configuringSettings) {
+      logger.lifecycle("Local Lucene development repository has been detected but won't be used.")
+    }
+  } else {
+    // For relative path `propertyValue` spec, `file(propertyValue)` at settings configuration time
+    // resolves relative to "${rootDir}/gradle/" (as opposed to "${rootDir}/"); so we use the Java
+    // Path API here for consistent relative path resolution at configuration and build time
+    luceneDevRepo = file(rootDir).toPath().resolve(propertyValue).normalize().toFile()
+    if (!luceneDevRepo.exists()) {
+      throw new GradleException("Lucene repository does not exist at: -P${PROP_FORCE_PATH}=${luceneDevRepo}.")
+    }
+  }
+} else if (defaultLuceneDevRepo.exists()) {
+  // Step 3
+  luceneDevRepo = defaultLuceneDevRepo
+}
+
+
+if (luceneDevRepo != null) {
+  // Allow turning off this auto-wiring via -Dlucene.dev.repo=false (can't be a -P property because
+  // at settings evaluation time we don't have project properties yet).
+  if (configuringSettings) {
+    // We substitute the exact version of Lucene we currently have in versions.props across all the dependencies.
+    // We can't just substitute all references without looking at the versoin because
+    // plugin dependencies then also get substituted and everything crashes.
+    String luceneVersion = (file("${rootDir}/versions.props").getText("UTF-8") =~ /org.apache.lucene:\*=(.+)/)[0][1]
+    logger.lifecycle("Local Lucene development repository will be used substituting ${luceneVersion}: ${luceneDevRepo}")
+
+    // Include Lucene repository as a composite and substitute module names.
+    includeBuild(luceneDevRepo) {
+      // Explicitly specify project name; otherwise project name is determined by directory name.
+      // The name of included build should match the `rootProject.name` of lucene: "lucene-root"
+      // At build time (below) the included build is retrieved by name; subproject tests in IDE
+      // will also default to run against the root project name of the included build, so it's
+      // important to have the names match.
+      name = 'lucene-root'
+      dependencySubstitution {
+        all {  DependencySubstitution dependency ->
+          if (dependency.requested instanceof ModuleComponentSelector) {
+            def moduleSelector = (ModuleComponentSelector) dependency.requested
+            if (moduleSelector.group == "org.apache.lucene" && moduleSelector.version == luceneVersion) {
+              // Map Maven artifact name to lucene module name.
+              def projectModuleName =
+                  moduleSelector.moduleIdentifier.name
+                      .replaceFirst("^lucene-analysis-", ":lucene:analysis:")
+                      .replaceFirst("^lucene-", ":lucene:")
+
+              logger.info("Substituting Lucene dependency ${moduleSelector} with an included build project: ${projectModuleName}")
+              dependency.useTarget(project(projectModuleName))
+            }
+          }
+        }
+      }
+    }
+  } else {
+    // We're being applied at build-time and Lucene development repository exists. Configure
+    // certain aspects of the build so that things work with it.
+    
+    // replace luceneBaseVersionProvider by one evaluating the included build:
+    configure(rootProject) {
+      def line = new File(gradle.includedBuild('lucene-root').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s*=\s*['"]/ }
+      if (!line) {
+        throw new GradleException('Cannot extract Lucene baseVersion from build.gradle file.')
+      }
+      def luceneBaseVersion = evaluate(line)
+      
+      logger.lifecycle("Local Lucene development repository will override luceneBaseVersion with: {}", luceneBaseVersion)
+
+      ext {
+        luceneBaseVersionProvider = provider { luceneBaseVersion }
+      }
+    }
+
+    // Security policy requires read access to the repo path.
+    allprojects {
+      tasks.withType(Test) {
+        systemProperty READ_ACCESS_PROPERTY, luceneDevRepo.absolutePath
+      }
+    }
+  }
+}
+

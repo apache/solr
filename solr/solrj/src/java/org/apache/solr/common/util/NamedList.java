@@ -33,7 +33,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -43,31 +42,26 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * A simple container class for modeling an ordered list of name/value pairs.
  *
- * <p>
- * Unlike Maps:
- * </p>
+ * <p>Unlike Maps:
+ *
  * <ul>
- *  <li>Names may be repeated</li>
- *  <li>Order of elements is maintained</li>
- *  <li>Elements may be accessed by numeric index</li>
- *  <li>Names and Values can both be null</li>
+ *   <li>Names may be repeated
+ *   <li>Order of elements is maintained
+ *   <li>Elements may be accessed by numeric index
+ *   <li>Names and Values can both be null
  * </ul>
  *
- * <p>
- * A NamedList provides fast access by element number, but not by name.
- * </p>
- * <p>
- * When a NamedList is serialized, order is considered more important than access
- * by key, so ResponseWriters that output to a format such as JSON will normally
- * choose a data structure that allows order to be easily preserved in various
- * clients (i.e. not a straight map).
- * If access by key is more important for serialization, see {@link SimpleOrderedMap},
- * or simply use a regular {@link Map}
- * </p>
+ * <p>A NamedList provides fast access by element number, but not by name.
  *
+ * <p>When a NamedList is serialized, order is considered more important than access by key, so
+ * ResponseWriters that output to a format such as JSON will normally choose a data structure that
+ * allows order to be easily preserved in various clients (i.e. not a straight map). If access by
+ * key is more important for serialization, see {@link SimpleOrderedMap}, or simply use a regular
+ * {@link Map}
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter, SimpleMap<T> {
+public class NamedList<T>
+    implements Cloneable, Serializable, Iterable<Map.Entry<String, T>>, MapWriter, SimpleMap<T> {
 
   private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
@@ -77,28 +71,24 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     nvPairs = new ArrayList<>();
   }
 
-
   public NamedList(int sz) {
-    nvPairs = new ArrayList<>(sz<<1);
+    nvPairs = new ArrayList<>(sz << 1);
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    for (int i = 0; i < nvPairs.size(); i+=2) {
+    for (int i = 0; i < nvPairs.size(); i += 2) {
       ew.put((CharSequence) nvPairs.get(i), nvPairs.get(i + 1));
     }
   }
 
   /**
-   * Creates a NamedList instance containing the "name,value" pairs contained in the
-   * Entry[].
+   * Creates a NamedList instance containing the "name,value" pairs contained in the Entry[].
    *
-   * <p>
-   * Modifying the contents of the Entry[] after calling this constructor may change
-   * the NamedList (in future versions of Solr), but this is not guaranteed and should
-   * not be relied upon.  To modify the NamedList, refer to {@link #add(String, Object)}
-   * or {@link #remove(String)}.
-   * </p>
+   * <p>Modifying the contents of the Entry[] after calling this constructor may change the
+   * NamedList (in future versions of Solr), but this is not guaranteed and should not be relied
+   * upon. To modify the NamedList, refer to {@link #add(String, Object)} or {@link
+   * #remove(String)}.
    *
    * @param nameValuePairs the name value pairs
    */
@@ -107,24 +97,20 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Creates a NamedList instance containing the "name,value" pairs contained in the
-   * Map.
+   * Creates a NamedList instance containing the "name,value" pairs contained in the Map.
    *
-   * <p>
-   * Modifying the contents of the Map after calling this constructor may change
-   * the NamedList (in future versions of Solr), but this is not guaranteed and should
-   * not be relied upon.  To modify the NamedList, refer to {@link #add(String, Object)}
-   * or {@link #remove(String)}.
-   * </p>
+   * <p>Modifying the contents of the Map after calling this constructor may change the NamedList
+   * (in future versions of Solr), but this is not guaranteed and should not be relied upon. To
+   * modify the NamedList, refer to {@link #add(String, Object)} or {@link #remove(String)}.
    *
    * @param nameValueMap the name value pairs
    */
-  public NamedList(Map<String,? extends T> nameValueMap) {
+  public NamedList(Map<String, ? extends T> nameValueMap) {
     if (null == nameValueMap) {
       nvPairs = new ArrayList<>();
     } else {
       nvPairs = new ArrayList<>(nameValueMap.size() << 1);
-      for (Map.Entry<String,? extends T> ent : nameValueMap.entrySet()) {
+      for (Map.Entry<String, ? extends T> ent : nameValueMap.entrySet()) {
         nvPairs.add(ent.getKey());
         nvPairs.add(ent.getValue());
       }
@@ -132,36 +118,30 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Creates an instance backed by an explicitly specified list of
-   * pairwise names/values.
+   * Creates an instance backed by an explicitly specified list of pairwise names/values.
    *
-   * <p>
-   * When using this constructor, runtime type safety is only guaranteed if
-   * all even numbered elements of the input list are of type "T".
-   * </p>
-   * <p>
-   * This method is package protected and exists solely so SimpleOrderedMap and clone() can utilize it
-   * </p>
-   * <p>
-   * TODO: this method was formerly public, now that it's not we can change the impl details of 
-   * this class to be based on a Map.Entry[] 
-   * </p>
+   * <p>When using this constructor, runtime type safety is only guaranteed if all even numbered
+   * elements of the input list are of type "T".
+   *
+   * <p>This method is package protected and exists solely so SimpleOrderedMap and clone() can
+   * utilize it
+   *
+   * <p>TODO: this method was formerly public, now that it's not we can change the impl details of
+   * this class to be based on a Map.Entry[]
+   *
    * @lucene.internal
    * @see #nameValueMapToList
    */
   NamedList(List<Object> nameValuePairs) {
-    nvPairs=nameValuePairs;
+    nvPairs = nameValuePairs;
   }
 
   /**
-   * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even
-   * indexed elements (0,2,4. ..etc) are Strings and odd elements (1,3,5,) are of
-   * the type "T".
+   * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even indexed elements
+   * (0,2,4. ..etc) are Strings and odd elements (1,3,5,) are of the type "T".
    *
-   * <p>
-   * NOTE: This a temporary placeholder method until the guts of the class
-   * are actually replaced by List&lt;String, ?&gt;.
-   * </p>
+   * <p>NOTE: This a temporary placeholder method until the guts of the class are actually replaced
+   * by List&lt;String, ?&gt;.
    *
    * @return Modified List as per the above description
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-912">SOLR-912</a>
@@ -176,6 +156,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /** The total number of name/value pairs */
+  @Override
   public int size() {
     return nvPairs.size() >> 1;
   }
@@ -186,7 +167,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return null if no name exists
    */
   public String getName(int idx) {
-    return (String)nvPairs.get(idx << 1);
+    return (String) nvPairs.get(idx << 1);
   }
 
   /**
@@ -196,22 +177,18 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   @SuppressWarnings("unchecked")
   public T getVal(int idx) {
-    return (T)nvPairs.get((idx << 1) + 1);
+    return (T) nvPairs.get((idx << 1) + 1);
   }
 
-  /**
-   * Adds a name/value pair to the end of the list.
-   */
+  /** Adds a name/value pair to the end of the list. */
   public void add(String name, T val) {
     nvPairs.add(name);
     nvPairs.add(val);
   }
 
-  /**
-   * Modifies the name of the pair at the specified index.
-   */
+  /** Modifies the name of the pair at the specified index. */
   public void setName(int idx, String name) {
-    nvPairs.set(idx<<1, name);
+    nvPairs.set(idx << 1, name);
   }
 
   /**
@@ -220,9 +197,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return the value that used to be at index
    */
   public T setVal(int idx, T val) {
-    int index = (idx<<1)+1;
+    int index = (idx << 1) + 1;
     @SuppressWarnings("unchecked")
-    T old = (T)nvPairs.get( index );
+    T old = (T) nvPairs.get(index);
     nvPairs.set(index, val);
     return old;
   }
@@ -233,16 +210,16 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return the value at the index removed
    */
   public T remove(int idx) {
-    int index = (idx<<1);
+    int index = (idx << 1);
     nvPairs.remove(index);
     @SuppressWarnings("unchecked")
-    T result = (T)nvPairs.remove(index);  // same index, as things shifted in previous remove
+    T result = (T) nvPairs.remove(index); // same index, as things shifted in previous remove
     return result;
   }
 
   /**
-   * Scans the list sequentially beginning at the specified index and
-   * returns the index of the first pair with the specified name.
+   * Scans the list sequentially beginning at the specified index and returns the index of the first
+   * pair with the specified name.
    *
    * @param name name to look for, may be null
    * @param start index to begin searching from
@@ -250,10 +227,10 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   public int indexOf(String name, int start) {
     int sz = size();
-    for (int i=start; i<sz; i++) {
+    for (int i = start; i < sz; i++) {
       String n = getName(i);
-      if (name==null) {
-        if (n==null) return i; // matched null
+      if (name == null) {
+        if (n == null) return i; // matched null
       } else if (name.equals(n)) {
         return i;
       }
@@ -262,39 +239,36 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Gets the value for the first instance of the specified name
-   * found.
-   * <p>
-   * NOTE: this runs in linear time (it scans starting at the
-   * beginning of the list until it finds the first pair with
-   * the specified name).
+   * Gets the value for the first instance of the specified name found.
+   *
+   * <p>NOTE: this runs in linear time (it scans starting at the beginning of the list until it
+   * finds the first pair with the specified name).
    *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    * @see #get(String,int)
-   *
    */
+  @Override
   public T get(String name) {
-    return get(name,0);
+    return get(name, 0);
   }
 
   /**
-   * Gets the value for the first instance of the specified name
-   * found starting at the specified index.
-   * <p>
-   * NOTE: this runs in linear time (it scans starting at the
-   * specified position until it finds the first pair with
-   * the specified name).
+   * Gets the value for the first instance of the specified name found starting at the specified
+   * index.
+   *
+   * <p>NOTE: this runs in linear time (it scans starting at the specified position until it finds
+   * the first pair with the specified name).
    *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    */
   public T get(String name, int start) {
     int sz = size();
-    for (int i=start; i<sz; i++) {
+    for (int i = start; i < sz; i++) {
       String n = getName(i);
-      if (name==null) {
-        if (n==null) return getVal(i);
+      if (name == null) {
+        if (n == null) return getVal(i);
       } else if (name.equals(n)) {
         return getVal(i);
       }
@@ -319,7 +293,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     }
     return result;
   }
-  
+
   /**
    * Removes all values matching the specified name
    *
@@ -335,30 +309,27 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
     }
   }
-  
+
   /**
-   * Recursively parses the NamedList structure to arrive at a specific element.
-   * As you descend the NamedList tree, the last element can be any type,
-   * including NamedList, but the previous elements MUST be NamedList objects
-   * themselves. A null value is returned if the indicated hierarchy doesn't
-   * exist, but NamedList allows null values so that could be the actual value
-   * at the end of the path.
-   * 
-   * This method is particularly useful for parsing the response from Solr's
-   * /admin/mbeans handler, but it also works for any complex structure.
-   * 
-   * Explicitly casting the return value is recommended. An even safer option is
-   * to accept the return value as an object and then check its type.
-   * 
-   * Usage examples:
-   * 
-   * String coreName = (String) response.findRecursive
-   * ("solr-mbeans", "CORE", "core", "stats", "coreName");
-   * long numDoc = (long) response.findRecursive
-   * ("solr-mbeans", "CORE", "searcher", "stats", "numDocs");
-   * 
-   * @param args
-   *          One or more strings specifying the tree to navigate.
+   * Recursively parses the NamedList structure to arrive at a specific element. As you descend the
+   * NamedList tree, the last element can be any type, including NamedList, but the previous
+   * elements MUST be NamedList objects themselves. A null value is returned if the indicated
+   * hierarchy doesn't exist, but NamedList allows null values so that could be the actual value at
+   * the end of the path.
+   *
+   * <p>This method is particularly useful for parsing the response from Solr's /admin/mbeans
+   * handler, but it also works for any complex structure.
+   *
+   * <p>Explicitly casting the return value is recommended. An even safer option is to accept the
+   * return value as an object and then check its type.
+   *
+   * <p>Usage examples:
+   *
+   * <p>String coreName = (String) response.findRecursive ("solr-mbeans", "CORE", "core", "stats",
+   * "coreName"); long numDoc = (long) response.findRecursive ("solr-mbeans", "CORE", "searcher",
+   * "stats", "numDocs");
+   *
+   * @param args One or more strings specifying the tree to navigate.
    * @return the last entry in the given path hierarchy, null if not found.
    */
   public Object findRecursive(String... args) {
@@ -370,12 +341,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
        * The first time through the loop, the current list is null, so we assign
        * it to this list. Then we retrieve the first key from this list and
        * assign it to value.
-       * 
+       *
        * On the next loop, we check whether the retrieved value is a NamedList.
        * If it is, then we drop down to that NamedList, grab the value of the
        * next key, and start the loop over. If it is not a NamedList, then we
        * assign the value to null and break out of the loop.
-       * 
+       *
        * Assigning the value to null and then breaking out of the loop seems
        * like the wrong thing to do, but there's a very simple reason that it
        * works: If we have reached the last key, then the loop ends naturally
@@ -406,7 +377,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     StringBuilder sb = new StringBuilder();
     sb.append('{');
     int sz = size();
-    for (int i=0; i<sz; i++) {
+    for (int i = 0; i < sz; i++) {
       if (i != 0) sb.append(", ");
       sb.append(getName(i));
       sb.append('=');
@@ -419,13 +390,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
   public NamedList<T> getImmutableCopy() {
     NamedList<T> copy = clone();
-    return new NamedList<>( Collections.unmodifiableList(copy.nvPairs));
+    return new NamedList<>(Collections.unmodifiableList(copy.nvPairs));
   }
 
-  public Map<String,T> asShallowMap() {
+  public Map<String, T> asShallowMap() {
     return asShallowMap(false);
   }
-  public Map<String,T> asShallowMap(boolean allowDps) {
+
+  public Map<String, T> asShallowMap(boolean allowDps) {
     return new Map<String, T>() {
       @Override
       public int size() {
@@ -437,8 +409,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         return size() == 0;
       }
 
-      public boolean containsKey(Object  key) {
-        return NamedList.this.get((String) key) != null ;
+      @Override
+      public boolean containsKey(Object key) {
+        return NamedList.this.get((String) key) != null;
       }
 
       @Override
@@ -448,11 +421,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T get(Object key) {
-        return  NamedList.this.get((String) key);
+        return NamedList.this.get((String) key);
       }
 
       @Override
-      public T put(String  key, T value) {
+      public T put(String key, T value) {
         if (allowDps) {
           NamedList.this.add(key, value);
           return null;
@@ -468,7 +441,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T remove(Object key) {
-        return  NamedList.this.remove((String) key);
+        return NamedList.this.remove((String) key);
       }
 
       @Override
@@ -478,7 +451,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         for (Object o : m.entrySet()) {
           @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Entry) o;
-          if (isEmpty) {// we know that there are no duplicates
+          if (isEmpty) { // we know that there are no duplicates
             add((String) e.getKey(), (T) e.getValue());
           } else {
             put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
@@ -494,20 +467,20 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       @Override
       @SuppressWarnings({"unchecked"})
       public Set<String> keySet() {
-        //TODO implement more efficiently
-        return  NamedList.this.asMap(1).keySet();
+        // TODO implement more efficiently
+        return NamedList.this.asMap(1).keySet();
       }
 
       @Override
       @SuppressWarnings({"unchecked", "rawtypes"})
       public Collection values() {
-        //TODO implement more efficiently
-        return  NamedList.this.asMap(1).values();
+        // TODO implement more efficiently
+        return NamedList.this.asMap(1).values();
       }
 
       @Override
-      public Set<Entry<String,T>> entrySet() {
-        //TODO implement more efficiently
+      public Set<Entry<String, T>> entrySet() {
+        // TODO implement more efficiently
         return NamedList.this.asMap(1).entrySet();
       }
 
@@ -521,18 +494,18 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   @SuppressWarnings("rawtypes")
   public Map asMap(int maxDepth) {
     LinkedHashMap result = new LinkedHashMap<>();
-    for(int i=0;i<size();i++){
+    for (int i = 0; i < size(); i++) {
       Object val = getVal(i);
-      if (val instanceof NamedList && maxDepth> 0) {
-        //the maxDepth check is to avoid stack overflow due to infinite recursion
-        val = ((NamedList) val).asMap(maxDepth-1);
+      if (val instanceof NamedList && maxDepth > 0) {
+        // the maxDepth check is to avoid stack overflow due to infinite recursion
+        val = ((NamedList) val).asMap(maxDepth - 1);
       }
       Object old = result.put(getName(i), val);
-      if(old!=null){
+      if (old != null) {
         if (old instanceof List) {
           List list = (List) old;
           list.add(val);
-          result.put(getName(i),old);
+          result.put(getName(i), old);
         } else {
           ArrayList l = new ArrayList<>();
           l.add(old);
@@ -543,14 +516,15 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     }
     return result;
   }
+
   /**
-   * Create SolrParams from NamedList.  Values must be {@code String[]} or {@code List}
-   * (with toString()-appropriate entries), or otherwise have a toString()-appropriate value.
-   * Nulls are retained as such in arrays/lists but otherwise will NPE.
+   * Create SolrParams from NamedList. Values must be {@code String[]} or {@code List} (with
+   * toString()-appropriate entries), or otherwise have a toString()-appropriate value. Nulls are
+   * retained as such in arrays/lists but otherwise will NPE.
    */
   public SolrParams toSolrParams() {
-    HashMap<String,String[]> map = new HashMap<>();
-    for (int i=0; i<this.size(); i++) {
+    HashMap<String, String[]> map = new HashMap<>();
+    for (int i = 0; i < this.size(); i++) {
       String name = this.getName(i);
       Object val = this.getVal(i);
       if (val instanceof String[]) {
@@ -563,7 +537,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         }
         MultiMapSolrParams.addParam(name, s, map);
       } else {
-        //TODO: we NPE if val is null; yet we support val members above. A bug?
+        // TODO: we NPE if val is null; yet we support val members above. A bug?
         MultiMapSolrParams.addParam(name, val.toString(), map);
       }
     }
@@ -572,15 +546,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * 
-   * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value
-   * relationship in NamedList (the keys of which are String-s)
+   * Helper class implementing Map.Entry&lt;String, T&gt; to store the key-value relationship in
+   * NamedList (the keys of which are String-s)
    */
-  public static final class NamedListEntry<T> implements Map.Entry<String,T> {
-    
-    public NamedListEntry() {
+  public static final class NamedListEntry<T> implements Map.Entry<String, T> {
 
-    }
+    public NamedListEntry() {}
 
     public NamedListEntry(String _key, T _value) {
       key = _key;
@@ -609,26 +580,22 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     private T value;
   }
 
-  /**
-   * Iterates over the Map and sequentially adds its key/value pairs
-   */
-  public boolean addAll(Map<String,T> args) {
-    for (Map.Entry<String, T> entry : args.entrySet() ) {
+  /** Iterates over the Map and sequentially adds its key/value pairs */
+  public boolean addAll(Map<String, T> args) {
+    for (Map.Entry<String, T> entry : args.entrySet()) {
       add(entry.getKey(), entry.getValue());
     }
-    return args.size()>0;
+    return args.size() > 0;
   }
 
   /** Appends the elements of the given NamedList to this one. */
   // TODO this seems scary because it does not type checking
   public boolean addAll(NamedList<? extends T> nl) {
     nvPairs.addAll(nl.nvPairs);
-    return nl.size()>0;
+    return nl.size() > 0;
   }
 
-  /**
-   * Makes a <i>shallow copy</i> of the named list.
-   */
+  /** Makes a <i>shallow copy</i> of the named list. */
   @Override
   public NamedList<T> clone() {
     ArrayList<Object> newList = new ArrayList<>(nvPairs.size());
@@ -636,78 +603,76 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return new NamedList<>(newList);
   }
 
-  //----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
   // Iterable interface
-  //----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
 
-  /**
-   * Support the Iterable interface
-   */
+  /** Support the Iterable interface */
   @Override
-  public Iterator<Map.Entry<String,T>> iterator() {
+  public Iterator<Map.Entry<String, T>> iterator() {
 
     final NamedList<T> list = this;
 
-    Iterator<Map.Entry<String,T>> iter = new Iterator<Map.Entry<String,T>>() {
+    Iterator<Map.Entry<String, T>> iter =
+        new Iterator<Map.Entry<String, T>>() {
 
-      int idx = 0;
+          int idx = 0;
 
-      @Override
-      public boolean hasNext() {
-        return idx < list.size();
-      }
-
-      @Override
-      public Map.Entry<String,T> next() {
-        final int index = idx++;
-        Map.Entry<String,T> nv = new Map.Entry<String,T>() {
           @Override
-          public String getKey() {
-            return list.getName( index );
+          public boolean hasNext() {
+            return idx < list.size();
           }
 
           @Override
-          public T getValue() {
-            return list.getVal( index );
+          public Map.Entry<String, T> next() {
+            final int index = idx++;
+            Map.Entry<String, T> nv =
+                new Map.Entry<String, T>() {
+                  @Override
+                  public String getKey() {
+                    return list.getName(index);
+                  }
+
+                  @Override
+                  public T getValue() {
+                    return list.getVal(index);
+                  }
+
+                  @Override
+                  public String toString() {
+                    return getKey() + "=" + getValue();
+                  }
+
+                  @Override
+                  public T setValue(T value) {
+                    return list.setVal(index, value);
+                  }
+                };
+            return nv;
           }
 
           @Override
-          public String toString() {
-            return getKey()+"="+getValue();
-          }
-
-          @Override
-          public T setValue(T value) {
-            return list.setVal(index, value);
+          public void remove() {
+            throw new UnsupportedOperationException();
           }
         };
-        return nv;
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException();
-      }
-    };
     return iter;
   }
 
   /**
-   * NOTE: this runs in linear time (it scans starting at the
-   * beginning of the list until it finds the first pair with
-   * the specified name).
+   * NOTE: this runs in linear time (it scans starting at the beginning of the list until it finds
+   * the first pair with the specified name).
    */
   public T remove(String name) {
     int idx = indexOf(name, 0);
-    if(idx != -1) return remove(idx);
+    if (idx != -1) return remove(idx);
     return null;
   }
 
   /**
-   * Removes and returns all values for the specified name.  Returns null if
-   * no matches found.  This method will return all matching objects,
-   * regardless of data type.  If you are parsing Solr config options, the
-   * {@link #removeConfigArgs(String)} or {@link #removeBooleanArg(String)}
+   * Removes and returns all values for the specified name. Returns null if no matches found. This
+   * method will return all matching objects, regardless of data type. If you are parsing Solr
+   * config options, the {@link #removeConfigArgs(String)} or {@link #removeBooleanArg(String)}
    * methods will probably work better.
    *
    * @param name Name
@@ -715,7 +680,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    */
   public List<T> removeAll(String name) {
     List<T> result = getAll(name);
-    if (result.size() > 0 ) {
+    if (result.size() > 0) {
       killAll(name);
       return result;
     }
@@ -723,21 +688,18 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Used for getting a boolean argument from a NamedList object.  If the name
-   * is not present, returns null.  If there is more than one value with that
-   * name, or if the value found is not a Boolean or a String, throws an
-   * exception.  If there is only one value present and it is a Boolean or a
-   * String, the value is removed and returned as a Boolean. If an exception
-   * is thrown, the NamedList is not modified. See {@link #removeAll(String)}
-   * and {@link #removeConfigArgs(String)} for additional ways of gathering
-   * configuration information from a NamedList.
-   * 
-   * @param name
-   *          The key to look up in the NamedList.
+   * Used for getting a boolean argument from a NamedList object. If the name is not present,
+   * returns null. If there is more than one value with that name, or if the value found is not a
+   * Boolean or a String, throws an exception. If there is only one value present and it is a
+   * Boolean or a String, the value is removed and returned as a Boolean. If an exception is thrown,
+   * the NamedList is not modified. See {@link #removeAll(String)} and {@link
+   * #removeConfigArgs(String)} for additional ways of gathering configuration information from a
+   * NamedList.
+   *
+   * @param name The key to look up in the NamedList.
    * @return The boolean value found.
-   * @throws SolrException
-   *           If multiple values are found for the name or the value found is
-   *           not a Boolean or a String.
+   * @throws SolrException If multiple values are found for the name or the value found is not a
+   *     Boolean or a String.
    */
   public Boolean removeBooleanArg(final String name) {
     Boolean bool = getBooleanArg(name);
@@ -748,20 +710,17 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   /**
-   * Used for getting a boolean argument from a NamedList object.  If the name
-   * is not present, returns null.  If there is more than one value with that
-   * name, or if the value found is not a Boolean or a String, throws an
-   * exception.  If there is only one value present and it is a Boolean or a
-   * String, the value is returned as a Boolean.  The NamedList is not
-   * modified. See {@link #remove(String)}, {@link #removeAll(String)}
-   * and {@link #removeConfigArgs(String)} for additional ways of gathering
-   * configuration information from a NamedList.
+   * Used for getting a boolean argument from a NamedList object. If the name is not present,
+   * returns null. If there is more than one value with that name, or if the value found is not a
+   * Boolean or a String, throws an exception. If there is only one value present and it is a
+   * Boolean or a String, the value is returned as a Boolean. The NamedList is not modified. See
+   * {@link #remove(String)}, {@link #removeAll(String)} and {@link #removeConfigArgs(String)} for
+   * additional ways of gathering configuration information from a NamedList.
    *
    * @param name The key to look up in the NamedList.
    * @return The boolean value found.
-   * @throws SolrException
-   *           If multiple values are found for the name or the value found is
-   *           not a Boolean or a String.
+   * @throws SolrException If multiple values are found for the name or the value found is not a
+   *     Boolean or a String.
    */
   public Boolean getBooleanArg(final String name) {
     Boolean bool;
@@ -770,60 +729,59 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       return null;
     }
     if (values.size() > 1) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Only one '" + name + "' is allowed");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Only one '" + name + "' is allowed");
     }
     Object o = get(name);
     if (o instanceof Boolean) {
-      bool = (Boolean)o;
+      bool = (Boolean) o;
     } else if (o instanceof CharSequence) {
       bool = Boolean.parseBoolean(o.toString());
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           "'" + name + "' must have type Boolean or CharSequence; found " + o.getClass());
     }
     return bool;
   }
 
   /**
-   * Used for getting one or many arguments from NamedList objects that hold
-   * configuration parameters. Finds all entries in the NamedList that match
-   * the given name. If they are all strings or arrays of strings, remove them
-   * from the NamedList and return the individual elements as a {@link Collection}.
-   * Parameter order will be preserved if the returned collection is handled as
-   * an {@link ArrayList}. Throws SolrException if any of the values associated
-   * with the name are not strings or arrays of strings.  If exception is
-   * thrown, the NamedList is not modified.  Returns an empty collection if no
-   * matches found.  If you need to remove and retrieve all matching items from
-   * the NamedList regardless of data type, use {@link #removeAll(String)} instead.
-   * The {@link #removeBooleanArg(String)} method can be used for retrieving a
-   * boolean argument.
-   * 
-   * @param name
-   *          The key to look up in the NamedList.
+   * Used for getting one or many arguments from NamedList objects that hold configuration
+   * parameters. Finds all entries in the NamedList that match the given name. If they are all
+   * strings or arrays of strings, remove them from the NamedList and return the individual elements
+   * as a {@link Collection}. Parameter order will be preserved if the returned collection is
+   * handled as an {@link ArrayList}. Throws SolrException if any of the values associated with the
+   * name are not strings or arrays of strings. If exception is thrown, the NamedList is not
+   * modified. Returns an empty collection if no matches found. If you need to remove and retrieve
+   * all matching items from the NamedList regardless of data type, use {@link #removeAll(String)}
+   * instead. The {@link #removeBooleanArg(String)} method can be used for retrieving a boolean
+   * argument.
+   *
+   * @param name The key to look up in the NamedList.
    * @return A collection of the values found.
-   * @throws SolrException
-   *           If values are found for the input key that are not strings or
-   *           arrays of strings.
+   * @throws SolrException If values are found for the input key that are not strings or arrays of
+   *     strings.
    */
-  public Collection<String> removeConfigArgs(final String name)
-      throws SolrException {
+  public Collection<String> removeConfigArgs(final String name) throws SolrException {
     List<T> objects = getAll(name);
     List<String> collection = new ArrayList<>(size() / 2);
-    final String err = "init arg '" + name + "' must be a string "
-        + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
-    
+    final String err =
+        "init arg '"
+            + name
+            + "' must be a string "
+            + "(ie: 'str'), or an array (ie: 'arr') containing strings; found: ";
+
     for (Object o : objects) {
       if (o instanceof String) {
         collection.add((String) o);
         continue;
       }
-      
+
       // If it's an array, convert to List (which is a Collection).
       if (o instanceof Object[]) {
         o = Arrays.asList((Object[]) o);
       }
-      
+
       // If it's a Collection, collect each value.
       if (o instanceof Collection) {
         for (Object item : (Collection) o) {
@@ -836,14 +794,14 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, err + o.getClass());
     }
-    
+
     if (collection.size() > 0) {
       killAll(name);
     }
-    
+
     return collection;
   }
-  
+
   public void clear() {
     nvPairs.clear();
   }
@@ -860,12 +818,11 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return this.nvPairs.equals(nl.nvPairs);
   }
 
-
   @Override
   public void abortableForEach(BiFunction<String, ? super T, Boolean> fun) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
-      if(!fun.apply(getName(i), getVal(i))) break;
+      if (!fun.apply(getName(i), getVal(i))) break;
     }
   }
 
@@ -873,7 +830,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   public void abortableForEachKey(Function<String, Boolean> fun) {
     int sz = size();
     for (int i = 0; i < sz; i++) {
-      if(!fun.apply(getName(i))) break;
+      if (!fun.apply(getName(i))) break;
     }
   }
 
@@ -884,6 +841,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       fun.accept(getName(i));
     }
   }
+
   public void forEach(BiConsumer<String, ? super T> action) {
     int sz = size();
     for (int i = 0; i < sz; i++) {

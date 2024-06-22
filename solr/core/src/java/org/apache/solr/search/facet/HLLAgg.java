@@ -17,7 +17,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -43,29 +42,38 @@ public class HLLAgg extends StrAggValueSource {
   public static class HLLFactory {
     int log2m = 13;
     int regwidth = 6;
+
     public HLL getHLL() {
-      return new HLL(log2m, regwidth, -1 /* auto explict threshold */,
-          false /* no sparse representation */, HLLType.EMPTY);
+      return new HLL(
+          log2m,
+          regwidth,
+          -1 /* auto explict threshold */,
+          false /* no sparse representation */,
+          HLLType.EMPTY);
     }
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(getArg());
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
       if (sf.getType().isPointField()) {
         return new SortedNumericAcc(fcontext, getArg(), numSlots);
       } else if (sf.hasDocValues()) {
-        return new UniqueMultiDvSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultiDvSlotAcc(
+            fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       } else {
-        return new UniqueMultivaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueMultivaluedSlotAcc(
+            fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       }
     } else {
       if (sf.getType().getNumberType() != null) {
         // always use hll here since we don't know how many values there are?
         return new NumericAcc(fcontext, getArg(), numSlots);
       } else {
-        return new UniqueSinglevaluedSlotAcc(fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
+        return new UniqueSinglevaluedSlotAcc(
+            fcontext, sf, numSlots, fcontext.isShard() ? factory : null);
       }
     }
   }
@@ -86,8 +94,8 @@ public class HLLAgg extends StrAggValueSource {
         return;
       }
 
-      SimpleOrderedMap<?> map = (SimpleOrderedMap<?>)facetResult;
-      byte[] serialized = ((byte[])map.get("hll"));
+      SimpleOrderedMap<?> map = (SimpleOrderedMap<?>) facetResult;
+      byte[] serialized = ((byte[]) map.get("hll"));
       HLL subHLL = HLL.fromBytes(serialized);
       if (aggregate == null) {
         aggregate = subHLL;
@@ -109,11 +117,11 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
-      return Long.compare( getLong(), ((Merger)other).getLong() );
+    public int compareTo(
+        FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
+      return Long.compare(getLong(), ((Merger) other).getLong());
     }
   }
-
 
   // TODO: hybrid model for non-distrib numbers?
   // todo - better efficiency for sorting?
@@ -173,7 +181,6 @@ public class HLLAgg extends StrAggValueSource {
     public int compare(int slotA, int slotB) {
       return Long.compare(getCardinality(slotA), getCardinality(slotB));
     }
-
   }
 
   class NumericAcc extends BaseNumericAcc {
@@ -186,7 +193,7 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
+      values = DocValues.getNumeric(readerContext.reader(), sf.getName());
     }
 
     @Override
@@ -212,7 +219,7 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
+      values = DocValues.getSortedNumeric(readerContext.reader(), sf.getName());
     }
 
     @Override
@@ -230,5 +237,4 @@ public class HLLAgg extends StrAggValueSource {
       }
     }
   }
-
 }

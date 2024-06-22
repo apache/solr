@@ -17,34 +17,33 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 
-/** {@link UnInvertedField} implementation of field faceting.
- * It's a top-level term cache. */
+/** {@link UnInvertedField} implementation of field faceting. It's a top-level term cache. */
 class FacetFieldProcessorByArrayUIF extends FacetFieldProcessorByArray {
   UnInvertedField uif;
   TermsEnum te;
 
   FacetFieldProcessorByArrayUIF(FacetContext fcontext, FacetField freq, SchemaField sf) {
     super(fcontext, freq, sf);
-    if (! sf.isUninvertible()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                              getClass()+" can not be used on fields where uninvertible='false'");
+    if (!sf.isUninvertible()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          getClass() + " can not be used on fields where uninvertible='false'");
     }
   }
 
   @Override
   protected void findStartAndEndOrds() throws IOException {
     uif = UnInvertedField.getUnInvertedField(freq.field, fcontext.searcher);
-    te = uif.getOrdTermsEnum( fcontext.searcher.getSlowAtomicReader() );    // "te" can be null
+    te = uif.getOrdTermsEnum(fcontext.searcher.getSlowAtomicReader()); // "te" can be null
 
     startTermIndex = 0;
-    endTermIndex = uif.numTerms();  // one past the end
+    endTermIndex = uif.numTerms(); // one past the end
 
     if (prefixRef != null && te != null) {
       if (te.seekCeil(prefixRef.get()) == TermsEnum.SeekStatus.END) {

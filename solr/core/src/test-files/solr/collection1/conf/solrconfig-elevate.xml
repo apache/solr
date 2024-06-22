@@ -19,7 +19,6 @@
 
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-  <jmx />
 
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
@@ -36,10 +35,10 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
-    <!-- autocommit pending docs if certain criteria are met 
-    <autoCommit> 
+    <!-- autocommit pending docs if certain criteria are met
+    <autoCommit>
       <maxDocs>10000</maxDocs>
-      <maxTime>3600000</maxTime> 
+      <maxTime>3600000</maxTime>
     </autoCommit>
     -->
 
@@ -115,16 +114,11 @@
   </requestHandler>-->
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>
   </requestDispatcher>
-
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-    <gettableFiles>solrconfig.xml schema.xml</gettableFiles>
-  </admin>
 
   <!-- test getting system property -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"

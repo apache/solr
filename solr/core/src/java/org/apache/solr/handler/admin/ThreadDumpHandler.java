@@ -16,45 +16,47 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.LockInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.io.IOException;
+import java.lang.management.LockInfo;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.api.NodeThreadsAPI;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+
 /**
- * 
  * @since solr 1.2
  */
-public class ThreadDumpHandler extends RequestHandlerBase
-{
+public class ThreadDumpHandler extends RequestHandlerBase {
+
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
-  {    
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     SimpleOrderedMap<Object> system = new SimpleOrderedMap<>();
-    rsp.add( "system", system );
+    rsp.add("system", system);
 
     ThreadMXBean tmbean = ManagementFactory.getThreadMXBean();
-    
+
     // Thread Count
     SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-    nl.add( "current",tmbean.getThreadCount() );
-    nl.add( "peak", tmbean.getPeakThreadCount() );
-    nl.add( "daemon", tmbean.getDaemonThreadCount() );
-    system.add( "threadCount", nl );
-    
+    nl.add("current", tmbean.getThreadCount());
+    nl.add("peak", tmbean.getPeakThreadCount());
+    nl.add("daemon", tmbean.getDaemonThreadCount());
+    system.add("threadCount", nl);
+
     // Deadlocks
     ThreadInfo[] tinfos;
     long[] tids = tmbean.findDeadlockedThreads();
@@ -63,57 +65,59 @@ public class ThreadDumpHandler extends RequestHandlerBase
       NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
       for (ThreadInfo ti : tinfos) {
         if (ti != null) {
-          lst.add( "thread", getThreadInfo( ti, tmbean ) );
+          lst.add("thread", getThreadInfo(ti, tmbean));
         }
       }
-      system.add( "deadlocks", lst );
+      system.add("deadlocks", lst);
     }
-    
+
     // Now show all the threads....
 
     tinfos = tmbean.dumpAllThreads(true, true);
     NamedList<SimpleOrderedMap<Object>> lst = new NamedList<>();
     for (ThreadInfo ti : tinfos) {
       if (ti != null) {
-        lst.add( "thread", getThreadInfo( ti, tmbean ) );
+        lst.add("thread", getThreadInfo(ti, tmbean));
       }
     }
-    system.add( "threadDump", lst );
+    system.add("threadDump", lst);
     rsp.setHttpCaching(false);
   }
 
-  //--------------------------------------------------------------------------------
-  //--------------------------------------------------------------------------------
-  
-  private static SimpleOrderedMap<Object> getThreadInfo( ThreadInfo ti, ThreadMXBean tmbean ) {
+  // --------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------
+
+  private static SimpleOrderedMap<Object> getThreadInfo(ThreadInfo ti, ThreadMXBean tmbean) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     long tid = ti.getThreadId();
 
-    info.add( ID, tid );
+    info.add(ID, tid);
     info.add(NAME, ti.getThreadName());
-    info.add( "state", ti.getThreadState().toString() );
-    
+    info.add("state", ti.getThreadState().toString());
+
     if (ti.getLockName() != null) {
       // TODO: this is redundent with lock-waiting below .. deprecate & remove
       // TODO: (but first needs UI change)
-      info.add( "lock", ti.getLockName() );
+      info.add("lock", ti.getLockName());
     }
-    { final LockInfo lockInfo = ti.getLockInfo();
+    {
+      final LockInfo lockInfo = ti.getLockInfo();
       if (null != lockInfo) {
         final SimpleOrderedMap<Object> lock = new SimpleOrderedMap<>();
         info.add("lock-waiting", lock);
         lock.add(NAME, lockInfo.toString());
         if (-1 == ti.getLockOwnerId() && null == ti.getLockOwnerName()) {
-          lock.add("owner", null );
+          lock.add("owner", null);
         } else {
           final SimpleOrderedMap<Object> owner = new SimpleOrderedMap<>();
           lock.add("owner", owner);
           owner.add(NAME, ti.getLockOwnerName());
-          owner.add( ID, ti.getLockOwnerId() );
+          owner.add(ID, ti.getLockOwnerId());
         }
       }
     }
-    { final LockInfo[] synchronizers = ti.getLockedSynchronizers();
+    {
+      final LockInfo[] synchronizers = ti.getLockedSynchronizers();
       if (0 < synchronizers.length) {
         final List<String> locks = new ArrayList<>(synchronizers.length);
         info.add("synchronizers-locked", locks);
@@ -122,7 +126,8 @@ public class ThreadDumpHandler extends RequestHandlerBase
         }
       }
     }
-    { final LockInfo[] monitors = ti.getLockedMonitors();
+    {
+      final LockInfo[] monitors = ti.getLockedMonitors();
       if (0 < monitors.length) {
         final List<String> locks = new ArrayList<>(monitors.length);
         info.add("monitors-locked", locks);
@@ -131,32 +136,29 @@ public class ThreadDumpHandler extends RequestHandlerBase
         }
       }
     }
-    
-    
 
-    
     if (ti.isSuspended()) {
-      info.add( "suspended", true );
+      info.add("suspended", true);
     }
     if (ti.isInNative()) {
-      info.add( "native", true );
+      info.add("native", true);
     }
-    
+
     if (tmbean.isThreadCpuTimeSupported()) {
-      info.add( "cpuTime", formatNanos(tmbean.getThreadCpuTime(tid)) );
-      info.add( "userTime", formatNanos(tmbean.getThreadUserTime(tid)) );
+      info.add("cpuTime", formatNanos(tmbean.getThreadCpuTime(tid)));
+      info.add("userTime", formatNanos(tmbean.getThreadUserTime(tid)));
     }
 
     // Add the stack trace
-    int i=0;
+    int i = 0;
     String[] trace = new String[ti.getStackTrace().length];
-    for( StackTraceElement ste : ti.getStackTrace()) {
+    for (StackTraceElement ste : ti.getStackTrace()) {
       trace[i++] = ste.toString();
     }
-    info.add( "stackTrace", trace );
+    info.add("stackTrace", trace);
     return info;
   }
-  
+
   private static String formatNanos(long ns) {
     return String.format(Locale.ROOT, "%.4fms", ns / (double) 1000000);
   }
@@ -171,5 +173,20 @@ public class ThreadDumpHandler extends RequestHandlerBase
   @Override
   public Category getCategory() {
     return Category.ADMIN;
+  }
+
+  @Override
+  public Collection<Api> getApis() {
+    return AnnotatedApi.getApis(new NodeThreadsAPI(this));
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.METRICS_READ_PERM;
   }
 }

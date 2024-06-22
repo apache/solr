@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.store.Directory;
@@ -31,12 +30,10 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
- * Standard Solr deletion policy that allows reserving index commit points
- * for certain amounts of time to support features such as index replication
- * or snapshooting directly out of a live index directory.
- *
+ * Standard Solr deletion policy that allows reserving index commit points for certain amounts of
+ * time to support features such as index replication or snapshotting directly out of a live index
+ * directory.
  *
  * @see org.apache.lucene.index.IndexDeletionPolicy
  */
@@ -58,23 +55,22 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       maxCommitsToKeep = Integer.parseInt(maxCommitsToKeepString);
     if (maxCommitAgeString != null && maxCommitAgeString.trim().length() > 0)
       maxCommitAge = "-" + maxCommitAgeString;
-    if (maxOptimizedCommitsToKeepString != null && maxOptimizedCommitsToKeepString.trim().length() > 0) {
+    if (maxOptimizedCommitsToKeepString != null
+        && maxOptimizedCommitsToKeepString.trim().length() > 0) {
       maxOptimizedCommitsToKeep = Integer.parseInt(maxOptimizedCommitsToKeepString);
     }
-    
+
     // legacy support
     if (keepOptimizedOnlyString != null && keepOptimizedOnlyString.trim().length() > 0) {
       boolean keepOptimizedOnly = Boolean.parseBoolean(keepOptimizedOnlyString);
       if (keepOptimizedOnly) {
         maxOptimizedCommitsToKeep = Math.max(maxOptimizedCommitsToKeep, maxCommitsToKeep);
-        maxCommitsToKeep=0;
+        maxCommitsToKeep = 0;
       }
     }
   }
 
-  /**
-   * Internal use for Lucene... do not explicitly call.
-   */
+  /** Internal use for Lucene... do not explicitly call. */
   @Override
   public void onInit(List<? extends IndexCommit> commits) throws IOException {
     if (commits.isEmpty()) {
@@ -86,9 +82,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
     updateCommits(commits);
   }
 
-  /**
-   * Internal use for Lucene... do not explicitly call.
-   */
+  /** Internal use for Lucene... do not explicitly call. */
   @Override
   public void onCommit(List<? extends IndexCommit> commits) throws IOException {
     if (log.isDebugEnabled()) {
@@ -104,6 +98,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       this.commits = commits;
     }
 
+    @Override
     public final String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("num=").append(commits.size());
@@ -134,6 +129,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       super(commits);
     }
 
+    @Override
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       super.appendDetails(sb, c);
       try {
@@ -147,7 +143,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
   private void updateCommits(List<? extends IndexCommit> commits) {
     // to be safe, we should only call delete on a commit point passed to us
-    // in this specific call (may be across diff IndexWriter instances).
+    // in this specific call (which may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything
     // for safety and to avoid race conditions
 
@@ -161,13 +157,13 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       int totalKept = 1;
 
       // work our way from newest to oldest, skipping the first since we always want to keep it.
-      for (int i=commits.size()-2; i>=0; i--) {
+      for (int i = commits.size() - 2; i >= 0; i--) {
         IndexCommit commit = commits.get(i);
 
         // delete anything too old, regardless of other policies
         try {
           if (maxCommitAge != null) {
-            if (maxCommitAgeTimeStamp==-1) {
+            if (maxCommitAgeTimeStamp == -1) {
               DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
               maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
             }
@@ -190,10 +186,9 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
           totalKept++;
           continue;
         }
-                                                  
+
         commit.delete();
       }
-
     } // end synchronized
   }
 
@@ -237,7 +232,6 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
   public void setMaxOptimizedCommitsToKeep(int maxOptimizedCommitsToKeep) {
     synchronized (this) {
       this.maxOptimizedCommitsToKeep = maxOptimizedCommitsToKeep;
-    }    
+    }
   }
-
 }

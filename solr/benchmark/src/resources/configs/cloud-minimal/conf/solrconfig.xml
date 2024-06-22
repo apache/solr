@@ -38,7 +38,8 @@
 
     <useCompoundFile>${useCompoundFile:true}</useCompoundFile>
 
-    <ramBufferSizeMB>${ramBufferSizeMB:100}</ramBufferSizeMB>
+    <ramBufferSizeMB>${ramBufferSizeMB:160}</ramBufferSizeMB>
+    <maxBufferedDocs>${maxBufferedDocs:250000}</maxBufferedDocs>     <!-- Force the common case to flush by doc count  -->
     <!-- <ramPerThreadHardLimitMB>60</ramPerThreadHardLimitMB> -->
 
     <!-- <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">

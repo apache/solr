@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.junit.Test;
@@ -32,75 +32,83 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_ZK_HOST = "ANY_ZK_HOST";
   private static final String ANY_OTHER_ZK_HOST = "ANY_OTHER_ZK_HOST";
 
-  @Test(expected = IllegalArgumentException.class)
-  public void testNoZkHostSpecified() {
-    new Builder()
-      .withZkChroot(ANY_CHROOT)
-      .build();
-  }
-  
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSingleZkHostSpecified() throws IOException {
-    try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
-        .build()) {
-      final String clientZkHost = createdClient.getZkHost();
-    
-      assertTrue(clientZkHost.contains(ANY_ZK_HOST));
-    }
-  }
-  
-  @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testSeveralZkHostsSpecifiedSingly() throws IOException {
-    final List<String> zkHostList = new ArrayList<>();
-    zkHostList.add(ANY_ZK_HOST); zkHostList.add(ANY_OTHER_ZK_HOST);
-    try (CloudSolrClient createdClient = new Builder(zkHostList, Optional.of(ANY_CHROOT))
-        .build()) {
-      final String clientZkHost = createdClient.getZkHost();
-    
-      assertTrue(clientZkHost.contains(ANY_ZK_HOST));
-      assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
-    }
-  }
-  
-  @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testSeveralZkHostsSpecifiedTogether() throws IOException {
-    final ArrayList<String> zkHosts = new ArrayList<String>();
-    zkHosts.add(ANY_ZK_HOST);
-    zkHosts.add(ANY_OTHER_ZK_HOST);
-    try(CloudSolrClient createdClient = new Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
-      final String clientZkHost = createdClient.getZkHost();
-    
-      assertTrue(clientZkHost.contains(ANY_ZK_HOST));
-      assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
-    }
-  }
-  
-  @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
-    try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
-      assertTrue(createdClient.isUpdatesToLeaders() == true);
+    try (CloudSolrClient createdClient =
+        new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build(); ) {
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(createdClient)) {
+        final String clientZkHost = zkClientClusterStateProvider.getZkHost();
+        assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+      }
     }
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
+  public void testSeveralZkHostsSpecifiedSingly() throws IOException {
+    final List<String> zkHostList = new ArrayList<>();
+    zkHostList.add(ANY_ZK_HOST);
+    zkHostList.add(ANY_OTHER_ZK_HOST);
+    try (CloudSolrClient createdClient = new Builder(zkHostList, Optional.of(ANY_CHROOT)).build()) {
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(createdClient)) {
+        final String clientZkHost = zkClientClusterStateProvider.getZkHost();
+        assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+      }
+    }
+  }
+
+  @Test
+  public void testSeveralZkHostsSpecifiedTogether() throws IOException {
+    final ArrayList<String> zkHosts = new ArrayList<>();
+    zkHosts.add(ANY_ZK_HOST);
+    zkHosts.add(ANY_OTHER_ZK_HOST);
+    try (CloudSolrClient createdClient = new Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
+      try (ZkClientClusterStateProvider zkClientClusterStateProvider =
+          ZkClientClusterStateProvider.from(createdClient)) {
+        final String clientZkHost = zkClientClusterStateProvider.getZkHost();
+        assertTrue(clientZkHost.contains(ANY_ZK_HOST));
+        assertTrue(clientZkHost.contains(ANY_OTHER_ZK_HOST));
+      }
+    }
+  }
+
+  @Test
+  public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
+    try (CloudSolrClient createdClient =
+        new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
+      assertTrue(createdClient.isUpdatesToLeaders());
+    }
+  }
+
+  @Test
   public void testIsDirectUpdatesToLeadersOnlyDefault() throws IOException {
-    try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
+    try (CloudSolrClient createdClient =
+        new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
       assertFalse(createdClient.isDirectUpdatesToLeadersOnly());
     }
   }
-  
+
   @Test
   @SuppressWarnings({"try"})
   public void test0Timeouts() throws IOException {
-    try(CloudSolrClient createdClient = new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
-        .withSocketTimeout(0)
-        .withConnectionTimeout(0)
-        .build()) {
+    try (CloudSolrClient createdClient =
+        new CloudLegacySolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
+            .withSocketTimeout(0, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(0, TimeUnit.MILLISECONDS)
+            .build()) {
+      assertNotNull(createdClient);
+    }
+  }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (CloudSolrClient createdClient =
+        new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withDefaultCollection("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
     }
   }
 }

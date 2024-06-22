@@ -17,7 +17,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The definitive manual on AsciiDoc syntax is in the https://docs.asciidoctor.org/asciidoc/latest/[Asciidoctor documentation].
+The definitive manual on AsciiDoc syntax is in the https://docs.asciidoctor.org/asciidoctor.js/latest[Asciidoctor.js documentation].
 To help people get started, however, here is a simpler cheat sheet.
 
 == AsciiDoc vs Asciidoctor Syntax
@@ -109,49 +109,27 @@ When in doubt, choose `text`, or leave it blank.
 
 The build system has the ability to "include" snippets located in other files -- even non-AsciiDoc files such as `*.java` source code files.
 
+These files must reside under the `examples/` directory in the same module as the page that wants to use it.
+
 Snippets are bounded by "tag" comments placed at the start and end of the section you would like to import.
 Opening tags look like: `// tag::snippetName[]`.
 Closing tags follow the format: `// end::snippetName[]`.
 
-Snippets can be inserted into an `.adoc` file using an `include` directive, following the format: `include::PathToFileWithSnippet[tag=snippetName]`.
+Snippets can be inserted into an `.adoc` file using an `include` directive, following the format: `include::<directory-under-module>$<file-name>[tag=snippetName]`.
 
-Note that when relative paths are provided in these directives, those paths are resolved relative to the location of the AsciiDoc file that the `include` appears in.
+Note that when paths are provided in these directives, those paths are resolved relative to the module that the AsciiDoc page lives in.
 
-Snippets can be included directly from any file in the Solr GIT repo by refering to a `solr-root-path` variable prior to the file path, for example:
-
-[source]
---
-[source,java,indent=0]
-----
-\include::{solr-root-path}core/src/java/org/apache/solr/core/SolrCore.java[tag=something]
-----
---
-
-When building the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `solr-ref-guide/build/content` directory used by Gradle.
-
-In order for editors (such as ATOM) to be able to offer "live preview" of the `*.adoc` files using these includes, the `solr-root-path` attribute must also be set as a document level attribute in each file, with the correct relative path.
-
-For example, `using-solrj.adoc` sets `solr-root-path` in its header, along with an `example-source-dir` attribute (that depends on `solr-root-path`) in order to reduce redundancy in the many `include::` directives it specifies.
+For example, `modules/deployment-guide/pages/solrj.adoc` uses the `UsingSolrJRefGuideExamplesTest.java` file located under `modules/deployment-guide/examples/`.
 
 [source]
 --
-= Using SolrJ
-:solr-root-path: ../../
-:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
-...
 [source,java,indent=0]
 ----
-\include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
+\include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeouts]
 ----
-...
-[source,java,indent=0]
-----
-\include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-other-apis]
-----
-...
 --
 
-For more information on the `include` directive, see the documentation at https://docs.asciidoctor.org/asciidoc/latest/directives/include/.
+For more information on the `include` directive, see the documentation at https://docs.antora.org/antora/latest/page/include-an-example/.
 
 === Block Titles
 
@@ -185,10 +163,18 @@ There are slightly different rules depending on the type of link you want to cre
 
 The build process includes a validation for internal or inter-page links, so if you can build the docs locally, you can use that to verify you constructed your link properly (or pay attention to the Jenkins build after your commit).
 
-With all of the below examples, you can add text to display as the link title by adding a comma after the section reference followed by the display text, as in:
+With all of the below examples, you can add text to display as the link title by putting the display text in brackets after the link, as in:
 
 [source]
-<<schema-api.adoc#modify-the-schema,Modify the Schema>>
+xref:indexing-guide:schema-api.adoc#modify-the-schema[Modify the Schema]
+
+You can also use the title of the Page or Section you are linking to by using an empty display text.
+This is useful in case the title of the page or section changes.
+In that case you won't need to change the display text for every link that refers to that page/section.
+See an example below:
+
+[source]
+xref:indexing-guide:schema-api.adoc#modify-the-schema[]
 
 ==== Link to a Section on the Same Page
 
@@ -230,20 +216,32 @@ Take this example from `configsets-api.adoc`:
 To link to this section, there are two approaches depending on where you are linking from:
 
 * From the same page, simply use the anchor name: `\<<configsets-create>>`.
-* From another page, use the page name and the anchor name: `\<<configsets-api.adoc#configsets-create>>`.
+* From another page, use the page name and the anchor name: `\xref:configuration-guide:configsets-api.adoc#configsets-create[]`.
 
 ==== Link to Another Page
 To link to _another page_ or a section on another page, you must refer to the full filename and refer to the section you want to link to.
 
-When you want to refer the reader to another page without deep-linking to a section, Asciidoctor allows a shorthand for this: you only need to specify an empty anchor (`#`) after the file name.
+When you want to refer the reader to another page without deep-linking to a section, Asciidoctor allows this by merely ommiting the `#` and section id.
 
 Example::
-To construct a link to the `solr-upgrade-notes.adoc` page, we need to refer to the file name (`solr-upgrade-notes.adoc`), then use an empty anchor for the section reference.
+To construct a link to the `solr-upgrade-notes.adoc` page, we need to refer to the file name (`solr-upgrade-notes.adoc`), as well as the module that the file resides in (`upgrade-notes/`).
+You can determine the module that a page falls under by looking at the folder under `solr-ref-guide/modules` that it resides in.
++
 It's preferred to also always use the page name to give the reader better context for where the link goes.
 As in:
 +
 [source]
-For more about upgrades, see <<upgrading-solr.adoc#,Solr Upgrade Notes>>.
+For more about upgrades, see xref:upgrade-notes:solr-upgrade-notes.adoc[Solr Upgrade Notes].
+
+==== Link to Another Page in the same Module
+
+If the page that contains the link and the page being linked to reside in the same module, there is no need to include the module name after `xref:`
+
+Example::
+To construct a link to the `major-changes-in-solr-9.adoc` page from `solr-upgrade-notes.adoc` page, we do not need to include the module name because they both reside in the `upgrade-notes` module.
++
+[source]
+For more information on upgrading to Solr 9, see the section xref:major-changes-in-solr-9.adoc[].
 
 ==== Link to a Section on Another Page
 Linking to a section is the same conceptually as linking to the top of a page, you just need to take a little extra care to format the anchor ID in your link reference properly.
@@ -280,7 +278,7 @@ To link from to this section from another page, you would create a link structur
 The link in context would look like this:
 +
 [source]
-For more information, see the section <<schema-api.adoc#modify-the-schema,Modify the Schema>>.
+For more information, see the section xref:indexing-guide:schema-api.adoc#modify-the-schema[Modify the Schema].
 
 More info: https://docs.asciidoctor.org/asciidoc/latest/macros/inter-document-xref/
 
@@ -339,7 +337,11 @@ If a block image includes a title, it will be included as the text of the captio
 
 Optional attributes allow you to set the alt text, the size of the image, if it should be a link, float and alignment.
 
-More info: https://docs.asciidoctor.org/asciidoc/latest/macros/images/
+Images must be placed in the `images/` directory under the module of the pages that wish to use that image.
+As you can see in the modules that exist now, the ref-guide generally includes sub-directories for each page in the module.
+This allows for better management of which pages are using which images.
+
+More info: https://docs.antora.org/antora/latest/page/images/
 
 == Tables
 

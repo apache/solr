@@ -22,51 +22,52 @@ import org.junit.BeforeClass;
 /**
  * Tests per-field similarity support in the schema when SchemaSimilarityFactory is explicitly
  * configured to use a custom default sim for field types that do not override it.
+ *
  * @see TestPerFieldSimilarity
  */
 public class TestPerFieldSimilarityWithDefaultOverride extends BaseSimilarityTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-sim-default-override.xml");
+    initCore("solrconfig-basic.xml", "schema-sim-default-override.xml");
   }
-  
+
   /** test a field where the sim is specified directly */
-  public void testDirect() throws Exception {
+  public void testDirect() {
     assertNotNull(getSimilarity("sim1text", SweetSpotSimilarity.class));
   }
-  
+
   /** ... and for a dynamic field */
-  public void testDirectDynamic() throws Exception {
+  public void testDirectDynamic() {
     assertNotNull(getSimilarity("text_sim1", SweetSpotSimilarity.class));
   }
-  
+
   /** test a field where a configurable sim factory is explicitly defined */
-  public void testDirectFactory() throws Exception {
+  public void testDirectFactory() {
     MockConfigurableSimilarity sim = getSimilarity("sim2text", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());
   }
-  
+
   /** ... and for a dynamic field */
-  public void testDirectFactoryDynamic() throws Exception {
+  public void testDirectFactoryDynamic() {
     MockConfigurableSimilarity sim = getSimilarity("text_sim2", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());
   }
-  
+
   /** test a field where no similarity is specified */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     MockConfigurableSimilarity sim = getSimilarity("sim3text", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());
   }
-  
+
   /** ... and for a dynamic field */
-  public void testDefaultsDynamic() throws Exception {
+  public void testDefaultsDynamic() {
     MockConfigurableSimilarity sim = getSimilarity("text_sim3", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());
   }
-  
+
   /** test a field that does not exist */
-  public void testNonexistent() throws Exception {
+  public void testNonexistent() {
     MockConfigurableSimilarity sim = getSimilarity("text_sim3", MockConfigurableSimilarity.class);
     assertEquals("is there an echo?", sim.getPassthrough());
   }

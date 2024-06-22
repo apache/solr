@@ -16,6 +16,10 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.core.SolrConfig;
@@ -25,54 +29,51 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.Arrays;
-import java.util.List;
-
 public class TestSchemaManager extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema-tiny.xml");
+    initCore("solrconfig.xml", "schema-tiny.xml");
   }
 
   @Test
   public void testParsing() throws IOException {
-    String x = "{\n" +
-        " 'add-field' : {\n" +
-        "              'name':'a',\n" +
-        "              'type': 'string',\n" +
-        "              'stored':true,\n" +
-        "              'indexed':false\n" +
-        "              },\n" +
-        " 'add-field' : {\n" +
-        "              'name':'b',\n" +
-        "              'type': 'string',\n" +
-        "              'stored':true,\n" +
-        "              'indexed':false\n" +
-        "              }\n" +
-        "\n" +
-        "}";
+    String x =
+        "{\n"
+            + " 'add-field' : {\n"
+            + "              'name':'a',\n"
+            + "              'type': 'string',\n"
+            + "              'stored':true,\n"
+            + "              'indexed':false\n"
+            + "              },\n"
+            + " 'add-field' : {\n"
+            + "              'name':'b',\n"
+            + "              'type': 'string',\n"
+            + "              'stored':true,\n"
+            + "              'indexed':false\n"
+            + "              }\n"
+            + "\n"
+            + "}";
 
     List<CommandOperation> ops = CommandOperation.parse(new StringReader(json(x)));
-    assertEquals(2,ops.size());
-    assertTrue( CommandOperation.captureErrors(ops).isEmpty());
+    assertEquals(2, ops.size());
+    assertTrue(CommandOperation.captureErrors(ops).isEmpty());
 
-    x = " {'add-field' : [{\n" +
-        "                       'name':'a1',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':true,\n" +
-        "                       'indexed':false\n" +
-        "                      },\n" +
-        "                      {\n" +
-        "                       'name':'a2',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':true,\n" +
-        "                       'indexed':true\n" +
-        "                      }]\n" +
-        "      }";
+    x =
+        " {'add-field' : [{\n"
+            + "                       'name':'a1',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':true,\n"
+            + "                       'indexed':false\n"
+            + "                      },\n"
+            + "                      {\n"
+            + "                       'name':'a2',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':true,\n"
+            + "                       'indexed':true\n"
+            + "                      }]\n"
+            + "      }";
     ops = CommandOperation.parse(new StringReader(json(x)));
-    assertEquals(2,ops.size());
+    assertEquals(2, ops.size());
     assertTrue(CommandOperation.captureErrors(ops).isEmpty());
   }
 
@@ -80,7 +81,8 @@ public class TestSchemaManager extends SolrTestCaseJ4 {
   @Ignore
   public void testSchemaLoadingPerf() {
     SolrConfig config = TestHarness.createConfig(testSolrHome, "collection1", "solrconfig.xml");
-    List<String> names = Arrays.asList("schema.xml", "schema11.xml", "schema12.xml", "schema15.xml");
+    List<String> names =
+        Arrays.asList("schema.xml", "schema11.xml", "schema12.xml", "schema15.xml");
     RTimer timer = new RTimer();
     for (String name : names) {
       IndexSchema schema = IndexSchemaFactory.buildIndexSchema(name, config);

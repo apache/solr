@@ -27,14 +27,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.annotation.JsonProperty;
 
-/**Creates a json schema from an annotated Java Object. This, by  no means, is an exhaustive impl
- * of schema generation. We will expand the scope as we use more types
- *
+/**
+ * Creates a json schema from an annotated Java Object. This, by no means, is an exhaustive impl of
+ * schema generation. We will expand the scope as we use more types
  */
-
 public class JsonSchemaCreator {
   public static final Map<Class<?>, String> natives = new HashMap<>();
 
@@ -42,6 +40,8 @@ public class JsonSchemaCreator {
     natives.put(String.class, "string");
     natives.put(Integer.class, "integer");
     natives.put(int.class, "integer");
+    natives.put(Long.class, "long");
+    natives.put(long.class, "long");
     natives.put(Float.class, "number");
     natives.put(float.class, "number");
     natives.put(Double.class, "number");
@@ -54,7 +54,8 @@ public class JsonSchemaCreator {
     return createSchemaFromType(t, new LinkedHashMap<>());
   }
 
-  private static Map<String, Object> createSchemaFromType(java.lang.reflect.Type t, Map<String, Object> map) {
+  private static Map<String, Object> createSchemaFromType(
+      java.lang.reflect.Type t, Map<String, Object> map) {
     if (natives.containsKey(t)) {
       map.put("type", natives.get(t));
     } else if (t instanceof ParameterizedType) {
@@ -77,16 +78,15 @@ public class JsonSchemaCreator {
     map.put("type", "object");
     Map<String, Object> props = new HashMap<>();
     map.put("properties", props);
-    Set<String>  required = new HashSet<>();
+    Set<String> required = new HashSet<>();
     for (Field fld : klas.getDeclaredFields()) {
       JsonProperty p = fld.getAnnotation(JsonProperty.class);
       if (p == null) continue;
       String name = p.value().isEmpty() ? fld.getName() : p.value();
       props.put(name, getSchema(fld.getGenericType()));
-      if(p.required()) required.add(name);
+      if (p.required()) required.add(name);
     }
-    if(!required.isEmpty()) map.put("required", new ArrayList<>(required));
-     map.put("additionalProperties", true);
-
+    if (!required.isEmpty()) map.put("required", new ArrayList<>(required));
+    map.put("additionalProperties", true);
   }
 }

@@ -16,15 +16,14 @@
  */
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
+import java.io.IOException;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.util.NamedList;
 
-import java.io.IOException;
-
 /**
- * A <code>ShardResultTransformer</code> is responsible for transforming a grouped shard result into group related
- * structures (such as {@link org.apache.lucene.search.grouping.TopGroups} and {@link org.apache.lucene.search.grouping.SearchGroup})
- * and visa versa.
+ * A <code>ShardResultTransformer</code> is responsible for transforming a grouped shard result into
+ * group related structures (such as {@link org.apache.lucene.search.grouping.TopGroups} and {@link
+ * org.apache.lucene.search.grouping.SearchGroup}) and visa versa.
  *
  * @lucene.experimental
  */
@@ -48,6 +47,6 @@ public interface ShardResultTransformer<T, R> {
    * @param shard The shard address where the response originated from
    * @return native structure of the data
    */
-  R transformToNative(NamedList<NamedList<?>> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
-
+  R transformToNative(
+      NamedList<NamedList<?>> shardResponse, Sort groupSort, Sort withinGroupSort, String shard);
 }

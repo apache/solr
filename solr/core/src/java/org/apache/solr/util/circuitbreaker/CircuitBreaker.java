@@ -17,83 +17,131 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+
 /**
- * Default class to define circuit breakers for Solr.
- * <p>
- *  There are two (typical) ways to use circuit breakers:
- *  1. Have them checked at admission control by default (use CircuitBreakerManager for the same).
- *  2. Use the circuit breaker in a specific code path(s).
+ * Default base class to define circuit breaker plugins for Solr. <b>Still experimental, may
+ * change</b>
  *
- * TODO: This class should be grown as the scope of circuit breakers grow.
+ * <p>There are two (typical) ways to use circuit breakers:
  *
- * The class and its derivatives raise a standard exception when a circuit breaker is triggered.
- * We should make it into a dedicated exception (https://issues.apache.org/jira/browse/SOLR-14755)
- * </p>
+ * <ol>
+ *   <li>Have them checked at admission control by default (use CircuitBreakerRegistry for the
+ *       same).
+ *   <li>Use the circuit breaker in a specific code path(s).
+ * </ol>
+ *
+ * @lucene.experimental
  */
-public abstract class CircuitBreaker {
-  public static final String NAME = "circuitbreaker";
+public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
+  public static final String SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE =
+      "solr.circuitbreaker.errorcode";
+  private static SolrException.ErrorCode errorCode = resolveExceptionErrorCode();
+  // Only query requests are checked by default
+  private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
+  private boolean warnOnly;
+  private final List<SolrRequestType> SUPPORTED_TYPES =
+      List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
 
-  protected final CircuitBreakerConfig config;
-
-  public CircuitBreaker(CircuitBreakerConfig config) {
-    this.config = config;
+  @Override
+  public void init(NamedList<?> args) {
+    SolrPluginUtils.invokeSetters(this, args);
+    if (args.getBooleanArg("warnOnly") != null) {
+      setWarnOnly(args.getBooleanArg("warnOnly"));
+    }
   }
 
-  // Global config for all circuit breakers. For specific circuit breaker configs, define
-  // your own config.
-  protected boolean isEnabled() {
-    return config.isEnabled();
+  public CircuitBreaker() {
+    // Early abort if custom error code system property is wrong
+    errorCode = resolveExceptionErrorCode();
   }
 
-  /**
-   * Check if circuit breaker is tripped.
-   */
+  /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
 
-  /**
-   * Get debug useful info.
-   */
-  public abstract String getDebugInfo();
-
-  /**
-   * Get error message when the circuit breaker triggers
-   */
+  /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
 
-  public static class CircuitBreakerConfig {
-    private final boolean enabled;
-    private final boolean memCBEnabled;
-    private final int memCBThreshold;
-    private final boolean cpuCBEnabled;
-    private final int cpuCBThreshold;
+  /**
+   * Get http error code, defaults to 429 (TOO_MANY_REQUESTS) but can be overridden with system
+   * property {@link #SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE}
+   */
+  public static SolrException.ErrorCode getExceptionErrorCode() {
+    return errorCode;
+  }
 
-    public CircuitBreakerConfig(final boolean enabled, final boolean memCBEnabled, final int memCBThreshold,
-                                  final boolean cpuCBEnabled, final int cpuCBThreshold) {
-      this.enabled = enabled;
-      this.memCBEnabled = memCBEnabled;
-      this.memCBThreshold = memCBThreshold;
-      this.cpuCBEnabled = cpuCBEnabled;
-      this.cpuCBThreshold = cpuCBThreshold;
+  private static SolrException.ErrorCode resolveExceptionErrorCode() {
+    int intCode = SolrException.ErrorCode.TOO_MANY_REQUESTS.code;
+    String strCode = System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+    if (strCode != null) {
+      try {
+        intCode = Integer.parseInt(strCode);
+      } catch (NumberFormatException nfe) {
+        intCode = SolrException.ErrorCode.UNKNOWN.code;
+      }
     }
+    SolrException.ErrorCode errorCode = SolrException.ErrorCode.getErrorCode(intCode);
+    if (errorCode != SolrException.ErrorCode.UNKNOWN) {
+      return errorCode;
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          String.format(
+              Locale.ROOT,
+              "Invalid error code %s specified for circuit breaker system property %s.",
+              strCode,
+              SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE));
+    }
+  }
 
-    public boolean isEnabled() {
-      return enabled;
-    }
+  @Override
+  public void close() throws IOException {
+    // Nothing to do by default
+  }
 
-    public boolean getMemCBEnabled() {
-      return memCBEnabled;
-    }
+  /**
+   * Set the request types for which this circuit breaker should be checked. If not called, the
+   * circuit breaker will be checked for the {@link SolrRequestType#QUERY} request type only.
+   *
+   * @param requestTypes list of strings representing request types
+   * @throws IllegalArgumentException if the request type is not valid
+   */
+  public void setRequestTypes(List<String> requestTypes) {
+    this.requestTypes =
+        requestTypes.stream()
+            .map(t -> SolrRequestType.valueOf(t.toUpperCase(Locale.ROOT)))
+            .peek(
+                t -> {
+                  if (!SUPPORTED_TYPES.contains(t)) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            Locale.ROOT,
+                            "Request type %s is not supported for circuit breakers",
+                            t.name()));
+                  }
+                })
+            .collect(Collectors.toSet());
+  }
 
-    public int getMemCBThreshold() {
-      return memCBThreshold;
-    }
+  public void setWarnOnly(boolean warnOnly) {
+    this.warnOnly = warnOnly;
+  }
 
-    public boolean getCpuCBEnabled() {
-      return cpuCBEnabled;
-    }
+  public boolean isWarnOnly() {
+    return warnOnly;
+  }
 
-    public int getCpuCBThreshold() {
-      return cpuCBThreshold;
-    }
+  public Set<SolrRequestType> getRequestTypes() {
+    return requestTypes;
   }
 }

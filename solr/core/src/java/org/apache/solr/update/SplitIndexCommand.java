@@ -16,31 +16,44 @@
  */
 package org.apache.solr.update;
 
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import java.util.List;
-
 /**
  * A split index command encapsulated in an object.
  *
  * @since solr 1.4
- *
  */
 public class SplitIndexCommand extends UpdateCommand {
   public final SolrQueryResponse rsp;
   public final List<String> paths;
-  public final List<SolrCore> cores;  // either paths or cores should be specified
+  public final List<SolrCore> cores; // either paths or cores should be specified
   public final List<DocRouter.Range> ranges;
   public final DocRouter router;
   public final String routeFieldName;
   public final String splitKey;
   public final SolrIndexSplitter.SplitMethod splitMethod;
 
-  public SplitIndexCommand(SolrQueryRequest req, SolrQueryResponse rsp, List<String> paths, List<SolrCore> cores, List<DocRouter.Range> ranges,
-                           DocRouter router, String routeFieldName, String splitKey, SolrIndexSplitter.SplitMethod splitMethod) {
+  /**
+   * User provided commit data. Can be let to null if there is none. This commit data is used when
+   * the split command commits.
+   */
+  public Map<String, String> commitData;
+
+  public SplitIndexCommand(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      List<String> paths,
+      List<SolrCore> cores,
+      List<DocRouter.Range> ranges,
+      DocRouter router,
+      String routeFieldName,
+      String splitKey,
+      SolrIndexSplitter.SplitMethod splitMethod) {
     super(req);
     this.rsp = rsp;
     this.paths = paths;
@@ -71,6 +84,9 @@ public class SplitIndexCommand extends UpdateCommand {
       sb.append(",split.key=").append(splitKey);
     }
     sb.append(",method=").append(splitMethod.toLower());
+    if (commitData != null) {
+      sb.append(",commitData=").append(commitData);
+    }
     sb.append('}');
     return sb.toString();
   }

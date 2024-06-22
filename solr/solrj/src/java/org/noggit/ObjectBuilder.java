@@ -19,7 +19,6 @@
 
 package org.noggit;
 
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -27,20 +26,20 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.noggit.JSONParser.ParseException;
 
 public class ObjectBuilder {
 
-  /** consider to use {@link #fromJSONStrict(String)}*/
+  /** consider to use {@link #fromJSONStrict(String)} */
   public static Object fromJSON(String json) throws IOException {
     JSONParser p = new JSONParser(json);
     return getVal(p);
   }
-  
-  /** like {@link #fromJSON(String)}, but also check that there is nothing 
-   * remaining in the given string after closing bracket. 
-   * Throws {@link ParseException} otherwise.*/
+
+  /**
+   * like {@link #fromJSON(String)}, but also check that there is nothing remaining in the given
+   * string after closing bracket. Throws {@link ParseException} otherwise.
+   */
   public static Object fromJSONStrict(String json) throws IOException {
     JSONParser p = new JSONParser(json);
     final Object val = getVal(p);
@@ -49,28 +48,30 @@ public class ObjectBuilder {
   }
 
   public static void checkEOF(JSONParser p) throws IOException {
-    if (p.nextEvent()!=JSONParser.EOF) {
+    if (p.nextEvent() != JSONParser.EOF) {
       throw p.err("Expecting single object only.");
     }
   }
 
-  /** consider to use {@link #getValStrict()}*/
+  /** consider to use {@link #getValStrict()} */
   public static Object getVal(JSONParser parser) throws IOException {
     return new ObjectBuilder(parser).getVal();
   }
-  
-  /** like {@link #getVal()}, but also check that there is nothing 
-   * remaining in the given stream after closing bracket. 
-   * Throws {@link ParseException} otherwise.*/
+
+  /**
+   * like {@link #getVal()}, but also check that there is nothing remaining in the given stream
+   * after closing bracket. Throws {@link ParseException} otherwise.
+   */
   public static Object getValStrict(JSONParser parser) throws IOException {
     final Object val = getVal(parser);
     checkEOF(parser);
     return val;
   }
 
-  /** like {@link #getVal()}, but also check that there is nothing 
-   * remaining in the given stream after closing bracket. 
-   * Throws {@link ParseException} otherwise.*/
+  /**
+   * like {@link #getVal()}, but also check that there is nothing remaining in the given stream
+   * after closing bracket. Throws {@link ParseException} otherwise.
+   */
   public Object getValStrict() throws IOException {
     final Object val = getVal();
     checkEOF(parser);
@@ -83,7 +84,6 @@ public class ObjectBuilder {
     this.parser = parser;
     if (parser.lastEvent() == 0) parser.nextEvent();
   }
-
 
   public Object getVal() throws IOException {
     int ev = parser.lastEvent();
@@ -114,7 +114,6 @@ public class ObjectBuilder {
         return null; // OR ERROR?
     }
   }
-
 
   public Object getString() throws IOException {
     return parser.getString();
@@ -161,15 +160,13 @@ public class ObjectBuilder {
 
   @SuppressWarnings("unchecked")
   public void addKeyVal(Object map, Object key, Object val) throws IOException {
-    /* Object prev = */
-    ((Map<Object, Object>) map).put(key, val);
+    /* Object prev = */ ((Map<Object, Object>) map).put(key, val);
     // TODO: test for repeated value?
   }
 
   public Object objectEnd(Object obj) {
     return obj;
   }
-
 
   public Object getObject() throws IOException {
     Object m = newObject();
@@ -205,5 +202,4 @@ public class ObjectBuilder {
       addArrayVal(arr, val);
     }
   }
-
 }

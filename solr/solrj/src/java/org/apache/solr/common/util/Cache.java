@@ -28,8 +28,7 @@ public interface Cache<K, V> {
 
   void clear();
 
-  default V computeIfAbsent(K key,
-                            Function<? super K, ? extends V> mappingFunction) {
+  default V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
     Objects.requireNonNull(mappingFunction);
     V v;
     if ((v = get(key)) == null) {
@@ -42,5 +41,4 @@ public interface Cache<K, V> {
 
     return v;
   }
-
 }

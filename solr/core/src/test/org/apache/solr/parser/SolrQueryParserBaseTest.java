@@ -16,8 +16,15 @@
  */
 package org.apache.solr.parser;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+
+import java.util.Arrays;
+import java.util.List;
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.search.Query;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -25,114 +32,100 @@ import org.apache.solr.search.QParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.Mockito;
 
-import java.util.Arrays;
-import java.util.List;
+public class SolrQueryParserBaseTest extends SolrTestCaseJ4 {
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
+  @BeforeClass
+  public static void setUpClass() {
+    assumeWorkingMockito();
+  }
 
-@RunWith(MockitoJUnitRunner.class)
-public class SolrQueryParserBaseTest {
+  private static final String DEFAULT_FIELD_NAME = "TestDefaultFieldname";
 
-    @BeforeClass
-    public static void setUpClass() {
-        assumeWorkingMockito();
+  private static class MockSolrQueryParser extends SolrQueryParserBase {
+    @Override
+    public void ReInit(CharStream stream) {}
+
+    @Override
+    public Query TopLevelQuery(String field) {
+      return null;
     }
+  }
 
-    private static final String DEFAULT_FIELD_NAME = "TestDefaultFieldname";
+  private final QParser qParser = Mockito.mock(QParser.class);
+  private final QParser subQParser = Mockito.mock(QParser.class);
+  private final SolrQueryRequest solrQueryRequest = Mockito.mock(SolrQueryRequest.class);
+  private final Query query = Mockito.mock(Query.class);
+  private final IndexSchema indexSchema = Mockito.mock(IndexSchema.class);
 
-    private static class MockSolrQueryParser extends SolrQueryParserBase {
-        public void ReInit(CharStream stream) {
-        }
+  private MockSolrQueryParser solrQueryParser;
 
-        public Query TopLevelQuery(String field) {
-            return null;
-        }
-    }
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    solrQueryParser = new MockSolrQueryParser();
+  }
 
-    @Mock
-    private QParser qParser;
-    @Mock
-    private QParser subQParser;
-    @Mock
-    private SolrQueryRequest solrQueryRequest;
-    @Mock
-    private Query query;
-    @Mock
-    private IndexSchema indexSchema;
+  private void initQParser() {
+    doReturn(indexSchema).when(solrQueryRequest).getSchema();
+    doReturn(solrQueryRequest).when(qParser).getReq();
+  }
 
-    private MockSolrQueryParser solrQueryParser;
+  @Test
+  public void testInitHappyCases() {
+    initQParser();
+    solrQueryParser.init(null, qParser);
+    solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
+  }
 
-    @Before
-    public void setUp() throws Exception {
-        solrQueryParser = new MockSolrQueryParser();
-    }
+  @Test(expected = SolrException.class)
+  public void testInitBadDefaultField() {
+    solrQueryParser.init("", qParser);
+  }
 
-    private void initQParser() {
-        doReturn(indexSchema).when(solrQueryRequest).getSchema();
-        doReturn(solrQueryRequest).when(qParser).getReq();
-    }
+  @Test(expected = SolrException.class)
+  public void testInitNullQParser() {
+    solrQueryParser.init(DEFAULT_FIELD_NAME, null);
+  }
 
-    @Test
-    public void testInitHappyCases() {
-        initQParser();
-        solrQueryParser.init(null, qParser);
-        solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
-    }
+  @Test(expected = SolrException.class)
+  public void testInitNullQParserReq() {
+    solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
+  }
 
-    @Test(expected = SolrException.class)
-    public void testInitBadDefaultField() {
-        solrQueryParser.init("", qParser);
-    }
+  @Test(expected = SolrException.class)
+  public void testInitNullQParserReqSchema() {
+    doReturn(solrQueryRequest).when(qParser).getReq();
+    solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
+  }
 
-    @Test(expected = SolrException.class)
-    public void testInitNullQParser() {
-        solrQueryParser.init(DEFAULT_FIELD_NAME, null);
-    }
+  @Test
+  public void testGetField() {
+    initQParser();
+    solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
+    assertEquals(DEFAULT_FIELD_NAME, solrQueryParser.getField(null));
+    assertEquals(DEFAULT_FIELD_NAME, solrQueryParser.getField(""));
+    final String nonNullFieldName = "testFieldName";
+    assertEquals(nonNullFieldName, solrQueryParser.getField(nonNullFieldName));
+  }
 
-    @Test(expected = SolrException.class)
-    public void testInitNullQParserReq() {
-        solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
-    }
+  @Test
+  public void testGetMagicFieldQuery() throws Exception {
+    String magicField = "_val_";
+    String magicFieldSubParser = SolrQueryParserBase.MagicFieldName.get(magicField).subParser;
+    initQParser();
+    solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
+    solrQueryParser.setAllowSubQueryParsing(true);
+    doReturn(query).when(subQParser).getQuery();
+    doReturn(subQParser).when(qParser).subQuery(anyString(), eq(magicFieldSubParser));
 
-    @Test(expected = SolrException.class)
-    public void testInitNullQParserReqSchema() {
-        doReturn(solrQueryRequest).when(qParser).getReq();
-        solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
-    }
-
-    @Test
-    public void testGetField() {
-        initQParser();
-        solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
-        assertEquals(DEFAULT_FIELD_NAME, solrQueryParser.getField(null));
-        assertEquals(DEFAULT_FIELD_NAME, solrQueryParser.getField(""));
-        final String nonNullFieldName = "testFieldName";
-        assertEquals(nonNullFieldName, solrQueryParser.getField(nonNullFieldName));
-    }
-
-    @Test
-    public void testGetMagicFieldQuery() throws Exception {
-        String magicField = "_val_";
-        String magicFieldSubParser = SolrQueryParserBase.MagicFieldName.get(magicField).subParser;
-        initQParser();
-        solrQueryParser.init(DEFAULT_FIELD_NAME, qParser);
-        solrQueryParser.setAllowSubQueryParsing(true);
-        doReturn(query).when(subQParser).getQuery();
-        doReturn(subQParser).when(qParser).subQuery(anyString(), eq(magicFieldSubParser));
-
-        String queryText = "queryText";
-        List<String> queryTerms = Arrays.asList("query", "terms");
-        boolean quoted = true;    //value doesn't matter for this test
-        boolean raw = true;    //value doesn't matter for this test
-        assertEquals(query, solrQueryParser.getFieldQuery(magicField, queryText, quoted, raw));
-        assertEquals(query, solrQueryParser.getFieldQuery(magicField, queryTerms, raw));
-    }
+    String queryText = "queryText";
+    List<String> queryTerms = Arrays.asList("query", "terms");
+    boolean quoted = true; // value doesn't matter for this test
+    boolean raw = true; // value doesn't matter for this test
+    assertEquals(query, solrQueryParser.getFieldQuery(magicField, queryText, quoted, raw));
+    assertEquals(query, solrQueryParser.getFieldQuery(magicField, queryTerms, raw));
+  }
 }

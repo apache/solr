@@ -19,30 +19,50 @@ package org.apache.solr.core;
 import org.apache.solr.metrics.SolrMetricProducer;
 
 /**
- * Interface for getting various ui friendly strings
- * for use by objects which are 'pluggable' to make server administration
- * easier.
+ * Interface for getting various ui friendly strings for use by objects which are 'pluggable' to
+ * make server administration easier.
  */
 public interface SolrInfoBean extends SolrMetricProducer {
 
-  /**
-   * Category of Solr component.
-   */
-  enum Category { CONTAINER, ADMIN, CORE, QUERY, UPDATE, CACHE, HIGHLIGHTER, QUERYPARSER, SPELLCHECKER,
-    SEARCHER, REPLICATION, TLOG, INDEX, DIRECTORY, HTTP, SECURITY, OTHER }
+  /** Category of Solr component. */
+  enum Category {
+    CONTAINER,
+    ADMIN,
+    CORE,
+    QUERY,
+    UPDATE,
+    CACHE,
+    HIGHLIGHTER,
+    QUERYPARSER,
+    SPELLCHECKER,
+    SEARCHER,
+    REPLICATION,
+    TLOG,
+    INDEX,
+    DIRECTORY,
+    HTTP,
+    SECURITY,
+    OTHER
+  }
 
-  /**
-   * Top-level group of beans or metrics for a subsystem.
-   */
-  enum Group { jvm, jetty, node, core, collection, shard, cluster, overseer }
+  /** Top-level group of beans or metrics for a subsystem. */
+  enum Group {
+    jvm,
+    jetty,
+    node,
+    core,
+    collection,
+    shard,
+    cluster,
+    overseer
+  }
 
-  /**
-   * Simple common usage name, e.g. BasicQueryHandler,
-   * or fully qualified class name.
-   */
+  /** Simple common usage name, e.g. BasicQueryHandler, or fully qualified class name. */
   String getName();
+
   /** Simple one or two line description */
   String getDescription();
+
   /** Category of this component */
   Category getCategory();
 }

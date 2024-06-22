@@ -19,9 +19,7 @@ package org.apache.solr.client.solrj.request;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-/**
- * Test for DelegationTokenRequests
- */
+/** Test for DelegationTokenRequests */
 public class TestDelegationTokenRequest extends SolrTestCase {
 
   @Test
@@ -30,7 +28,6 @@ public class TestDelegationTokenRequest extends SolrTestCase {
     DelegationTokenRequest.Get get = new DelegationTokenRequest.Get();
     assertEquals("GETDELEGATIONTOKEN", get.getParams().get("op"));
     assertNull(get.getParams().get("renewer"));
-
 
     // with renewer
     final String renewer = "test";
