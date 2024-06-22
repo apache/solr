@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr;
 
+import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -79,6 +80,60 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
     assertTrue(res.contains("the model 0 is empty"));
+  }
+
+  @Test
+  public void ltrRepeatedQueriesCachedTest() throws Exception {
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("bloomberg baz buzz");
+    query.add("q", "bloomberg baz buzz");
+    query.add("qf", "title description");
+    query.add("defType", "edismax");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3}");
+
+    // Different order for top 3 reranked, but last one is the same top nonreranked doc
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/id=='7'",
+        "/response/docs/[1]/id=='8'",
+        "/response/docs/[2]/id=='9'",
+        "/response/docs/[3]/id=='6'");
+
+    // to check caching
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/id=='7'",
+        "/response/docs/[1]/id=='8'",
+        "/response/docs/[2]/id=='9'",
+        "/response/docs/[3]/id=='6'");
+
+    String resp =
+        restTestHarness.adminQuery(
+            "/admin/metrics?group=core&&prefix=CACHE.searcher.queryResultCache");
+    String error =
+        JSONTestUtil.match(
+            resp, "/metrics/solr.core.collection1/CACHE.searcher.queryResultCache/hits==1");
+    assertNull("cache check failed with error: " + error, error);
+
+    // to check caching
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/id=='7'",
+        "/response/docs/[1]/id=='8'",
+        "/response/docs/[2]/id=='9'",
+        "/response/docs/[3]/id=='6'");
+
+    resp =
+        restTestHarness.adminQuery(
+            "/admin/metrics?group=core&&prefix=CACHE.searcher.queryResultCache");
+    error =
+        JSONTestUtil.match(
+            resp, "/metrics/solr.core.collection1/CACHE.searcher.queryResultCache/hits==2");
+    assertNull("cache check failed with error: " + error, error);
+    ;
   }
 
   @Test
