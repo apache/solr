@@ -97,6 +97,9 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 
 [NOTE]
+the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
+
+[NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
