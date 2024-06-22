@@ -142,6 +142,8 @@ Optimizations
 
 * SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
 
+* SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
