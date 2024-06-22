@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.stream.IntStream;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -35,11 +36,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
+public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
+
+  private final String monitorChain = "monitor";
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig-not-distributed.xml", "schema-aliasing.xml");
+    initCore("solrconfig-single-core.xml", "schema-aliasing.xml");
   }
 
   @Override
@@ -55,7 +58,6 @@ public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
     String regularChain = "regular-ole-document";
     addDoc(adoc("id", "0", "content_s", "some unremarkable content"), regularChain);
     addDoc(commit(), regularChain);
-    String monitorChain = "monitor";
     addDoc(adoc("id", "1", MonitorFields.MONITOR_QUERY, "content_s:test"), monitorChain);
     addDoc(commit(), monitorChain);
     URL url = getClass().getResource("/monitor/multi-doc-batch.json");
@@ -80,7 +82,6 @@ public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
 
   @Test
   public void queryStringIdTest() throws Exception {
-    String monitorChain = "monitor";
     addDoc(adoc("id", "1", MonitorFields.MONITOR_QUERY, "id:4"), monitorChain);
     addDoc(adoc("id", "2", MonitorFields.MONITOR_QUERY, "id:4"), monitorChain);
     addDoc(commit(), monitorChain);
@@ -106,7 +107,6 @@ public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
 
   @Test
   public void missingQueryFieldTest() {
-    String monitorChain = "monitor";
     var ex = assertThrows(SolrException.class, () -> addDoc(adoc("id", "1"), monitorChain));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     String lowerCaseMessage = ex.getMessage().toLowerCase(Locale.ROOT);
@@ -118,7 +118,6 @@ public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
 
   @Test
   public void unsupportedFieldTest() {
-    String monitorChain = "monitor";
     String unsupportedField1 = "unsupported2_s";
     String unsupportedField2 = "unsupported2_s";
     var ex =
@@ -142,5 +141,108 @@ public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
     assertTrue(lowerCaseMessage.contains("fields"));
     assertTrue(lowerCaseMessage.contains(unsupportedField1));
     assertTrue(lowerCaseMessage.contains(unsupportedField2));
+  }
+
+  @Test
+  public void multiPassPresearcherTest() throws Exception {
+    addDoc(
+        adoc(
+            "id", "0", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs and escalator\""),
+        monitorChain);
+    addDoc(
+        adoc("id", "1", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator test\""), monitorChain);
+    addDoc(
+        adoc("id", "2", MonitorFields.MONITOR_QUERY, "content0_s:\"stairs test\""), monitorChain);
+    addDoc(
+        adoc("id", "3", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs\""),
+        monitorChain);
+    addDoc(commit(), monitorChain);
+    URL url = getClass().getResource("/monitor/single-doc-batch.json");
+    String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    String[] params =
+        new String[] {
+          CommonParams.SORT,
+          "id desc",
+          CommonParams.JSON,
+          json,
+          CommonParams.QT,
+          "/reverseSearch",
+          QUERY_MATCH_TYPE_KEY,
+          "simple"
+        };
+
+    assertQ(
+        req(params),
+        "/response/lst[@name=\"monitor\"]/int[@name=\"queriesRun\"]/text()='1'",
+        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/int[@name=\"monitorDocument\"]/text()='0'",
+        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str/text()='3'");
+  }
+
+  @Test
+  public void manySegmentsQuery() throws Exception {
+    int count = 10_000;
+    IntStream.range(0, count)
+        .forEach(
+            i -> {
+              try {
+                addDoc(
+                    adoc(
+                        "id",
+                        Integer.toString(i),
+                        MonitorFields.MONITOR_QUERY,
+                        "content_s:\"elevator stairs\""),
+                    monitorChain);
+              } catch (Exception e) {
+                throw new IllegalStateException(e);
+              }
+            });
+    addDoc(commit(), monitorChain);
+    URL url = getClass().getResource("/monitor/multi-doc-batch.json");
+    String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    String[] params =
+        new String[] {
+          CommonParams.SORT,
+          "id desc",
+          CommonParams.JSON,
+          json,
+          CommonParams.QT,
+          "/reverseSearch",
+          QUERY_MATCH_TYPE_KEY,
+          "simple"
+        };
+
+    assertQ(
+        req(params),
+        "/response/lst[@name=\"monitor\"]/int[@name=\"queriesRun\"]/text()='" + count + "'",
+        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/int[@name=\"monitorDocument\"]/text()='0'",
+        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str/text()='0'",
+        "count(/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str)="
+            + count);
+
+    IntStream.range(count / 2, count)
+        .forEach(
+            i -> {
+              try {
+                addDoc(
+                    adoc(
+                        "id",
+                        Integer.toString(i),
+                        MonitorFields.MONITOR_QUERY,
+                        "content_s:\"x y\""),
+                    monitorChain);
+              } catch (Exception e) {
+                throw new IllegalStateException(e);
+              }
+            });
+    addDoc(commit(), monitorChain);
+    assertQ(
+        req(params),
+        "/response/lst[@name=\"monitor\"]/int[@name=\"queriesRun\"]/text()='" + (count / 2) + "'",
+        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/int[@name=\"monitorDocument\"]/text()='0'",
+        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str/text()='0'",
+        "count(/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str)="
+            + (count / 2));
   }
 }
