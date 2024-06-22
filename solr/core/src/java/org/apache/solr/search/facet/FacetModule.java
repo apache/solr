@@ -21,7 +21,6 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -31,6 +30,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -234,7 +234,7 @@ public class FacetModule extends SearchComponent {
 
       shardsRefineRequest.purpose |= PURPOSE_REFINE_JSON_FACETS;
 
-      Map<String, Object> finfo = new HashMap<>(1);
+      Map<String, Object> finfo = CollectionUtil.newHashMap(1);
       finfo.put(FACET_REFINE, refinement);
 
       // String finfoStr = JSONUtil.toJSON(finfo, -1);  // this doesn't handle formatting of Date
@@ -303,10 +303,7 @@ public class FacetModule extends SearchComponent {
         if (Boolean.TRUE.equals(
             shardResponseHeader.getBooleanArg(
                 SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          rb.rsp
-              .getResponseHeader()
-              .asShallowMap()
-              .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+          rb.rsp.setPartialResults();
         }
         continue;
       }
@@ -409,14 +406,14 @@ public class FacetModule extends SearchComponent {
       if (a < b) return -1;
       if (a > b) return 1;
 
-      if (a != a) { // a==NaN
-        if (b != b) {
+      if (Double.isNaN(a)) {
+        if (Double.isNaN(b)) {
           return 0; // both NaN
         }
         return -1 * direction.getMultiplier(); // asc==-1, so this will put NaN at end of sort
       }
 
-      if (b != b) { // b is NaN so a is greater
+      if (Double.isNaN(b)) { // b is NaN so a is greater
         return 1 * direction.getMultiplier(); // if sorting asc, make a less so NaN is at end
       }
 

@@ -40,6 +40,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
 import org.apache.solr.analysis.SolrAnalyzer;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.OrdFieldSource;
@@ -69,7 +70,10 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   // avoid instantiating every time...
+  @SuppressWarnings("MutablePublicArray")
   public static final char[] TRUE_TOKEN = {'T'};
+
+  @SuppressWarnings("MutablePublicArray")
   public static final char[] FALSE_TOKEN = {'F'};
 
   ////////////////////////////////////////////////////////////////////////
@@ -120,8 +124,7 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public String toInternal(String val) {
-    char ch = (val != null && val.length() > 0) ? val.charAt(0) : 0;
-    return (ch == '1' || ch == 't' || ch == 'T') ? "T" : "F";
+    return StrUtils.parseBoolean(val) ? "T" : "F";
   }
 
   @Override
@@ -208,7 +211,7 @@ public class BoolField extends PrimitiveFieldType {
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof CharSequence) {
-      return Boolean.valueOf(val.toString());
+      return Boolean.valueOf(StrUtils.parseBoolean((CharSequence) val));
     }
     return super.toNativeType(val);
   }

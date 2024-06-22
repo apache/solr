@@ -75,11 +75,11 @@ public class SSLTestConfig {
    * <p>As needed, keystore/truststore information will be pulled from a hardcoded resource file
    * provided by the solr test-framework
    *
-   * @param useSSL - whether SSL should be required.
+   * @param useSsl - whether SSL should be required.
    * @param clientAuth - whether client authentication should be required.
    */
-  public SSLTestConfig(boolean useSSL, boolean clientAuth) {
-    this(useSSL, clientAuth, false);
+  public SSLTestConfig(boolean useSsl, boolean clientAuth) {
+    this(useSsl, clientAuth, false);
   }
 
   // NOTE: if any javadocs below change, update create-keystores.sh
@@ -97,18 +97,18 @@ public class SSLTestConfig {
    *       SSLTestConfig should care what CN/SAN are.
    * </ul>
    *
-   * @param useSSL - whether SSL should be required.
+   * @param useSsl - whether SSL should be required.
    * @param clientAuth - whether client authentication should be required.
    * @param checkPeerName - whether the client should validate the 'peer name' of the SSL
    *     Certificate (and which testing Cert should be used)
    * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
    */
-  public SSLTestConfig(boolean useSSL, boolean clientAuth, boolean checkPeerName) {
-    this.useSsl = useSSL;
+  public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {
+    this.useSsl = useSsl;
     this.clientAuth = clientAuth;
     this.checkPeerName = checkPeerName;
 
-    if (useSsl) {
+    if (this.useSsl) {
       assumeSslIsSafeToTest();
     }
 
@@ -161,7 +161,9 @@ public class SSLTestConfig {
    * (since that's what is almost always used during testing).
    */
   public SSLContext buildClientSSLContext()
-      throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException,
+      throws KeyManagementException,
+          UnrecoverableKeyException,
+          NoSuchAlgorithmException,
           KeyStoreException {
 
     assert isSSLMode();
@@ -247,6 +249,21 @@ public class SSLTestConfig {
     };
   }
 
+  public KeyStore defaultKeyStore() {
+    if (keyStore == null) {
+      return null;
+    }
+    return buildKeyStore(keyStore, TEST_PASSWORD);
+  }
+
+  public String defaultKeyStorePassword() {
+    return TEST_PASSWORD;
+  }
+
+  public SecureRandom notSecureSecureRandom() {
+    return NotSecurePseudoRandom.INSTANCE;
+  }
+
   /** Constructs a KeyStore using the specified filename and password */
   private static KeyStore buildKeyStore(Resource resource, String password) {
     try {
@@ -322,6 +339,7 @@ public class SSLTestConfig {
    */
   private static class NotSecurePseudoRandom extends SecureRandom {
     public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
+
     /**
      * Helper method that can be used to fill an array with non-zero data. (Attempted workarround of
      * Solaris SSL Padding bug: SOLR-9068)
@@ -339,11 +357,13 @@ public class SSLTestConfig {
           public byte[] engineGenerateSeed(int numBytes) {
             return fillData(new byte[numBytes]);
           }
+
           /** fills the byte[] with static data */
           @Override
           public void engineNextBytes(byte[] bytes) {
             fillData(bytes);
           }
+
           /** NOOP */
           @Override
           public void engineSetSeed(byte[] seed) {
@@ -360,6 +380,7 @@ public class SSLTestConfig {
     public byte[] generateSeed(int numBytes) {
       return fillData(new byte[numBytes]);
     }
+
     /** fills the byte[] with static data */
     @Override
     public void nextBytes(byte[] bytes) {
@@ -370,11 +391,13 @@ public class SSLTestConfig {
     public void nextBytes(byte[] bytes, SecureRandomParameters params) {
       fillData(bytes);
     }
+
     /** NOOP */
     @Override
     public void setSeed(byte[] seed) {
       /* NOOP */
     }
+
     /** NOOP */
     @Override
     public void setSeed(long seed) {

@@ -37,7 +37,6 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -59,12 +58,12 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -818,7 +817,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
                 addDocAndGetVersion(
                     "id", 100, "inplace_updatable_float", map("set", "NOT_NUMBER")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+    assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // inc operation with invalid inc value
     e =
@@ -827,7 +826,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
             () ->
                 addDocAndGetVersion("id", 100, "inplace_updatable_int", map("inc", "NOT_NUMBER")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+    assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // RTG from tlog(s)
     for (SolrClient client : clients) {
@@ -1146,7 +1145,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // the resurrection can happen from there (instead of the leader)
       update.setParam(
           DistributedUpdateProcessor.DISTRIB_FROM,
-          ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL());
+          ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()
+              + "/"
+              + NONLEADERS.get(1).getDefaultCollection());
       AsyncUpdateWithRandomCommit task =
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));
@@ -1487,6 +1488,14 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     DocCollection collection = cloudClient.getClusterState().getCollection(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     return slice.getLeader().getCoreUrl();
+  }
+
+  protected String getBaseUrl(HttpSolrClient client) {
+    // take a complete Solr url that ends with /collection1 and truncates it to the root url
+    // that is used for admin api calls.
+    return client
+        .getBaseURL()
+        .substring(0, client.getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
   }
 
   UpdateRequest regularUpdateRequest(Object... fields) {

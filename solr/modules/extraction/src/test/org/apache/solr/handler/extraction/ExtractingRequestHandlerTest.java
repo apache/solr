@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,7 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
       assertTrue(
           "Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
-          System.getProperty("java.version").startsWith("11"));
+          EnvUtils.getProperty("java.version").startsWith("11"));
       assumeTrue(
           "SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
           false);
@@ -687,14 +688,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     String extraction = (String) list.get("solr-word.pdf");
     assertNotNull("extraction is null and it shouldn't be", extraction);
-    assertTrue(
-        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
     Object title = nl.get("title");
     assertNotNull("title is null and it shouldn't be", title);
-    assertTrue(extraction.indexOf("<?xml") != -1);
+    assertTrue(extraction.contains("<?xml"));
 
     rsp =
         loadLocal(
@@ -708,8 +708,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     extraction = (String) list.get("solr-word.pdf");
     assertNotNull("extraction is null and it shouldn't be", extraction);
-    assertTrue(
-        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
     assertEquals(-1, extraction.indexOf("<?xml"));
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");

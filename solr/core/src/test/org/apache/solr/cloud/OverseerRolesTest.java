@@ -20,15 +20,15 @@ import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLead
 import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -75,7 +75,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   private JettySolrRunner getOverseerJetty() throws Exception {
     String overseer = getLeaderNode(zkClient());
-    URL overseerUrl = new URL("http://" + overseer.substring(0, overseer.indexOf('_')));
+    URI overseerUrl = URI.create("http://" + overseer.substring(0, overseer.indexOf('_')));
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try {

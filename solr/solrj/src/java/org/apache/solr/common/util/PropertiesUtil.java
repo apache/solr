@@ -33,6 +33,7 @@ public class PropertiesUtil {
     if (coreProperties == null) return substitute(value, null);
     return substitute(value, coreProperties::getProperty);
   }
+
   /*
    * This method borrowed from Ant's PropertyHelper.replaceProperties:
    *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
@@ -64,7 +65,7 @@ public class PropertiesUtil {
           fragment = coreProperties.apply(propertyName);
         }
         if (fragment == null) {
-          fragment = System.getProperty(propertyName, defaultValue);
+          fragment = EnvUtils.getProperty(propertyName, defaultValue);
         }
         if (fragment == null) {
           throw new SolrException(
@@ -89,7 +90,7 @@ public class PropertiesUtil {
     int prev = 0;
     int pos;
     // search for the next instance of $ from the 'prev' position
-    while ((pos = value.indexOf("$", prev)) >= 0) {
+    while ((pos = value.indexOf('$', prev)) >= 0) {
 
       // if there was any text before this, add it as a fragment
       // TODO, this check could be modified to go if pos>prev;

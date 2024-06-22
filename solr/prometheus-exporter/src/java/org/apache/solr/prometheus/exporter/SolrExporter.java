@@ -21,16 +21,17 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
+import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -95,6 +96,20 @@ public class SolrExporter {
       "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
           + ARG_NUM_THREADS_DEFAULT
           + ".";
+
+  private static final String[] ARG_CREDENTIALS_FLAGS = {"-u", "--credentials"};
+  private static final String ARG_CREDENTIALS_METAVAR = "CREDENTIALS";
+  private static final String ARG_CREDENTIALS_DEST = "credentials";
+  private static final String ARG_CREDENTIALS_DEFAULT = "";
+  private static final String ARG_CREDENTIALS_HELP =
+      "Specify the credentials in the format username:password. Example: --credentials solr:SolrRocks";
+
+  private static final String[] ARG_SSL_FLAGS = {"-ssl", "--ssl-enabled"};
+  private static final String ARG_SSL_METAVAR = "SSL_ENABLED";
+  private static final String ARG_SSL_DEST = "ssl_enabled";
+  private static final boolean ARG_SSL_DEFAULT = false;
+  private static final String ARG_SSL_HELP =
+      "Enable TLS connection to Solr. Expects following env variables: SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE, SOLR_SSL_TRUST_STORE_PASSWORD. Example: --ssl-enabled";
 
   public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
@@ -161,7 +176,7 @@ public class SolrExporter {
       SolrScrapeConfiguration configuration,
       PrometheusExporterSettings settings,
       String clusterId) {
-    SolrClientFactory factory = new SolrClientFactory(settings);
+    SolrClientFactory factory = new SolrClientFactory(settings, configuration);
 
     switch (configuration.getType()) {
       case STANDALONE:
@@ -242,16 +257,32 @@ public class SolrExporter {
         .setDefault(ARG_CLUSTER_ID_DEFAULT)
         .help(ARG_CLUSTER_ID_HELP);
 
+    parser
+        .addArgument(ARG_CREDENTIALS_FLAGS)
+        .metavar(ARG_CREDENTIALS_METAVAR)
+        .dest(ARG_CREDENTIALS_DEST)
+        .type(String.class)
+        .setDefault(ARG_CREDENTIALS_DEFAULT)
+        .help(ARG_CREDENTIALS_HELP);
+
+    parser
+        .addArgument(ARG_SSL_FLAGS)
+        .metavar(ARG_SSL_METAVAR)
+        .dest(ARG_SSL_DEST)
+        .type(Boolean.class)
+        .setDefault(ARG_SSL_DEFAULT)
+        .help(ARG_SSL_HELP);
+
     try {
       Namespace res = parser.parseArgs(args);
 
       SolrScrapeConfiguration scrapeConfiguration = null;
 
       String defaultClusterId = "";
-      if (!res.getString(ARG_ZK_HOST_DEST).equals("")) {
+      if (!res.getString(ARG_ZK_HOST_DEST).isEmpty()) {
         defaultClusterId = makeShortHash(res.getString(ARG_ZK_HOST_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
-      } else if (!res.getString(ARG_BASE_URL_DEST).equals("")) {
+      } else if (!res.getString(ARG_BASE_URL_DEST).isEmpty()) {
         defaultClusterId = makeShortHash(res.getString(ARG_BASE_URL_DEST));
         scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
       }
@@ -262,8 +293,26 @@ public class SolrExporter {
 
       int port = res.getInt(ARG_PORT_DEST);
       String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
-      if (StringUtils.isEmpty(clusterId)) {
+      if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
+      }
+
+      if (!res.getString(ARG_CREDENTIALS_DEST).isEmpty()) {
+        String credentials = res.getString(ARG_CREDENTIALS_DEST);
+        if (credentials.indexOf(':') > 0) {
+          String[] credentialsArray = credentials.split(":", 2);
+          scrapeConfiguration.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
+        }
+      }
+
+      if (Boolean.TRUE.equals(res.getBoolean(ARG_SSL_DEST))) {
+        log.info("SSL ENABLED");
+
+        scrapeConfiguration.withSslConfiguration(
+            Paths.get(getSystemVariable("SOLR_SSL_KEY_STORE")),
+            getSystemVariable("SOLR_SSL_KEY_STORE_PASSWORD"),
+            Paths.get(getSystemVariable("SOLR_SSL_TRUST_STORE")),
+            getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 
       SolrExporter solrExporter =
@@ -305,5 +354,9 @@ public class SolrExporter {
       log.error("Could not load scrape configuration from {}", configPath);
       throw new RuntimeException(e);
     }
+  }
+
+  private static String getSystemVariable(String name) {
+    return System.getProperty(name, System.getenv(name));
   }
 }

@@ -34,15 +34,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -188,7 +187,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     } catch (KeeperException e) {
       // We don't need to handle this. This is just a fail-safe which comes in handy in skipping
       // already processed async calls.
-      SolrException.log(log, "", e);
+      log.error("KeeperException", e);
     } catch (AlreadyClosedException e) {
       return;
     } catch (InterruptedException e) {
@@ -383,7 +382,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             log.warn("Overseer cannot talk to ZK");
             return;
           }
-          SolrException.log(log, "", e);
+          log.error("KeeperException", e);
 
           // Prevent free-spinning this loop.
           try {
@@ -396,10 +395,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
-        } catch (AlreadyClosedException e) {
+        } catch (AlreadyClosedException ignore) {
 
         } catch (Exception e) {
-          SolrException.log(log, "", e);
+          log.error("Exception processing", e);
         }
       }
     } finally {
@@ -422,7 +421,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     isClosed = true;
     overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
-      if (!tpe.isShutdown()) {
+      if (!ExecutorUtil.isShutdown(tpe)) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
     }
@@ -603,10 +602,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               response.getResponse());
         }
         success = true;
-      } catch (AlreadyClosedException e) {
+      } catch (AlreadyClosedException ignore) {
 
       } catch (KeeperException e) {
-        SolrException.log(log, "", e);
+        log.error("KeeperException", e);
       } catch (InterruptedException e) {
         // Reset task from tracking data structures so that it can be retried.
         resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
@@ -618,7 +617,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           // Reset task from tracking data structures so that it can be retried.
           try {
             resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
-          } catch (AlreadyClosedException e) {
+          } catch (AlreadyClosedException ignore) {
 
           }
         }
@@ -658,7 +657,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
         runningTasks.remove(id);
       } catch (KeeperException e) {
-        SolrException.log(log, "", e);
+        log.error("KeeperException", e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

@@ -22,11 +22,11 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.SnapShooter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -59,13 +59,12 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf1", 1, 2)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    // TODO make this configurable on StoppableIndexingThread
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
     int maxDoc = atLeast(300);
 
     StoppableIndexingThread indexThread =
-        new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
+        new StoppableIndexingThread(
+            null, cluster.getSolrClient(COLLECTION), "1", true, maxDoc, 1, true);
     indexThread.start();
 
     // give some time to index...

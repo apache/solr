@@ -33,6 +33,7 @@ import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTest
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.solr.common.util.EnvUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutput;
@@ -706,7 +707,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public Path getHomeDirectory() {
-    return this.makeQualified(new Path(System.getProperty("user.home")));
+    return this.makeQualified(new Path(EnvUtils.getProperty("user.home")));
   }
 
   /**
@@ -725,7 +726,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   protected Path getInitialWorkingDirectory() {
-    return this.makeQualified(new Path(System.getProperty("user.dir")));
+    return this.makeQualified(new Path(EnvUtils.getProperty("user.dir")));
   }
 
   @Override
@@ -896,7 +897,7 @@ public class RawLocalFileSystem extends FileSystem {
     // remove domain name as follows:
     // DOMAIN\\user => user, DOMAIN\\group => group
     private String removeDomain(String str) {
-      int index = str.indexOf("\\");
+      int index = str.indexOf('\\');
       if (index != -1) {
         str = str.substring(index + 1);
       }

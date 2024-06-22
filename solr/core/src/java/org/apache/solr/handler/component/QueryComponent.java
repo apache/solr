@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
@@ -113,6 +114,7 @@ import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer
 import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
+import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
@@ -144,6 +146,18 @@ public class QueryComponent extends SearchComponent {
         // Generate Query ID
         rb.queryID = generateQueryID(req);
       }
+      // set the flag for distributed stats
+      if (req.getSearcher().getStatsCache().getClass().equals(LocalStatsCache.class)) {
+        if (params.getPrimitiveBool(CommonParams.DISTRIB_STATS_CACHE)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Explicitly set "
+                  + CommonParams.DISTRIB_STATS_CACHE
+                  + "=true is not supported with "
+                  + LocalStatsCache.class.getSimpleName());
+        }
+      }
+      rb.setDistribStatsDisabled(!params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
     }
 
     // Set field flags
@@ -204,7 +218,7 @@ public class QueryComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        filters.addAll(QueryUtils.parseFilterQueries(req, false));
+        filters.addAll(QueryUtils.parseFilterQueries(req));
 
         // only set the filters if they are not empty otherwise
         // fq=&someotherParam= will trigger all docs filter for every request
@@ -357,12 +371,16 @@ public class QueryComponent extends SearchComponent {
       return;
     }
 
+    final boolean multiThreaded = params.getBool("multiThreaded", true);
+
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
 
     QueryCommand cmd = rb.createQueryCommand();
+    cmd.setMultiThreaded(multiThreaded);
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+    cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
 
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
@@ -496,7 +514,12 @@ public class QueryComponent extends SearchComponent {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
-          FieldComparator<?> comparator = sortField.getComparator(1, true);
+          FieldComparator<?> comparator =
+              sortField.getComparator(
+                  1,
+                  schemaFields.size() > 1
+                      ? Pruning.GREATER_THAN
+                      : Pruning.GREATER_THAN_OR_EQUAL_TO);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
@@ -729,8 +752,9 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-        || rb.getSortSpec().includesScore()) {
+    if (!rb.isDistribStatsDisabled()
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+            || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
         rb.addRequest(this, sreq);
@@ -893,6 +917,7 @@ public class QueryComponent extends SearchComponent {
     Float maxScore = null;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
+    int failedShardCount = 0;
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
       NamedList<?> responseHeader = null;
@@ -902,14 +927,16 @@ public class QueryComponent extends SearchComponent {
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
-          if (t instanceof SolrServerException) {
-            t = ((SolrServerException) t).getCause();
+          if (t instanceof SolrServerException && t.getCause() != null) {
+            t = t.getCause();
           }
           nl.add("error", t.toString());
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          nl.add("trace", trace.toString());
-          if (srsp.getShardAddress() != null) {
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString());
+          }
+          if (!StrUtils.isNullOrEmpty(srsp.getShardAddress())) {
             nl.add("shardAddress", srsp.getShardAddress());
           }
         } else {
@@ -939,8 +966,13 @@ public class QueryComponent extends SearchComponent {
         if (srsp.getSolrResponse() != null) {
           nl.add("time", srsp.getSolrResponse().getElapsedTime());
         }
-
-        shardInfo.add(srsp.getShard(), nl);
+        // This ought to be better, but at least this ensures no duplicate keys in JSON result
+        String shard = srsp.getShard();
+        if (StrUtils.isNullOrEmpty(shard)) {
+          failedShardCount += 1;
+          shard = "unknown_shard_" + failedShardCount;
+        }
+        shardInfo.add(shard, nl);
       }
       // now that we've added the shard info, let's only proceed if we have no error.
       if (srsp.getException() != null) {
@@ -1272,13 +1304,15 @@ public class QueryComponent extends SearchComponent {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
-      String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+      final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
+      String keyFieldName = uniqueKey;
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
       if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
         // if id was renamed we need to use the new name
         keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
       }
-
+      String lastKeyString = "<empty>";
+      Boolean shardDocFoundInResults = null;
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
           // Don't try to get the documents if there was an exception in the shard
@@ -1295,9 +1329,11 @@ public class QueryComponent extends SearchComponent {
                 t = ((SolrServerException) t).getCause();
               }
               nl.add("error", t.toString());
-              StringWriter trace = new StringWriter();
-              t.printStackTrace(new PrintWriter(trace));
-              nl.add("trace", trace.toString());
+              if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+                StringWriter trace = new StringWriter();
+                t.printStackTrace(new PrintWriter(trace));
+                nl.add("trace", trace.toString());
+              }
             }
           }
 
@@ -1312,10 +1348,9 @@ public class QueryComponent extends SearchComponent {
           if (Boolean.TRUE.equals(
               responseHeader.getBooleanArg(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp
-                .getResponseHeader()
-                .asShallowMap()
-                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+            rb.rsp.setPartialResults();
+            rb.rsp.addPartialResponseDetail(
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }
         }
         SolrDocumentList docs =
@@ -1323,9 +1358,11 @@ public class QueryComponent extends SearchComponent {
                 (SolrDocumentList)
                     SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
         for (SolrDocument doc : docs) {
-          Object id = doc.getFieldValue(keyFieldName);
-          ShardDoc sdoc = rb.resultIds.get(id.toString());
+          final Object id = doc.getFieldValue(keyFieldName);
+          lastKeyString = id.toString();
+          final ShardDoc sdoc = rb.resultIds.get(lastKeyString);
           if (sdoc != null) {
+            shardDocFoundInResults = Boolean.TRUE;
             if (returnScores) {
               doc.setField("score", sdoc.score);
             } else {
@@ -1338,8 +1375,27 @@ public class QueryComponent extends SearchComponent {
               doc.removeFields(keyFieldName);
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
+          } else {
+            if (shardDocFoundInResults == null) {
+              shardDocFoundInResults = Boolean.FALSE;
+            }
           }
         }
+      }
+      if (Objects.equals(shardDocFoundInResults, Boolean.FALSE) && !rb.resultIds.isEmpty()) {
+        String keyMsg =
+            !uniqueKey.equals(keyFieldName)
+                ? "(either " + uniqueKey + " or " + keyFieldName + ")"
+                : uniqueKey;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Unable to merge shard response. Perhaps uniqueKey "
+                + keyMsg
+                + " was erased by renaming via fl parameters."
+                + " Expecting:"
+                + rb.resultIds.keySet()
+                + ", a sample of keys received:"
+                + lastKeyString);
       }
     }
   }

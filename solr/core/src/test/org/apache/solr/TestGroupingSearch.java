@@ -458,7 +458,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(add(doc("id", "5")));
     assertU(commit());
 
-    // Just checking if no errors occur
+    // should exceed timeAllowed
+    // TODO: this always succeeds now, regardless of partialResults=true
+    // needs SOLR-17151 to fix how QueryLimitsExceeded exception is handled
     assertJQ(
         req(
             "q",
@@ -470,7 +472,23 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "1"));
+            "0"),
+        "/responseHeader/partialResults==true");
+    // should succeed
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "group",
+            "true",
+            "group.query",
+            "id:1",
+            "group.query",
+            "id:2",
+            "timeAllowed",
+            "200"),
+        "/grouped/id:1/matches==5",
+        "/grouped/id:2/matches==5");
   }
 
   @Test
@@ -1991,7 +2009,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     public Doc maxDoc; // the document highest according to the "sort" param
 
     public void setMaxDoc(Comparator<Doc> comparator) {
-      Doc[] arr = docs.toArray(new Doc[docs.size()]);
+      Doc[] arr = docs.toArray(new Doc[0]);
       Arrays.sort(arr, comparator);
       maxDoc = arr.length > 0 ? arr[0] : null;
     }

@@ -23,12 +23,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import org.apache.http.client.HttpClient;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -55,7 +54,7 @@ public class SyncStrategy {
 
   private volatile boolean isClosed;
 
-  private final HttpClient client;
+  private final Http2SolrClient solrClient;
 
   private final ExecutorService updateExecutor;
 
@@ -69,7 +68,7 @@ public class SyncStrategy {
 
   public SyncStrategy(CoreContainer cc) {
     UpdateShardHandler updateShardHandler = cc.getUpdateShardHandler();
-    client = updateShardHandler.getDefaultHttpClient();
+    solrClient = updateShardHandler.getRecoveryOnlyHttpClient();
     shardHandler = cc.getShardHandlerFactory().getShardHandler();
     updateExecutor = updateShardHandler.getUpdateExecutor();
   }
@@ -136,7 +135,7 @@ public class SyncStrategy {
               zkController, core, leaderProps, collection, shardId, peerSyncOnlyWithActive);
       success = result.isSuccess();
     } catch (Exception e) {
-      SolrException.log(log, "Sync Failed", e);
+      log.error("Sync Failed", e);
     }
     try {
       if (isClosed) {
@@ -161,7 +160,7 @@ public class SyncStrategy {
       }
 
     } catch (Exception e) {
-      SolrException.log(log, "Sync Failed", e);
+      log.error("Sync Failed", e);
     }
 
     return result == null ? PeerSync.PeerSyncResult.failure() : result;
@@ -261,7 +260,7 @@ public class SyncStrategy {
             nUpdates);
 
       } catch (Exception e) {
-        SolrException.log(log, "Error syncing replica to leader", e);
+        log.error("Error syncing replica to leader", e);
       }
     }
 
@@ -270,7 +269,7 @@ public class SyncStrategy {
       if (srsp == null) break;
       boolean success = handleResponse(srsp);
       if (srsp.getException() != null) {
-        SolrException.log(log, "Sync request error: " + srsp.getException());
+        log.error("Sync request error", srsp.getException());
       }
 
       if (!success) {
@@ -361,19 +360,17 @@ public class SyncStrategy {
               RequestRecovery recoverRequestCmd = new RequestRecovery();
               recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
               recoverRequestCmd.setCoreName(coreName);
-
               try (SolrClient client =
-                  new HttpSolrClient.Builder(baseUrl)
-                      .withHttpClient(SyncStrategy.this.client)
-                      .withConnectionTimeout(30000)
-                      .withSocketTimeout(120000)
+                  new Http2SolrClient.Builder(baseUrl)
+                      .withHttpClient(solrClient)
+                      .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
                       .build()) {
                 client.request(recoverRequestCmd);
               } catch (Throwable t) {
-                SolrException.log(
-                    log,
-                    ZkCoreNodeProps.getCoreUrl(leaderProps)
-                        + ": Could not tell a replica to recover",
+                log.error(
+                    "{}: Could not tell a replica to recover",
+                    ZkCoreNodeProps.getCoreUrl(leaderProps),
                     t);
                 if (t instanceof Error) {
                   throw (Error) t;

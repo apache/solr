@@ -22,7 +22,7 @@ The sample queries in this section assume you are running the "techproducts" exa
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 == Stats Component Parameters
@@ -156,7 +156,7 @@ This statistic is computed for all field types but is not computed by default.
 
 `cardinality`::
 A statistical approximation (currently using the https://en.wikipedia.org/wiki/HyperLogLog[HyperLogLog] algorithm) of the number of distinct values in the field/function in all of the documents in the set.
-This calculation is much more efficient then using the `countDistinct` option, but may not be 100% accurate.
+This calculation is much more efficient than using the `countDistinct` option, but may not be 100% accurate.
 +
 Input for this option can be floating point number between `0.0` and `1.0` indicating how aggressively the algorithm should try to be accurate: `0.0` means use as little memory as possible; `1.0` means use as much memory as needed to be as accurate as possible.
 `true` is supported as an alias for `0.3`.

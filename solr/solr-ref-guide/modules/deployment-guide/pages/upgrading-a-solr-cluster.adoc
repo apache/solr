@@ -1,5 +1,4 @@
 = Upgrading a Solr Cluster
-:page-children: indexupgrader-tool
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -22,6 +21,11 @@ This page covers how to upgrade an existing Solr cluster that was installed usin
 IMPORTANT: The steps outlined on this page assume you use the default service name of `solr`.
 If you use an alternate service name or Solr installation directory, some of the paths and commands mentioned below will have to be modified accordingly.
 
+NOTE: Previous versions of this reference guide mentioned an {lucene-javadocs}/core/org/apache/lucene/index/IndexUpgrader.html[IndexUpgraderTool] that is made available by the Lucene project, and that can be used to upgrade Solr index files offline if desired.
+Users with a business requirement that necessitates its use may use this tool as before, however it's not needed in the vast majority of upgrade workflows.
+The documentation below assumes the tool is not in use.
+
+
 == Planning Your Upgrade
 
 Here is a checklist of things you need to prepare before starting the upgrade process:
@@ -39,7 +43,7 @@ You'll be doing a rolling restart of your cluster (each node, one-by-one), but w
 * `ZK_HOST`: The ZooKeeper connection string your current SolrCloud nodes use to connect to ZooKeeper; this value will be the same for all nodes in the cluster.
 * `SOLR_HOST`: The hostname each Solr node used to register with ZooKeeper when joining the SolrCloud cluster; this value will be used to set the *host* Java system property when starting the new Solr process.
 * `SOLR_PORT`: The port each Solr node is listening on, such as 8983.
-* `SOLR_HOME`: The absolute path to the Solr home directory for each Solr node; this directory must contain a `solr.xml` file.
+* `SOLR_HOME`: The absolute path to the Solr home directory for each Solr node.
 This value will be passed to the new Solr process using the `solr.solr.home` system property, see: xref:configuration-guide:configuring-solr-xml.adoc[].
 +
 If you are upgrading from an installation of Solr 5.x or later, these values can typically be found in either `/var/solr/solr.in.sh` or `/etc/default/solr.in.sh`.

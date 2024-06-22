@@ -28,13 +28,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -107,32 +108,37 @@ public class CollectionHandlingUtils {
 
   // Immutable Maps are null-hostile, so build our own
   public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS =
-      Collections.unmodifiableMap(
-          Utils.makeMap(
-              CollectionStateProps.DOC_ROUTER,
-              DocRouter.DEFAULT_NAME,
-              CollectionStateProps.REPLICATION_FACTOR,
-              "1",
-              CollectionStateProps.NRT_REPLICAS,
-              "1",
-              CollectionStateProps.TLOG_REPLICAS,
-              "0",
-              CollectionStateProps.PER_REPLICA_STATE,
-              null,
-              CollectionStateProps.PULL_REPLICAS,
-              "0"));
+      Collections.unmodifiableMap(makeCollectionPropsAndDefaults());
 
-  public static final Random RANDOM;
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
-    } else {
-      RANDOM = new Random(seed.hashCode());
+  private static Map<String, Object> makeCollectionPropsAndDefaults() {
+    Map<String, Object> propsAndDefaults =
+        Utils.makeMap(
+            CollectionStateProps.DOC_ROUTER,
+            (Object) DocRouter.DEFAULT_NAME,
+            CollectionStateProps.REPLICATION_FACTOR,
+            "1",
+            CollectionStateProps.PER_REPLICA_STATE,
+            null);
+    for (Replica.Type replicaType : Replica.Type.values()) {
+      propsAndDefaults.put(
+          replicaType.numReplicasPropertyName,
+          replicaType == Replica.Type.defaultType() ? "1" : "0");
     }
+    return propsAndDefaults;
+  }
+
+  /** Returns names of properties that are used to specify a number of replicas of a given type. */
+  public static Set<String> numReplicasProperties() {
+    return Arrays.stream(Replica.Type.values())
+        .map(t -> t.numReplicasPropertyName)
+        .collect(Collectors.toSet());
+  }
+
+  /** Returns replica types that are eligible to be leader. */
+  public static EnumSet<Replica.Type> leaderEligibleReplicaTypes() {
+    return Arrays.stream(Replica.Type.values())
+        .filter(t -> t.leaderEligible)
+        .collect(Collectors.toCollection(() -> EnumSet.noneOf(Replica.Type.class)));
   }
 
   static boolean waitForCoreNodeGone(
@@ -216,12 +222,13 @@ public class CollectionHandlingUtils {
 
   static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
+    final var zkCoreProps = new ZkCoreNodeProps(parentShardLeader);
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(coreUrl);
+      updateResponse = softCommit(zkCoreProps.getBaseUrl(), zkCoreProps.getCoreName());
       CollectionHandlingUtils.processResponse(
           results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {
@@ -234,12 +241,14 @@ public class CollectionHandlingUtils {
     }
   }
 
-  static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String baseUrl, String coreName)
+      throws SolrServerException, IOException {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(url)
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(coreName)
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
@@ -450,6 +459,26 @@ public class CollectionHandlingUtils {
     }
   }
 
+  static void logFailedOperation(final Object operation, final Exception e, final String collName) {
+    if (collName == null) {
+      log.error("Operation {} failed", operation, e);
+    } else {
+      log.error("Collection {}, operation {} failed", collName, operation, e);
+    }
+  }
+
+  /***
+   * Creates a SimpleOrderedMap with the exception details and adds it to the results
+   */
+  public static void addExceptionToNamedList(
+      final Object operation, final Exception e, final NamedList<Object> results) {
+    results.add("Operation " + operation + " caused exception:", e);
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+    nl.add("msg", e.getMessage());
+    nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
+    results.add("exception", nl);
+  }
+
   private static void addFailure(NamedList<Object> results, String key, Object value) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
@@ -528,18 +557,19 @@ public class CollectionHandlingUtils {
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
               }
               break;
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                "Invalid status request for requestId: "
+                "Invalid status request for requestId: '"
                     + requestId
-                    + ""
+                    + "' - '"
                     + srsp.getSolrResponse().getResponse().get("STATUS")
-                    + "retried "
+                    + "'. Retried "
                     + counter
-                    + "times");
+                    + " times");
           } else {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

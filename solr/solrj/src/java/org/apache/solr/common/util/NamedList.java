@@ -516,6 +516,7 @@ public class NamedList<T>
     }
     return result;
   }
+
   /**
    * Create SolrParams from NamedList. Values must be {@code String[]} or {@code List} (with
    * toString()-appropriate entries), or otherwise have a toString()-appropriate value. Nulls are

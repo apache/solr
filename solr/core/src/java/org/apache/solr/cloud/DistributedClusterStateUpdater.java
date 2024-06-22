@@ -31,6 +31,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -39,7 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
-import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -52,7 +52,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -506,12 +505,13 @@ public class DistributedClusterStateUpdater {
             // Fetch the per replica states updates done previously or skip fetching if we already
             // have them
             fetchedPerReplicaStates =
-                PerReplicaStatesFetcher.fetch(
+                PerReplicaStatesOps.fetch(
                     docCollection.getZNode(), zkStateReader.getZkClient(), fetchedPerReplicaStates);
             // Transpose the per replica states into the cluster state
             updatedState =
                 updatedState.copyWith(
-                    updater.getCollectionName(), docCollection.copyWith(fetchedPerReplicaStates));
+                    updater.getCollectionName(),
+                    docCollection.setPerReplicaStates(fetchedPerReplicaStates));
           }
         }
 
@@ -534,7 +534,7 @@ public class DistributedClusterStateUpdater {
         // exponential backoff instead. With "per replica states" collections, concurrent attempts
         // of even just two threads are expected to be extremely rare.
         Thread.sleep(
-            CollectionHandlingUtils.RANDOM.nextInt(
+            Utils.RANDOM.nextInt(
                 attempt < 13 ? 1 << attempt : 1 << 13)); // max wait 2^13ms=8.192 sec
       }
 
@@ -628,13 +628,17 @@ public class DistributedClusterStateUpdater {
       // This factory method can detect a missing configName and supply it by reading it from the
       // old ZK location.
       // TODO in Solr 10 remove that factory method
-      ClusterState clusterState =
+
+      ClusterState clusterState;
+      clusterState =
           ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(),
               data,
               Collections.emptySet(),
               updater.getCollectionName(),
-              zkStateReader.getZkClient());
+              zkStateReader.getZkClient(),
+              Instant.ofEpochMilli(stat.getCtime()));
+
       return clusterState;
     }
   }
@@ -657,8 +661,10 @@ public class DistributedClusterStateUpdater {
    */
   public static class StateChangeRecorder {
     final List<Pair<MutatingCommand, ZkNodeProps>> mutations;
+
     /** The collection name for which are all recorded commands */
     final String collectionName;
+
     /**
      * {@code true} if recorded commands assume creation of the collection {@code state.json} file.
      * <br>

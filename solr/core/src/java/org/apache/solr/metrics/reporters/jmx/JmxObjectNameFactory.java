@@ -38,9 +38,9 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
    * @param additionalProperties additional properties as key, value pairs.
    */
   public JmxObjectNameFactory(String reporterName, String domain, String... additionalProperties) {
-    this.reporterName = reporterName.replaceAll(":", "_");
+    this.reporterName = reporterName.replace(":", "_");
     this.domain = domain;
-    this.subdomains = domain.replaceAll(":", "_").split("\\.");
+    this.subdomains = domain.replace(":", "_").split("\\.");
     if (additionalProperties != null && (additionalProperties.length % 2) != 0) {
       throw new IllegalArgumentException(
           "additionalProperties length must be even: " + Arrays.toString(additionalProperties));
@@ -69,7 +69,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
   public ObjectName createName(String type, String currentDomain, String name) {
     SolrMetricInfo metricInfo = SolrMetricInfo.of(name);
     String safeName = metricInfo != null ? metricInfo.name : name;
-    safeName = safeName.replaceAll(":", "_");
+    safeName = safeName.replace(":", "_");
     // It turns out that ObjectName(String) mostly preserves key ordering
     // as specified in the constructor (except for the 'type' key that ends
     // up at top level) - unlike ObjectName(String, Map) constructor
@@ -92,7 +92,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
         }
         sb.append(','); // separate from other properties
       } else {
-        sb.append(currentDomain.replaceAll(":", "_"));
+        sb.append(currentDomain.replace(":", "_"));
         sb.append(':');
       }
     } else {

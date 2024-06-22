@@ -25,6 +25,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
@@ -124,8 +125,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
           childField.getName(), type, reverse, parentFilter, childFilter) {
         @SuppressWarnings("unchecked")
         @Override
-        public FieldComparator<?> getComparator(int numHits, boolean enableSkipping) {
-          final FieldComparator<?> comparator = super.getComparator(numHits, enableSkipping);
+        public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
+          final FieldComparator<?> comparator = super.getComparator(numHits, pruning);
           return type == Type.STRING
               ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
               : comparator;
@@ -183,7 +184,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       childFilter =
           BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
 
-      if (sortFieldName == null || sortFieldName.equals("")) {
+      if (sortFieldName == null || sortFieldName.isEmpty()) {
         throw new SyntaxError("field is omitted in " + fp.getString());
       }
 

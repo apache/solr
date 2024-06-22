@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -39,14 +38,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class TestSortableTextField extends SolrTestCaseJ4 {
 
   protected static final String BIG_CONST =
-      StringUtils.repeat("x", SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
+      "x".repeat(SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
 
   @BeforeClass
   public static void create() throws Exception {
@@ -292,23 +290,23 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
             "whitespace_l_stxt")) {
       values = createIndexableFields(field);
       assertEquals(field, 2, values.size());
-      MatcherAssert.assertThat(field, values.get(0), instanceOf(Field.class));
-      MatcherAssert.assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
+      assertThat(field, values.get(0), instanceOf(Field.class));
+      assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
     }
 
     // special cases...
     values = createIndexableFields("whitespace_nois_stxt");
     assertEquals(1, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
+    assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
     //
     values = createIndexableFields("whitespace_nodv_stxt");
     assertEquals(1, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(0), instanceOf(Field.class));
     //
     values = createIndexableFields("whitespace_m_stxt");
     assertEquals(2, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
-    MatcherAssert.assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
+    assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
   }
 
   private List<IndexableField> createIndexableFields(String fieldName) {
@@ -533,7 +531,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     // check all our expected docs can be found (with the expected values)
     assertU(commit());
     xpaths.add("//*[@numFound='" + xpaths.size() + "']");
-    assertQ(req("q", "*:*", "fl", "*"), xpaths.toArray(new String[xpaths.size()]));
+    assertQ(req("q", "*:*", "fl", "*"), xpaths.toArray(new String[0]));
   }
 
   /**

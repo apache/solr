@@ -57,10 +57,13 @@ public class ManagedFeatureStore extends ManagedResource
 
   /** name of the attribute containing the feature class */
   static final String CLASS_KEY = "class";
+
   /** name of the attribute containing the feature name */
   static final String NAME_KEY = "name";
+
   /** name of the attribute containing the feature params */
   static final String PARAMS_KEY = "params";
+
   /** name of the attribute containing the feature store used */
   static final String FEATURE_STORE_NAME_KEY = "store";
 
@@ -80,6 +83,16 @@ public class ManagedFeatureStore extends ManagedResource
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
+  }
+
+  @Override
+  protected ManagedResourceStorage createStorage(
+      ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
+    return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
+  }
+
+  public Map<String, FeatureStore> getStores() {
+    return stores;
   }
 
   public synchronized FeatureStore getFeatureStore(String name) {
@@ -160,11 +173,12 @@ public class ManagedFeatureStore extends ManagedResource
     if (childId == null) {
       response.add(FEATURE_STORE_JSON_FIELD, stores.keySet());
     } else {
-      final FeatureStore store = getFeatureStore(childId);
-      if (store == null) {
+      // check for non-existent feature store name
+      if (!stores.containsKey(childId)) {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "missing feature store [" + childId + "]");
+            SolrException.ErrorCode.BAD_REQUEST, "Missing feature store: " + childId);
       }
+      final FeatureStore store = getFeatureStore(childId);
       response.add(FEATURES_JSON_FIELD, featuresAsManagedResources(store));
     }
   }

@@ -79,6 +79,21 @@ Previously uploaded sample documents are indexed in the temporary collection eve
 Click on the btn:[Edit Documents] button on the *Query Results* panel to load a JSON representation of indexed documents into the text area.
 ====
 
+=== Trusted Config Sets
+
+ConfigSet trust is necessary when loading extra libraries from the `solrconfig.xml` and using certain features of Solr.
+Refer to the xref:configuration-guide:configsets-api.adoc#configsets-upload[ConfigSet API] section for more information on trusted configSets.
+
+Using the Schema Designer API has the same effect on the trust of a ConfigSet as using the xref:configuration-guide:configsets-api.adoc#configsets-upload[ConfigSet Upload API].
+
+* If you are authenticated:
+** If your source configSet **is** trusted, then the temporary configSets you are modifying will remain trusted.
+** If your source configSet **is not** trusted, then the temporary configSet you are modifying will never be trusted.
+* If you are unauthenticated:
+** The temporary configSet created for you will **not** be trusted.
+
+When <<publish,publishing the temporary configSet>>, the trust of the temporary configSet is used to set the trust of the permanent configSet.
+
 === Iteratively Post Sample Documents
 
 If you have sample documents spread across multiple files, you can POST them to the Schema Designer API and then load your schema in the Designer UI to design your schema.

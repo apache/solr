@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import org.apache.lucene.analysis.Analyzer;
@@ -26,8 +27,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String[] valid = {
     "1 one two three", // simple parsing
@@ -112,7 +116,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
         // System.out.println(" - toString: '" + sb.toString() + "'");
         assertEquals(validParsed[i], parser.toFormattedString(f));
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("Should pass: '{}', exception", s, e);
         fail("Should pass: '" + s + "', exception: " + e);
       }
     }

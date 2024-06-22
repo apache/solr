@@ -33,7 +33,6 @@ However, if reindexing is not feasible, keep in mind you can only upgrade one ma
 Thus, Solr 6.x indexes will be compatible with Solr 7 but Solr 5.x indexes will not be.
 
 If you do not reindex now, keep in mind that you will need to either reindex your data or upgrade your indexes before you will be able to move to Solr 8 when it is released in the future.
-See the section xref:deployment-guide:indexupgrader-tool.adoc[] for more details on how to upgrade your indexes.
 
 See also the section xref:deployment-guide:upgrading-a-solr-cluster.adoc[] for details on how to upgrade a SolrCloud cluster.
 
@@ -61,7 +60,7 @@ At its core, Solr autoscaling provides users with a rule syntax to define prefer
 
 === Other Features & Enhancements
 
-* The xref:query-guide:analytics.adoc[] has been refactored.
+* The analytics query guide has been refactored.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** xref:query-guide:learning-to-rank.adoc[]

@@ -36,7 +36,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.SearchGroupsFieldCommandResult;
@@ -89,9 +88,11 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
             t = t.getCause();
           }
           nl.add("error", t.toString());
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          nl.add("trace", trace.toString());
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString());
+          }
         } else {
           nl.add("numFound", response.get("totalHitCount"));
         }
@@ -104,10 +105,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
         shardInfo.add(srsp.getShard(), nl);
       }
       if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.setPartialResults();
         continue; // continue if there was an error and we're tolerant.
       }
       maxElapsedTime = Math.max(maxElapsedTime, solrResponse.getElapsedTime());

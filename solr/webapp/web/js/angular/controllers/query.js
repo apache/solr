@@ -165,10 +165,21 @@ solrAdminApp.controller('QueryController',
                   return param.indexOf(argParam) === 0;
               });
       }
+
+      var getHighlighterFieldsToPurge = function(hlMethod){
+          // first, select the fieldsets which ng-show includes val['hl.method'] but not val['hl.method']==${hlMethod}
+          // then, select their descendants that have ng-model
+          const selector = `div.fieldset[ng-show*="val['hl.method']"]:not([ng-show*="val['hl.method']=='${hlMethod}'"])
+                            [ng-model]`;
+          // return the field names
+          return Array.from(document.querySelectorAll(selector), x => x.name);
+      }
+
       copy(params, $scope.val);
       purgeParams(params, ["q.alt", "qf", "mm", "pf", "ps", "qs", "tie", "bq", "bf"], $scope.val.defType !== "dismax" && $scope.val.defType !== "edismax");
       purgeParams(params, ["uf", "pf2", "pf3", "ps2", "ps3", "boost", "stopwords", "lowercaseOperators"], $scope.val.defType !== "edismax");
       purgeParams(params, getDependentFields("hl"), $scope.val.hl !== true);
+      purgeParams(params, getHighlighterFieldsToPurge($scope.val["hl.method"]), true);
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
       purgeParams(params, ["spatial", "pt", "sfield", "d"], $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);

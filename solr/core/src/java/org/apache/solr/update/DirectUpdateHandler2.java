@@ -50,6 +50,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -102,6 +105,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   protected final CommitTracker softCommitTracker;
 
   protected boolean commitWithinSoftCommit;
+
   /**
    * package access for testing
    *
@@ -114,7 +118,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DirectUpdateHandler2(SolrCore core) {
-    super(core);
+    super(core, null, false);
 
     solrCoreState = core.getSolrCoreState();
 
@@ -152,10 +156,13 @@ public class DirectUpdateHandler2 extends UpdateHandler
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }
+    if (ulog != null) {
+      initUlog(true);
+    }
   }
 
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
-    super(core, updateHandler.getUpdateLog());
+    super(core, updateHandler.getUpdateLog(), false);
     solrCoreState = core.getSolrCoreState();
 
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig().getUpdateHandlerInfo();
@@ -186,17 +193,29 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
 
-    UpdateLog existingLog = updateHandler.getUpdateLog();
-    if (this.ulog != null && this.ulog == existingLog) {
+    if (ulog != null) {
       // If we are reusing the existing update log, inform the log that its update handler has
       // changed. We do this as late as possible.
-      this.ulog.init(this, core);
+      // TODO: not sure _why_ we "do this as late as possible". Consider simplifying by
+      //  moving `ulog.init(UpdateHandler, SolrCore)` entirely into the `UpdateHandler` ctor,
+      //  avoiding the need for the `UpdateHandler(SolrCore, UpdateLog, boolean)` ctor
+      //  (with the extra boolean `initUlog` param).
+      initUlog(ulog != updateHandler.getUpdateLog());
     }
   }
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
+      this.solrMetricsContext =
+          new SolrDelegateRegistryMetricsContext(
+              parentContext.getMetricManager(),
+              parentContext.getRegistryName(),
+              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+    }
     commitCommands = solrMetricsContext.meter("commits", getCategory().toString(), scope);
     solrMetricsContext.gauge(
         () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
@@ -366,13 +385,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        long currentTlogSize = getCurrentTLogSize();
         if (commitWithinSoftCommit) {
-          commitTracker.addedDocument(-1, currentTlogSize);
+          commitTracker.addedDocument(-1, this::getCurrentTLogSize);
           softCommitTracker.addedDocument(cmd.commitWithin);
         } else {
           softCommitTracker.addedDocument(-1);
-          commitTracker.addedDocument(cmd.commitWithin, currentTlogSize);
+          commitTracker.addedDocument(cmd.commitWithin, this::getCurrentTLogSize);
         }
       }
 
@@ -471,8 +489,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
 
-      long currentTlogSize = getCurrentTLogSize();
-      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(this::getCurrentTLogSize);
 
       if (softCommitTracker.getTimeUpperBound() > 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
@@ -633,7 +650,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[mergeReaders.size()]));
+        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[0]));
       } finally {
         iw.decref();
       }
@@ -812,7 +829,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {
-        SolrException.log(log, e);
+        log.error("Exception waiting for searcher", e);
       }
     }
   }
@@ -1038,7 +1055,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       // skips uniqueKey and _root_
       List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields();
       log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));
+      writer.updateDocValues(updateTerm, fields.toArray(new Field[0]));
 
     } else { // more normal path
 

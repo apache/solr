@@ -132,10 +132,10 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     addAndGetVersion(sdoc("id", "REP1"), null);
     assertU(commit());
 
-    String[] logList = ulog.getLogList(new Path(ulog.getLogDir()));
+    String[] logList = ulog.getLogList(new Path(ulog.getTlogDir()));
     boolean foundRep2 = false;
     for (String tl : logList) {
-      FileStatus status = fs.getFileStatus(new Path(ulog.getLogDir(), tl));
+      FileStatus status = fs.getFileStatus(new Path(ulog.getTlogDir(), tl));
       if (status.getReplication() == 2) {
         foundRep2 = true;
         break;
@@ -739,7 +739,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getTlogDir();
 
       h.close();
 
@@ -877,7 +877,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
-      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getTlogDir();
 
       clearIndex();
       assertU(commit());
@@ -938,7 +938,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
 
-      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getTlogDir();
 
       clearIndex();
       assertU(commit());
@@ -1016,7 +1016,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
-      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+      String logDir = h.getCore().getUpdateHandler().getUpdateLog().getTlogDir();
 
       clearIndex();
       assertU(commit());
@@ -1056,7 +1056,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
             content);
 
         // WARNING... assumes format of .00000n where n is less than 9
-        long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
+        long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf('.') + 1));
         String fname2 =
             String.format(
                 Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, logNumber + 1);
@@ -1105,7 +1105,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
   // stops the core, removes the transaction logs, restarts the core.
   void deleteLogs() throws Exception {
-    String logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+    String logDir = h.getCore().getUpdateHandler().getUpdateLog().getTlogDir();
 
     h.close();
 

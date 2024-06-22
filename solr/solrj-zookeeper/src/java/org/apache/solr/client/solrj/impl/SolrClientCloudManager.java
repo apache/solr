@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -36,7 +37,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -53,23 +53,17 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   protected final CloudLegacySolrClient solrClient;
   private final ZkDistribStateManager stateManager;
-  private final DistributedQueueFactory queueFactory;
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(
-      DistributedQueueFactory queueFactory, CloudLegacySolrClient solrClient) {
-    this(queueFactory, solrClient, null);
+  public SolrClientCloudManager(CloudLegacySolrClient solrClient) {
+    this(solrClient, null);
   }
 
-  public SolrClientCloudManager(
-      DistributedQueueFactory queueFactory,
-      CloudLegacySolrClient solrClient,
-      ObjectCache objectCache) {
-    this.queueFactory = queueFactory;
+  public SolrClientCloudManager(CloudLegacySolrClient solrClient, ObjectCache objectCache) {
     this.solrClient = solrClient;
     this.zkStateReader = ZkStateReader.from(solrClient);
     this.zkClient = zkStateReader.getZkClient();
@@ -146,7 +140,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
     final HttpRequestBase req;
     HttpEntity entity = null;
     if (payload != null) {
-      entity = new StringEntity(payload, "UTF-8");
+      entity = new StringEntity(payload, StandardCharsets.UTF_8);
     }
     switch (method) {
       case GET:
@@ -197,10 +191,5 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   public SolrZkClient getZkClient() {
     return zkClient;
-  }
-
-  @Override
-  public DistributedQueueFactory getDistributedQueueFactory() {
-    return queueFactory;
   }
 }

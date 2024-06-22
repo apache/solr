@@ -48,7 +48,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -172,7 +171,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       solrClient.commit(getCollectionName());
     }
 
-    testBackupAndRestore(getCollectionName(), backupReplFactor);
+    testBackupAndRestore(getCollectionName());
     testConfigBackupOnly("conf1", getCollectionName());
     testInvalidPath(getCollectionName());
   }
@@ -219,7 +218,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
-      MatcherAssert.assertThat(
+      assertThat(
           "Failed collection is still in the clusterstate: "
               + cluster
                   .getSolrClient()
@@ -326,7 +325,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     return numDocs;
   }
 
-  private void testBackupAndRestore(String collectionName, int backupReplFactor) throws Exception {
+  private void testBackupAndRestore(String collectionName) throws Exception {
     String backupLocation = getBackupLocation();
     String backupName = BACKUPNAME_PREFIX + testSuffix;
 
@@ -347,7 +346,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       if (random().nextBoolean()) {
         assertEquals(0, backup.process(client).getStatus());
       } else {
-        assertEquals(RequestStatusState.COMPLETED, backup.processAndWait(client, 30)); // async
+        String asyncId = backup.processAsync(client);
+        assertNotNull(asyncId);
+        CollectionAdminRequest.waitForAsyncRequest(asyncId, client, 30);
       }
     }
 
@@ -395,10 +396,13 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     if (sameConfig == false) {
       restore.setConfigName("customConfigName");
     }
+
     if (random().nextBoolean()) {
       assertEquals(0, restore.process(client).getStatus());
     } else {
-      assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60)); // async
+      String asyncId = restore.processAsync(client);
+      assertNotNull(asyncId);
+      CollectionAdminRequest.waitForAsyncRequest(asyncId, client, 60);
     }
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         restoreCollectionName, ZkStateReader.from(client), log.isDebugEnabled(), true, 30);
@@ -492,7 +496,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
       try (var leaderClient =
-          new HttpSolrClient.Builder(slice.getLeader().getCoreUrl())
+          new HttpSolrClient.Builder(slice.getLeader().getBaseUrl())
+              .withDefaultCollection(slice.getLeader().getCoreName())
               .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
               .build()) {
         long docsInShard =

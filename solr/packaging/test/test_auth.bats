@@ -23,6 +23,8 @@ setup() {
   run solr auth disable
 }
 
+# Note: there are additional auth related tests in test_ssl.bats
+
 @test "auth rejects blockUnknown option with invalid boolean" {
   run ! solr auth enable -type basicAuth -credentials any:any -blockUnknown ture
   assert_output --partial "Argument [blockUnknown] must be either true or false, but was [ture]"
@@ -33,3 +35,16 @@ setup() {
   assert_output --partial "Argument [updateIncludeFileOnly] must be either true or false, but was [ture]"
 }
 
+@test "auth enable/disable lifecycle" {
+  solr start -c
+  solr auth enable -type basicAuth -credentials name:password
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+
+  run curl -u name:password --basic "http://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
+  assert_output --partial '"status":0'
+  
+  solr auth disable
+  run curl "http://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+  solr stop -all  
+}

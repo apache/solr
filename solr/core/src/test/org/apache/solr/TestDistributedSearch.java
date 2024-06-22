@@ -31,12 +31,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -52,6 +50,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
 import org.apache.solr.handler.component.StatsField.Stat;
@@ -1558,7 +1557,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     rsp = queryServer(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
-    int cnt = StringUtils.countMatches(shards, ",") + 1;
+    int cnt = shards.length() - shards.replace(",", "").length() + 1;
 
     assertNotNull("missing shard info", sinfo);
     assertEquals(

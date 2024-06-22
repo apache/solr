@@ -40,11 +40,12 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   private final CoreContainer coreContainer;
   private final SolrClassLoader fallbackClassLoader;
   private final Function<String, String> pkgVersionSupplier;
+
   /** package name and the versions that we are tracking */
   private Map<String, PackageAPI.PkgVersion> packageVersions = new ConcurrentHashMap<>(1);
 
   private Map<String, String> classNameVsPackageName = new ConcurrentHashMap<>();
-  private final Runnable onReload;
+  private final Runnable reloadAction;
 
   /**
    * @param fallbackClassLoader The {@link SolrClassLoader} to use if no package is specified
@@ -59,11 +60,13 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
     this.coreContainer = coreContainer;
     this.fallbackClassLoader = fallbackClassLoader;
     this.pkgVersionSupplier = pkgVersionSupplier;
-    this.onReload =
+    this.reloadAction =
         () -> {
           packageVersions = new ConcurrentHashMap<>();
           classNameVsPackageName = new ConcurrentHashMap<>();
-          onReload.run();
+          if (onReload != null) {
+            onReload.run();
+          }
         };
   }
 
@@ -87,11 +90,13 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
    */
   public SolrPackageLoader.SolrPackage.Version findPackageVersion(
       PluginInfo.ClassName cName, boolean registerListener) {
+    SolrPackageLoader.SolrPackage p = coreContainer.getPackageLoader().getPackage(cName.pkg);
+    if (p == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "No such package: " + cName.pkg);
+    }
     SolrPackageLoader.SolrPackage.Version theVersion =
-        coreContainer
-            .getPackageLoader()
-            .getPackage(cName.pkg)
-            .getLatest(pkgVersionSupplier.apply(cName.pkg));
+        p.getLatest(pkgVersionSupplier.apply(cName.pkg));
     if (registerListener) {
       classNameVsPackageName.put(cName.original, cName.pkg);
       PackageAPI.PkgVersion pkgVersion = theVersion.getPkgVersion();
@@ -180,7 +185,6 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   }
 
   protected void doReloadAction(Ctx ctx) {
-    if (onReload == null) return;
-    ctx.runLater(null, onReload);
+    ctx.runLater(null, reloadAction);
   }
 }

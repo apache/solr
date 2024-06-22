@@ -34,7 +34,6 @@ import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -142,7 +141,7 @@ public class GraphHandler extends RequestHandlerBase
     } catch (Exception e) {
       // Catch exceptions that occur while the stream is being created. This will include streaming
       // expression parse rules.
-      SolrException.log(log, e);
+      log.error("Exception constructing stream", e);
       Map<Object, Object> requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;

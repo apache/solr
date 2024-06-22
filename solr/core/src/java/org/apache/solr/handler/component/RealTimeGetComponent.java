@@ -19,8 +19,10 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.search.QueryUtils.makeQueryable;
 
-import com.google.common.collect.Lists;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -60,7 +62,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -69,6 +70,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -81,6 +83,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocValuesIteratorCache;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
@@ -93,7 +96,6 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
-import org.apache.solr.util.LongSet;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -205,7 +207,7 @@ public class RealTimeGetComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        filters.addAll(QueryUtils.parseFilterQueries(req, true));
+        filters.addAll(QueryUtils.parseFilterQueries(req));
         if (!filters.isEmpty()) {
           rb.setFilters(filters);
         }
@@ -238,6 +240,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
       boolean opennedRealtimeSearcher = false;
       BytesRefBuilder idBytes = new BytesRefBuilder();
+      DocValuesIteratorCache reuseDvIters = null;
       for (String idStr : reqIds.allIds) {
         fieldType.readableToIndexed(idStr, idBytes);
         // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
@@ -326,6 +329,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
           if (rb.getFilters() != null) {
             for (Query raw : rb.getFilters()) {
+              raw = makeQueryable(raw);
               Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
               Scorer scorer =
                   searcherInfo
@@ -347,7 +351,11 @@ public class RealTimeGetComponent extends SearchComponent {
             searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
         SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
-        docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(true));
+        if (reuseDvIters == null) {
+          reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
+        }
+        docFetcher.decorateDocValueFields(
+            doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
@@ -574,7 +582,11 @@ public class RealTimeGetComponent extends SearchComponent {
       if (!doc.containsKey(VERSION_FIELD)) {
         searcher
             .getDocFetcher()
-            .decorateDocValueFields(doc, docid, Collections.singleton(VERSION_FIELD));
+            .decorateDocValueFields(
+                doc,
+                docid,
+                Collections.singleton(VERSION_FIELD),
+                new DocValuesIteratorCache(searcher, false));
       }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
@@ -883,7 +895,7 @@ public class RealTimeGetComponent extends SearchComponent {
           if (!fieldArrayListCreated && doc.getFieldValue(fname) instanceof Collection) {
             // previous value was array so we must return as an array even if was a single value
             // array
-            out.setField(fname, Lists.newArrayList(val));
+            out.setField(fname, new ArrayList<>(List.of(val)));
             fieldArrayListCreated = true;
             continue;
           }
@@ -999,16 +1011,16 @@ public class RealTimeGetComponent extends SearchComponent {
       if (solrInputField.getFirstValue() instanceof SolrInputDocument) {
         // is child doc
         Object val = solrInputField.getValue();
-        Iterator<SolrDocument> childDocs =
+        List<SolrDocument> childDocs =
             solrInputField.getValues().stream()
                 .map(x -> toSolrDoc((SolrInputDocument) x, schema))
-                .iterator();
+                .collect(Collectors.toList());
         if (val instanceof Collection) {
           // add as collection even if single element collection
-          solrDoc.setField(solrInputField.getName(), Lists.newArrayList(childDocs));
+          solrDoc.setField(solrInputField.getName(), childDocs);
         } else {
           // single child doc
-          solrDoc.setField(solrInputField.getName(), childDocs.next());
+          solrDoc.setField(solrInputField.getName(), childDocs.get(0));
         }
       }
     }
@@ -1050,7 +1062,10 @@ public class RealTimeGetComponent extends SearchComponent {
       for (String id : reqIds.allIds) {
         Slice slice =
             coll.getRouter()
-                .getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+                .getTargetSlice(id, null, params.get(ShardParams._ROUTE_), params, coll);
+        if (slice == null) {
+          continue;
+        }
 
         List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {
@@ -1111,7 +1126,7 @@ public class RealTimeGetComponent extends SearchComponent {
     // the mappings.
 
     for (int i = 0; i < rb.slices.length; i++) {
-      log.info("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
+      log.trace("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
       if (lookup.equals(rb.slices[i]) || slice.equals(rb.slices[i])) {
         return new String[] {rb.shards[i]};
       }
@@ -1304,7 +1319,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // handle version ranges
     List<Long> versions = null;
-    if (versionsStr.indexOf("...") != -1) {
+    if (versionsStr.contains("...")) {
       versions = resolveVersionRanges(versionsStr, ulog);
     } else {
       versions =
@@ -1328,7 +1343,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      LongSet updateVersions = new LongSet(versions.size());
+      LongSet updateVersions = new LongHashSet(versions.size());
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
@@ -1358,7 +1373,7 @@ public class RealTimeGetComponent extends SearchComponent {
   }
 
   private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
-    if (StringUtils.isEmpty(versionsStr)) {
+    if (StrUtils.isNullOrEmpty(versionsStr)) {
       return Collections.emptyList();
     }
 
@@ -1376,7 +1391,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // This can be done with single pass over both ranges and versionsAvailable, that would require
     // merging ranges. We currently use Set to ensure there are no duplicates.
-    Set<Long> versionsToRet = new HashSet<>(ulog.getNumRecordsToKeep());
+    Set<Long> versionsToRet = CollectionUtil.newHashSet(ulog.getNumRecordsToKeep());
     for (String range : ranges) {
       String[] rangeBounds = range.split("\\.{3}");
       int indexStart =
@@ -1413,6 +1428,7 @@ public class RealTimeGetComponent extends SearchComponent {
   private static final class IdsRequested {
     /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
     public final List<String> allIds;
+
     /**
      * true if the params provided by the user indicate that a single doc response structure should
      * be used. Value is meaningless if <code>ids</code> is empty.

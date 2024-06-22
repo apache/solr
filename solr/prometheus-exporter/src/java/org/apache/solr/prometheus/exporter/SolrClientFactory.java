@@ -17,8 +17,11 @@
 
 package org.apache.solr.prometheus.exporter;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -27,40 +30,55 @@ import org.apache.zookeeper.client.ConnectStringParser;
 
 public class SolrClientFactory {
 
-  private PrometheusExporterSettings settings;
+  private final PrometheusExporterSettings settings;
+  private final SolrScrapeConfiguration configuration;
 
-  public SolrClientFactory(PrometheusExporterSettings settings) {
+  public SolrClientFactory(
+      PrometheusExporterSettings settings, SolrScrapeConfiguration configuration) {
     this.settings = settings;
+    this.configuration = configuration;
+  }
+
+  private static Http2SolrClient.Builder newHttp2SolrClientBuilder(
+      String solrHost, PrometheusExporterSettings settings, SolrScrapeConfiguration configuration) {
+    var builder =
+        new Http2SolrClient.Builder(solrHost)
+            .withIdleTimeout(settings.getHttpReadTimeout(), TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(settings.getHttpConnectionTimeout(), TimeUnit.MILLISECONDS)
+            .withResponseParser(new NoOpResponseParser("json"));
+    if (configuration.getBasicAuthUser() != null) {
+      builder.withBasicAuthCredentials(
+          configuration.getBasicAuthUser(), configuration.getBasicAuthPwd());
+    }
+    if (configuration.isSSLEnabled()) {
+      builder.withSSLConfig(
+          new SSLConfig(
+              true,
+              true,
+              configuration.getSslConfiguration().keystorePath.toString(),
+              configuration.getSslConfiguration().keystorePassword,
+              configuration.getSslConfiguration().trustStorePath.toString(),
+              configuration.getSslConfiguration().trustStorePassword));
+    }
+    return builder;
   }
 
   public Http2SolrClient createStandaloneSolrClient(String solrHost) {
-    Http2SolrClient http2SolrClient =
-        new Http2SolrClient.Builder(solrHost)
-            .idleTimeout(settings.getHttpReadTimeout())
-            .connectionTimeout(settings.getHttpConnectionTimeout())
-            .build();
-
-    http2SolrClient.setParser(new NoOpResponseParser("json"));
-
-    return http2SolrClient;
+    return newHttp2SolrClientBuilder(solrHost, settings, configuration).build();
   }
 
   public CloudSolrClient createCloudSolrClient(String zookeeperConnectionString) {
     ConnectStringParser parser = new ConnectStringParser(zookeeperConnectionString);
 
+    List<String> zkHosts =
+        parser.getServerAddresses().stream()
+            .map(address -> address.getHostString() + ":" + address.getPort())
+            .collect(Collectors.toList());
     CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(
-                parser.getServerAddresses().stream()
-                    .map(address -> address.getHostString() + ":" + address.getPort())
-                    .collect(Collectors.toList()),
-                Optional.ofNullable(parser.getChrootPath()))
-            .withInternalClientBuilder(
-                new Http2SolrClient.Builder()
-                    .idleTimeout(settings.getHttpReadTimeout())
-                    .connectionTimeout(settings.getHttpConnectionTimeout()))
+        new CloudHttp2SolrClient.Builder(zkHosts, Optional.ofNullable(parser.getChrootPath()))
+            .withInternalClientBuilder(newHttp2SolrClientBuilder(null, settings, configuration))
+            .withResponseParser(new NoOpResponseParser("json"))
             .build();
-
-    client.setParser(new NoOpResponseParser("json"));
 
     client.connect();
 

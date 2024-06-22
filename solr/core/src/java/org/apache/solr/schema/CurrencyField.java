@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * Field type for support of monetary values.
@@ -78,7 +79,7 @@ public class CurrencyField extends CurrencyFieldType implements SchemaAware, Res
     // Initialize field type for amount
     fieldTypeAmountRaw = new TrieLongField();
     fieldTypeAmountRaw.setTypeName(FIELD_TYPE_AMOUNT_RAW);
-    Map<String, String> map = new HashMap<>(1);
+    Map<String, String> map = CollectionUtil.newHashMap(1);
     map.put("precisionStep", precisionStepString);
     fieldTypeAmountRaw.init(schema, map);
     fieldSuffixAmountRaw = FIELD_SUFFIX_AMOUNT_RAW;

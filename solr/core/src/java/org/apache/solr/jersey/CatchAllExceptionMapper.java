@@ -17,23 +17,24 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.common.SolrException.ErrorCode.getErrorCode;
-import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.jersey.RequestContextKeys.HANDLER_METRICS;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.ResponseUtils;
@@ -107,26 +108,17 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE) == null
             ? new SolrJerseyResponse()
             : (SolrJerseyResponse) containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE);
-
-    response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log);
+    response.error =
+        ResponseUtils.getTypedErrorInfo(
+            normalizedException,
+            log,
+            solrQueryRequest.getCore() != null
+                && solrQueryRequest.getCore().getCoreContainer().hideStackTrace());
     response.responseHeader.status = response.error.code;
-    final String mediaType = getMediaType(solrQueryRequest);
+    final String mediaType =
+        V2ApiUtils.getMediaTypeFromWtParam(
+            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
     return Response.status(response.error.code).type(mediaType).entity(response).build();
-  }
-
-  private static String getMediaType(SolrQueryRequest solrQueryRequest) {
-    final String wtParam = solrQueryRequest.getParams().get(WT);
-    if (wtParam == null) return "application/json";
-
-    // The only currently-supported response-formats for JAX-RS v2 endpoints.
-    switch (wtParam) {
-      case "xml":
-        return "application/xml";
-      case "javabin":
-        return BINARY_CONTENT_TYPE_V2;
-      default:
-        return "application/json";
-    }
   }
 
   private Response processWebApplicationException(WebApplicationException wae) {

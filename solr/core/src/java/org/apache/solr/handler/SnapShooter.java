@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -33,6 +35,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -44,6 +47,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository.PathType;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,7 +174,7 @@ public class SnapShooter {
     }
   }
 
-  public NamedList<Object> createSnapshot() throws Exception {
+  public CoreSnapshotResponse createSnapshot() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
       return createSnapshot(indexCommit);
@@ -246,12 +250,12 @@ public class SnapShooter {
     // TODO should use Solr's ExecutorUtil
     new Thread(
             () -> {
-              NamedList<Object> snapShootDetails;
+              NamedList<Object> snapShootDetails = new SimpleOrderedMap<>();
               try {
-                snapShootDetails = createSnapshot();
+                V2ApiUtils.squashIntoNamedListWithoutHeader(snapShootDetails, createSnapshot());
               } catch (Exception e) {
                 log.error("Exception while creating snapshot", e);
-                snapShootDetails = new NamedList<>();
+                snapShootDetails = new SimpleOrderedMap<>();
                 snapShootDetails.add("exception", e.getMessage());
               }
               if (snapshotName == null) {
@@ -277,7 +281,7 @@ public class SnapShooter {
    * @see IndexDeletionPolicyWrapper#saveCommitPoint
    * @see IndexDeletionPolicyWrapper#releaseCommitPoint
    */
-  protected NamedList<Object> createSnapshot(final IndexCommit indexCommit) throws Exception {
+  protected CoreSnapshotResponse createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
     if (log.isInfoEnabled()) {
       log.info(
@@ -287,8 +291,8 @@ public class SnapShooter {
     }
     boolean success = false;
     try {
-      NamedList<Object> details = new SimpleOrderedMap<>();
-      details.add("startTime", Instant.now().toString());
+      CoreSnapshotResponse details = new CoreSnapshotResponse();
+      details.startTime = Instant.now().toString();
 
       Collection<String> files = indexCommit.getFileNames();
       Directory dir =
@@ -311,13 +315,13 @@ public class SnapShooter {
       String endTime = Instant.now().toString();
 
       // DEPRECATED: fileCount for removal, replaced with indexFileCount
-      details.add("fileCount", files.size());
-      details.add("indexFileCount", files.size());
-      details.add("status", "success");
-      details.add("snapshotCompletedAt", endTime); // DEPRECATED: for removal, replaced with endTime
-      details.add("endTime", endTime);
-      details.add("snapshotName", snapshotName);
-      details.add("directoryName", directoryName);
+      details.fileCount = files.size();
+      details.indexFileCount = files.size();
+      details.status = "success";
+      details.snapshotCompletedAt = endTime; // DEPRECATED: for removal, replaced with endTime
+      details.endTime = endTime;
+      details.snapshotName = snapshotName;
+      details.directoryName = directoryName;
       if (log.isInfoEnabled()) {
         log.info(
             "Done creating backup snapshot: {} into {}",
@@ -389,4 +393,38 @@ public class SnapShooter {
   }
 
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
+
+  public static class CoreSnapshotResponse extends SolrJerseyResponse {
+    @Schema(description = "The time at which snapshot started at.")
+    @JsonProperty("startTime")
+    public String startTime;
+
+    @Schema(description = "The number of files in the snapshot.")
+    @JsonProperty("fileCount")
+    public int fileCount;
+
+    @Schema(description = "The number of index files in the snapshot.")
+    @JsonProperty("indexFileCount")
+    public int indexFileCount;
+
+    @Schema(description = "The status of the snapshot")
+    @JsonProperty("status")
+    public String status;
+
+    @Schema(description = "The time at which snapshot completed at.")
+    @JsonProperty("snapshotCompletedAt")
+    public String snapshotCompletedAt;
+
+    @Schema(description = "The time at which snapshot completed at.")
+    @JsonProperty("endTime")
+    public String endTime;
+
+    @Schema(description = "The name of the snapshot")
+    @JsonProperty("snapshotName")
+    public String snapshotName;
+
+    @Schema(description = "The name of the directory where snapshot created.")
+    @JsonProperty("directoryName")
+    public String directoryName;
+  }
 }

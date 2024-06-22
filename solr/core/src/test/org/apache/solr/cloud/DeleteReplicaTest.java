@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -45,6 +44,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.ZkContainer;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -346,6 +346,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
             log.info("Running delete core {}", cd);
 
             try {
+              waitForJettyInit(replica1Jetty, replica1JettyNodeName);
               ZkController replica1ZkController =
                   replica1Jetty.getCoreContainer().getZkController();
               ZkNodeProps m =
@@ -394,7 +395,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                   }
                   Thread.sleep(500);
                 } catch (NullPointerException | SolrException e) {
-                  e.printStackTrace();
+                  log.error("error deleting replica", e);
                   Thread.sleep(500);
                 }
               }
@@ -402,7 +403,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                 fail("Timeout for waiting replica get deleted");
               }
             } catch (Exception e) {
-              e.printStackTrace();
+              log.error("Failed to delete replica", e);
               fail("Failed to delete replica");
             } finally {
               // avoiding deadlock
@@ -492,6 +493,20 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
       Thread.sleep(100);
       if (timeOut.hasTimedOut()) fail("Wait for " + lostNodeName + " to leave failed!");
+    }
+  }
+
+  /**
+   * see SOLR-16848 working around a timing issue where the callback will be faster than the
+   * dispatchFilter's init
+   */
+  private void waitForJettyInit(JettySolrRunner replica1Jetty, String replica1JettyNodeName)
+      throws InterruptedException {
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!replica1Jetty.isRunning()) {
+      Thread.sleep(100);
+      if (timeOut.hasTimedOut())
+        fail("Wait for " + replica1JettyNodeName + " replica to init failed!");
     }
   }
 

@@ -19,13 +19,15 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +35,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -47,7 +48,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -60,7 +60,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.TrackingBackupRepository;
@@ -71,6 +70,7 @@ import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,7 +88,9 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static long docsSeed; // see indexDocs()
+  protected static final int NUM_NODES = 2;
   protected static final int NUM_SHARDS = 2; // granted we sometimes shard split to get more
+  protected static final int LARGE_NUM_SHARDS = 11; // Periodically chosen via randomization
   protected static final int REPL_FACTOR = 2;
   protected static final String BACKUPNAME_PREFIX = "mytestbackup";
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
@@ -129,10 +131,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     setTestSuffix("testbackupincsimple");
     final String backupCollectionName = getCollectionName();
     final String restoreCollectionName = backupCollectionName + "_restore";
+    final int randomizedNumShards = rarely() ? LARGE_NUM_SHARDS : NUM_SHARDS;
 
     CloudSolrClient solrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", randomizedNumShards, 1)
         .process(solrClient);
     int totalIndexedDocs = indexDocs(backupCollectionName, true);
     String backupName = BACKUPNAME_PREFIX + testSuffix;
@@ -166,7 +169,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       log.info("Created backup with {} docs, took {}ms", numFound, timeTaken);
 
       t = System.nanoTime();
-      randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", NUM_SHARDS, 1);
+      randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", randomizedNumShards, 1);
       CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setBackupId(0)
           .setLocation(backupLocation)
@@ -229,6 +232,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   @Nightly
   public void testBackupIncremental() throws Exception {
@@ -320,7 +324,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
               .setRepositoryName(BACKUP_REPO_NAME)
               .setLocation(backupLocation)
               .process(cluster.getSolrClient());
-      assertEquals(2, ((NamedList) resp.getResponse().get("deleted")).get("numIndexFiles"));
+      assertEquals(
+          2, ((Map<String, Object>) resp.getResponse().get("deleted")).get("numIndexFiles"));
 
       new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), getCollectionName());
       indexDocs(getCollectionName(), false);
@@ -344,38 +349,177 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           fail("This backup should be failed");
         }
       } catch (Exception e) {
-        // expected
-        e.printStackTrace();
+        log.error("expected", e);
       }
     }
   }
 
-  protected void corruptIndexFiles() throws IOException {
-    Collection<Slice> slices = getCollectionState(getCollectionName()).getSlices();
-    Slice slice = slices.iterator().next();
-    JettySolrRunner leaderNode = cluster.getReplicaJetty(slice.getLeader());
+  @Test
+  public void testSkipConfigset() throws Exception {
+    setTestSuffix("testskipconfigset");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "-restore";
 
-    SolrCore solrCore = leaderNode.getCoreContainer().getCore(slice.getLeader().getCoreName());
-    Set<String> fileNames =
-        new HashSet<>(solrCore.getDeletionPolicy().getLatestCommit().getFileNames());
-    File indexFolder = new File(solrCore.getIndexDir());
-    File fileGetCorrupted =
-        Stream.of(Objects.requireNonNull(indexFolder.listFiles()))
-            .filter(x -> fileNames.contains(x.getName()))
-            .findAny()
-            .get();
-    try (FileInputStream fis = new FileInputStream(fileGetCorrupted)) {
-      byte[] contents = fis.readAllBytes();
-      for (int i = 1; i < 5; i++) {
-        byte key = (byte) (contents.length - CodecUtil.footerLength() - i);
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setBackupConfigset(false)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(cluster.getSolrClient(), 100);
+
+      assertFalse(
+          "Configset shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.directoriesCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.directoriesCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertFalse(
+          "Configset shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertFalse(
+          "solrconfig.xml shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("solrconfig.xml")));
+      assertFalse(
+          "schema.xml shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("schema.xml")));
+
+      CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(solrClient, 500);
+
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+          restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
+      assertEquals(
+          numDocs,
+          cluster
+              .getSolrClient()
+              .query(restoreCollectionName, new SolrQuery("*:*"))
+              .getResults()
+              .getNumFound());
+    }
+
+    TrackingBackupRepository.clear();
+
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setBackupConfigset(true)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(cluster.getSolrClient(), 100);
+
+      assertTrue(
+          "Configset should be part of the backup but not found:\n"
+              + TrackingBackupRepository.directoriesCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.directoriesCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertTrue(
+          "Configset should be part of the backup but not found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertTrue(
+          "solrconfig.xml should be part of the backup but not found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("solrconfig.xml")));
+      assertTrue(
+          "schema.xml should be part of the backup but not found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("schema.xml")));
+    }
+  }
+
+  public void testBackupProperties() throws IOException {
+    BackupProperties p =
+        BackupProperties.create(
+            "backupName",
+            "collection1",
+            "collection1-ext",
+            "conf1",
+            Map.of("foo", "bar", "aaa", "bbb"));
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      URI dest = repository.resolve(repository.createURI(backupLocation), "props-file.properties");
+      try (Writer propsWriter =
+          new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
+        p.store(propsWriter);
+      }
+      BackupProperties propsRead =
+          BackupProperties.readFrom(
+              repository, repository.createURI(backupLocation), "props-file.properties");
+      assertEquals(p.getCollection(), propsRead.getCollection());
+      assertEquals(p.getCollectionAlias(), propsRead.getCollectionAlias());
+      assertEquals(p.getConfigName(), propsRead.getConfigName());
+      assertEquals(p.getIndexVersion(), propsRead.getIndexVersion());
+      assertEquals(p.getExtraProperties(), propsRead.getExtraProperties());
+      assertEquals(p.getBackupName(), propsRead.getBackupName());
+    }
+  }
+
+  protected void corruptIndexFiles() throws IOException {
+    List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
+    Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
+    JettySolrRunner leaderNode = cluster.getReplicaJetty(leader);
+
+    final Path fileToCorrupt;
+    try (SolrCore solrCore = leaderNode.getCoreContainer().getCore(leader.getCoreName())) {
+      Set<String> fileNames =
+          new HashSet<>(solrCore.getDeletionPolicy().getLatestCommit().getFileNames());
+      final List<Path> indexFiles;
+      try (Stream<Path> indexFolderFiles = Files.list(Path.of(solrCore.getIndexDir()))) {
+        indexFiles =
+            indexFolderFiles
+                .filter(x -> fileNames.contains(x.getFileName().toString()))
+                .sorted()
+                .collect(Collectors.toList());
+      }
+      if (indexFiles.isEmpty()) {
+        return;
+      }
+      fileToCorrupt = indexFiles.get(random().nextInt(indexFiles.size()));
+    }
+    final byte[] contents = Files.readAllBytes(fileToCorrupt);
+    for (int i = 1; i < 5; i++) {
+      int key = contents.length - CodecUtil.footerLength() - i;
+      if (key >= 0) {
         contents[key] = (byte) (contents[key] + 1);
       }
-      try (FileOutputStream fos = new FileOutputStream(fileGetCorrupted)) {
-        fos.write(contents);
-      }
-    } finally {
-      solrCore.close();
     }
+    Files.write(fileToCorrupt, contents);
   }
 
   private void addDummyFileToIndex(BackupRepository repository, URI indexDir, String fileName)
@@ -440,7 +584,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
   }
 
-  private int indexDocs(String collectionName, boolean useUUID) throws Exception {
+  protected int indexDocs(String collectionName, boolean useUUID) throws Exception {
     Random random =
         new Random(
             docsSeed); // use a constant seed for the whole test run so that we can easily re-index.
@@ -494,7 +638,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void backupThenWait() throws SolrServerException, IOException {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
@@ -507,13 +651,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           RequestStatusState state = backup.processAndWait(cluster.getSolrClient(), 1000);
           assertEquals(RequestStatusState.COMPLETED, state);
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          Thread.currentThread().interrupt();
+          log.error("interrupted", e);
         }
         numBackup++;
       } else {
         CollectionAdminResponse rsp = backup.process(cluster.getSolrClient());
         assertEquals(0, rsp.getStatus());
-        NamedList resp = (NamedList) rsp.getResponse().get("response");
+        Map<String, Object> resp = (Map<String, Object>) rsp.getResponse().get("response");
         numBackup++;
         assertEquals(numBackup, resp.get("backupId"));
         ;
@@ -575,7 +720,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
       URI backupPropertiesFile =
           repository.resolve(backupURI, "backup_" + numBackup + ".properties");
-      URI zkBackupFolder = repository.resolve(backupURI, "zk_backup_" + numBackup);
+      URI zkBackupFolder = repository.resolveDirectory(backupURI, "zk_backup_" + numBackup);
       assertTrue(repository.exists(backupPropertiesFile));
       assertTrue(repository.exists(zkBackupFolder));
       assertFolderAreSame(

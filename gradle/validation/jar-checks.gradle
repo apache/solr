@@ -122,17 +122,24 @@ subprojects {
       }
 
       def visited = new HashSet<>()
+      def seenDeps = new HashSet<>()
       def infos = []
 
       while (!queue.isEmpty()) {
         def dep = queue.removeFirst()
+        seenDeps.add(dep)
 
         // Skip any artifacts from other Solr Modules (they will be resolved there).
         if (dep.moduleGroup == "org.apache.solr") {
           continue
         }
 
-        queue.addAll(dep.children)
+        // Make sure we don't keep visiting the same children over and over again
+        dep.children.each { child ->
+          if (!seenDeps.contains(child)) {
+            queue.add(child)
+          }
+        }
         dep.moduleArtifacts.each { resolvedArtifact ->
           def file = resolvedArtifact.file
           if (visited.add(file)) {
@@ -165,7 +172,10 @@ subprojects {
       def errors = []
       jarInfos.each { dep ->
         def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
-        if (!expectedChecksumFile.exists()) {
+        def forceLuceneVersion = project.properties['lucene.dev.version']
+        if (dep.module.id.group == 'org.apache.lucene' && forceLuceneVersion != null && forceLuceneVersion.endsWith('-SNAPSHOT')) {
+          logger.log(LogLevel.INFO, "Skipping jar checksum validation for local SNAPSHOT dependency ('${dep.module}')")
+        } else if (!expectedChecksumFile.exists()) {
           errors << "Dependency checksum missing ('${dep.module}'), expected it at: ${expectedChecksumFile}"
         } else {
           dep.referencedFiles += expectedChecksumFile
@@ -195,10 +205,17 @@ subprojects {
   // where 'jar-or-prefix' can be any '-'-delimited prefix of the dependency JAR's name.
   // So for 'commons-io' it can be 'commons-io-LICENSE-foo.txt' or
   // 'commons-LICENSE.txt'
-  task validateJarLicenses() {
+  tasks.register('validateJarLicenses') {
     group = 'Dependency validation'
     description = "Validate license and notice files of dependencies"
     dependsOn collectJarInfos
+
+    def outputFileName = 'validateJarLicenses'
+    inputs.dir(file(project.rootDir.path + '/solr/licenses'))
+        .withPropertyName('licenses')
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.file(layout.buildDirectory.file(outputFileName))
+        .withPropertyName('validateJarLicensesResult')
 
     doLast {
       def errors = []
@@ -245,7 +262,8 @@ subprojects {
           }
         }
       }
-
+      def f = new File(project.buildDir.path + "/" + outputFileName)
+      f.text = errors
       if (errors) {
         def msg = "Certain license/ notice files are missing:\n  - " + errors.join("\n  - ")
         if (failOnError) {

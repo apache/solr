@@ -18,16 +18,34 @@
 
 A `codecFactory` can be specified in `solrconfig.xml` to determine which Lucene {lucene-javadocs}/core/org/apache/lucene/codecs/Codec.html[`Codec`] is used when writing the index to disk.
 
-If not specified, Lucene's default codec is implicitly used.
+If not specified, Solr's `SchemaCodecFactory` is implicitly used as if it had been defined with no configuration options:
 
-== Alternatives to the Default Codec
-There are two alternatives to Lucene's default codec.
+[source,xml]
+----
+<codecFactory class="solr.SchemaCodecFactory" />
+----
 
-=== solr.SchemaCodecFactory
 
-The {solr-javadocs}/core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] supports 2 key features:
+== Available Codec Factories
 
-* Schema based per-fieldtype configuration for `docValuesFormat` and `postingsFormat` - see the xref:indexing-guide:field-type-definitions-and-properties.adoc#field-type-properties[Field Type Properties] section for more details.
+=== solr.LuceneDefaultCodecFactory
+
+The {solr-javadocs}/core/org/apache/solr/core/LuceneDefaultCodecFactory.html[`solr.LuceneDefaultCodecFactory`] Uses the Lucene {lucene-javadocs}/core/org/apache/lucene/codecs/Codec.html#getDefault()[`Codec.getDefault()`] and does not support any configuration options.
+
+Example:
+
+[source,xml]
+----
+<codecFactory class="solr.LuceneDefaultCodecFactory" />
+----
+
+=== solr.SchemaCodecFactory (default)
+
+The {solr-javadocs}/core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] defaults to the same behavior as Lucene's default Codec, but supports 2 additional key features:
+
+* Schema based per-fieldtype customizations:
+** `docValuesFormat` and `postingsFormat` on any field type - see the xref:indexing-guide:field-type-definitions-and-properties.adoc#field-type-properties[Field Type Properties] section for more details.
+** Support for `DenseVectorField` customizations to the `KnnVectorsFormat` - see the xref:query-guide:dense-vector-search.adoc[Dense Vector Search] section for more details.
 * A `compressionMode` option:
 ** `BEST_SPEED` (default) is optimized for search speed performance
 ** `BEST_COMPRESSION` is optimized for disk space usage

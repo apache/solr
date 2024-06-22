@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -41,6 +42,7 @@ import org.junit.Test;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
+@SolrCloudTestCase.NoPrs // disabled PRS for a while to enure if that is causing test failures
 public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTestCase {
   private static String backupLocation;
 
@@ -149,6 +151,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   }
 
   private static final String poisoned = "poisoned";
+
   // let it go through collection handler, and break only when real thing is doing:
   // Restore/BackupCore
   public static class PoisonedRepository extends LocalFileSystemRepository {

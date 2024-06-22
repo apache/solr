@@ -22,9 +22,11 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -105,11 +107,14 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
    * etc.
    */
   private final HashMap<String, Integer> fname2index;
+
   /**
    * trees is part of the LTRScoringModel params map and therefore here it does not individually
    * influence the class hashCode, equals, etc.
    */
   private List<RegressionTree> trees;
+
+  private boolean isNullSameAsZero = true;
 
   private RegressionTree createRegressionTree(Map<String, Object> map) {
     final RegressionTree rt = new RegressionTree();
@@ -127,6 +132,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     return rtn;
   }
 
+  public void setIsNullSameAsZero(boolean nullSameAsZero) {
+    isNullSameAsZero = nullSameAsZero;
+  }
+
   public class RegressionTreeNode {
     private static final float NODE_SPLIT_SLACK = 1E-6f;
 
@@ -136,6 +145,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     private Float threshold;
     private RegressionTreeNode left;
     private RegressionTreeNode right;
+    private String missing;
 
     public void setValue(float value) {
       this.value = value;
@@ -143,6 +153,10 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
     public void setValue(String value) {
       this.value = Float.parseFloat(value);
+    }
+
+    public void setMissing(String direction) {
+      this.missing = direction;
     }
 
     public void setFeature(String feature) {
@@ -184,6 +198,9 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       } else {
         sb.append("(feature=").append(feature);
         sb.append(",threshold=").append(threshold.floatValue() - NODE_SPLIT_SLACK);
+        if (missing != null) {
+          sb.append(",missing=").append(missing);
+        }
         sb.append(",left=").append(left);
         sb.append(",right=").append(right);
         sb.append(')');
@@ -213,7 +230,11 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
     }
 
     public float score(float[] featureVector) {
-      return weight.floatValue() * scoreNode(featureVector, root);
+      if (isNullSameAsZero) {
+        return weight.floatValue() * scoreNode(featureVector, root);
+      } else {
+        return weight.floatValue() * scoreNodeWithNullSupport(featureVector, root);
+      }
     }
 
     public String explain(float[] featureVector) {
@@ -276,6 +297,31 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
   }
 
   @Override
+  public void normalizeFeaturesInPlace(float[] modelFeatureValues) {
+    normalizeFeaturesInPlace(modelFeatureValues, isNullSameAsZero);
+  }
+
+  protected void normalizeFeaturesInPlace(float[] modelFeatureValues, boolean isNullSameAsZero) {
+    float[] modelFeatureValuesNormalized = modelFeatureValues;
+    if (modelFeatureValues.length != norms.size()) {
+      throw new FeatureException("Must have normalizer for every feature");
+    }
+    if (isNullSameAsZero) {
+      for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+        modelFeatureValuesNormalized[idx] =
+            norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+      }
+    } else {
+      for (int idx = 0; idx < modelFeatureValuesNormalized.length; ++idx) {
+        if (!Float.isNaN(modelFeatureValuesNormalized[idx])) {
+          modelFeatureValuesNormalized[idx] =
+              norms.get(idx).normalize(modelFeatureValuesNormalized[idx]);
+        }
+      }
+    }
+  }
+
+  @Override
   public float score(float[] modelFeatureValuesNormalized) {
     float score = 0;
     for (final RegressionTree t : trees) {
@@ -299,6 +345,34 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
         regressionTreeNode = regressionTreeNode.left;
       } else {
         regressionTreeNode = regressionTreeNode.right;
+      }
+    }
+  }
+
+  private static float scoreNodeWithNullSupport(
+      float[] featureVector, RegressionTreeNode regressionTreeNode) {
+    while (true) {
+      if (regressionTreeNode.isLeaf()) {
+        return regressionTreeNode.value;
+      }
+      // unsupported feature (tree is looking for a feature that does not exist)
+      if ((regressionTreeNode.featureIndex < 0)
+          || (regressionTreeNode.featureIndex >= featureVector.length)) {
+        return 0f;
+      }
+
+      if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
+        regressionTreeNode = regressionTreeNode.left;
+      } else if (featureVector[regressionTreeNode.featureIndex] > regressionTreeNode.threshold) {
+        regressionTreeNode = regressionTreeNode.right;
+      } else if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
+        switch (regressionTreeNode.missing) {
+          case "left":
+            regressionTreeNode = regressionTreeNode.left;
+            break;
+          default:
+            regressionTreeNode = regressionTreeNode.right;
+        }
       }
     }
   }
@@ -359,7 +433,6 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
       // could store extra information about how much training data supported
       // each branch and report
       // that here
-
       if (featureVector[regressionTreeNode.featureIndex] <= regressionTreeNode.threshold) {
         returnValueBuilder
             .append("'")
@@ -370,7 +443,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
             .append(regressionTreeNode.threshold)
             .append(", Go Left | ");
         regressionTreeNode = regressionTreeNode.left;
-      } else {
+      } else if (featureVector[regressionTreeNode.featureIndex] > regressionTreeNode.threshold) {
         returnValueBuilder
             .append("'")
             .append(regressionTreeNode.feature)
@@ -380,6 +453,20 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
             .append(regressionTreeNode.threshold)
             .append(", Go Right | ");
         regressionTreeNode = regressionTreeNode.right;
+      } else if (Float.isNaN(featureVector[regressionTreeNode.featureIndex])) {
+        if (Objects.equals(regressionTreeNode.missing, "left")) {
+          returnValueBuilder
+              .append("'")
+              .append(regressionTreeNode.feature)
+              .append("': NaN, Go Left | ");
+          regressionTreeNode = regressionTreeNode.left;
+        } else {
+          returnValueBuilder
+              .append("'")
+              .append(regressionTreeNode.feature)
+              .append("': NaN, Go Right | ");
+          regressionTreeNode = regressionTreeNode.right;
+        }
       }
     }
   }

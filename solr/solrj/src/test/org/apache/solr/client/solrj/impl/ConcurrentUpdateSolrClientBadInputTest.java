@@ -17,12 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,68 +35,69 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
-        getConcurrentUpdateSolrClient(
-            jetty.getBaseUrl().toString() + "/" + ANY_COLLECTION,
-            ANY_QUEUE_SIZE,
-            ANY_MAX_NUM_THREADS)) {
+        new ConcurrentUpdateSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(ANY_COLLECTION)
+            .withQueueSize(ANY_QUEUE_SIZE)
+            .withThreadCount(ANY_MAX_NUM_THREADS)
+            .build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "null"),
+          List.of("ids", "null"),
           () -> {
             client.deleteById(NULL_STR_LIST);
           });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "empty"),
+          List.of("ids", "empty"),
           () -> {
             client.deleteById(EMPTY_STR_LIST);
           });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "null"),
+          List.of("ids", "null"),
           () -> {
             client.deleteById(NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
           });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "empty"),
+          List.of("ids", "empty"),
           () -> {
             client.deleteById(EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
           });
     }
 
     try (SolrClient client =
-        getConcurrentUpdateSolrClient(
-            jetty.getBaseUrl().toString(), ANY_QUEUE_SIZE, ANY_MAX_NUM_THREADS)) {
+        new ConcurrentUpdateSolrClient.Builder(getBaseUrl())
+            .withQueueSize(ANY_QUEUE_SIZE)
+            .withThreadCount(ANY_MAX_NUM_THREADS)
+            .build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "null"),
+          List.of("ids", "null"),
           () -> {
             client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
           });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "empty"),
+          List.of("ids", "empty"),
           () -> {
             client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
           });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "null"),
+          List.of("ids", "null"),
           () -> {
             client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
           });
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
-          Lists.newArrayList("ids", "empty"),
+          List.of("ids", "empty"),
           () -> {
             client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
           });

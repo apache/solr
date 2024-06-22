@@ -28,7 +28,7 @@ All of the sample configuration and queries used in this section assume you are 
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 == Configuring the Query Elevation Component
@@ -234,5 +234,17 @@ http://localhost:8983/solr/techproducts/elevate?q=ipod&df=text&elevateIds=IW-02,
 
 === The fq Parameter with Elevation
 
-Query elevation respects the standard filter query (`fq`) parameter.
+By default, query elevation respects the standard filter query (`fq`) parameter.
 That is, if the query contains the `fq` parameter, all results will be within that filter even if `elevate.xml` adds other documents to the result set.
+
+If you want elevated documents to be included in the result set whether or not they match specific filter queries, you can tag those filter queries using xref:local-params.adoc[LocalParams syntax] and then specify the tags for exclusion via the `elevate.excludeTags` request parameter.
+Both the `tag` local param and the `elevate.excludeTags` request parameter may specify multiple values by separating them with commas.
+
+[source,text]
+q=mainquery&fq=status:public&fq={!tag=dt}doctype:pdf&elevate.excludeTags=dt
+
+[source,text]
+q=mainquery&fq=status:public&fq={!tag=t1,t2}a:b&fq={!tag=t3}c:d&fq={!tag=t4}e:f&elevate.excludeTags=t1,t4
+
+When a filter is tagged for exclusion, it is not ignored completely; rather it is modified so that the elevated documents can pass through.
+Documents that are not elevated are still subject to the filter.

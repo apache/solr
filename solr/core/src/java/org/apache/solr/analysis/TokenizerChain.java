@@ -89,12 +89,14 @@ public final class TokenizerChain extends SolrAnalyzer {
   public CharFilterFactory[] getCharFilterFactories() {
     return charFilters;
   }
+
   /**
    * @return the TokenizerFactory in use, will never be null
    */
   public TokenizerFactory getTokenizerFactory() {
     return tokenizer;
   }
+
   /**
    * @return array of TokenFilterFactories, may be empty but never null
    */

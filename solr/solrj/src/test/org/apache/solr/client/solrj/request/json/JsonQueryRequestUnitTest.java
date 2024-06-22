@@ -28,7 +28,6 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.MapWriter;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** Unit tests for {@link JsonQueryRequest} */
@@ -44,7 +43,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().setQuery((String) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -55,7 +54,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().setQuery((Map<String, Object>) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -66,14 +65,14 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().setQuery((MapWriter) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testWritesProvidedQueryStringToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().setQuery("text:solr");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"query\":\"text:solr\""));
+    assertThat(requestBody, containsString("\"query\":\"text:solr\""));
   }
 
   @Test
@@ -85,7 +84,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     paramsMap.put("q", "*:*");
     final JsonQueryRequest request = new JsonQueryRequest().setQuery(queryMap);
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(
+    assertThat(
         requestBody, containsString("\"query\":{\"lucene\":{\"q\":\"*:*\",\"df\":\"text\"}}"));
   }
 
@@ -106,7 +105,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
         };
     final JsonQueryRequest request = new JsonQueryRequest().setQuery(queryWriter);
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(
+    assertThat(
         requestBody, containsString("\"query\":{\"lucene\":{\"q\":\"*:*\",\"df\":\"text\"}}"));
   }
 
@@ -118,7 +117,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withFacet(null, new HashMap<>());
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
 
     thrown =
         expectThrows(
@@ -126,7 +125,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withStatFacet(null, "avg(price)");
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -137,7 +136,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withFacet("anyFacetName", (Map<String, Object>) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -148,7 +147,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withFacet("anyFacetName", (MapWriter) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -159,7 +158,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withStatFacet("anyFacetName", (String) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -170,7 +169,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     final JsonQueryRequest request =
         new JsonQueryRequest().withFacet("top_categories", categoryFacetMap);
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(
+    assertThat(
         requestBody,
         containsString(
             "\"facet\":{\"top_categories\":{\"field\":\"category\",\"type\":\"terms\"}}"));
@@ -189,7 +188,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     final JsonQueryRequest request =
         new JsonQueryRequest().withFacet("top_categories", facetWriter);
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(
+    assertThat(
         requestBody,
         containsString(
             "\"facet\":{\"top_categories\":{\"type\":\"terms\",\"field\":\"category\"}}"));
@@ -200,8 +199,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     final JsonQueryRequest request =
         new JsonQueryRequest().withStatFacet("avg_price", "avg(price)");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(
-        requestBody, containsString("\"facet\":{\"avg_price\":\"avg(price)\"}"));
+    assertThat(requestBody, containsString("\"facet\":{\"avg_price\":\"avg(price)\"}"));
   }
 
   @Test
@@ -218,7 +216,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     request.withFacet("facet2", facetMap2);
     final String requestBody = writeRequestToJson(request);
 
-    MatcherAssert.assertThat(
+    assertThat(
         requestBody,
         containsString(
             "\"facet\":{\"facet2\":{\"field\":\"b\",\"type\":\"terms\"},\"facet1\":{\"field\":\"a\",\"type\":\"terms\"}}"));
@@ -232,14 +230,14 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().setLimit(-1);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-negative"));
+    assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
   @Test
   public void testWritesProvidedLimitToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().setLimit(5);
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"limit\":5"));
+    assertThat(requestBody, containsString("\"limit\":5"));
   }
 
   @Test
@@ -250,14 +248,14 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().setOffset(-1);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-negative"));
+    assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
   @Test
   public void testWritesProvidedOffsetToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().setOffset(5);
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"offset\":5"));
+    assertThat(requestBody, containsString("\"offset\":5"));
   }
 
   @Test
@@ -268,14 +266,14 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().setSort(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testWritesProvidedSortToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().setSort("price asc");
     final String requestBody = writeRequestToJson(request, LEAVE_WHITESPACE);
-    MatcherAssert.assertThat(requestBody, containsString("\"sort\":\"price asc"));
+    assertThat(requestBody, containsString("\"sort\":\"price asc"));
   }
 
   @Test
@@ -286,7 +284,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withFilter((String) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -297,14 +295,14 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withFilter((Map<String, Object>) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testWritesProvidedFilterToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().withFilter("text:solr");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"filter\":[\"text:solr\"]"));
+    assertThat(requestBody, containsString("\"filter\":[\"text:solr\"]"));
   }
 
   @Test
@@ -312,8 +310,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     final JsonQueryRequest request =
         new JsonQueryRequest().withFilter("text:solr").withFilter("text:lucene");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(
-        requestBody, containsString("\"filter\":[\"text:solr\",\"text:lucene\"]"));
+    assertThat(requestBody, containsString("\"filter\":[\"text:solr\",\"text:lucene\"]"));
   }
 
   @Test
@@ -324,21 +321,21 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().returnFields((Iterable<String>) null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testWritesProvidedFieldsToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().returnFields("price");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"fields\":[\"price\"]"));
+    assertThat(requestBody, containsString("\"fields\":[\"price\"]"));
   }
 
   @Test
   public void testWritesMultipleProvidedFieldsToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().returnFields("price", "name");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"fields\":[\"price\",\"name\"]"));
+    assertThat(requestBody, containsString("\"fields\":[\"price\",\"name\"]"));
   }
 
   @Test
@@ -349,7 +346,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withParam(null, "any-value");
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -360,14 +357,14 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
             () -> {
               new JsonQueryRequest().withParam("any-name", null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
   public void testWritesMiscParamsToJsonCorrectly() {
     final JsonQueryRequest request = new JsonQueryRequest().withParam("fq", "inStock:true");
     final String requestBody = writeRequestToJson(request);
-    MatcherAssert.assertThat(requestBody, containsString("\"params\":{\"fq\":\"inStock:true\"}"));
+    assertThat(requestBody, containsString("\"params\":{\"fq\":\"inStock:true\"}"));
   }
 
   private String writeRequestToJson(JsonQueryRequest request, boolean trimWhitespace) {
@@ -380,7 +377,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
       // formatting) so we do it by default.  But we leave the option open in case the JSON fields
       // have spaces.
       if (trimWhitespace) {
-        return rawJsonString.replaceAll("\n", "").replaceAll(" ", "");
+        return rawJsonString.replace("\n", "").replace(" ", "");
       } else {
         return rawJsonString;
       }

@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.util;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -27,6 +29,11 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -42,6 +49,8 @@ public class ClientUtils {
   public static final String TEXT_XML = "application/xml; charset=UTF-8";
   public static final String TEXT_JSON = "application/json; charset=UTF-8";
 
+  public static final String DEFAULT_PATH = "/select";
+
   /** Take a string and make it an iterable ContentStream */
   public static Collection<ContentStream> toContentStreams(
       final String str, final String contentType) {
@@ -52,6 +61,51 @@ public class ClientUtils {
     ccc.setContentType(contentType);
     streams.add(ccc);
     return streams;
+  }
+
+  /**
+   * Create the full URL for a SolrRequest (excepting query parameters) as a String
+   *
+   * @param solrRequest the {@link SolrRequest} to build the URL for
+   * @param requestWriter a {@link RequestWriter} from the {@link SolrClient} that will be sending
+   *     the request
+   * @param serverRootUrl the root URL of the Solr server being targeted. May by overridden {@link
+   *     SolrRequest#getBasePath()}, if present.
+   * @param collection the collection to send the request to. May be null if no collection is
+   *     needed.
+   * @throws MalformedURLException if {@code serverRootUrl} or {@link SolrRequest#getBasePath()}
+   *     contain a malformed URL string
+   */
+  public static String buildRequestUrl(
+      SolrRequest<?> solrRequest,
+      RequestWriter requestWriter,
+      String serverRootUrl,
+      String collection)
+      throws MalformedURLException {
+    String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
+
+    if (solrRequest instanceof V2Request) {
+      if (System.getProperty("solr.v2RealPath") == null) {
+        basePath = changeV2RequestEndpoint(basePath);
+      } else {
+        basePath = serverRootUrl + "/____v2";
+      }
+    }
+
+    if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
+
+    String path = requestWriter.getPath(solrRequest);
+    if (path == null || !path.startsWith("/")) {
+      path = DEFAULT_PATH;
+    }
+
+    return basePath + path;
+  }
+
+  private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URI oldURI = URI.create(basePath);
+    String newPath = oldURI.getPath().replaceFirst("/solr", "/api");
+    return oldURI.resolve(newPath).toString();
   }
 
   // ------------------------------------------------------------------------
@@ -192,14 +246,16 @@ public class ClientUtils {
   }
 
   /**
-   * Returns the value encoded properly so it can be appended after a
+   * Returns the (literal) value encoded properly so it can be appended after a <code>name=</code>
+   * local-param key.
    *
-   * <pre>name=</pre>
-   *
-   * local-param.
+   * <p>NOTE: This method assumes <code>$</code> is a literal character that must be quoted. (It
+   * does not assume strings starting <code>$</code> should be treated as param refrenes)
    */
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
+    if (0 == len) return "''"; // quoted empty string
+
     int i = 0;
     if (len > 0 && val.charAt(0) != '$') {
       for (; i < len; i++) {
@@ -238,5 +294,17 @@ public class ClientUtils {
       if (multiCollection) key = collectionName + "_" + key;
       target.put(key, slice);
     }
+  }
+
+  /**
+   * Determines whether any SolrClient "default" collection should applied to the specified request
+   *
+   * @param providedCollection a collection/core explicitly provided to the SolrClient (typically
+   *     through {@link org.apache.solr.client.solrj.SolrClient#request(SolrRequest, String)}
+   * @param request the {@link SolrRequest} being executed
+   */
+  public static boolean shouldApplyDefaultCollection(
+      String providedCollection, SolrRequest<? extends SolrResponse> request) {
+    return providedCollection == null && request.requiresCollection();
   }
 }

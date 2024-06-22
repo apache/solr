@@ -565,6 +565,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     /** Filled in if and only if needed for resorting, deferred stats, or subfacets */
     Query bucketFilter;
+
     // TODO: we could potentially store the bucket's (DocSet)subDomain as well,
     // but that's much bigger object to hang onto for every slot at the sametime
     // Probably best to just trust the filterCache to do it's job
@@ -738,7 +739,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   protected void processStats(
       SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount)
       throws IOException {
-    if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
+    if ((docCount == 0 && !freq.processEmpty) || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }

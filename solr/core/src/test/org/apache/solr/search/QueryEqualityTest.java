@@ -71,10 +71,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * @see #testParserCoverage
    */
   private static boolean doAssertParserCoverage = false;
+
   /**
    * @see #testParserCoverage
    */
   private static final Set<String> qParsersTested = new HashSet<>();
+
   /**
    * @see #testParserCoverage
    */
@@ -908,6 +910,70 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
   }
 
+  public void testFuncKnnVector() throws Exception {
+    try (SolrQueryRequest req =
+        req(
+            "v1", "[1,2,3]",
+            "v2", " [1,2,3] ",
+            "v3", " [1, 2, 3] ")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+          "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])",
+          "vectorSimilarity(FLOAT32, COSINE,$v1, [4, 5, 6])",
+          "vectorSimilarity(FLOAT32, COSINE, $v2 , [4, 5, 6])",
+          "vectorSimilarity(FLOAT32, COSINE, $v3 , [4, 5, 6])");
+    }
+
+    try (SolrQueryRequest req =
+        req(
+            "f1", "bar_i",
+            "f2", " bar_i ",
+            "f3", " field(bar_i) ")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN,$f1, [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, $f1, [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, $f2, [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, $f3, [4, 5,  6])");
+    }
+
+    try (SolrQueryRequest req =
+        req(
+            "f", "vector",
+            "v1", "[1,2,3,4]",
+            "v2", " [1, 2, 3, 4]")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(FLOAT32,COSINE,vector,[1,2,3,4])",
+          "vectorSimilarity(FLOAT32,COSINE,vector,$v1)",
+          "vectorSimilarity(FLOAT32,COSINE,vector, $v1)",
+          "vectorSimilarity(FLOAT32,COSINE,vector,$v2)",
+          "vectorSimilarity(FLOAT32,COSINE,vector, $v2)",
+          "vectorSimilarity(vector,[1,2,3,4])",
+          "vectorSimilarity( vector,[1,2,3,4])",
+          "vectorSimilarity( $f,[1,2,3,4])",
+          "vectorSimilarity(vector,$v1)",
+          "vectorSimilarity(vector, $v1)",
+          "vectorSimilarity( $f, $v1)",
+          "vectorSimilarity(vector,$v2)",
+          "vectorSimilarity(vector, $v2)");
+    }
+
+    // contrived, but helps us test the param resolution
+    // for both field names in the 2arg usecase
+    try (SolrQueryRequest req = req("f", "vector")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity($f, $f)",
+          "vectorSimilarity($f, vector)",
+          "vectorSimilarity(vector, $f)",
+          "vectorSimilarity(vector, vector)");
+    }
+  }
+
   public void testFuncQuery() throws Exception {
     SolrQueryRequest req = req("myQ", "asdf");
     try {
@@ -1064,6 +1130,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "exists(field('field_t'))",
           "exists(field($myField))");
       assertFuncEquals(req, "exists(query($myQ))", "exists(query({!lucene v=$myQ}))");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testFuncIsnan() throws Exception {
+    SolrQueryRequest req = req("num", "12.3456", "zero", "0");
+    try {
+      assertFuncEquals(req, "isnan(12.3456)", "isnan(12.3456)", "isnan($num)");
+      assertFuncEquals(req, "isnan(div(0,0))", "isnan(div($zero,$zero))");
     } finally {
       req.close();
     }
@@ -1294,6 +1370,33 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryMLTContent() throws Exception {
+    assertU(adoc("id", "1", "lowerfilt", "sample data", "standardfilt", "sample data"));
+    assertU(commit());
+    try {
+      assertQueryEquals(
+          "mlt_content",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0 v='sample data'}",
+          "{!qf=lowerfilt mindf=0 mintf=0}sample data");
+      SolrQueryRequest req = req(new String[] {"df", "text"});
+      try {
+        QueryUtils.checkUnequal(
+            QParser.getParser("{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data", req)
+                .getQuery(),
+            QParser.getParser(
+                    "{!mlt_content qf=lowerfilt qf=standardfilt mindf=0 mintf=0}sample data", req)
+                .getQuery());
+      } finally {
+        req.close();
+      }
+
+    } finally {
+      delQ("*:*");
+      assertU(commit());
+    }
+  }
+
   public void testQueryKNN() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "0");
@@ -1301,9 +1404,139 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    try {
-      assertQueryEquals(
-          "knn", "{!knn f=vector}[1.0,2.0,3.0,4.0]", "{!knn f=vector v=[1.0,2.0,3.0,4.0]}");
+    final String qvec = "[1.0,2.0,3.0,4.0]";
+
+    try (SolrQueryRequest req0 = req()) {
+
+      // no filters
+      final Query fqNull =
+          assertQueryEqualsAndReturn(
+              "knn",
+              req0,
+              "{!knn f=vector}" + qvec,
+              "{!knn f=vector preFilter=''}" + qvec,
+              "{!knn f=vector v=" + qvec + "}");
+
+      try (SolrQueryRequest req1 = req("fq", "{!tag=t1}id:1", "xxx", "id:1")) {
+        // either global fq, or (same) preFilter as localparam
+        final Query fqOne =
+            assertQueryEqualsAndReturn(
+                "knn",
+                req1,
+                "{!knn f=vector}" + qvec,
+                "{!knn f=vector includeTags=t1}" + qvec,
+                "{!knn f=vector preFilter='id:1'}" + qvec,
+                "{!knn f=vector preFilter=$xxx}" + qvec,
+                "{!knn f=vector v=" + qvec + "}");
+        QueryUtils.checkUnequal(fqNull, fqOne);
+
+        try (SolrQueryRequest req2 = req("fq", "{!tag=t2}id:2", "xxx", "id:1", "yyy", "")) {
+          // override global fq with local param to use different preFilter
+          final Query fqOneOverride =
+              assertQueryEqualsAndReturn(
+                  "knn",
+                  req2,
+                  "{!knn f=vector preFilter='id:1'}" + qvec,
+                  "{!knn f=vector preFilter=$xxx}" + qvec);
+          QueryUtils.checkEqual(fqOne, fqOneOverride);
+
+          // override global fq with local param to use no preFilters
+          final Query fqNullOverride =
+              assertQueryEqualsAndReturn(
+                  "knn",
+                  req2,
+                  "{!knn f=vector preFilter=''}" + qvec,
+                  "{!knn f=vector excludeTags=t2}" + qvec,
+                  "{!knn f=vector preFilter=$yyy}" + qvec);
+          QueryUtils.checkEqual(fqNull, fqNullOverride);
+        }
+      }
+
+      try (SolrQueryRequest reqPostFilter = req("fq", "{!tag=post frange cache=false l=0}9.9")) {
+        // global post-filter fq should always be ignored
+        final Query fqPostFilter =
+            assertQueryEqualsAndReturn(
+                "knn",
+                reqPostFilter,
+                "{!knn f=vector}" + qvec,
+                "{!knn f=vector includeTags=post}" + qvec);
+        QueryUtils.checkEqual(fqNull, fqPostFilter);
+      }
+
+    } finally {
+      delQ("id:0");
+      assertU(commit());
+    }
+  }
+
+  public void testQueryVecSim() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector", Arrays.asList(1, 2, 3, 4));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    final String common = "!vectorSimilarity minReturn=0.3 f=vector";
+    final String qvec = "[1.0,2.0,3.0,4.0]";
+
+    try (SolrQueryRequest req0 = req()) {
+
+      // no filters
+      final Query fqNull =
+          assertQueryEqualsAndReturn(
+              "vectorSimilarity",
+              req0,
+              "{" + common + "}" + qvec,
+              "{" + common + " minTraverse='-Infinity'}" + qvec,
+              "{" + common + " preFilter=''}" + qvec,
+              "{" + common + " v=" + qvec + "}");
+
+      try (SolrQueryRequest req1 = req("fq", "{!tag=t1}id:1", "xxx", "id:1")) {
+        // either global fq, or (same) preFilter as localparam
+        final Query fqOne =
+            assertQueryEqualsAndReturn(
+                "vectorSimilarity",
+                req1,
+                "{" + common + "}" + qvec,
+                "{" + common + " includeTags=t1}" + qvec,
+                "{" + common + " preFilter='id:1'}" + qvec,
+                "{" + common + " preFilter=$xxx}" + qvec,
+                "{" + common + " v=" + qvec + "}");
+        QueryUtils.checkUnequal(fqNull, fqOne);
+
+        try (SolrQueryRequest req2 = req("fq", "{!tag=t2}id:2", "xxx", "id:1", "yyy", "")) {
+          // override global fq with local param to use different preFilter
+          final Query fqOneOverride =
+              assertQueryEqualsAndReturn(
+                  "vectorSimilarity",
+                  req2,
+                  "{" + common + " preFilter='id:1'}" + qvec,
+                  "{" + common + " preFilter=$xxx}" + qvec);
+          QueryUtils.checkEqual(fqOne, fqOneOverride);
+
+          // override global fq with local param to use no preFilters
+          final Query fqNullOverride =
+              assertQueryEqualsAndReturn(
+                  "vectorSimilarity",
+                  req2,
+                  "{" + common + " preFilter=''}" + qvec,
+                  "{" + common + " excludeTags=t2}" + qvec,
+                  "{" + common + " preFilter=$yyy}" + qvec);
+          QueryUtils.checkEqual(fqNull, fqNullOverride);
+        }
+      }
+
+      try (SolrQueryRequest reqPostFilter = req("fq", "{!tag=post frange cache=false l=0}9.9")) {
+        // global post-filter fq should always be ignored
+        final Query fqPostFilter =
+            assertQueryEqualsAndReturn(
+                "vectorSimilarity",
+                reqPostFilter,
+                "{" + common + "}" + qvec,
+                "{" + common + " includeTags=post}" + qvec);
+        QueryUtils.checkEqual(fqNull, fqPostFilter);
+      }
+
     } finally {
       delQ("id:0");
       assertU(commit());
@@ -1315,12 +1548,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * for coverage sanity checking
    *
    * @see #testParserCoverage
-   * @see #assertQueryEquals
+   * @see #assertQueryEqualsAndReturn
    */
   protected void assertQueryEquals(final String defType, final String... inputs) throws Exception {
     SolrQueryRequest req = req(new String[] {"df", "text"});
     try {
-      assertQueryEquals(defType, req, inputs);
+      assertQueryEqualsAndReturn(defType, req, inputs);
     } finally {
       req.close();
     }
@@ -1330,12 +1563,33 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * NOTE: defType is not only used to pick the parser, but, if non-null it is also to record the
    * parser being tested for coverage sanity checking
    *
+   * @see #testParserCoverage
+   * @see #assertQueryEqualsAndReturn
+   */
+  protected void assertQueryEquals(
+      final String defType, final SolrQueryRequest req, final String... inputs) throws Exception {
+    assertQueryEqualsAndReturn(defType, req, inputs);
+  }
+
+  /**
+   * Parses a set of input strings in the context of a request, making various assertions about the
+   * resulting Query objects, including that they must all be equals.
+   *
+   * <p>Returns one of the (all equal) Query objects so it may be used in other comparisons with
+   * other Query objects, possibly parsed in the context of different requests.
+   *
+   * <p>NOTE: defType is not only used to pick the parser, but, if non-null it is also to record the
+   * parser being tested for coverage sanity checking.
+   *
    * @see QueryUtils#check
    * @see QueryUtils#checkEqual
    * @see #testParserCoverage
    */
-  protected void assertQueryEquals(
+  protected Query assertQueryEqualsAndReturn(
       final String defType, final SolrQueryRequest req, final String... inputs) throws Exception {
+
+    assertTrue(
+        "At least one input string for parsing must be passed to this method", 0 < inputs.length);
 
     if (null != defType) qParsersTested.add(defType);
 
@@ -1360,6 +1614,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         QueryUtils.checkEqual(query1, query2);
       }
     }
+    return queries[0];
   }
 
   /**
@@ -1473,6 +1728,25 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     } finally {
       req.close();
     }
+  }
+
+  public void testBoolMmQuery() throws Exception {
+    assertQueryEquals(
+        "lucene",
+        "{!bool should=foo_s:a should=foo_s:b}",
+        "{!bool should=foo_s:a should=foo_s:b mm=0}");
+    assertQueryEquals(
+        "lucene",
+        "{!bool should=foo_s:a should=foo_s:b mm=1}",
+        "{!bool should=foo_s:a should=foo_s:b mm=1}");
+    expectThrows(
+        AssertionError.class,
+        "queries should not have been equal",
+        () ->
+            assertQueryEquals(
+                "lucene",
+                "{!bool should=foo_s:a should=foo_s:b mm=1}",
+                "{!bool should=foo_s:a should=foo_s:b}"));
   }
 
   public void testBoolQuery() throws Exception {

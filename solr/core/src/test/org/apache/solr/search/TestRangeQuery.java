@@ -170,7 +170,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         fields.add(entry.getKey());
         fields.add(entry.getValue()[j]);
       }
-      assertU(adoc(fields.toArray(new String[fields.size()])));
+      assertU(adoc(fields.toArray(new String[0])));
     }
 
     assertU(commit());

@@ -42,7 +42,7 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
   public static final long BLOCK_SHIFT = Integer.getInteger("solr.hdfs.blockcache.blockshift", 13);
 
   public static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
-  public static final long BLOCK_MOD = BLOCK_SIZE - 1;
+  public static final long BLOCK_MOD = BLOCK_SIZE - 1L;
 
   public static long getBlock(long pos) {
     return pos >>> BLOCK_SHIFT;

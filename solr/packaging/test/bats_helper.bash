@@ -20,7 +20,7 @@
 #   The SOLR_HOME directory will be cleared when the next test file is executed.
 # - "setup" should use "common_setup" if a Solr process is NOT being started in that same "setup" function.
 common_setup() {
-    bats_require_minimum_version 1.8.0
+    bats_require_minimum_version 1.8.2
 
     if [ -z ${BATS_LIB_PREFIX:-} ]; then
         # Debugging help, if you want to run bats directly, try to detect where libraries might be
@@ -33,7 +33,7 @@ common_setup() {
     load "${BATS_LIB_PREFIX}/bats-assert/load.bash"
     load "${BATS_LIB_PREFIX}/bats-file/load.bash"
 
-    PATH="${SOLR_TIP:-.}/bin:$PATH"
+    PATH="${SOLR_TIP:-.}/bin:${SOLR_TIP:-.}/prometheus-exporter/bin:$PATH"
     export SOLR_ULIMIT_CHECKS=false
 }
 
@@ -58,8 +58,17 @@ save_home_on_failure() {
     fi
 }
 
+shutdown_all() {
+  solr stop -all >/dev/null 2>&1
+}
+
+shutdown_exporter(){
+  EXPORTER_PID=$(ps auxww | grep org.apache.solr.prometheus.exporter.SolrExporter | awk "/-classpath/"' {print $2}' | sort -r)
+  kill -9 $EXPORTER_PID
+}
+
 delete_all_collections() {
-  local collection_list="$(solr zk ls /collections -z localhost:9983)"
+  local collection_list="$(solr zk ls /collections -z localhost:${ZK_PORT})"
   for collection in $collection_list; do
     if [[ -n $collection ]]; then
       solr delete -c $collection >/dev/null 2>&1
@@ -69,7 +78,7 @@ delete_all_collections() {
 
 config_exists() {
   local config_name=$1
-  local config_list=$(solr zk ls /configs -z localhost:9983)
+  local config_list=$(solr zk ls /configs -z localhost:${ZK_PORT})
 
   for config in $config_list; do
     if [[ $(echo $config | tr -d " ") == $config_name ]]; then
@@ -82,7 +91,7 @@ config_exists() {
 
 collection_exists() {
   local coll_name=$1
-  local coll_list=$(solr zk ls /collections -z localhost:9983)
+  local coll_list=$(solr zk ls /collections -z localhost:${ZK_PORT})
 
   for coll in $coll_list; do
     if [[ $(echo $coll | tr -d " ") == $coll_name ]]; then

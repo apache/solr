@@ -20,11 +20,17 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
   $scope.reload = function() {
     System.get(function(data) {
       $scope.system = data;
+      const releaseDate = parse_release_date($scope.system.lucene['solr-impl-version'])
+      $scope.releaseDaysOld = (new Date() - releaseDate)/1000/60/60/24;
 
       if ("username" in data.security) {
         // Needed for Kerberos, since this is the only place from where
         // Kerberos username can be obtained.
         sessionStorage.setItem("auth.username", data.security.username);
+      }
+
+      if (data.security.authenticationPlugin) {
+        $scope.isSecurityEnabled = true
       }
 
       // load average, unless its negative (means n/a on windows, etc)
@@ -66,11 +72,26 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
         data.system.totalSwapSpaceSize && data.system.freeSwapSpaceSize &&
         data.system.openFileDescriptorCount && data.system.maxFileDescriptorCount);
 
-      // command line args:
-      $scope.commandLineArgs = data.jvm.jmx.commandLineArgs.sort();
-    });
+      // save a copy of the original commandline args
+      $scope.commandLineArgsUnsorted = [...data.jvm.jmx.commandLineArgs];
+      // get commandline args latest orderby or defaults to "Unsorted"
+      $scope.commandLineOrderBy = sessionStorage.getItem("commandline.orderby") || "Unsorted";
+      $scope.showCommandLineArgs();
+      });
   };
-  $scope.reload();
+  $scope.toggleCommandLineOrder = function() {
+    $scope.commandLineOrderBy = ($scope.commandLineOrderBy=="Sorted") ? "Unsorted":"Sorted";
+    sessionStorage.setItem("commandline.orderby", $scope.commandLineOrderBy);
+    $scope.showCommandLineArgs();
+  }
+  $scope.showCommandLineArgs = function() {
+    if ($scope.commandLineOrderBy == "Sorted") {
+      $scope.commandLineArgs = [...$scope.commandLineArgsUnsorted].sort();
+    } else {
+      $scope.commandLineArgs = $scope.commandLineArgsUnsorted;
+    }
+  }
+$scope.reload();
 });
 
 var parse_memory_value = function( value ) {
@@ -82,6 +103,11 @@ var parse_memory_value = function( value ) {
   }
 
   return value;
+};
+
+const parse_release_date = function(value) {
+  const match = value.match( /.* (20\d\d-[0-1]\d-[0-3]\d) .*/ );
+  return match === null ? new Date() : new Date(match[1]);
 };
 
 var pretty_print_bytes = function(byte_value) {

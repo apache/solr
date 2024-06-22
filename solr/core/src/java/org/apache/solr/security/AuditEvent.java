@@ -86,9 +86,9 @@ public class AuditEvent {
     ERROR("Error", "Request was not executed due to an error", Level.ERROR, 500);
 
     public final String message;
-    public String explanation;
+    public final String explanation;
     public final Level level;
-    public int status;
+    public final int status;
 
     EventType(String message, String explanation, Level level, int status) {
       this.message = message;

@@ -47,7 +47,6 @@ import org.apache.solr.util.LogListener;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,7 +77,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
           new RESTfulServerProvider() {
             @Override
             public String getBaseURL() {
-              return jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
+              return getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME;
             }
           });
     }
@@ -86,10 +85,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -1291,10 +1287,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
           "/responseHeader/status==0");
 
       assertEquals(2, listener.getCount());
-      MatcherAssert.assertThat(
-          listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
-      MatcherAssert.assertThat(
-          listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
+      assertThat(listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
+      assertThat(listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
 
       // Add a date range field with violated invariants
       assertJPost(
@@ -1459,7 +1453,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
   @SuppressWarnings({"unchecked", "varargs"})
   private static <T extends Similarity> void assertFieldSimilarity(
       String fieldname, Class<T> expected, Consumer<T>... validators) {
-    CoreContainer cc = jetty.getCoreContainer();
+    CoreContainer cc = solrClientTestRule.getCoreContainer();
     try (SolrCore core = cc.getCore("collection1")) {
       SimilarityFactory simfac = core.getLatestSchema().getSimilarityFactory();
       assertNotNull(simfac);

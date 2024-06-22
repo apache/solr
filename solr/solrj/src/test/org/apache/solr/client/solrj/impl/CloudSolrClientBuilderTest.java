@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.junit.Test;
@@ -94,10 +95,20 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   public void test0Timeouts() throws IOException {
     try (CloudSolrClient createdClient =
         new CloudLegacySolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
-            .withSocketTimeout(0)
-            .withConnectionTimeout(0)
+            .withSocketTimeout(0, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(0, TimeUnit.MILLISECONDS)
             .build()) {
       assertNotNull(createdClient);
+    }
+  }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (CloudSolrClient createdClient =
+        new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withDefaultCollection("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
     }
   }
 }

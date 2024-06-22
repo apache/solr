@@ -23,7 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
@@ -51,7 +51,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testFillWorkQueue() throws Exception {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
       // This test does not make sense when the Collection API execution is distributed. There is no
       // queue to fill
       if (!new CollectionAdminRequest.RequestApiDistributedProcessing()
@@ -147,7 +147,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   @Test
   public void testParallelCollectionAPICalls() throws IOException, SolrServerException {
     final int ASYNC_SHIFT = 10000;
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
       for (int i = 1 + ASYNC_SHIFT; i <= NUM_COLLECTIONS + ASYNC_SHIFT; i++) {
         CollectionAdminRequest.createCollection("ocptest" + i, "conf1", 3, 1)
             .processAsync(String.valueOf(i), client);
@@ -188,7 +188,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testTaskExclusivity() throws Exception, SolrServerException {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
 
       Create createCollectionRequest =
           CollectionAdminRequest.createCollection("ocptest_shardsplit", "conf1", 4, 1);
@@ -246,7 +246,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
       CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1)
           .processAsync("3000", client);
 
@@ -261,7 +261,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       // Now submit another task with the same id. At this time, hopefully the previous 3002 should
       // still be in the queue.
       expectThrows(
-          SolrServerException.class,
+          BaseHttpSolrClient.RemoteSolrException.class,
           () -> {
             CollectionAdminRequest.splitShard("ocptest_shardsplit2")
                 .setShardName(SHARD1)
@@ -301,7 +301,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
           }
         };
     indexThread.start();
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
 
       SplitShard splitShardRequest =
           CollectionAdminRequest.splitShard("collection1").setShardName(SHARD1);

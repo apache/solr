@@ -434,13 +434,13 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     int hash = super.hashCode();
     hash = 31 * hash + precisionStep;
     hash = 31 * hash + Objects.hashCode(min);
     hash = 31 * hash + Objects.hashCode(max);
-    hash = 31 * hash + Objects.hashCode(minInclusive);
-    hash = 31 * hash + Objects.hashCode(maxInclusive);
+    hash = 31 * hash + Boolean.hashCode(minInclusive);
+    hash = 31 * hash + Boolean.hashCode(maxInclusive);
     return hash;
   }
 

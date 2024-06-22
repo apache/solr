@@ -23,8 +23,10 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafMetaData;
@@ -37,11 +39,12 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
@@ -60,8 +63,9 @@ public class TestDocSet extends SolrTestCase {
   }
 
   // test the DocSetCollector
+  @SuppressWarnings("BadShiftAmount")
   public void collect(DocSet set, int maxDoc) {
-    int smallSetSize = maxDoc >> 64 + 3;
+    int smallSetSize = maxDoc >> (64 + 3);
     if (set.size() > 1) {
       if (random().nextBoolean()) {
         smallSetSize = set.size() + random().nextInt(3) - 1; // test the bounds around smallSetSize
@@ -304,6 +308,11 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      public TermVectors termVectors() {
+        return null;
+      }
+
+      @Override
       public int numDocs() {
         return maxDoc;
       }
@@ -359,15 +368,27 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public VectorValues getVectorValues(String field) {
+      public FloatVectorValues getFloatVectorValues(String field) {
         return null;
       }
 
       @Override
-      public TopDocs searchNearestVectors(
-          String field, float[] target, int k, Bits acceptDoc, int visitedLimits) {
+      public ByteVectorValues getByteVectorValues(String field) {
         return null;
       }
+
+      @Override
+      public StoredFields storedFields() {
+        return null;
+      }
+
+      @Override
+      public void searchNearestVectors(
+          String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) {}
+
+      @Override
+      public void searchNearestVectors(
+          String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) {}
 
       @Override
       protected void doClose() {}
@@ -380,7 +401,7 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public LeafMetaData getMetaData() {
-        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null, true);
       }
 
       @Override

@@ -68,6 +68,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
    * @see #createName
    */
   private static final AtomicInteger ID_GEN = new AtomicInteger(0);
+
   /** generate a unique name for each muter to use in it's own lifecycle logging */
   private static String createName(final String type) {
     return MethodHandles.lookup().lookupClass().getSimpleName()
@@ -96,6 +97,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
   public static ErrorLogMuter regex(final String regex) {
     return regex(Pattern.compile(regex));
   }
+
   /**
    * Mutes ERROR log messages that <em>partially</em> match the specified regex.
    *

@@ -45,7 +45,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.carrot2.clustering.Cluster;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -167,7 +166,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
       List<String> labels2 = full.get(i).getLabels();
       assertEquals(labels1.size(), labels2.size());
       for (int j = 0; j < labels1.size(); j++) {
-        MatcherAssert.assertThat(
+        assertThat(
             "Summary shorter than original document?",
             labels1.get(j).length(),
             Matchers.lessThanOrEqualTo(labels2.get(j).length()));
@@ -214,7 +213,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
       List<String> longLabels = longSummaries.get(i).getLabels();
       assertEquals(shortLabels.size(), longLabels.size());
       for (int j = 0; j < shortLabels.size(); j++) {
-        MatcherAssert.assertThat(
+        assertThat(
             "Shorter summary is longer than longer summary?",
             shortLabels.get(j).length(),
             Matchers.lessThanOrEqualTo(longLabels.get(j).length()));
@@ -257,7 +256,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
     clusters.forEach(
         c -> {
-          MatcherAssert.assertThat(c.getLabels(), Matchers.hasSize(3));
+          assertThat(c.getLabels(), Matchers.hasSize(3));
         });
   }
 
@@ -293,8 +292,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
   }
 
   static void compareWhitespaceNormalized(String actual, String expected) {
-    Function<String, String> normalize =
-        v -> v.replaceAll("\r", "").replaceAll("[ \t]+", " ").trim();
+    Function<String, String> normalize = v -> v.replace("\r", "").replaceAll("[ \t]+", " ").trim();
 
     if (!normalize.apply(expected).equals(normalize.apply(actual))) {
       throw new AssertionError(

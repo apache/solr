@@ -30,8 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -41,6 +39,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -49,6 +48,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
@@ -95,7 +95,7 @@ public class FacetComponent extends SearchComponent {
         }
         HashSet<String> deDupe =
             new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
-        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+        params.add(paramName, deDupe.toArray(new String[0]));
       }
       rb.req.setParams(params);
 
@@ -163,7 +163,7 @@ public class FacetComponent extends SearchComponent {
 
       String[] queries = rb.req.getParams().getParams(FacetParams.FACET_QUERY);
       if (queries != null) {
-        facetQueries = new ArrayList<>();
+        facetQueries = new ArrayList<>(queries.length);
         for (String query : queries) {
           facetQueries.add(new FacetBase(rb, FacetParams.FACET_QUERY, query));
         }
@@ -263,6 +263,7 @@ public class FacetComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     if (rb.doFacets) {
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       SolrParams params = rb.req.getParams();
       SimpleFacets f = newSimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
@@ -276,13 +277,20 @@ public class FacetComponent extends SearchComponent {
       }
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
+      rb.rsp.add(FACET_COUNTS_KEY, counts);
+      if (queryLimits.maybeExitWithPartialResults("Faceting counts")) {
+        return;
+      }
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (!ArrayUtils.isEmpty(pivots)) {
+      if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
         if (v != null) {
           counts.add(PIVOT_KEY, v);
+        }
+        if (queryLimits.maybeExitWithPartialResults("Faceting pivots")) {
+          return;
         }
       }
 
@@ -290,8 +298,6 @@ public class FacetComponent extends SearchComponent {
         long timeElapsed = (long) timer.getTime();
         fdebug.setElapse(timeElapsed);
       }
-
-      rb.rsp.add(FACET_COUNTS_KEY, counts);
     }
   }
 
@@ -1172,6 +1178,8 @@ public class FacetComponent extends SearchComponent {
     rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
 
     rb._facetInfo = null; // could be big, so release asap
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithPartialResults("Faceting finish");
   }
 
   private SimpleOrderedMap<List<NamedList<Object>>> createPivotFacetOutput(ResponseBuilder rb) {
@@ -1335,7 +1343,7 @@ public class FacetComponent extends SearchComponent {
         this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;
 
         String excludeStr = localParams.get(CommonParams.EXCLUDE);
-        if (StringUtils.isEmpty(excludeStr)) {
+        if (StrUtils.isNullOrEmpty(excludeStr)) {
           this.excludeTags = Collections.emptyList();
         } else {
           this.excludeTags = StrUtils.splitSmart(excludeStr, ',');
@@ -1435,7 +1443,7 @@ public class FacetComponent extends SearchComponent {
     public long[] missingMax;
     // a bitset for each shard, keeping track of which terms seen
     public FixedBitSet[] counted;
-    public HashMap<String, ShardFacetCount> counts = new HashMap<>(128);
+    public HashMap<String, ShardFacetCount> counts = CollectionUtil.newHashMap(128);
     public int termNum;
 
     public int initialLimit; // how many terms requested in first phase
@@ -1497,7 +1505,7 @@ public class FacetComponent extends SearchComponent {
 
       // the largest possible missing term is (initialMincount - 1) if we received
       // less than the number requested.
-      if (numRequested < 0 || numRequested != 0 && numReceived < numRequested) {
+      if (numRequested < 0 || (numRequested != 0 && numReceived < numRequested)) {
         last = Math.max(0, initialMincount - 1);
       }
 
@@ -1511,14 +1519,14 @@ public class FacetComponent extends SearchComponent {
     }
 
     public ShardFacetCount[] getLexSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
 
     public ShardFacetCount[] getCountSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(
           arr,
           (o1, o2) -> {

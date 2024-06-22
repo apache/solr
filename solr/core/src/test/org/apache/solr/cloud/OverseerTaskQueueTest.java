@@ -17,10 +17,10 @@
 package org.apache.solr.cloud;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -47,13 +47,14 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
 
     // Basic ops
     // Put an expected Overseer task onto the queue
-    final Map<String, Object> props = new HashMap<>();
-    props.put(CommonParams.NAME, "coll1");
-    props.put(CollectionAdminParams.COLL_CONF, "myconf");
-    props.put(CollectionHandlingUtils.NUM_SLICES, 1);
-    props.put(ZkStateReader.REPLICATION_FACTOR, 3);
-    props.put(CommonAdminParams.ASYNC, requestId);
-    tq.offer(Utils.toJSON(props));
+    MapWriter props =
+        ew ->
+            ew.put(CommonParams.NAME, "coll1")
+                .put(CollectionAdminParams.COLL_CONF, "myconf")
+                .put(CollectionHandlingUtils.NUM_SLICES, 1)
+                .put(ZkStateReader.REPLICATION_FACTOR, 3)
+                .put(CommonAdminParams.ASYNC, requestId);
+    tq.offer(props);
 
     assertTrue(
         "Task queue should contain task with requestid " + requestId,
@@ -71,8 +72,9 @@ public class OverseerTaskQueueTest extends DistributedQueueTest {
     // containsTaskWithRequestId runs while the response is still in the queue.
     String watchID = tq.createResponseNode();
     String requestId2 = "baz";
-    props.put(CommonAdminParams.ASYNC, requestId2);
-    tq.createRequestNode(Utils.toJSON(props), watchID);
+
+    tq.createRequestNode(
+        Utils.toJSON(props.append(ew -> ew.put(CommonAdminParams.ASYNC, requestId2))), watchID);
 
     // Set a SolrResponse as the response node by removing the QueueEvent, as done in
     // OverseerTaskProcessor

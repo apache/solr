@@ -362,7 +362,7 @@ public class CrossCollectionJoinQuery extends Query {
     result = prime * result + Objects.hashCode(collection);
     result = prime * result + Objects.hashCode(fromField);
     result = prime * result + Objects.hashCode(toField);
-    result = prime * result + Objects.hashCode(routedByJoinKey);
+    result = prime * result + Boolean.hashCode(routedByJoinKey);
     result = prime * result + Objects.hashCode(otherParamsString);
     // timestamp and ttl should not be included in hash code
     return result;

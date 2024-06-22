@@ -45,7 +45,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -131,10 +130,7 @@ public class SchemaTest extends RestTestBase {
 
   @After
   public void cleanup() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -181,7 +177,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.FieldsResponse fieldsResponse = fieldsSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldsResponse);
     List<Map<String, Object>> fields = fieldsResponse.getFields();
-    MatcherAssert.assertThat(fields.isEmpty(), is(false));
+    assertThat(fields.isEmpty(), is(false));
   }
 
   @Test
@@ -191,8 +187,8 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.FieldResponse fieldResponse = fieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldResponse);
     Map<String, Object> fieldAttributes = fieldResponse.getField();
-    MatcherAssert.assertThat(fieldName, is(equalTo(fieldAttributes.get("name"))));
-    MatcherAssert.assertThat("string", is(equalTo(fieldAttributes.get("type"))));
+    assertThat(fieldName, is(equalTo(fieldAttributes.get("name"))));
+    assertThat("string", is(equalTo(fieldAttributes.get("type"))));
   }
 
   @Test
@@ -202,7 +198,7 @@ public class SchemaTest extends RestTestBase {
         dynamicFieldsSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(dynamicFieldsResponse);
     List<Map<String, Object>> fields = dynamicFieldsResponse.getDynamicFields();
-    MatcherAssert.assertThat(fields.isEmpty(), is(false));
+    assertThat(fields.isEmpty(), is(false));
   }
 
   @Test
@@ -214,8 +210,8 @@ public class SchemaTest extends RestTestBase {
         dynamicFieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(dynamicFieldResponse);
     Map<String, Object> dynamicFieldAttributes = dynamicFieldResponse.getDynamicField();
-    MatcherAssert.assertThat(dynamicFieldName, is(equalTo(dynamicFieldAttributes.get("name"))));
-    MatcherAssert.assertThat("int", is(equalTo(dynamicFieldAttributes.get("type"))));
+    assertThat(dynamicFieldName, is(equalTo(dynamicFieldAttributes.get("name"))));
+    assertThat("int", is(equalTo(dynamicFieldAttributes.get("type"))));
   }
 
   @Test
@@ -225,7 +221,7 @@ public class SchemaTest extends RestTestBase {
         fieldTypesRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldTypesResponse);
     List<FieldTypeRepresentation> fieldTypes = fieldTypesResponse.getFieldTypes();
-    MatcherAssert.assertThat(fieldTypes.isEmpty(), is(false));
+    assertThat(fieldTypes.isEmpty(), is(false));
   }
 
   @Test
@@ -236,10 +232,8 @@ public class SchemaTest extends RestTestBase {
         fieldTypeSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldTypeResponse);
     FieldTypeRepresentation fieldTypeDefinition = fieldTypeResponse.getFieldType();
-    MatcherAssert.assertThat(
-        fieldType, is(equalTo(fieldTypeDefinition.getAttributes().get("name"))));
-    MatcherAssert.assertThat(
-        "solr.StrField", is(equalTo(fieldTypeDefinition.getAttributes().get("class"))));
+    assertThat(fieldType, is(equalTo(fieldTypeDefinition.getAttributes().get("name"))));
+    assertThat("solr.StrField", is(equalTo(fieldTypeDefinition.getAttributes().get("class"))));
   }
 
   @Test
@@ -249,7 +243,7 @@ public class SchemaTest extends RestTestBase {
         copyFieldsRequest.process(getSolrClient());
     assertValidSchemaResponse(copyFieldsResponse);
     List<Map<String, Object>> copyFieldsAttributes = copyFieldsResponse.getCopyFields();
-    MatcherAssert.assertThat(copyFieldsAttributes.isEmpty(), is(false));
+    assertThat(copyFieldsAttributes.isEmpty(), is(false));
   }
 
   @Test
@@ -303,12 +297,12 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.FieldResponse newFieldResponse = fieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldResponse);
     Map<String, Object> newFieldAttributes = newFieldResponse.getField();
-    MatcherAssert.assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
-    MatcherAssert.assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
-    MatcherAssert.assertThat(false, is(equalTo(newFieldAttributes.get("stored"))));
-    MatcherAssert.assertThat(true, is(equalTo(newFieldAttributes.get("indexed"))));
-    MatcherAssert.assertThat("accuracy", is(equalTo(newFieldAttributes.get("default"))));
-    MatcherAssert.assertThat(true, is(equalTo(newFieldAttributes.get("required"))));
+    assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
+    assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
+    assertThat(false, is(equalTo(newFieldAttributes.get("stored"))));
+    assertThat(true, is(equalTo(newFieldAttributes.get("indexed"))));
+    assertThat("accuracy", is(equalTo(newFieldAttributes.get("default"))));
+    assertThat(true, is(equalTo(newFieldAttributes.get("required"))));
   }
 
   @Test
@@ -344,7 +338,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.FieldResponse initialFieldResponse = fieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(initialFieldResponse);
     Map<String, Object> fieldAttributesResponse = initialFieldResponse.getField();
-    MatcherAssert.assertThat(fieldName, is(equalTo(fieldAttributesResponse.get("name"))));
+    assertThat(fieldName, is(equalTo(fieldAttributesResponse.get("name"))));
 
     SchemaRequest.DeleteField deleteFieldRequest = new SchemaRequest.DeleteField(fieldName);
     SchemaResponse.UpdateResponse deleteFieldResponse = deleteFieldRequest.process(getSolrClient());
@@ -392,11 +386,11 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.FieldResponse newFieldResponse = fieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldResponse);
     Map<String, Object> newFieldAttributes = newFieldResponse.getField();
-    MatcherAssert.assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
-    MatcherAssert.assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
-    MatcherAssert.assertThat(true, is(equalTo(newFieldAttributes.get("stored"))));
-    MatcherAssert.assertThat(false, is(equalTo(newFieldAttributes.get("indexed"))));
-    MatcherAssert.assertThat(true, is(equalTo(newFieldAttributes.get("required"))));
+    assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
+    assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
+    assertThat(true, is(equalTo(newFieldAttributes.get("stored"))));
+    assertThat(false, is(equalTo(newFieldAttributes.get("indexed"))));
+    assertThat(true, is(equalTo(newFieldAttributes.get("required"))));
   }
 
   @Test
@@ -430,10 +424,10 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.DynamicFieldResponse newFieldResponse = dFieldRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldResponse);
     Map<String, Object> newFieldAttributes = newFieldResponse.getDynamicField();
-    MatcherAssert.assertThat(dFieldName, is(equalTo(newFieldAttributes.get("name"))));
-    MatcherAssert.assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
-    MatcherAssert.assertThat(false, is(equalTo(newFieldAttributes.get("stored"))));
-    MatcherAssert.assertThat(true, is(equalTo(newFieldAttributes.get("indexed"))));
+    assertThat(dFieldName, is(equalTo(newFieldAttributes.get("name"))));
+    assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
+    assertThat(false, is(equalTo(newFieldAttributes.get("stored"))));
+    assertThat(true, is(equalTo(newFieldAttributes.get("indexed"))));
   }
 
   @Test
@@ -472,7 +466,7 @@ public class SchemaTest extends RestTestBase {
         dynamicFieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(initialDFieldResponse);
     Map<String, Object> fieldAttributesResponse = initialDFieldResponse.getDynamicField();
-    MatcherAssert.assertThat(dynamicFieldName, is(equalTo(fieldAttributesResponse.get("name"))));
+    assertThat(dynamicFieldName, is(equalTo(fieldAttributesResponse.get("name"))));
 
     SchemaRequest.DeleteDynamicField deleteFieldRequest =
         new SchemaRequest.DeleteDynamicField(dynamicFieldName);
@@ -527,10 +521,10 @@ public class SchemaTest extends RestTestBase {
         dynamicFieldSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldResponse);
     Map<String, Object> newFieldAttributes = newFieldResponse.getDynamicField();
-    MatcherAssert.assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
-    MatcherAssert.assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
-    MatcherAssert.assertThat(true, is(equalTo(newFieldAttributes.get("stored"))));
-    MatcherAssert.assertThat(false, is(equalTo(newFieldAttributes.get("indexed"))));
+    assertThat(fieldName, is(equalTo(newFieldAttributes.get("name"))));
+    assertThat("string", is(equalTo(newFieldAttributes.get("type"))));
+    assertThat(true, is(equalTo(newFieldAttributes.get("stored"))));
+    assertThat(false, is(equalTo(newFieldAttributes.get("indexed"))));
   }
 
   @Test
@@ -599,11 +593,10 @@ public class SchemaTest extends RestTestBase {
         fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation newFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
-    MatcherAssert.assertThat(
-        fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
-    MatcherAssert.assertThat(
+    assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
+    assertThat(
         "solr.TextField", is(equalTo(newFieldTypeRepresentation.getAttributes().get("class"))));
-    MatcherAssert.assertThat(
+    assertThat(
         analyzerDefinition.getTokenizer().get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getTokenizer().get("class"))));
   }
@@ -643,9 +636,8 @@ public class SchemaTest extends RestTestBase {
         fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation newFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
-    MatcherAssert.assertThat(
-        fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
-    MatcherAssert.assertThat(
+    assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
+    assertThat(
         similarityAttributes.get("class"),
         is(equalTo(newFieldTypeRepresentation.getSimilarity().get("class"))));
   }
@@ -677,9 +669,8 @@ public class SchemaTest extends RestTestBase {
         fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);
     FieldTypeRepresentation newFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
-    MatcherAssert.assertThat(
-        fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
-    MatcherAssert.assertThat(
+    assertThat(fieldTypeName, is(equalTo(newFieldTypeRepresentation.getAttributes().get("name"))));
+    assertThat(
         analyzerAttributes.get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getAttributes().get("class"))));
   }
@@ -727,7 +718,7 @@ public class SchemaTest extends RestTestBase {
     assertValidSchemaResponse(initialFieldTypeResponse);
     FieldTypeRepresentation responseFieldTypeRepresentation =
         initialFieldTypeResponse.getFieldType();
-    MatcherAssert.assertThat(
+    assertThat(
         fieldTypeName, is(equalTo(responseFieldTypeRepresentation.getAttributes().get("name"))));
 
     SchemaRequest.DeleteFieldType deleteFieldTypeRequest =
@@ -800,15 +791,14 @@ public class SchemaTest extends RestTestBase {
     FieldTypeRepresentation replacedFieldTypeRepresentation = newFieldTypeResponse.getFieldType();
     Map<String, Object> replacedFieldTypeAttributes =
         replacedFieldTypeRepresentation.getAttributes();
-    MatcherAssert.assertThat(fieldTypeName, is(equalTo(replacedFieldTypeAttributes.get("name"))));
-    MatcherAssert.assertThat(
+    assertThat(fieldTypeName, is(equalTo(replacedFieldTypeAttributes.get("name"))));
+    assertThat(
         RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class),
         is(equalTo(replacedFieldTypeAttributes.get("class"))));
-    MatcherAssert.assertThat(false, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
-    MatcherAssert.assertThat(
-        "42", is(equalTo(replacedFieldTypeAttributes.get("positionIncrementGap"))));
+    assertThat(false, is(equalTo(replacedFieldTypeAttributes.get("omitNorms"))));
+    assertThat("42", is(equalTo(replacedFieldTypeAttributes.get("positionIncrementGap"))));
     // should be unchanged...
-    MatcherAssert.assertThat(useDv, is(equalTo(replacedFieldTypeAttributes.get("docValues"))));
+    assertThat(useDv, is(equalTo(replacedFieldTypeAttributes.get("docValues"))));
   }
 
   @Test
@@ -867,7 +857,7 @@ public class SchemaTest extends RestTestBase {
       if (srcFieldName.equals(currentCopyField.get("source"))) {
         String currentDestFieldName = (String) currentCopyField.get("dest");
         int currentMaxChars = (Integer) currentCopyField.get("maxChars");
-        MatcherAssert.assertThat(
+        assertThat(
             currentDestFieldName, anyOf(is(equalTo(destFieldName1)), is(equalTo(destFieldName2))));
         assertEquals(maxChars, currentMaxChars);
       }
@@ -954,25 +944,24 @@ public class SchemaTest extends RestTestBase {
         fieldTypeSchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(fieldTypeResponse);
     FieldTypeRepresentation fieldTypeRepresentation = fieldTypeResponse.getFieldType();
-    MatcherAssert.assertThat(
-        fieldTypeName, is(equalTo(fieldTypeRepresentation.getAttributes().get("name"))));
+    assertThat(fieldTypeName, is(equalTo(fieldTypeRepresentation.getAttributes().get("name"))));
 
     SchemaRequest.Field field1SchemaRequest = new SchemaRequest.Field(field1Name);
     SchemaResponse.FieldResponse field1Response = field1SchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(field1Response);
     Map<String, ?> field1Attributes = field1Response.getField();
-    MatcherAssert.assertThat(field1Name, is(equalTo(field1Attributes.get("name"))));
-    MatcherAssert.assertThat(fieldTypeName, is(equalTo(field1Attributes.get("type"))));
-    MatcherAssert.assertThat(true, is(equalTo(field1Attributes.get("stored"))));
-    MatcherAssert.assertThat(true, is(equalTo(field1Attributes.get("indexed"))));
+    assertThat(field1Name, is(equalTo(field1Attributes.get("name"))));
+    assertThat(fieldTypeName, is(equalTo(field1Attributes.get("type"))));
+    assertThat(true, is(equalTo(field1Attributes.get("stored"))));
+    assertThat(true, is(equalTo(field1Attributes.get("indexed"))));
 
     SchemaRequest.Field field2SchemaRequest = new SchemaRequest.Field(field1Name);
     SchemaResponse.FieldResponse field2Response = field2SchemaRequest.process(getSolrClient());
     assertValidSchemaResponse(field2Response);
     Map<String, ?> field2Attributes = field2Response.getField();
-    MatcherAssert.assertThat(field1Name, is(equalTo(field2Attributes.get("name"))));
-    MatcherAssert.assertThat(fieldTypeName, is(equalTo(field2Attributes.get("type"))));
-    MatcherAssert.assertThat(true, is(equalTo(field2Attributes.get("stored"))));
-    MatcherAssert.assertThat(true, is(equalTo(field2Attributes.get("indexed"))));
+    assertThat(field1Name, is(equalTo(field2Attributes.get("name"))));
+    assertThat(fieldTypeName, is(equalTo(field2Attributes.get("type"))));
+    assertThat(true, is(equalTo(field2Attributes.get("stored"))));
+    assertThat(true, is(equalTo(field2Attributes.get("indexed"))));
   }
 }

@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final long TIMEOUT = TEST_NIGHTLY ? 10 : 1; // in seconds
+  private static final long TIMEOUT = TEST_NIGHTLY ? 10 : 2; // in seconds
   private static final int THREAD_COUNT = TEST_NIGHTLY ? 5 : 2;
 
   @BeforeClass

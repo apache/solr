@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
  * synchronization across all instance methods. This allows google-cloud-nio's in-memory fake to be
  * used from multiple threads simultaneously as our tests require.
  */
+@SuppressWarnings("try")
 public class ConcurrentDelegatingStorage implements Storage {
 
   private final Storage delegate;

@@ -16,8 +16,8 @@
  */
 package org.apache.solr.security.jwt;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -55,8 +54,8 @@ import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
@@ -64,6 +63,7 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
 import org.apache.solr.security.jwt.api.ModifyJWTAuthPluginConfigAPI;
+import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
@@ -78,7 +78,7 @@ import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Authenticaion plugin that finds logged in user by validating the signature of a JWT token */
+/** Authentication plugin that finds logged in user by validating the signature of a JWT token */
 public class JWTAuthPlugin extends AuthenticationPlugin
     implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -131,7 +131,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
           JWTIssuerConfig.PARAM_CLIENT_ID,
           JWTIssuerConfig.PARAM_WELL_KNOWN_URL,
           JWTIssuerConfig.PARAM_AUDIENCE,
-          JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT);
+          JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT,
+          JWTIssuerConfig.PARAM_TOKEN_ENDPOINT,
+          JWTIssuerConfig.PARAM_AUTHORIZATION_FLOW);
 
   private JwtConsumer jwtConsumer;
   private boolean requireExpirationTime;
@@ -207,15 +209,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     }
 
     String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
-    if (!StringUtils.isEmpty(requiredScopesStr)) {
+    if (StrUtils.isNotNullOrEmpty(requiredScopesStr)) {
       requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
     }
 
-    // Parse custom IDP SSL Cert from either path or string
-    InputStream trustedCertsStream = null;
-    String trustedCertsFile = (String) pluginConfig.get(PARAM_TRUSTED_CERTS_FILE);
+    // Parse custom IDP SSL Cert from either path, list of paths or plaintext string
+    Object trustedCertsFileObj = pluginConfig.get(PARAM_TRUSTED_CERTS_FILE);
     String trustedCerts = (String) pluginConfig.get(PARAM_TRUSTED_CERTS);
-    if (trustedCertsFile != null && trustedCerts != null) {
+    if (trustedCertsFileObj != null && trustedCerts != null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Found both "
@@ -224,25 +225,14 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               + PARAM_TRUSTED_CERTS
               + ", please use only one");
     }
-    if (trustedCertsFile != null) {
-      try {
-        Path trustedCertsPath = Paths.get(trustedCertsFile);
-        if (coreContainer != null) {
-          coreContainer.assertPathAllowed(trustedCertsPath);
-        }
-        trustedCertsStream = Files.newInputStream(trustedCertsPath);
-        log.info("Reading trustedCerts from file {}", trustedCertsFile);
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + trustedCertsFile, e);
-      }
+    if (trustedCertsFileObj != null) {
+      trustedSslCerts = readSslCertsFromFileOrList(trustedCertsFileObj);
     }
     if (trustedCerts != null) {
       log.info("Reading trustedCerts PEM from configuration string");
-      trustedCertsStream = IOUtils.toInputStream(trustedCerts, StandardCharsets.UTF_8);
-    }
-    if (trustedCertsStream != null) {
-      trustedSslCerts = CryptoKeys.parseX509Certs(trustedCertsStream);
+      trustedSslCerts =
+          CryptoKeys.parseX509Certs(
+              new ByteArrayInputStream(trustedCerts.getBytes(StandardCharsets.UTF_8)));
     }
 
     long jwkCacheDuration =
@@ -267,9 +257,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     issuerConfigs.addAll(parseIssuers(pluginConfig));
     verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfigs, requireIssuer);
 
-    if (issuerConfigs.size() > 0 && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
+    if (!issuerConfigs.isEmpty() && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
       adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
-      if (adminUiScope == null && requiredScopes.size() > 0) {
+      if (adminUiScope == null && !requiredScopes.isEmpty()) {
         adminUiScope = requiredScopes.get(0);
         log.warn(
             "No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
@@ -293,8 +283,64 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     }
 
     initConsumer();
+    registerTokenEndpointForCsp();
 
     lastInitTime = Instant.now();
+  }
+
+  /**
+   * Record Issuer token URL as a system property so it can be picked up and sent to Admin UI as CSP
+   */
+  protected void registerTokenEndpointForCsp() {
+    final String syspropName = LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS;
+    String url = !issuerConfigs.isEmpty() ? getPrimaryIssuer().getTokenEndpoint() : null;
+    if (url != null) {
+      System.setProperty(syspropName, url);
+    } else {
+      System.clearProperty(syspropName);
+    }
+  }
+
+  /**
+   * Given a configuration object of a file name or list of file names, read X509 certificates from
+   * each file
+   */
+  @SuppressWarnings("unchecked")
+  Collection<X509Certificate> readSslCertsFromFileOrList(Object trustedCertsFileObj) {
+    Collection<X509Certificate> certs = new HashSet<>();
+    List<String> trustedCertsFileList;
+    if (trustedCertsFileObj instanceof String) {
+      trustedCertsFileList = List.of((String) trustedCertsFileObj);
+    } else if (trustedCertsFileObj instanceof List) {
+      trustedCertsFileList = (List<String>) trustedCertsFileObj;
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "trustedCertsFile is neither a String or List");
+    }
+    log.info("Reading trustedCerts from file(s) {}", trustedCertsFileList);
+    trustedCertsFileList.forEach(
+        f -> {
+          try {
+            certs.addAll(parseCertsFromFile(f));
+          } catch (IOException e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Failed to read file " + f, e);
+          }
+        });
+    return certs;
+  }
+
+  /**
+   * Given a filename string, validate the file and then read any X509 certificates from it
+   *
+   * @return list of certificates found in file
+   */
+  Collection<? extends X509Certificate> parseCertsFromFile(String certFileName) throws IOException {
+    Path certFilePath = Paths.get(certFileName);
+    if (coreContainer != null) {
+      coreContainer.assertPathAllowed(certFilePath);
+    }
+    return CryptoKeys.parseX509Certs(Files.newInputStream(certFilePath));
   }
 
   @SuppressWarnings("unchecked")
@@ -307,6 +353,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               .setJwksUrl(conf.get(JWTIssuerConfig.PARAM_JWKS_URL))
               .setAuthorizationEndpoint(
                   (String) conf.get(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT))
+              .setTokenEndpoint((String) conf.get(JWTIssuerConfig.PARAM_TOKEN_ENDPOINT))
+              .setAuthorizationFlow((String) conf.get(JWTIssuerConfig.PARAM_AUTHORIZATION_FLOW))
               .setClientId((String) conf.get(JWTIssuerConfig.PARAM_CLIENT_ID))
               .setWellKnownUrl((String) conf.get(JWTIssuerConfig.PARAM_WELL_KNOWN_URL));
       if (conf.get(JWTIssuerConfig.PARAM_JWK) != null) {
@@ -336,7 +384,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return JWTIssuerConfig object for the primary issuer
    */
   JWTIssuerConfig getPrimaryIssuer() {
-    if (issuerConfigs.size() == 0) {
+    if (issuerConfigs.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No issuers configured");
     }
     return issuerConfigs.get(0);
@@ -642,7 +690,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                 }
               }
             }
-            if (finalRoles.size() > 0) {
+            if (!finalRoles.isEmpty()) {
               return new JWTAuthenticationResponse(
                   AuthCode.AUTHENTICATED,
                   new JWTPrincipalWithUserRoles(
@@ -818,9 +866,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     Map<String, Object> data = new HashMap<>();
     data.put(
         JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT, primaryIssuer.getAuthorizationEndpoint());
+    data.put(JWTIssuerConfig.PARAM_TOKEN_ENDPOINT, primaryIssuer.getTokenEndpoint());
     data.put("client_id", primaryIssuer.getClientId());
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
+    data.put("authorization_flow", primaryIssuer.getAuthorizationFlow());
     String headerJson = Utils.toJSONString(data);
     return Base64.getEncoder().encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
   }
@@ -922,7 +972,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
     if (userToken instanceof JWTPrincipal) {
       JWTPrincipal jwtPrincipal = (JWTPrincipal) userToken;
-      request.header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
+      request.headers(h -> h.put(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken()));
       return true;
     }
     return false;

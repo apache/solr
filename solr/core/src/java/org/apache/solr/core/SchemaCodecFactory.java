@@ -16,16 +16,21 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.codecs.KnnVectorsReader;
+import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene94.Lucene94Codec;
-import org.apache.lucene.codecs.lucene94.Lucene94Codec.Mode;
-import org.apache.lucene.codecs.lucene94.Lucene94HnswVectorsFormat;
+import org.apache.lucene.codecs.lucene99.Lucene99Codec;
+import org.apache.lucene.codecs.lucene99.Lucene99Codec.Mode;
+import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -92,12 +97,12 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       log.debug("Using default compressionMode: {}", compressionMode);
     }
     codec =
-        new Lucene94Codec(compressionMode) {
+        new Lucene99Codec(compressionMode) {
           @Override
           public PostingsFormat getPostingsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
             if (schemaField != null) {
-              String postingsFormatName = schemaField.getType().getPostingsFormat();
+              String postingsFormatName = schemaField.getPostingsFormat();
               if (postingsFormatName != null) {
                 return PostingsFormat.forName(postingsFormatName);
               }
@@ -109,7 +114,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
           public DocValuesFormat getDocValuesFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
             if (schemaField != null) {
-              String docValuesFormatName = schemaField.getType().getDocValuesFormat();
+              String docValuesFormatName = schemaField.getDocValuesFormat();
               if (docValuesFormatName != null) {
                 return DocValuesFormat.forName(docValuesFormatName);
               }
@@ -124,12 +129,11 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorType = (DenseVectorField) fieldType;
               String knnAlgorithm = vectorType.getKnnAlgorithm();
-              if (knnAlgorithm != null) {
-                if (knnAlgorithm.equals(DenseVectorField.HNSW_ALGORITHM)) {
-                  int maxConn = vectorType.getHnswMaxConn();
-                  int beamWidth = vectorType.getHnswBeamWidth();
-                  return new Lucene94HnswVectorsFormat(maxConn, beamWidth);
-                }
+              if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
+                int maxConn = vectorType.getHnswMaxConn();
+                int beamWidth = vectorType.getHnswBeamWidth();
+                var delegate = new Lucene99HnswVectorsFormat(maxConn, beamWidth);
+                return new SolrDelegatingKnnVectorsFormat(delegate, vectorType.getDimension());
               } else {
                 throw new SolrException(
                     ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
@@ -144,5 +148,36 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   public Codec getCodec() {
     assert core != null : "inform must be called first";
     return codec;
+  }
+
+  /**
+   * This class exists because {@link Lucene99HnswVectorsFormat#getMaxDimensions(String)} method is
+   * final and we need to workaround that constraint to allow more than the default number of
+   * dimensions
+   */
+  private static final class SolrDelegatingKnnVectorsFormat extends KnnVectorsFormat {
+    private final KnnVectorsFormat delegate;
+    private final int maxDimensions;
+
+    public SolrDelegatingKnnVectorsFormat(KnnVectorsFormat delegate, int maxDimensions) {
+      super(delegate.getName());
+      this.delegate = delegate;
+      this.maxDimensions = maxDimensions;
+    }
+
+    @Override
+    public KnnVectorsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+      return delegate.fieldsWriter(state);
+    }
+
+    @Override
+    public KnnVectorsReader fieldsReader(SegmentReadState state) throws IOException {
+      return delegate.fieldsReader(state);
+    }
+
+    @Override
+    public int getMaxDimensions(String fieldName) {
+      return maxDimensions;
+    }
   }
 }

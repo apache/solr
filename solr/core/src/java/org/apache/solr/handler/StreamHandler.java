@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -49,7 +48,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -89,7 +87,7 @@ public class StreamHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private SolrClientCache solrClientCache;
-  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap<>());
+  private Map<String, DaemonStream> daemons = new ConcurrentHashMap<>();
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -195,7 +193,7 @@ public class StreamHandler extends RequestHandlerBase
     } catch (Exception e) {
       // Catch exceptions that occur while the stream is being created. This will include streaming
       // expression parse rules.
-      SolrException.log(log, e);
+      log.error("Exception creating stream", e);
       rsp.add(StreamParams.RESULT_SET, new DummyErrorStream(e));
 
       return;
@@ -546,7 +544,7 @@ public class StreamHandler extends RequestHandlerBase
     Iterator<String> paramsIt = params.getParameterNamesIterator();
     while (paramsIt.hasNext()) {
       String param = paramsIt.next();
-      if (param.indexOf(".shards") > -1) {
+      if (param.contains(".shards")) {
         String collection = param.split("\\.")[0];
         String shardString = params.get(param);
         String[] shards = shardString.split(",");

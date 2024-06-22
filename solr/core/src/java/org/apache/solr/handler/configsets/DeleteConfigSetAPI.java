@@ -20,12 +20,12 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.ConfigSetParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -50,11 +50,11 @@ public class DeleteConfigSetAPI extends ConfigSetAPIBase {
       permission = CONFIG_EDIT_PERM)
   public void deleteConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final String configSetName = req.getPathTemplateValues().get("name");
-    if (StringUtils.isEmpty(configSetName)) {
+    if (StrUtils.isNullOrEmpty(configSetName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "No configset name provided to delete");
     }
-    final Map<String, Object> configsetCommandMsg = Maps.newHashMap();
+    final Map<String, Object> configsetCommandMsg = new HashMap<>();
     configsetCommandMsg.put(NAME, configSetName);
 
     runConfigSetCommand(rsp, ConfigSetParams.ConfigSetAction.DELETE, configsetCommandMsg);

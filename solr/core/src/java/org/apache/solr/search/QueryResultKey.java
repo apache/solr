@@ -17,7 +17,10 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -33,38 +36,55 @@ public final class QueryResultKey implements Accountable {
 
   final Query query;
   final Sort sort;
-  final SortField[] sfields;
+  final List<SortField> sfields;
   final List<Query> filters;
   final int nc_flags; // non-comparable flags... ignored by hashCode and equals
   final int minExactCount;
-
+  final boolean distribStatsDisabled;
   private final int hc; // cached hashCode
   private final long ramBytesUsed; // cached
 
-  private static SortField[] defaultSort = new SortField[0];
-
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
-    this(query, filters, sort, nc_flags, Integer.MAX_VALUE);
+    this(query, filters, sort, nc_flags, Integer.MAX_VALUE, false);
   }
 
   public QueryResultKey(
       Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
+    this(query, filters, sort, nc_flags, minExactCount, false);
+  }
+
+  public QueryResultKey(
+      Query query,
+      List<Query> filters,
+      Sort sort,
+      int nc_flags,
+      int minExactCount,
+      boolean distribStatsDisabled) {
     this.query = query;
     this.sort = sort;
-    this.filters = filters;
     this.nc_flags = nc_flags;
     this.minExactCount = minExactCount;
+    this.distribStatsDisabled = distribStatsDisabled;
 
     int h = query.hashCode();
 
-    if (filters != null) {
-      for (Query filt : filters)
+    if (filters == null) {
+      this.filters = null;
+    } else {
+      this.filters = filters.stream().filter(Objects::nonNull).collect(Collectors.toList());
+      for (Query filt : this.filters) {
         // NOTE: simple summation used here so keys with the same filters but in
         // different orders get the same hashCode
         h += filt.hashCode();
+      }
     }
 
-    sfields = (this.sort != null) ? this.sort.getSort() : defaultSort;
+    if (this.sort == null) {
+      this.sfields = List.of();
+    } else {
+      this.sfields =
+          Arrays.stream(sort.getSort()).filter(Objects::nonNull).collect(Collectors.toList());
+    }
     long ramSfields = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
     for (SortField sf : sfields) {
       h = h * 29 + sf.hashCode();
@@ -79,7 +99,7 @@ public final class QueryResultKey implements Accountable {
             + ramSfields
             + RamUsageEstimator.sizeOfObject(query, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
             + RamUsageEstimator.sizeOfObject(
-                filters, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+                this.filters, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -100,14 +120,15 @@ public final class QueryResultKey implements Accountable {
 
     // check for the thing most likely to be different (and the fastest things)
     // first.
-    if (this.sfields.length != other.sfields.length) return false;
+    if (this.sfields.size() != other.sfields.size()) return false;
     if (!this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
     if (this.minExactCount != other.minExactCount) return false;
+    if (this.distribStatsDisabled != other.distribStatsDisabled) return false;
 
-    for (int i = 0; i < sfields.length; i++) {
-      SortField sf1 = this.sfields[i];
-      SortField sf2 = other.sfields[i];
+    for (int i = 0; i < sfields.size(); i++) {
+      SortField sf1 = this.sfields.get(i);
+      SortField sf2 = other.sfields.get(i);
       if (!sf1.equals(sf2)) return false;
     }
 

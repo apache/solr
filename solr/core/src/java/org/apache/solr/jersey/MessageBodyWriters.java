@@ -22,24 +22,25 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
 
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriterUtil;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 
@@ -53,7 +54,7 @@ public class MessageBodyWriters {
 
   @Produces(MediaType.APPLICATION_XML)
   public static class XmlMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new XMLResponseWriter();
@@ -67,7 +68,7 @@ public class MessageBodyWriters {
 
   @Produces(BINARY_CONTENT_TYPE_V2)
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new BinaryResponseWriter();
@@ -79,9 +80,23 @@ public class MessageBodyWriters {
     }
   }
 
+  @Produces(RawResponseWriter.CONTENT_TYPE)
+  public static class RawMessageBodyWriter extends BaseMessageBodyWriter
+      implements MessageBodyWriter<Object> {
+    @Override
+    public QueryResponseWriter createResponseWriter() {
+      return new RawResponseWriter();
+    }
+
+    @Override
+    public String getSupportedMediaType() {
+      return RawResponseWriter.CONTENT_TYPE;
+    }
+  }
+
   @Produces(CONTENT_TYPE_TEXT_UTF8)
   public static class CsvMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new CSVResponseWriter();
@@ -93,8 +108,7 @@ public class MessageBodyWriters {
     }
   }
 
-  public abstract static class BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+  public abstract static class BaseMessageBodyWriter implements MessageBodyWriter<Object> {
 
     @Context protected ResourceContext resourceContext;
     private final QueryResponseWriter responseWriter = createResponseWriter();
@@ -111,7 +125,7 @@ public class MessageBodyWriters {
 
     @Override
     public void writeTo(
-        JacksonReflectMapWriter reflectMapWriter,
+        Object toWrite,
         Class<?> type,
         Type genericType,
         Annotation[] annotations,
@@ -126,7 +140,7 @@ public class MessageBodyWriters {
       final SolrQueryResponse solrQueryResponse =
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE);
 
-      V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, reflectMapWriter);
+      V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, toWrite);
       QueryResponseWriterUtil.writeQueryResponse(
           entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
     }

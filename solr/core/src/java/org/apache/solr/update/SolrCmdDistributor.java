@@ -16,9 +16,6 @@
  */
 package org.apache.solr.update;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +49,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
-import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,36 +166,24 @@ public class SolrCmdDistributor implements Closeable {
     this.errors.clear();
     for (SolrError err : resubmitList) {
       if (err.req.node instanceof ForwardNode) {
-        SolrException.log(
-            SolrCmdDistributor.log,
-            "forwarding update to "
-                + err.req.node.getUrl()
-                + " failed - retrying ... retries: "
-                + err.req.retries
-                + "/"
-                + err.req.node.getMaxRetries()
-                + ". "
-                + err.req.cmd.toString()
-                + " params:"
-                + err.req.uReq.getParams()
-                + " rsp:"
-                + err.statusCode,
+        SolrCmdDistributor.log.error(
+            "forwarding update to {} failed - retrying ... retries: {}/{}. {} params: {} rsp: {}",
+            err.req.node.getUrl(),
+            err.req.retries,
+            err.req.node.getMaxRetries(),
+            err.req.cmd,
+            err.req.uReq.getParams(),
+            err.statusCode,
             err.e);
       } else {
-        SolrException.log(
-            SolrCmdDistributor.log,
-            "FROMLEADER request to "
-                + err.req.node.getUrl()
-                + " failed - retrying ... retries: "
-                + err.req.retries
-                + "/"
-                + err.req.node.getMaxRetries()
-                + ". "
-                + err.req.cmd.toString()
-                + " params:"
-                + err.req.uReq.getParams()
-                + " rsp:"
-                + err.statusCode,
+        SolrCmdDistributor.log.error(
+            "FROMLEADER request to {} failed - retrying ... retries: {}/{}. {} params: {} rsp: {}",
+            err.req.node.getUrl(),
+            err.req.retries,
+            err.req.node.getMaxRetries(),
+            err.req.cmd,
+            err.req.uReq.getParams(),
+            err.statusCode,
             err.e);
       }
       submit(err.req, false);
@@ -327,13 +311,6 @@ public class SolrCmdDistributor implements Closeable {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
     }
 
-    Tracer tracer = req.cmd.getTracer();
-    Span parentSpan = tracer.activeSpan();
-    if (parentSpan != null) {
-      tracer.inject(
-          parentSpan.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req.uReq));
-    }
-
     if (req.synchronous) {
       blockAndDoRetries();
 
@@ -341,7 +318,7 @@ public class SolrCmdDistributor implements Closeable {
         req.uReq.setBasePath(req.node.getUrl());
         clients.getHttpClient().request(req.uReq);
       } catch (Exception e) {
-        SolrException.log(log, e);
+        log.error("Exception making request", e);
         SolrError error = new SolrError();
         error.e = e;
         error.req = req;
@@ -383,7 +360,7 @@ public class SolrCmdDistributor implements Closeable {
       SolrClient solrClient = clients.getSolrClient(req);
       solrClient.request(req.uReq);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Exception making request", e);
       SolrError error = new SolrError();
       error.e = e;
       error.req = req;

@@ -18,17 +18,14 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -83,39 +80,21 @@ public class NodeMutator {
       String nodeName, String collectionName, DocCollection docCollection, SolrZkClient client) {
     boolean needToUpdateCollection = false;
     List<String> downedReplicas = new ArrayList<>();
-    Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
+    final Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
-    for (Entry<String, Slice> sliceEntry : slicesCopy.entrySet()) {
-      Slice slice = sliceEntry.getValue();
-      Map<String, Replica> newReplicas = slice.getReplicasCopy();
-
-      Collection<Replica> replicas = slice.getReplicas();
-      for (Replica replica : replicas) {
-        String rNodeName = replica.getNodeName();
-        if (rNodeName == null) {
-          throw new RuntimeException("Replica without node name! " + replica);
-        }
-        if (rNodeName.equals(nodeName)) {
-          log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
-          Map<String, Object> props = replica.shallowCopy();
-          Replica newReplica =
-              new Replica(
-                  replica.getName(),
-                  replica.node,
-                  replica.collection,
-                  slice.getName(),
-                  replica.core,
-                  Replica.State.DOWN,
-                  replica.type,
-                  props);
-          newReplicas.put(replica.getName(), newReplica);
-          needToUpdateCollection = true;
-          downedReplicas.add(replica.getName());
-        }
+    List<Replica> replicasOnNode = docCollection.getReplicas(nodeName);
+    if (replicasOnNode == null || replicasOnNode.isEmpty()) {
+      return Optional.empty();
+    }
+    for (Replica replica : replicasOnNode) {
+      if (replica.getState() != Replica.State.DOWN) {
+        log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
+        needToUpdateCollection = true;
+        downedReplicas.add(replica.getName());
+        slicesCopy.computeIfPresent(
+            replica.getShard(),
+            (name, slice) -> slice.copyWith(replica.copyWith(Replica.State.DOWN)));
       }
-
-      Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(), collectionName);
-      sliceEntry.setValue(newSlice);
     }
 
     if (needToUpdateCollection) {
@@ -123,7 +102,7 @@ public class NodeMutator {
         PerReplicaStates prs =
             client == null
                 ? docCollection.getPerReplicaStates()
-                : PerReplicaStatesFetcher.fetch(
+                : PerReplicaStatesOps.fetch(
                     docCollection.getZNode(), client, docCollection.getPerReplicaStates());
 
         return Optional.of(

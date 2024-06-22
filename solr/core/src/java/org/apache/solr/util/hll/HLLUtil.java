@@ -30,6 +30,7 @@ final class HLLUtil {
    *
    * @see #pwMaxMask(int)
    */
+  @SuppressWarnings("BadShiftAmount")
   private static final long[] PW_MASK = {
     ~((1L << (((1 << 0) - 1) - 1)) - 1),
     ~((1L << (((1 << 1) - 1) - 1)) - 1),

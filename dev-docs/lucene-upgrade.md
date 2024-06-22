@@ -44,6 +44,8 @@ gradlew --write-locks
 
 ```
 gradlew updateLicenses
+
+git add solr/licenses
 ```
 
 ## Code
@@ -77,4 +79,8 @@ gradlew test
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
+
+## Looking for something else?
+
+Thanks for reading these upgrade steps! But perhaps you were looking for information on trying out prerelease Lucene changes or joint local Solr and Lucene development? If so then please see the 'Update Lucene prerelease' and 'Lucene local dependency substitution' sections in the [help/dependencies.txt](../help/dependencies.txt) documentation.
 

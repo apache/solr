@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -56,6 +55,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
@@ -71,6 +71,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -176,7 +177,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public static NullPolicy fromString(String nullPolicy) {
-      if (StringUtils.isEmpty(nullPolicy)) {
+      if (StrUtils.isNullOrEmpty(nullPolicy)) {
         return DEFAULT_POLICY;
       }
       switch (nullPolicy) {
@@ -192,7 +193,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    static NullPolicy DEFAULT_POLICY = IGNORE;
+    static final NullPolicy DEFAULT_POLICY = IGNORE;
   }
 
   @Override
@@ -218,12 +219,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  public static enum GroupHeadSelectorType {
+  public enum GroupHeadSelectorType {
     MIN,
     MAX,
     SORT,
     SCORE;
-    public static EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
+    public static final EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
   }
 
   /** Models all the information about how group head documents should be selected */
@@ -234,6 +235,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * for MIN/MAX, a sort string for SORT, "score" for SCORE). Will never be null.
      */
     public final String selectorText;
+
     /** The type for this selector, will never be null */
     public final GroupHeadSelectorType type;
 
@@ -266,9 +268,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     /** returns a new GroupHeadSelector based on the specified local params */
     public static GroupHeadSelector build(final SolrParams localParams) {
-      final String sortString = StringUtils.defaultIfBlank(localParams.get(SORT), null);
-      final String max = StringUtils.defaultIfBlank(localParams.get("max"), null);
-      final String min = StringUtils.defaultIfBlank(localParams.get("min"), null);
+      final String sortString =
+          StrUtils.isBlank(localParams.get(SORT)) ? null : localParams.get(SORT);
+      final String max = StrUtils.isBlank(localParams.get("max")) ? null : localParams.get("max");
+      final String min = StrUtils.isBlank(localParams.get("min")) ? null : localParams.get("min");
 
       if (1 < numNotNull(min, max, sortString)) {
         throw new SolrException(
@@ -533,13 +536,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                   fieldInfo.getVectorDimension(),
                   fieldInfo.getVectorEncoding(),
                   fieldInfo.getVectorSimilarityFunction(),
-                  fieldInfo.isSoftDeletesField());
+                  fieldInfo.isSoftDeletesField(),
+                  fieldInfo.isParentField());
           newInfos.add(f);
         } else {
           newInfos.add(fieldInfo);
         }
       }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
+      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[0]));
       this.fieldInfos = infos;
     }
 
@@ -711,7 +715,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -802,7 +806,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -918,7 +922,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -992,7 +996,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1195,7 +1199,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -1277,7 +1281,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1442,7 +1446,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -1506,7 +1510,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1552,6 +1556,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         delegateCollect();
       }
     }
+
     /** Immediately delegate the collection of the current doc */
     protected void delegateCollect() throws IOException {
       // ensure we have the 'correct' scorer
@@ -1586,11 +1591,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       // Deal with last group (if any)...
       maybeDelegateCollect();
 
-      super.finish();
+      super.complete();
     }
 
     /**
@@ -1773,6 +1778,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -2002,6 +2008,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -2092,7 +2099,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               new EmptyDocValuesProducer() {
                 @Override
                 public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                  return uninvertingReader.getSortedDocValues(collapseField);
+                  SortedDocValues values = uninvertingReader.getSortedDocValues(collapseField);
+                  if (values != null) {
+                    return values;
+                  } else {
+                    return DocValues.emptySorted();
+                  }
                 }
               };
         } else {
@@ -2115,7 +2127,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       FieldType minMaxFieldType = null;
       if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
         final String text = groupHeadSelector.selectorText;
-        if (text.indexOf("(") == -1) {
+        if (!text.contains("(")) {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
@@ -2263,7 +2275,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * sources if they depend on score
      */
     public static boolean wantsCScore(final String text) {
-      return (0 <= text.indexOf("cscore()"));
+      return (text.contains("cscore()"));
     }
 
     private CollapseScore() {
@@ -3381,9 +3393,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         public void purgeGroupsThatHaveBoostedDocs(
             final FixedBitSet collapsedSet,
             final IntProcedure removeGroupKey,
-            final Runnable resetNullGroupHead) {
-          return;
-        }
+            final Runnable resetNullGroupHead) {}
       };
     }
 
@@ -3526,12 +3536,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void setScorer(Scorable s) throws IOException {
       inner.setScorer(s);
     }
+
     /**
      * @see SortFieldsCompare#setGroupValues
      */
     public void setGroupValues(int contextDoc) throws IOException {
       inner.setNullGroupValues(contextDoc);
     }
+
     /**
      * @see SortFieldsCompare#testAndSetGroupValues
      */
@@ -3573,7 +3585,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       for (int clause = 0; clause < numClauses; clause++) {
         SortField sf = sorts[clause];
         // we only need one slot for every comparator
-        fieldComparators[clause] = sf.getComparator(1, clause == 0);
+        fieldComparators[clause] =
+            sf.getComparator(
+                1,
+                clause == 0
+                    ? (numClauses > 1 ? Pruning.GREATER_THAN : Pruning.GREATER_THAN_OR_EQUAL_TO)
+                    : Pruning.NONE);
+
         reverseMul[clause] = sf.getReverse() ? -1 : 1;
       }
       groupHeadValues = new Object[initNumGroups][];

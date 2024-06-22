@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 /**
@@ -86,7 +85,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
                   previous.createNext(Arrays.<Object>asList(buildRandomSortObjects(otherSort)));
             });
     assertEquals(500, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("sort values != sort length"));
+    assertThat(e.getMessage(), containsString("sort values != sort length"));
   }
 
   public void testInvalidUsage() {
@@ -253,7 +252,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         } else if (fieldName.startsWith("bool")) {
           val = sf.getType().unmarshalSortValue(random().nextBoolean() ? "t" : "f");
         } else if (fieldName.startsWith("enum")) {
-          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.length);
+          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.size());
         } else if (fieldName.contains("collation")) {
           val = getRandomCollation(sf);
         } else {

@@ -266,8 +266,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         del("*:*");
         break;
       } catch (SolrServerException | SolrException e) {
-        // cluster may not be up yet
-        e.printStackTrace();
+        log.error("cluster may not be up yet", e);
       }
       Thread.sleep(100);
     }

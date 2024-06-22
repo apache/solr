@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
@@ -70,7 +71,6 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("techproducts", 1, 1);
   }
@@ -244,8 +244,8 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     // tag::solrj-solrclient-timeouts[]
     final String solrUrl = "http://localhost:8983/solr";
     return new HttpSolrClient.Builder(solrUrl)
-        .withConnectionTimeout(10000)
-        .withSocketTimeout(60000)
+        .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
     // end::solrj-solrclient-timeouts[]
   }
@@ -296,6 +296,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     public TechProduct() {}
   }
+
   // end::solrj-techproduct-value-type[]
 
   private void expectLine(String expectedLine) {

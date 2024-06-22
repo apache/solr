@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** */
   private final HttpClient httpClient;
 
@@ -61,11 +63,12 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     cusc =
         new ErrorLoggingConcurrentUpdateSolrClient.Builder(
                 ((HttpSolrClient) clients.get(0)).getBaseURL())
+            .withDefaultCollection(clients.get(0).getDefaultCollection())
             .withHttpClient(httpClient)
             .withQueueSize(8)
             .withThreadCount(2)
-            .withConnectionTimeout(10000)
-            .withSocketTimeout(clientSoTimeout)
+            .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(clientSoTimeout, TimeUnit.MILLISECONDS)
             .build();
   }
 
@@ -125,6 +128,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       cusc =
           new ErrorLoggingConcurrentUpdateSolrClient.Builder(
                   ((HttpSolrClient) clients.get(clientIndex)).getBaseURL())
+              .withDefaultCollection(clients.get(clientIndex).getDefaultCollection())
               .withHttpClient(httpClient)
               .withQueueSize(30)
               .withThreadCount(3)

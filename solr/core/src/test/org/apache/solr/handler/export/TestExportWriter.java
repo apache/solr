@@ -1298,6 +1298,43 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             .contains("Must have useDocValuesAsStored='true'"));
   }
 
+  @Test
+  public void testGlobFields() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createLargeIndex();
+    SolrQueryRequest req =
+        req("q", "*:*", "qt", "/export", "fl", "id,*_udvas,*_i_p", "sort", "id asc");
+    assertJQ(
+        req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='0'",
+        "response/docs/[1]/id=='1'",
+        "response/docs/[0]/sortabledv_udvas=='0'",
+        "response/docs/[1]/sortabledv_udvas=='1'",
+        "response/docs/[0]/small_i_p==0",
+        "response/docs/[1]/small_i_p==1");
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createLargeIndex();
+    req = req("q", "*:*", "qt", "/export", "fl", "*", "sort", "id asc");
+    assertJQ(
+        req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='0'",
+        "response/docs/[1]/id=='1'",
+        "response/docs/[0]/sortabledv_udvas=='0'",
+        "response/docs/[1]/sortabledv_udvas=='1'",
+        "response/docs/[0]/small_i_p==0",
+        "response/docs/[1]/small_i_p==1");
+
+    String jq = JQ(req);
+    assertFalse(
+        "Fields without docvalues and useDocValuesAsStored should not be returned",
+        jq.contains("\"sortabledv\""));
+  }
+
   @SuppressWarnings("rawtypes")
   private void validateSort(int numDocs) throws Exception {
     // 10 fields
@@ -1446,7 +1483,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
     String resultTries =
         h.query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
-    assertJsonEquals(resultPoints.replaceAll("_p", ""), resultTries.replaceAll("_t", ""));
+    assertJsonEquals(resultPoints.replace("_p", ""), resultTries.replace("_t", ""));
   }
 
   private void addFloat(SolrInputDocument doc, float value, boolean mv) {

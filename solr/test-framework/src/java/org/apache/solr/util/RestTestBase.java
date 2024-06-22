@@ -23,7 +23,6 @@ import java.util.SortedMap;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -57,8 +56,7 @@ public abstract class RestTestBase extends SolrJettyTestBase {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
-    restTestHarness =
-        new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
+    restTestHarness = new RestTestHarness(() -> getCoreUrl());
   }
 
   /** Validates an update XML String is successful */
@@ -147,7 +145,7 @@ public abstract class RestTestBase extends SolrJettyTestBase {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log, "REQUEST FAILED: " + request, e2);
+      log.error("REQUEST FAILED: {}", request, e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }

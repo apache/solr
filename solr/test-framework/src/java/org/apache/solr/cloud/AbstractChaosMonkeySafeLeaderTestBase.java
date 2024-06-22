@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -28,9 +29,13 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly
 public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFullDistribZkTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final Integer RUN_LENGTH =
       Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
@@ -209,8 +214,7 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
         del("*:*");
         break;
       } catch (SolrServerException e) {
-        // cluster may not be up yet
-        e.printStackTrace();
+        log.error("cluster may not be up yet", e);
       }
       Thread.sleep(100);
     }

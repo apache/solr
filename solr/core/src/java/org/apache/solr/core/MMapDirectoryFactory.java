@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  boolean unmapHack;
   boolean preload;
   private long maxChunk;
 
@@ -54,7 +53,12 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
     if (maxChunk <= 0) {
       throw new IllegalArgumentException("maxChunk must be greater than 0");
     }
-    unmapHack = params.getBool("unmap", true);
+    if (params.get("unmap") != null) {
+      log.warn(
+          "It is no longer possible to configure unmapping of index files on DirectoryFactory level in solrconfig.xml.");
+      log.warn(
+          "To disable unmapping, pass -Dorg.apache.lucene.store.MMapDirectory.enableUnmapHack=false on Solr's command line.");
+    }
     preload = params.getBool("preload", false); // default turn-off
   }
 
@@ -62,11 +66,6 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    try {
-      mapDirectory.setUseUnmap(unmapHack);
-    } catch (IllegalArgumentException e) {
-      log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
-    }
     mapDirectory.setPreload(preload);
     return mapDirectory;
   }

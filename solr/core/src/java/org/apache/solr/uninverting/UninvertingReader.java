@@ -298,7 +298,8 @@ public class UninvertingReader extends FilterLeafReader {
                 fi.getVectorDimension(),
                 fi.getVectorEncoding(),
                 fi.getVectorSimilarityFunction(),
-                fi.isSoftDeletesField()));
+                fi.isSoftDeletesField(),
+                fi.isParentField()));
       } else {
         newFieldInfos.add(fi);
       }
@@ -306,8 +307,7 @@ public class UninvertingReader extends FilterLeafReader {
     if (!wrap) {
       return in;
     } else {
-      FieldInfos fieldInfos =
-          new FieldInfos(newFieldInfos.toArray(new FieldInfo[newFieldInfos.size()]));
+      FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(new FieldInfo[0]));
       return new UninvertingReader(in, mapping, fieldInfos);
     }
   }

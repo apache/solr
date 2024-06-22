@@ -26,26 +26,31 @@ import static org.apache.solr.security.BasicAuthStandaloneTest.doHttpPostWithHea
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.FileUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
 import org.junit.After;
@@ -91,20 +96,24 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     SolrClient solrClient = null;
     try {
       httpClient = HttpClientUtil.createClient(null);
-      String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
+      String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
       // Initialize security.json with multiple auth plugins configured
       String multiAuthPluginSecurityJson =
-          FileUtils.readFileToString(
-              TEST_PATH().resolve("security").resolve("multi_auth_plugin_security.json").toFile(),
+          Files.readString(
+              TEST_PATH().resolve("security").resolve("multi_auth_plugin_security.json"),
               StandardCharsets.UTF_8);
       securityConfHandler.persistConf(
           new SecurityConfHandler.SecurityConfig()
               .setData(Utils.fromJSONString(multiAuthPluginSecurityJson)));
       securityConfHandler.securityConfEdited();
+
+      // verify "WWW-Authenticate" headers are returned
+      verifyWWWAuthenticateHeaders(httpClient, baseUrl);
+
       verifySecurityStatus(
           httpClient,
           baseUrl + authcPrefix,
@@ -267,6 +276,40 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     int statusCode = r.getStatusLine().getStatusCode();
     Utils.consumeFully(r.getEntity());
     return statusCode;
+  }
+
+  private void verifyWWWAuthenticateHeaders(HttpClient httpClient, String baseUrl)
+      throws Exception {
+    HttpGet httpGet = new HttpGet(baseUrl + "/admin/info/system");
+    HttpResponse response = httpClient.execute(httpGet);
+    Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
+    List<String> actualSchemes =
+        Arrays.stream(headers).map(Header::getValue).collect(Collectors.toList());
+
+    List<String> expectedSchemes = generateExpectedSchemes();
+    actualSchemes.sort(String.CASE_INSENSITIVE_ORDER);
+    expectedSchemes.sort(String.CASE_INSENSITIVE_ORDER);
+
+    assertEquals(
+        "The actual schemes and realms should match the expected ones exactly",
+        expectedSchemes.stream().map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toList()),
+        actualSchemes.stream().map(s -> s.toLowerCase(Locale.ROOT)).collect(Collectors.toList()));
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<String> generateExpectedSchemes() {
+    Map<String, Object> data = securityConfHandler.getSecurityConfig(false).getData();
+    Map<String, Object> authentication = (Map<String, Object>) data.get("authentication");
+    List<Map<String, Object>> schemes = (List<Map<String, Object>>) authentication.get("schemes");
+
+    return schemes.stream()
+        .map(
+            schemeMap -> {
+              String scheme = (String) schemeMap.get("scheme");
+              String realm = (String) schemeMap.get("realm");
+              return realm != null ? scheme + " realm=\"" + realm + "\"" : scheme;
+            })
+        .collect(Collectors.toList());
   }
 
   private static final class MockPrincipal implements Principal, Serializable {

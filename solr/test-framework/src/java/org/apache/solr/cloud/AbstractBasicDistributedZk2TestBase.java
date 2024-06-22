@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.SolrCloudTestCase.configurePrsDefault;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +26,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -35,8 +36,10 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -64,6 +67,11 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
   protected boolean useTlogReplicas() {
     return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
     // and it's TestInjection use
+  }
+
+  @BeforeClass
+  public static void _setPrsDefault() {
+    configurePrsDefault();
   }
 
   @Test
@@ -176,8 +184,8 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     ZkStateReader.from(cloudClient).getLeaderRetry(ONE_NODE_COLLECTION, SHARD1, 30000);
 
     int docs = 2;
-    for (SolrClient client : clients) {
-      final String clientUrl = getBaseUrl((HttpSolrClient) client);
+    for (JettySolrRunner jetty : jettys) {
+      final String clientUrl = getBaseUrl(jetty);
       addAndQueryDocs(clientUrl, docs);
       docs += 2;
     }
@@ -188,33 +196,34 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+    String collectionUrl = baseUrl + "/onenodecollection" + "core";
+    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollectioncore")) {
 
       // it might take a moment for the proxy node to see us in their cloud state
-      waitForNon403or404or503(qclient);
+      waitForNon403or404or503(client, collectionUrl);
 
       // add a doc
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docs);
-      qclient.add(doc);
-      qclient.commit();
+      client.add(doc);
+      client.commit();
 
-      QueryResponse results = qclient.query(query);
+      QueryResponse results = client.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
 
-    try (SolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
-      QueryResponse results = qclient.query(query);
+    try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollection")) {
+      QueryResponse results = client.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docs + 1);
-      qclient.add(doc);
-      qclient.commit();
+      client.add(doc);
+      client.commit();
 
       query = new SolrQuery("*:*");
       query.set("rows", 0);
-      results = qclient.query(query);
+      results = client.query(query);
       assertEquals(docs, results.getResults().getNumFound());
     }
   }
@@ -323,8 +332,6 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     checkShardConsistency(true, false);
 
     query("q", "*:*", "sort", "n_tl1 desc");
-
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
 
     long numFound2 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 

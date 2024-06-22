@@ -22,7 +22,10 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.BeforeClass;
 
-/** A subclass of SolrExampleTests that explicitly uses the xml codec for communication. */
+/**
+ * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the xml codec for
+ * communication.
+ */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleXMLTest extends SolrExampleTests {
   @BeforeClass
@@ -32,15 +35,11 @@ public class SolrExampleXMLTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
-      client.setParser(new XMLResponseParser());
-      client.setRequestWriter(new RequestWriter());
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return new HttpSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .allowMultiPartPost(random().nextBoolean())
+        .withRequestWriter(new RequestWriter())
+        .withResponseParser(new XMLResponseParser())
+        .build();
   }
 }

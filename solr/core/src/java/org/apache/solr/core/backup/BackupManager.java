@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core.backup;
 
-import com.google.common.base.Preconditions;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -35,10 +36,12 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -219,7 +222,10 @@ public class BackupManager {
         repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
-      ClusterState c_state = ClusterState.createFromJson(-1, arr, Collections.emptySet());
+      // set a default created date, we don't aim at reading actual zookeeper state. The restored
+      // collection will have a new creation date when persisted in zookeeper.
+      ClusterState c_state =
+          ClusterState.createFromJson(-1, arr, Collections.emptySet(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
     }
   }
@@ -252,7 +258,9 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    Preconditions.checkState(repository.exists(source), "Path {} does not exist", source);
+    if (!repository.exists(source)) {
+      throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
+    }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 
@@ -267,7 +275,6 @@ public class BackupManager {
   public void downloadConfigDir(String configName, ConfigSetService configSetService)
       throws IOException {
     URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
-    repository.createDirectory(getZkStateDir());
     repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
@@ -329,13 +336,35 @@ public class BackupManager {
   private void downloadConfigToRepo(ConfigSetService configSetService, String configName, URI dir)
       throws IOException {
     List<String> filePaths = configSetService.getAllConfigFiles(configName);
+    // getAllConfigFiles always separates file paths with '/'
     for (String filePath : filePaths) {
-      URI uri = repository.resolve(dir, filePath);
+      // Replace '/' to ensure that propre file is resolved for writing.
+      URI uri = repository.resolve(dir, filePath.replace('/', File.separatorChar));
+      // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
+      // always separates file paths with '/'
       if (!filePath.endsWith("/")) {
-        log.debug("Writing file {}", filePath);
-        byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
-        try (OutputStream os = repository.createOutput(uri)) {
-          os.write(data);
+        if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+          log.warn(
+              "Not including zookeeper file in backup, as it is a forbidden type: {}", filePath);
+        } else {
+          log.debug("Writing file {}", filePath);
+          // ConfigSetService#downloadFileFromConfig requires '/' in fle path separator
+          byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
+          // replace empty zk node (data==null) with empty array
+          if (data == null) {
+            data = new byte[0];
+          }
+          if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+            try (OutputStream os = repository.createOutput(uri)) {
+              os.write(data);
+            }
+          } else {
+            String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+            log.warn(
+                "Not including zookeeper file {} in backup, as it matched the MAGIC signature of a forbidden mime type {}",
+                filePath,
+                mimeType);
+          }
         }
       } else {
         if (!repository.exists(uri)) {
@@ -355,11 +384,24 @@ public class BackupManager {
       switch (t) {
         case FILE:
           {
-            try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
-              // probably ok since the config file should be small.
-              byte[] arr = new byte[(int) is.length()];
-              is.readBytes(arr, 0, (int) is.length());
-              configSetService.uploadFileToConfig(configName, filePath, arr, false);
+            if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+              log.warn(
+                  "Not including zookeeper file in restore, as it is a forbidden type: {}", file);
+            } else {
+              try (IndexInput is = repository.openInput(sourceDir, file, IOContext.DEFAULT)) {
+                // probably ok since the config file should be small.
+                byte[] arr = new byte[(int) is.length()];
+                is.readBytes(arr, 0, (int) is.length());
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(arr)) {
+                  configSetService.uploadFileToConfig(configName, filePath, arr, false);
+                } else {
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(arr);
+                  log.warn(
+                      "Not including zookeeper file {} in restore, as it matched the MAGIC signature of a forbidden mime type {}",
+                      filePath,
+                      mimeType);
+                }
+              }
             }
             break;
           }
@@ -385,5 +427,9 @@ public class BackupManager {
       zkStateDir = repository.resolveDirectory(backupPath, ZK_STATE_DIR);
     }
     return zkStateDir;
+  }
+
+  public void createZkStateDir() throws IOException {
+    repository.createDirectory(getZkStateDir());
   }
 }

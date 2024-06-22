@@ -87,7 +87,7 @@ public class TestExternalFeatures extends TestRerankBase {
   public void testFeaturesUseStopwordQueryReturnEmptyFeatureVector() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*,score,fv:[fv]");
+    query.add("fl", "*,score,fv:[fv logAll=true]");
     query.add("rows", "1");
     // Stopword only query passed in
     query.add(

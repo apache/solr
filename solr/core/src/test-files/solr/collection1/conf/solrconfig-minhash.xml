@@ -271,7 +271,7 @@
       <str name="name">freq</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellcheckerFreq</str>
-      <!-- comparatorClass be one of:
+      <!-- comparatorClass can be one of:
         1. score (default)
         2. freq (Frequency first, then score)
         3. A fully qualified class name
@@ -419,7 +419,7 @@
   </searchComponent>
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="true" enableStreamBody="true" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
     <httpCaching lastModifiedFrom="openTime" etagSeed="Solr" never304="false">
       <cacheControl>max-age=30, public</cacheControl>
     </httpCaching>

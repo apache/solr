@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.params;
 
+import static org.apache.solr.SolrTestCaseJ4.params;
+
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,9 +26,52 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.QueryParsing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** */
 public class SolrParamTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public void testLocalParamRoundTripParsing() throws Exception {
+    final SolrParams in =
+        params(
+            "simple", "xxx",
+            "blank", "",
+            "space", "x y z",
+            "lead_space", " x",
+            "curly", "x}y",
+            "quote", "x'y",
+            "quoted", "'x y'",
+            "d_quote", "x\"y",
+            "d_quoted", "\"x y\"",
+            "dollar", "x$y",
+            "multi", "x",
+            "multi", "y y",
+            "v", "$ref");
+    final String toStr = in.toLocalParamsString();
+    final SolrParams out = QueryParsing.getLocalParams(toStr, params("ref", "ref value"));
+
+    assertEquals("xxx", out.get("simple"));
+    assertEquals("", out.get("blank"));
+    assertEquals("x y z", out.get("space"));
+    assertEquals(" x", out.get("lead_space"));
+    assertEquals("x}y", out.get("curly"));
+    assertEquals("x'y", out.get("quote"));
+    assertEquals("'x y'", out.get("quoted"));
+    assertEquals("x\"y", out.get("d_quote"));
+    assertEquals("\"x y\"", out.get("d_quoted"));
+    assertEquals("x$y", out.get("dollar"));
+
+    assertArrayEquals(new String[] {"x", "y y"}, out.getParams("multi"));
+    // first one should win...
+    assertEquals("x", out.get("multi"));
+
+    assertEquals("ref value", out.get("v"));
+
+    assertIterSize(toStr, 12, out);
+  }
 
   public void testParamIterators() {
 
@@ -301,7 +347,7 @@ public class SolrParamTest extends SolrTestCase {
     } catch (SolrException sx) {
       return sx.code();
     } catch (Exception ex) {
-      ex.printStackTrace();
+      log.error("error running", ex);
       return 500;
     }
     return 200;

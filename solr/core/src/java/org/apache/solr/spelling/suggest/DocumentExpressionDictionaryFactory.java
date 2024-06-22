@@ -16,6 +16,7 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,7 +47,7 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
   public static final String SORT_FIELD = "sortField";
 
   @Override
-  public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
+  public Dictionary create(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     if (params == null) {
       // should not happen; implies setParams was not called
       throw new IllegalStateException("Value of params not set");

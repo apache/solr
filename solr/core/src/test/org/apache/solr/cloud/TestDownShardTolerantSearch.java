@@ -20,12 +20,11 @@ import static org.hamcrest.CoreMatchers.is;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -54,8 +53,8 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     QueryResponse response =
         cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1));
-    MatcherAssert.assertThat(response.getStatus(), is(0));
-    MatcherAssert.assertThat(response.getResults().getNumFound(), is(100L));
+    assertThat(response.getStatus(), is(0));
+    assertThat(response.getResults().getNumFound(), is(100L));
 
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
 
@@ -67,7 +66,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
             .query(
                 "tolerant",
                 new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-    MatcherAssert.assertThat(response.getStatus(), is(0));
+    assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
     SolrServerException e =
