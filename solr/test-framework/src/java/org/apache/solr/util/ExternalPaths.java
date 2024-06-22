@@ -29,8 +29,8 @@ public class ExternalPaths {
 
   /**
    * The main directory path for the solr source being built if it can be determined. If it can not
-   * be determined -- possily because the current context is a client code base using hte test
-   * frameowrk -- then this variable will be null.
+   * be determined -- possibly because the current context is a client code base using the test
+   * framework -- then this variable will be null.
    *
    * <p>Note that all other static paths available in this class are derived from the source home,
    * and if it is null, those paths will just be relative to 'null' and may not be meaningful.
@@ -70,10 +70,11 @@ public class ExternalPaths {
       File file = new File("solr/conf");
       if (!file.exists()) {
         URL resourceUrl = ExternalPaths.class.getClassLoader().getResource("solr/conf");
-        if(resourceUrl != null) {
+        if (resourceUrl != null) {
           file = new File(resourceUrl.toURI());
         } else {
-          // If there is no "solr/conf" in the classpath, fall back to searching from the current directory.
+          // If there is no "solr/conf" in the classpath, fall back to searching from the current
+          // directory.
           file = new File(System.getProperty("tests.src.home", "."));
         }
       }
