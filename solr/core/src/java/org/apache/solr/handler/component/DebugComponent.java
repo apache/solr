@@ -44,6 +44,8 @@ import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * Adds debugging information to a request.
  *
@@ -181,7 +183,8 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
-  private String getDistributedStageName(int stage) {
+  @VisibleForTesting
+  static String getDistributedStageName(int stage) {
     String stageName = stages.get(stage);
 
     if (stageName == null) {
