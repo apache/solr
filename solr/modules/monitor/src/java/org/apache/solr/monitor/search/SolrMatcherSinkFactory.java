@@ -32,14 +32,7 @@ import org.apache.lucene.search.IndexSearcher;
 
 class SolrMatcherSinkFactory {
 
-  private final ExecutorService executorService;
-
   SolrMatcherSinkFactory() {
-    this(null);
-  }
-
-  SolrMatcherSinkFactory(ExecutorService executorService) {
-    this.executorService = executorService;
   }
 
   SolrMatcherSink build(
@@ -73,11 +66,6 @@ class SolrMatcherSinkFactory {
       Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
       Consumer<MultiMatchingQueries<T>> encoder) {
     var docBatchSearcher = new IndexSearcher(documentBatch.get());
-    if (executorService == null) {
       return new SyncSolrMatcherSink<>(matcherFactory, docBatchSearcher, encoder);
-    } else {
-      return new ParallelSolrMatcherSink<>(
-          executorService, matcherFactory, docBatchSearcher, encoder);
-    }
   }
 }
