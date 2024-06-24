@@ -50,7 +50,6 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -286,20 +285,6 @@ public class DistribFileStore implements FileStore {
         @Override
         public long size() {
           return realPath().toFile().length();
-        }
-
-        @Override
-        public void writeMap(EntryWriter ew) throws IOException {
-          MetaData metaData = readMetaData();
-          ew.put(CommonParams.NAME, getSimpleName());
-          if (type == FileType.DIRECTORY) {
-            ew.put("dir", true);
-            return;
-          }
-
-          ew.put("size", size());
-          ew.put("timestamp", getTimeStamp());
-          if (metaData != null) metaData.writeMap(ew);
         }
 
         @Override
