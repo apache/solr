@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -136,8 +137,13 @@ public class SolrDocumentFetcher {
     this.storedFields = storedFields;
   }
 
-  public SolrDocumentFetcher createInstance() throws IOException {
-    return new SolrDocumentFetcher(this, searcher.getIndexReader().storedFields());
+  @Override
+  protected SolrDocumentFetcher clone() {
+    try {
+      return new SolrDocumentFetcher(this, searcher.getIndexReader().storedFields());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
