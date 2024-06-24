@@ -20,7 +20,6 @@
 package org.apache.solr.monitor.search;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.lucene.monitor.CandidateMatcher;
@@ -32,8 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 
 class SolrMatcherSinkFactory {
 
-  SolrMatcherSinkFactory() {
-  }
+  SolrMatcherSinkFactory() {}
 
   SolrMatcherSink build(
       QueryMatchType matchType,
@@ -66,6 +64,6 @@ class SolrMatcherSinkFactory {
       Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
       Consumer<MultiMatchingQueries<T>> encoder) {
     var docBatchSearcher = new IndexSearcher(documentBatch.get());
-      return new SyncSolrMatcherSink<>(matcherFactory, docBatchSearcher, encoder);
+    return new SyncSolrMatcherSink<>(matcherFactory, docBatchSearcher, encoder);
   }
 }

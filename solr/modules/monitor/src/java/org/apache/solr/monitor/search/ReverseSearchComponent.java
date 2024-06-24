@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
@@ -45,12 +44,8 @@ import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -77,7 +72,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   private QueryDecomposer queryDecomposer;
   private Presearcher presearcher;
-  final private SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
+  private final SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
   private PresearcherFactory.PresearcherParameters presearcherParameters;
 
   @Override
