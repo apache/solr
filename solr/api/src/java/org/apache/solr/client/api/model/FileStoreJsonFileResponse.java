@@ -16,6 +16,15 @@
  */
 package org.apache.solr.client.api.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * One of several possible responses from {@link
+ * org.apache.solr.client.api.endpoint.NodeFileStoreApis#getFile(String, Boolean, String, Boolean)}
+ *
+ * <p>Typically used when 'wt=json' is specified while retrieving an individual file from the
+ * filestore
+ */
 public class FileStoreJsonFileResponse extends SolrJerseyResponse {
-  public String response;
+  @JsonProperty public String response;
 }

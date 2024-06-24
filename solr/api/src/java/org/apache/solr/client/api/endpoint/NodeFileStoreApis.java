@@ -21,19 +21,21 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
+import org.apache.solr.client.api.model.MergeIndexesRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
+/**
+ * V2 APIs for fetching filestore files, syncing them across nodes, or fetching related metadata.
+ *
+ * @see MergeIndexesRequestBody
+ */
 @Path("/node")
 public interface NodeFileStoreApis {
   @GET
   @Operation(
       summary = "Retrieve file contents or metadata from the filestore.",
       tags = {"file-store"})
-  @Produces({"application/vnd.apache.solr.raw", MediaType.APPLICATION_JSON})
-  // @Produces({"application/vnd.apache.solr.raw", MediaType.APPLICATION_JSON})
   @Path("/files{path:.+}")
   SolrJerseyResponse getFile(
       @Parameter(description = "Path to a file or directory within the filestore")

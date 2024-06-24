@@ -22,9 +22,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.api.util.ReflectWritable;
 
-public class FileStoreEntryMetadata implements ReflectWritable {
+/** Represents the metadata for a single filestore file or directory */
+public class FileStoreEntryMetadata {
   @JsonProperty public String name;
   @JsonProperty public Boolean dir;
   @JsonProperty public Long size;

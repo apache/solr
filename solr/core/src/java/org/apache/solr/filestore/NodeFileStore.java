@@ -19,6 +19,7 @@ package org.apache.solr.filestore;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
+import static org.apache.solr.security.PermissionNameProvider.Name.FILESTORE_READ_PERM;
 
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -32,7 +33,6 @@ import org.apache.solr.client.api.endpoint.NodeFileStoreApis;
 import org.apache.solr.client.api.model.FileStoreDirectoryListingResponse;
 import org.apache.solr.client.api.model.FileStoreEntryMetadata;
 import org.apache.solr.client.api.model.FileStoreJsonFileResponse;
-import org.apache.solr.client.api.model.FileStoreMissingFileResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -40,11 +40,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Implementation for {@link NodeFileStoreApis} */
 public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -65,30 +67,11 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     this.fileStore = fileStore;
   }
 
-  // TODO This really shouldn't be needed.
-  private FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details) {
-    final var entryMetadata = new FileStoreEntryMetadata();
-
-    entryMetadata.name = details.getSimpleName();
-    if (details.isDir()) {
-      entryMetadata.dir = true;
-      return entryMetadata;
-    }
-
-    entryMetadata.size = details.size();
-    entryMetadata.timestamp = details.getTimeStamp();
-    if (details.getMetaData() != null) {
-      details.getMetaData().toMap(entryMetadata.unknownProperties());
-    }
-
-    return entryMetadata;
-  }
-
   // TODO - this single "get" operation actually supports several different chunks of functionality:
-  // syncing,
-  //  directory listing, file-fetching, metadata-fetching. We should split it up into multiple
-  // distinct APIs
+  //  syncing, directory listing, file-fetching, metadata-fetching. We should split it up into
+  //  multiple distinct APIs
   @Override
+  @PermissionName(FILESTORE_READ_PERM)
   public SolrJerseyResponse getFile(String path, Boolean sync, String getFrom, Boolean meta) {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
 
@@ -124,7 +107,8 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     }
     FileStore.FileType typ = fileStore.getType(path, false);
     if (typ == FileStore.FileType.NOFILE) {
-      final var fileMissingResponse = instantiateJerseyResponse(FileStoreMissingFileResponse.class);
+      final var fileMissingResponse =
+          instantiateJerseyResponse(FileStoreDirectoryListingResponse.class);
       fileMissingResponse.files = Collections.singletonMap(path, null);
       return fileMissingResponse;
     }
@@ -203,5 +187,25 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
       }
     }
     return response;
+  }
+
+  // TODO Modify the filestore implementation itself to return this object, so conversion isn't
+  // needed.
+  private FileStoreEntryMetadata convertToResponse(FileStore.FileDetails details) {
+    final var entryMetadata = new FileStoreEntryMetadata();
+
+    entryMetadata.name = details.getSimpleName();
+    if (details.isDir()) {
+      entryMetadata.dir = true;
+      return entryMetadata;
+    }
+
+    entryMetadata.size = details.size();
+    entryMetadata.timestamp = details.getTimeStamp();
+    if (details.getMetaData() != null) {
+      details.getMetaData().toMap(entryMetadata.unknownProperties());
+    }
+
+    return entryMetadata;
   }
 }
