@@ -851,7 +851,7 @@ If the configuration directory is being used by another collection, then it will
 +
 Skip safety checks when deleting the configuration directory used by a collection.
 
-`-z <zkHost>` or `-zk-host <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1831,6 +1831,6 @@ $ bin/solr api --solr-url http://localhost:8983/solr/techproducts/select?q=*:* -
 Here is an example of sending a SQL query to the techproducts `/sql` end point (assumes you started Solr in Cloud mode with the SQL module enabled):
 
 [source,bash]
-$ bin/solr api -url http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+$ bin/solr api --solr-url http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.
