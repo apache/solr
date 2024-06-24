@@ -67,7 +67,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
   private static String solrUrl = null;
 
   /**
-   * Helper that returns the original {@link SolrRequest} <em>with it's original type</em> so it can
+   * Helper that returns the original {@link SolrRequest} <em>with its original type</em> so it can
    * be chained. This method knows that for the purpose of this test, every username is its own
    * password
    *
