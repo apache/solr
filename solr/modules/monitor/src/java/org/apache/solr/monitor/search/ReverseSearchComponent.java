@@ -21,10 +21,8 @@ package org.apache.solr.monitor.search;
 
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
-import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
 import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
-import static org.apache.solr.monitor.search.QueryMatchResponseCodec.mergeResponses;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,9 +89,8 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     var req = rb.req;
     var documentBatch = documentBatch(req);
     boolean writeToDocList = req.getParams().getBool(WRITE_TO_DOC_LIST_KEY, false);
-    var matchType = QueryMatchType.fromString(req.getParams().get(QUERY_MATCH_TYPE_KEY));
     Map<String, Object> monitorResult = new HashMap<>();
-    var matcherSink = solrMatcherSinkFactory.build(matchType, documentBatch, monitorResult);
+    var matcherSink = solrMatcherSinkFactory.build(documentBatch, monitorResult);
     Query preFilterQuery = presearcher.buildQuery(documentBatch.get(), getTermAcceptor(rb.req));
     List<Query> mutableFilters =
         Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
@@ -106,12 +103,9 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     mutableFilters.add(
         new MonitorPostFilter(
             new SolrMonitorQueryCollector.CollectorContext(
-                solrMonitorCache, queryDecoder, matcherSink, writeToDocList, matchType)));
+                solrMonitorCache, queryDecoder, matcherSink, writeToDocList)));
     rb.setFilters(mutableFilters);
-    rb.rsp.add(QUERY_MATCH_TYPE_KEY, matchType.name());
-    if (matchType != QueryMatchType.NONE) {
-      rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
-    }
+    rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -149,11 +143,8 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
             .map(shardResponse -> shardResponse.getSolrResponse().getResponse())
             .collect(Collectors.toList());
     rb.rsp.getValues().removeAll(MONITOR_OUTPUT_KEY);
-    var matchType = QueryMatchType.fromString(rb.req.getParams().get(QUERY_MATCH_TYPE_KEY));
-    if (matchType != QueryMatchType.NONE) {
-      var finalOutput = mergeResponses(responses, matchType);
-      rb.rsp.add(MONITOR_OUTPUT_KEY, finalOutput);
-    }
+    var finalOutput = QueryMatchResponseCodec.mergeResponses(responses);
+    rb.rsp.add(MONITOR_OUTPUT_KEY, finalOutput);
   }
 
   @Override

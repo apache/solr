@@ -19,7 +19,6 @@
 
 package org.apache.solr.monitor;
 
-import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
 
 import java.net.URL;
@@ -71,8 +70,6 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
           json,
           CommonParams.QT,
           "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "simple",
           WRITE_TO_DOC_LIST_KEY,
           "true"
         };
@@ -96,8 +93,6 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
           json,
           CommonParams.QT,
           "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "simple",
           WRITE_TO_DOC_LIST_KEY,
           "true"
         };
@@ -162,14 +157,7 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
 
     String[] params =
         new String[] {
-          CommonParams.SORT,
-          "id desc",
-          CommonParams.JSON,
-          json,
-          CommonParams.QT,
-          "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
         };
 
     assertQ(
@@ -203,14 +191,7 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
 
     String[] params =
         new String[] {
-          CommonParams.SORT,
-          "id desc",
-          CommonParams.JSON,
-          json,
-          CommonParams.QT,
-          "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
         };
 
     assertQ(
