@@ -185,6 +185,42 @@ public class StreamToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testStdInFailsWithRemoteWorker() throws Exception {
+    String expression = "echo(stdin())";
+
+    String[] args =
+        new String[] {
+          "stream",
+          "-workers",
+          "remote",
+          "-name",
+          "fakeCollection",
+          "-verbose",
+          "-zkHost",
+          cluster.getZkClient().getZkServerAddress(),
+          expression
+        };
+    assertEquals(1, runTool(args));
+  }
+
+  @Test
+  public void testStdInSucceedsWithLocalWorker() throws Exception {
+    String expression = "echo(stdin())";
+
+    String[] args =
+        new String[] {
+          "stream",
+          "-workers",
+          "local",
+          "-verbose",
+          "-zkHost",
+          cluster.getZkClient().getZkServerAddress(),
+          expression
+        };
+    assertEquals(0, runTool(args));
+  }
+
+  @Test
   public void testRunEchoStreamLocally() throws Exception {
 
     String expression = "echo(Hello)";

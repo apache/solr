@@ -230,6 +230,10 @@ public class StreamTool extends ToolBase {
     StreamExpression streamExpression = StreamExpressionParser.parse(expr);
     StreamFactory streamFactory = new StreamFactory();
 
+    // stdin is ONLY available in the local mode, not in the remote mode as it
+    // requires access to System.in
+    streamFactory.withFunctionName("stdin", StandardInStream.class);
+
     streamFactory.withDefaultZkHost(zkHost);
 
     Lang.register(streamFactory);
@@ -257,6 +261,11 @@ public class StreamTool extends ToolBase {
           "You must provide --name COLLECTION with --worker solr parameter.");
     }
     String collection = cli.getOptionValue("name");
+
+    if (expr.toLowerCase(Locale.ROOT).indexOf("stdin(") > -1) {
+      throw new IllegalStateException(
+          "The stdin() expression is only usable with --worker local set up.");
+    }
 
     final SolrStream solrStream =
         new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr));
