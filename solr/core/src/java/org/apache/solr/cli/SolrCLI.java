@@ -553,7 +553,7 @@ public class SolrCLI implements CLIO {
       String zkHost = cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
-        CLIO.getOutStream()
+        CLIO.getErrStream()
             .println(
                 "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
                     + solrUrl
