@@ -372,7 +372,7 @@ function print_usage() {
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or -cloud          Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
+    echo "  -c or --cloud         Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
     echo "                          solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
     echo "                          such as 9983 if Solr is bound to 8983"
     echo ""
@@ -422,8 +422,8 @@ function print_usage() {
     echo ""
     echo "  --noprompt            Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
-    echo "  -force                If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
-    echo "                          It is possible to override this warning with the '-force' parameter."
+    echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
+    echo "                          It is possible to override this warning with the '--force' parameter."
     echo ""
     echo "  -v and -q             Verbose (-v) or quiet (-q) logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
     echo ""
@@ -1134,7 +1134,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--update-include-file-only" "$2")
             shift 2
         ;;
-        -v|--verbose)
+        -v|--verbose|-verbose)
             VERBOSE="--verbose"
             shift
         ;;
@@ -1292,12 +1292,12 @@ PASS_TO_RUN_EXAMPLE=()
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
-        -c|--cloud)
+        -c|--cloud|-cloud)
             SOLR_MODE="solrcloud"
             PASS_TO_RUN_EXAMPLE+=("-c")
             shift
         ;;
-        -d|--dir)
+        -d|--dir|-dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
               exit 1
@@ -1317,7 +1317,7 @@ if [ $# -gt 0 ]; then
             SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
-        -s|--solr-home)
+        -s|--solr-home|-solr.home)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
@@ -1326,11 +1326,11 @@ if [ $# -gt 0 ]; then
             SOLR_HOME="$2"
             shift 2
         ;;
-        -t|--data-home)
+        -t|--data-home|-data.home)
             SOLR_DATA_HOME="$2"
             shift 2
         ;;
-        -e|--example)
+        -e|--example|-example)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Example name is required when using the $1 option!"
               exit 1
@@ -1338,11 +1338,11 @@ if [ $# -gt 0 ]; then
             EXAMPLE="$2"
             shift 2
         ;;
-        -f|--foreground)
+        -f|--foreground|-foreground)
             FG="true"
             shift
         ;;
-        --host)
+        --host|-host)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
               exit 1
@@ -1351,7 +1351,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--host" "$SOLR_HOST")
             shift 2
         ;;
-        -m|--memory)
+        -m|--memory|-memory)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Memory setting is required when using the $1 option!"
               exit 1
@@ -1360,7 +1360,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-m" "$SOLR_HEAP")
             shift 2
         ;;
-        -p|--port)
+        -p|--port|-port)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Port number is required when using the $1 option!"
               exit 1
@@ -1380,17 +1380,17 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
-        -a|--additional-options)
+        -a|--additional-options|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
             PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
-        -j|--jettyconfig)
+        -j|--jettyconfig|-jettyconfig)
             ADDITIONAL_JETTY_CONFIG="$2"
             PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
-        -k|--key)
+        -k|--key|-key)
             STOP_KEY="$2"
             shift 2
         ;;
@@ -1398,11 +1398,11 @@ if [ $# -gt 0 ]; then
             print_usage "$SCRIPT_CMD"
             exit 0
         ;;
-        --noprompt)
+        --noprompt|-noprompt)
             PASS_TO_RUN_EXAMPLE+=("--noprompt")
             shift
         ;;
-        -V|--verbose)
+        -V|--verbose|-verbose)
             verbose=true
             PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
@@ -1419,7 +1419,7 @@ if [ $# -gt 0 ]; then
             stop_all=true
             shift
         ;;
-        --force)
+        --force|-force)
             FORCE=true
             PASS_TO_RUN_EXAMPLE+=("--force")
             shift
@@ -1568,7 +1568,7 @@ fi
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
   if [[ $EUID -eq 0 ]] && [[ "$FORCE" == "false" ]] ; then
     echo "WARNING: Starting Solr as the root user is a security risk and not considered best practice. Exiting."
-    echo "         Please consult the Reference Guide. To override this check, start with argument '-force'"
+    echo "         Please consult the Reference Guide. To override this check, start with argument '--force'"
     exit 1
   fi
 fi
