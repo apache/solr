@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.SettableGauge;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,6 +29,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -45,6 +48,22 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     jetty = solrClientTestRule.getJetty();
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     jetty.getCoreContainer().waitForLoadingCoresToFinish(30000);
+    // Manually register metrics not initializing from JettyTestRule
+    registerGauge(
+        jetty.getCoreContainer().getMetricManager(),
+        "solr.jvm",
+        "buffers.mapped - 'non-volatile memory'.Count");
+    registerGauge(
+        jetty.getCoreContainer().getMetricManager(),
+        "solr.jvm",
+        "buffers.mapped - 'non-volatile memory'.MemoryUsed");
+    registerGauge(
+        jetty.getCoreContainer().getMetricManager(),
+        "solr.jvm",
+        "buffers.mapped - 'non-volatile memory'.TotalCapacity");
+    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "os.cpuLoad");
+    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "os.freeMemorySize");
+    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "os.totalMemorySize");
   }
 
   @Test
@@ -58,12 +77,27 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       String actual = (String) res.get("response");
-      System.out.println(actual.replaceAll("(?<=}).*", ""));
       String expectedOutput =
           Files.readString(
               new File(TEST_PATH().toString(), "solr-prometheus-output.txt").toPath(),
               StandardCharsets.UTF_8);
       assertEquals(expectedOutput, actual.replaceAll("(?<=}).*", ""));
     }
+  }
+
+  public static void registerGauge(
+      SolrMetricManager metricManager, String registry, String metricName) {
+    Gauge<Number> metric =
+        new SettableGauge<>() {
+          @Override
+          public void setValue(Number value) {}
+
+          @Override
+          public Number getValue() {
+            return 0;
+          }
+        };
+    metricManager.registerGauge(
+        null, registry, metric, "", SolrMetricManager.ResolutionStrategy.IGNORE, metricName, "");
   }
 }
