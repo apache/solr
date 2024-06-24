@@ -297,4 +297,12 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     params.add(CommonParams.REQUEST_ID, requestId);
     rb.req.setParams(params);
   }
+
+  @Test
+  public void testDistributedStageResolution() throws IOException {
+    assertEquals("PARSE_QUERY", DebugComponent.getDistributedStageName(ResponseBuilder.STAGE_PARSE_QUERY));
+    assertEquals("DONE", DebugComponent.getDistributedStageName(ResponseBuilder.STAGE_DONE));
+    assertEquals("STAGE_400", DebugComponent.getDistributedStageName(400));
+    assertEquals("STAGE_10000", DebugComponent.getDistributedStageName(10000));
+  }
 }

@@ -44,6 +44,8 @@ import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
  * Adds debugging information to a request.
  *
@@ -181,16 +183,28 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
+  @VisibleForTesting
+  static String getDistributedStageName(int stage) {
+    String stageName = stages.get(stage);
+
+    if (stageName == null) {
+      stageName = "STAGE_" + Integer.toString(stage);
+    }
+
+    return stageName;
+  }
+
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if (rb.isDebugTrack() && rb.isDistrib && !rb.finished.isEmpty()) {
       @SuppressWarnings("unchecked")
       NamedList<Object> stageList =
           (NamedList<Object>)
-              ((NamedList<Object>) rb.getDebugInfo().get("track")).get(stages.get(rb.stage));
+              ((NamedList<Object>) rb.getDebugInfo().get("track"))
+                  .get(getDistributedStageName(rb.stage));
       if (stageList == null) {
         stageList = new SimpleOrderedMap<>();
-        rb.addDebug(stageList, "track", stages.get(rb.stage));
+        rb.addDebug(stageList, "track", getDistributedStageName(rb.stage));
       }
       for (ShardResponse response : sreq.responses) {
         stageList.add(response.getShard(), getTrackResponse(response));
