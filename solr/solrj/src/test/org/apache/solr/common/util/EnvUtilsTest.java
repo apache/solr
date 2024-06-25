@@ -24,43 +24,24 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class EnvUtilsTest extends SolrTestCase {
+
+  private static final Map<String, String> ENV =
+      Map.of(
+          "SOLR_HOME", "/home/solr",
+          "SOLR_PORT", "8983",
+          "SOLR_HOST", "localhost",
+          "SOLR_LOG_LEVEL", "INFO",
+          "SOLR_BOOLEAN", "true",
+          "SOLR_LONG", "1234567890",
+          "SOLR_COMMASEP", "one,two, three",
+          "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]",
+          "SOLR_ALWAYS_ON_TRACE_ID", "true",
+          "SOLR_STR_WITH_NEWLINE", "foo\nbar,baz");
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Make a map of some common Solr environment variables for testing, and initialize EnvUtils
-    EnvUtils.setEnvs(
-        Map.of(
-            "SOLR_HOME", "/home/solr",
-            "SOLR_PORT", "8983",
-            "SOLR_HOST", "localhost",
-            "SOLR_LOG_LEVEL", "INFO",
-            "SOLR_BOOLEAN", "true",
-            "SOLR_LONG", "1234567890",
-            "SOLR_COMMASEP", "one,two, three",
-            "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]",
-            "SOLR_ALWAYS_ON_TRACE_ID", "true",
-            "SOLR_STR_WITH_NEWLINE", "foo\nbar,baz"));
-    EnvUtils.init(true);
-  }
-
-  @Test
-  public void testGetEnv() {
-    assertEquals("INFO", EnvUtils.getEnv("SOLR_LOG_LEVEL"));
-
-    assertNull(EnvUtils.getEnv("SOLR_NONEXIST"));
-    assertEquals("myString", EnvUtils.getEnv("SOLR_NONEXIST", "myString"));
-
-    assertTrue(EnvUtils.getEnvAsBool("SOLR_BOOLEAN"));
-    assertFalse(EnvUtils.getEnvAsBool("SOLR_BOOLEAN_NONEXIST", false));
-
-    assertEquals("1234567890", EnvUtils.getEnv("SOLR_LONG"));
-    assertEquals(1234567890L, EnvUtils.getEnvAsLong("SOLR_LONG"));
-    assertEquals(987L, EnvUtils.getEnvAsLong("SOLR_LONG_NONEXIST", 987L));
-
-    assertEquals("one,two, three", EnvUtils.getEnv("SOLR_COMMASEP"));
-    assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_COMMASEP"));
-    assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_JSON_LIST"));
-    assertEquals(List.of("fallback"), EnvUtils.getEnvAsList("SOLR_MISSING", List.of("fallback")));
-    assertEquals(List.of("foo\nbar", "baz"), EnvUtils.getEnvAsList("SOLR_STR_WITH_NEWLINE"));
+    EnvUtils.init(true, ENV);
   }
 
   @Test
@@ -96,10 +77,10 @@ public class EnvUtilsTest extends SolrTestCase {
   @Test
   public void testEnvsWithCustomKeyNameMappings() {
     // These have different names than the environment variables
-    assertEquals(EnvUtils.getEnv("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
-    assertEquals(EnvUtils.getEnv("SOLR_PORT"), EnvUtils.getProperty("jetty.port"));
-    assertEquals(EnvUtils.getEnv("SOLR_HOST"), EnvUtils.getProperty("host"));
-    assertEquals(EnvUtils.getEnv("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.log.dir"));
+    assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
+    assertEquals(ENV.get("SOLR_PORT"), EnvUtils.getProperty("jetty.port"));
+    assertEquals(ENV.get("SOLR_HOST"), EnvUtils.getProperty("host"));
+    assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.log.dir"));
   }
 
   @Test
@@ -111,10 +92,12 @@ public class EnvUtilsTest extends SolrTestCase {
   @Test
   public void testOverwrite() {
     EnvUtils.setProperty("solr.overwrite", "original");
-    EnvUtils.setEnv("SOLR_OVERWRITE", "overwritten");
-    EnvUtils.init(false);
+    var env2 = Map.of("SOLR_OVERWRITE", "overwritten");
+    EnvUtils.init(false, env2);
     assertEquals("original", EnvUtils.getProperty("solr.overwrite"));
-    EnvUtils.init(true);
+    EnvUtils.init(true, env2);
     assertEquals("overwritten", EnvUtils.getProperty("solr.overwrite"));
+
+    EnvUtils.init(true, ENV); // back to how it was...
   }
 }

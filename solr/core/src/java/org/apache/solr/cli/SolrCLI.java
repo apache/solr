@@ -201,9 +201,10 @@ public class SolrCLI implements CLIO {
   }
 
   public static String getDefaultSolrUrl() {
-    String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
-    String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
-    String port = EnvUtils.getEnv("SOLR_PORT", "8983");
+    // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
+    String scheme = EnvUtils.getProperty("SOLR_URL_SCHEME", "http");
+    String host = EnvUtils.getProperty("SOLR_TOOL_HOST", "localhost");
+    String port = EnvUtils.getProperty("SOLR_PORT", "8983");
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
