@@ -50,9 +50,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     var queryId = dataValues.getQueryId();
     var originalMatchQuery = entry.getMatchQuery();
 
-    var matchQuery = originalMatchQuery;
-    // TODO: or should this be wrapped like this?
-    // var matchQuery = new ConstantScoreQuery(originalMatchQuery);
+    var matchQuery = new ConstantScoreQuery(originalMatchQuery);
 
     boolean isMatch = matcherSink.matchQuery(queryId, matchQuery, entry.getMetadata());
     if (isMatch && writeToDocList) {
