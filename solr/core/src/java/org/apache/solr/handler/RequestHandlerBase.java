@@ -28,6 +28,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -219,6 +220,14 @@ public abstract class RequestHandlerBase
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
         req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
       SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+      SolrParams params = req.getParams();
+      if (params.getParams(CommonParams.JSON) != null
+          && params.getBool(CommonParams.DISTRIB, true)) {
+        // log JSON for top level query, this includes query embedded in POST query, which is
+        // available after SolrPluginUtils.setDefaults
+        rsp.getToLog().add("json", String.join(" ", params.getParams(CommonParams.JSON)));
+      }
+
       req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
