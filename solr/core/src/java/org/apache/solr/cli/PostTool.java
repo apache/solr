@@ -265,10 +265,10 @@ public class PostTool extends ToolBase {
     solrUpdateUrl = null;
     if (cli.hasOption("solr-update-url")) {
       String url = cli.getOptionValue("solr-update-url");
-      solrUpdateUrl = new URL(url);
+      solrUpdateUrl = new URI(url);
     } else if (cli.hasOption("name")) {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
-      solrUpdateUrl = new URL(url);
+      solrUpdateUrl = new URI(url);
     } else {
       throw new IllegalArgumentException(
           "Must specify either --solr-update-url or -c parameter to post documents.");
@@ -298,7 +298,7 @@ public class PostTool extends ToolBase {
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    commit = cli.hasOption("skipcommit") ? false : true;
+    commit = !cli.hasOption("skipcommit");
     optimize = cli.hasOption("optimize");
 
     credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
@@ -1092,8 +1092,7 @@ public class PostTool extends ToolBase {
   public static Document makeDom(byte[] in)
       throws SAXException, IOException, ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(in);
-    Document dom = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
-    return dom;
+    return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
   }
 
   /** Inner class to filter files based on glob wildcards */
