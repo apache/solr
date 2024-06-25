@@ -63,12 +63,12 @@ teardown() {
 }
 
 @test "reject d option with invalid config dir" {
-  run ! solr create -c COLL_NAME -d /asdf  --solr-url http://localhost:${SOLR_PORT}/solr
+  run ! solr create -c COLL_NAME -d /asdf  -solrUrl http://localhost:${SOLR_PORT}
   assert_output --partial "Specified configuration directory /asdf not found!"
 }
 
 @test "accept d option with builtin config" {
-  run solr create -c COLL_NAME -d sample_techproducts_configs --solr-url http://localhost:${SOLR_PORT}/solr
+  run solr create -c COLL_NAME -d sample_techproducts_configs --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
@@ -78,34 +78,34 @@ teardown() {
   test -d $source_configset_dir
   cp -r "${source_configset_dir}" "${dest_configset_dir}"
 
-  run solr create -c COLL_NAME -d "${dest_configset_dir}" --solr-url http://localhost:${SOLR_PORT}/solr
+  run solr create -c COLL_NAME -d "${dest_configset_dir}" --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
 @test "accept n option as config name" {
-  run solr create -c COLL_NAME -n other_conf_name --solr-url http://localhost:${SOLR_PORT}/solr
+  run solr create -c COLL_NAME -n other_conf_name --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "config-set 'other_conf_name'"
 }
 
 @test "allow config reuse when n option specifies same config" {
-  run -0 solr create -c COLL_NAME_1 -n shared_config --solr-url http://localhost:${SOLR_PORT}/solr
+  run -0 solr create -c COLL_NAME_1 -n shared_config --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME_1'"
   assert_output --partial "config-set 'shared_config'"
 
-  run -0 solr create -c COLL_NAME_2 -n shared_config --solr-url http://localhost:${SOLR_PORT}/solr
+  run -0 solr create -c COLL_NAME_2 -n shared_config --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME_2'"
   assert_output --partial "config-set 'shared_config'"
 }
 
 @test "create multisharded collections when s provided" {
-  run -0 solr create -c COLL_NAME -s 2 --solr-url http://localhost:${SOLR_PORT}/solr
+  run -0 solr create -c COLL_NAME -s 2 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 shard(s)"
 }
 
 @test "create replicated collections when rf provided" {
-  run -0 solr create -c COLL_NAME -rf 2 --solr-url http://localhost:${SOLR_PORT}/solr
+  run -0 solr create -c COLL_NAME -rf 2 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 replica(s)"
 }

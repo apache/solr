@@ -18,7 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.net.URL;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +97,7 @@ public class StatusTool extends ToolBase {
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
-      int solrPort = (new URL(solrUrl)).getPort();
+      int solrPort = new URI(solrUrl).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
       try {
         waitToSeeSolrUp(

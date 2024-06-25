@@ -98,7 +98,7 @@ public class PostTool extends ToolBase {
   int recursive = 0;
   int delay = 0;
   String fileTypes = PostTool.DEFAULT_FILE_TYPES;
-  URL solrUpdateUrl;
+  URI solrUpdateUrl;
   String credentials;
   OutputStream out = null;
   String type;
@@ -398,7 +398,7 @@ public class PostTool extends ToolBase {
       numPagesPosted = postWebPages(args, 0, out);
       info(numPagesPosted + " web pages indexed.");
 
-    } catch (MalformedURLException e) {
+    } catch (URISyntaxException e) {
       warn("Wrong URL trying to append /extract to " + solrUpdateUrl);
     }
   }
@@ -524,7 +524,7 @@ public class PostTool extends ToolBase {
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
-      } catch (InterruptedException | MalformedURLException e) {
+      } catch (InterruptedException | URISyntaxException e) {
         throw new RuntimeException(e);
       }
     }
@@ -632,8 +632,8 @@ public class PostTool extends ToolBase {
         PostTool.PageFetcherResult result = pageFetcher.readPageFromUrl(url);
         if (result.httpStatus == 200) {
           url = (result.redirectUrl != null) ? result.redirectUrl : url;
-          URL postUrl =
-              new URL(
+          URI postUri =
+              new URI(
                   appendParam(
                       solrUpdateUrl.toString(),
                       "literal.id="
@@ -647,7 +647,7 @@ public class PostTool extends ToolBase {
                   null,
                   out,
                   result.contentType,
-                  postUrl);
+                  postUri);
           if (success) {
             info("POSTed web resource " + url + " (depth: " + level + ")");
             Thread.sleep(delay * 1000L);
@@ -660,7 +660,7 @@ public class PostTool extends ToolBase {
                       new ByteArrayInputStream(
                           content.array(), content.arrayOffset(), content.limit()),
                       result.contentType,
-                      postUrl);
+                      postUri);
               subStack.addAll(children);
             }
           } else {
@@ -791,10 +791,10 @@ public class PostTool extends ToolBase {
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type) throws MalformedURLException {
+  public void postFile(File file, OutputStream output, String type) throws URISyntaxException {
     InputStream is = null;
 
-    URL url = solrUpdateUrl;
+    URI uri = solrUpdateUrl;
     String suffix = "";
     if (auto) {
       if (type == null) {
@@ -806,7 +806,7 @@ public class PostTool extends ToolBase {
       if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
         suffix = "/json/docs";
         String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
-        url = new URL(urlStr);
+        uri = new URI(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
           || type.equals("application/json")) {
@@ -824,7 +824,7 @@ public class PostTool extends ToolBase {
           urlStr =
               appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
         }
-        url = new URL(urlStr);
+        uri = new URI(urlStr);
       }
     } else {
       if (type == null) {
@@ -847,7 +847,7 @@ public class PostTool extends ToolBase {
                 + " to [base]"
                 + suffix);
         is = new FileInputStream(file);
-        postData(is, file.length(), output, type, url);
+        postData(is, file.length(), output, type, uri);
       } catch (IOException e) {
         warn("Can't open/read file: " + file);
       } finally {
@@ -865,18 +865,13 @@ public class PostTool extends ToolBase {
   /**
    * Appends to the path of the URL
    *
-   * @param url the URL
+   * @param uri the URI
    * @param append the path to append
    * @return the final URL version
    */
-  protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
-    return new URL(
-        url.getProtocol()
-            + "://"
-            + url.getAuthority()
-            + url.getPath()
-            + append
-            + (url.getQuery() != null ? "?" + url.getQuery() : ""));
+  protected static URI appendUrlPath(URI uri, String append) throws URISyntaxException {
+    var newPath = uri.getPath() + append;
+    return new URI(uri.getScheme(), uri.getAuthority(), newPath, uri.getQuery(), uri.getFragment());
   }
 
   /**
@@ -899,7 +894,7 @@ public class PostTool extends ToolBase {
    * @return true if success
    */
   public boolean postData(
-      InputStream data, Long length, OutputStream output, String type, URL url) {
+      InputStream data, Long length, OutputStream output, String type, URI uri) {
     if (dryRun) {
       return true;
     }
@@ -911,7 +906,7 @@ public class PostTool extends ToolBase {
     HttpURLConnection urlConnection = null;
     try {
       try {
-        urlConnection = (HttpURLConnection) url.openConnection();
+        urlConnection = (HttpURLConnection) (uri.toURL()).openConnection();
         try {
           urlConnection.setRequestMethod("POST");
         } catch (ProtocolException e) {
@@ -1209,9 +1204,9 @@ public class PostTool extends ToolBase {
         disallows = new ArrayList<>();
         URL urlRobot;
         try {
-          urlRobot = new URL(strRobot);
+          urlRobot = new URI(strRobot).toURL();
           disallows = parseRobotsTxt(urlRobot.openStream());
-        } catch (MalformedURLException e) {
+        } catch (URISyntaxException | MalformedURLException e) {
           return true; // We cannot trust this robots URL, should not happen
         } catch (IOException e) {
           // There is no robots.txt, will cache an empty disallow list
@@ -1259,17 +1254,16 @@ public class PostTool extends ToolBase {
      * @param url the URL of the web page
      * @param is the input stream of the page
      * @param type the content-type
-     * @param postUrl the URL (typically /solr/extract) in order to pull out links
+     * @param postUri the URI (typically /solr/extract) in order to pull out links
      * @return a set of URIs parsed from the page
      */
-    protected Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
+    protected Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URI postUri) {
       Set<URI> linksFromPage = new HashSet<>();
 
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
-        extractUrl = new URL(appendParam(extractUrl.toString(), "wt=xml"));
-        boolean success = postData(is, null, os, type, extractUrl);
+        URI extractUri = new URI(appendParam(postUri.toString(), "extractOnly=true"));
+        boolean success = postData(is, null, os, type, extractUri);
         if (success) {
           Document d = makeDom(os.toByteArray());
           String innerXml = getXP(d, "/response/str/text()[1]", false);
@@ -1288,7 +1282,7 @@ public class PostTool extends ToolBase {
             }
           }
         }
-      } catch (MalformedURLException e) {
+      } catch (URISyntaxException e) {
         warn("Malformed URL " + url);
       } catch (IOException e) {
         warn("IOException opening URL " + url + ": " + e.getMessage());

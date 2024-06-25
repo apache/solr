@@ -38,7 +38,7 @@ teardown() {
   run solr assert --cloud http://localhost:${SOLR_PORT}
   assert_output --partial "ERROR: Solr is not running in cloud mode"
 
-  run ! solr assert --cloud http://localhost:${SOLR_PORT}/solr -e
+  run ! solr assert --cloud http://localhost:${SOLR_PORT} -e
 }
 
 @test "assert for cloud mode" {

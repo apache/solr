@@ -73,9 +73,9 @@ import {{modelPackage}}.{{dataType}};
 public class {{classname}} {
 
     {{#operation}}
-        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{returnType}}> {
+        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
           public {{operationIdCamelCase}}Response() {
-            super({{returnType}}.class);
+            super({{modelPackage}}.{{returnType}}.class);
           }
         }
 
