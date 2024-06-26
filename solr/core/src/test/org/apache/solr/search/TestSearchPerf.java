@@ -175,7 +175,6 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
           new QueryCommand()
               .setQuery(q)
               .setFilterList(filt)
-              .setOffset(0)
               .setLen(10)
               .setFlags(SolrIndexSearcher.NO_CHECK_QCACHE)
               .search(searcher)
