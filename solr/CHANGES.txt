@@ -146,6 +146,10 @@ Optimizations
 
 * SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
 
+* SOLR-16677: Update Solr to use new Lucene 9.5 storedFields() API. This removes the use of ThreadLocal for
+  stored field state, reducing heap usage especially for high-core-count, high-field-count, high-thread-count
+  cases (Vinayak Hegde, Christine Poerschke, Kevin Risden, David Smiley, Michael Gibney)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
