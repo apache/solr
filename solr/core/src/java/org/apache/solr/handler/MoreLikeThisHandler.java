@@ -161,7 +161,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         if (reader != null) {
           mltDocs = mlt.getMoreLikeThis(reader, start, rows, filters, flags);
         } else if (q != null) {
-          // Matching options
           DocList match =
               new QueryCommand()
                   .setQuery(query)
