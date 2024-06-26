@@ -25,7 +25,6 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -46,6 +45,11 @@ public class BinaryField extends FieldType {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Field type " + this + " is 'large'; not supported (yet)");
+    }
+    if (field.hasDocValues() && field.multiValued()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Field type " + this + " does not support multiple doc values");
     }
   }
 
@@ -128,13 +132,8 @@ public class BinaryField extends FieldType {
   public List<IndexableField> createFields(SchemaField field, Object val) {
     IndexableField fval = createField(field, val);
 
-    if (field.hasDocValues()) {
-      IndexableField docval;
-      if (field.multiValued()) {
-        docval = new SortedSetDocValuesField(field.getName(), getBytesRef(val));
-      } else {
-        docval = new BinaryDocValuesField(field.getName(), getBytesRef(val));
-      }
+    if (field.hasDocValues() && !field.multiValued()) {
+      IndexableField docval = new BinaryDocValuesField(field.getName(), getBytesRef(val));
 
       // Only create list if we have 2 values...
       if (fval != null) {
