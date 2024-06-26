@@ -78,6 +78,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     Path ulogDir = Path.of("../");
 
     Path configSet = LuceneTestCase.createTempDir();
+    System.setProperty("enable.update.log", "true");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     System.setProperty("solr.ulog.dir", ulogDir.toString()); // picked up from `solrconfig.xml`
     SolrTestCaseJ4.copyMinConf(configSet.toFile(), null, "solrconfig.xml");
