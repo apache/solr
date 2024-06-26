@@ -87,9 +87,8 @@ public class PostTool extends ToolBase {
   static final String DATA_MODE_FILES = "files";
   static final String DATA_MODE_ARGS = "args";
   static final String DATA_MODE_STDIN = "stdin";
-  static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
-  static final String FORMAT_SOLR = "solr";
   static final String DATA_MODE_WEB = "web";
+  static final String FORMAT_SOLR = "solr";
 
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
@@ -104,7 +103,6 @@ public class PostTool extends ToolBase {
   OutputStream out = null;
   String type;
   String format;
-  String mode = DEFAULT_DATA_MODE;
   boolean commit;
   boolean optimize;
   boolean dryRun; // Avoids actual network traffic to Solr
@@ -286,13 +284,9 @@ public class PostTool extends ToolBase {
           "Must specify either --solr-update-url or -c parameter to post documents.");
     }
 
-    if (cli.hasOption("mode")) {
-      mode = cli.getOptionValue("mode");
-    }
+    String mode = cli.getOptionValue("mode", DATA_MODE_FILES);
 
-    if (cli.hasOption("dry-run")) {
-      dryRun = true;
-    }
+    dryRun = cli.hasOption("dry-run");
 
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
@@ -310,21 +304,21 @@ public class PostTool extends ToolBase {
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    commit = !cli.hasOption("skipcommit");
+    commit = !(cli.hasOption("skipcommit") || cli.hasOption("skip-commit"));
     optimize = cli.hasOption("optimize");
 
     credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
 
     args = cli.getArgs();
 
-    execute();
+    execute(mode);
   }
 
   /**
    * After initialization, call execute to start the post job. This method delegates to the correct
    * mode method.
    */
-  public void execute() throws SolrServerException, IOException {
+  public void execute(String mode) throws SolrServerException, IOException {
     final RTimer timer = new RTimer();
     if (PostTool.DATA_MODE_FILES.equals(mode)) {
       doFilesMode();
@@ -381,7 +375,7 @@ public class PostTool extends ToolBase {
 
   private void doWebMode() {
     reset();
-    int numPagesPosted = 0;
+    int numPagesPosted;
     try {
       if (type != null) {
         throw new IllegalArgumentException(
@@ -788,17 +782,23 @@ public class PostTool extends ToolBase {
    */
   public static String appendParam(String url, String param) {
     String[] pa = param.split("&");
+    StringBuilder urlBuilder = new StringBuilder(url);
     for (String p : pa) {
       if (p.trim().length() == 0) {
         continue;
       }
       String[] kv = p.split("=");
       if (kv.length == 2) {
-        url = url + (url.contains("?") ? "&" : "?") + kv[0] + "=" + kv[1];
+        urlBuilder
+            .append(urlBuilder.toString().contains("?") ? "&" : "?")
+            .append(kv[0])
+            .append("=")
+            .append(kv[1]);
       } else {
         warn("Skipping param " + p + " which is not on form key=value");
       }
     }
+    url = urlBuilder.toString();
     return url;
   }
 
