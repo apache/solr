@@ -169,7 +169,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
                   .setFlags(flags)
                   .search(searcher)
                   .getDocList();
-          // Find the base match
           if (params.getBool(MoreLikeThisParams.MATCH_INCLUDE, true)) {
             rsp.add("match", match);
           }
