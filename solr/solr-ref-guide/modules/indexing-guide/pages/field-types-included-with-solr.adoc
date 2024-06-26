@@ -75,7 +75,7 @@ Configuration and usage of PreAnalyzedField is documented in the section  xref:e
 
 |SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See xref:query-guide:spatial-search.adoc[] for more information.
 
-|StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
+|StrField |String (UTF-8 encoded string or Unicode). Indexed `indexed="true"` strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K. Non-indexed `indexed="false"` and non-DocValues `docValues="false"` strings are suitable for storing large strings. 
 
 |TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an xref:analyzers.adoc[analyzer].
 
