@@ -56,6 +56,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.PointRangeQuery;
@@ -5811,8 +5812,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
               }
               for (LeafReaderContext leave : ir.leaves()) {
                 LeafReader reader = leave.reader();
+                StoredFields storedFields = reader.storedFields();
                 for (int i = 0; i < reader.numDocs(); i++) {
-                  Document doc = reader.document(i);
+                  Document doc = storedFields.document(i);
                   if (sf.stored()) {
                     assertNotNull("Field " + field + " not found. Doc: " + doc, doc.get(field));
                   } else {
