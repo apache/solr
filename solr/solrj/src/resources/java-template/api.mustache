@@ -73,7 +73,8 @@ import {{modelPackage}}.{{dataType}};
 public class {{classname}} {
 
     {{#operation}}
-        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
+    {{^vendorExtensions.x-omitFromCodegen}}
+    public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{modelPackage}}.{{returnType}}> {
           public {{operationIdCamelCase}}Response() {
             super({{modelPackage}}.{{returnType}}.class);
           }
@@ -206,6 +207,7 @@ public class {{classname}} {
               return new InputStreamResponseParser("json");
             }
         }
+    {{/vendorExtensions.x-omitFromCodegen}}
     {{/operation}}
 }
 {{/operations}}

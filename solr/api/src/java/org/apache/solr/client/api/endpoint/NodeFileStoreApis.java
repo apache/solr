@@ -16,26 +16,38 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.MergeIndexesRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
  * V2 APIs for fetching filestore files, syncing them across nodes, or fetching related metadata.
- *
- * @see MergeIndexesRequestBody
  */
 @Path("/node")
 public interface NodeFileStoreApis {
   @GET
   @Operation(
       summary = "Retrieve file contents or metadata from the filestore.",
-      tags = {"file-store"})
+      tags = {"file-store"},
+      // The response of this v2 API is highly variable based on the parameters specified.  It can
+      // return raw (potentially binary) file data, a JSON-ified representation of that file data,
+      // metadata regarding one or multiple file store entries, etc.  This variability can be
+      // handled on the Jersey server side, but would be prohibitively difficult to accommodate in
+      // our code-generation templates.  Ideally, cosmetic improvements (e.g. splitting it up into
+      // multiple endpoints) will make this unnecessary in the future.  But for now, the extension
+      // property below ensures that this endpoint is ignored entirely when doing code generation.
+      extensions = {
+        @Extension(
+            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      })
   @Path("/files{path:.+}")
   SolrJerseyResponse getFile(
       @Parameter(description = "Path to a file or directory within the filestore")
