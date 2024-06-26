@@ -170,7 +170,7 @@ public class PackageTool extends ToolBase {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean noprompt = cli.hasOption("noprompt");
+                  boolean noprompt = cli.hasOption("no-prompt");
                   boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
@@ -339,7 +339,7 @@ public class PackageTool extends ToolBase {
             .desc("The collection to apply the package to, not required.")
             .build(),
         Option.builder("y")
-            .longOpt("noprompt")
+            .longOpt("no-prompt")
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .build(),
         SolrCLI.OPTION_SOLRURL,

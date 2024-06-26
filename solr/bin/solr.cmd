@@ -362,7 +362,7 @@ goto done
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   --noprompt    Don't prompt for input; accept all defaults when running examples that accept user input
+@echo   --no-prompt   Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
 @echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -569,6 +569,7 @@ IF "%1"=="--additional-options" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="--noprompt" goto set_noprompt
+IF "%1"=="--no-prompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="--key" goto set_stop_key
 IF "%1"=="--all" goto set_stop_all
@@ -827,7 +828,7 @@ goto parse_args
 
 :set_noprompt
 set NO_USER_PROMPT=1
-set "PASS_TO_RUN_EXAMPLE=--noprompt !PASS_TO_RUN_EXAMPLE!"
+set "PASS_TO_RUN_EXAMPLE=--no-prompt !PASS_TO_RUN_EXAMPLE!"
 
 SHIFT
 goto parse_args

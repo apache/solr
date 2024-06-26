@@ -28,8 +28,8 @@ teardown() {
   solr stop --all >/dev/null 2>&1
 }
 
-@test "SOLR-16755 test works with noprompt" {
-  solr start -e cloud --noprompt
+@test "SOLR-16755 test works with --no-prompt" {
+  solr start -e cloud --no-prompt
   solr assert --started http://localhost:${SOLR_PORT} --timeout 10000
   solr assert --started http://localhost:${SOLR2_PORT} --timeout 10000
 }

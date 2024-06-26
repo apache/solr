@@ -159,13 +159,13 @@ To stop Solr in SolrCloud mode, you would use the `bin/solr` script and issue th
 $ bin/solr stop --all
 ----
 
-=== Starting with --noprompt
+=== Starting with --no-prompt
 
 You can also get SolrCloud started with all the defaults instead of the interactive session using the following command:
 
 [,console]
 ----
-$ bin/solr start -e cloud --noprompt
+$ bin/solr start -e cloud --no-prompt
 ----
 
 === Restarting Nodes

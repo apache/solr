@@ -144,9 +144,8 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_VERBOSE =
       Option.builder("v")
           .longOpt("verbose")
-          .argName("verbose")
           .required(false)
-          .desc("Enable more verbose command output.")
+          .desc("Enable verbose command output.")
           .build();
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();

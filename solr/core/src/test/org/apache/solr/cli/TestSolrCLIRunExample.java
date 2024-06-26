@@ -356,8 +356,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       String[] toolArgs =
           new String[] {
             "-e", exampleName,
-            "--serverDir", solrServerDir.getAbsolutePath(),
-            "--exampleDir", solrExampleDir.getAbsolutePath(),
+            "--server-dir", solrServerDir.getAbsolutePath(),
+            "--example-dir", solrExampleDir.getAbsolutePath(),
             "-p", String.valueOf(bindPort)
           };
 
@@ -464,8 +464,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String[] toolArgs =
         new String[] {
           "--example", "cloud",
-          "-serverDir", solrServerDir.getAbsolutePath(),
-          "--exampleDir", solrExampleDir.getAbsolutePath()
+          "--server-dir", solrServerDir.getAbsolutePath(),
+          "--example-dir", solrExampleDir.getAbsolutePath()
         };
 
     int bindPort = -1;
@@ -589,8 +589,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String[] toolArgs =
         new String[] {
           "-e", "techproducts",
-          "--serverDir", solrServerDir.getAbsolutePath(),
-          "--exampleDir", solrExampleDir.getAbsolutePath(),
+          "--server-dir", solrServerDir.getAbsolutePath(),
+          "--example-dir", solrExampleDir.getAbsolutePath(),
           "-p", String.valueOf(bindPort),
           "-script", toExecute.getAbsolutePath().toString()
         };

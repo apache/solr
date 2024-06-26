@@ -32,7 +32,7 @@ The below command would start SolrCloud with the default collection name (`getti
 
 [source,bash]
 ----
-bin/solr start -e cloud --noprompt
+bin/solr start -e cloud --no-prompt
 ----
 
 You can also explicitly upload a configuration directory when creating a collection using the `bin/solr` script with the `-d` option, such as:

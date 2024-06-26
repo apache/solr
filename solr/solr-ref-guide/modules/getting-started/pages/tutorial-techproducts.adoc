@@ -24,7 +24,7 @@ Then you will index some sample data that ships with Solr and do some basic sear
 To launch Solr, run: `bin/solr start -e cloud` on Unix or MacOS; `bin\solr.cmd start -e cloud` on Windows.
 
 This will start an interactive session that will start two Solr "servers" on your machine.
-This command has an option to run without prompting you for input (`--noprompt`), but we want to modify two of the defaults so we won't use that option now.
+This command has an option to run without prompting you for input (`--no-prompt`), but we want to modify two of the defaults so we won't use that option now.
 
 [,console]
 ----

@@ -36,6 +36,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
@@ -94,7 +95,19 @@ public class RunExampleTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("n")
+            .longOpt("no-prompt")
+            .required(false)
+            .desc(
+                "Don't prompt for input; accept all defaults when running examples that accept user input.")
+            .build(),
+        Option.builder()
             .longOpt("noprompt")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --no-prompt instead")
+                    .get())
             .required(false)
             .desc(
                 "Don't prompt for input; accept all defaults when running examples that accept user input.")
@@ -118,7 +131,7 @@ public class RunExampleTool extends ToolBase {
             .hasArg()
             .required(true)
             .desc("Path to the Solr server directory.")
-            .longOpt("serverDir")
+            .longOpt("server-dir")
             .build(),
         Option.builder("f")
             .longOpt("force")
@@ -126,7 +139,7 @@ public class RunExampleTool extends ToolBase {
             .desc("Force option in case Solr is run as root.")
             .build(),
         Option.builder()
-            .longOpt("exampleDir")
+            .longOpt("example-dir")
             .argName("DIR")
             .hasArg()
             .required(false)
@@ -184,10 +197,10 @@ public class RunExampleTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     this.urlScheme = cli.getOptionValue("url-scheme", "http");
 
-    serverDir = new File(cli.getOptionValue("serverDir"));
+    serverDir = new File(cli.getOptionValue("server-dir"));
     if (!serverDir.isDirectory())
       throw new IllegalArgumentException(
-          "Value of -serverDir option is invalid! "
+          "Value of --server-dir option is invalid! "
               + serverDir.getAbsolutePath()
               + " is not a directory!");
 
@@ -212,12 +225,12 @@ public class RunExampleTool extends ToolBase {
     }
 
     exampleDir =
-        (cli.hasOption("exampleDir"))
-            ? new File(cli.getOptionValue("exampleDir"))
+        (cli.hasOption("example-dir"))
+            ? new File(cli.getOptionValue("example-dir"))
             : new File(serverDir.getParent(), "example");
     if (!exampleDir.isDirectory())
       throw new IllegalArgumentException(
-          "Value of --exampleDir option is invalid! "
+          "Value of --example-dir option is invalid! "
               + exampleDir.getAbsolutePath()
               + " is not a directory!");
 
@@ -441,7 +454,7 @@ public class RunExampleTool extends ToolBase {
 
   protected void runCloudExample(CommandLine cli) throws Exception {
 
-    boolean prompt = !cli.hasOption("noprompt");
+    boolean prompt = !(cli.hasOption("no-prompt") || cli.hasOption("noprompt"));
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
     int defaultPort =
@@ -912,12 +925,12 @@ public class RunExampleTool extends ToolBase {
     File solrXml = new File(serverDir, "solr/solr.xml");
     if (!solrXml.isFile())
       throw new IllegalArgumentException(
-          "Value of -serverDir option is invalid! " + solrXml.getAbsolutePath() + " not found!");
+          "Value of --server-dir option is invalid! " + solrXml.getAbsolutePath() + " not found!");
 
     File zooCfg = new File(serverDir, "solr/zoo.cfg");
     if (!zooCfg.isFile())
       throw new IllegalArgumentException(
-          "Value of -serverDir option is invalid! " + zooCfg.getAbsolutePath() + " not found!");
+          "Value of --server-dir option is invalid! " + zooCfg.getAbsolutePath() + " not found!");
 
     File solrHomeDir = new File(exampleParentDir, dirName + "/solr");
     if (!solrHomeDir.isDirectory()) {
