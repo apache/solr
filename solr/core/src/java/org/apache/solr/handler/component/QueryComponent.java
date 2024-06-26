@@ -417,17 +417,15 @@ public class QueryComponent extends SearchComponent {
       try {
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
           doProcessGroupedDistributedSearchFirstPhase(rb, cmd);
-          return;
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
           doProcessGroupedDistributedSearchSecondPhase(rb, cmd);
-          return;
+        } else {
+          doProcessGroupedSearch(rb, cmd);
         }
-
-        doProcessGroupedSearch(rb, cmd);
-        return;
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
+      return;
     }
 
     // normal search result

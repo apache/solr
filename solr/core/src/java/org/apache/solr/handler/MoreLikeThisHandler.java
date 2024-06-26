@@ -162,17 +162,16 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           mltDocs = mlt.getMoreLikeThis(reader, start, rows, filters, flags);
         } else if (q != null) {
           // Matching options
-          boolean includeMatch = params.getBool(MoreLikeThisParams.MATCH_INCLUDE, true);
-          int matchOffset = params.getInt(MoreLikeThisParams.MATCH_OFFSET, 0);
-          // Find the base match
           DocList match =
               new QueryCommand()
                   .setQuery(query)
-                  .setOffset(matchOffset)
+                  .setOffset(params.getInt(MoreLikeThisParams.MATCH_OFFSET, 0))
                   .setLen(1) // only get the first one...
                   .setFlags(flags)
-                  .search(searcher).getDocList();
-          if (includeMatch) {
+                  .search(searcher)
+                  .getDocList();
+          // Find the base match
+          if (params.getBool(MoreLikeThisParams.MATCH_INCLUDE, true)) {
             rsp.add("match", match);
           }
 
