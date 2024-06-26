@@ -84,6 +84,9 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
       }
     }
 
+    if (path == null) {
+      path = "";
+    }
     final var pathCopy = path;
     if (getFrom != null) {
       coreContainer
@@ -102,17 +105,14 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
       return response;
     }
 
-    if (path == null) {
-      path = "";
-    }
-    FileStore.FileType typ = fileStore.getType(path, false);
-    if (typ == FileStore.FileType.NOFILE) {
+    FileStore.FileType type = fileStore.getType(path, false);
+    if (type == FileStore.FileType.NOFILE) {
       final var fileMissingResponse =
           instantiateJerseyResponse(FileStoreDirectoryListingResponse.class);
       fileMissingResponse.files = Collections.singletonMap(path, null);
       return fileMissingResponse;
     }
-    if (typ == FileStore.FileType.DIRECTORY) {
+    if (type == FileStore.FileType.DIRECTORY) {
       final var directoryListingResponse =
           instantiateJerseyResponse(FileStoreDirectoryListingResponse.class);
       final var directoryContents =
@@ -123,7 +123,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
       return directoryListingResponse;
     }
     if (Boolean.TRUE.equals(meta)) {
-      if (typ == FileStore.FileType.FILE) {
+      if (type == FileStore.FileType.FILE) {
         int idx = path.lastIndexOf('/');
         String fileName = path.substring(idx + 1);
         String parentPath = path.substring(0, path.lastIndexOf('/'));
@@ -138,12 +138,11 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     } else { // User wants to get the "raw" file
       // TODO Should we be trying to json-ify otherwise "raw" files in this way?  It seems like a
       // pretty sketchy idea, esp. for code with very little test coverage.  Consider removing
-      final var pathCopy2 = path;
       if ("json".equals(req.getParams().get(CommonParams.WT))) {
         final var jsonResponse = instantiateJerseyResponse(FileStoreJsonFileResponse.class);
         try {
           fileStore.get(
-              path,
+              pathCopy,
               it -> {
                 try {
                   InputStream inputStream = it.getInputStream();
@@ -152,7 +151,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
                   }
                 } catch (IOException e) {
                   throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + pathCopy2);
+                      SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + pathCopy);
                 }
               },
               false);
@@ -170,7 +169,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
             (SolrCore.RawWriter)
                 os ->
                     fileStore.get(
-                        pathCopy2,
+                        pathCopy,
                         it -> {
                           try {
                             InputStream inputStream = it.getInputStream();
@@ -180,7 +179,7 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
                           } catch (IOException e) {
                             throw new SolrException(
                                 SolrException.ErrorCode.SERVER_ERROR,
-                                "Error reading file " + pathCopy2);
+                                "Error reading file " + pathCopy);
                           }
                         },
                         false));
