@@ -60,6 +60,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
             .withUrl(zkAddr)
             .withTimeout(30000, TimeUnit.MILLISECONDS)
             .build();
+    System.setProperty("solr.solr.home", TEST_HOME());
   }
 
   @AfterClass

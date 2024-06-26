@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -48,6 +49,16 @@ public class SolrClientFactory {
     if (configuration.getBasicAuthUser() != null) {
       builder.withBasicAuthCredentials(
           configuration.getBasicAuthUser(), configuration.getBasicAuthPwd());
+    }
+    if (configuration.isSSLEnabled()) {
+      builder.withSSLConfig(
+          new SSLConfig(
+              true,
+              true,
+              configuration.getSslConfiguration().keystorePath.toString(),
+              configuration.getSslConfiguration().keystorePassword,
+              configuration.getSslConfiguration().trustStorePath.toString(),
+              configuration.getSslConfiguration().trustStorePassword));
     }
     return builder;
   }

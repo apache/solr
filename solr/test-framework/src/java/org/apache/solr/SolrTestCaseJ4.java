@@ -149,7 +149,6 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -224,7 +223,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
+        assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }
@@ -367,19 +366,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_1 = "[::1]:4";
+  public static final String DEAD_HOST_1 = "127.0.0.1:4";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_2 = "[::1]:6";
+  public static final String DEAD_HOST_2 = "127.0.0.1:6";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_3 = "[::1]:8";
+  public static final String DEAD_HOST_3 = "127.0.0.1:8";
 
   /**
    * Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if

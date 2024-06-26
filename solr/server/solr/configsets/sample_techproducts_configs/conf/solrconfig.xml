@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.9</luceneMatchVersion>
+  <luceneMatchVersion>9.10</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -828,7 +828,7 @@
 
     <!-- a spellchecker that use an alternate comparator
 
-         comparatorClass be one of:
+         comparatorClass can be one of:
           1. score (default)
           2. freq (Frequency first, then score)
           3. A fully qualified class name

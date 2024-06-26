@@ -472,7 +472,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "1"),
+            "0"),
         "/responseHeader/partialResults==true");
     // should succeed
     assertJQ(
