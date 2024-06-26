@@ -53,7 +53,7 @@ public class LinkConfigTool extends ToolBase {
             .desc("Name of the collection to link.")
             .build(),
         Option.builder("n")
-            .longOpt("confname")
+            .longOpt("conf-name")
             .argName("NAME")
             .hasArg()
             .required(true)
@@ -67,7 +67,7 @@ public class LinkConfigTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
 
     String collection = cli.getOptionValue("name");
-    String confName = cli.getOptionValue("confname");
+    String confName = cli.getOptionValue("conf-name");
     String zkHost = SolrCLI.getZkHost(cli);
 
     try (SolrZkClient zkClient =

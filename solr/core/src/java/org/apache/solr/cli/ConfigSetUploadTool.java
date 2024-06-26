@@ -92,7 +92,7 @@ public class ConfigSetUploadTool extends ToolBase {
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
-              + cli.getOptionValue("confname")
+              + cli.getOptionValue("conf-name")
               + " to ZooKeeper at "
               + zkHost);
       FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
