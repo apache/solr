@@ -73,15 +73,15 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // create the gettingstarted collection just like the bin/solr script would do
     String[] args =
         new String[] {
-          "-name",
+          "--name",
           testCollectionName,
-          "-shards",
+          "--shards",
           "2",
           "--replication-factor",
           "2",
-          "-conf-name",
+          "--conf-name",
           testCollectionName,
-          "-conf-dir",
+          "--conf-dir",
           "_default",
           "--solr-url",
           solrUrl
@@ -117,7 +117,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         new String[] {
           "--solr-update-url",
           solrUrl + "/" + testCollectionName + "/update",
-          "-filetypes",
+          "--filetypes",
           "xml",
           exampleDocsDir.toAbsolutePath().toString()
         };
@@ -155,7 +155,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
     String[] args =
         new String[] {
-          "-name", testCollectionName,
+          "--name", testCollectionName,
           "--zk-host", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
@@ -166,7 +166,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   protected void doTestDeleteAction(String testCollectionName, String solrUrl) throws Exception {
     String[] args =
         new String[] {
-          "-name", testCollectionName,
+          "--name", testCollectionName,
           "--solr-url", solrUrl
         };
     DeleteTool tool = new DeleteTool();

@@ -362,13 +362,13 @@ Create a 2-shard, replicationFactor=1 collection named mycollection using the `_
 .*nix command
 [source,bash]
 ----
-bin/solr create -c mycollection -shards 2
+bin/solr create -c mycollection --shards 2
 ----
 
 .Windows command
 [source,text]
 ----
-bin\solr.cmd create -c mycollection -shards 2
+bin\solr.cmd create -c mycollection --shards 2
 ----
 
 The `create` action will pass the `SOLR_SSL_*` properties set in your include file to the SolrJ code used to create the collection.
