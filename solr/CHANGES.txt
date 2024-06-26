@@ -186,6 +186,9 @@ Other Changes
 
 * SOLR-17321: Remove Deprecated URL and replace it with URI in Preparation for Java 21 (Sanjay Dutt, David Smiley, Uwe Schindler)
 
+* SOLR-17347: EnvUtils: Removed "env" methods, as they were problematic.  Code should almost never
+  refer to env vars.  (David Smiley)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------

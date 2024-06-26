@@ -39,7 +39,9 @@ import org.apache.solr.common.SolrException;
  * use this in lieu of JDK equivalents.
  */
 public class EnvUtils {
+  /** Maps ENV keys to sys prop keys for special/custom mappings */
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
+
   private static final Map<String, String> camelCaseToDotsMap = new ConcurrentHashMap<>();
 
   static {
@@ -159,8 +161,6 @@ public class EnvUtils {
     System.setProperty(key, value);
     System.setProperty(camelCaseToDotSeparated(key), value);
   }
-
-  static synchronized void initWithEnv(Map<String, String> env) {}
 
   /**
    * Re-reads environment variables and updates the internal map. Mainly for internal and test use.

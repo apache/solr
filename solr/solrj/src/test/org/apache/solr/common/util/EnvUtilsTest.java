@@ -97,7 +97,5 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals("original", EnvUtils.getProperty("solr.overwrite"));
     EnvUtils.init(true, env2);
     assertEquals("overwritten", EnvUtils.getProperty("solr.overwrite"));
-
-    EnvUtils.init(true, ENV); // back to how it was...
   }
 }
