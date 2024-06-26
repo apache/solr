@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -427,7 +428,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public SolrDocumentFetcher getDocFetcher() {
-    return docFetcher;
+    return docFetcher.clone();
+  }
+
+  /**
+   * Allows interrogation of {@link #docFetcher} template (checking field names, etc.) without
+   * forcing it to be cloned (as it would be if an instance were retrieved via {@link
+   * #getDocFetcher()}).
+   */
+  public <T> T interrogateDocFetcher(Function<SolrDocumentFetcher, T> func) {
+    return func.apply(docFetcher);
   }
 
   public StatsCache getStatsCache() {
@@ -755,6 +765,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see SolrDocumentFetcher
    */
   @Override
+  @Deprecated
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
   }
@@ -767,6 +778,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see SolrDocumentFetcher
    */
   @Override
+  @Deprecated
   public final void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     getDocFetcher().doc(docId, visitor);
   }
@@ -780,6 +792,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @see SolrDocumentFetcher
    */
   @Override
+  @Deprecated
   public final Document doc(int i, Set<String> fields) throws IOException {
     return getDocFetcher().doc(i, fields);
   }
