@@ -591,7 +591,7 @@ function print_short_zk_usage() {
   echo "         solr zk mv <src> <dest> [-z zkHost] [-s solrUrl]"
   echo "         solr zk ls [-r] <path> [-z zkHost] [-s solrUrl]"
   echo "         solr zk mkroot <path> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk linkconfig -confname <confname> -c <collection> [-z zkHost] [-s solrUrl]"
+  echo "         solr zk linkconfig --conf-name <confname> -c <collection> [-z zkHost] [-s solrUrl]"
   echo "         solr zk updateacls <path> [-z zkHost] [-s solrUrl]"
   echo ""
 
@@ -913,14 +913,14 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_SOLR_URL="$2"
             shift 2
         ;;
-        -n|--confname)
+        -n|--confname|--conf-name)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
             fi
             CONFIGSET_CONFNAME="$2"
             shift 2
         ;;
-        -d|--confdir)
+        -d|--confdir|--conf-dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
             fi
@@ -939,7 +939,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_COLLECTION="$2"
             shift
         ;;
-        -V|-verbose)
+        -V|-verbose|--verbose)
             VERBOSE="--verbose"
             shift
         ;;
@@ -1014,10 +1014,10 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   case "$ZK_OP" in
     upconfig)
-      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" $CONNECTION_PARAMS $VERBOSE
+      run_tool "$ZK_OP" --conf-name "$CONFIGSET_CONFNAME" --conf-dir "$CONFIGSET_CONFDIR" $CONNECTION_PARAMS $VERBOSE
     ;;
     downconfig)
-      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" $CONNECTION_PARAMS $VERBOSE
+      run_tool "$ZK_OP" --conf-name "$CONFIGSET_CONFNAME" --conf-dir "$CONFIGSET_CONFDIR" $CONNECTION_PARAMS $VERBOSE
     ;;
     rm)
       if [ -z "$ZK_SRC" ]; then
@@ -1049,7 +1049,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       run_tool "$ZK_OP" --path "$ZK_SRC" $CONNECTION_PARAMS $VERBOSE
     ;;
     linkconfig)
-      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" -c "$ZK_COLLECTION" $CONNECTION_PARAMS $VERBOSE
+      run_tool "$ZK_OP" --conf-name "$CONFIGSET_CONFNAME" -c "$ZK_COLLECTION" $CONNECTION_PARAMS $VERBOSE
     ;;
     updateacls)
       run_tool "$ZK_OP" --path "$ZK_SRC" $CONNECTION_PARAMS $VERBOSE

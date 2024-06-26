@@ -46,14 +46,14 @@ public class ConfigSetUploadTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("n")
-            .longOpt("confname")
+            .longOpt("conf-name")
             .hasArg()
             .argName("NAME")
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder("d")
-            .longOpt("confdir")
+            .longOpt("conf-dir")
             .hasArg()
             .argName("DIR")
             .required(true)
@@ -79,14 +79,14 @@ public class ConfigSetUploadTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     Path solrInstallDirPath = Paths.get(solrInstallDir);
 
-    String confName = cli.getOptionValue("confname");
+    String confName = cli.getOptionValue("conf-name");
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
       Path confPath =
           ConfigSetService.getConfigsetPath(
-              cli.getOptionValue("confdir"), configsetsDirPath.toString());
+              cli.getOptionValue("conf-dir"), configsetsDirPath.toString());
 
       echo(
           "Uploading "

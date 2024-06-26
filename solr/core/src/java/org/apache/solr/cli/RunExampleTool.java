@@ -299,11 +299,11 @@ public class RunExampleTool extends ToolBase {
     if (!alreadyExists) {
       String[] createArgs =
           new String[] {
-            "-name", collectionName,
-            "-shards", "1",
+            "--name", collectionName,
+            "--shards", "1",
             "--replication-factor", "1",
-            "-confname", collectionName,
-            "-confdir", configSet,
+            "--conf-name", collectionName,
+            "--conf-dir", configSet,
             "--solr-url", solrUrl
           };
       CreateTool createTool = new CreateTool(stdout);
@@ -333,9 +333,9 @@ public class RunExampleTool extends ToolBase {
         String[] args =
             new String[] {
               "post",
-              "-url",
+              "--solr-update-url",
               updateUrl,
-              "-type",
+              "--type",
               "application/xml",
               exampledocsDir.getAbsolutePath() + "/*.xml"
             };
@@ -415,9 +415,9 @@ public class RunExampleTool extends ToolBase {
         String[] args =
             new String[] {
               "post",
-              "-url",
+              "--solr-update-url",
               updateUrl,
-              "-type",
+              "--type",
               "application/json",
               filmsJsonFile.getAbsolutePath()
             };
@@ -853,11 +853,11 @@ public class RunExampleTool extends ToolBase {
     // invoke the CreateTool
     String[] createArgs =
         new String[] {
-          "-name", collectionName,
-          "-shards", String.valueOf(numShards),
+          "--name", collectionName,
+          "--shards", String.valueOf(numShards),
           "--replication-factor", String.valueOf(replicationFactor),
-          "-confname", collectionName,
-          "-confdir", cloudConfig,
+          "--conf-name", collectionName,
+          "--conf-dir", cloudConfig,
           "--solr-url", solrUrl
         };
 

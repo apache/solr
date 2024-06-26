@@ -67,6 +67,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -185,7 +186,18 @@ public class PostTool extends ToolBase {
             .desc("Name of the collection.")
             .build(),
         Option.builder()
+            .longOpt("skip-commit")
+            .required(false)
+            .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
+            .build(),
+        Option.builder()
             .longOpt("skipcommit")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --skip-commit instead")
+                    .get())
             .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),

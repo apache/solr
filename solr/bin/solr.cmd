@@ -481,7 +481,7 @@ echo         solr zk rm [-r] ^<path^> [-z zkHost] [-s solrUrl]
 echo         solr zk mv ^<src^> ^<dest^> [-z zkHost] [-s solrUrl]
 echo         solr zk ls [-r] ^<path^> [-z zkHost] [-s solrUrl]
 echo         solr zk mkroot ^<path^> [-z zkHost] [-s solrUrl]
-echo         solr zk linkconfig -confname ^<confname^> -c ^<collection^> [-z zkHost] [-s solrUrl]
+echo         solr zk linkconfig --conf-name ^<confname^> -c ^<collection^> [-z zkHost] [-s solrUrl]
 echo         solr zk updateacls ^<path^> [-z zkHost] [-s solrUrl]
 echo.
 IF "%ZK_FULL%"=="true" (
@@ -1436,6 +1436,8 @@ IF "%1"=="-V" (
   goto set_configdir
 ) ELSE IF "%1"=="-confdir" (
   goto set_configdir
+) ELSE IF "%1"=="--conf-dir" (
+  goto set_configdir
 ) ELSE IF "%1"=="-c" (
   goto set_collection_zk
 ) ELSE IF "%1"=="-z" (
@@ -1540,7 +1542,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! --confname !CONFIGSET_NAME! --confdir !CONFIGSET_DIR! %CONNECTION_PARAMS% %ZK_VERBOSE%^
+  org.apache.solr.cli.SolrCLI !ZK_OP! --conf-name !CONFIGSET_NAME! --conf-dir !CONFIGSET_DIR! %CONNECTION_PARAMS% %ZK_VERBOSE%^
 ) ELSE IF "!ZK_OP!"=="downconfig" (
   IF "!CONFIGSET_NAME!"=="" (
     set ERROR_MSG="-n option must be set for downconfig"
@@ -1553,7 +1555,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! --confname !CONFIGSET_NAME! --confdir !CONFIGSET_DIR! -z !ZK_HOST! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! --conf-name !CONFIGSET_NAME! --conf-dir !CONFIGSET_DIR! -z !ZK_HOST! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="linkconfig" (
   IF "!CONFIGSET_NAME!"=="" (
     set ERROR_MSG="-n option must be set for linkconfig"
@@ -1566,7 +1568,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! --confname !CONFIGSET_NAME! -c !ZK_COLLECTION! -z !ZK_HOST! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! --conf-name !CONFIGSET_NAME! -c !ZK_COLLECTION! -z !ZK_HOST! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="updateacls" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"

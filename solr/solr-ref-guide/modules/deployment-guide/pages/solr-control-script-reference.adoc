@@ -671,7 +671,7 @@ Name of the core or collection to create.
 +
 *Example*: `bin/solr create -c mycollection`
 
-`-d <confdir>`::
+`-d <confdir>` or `--conf-dir <confdir>`::::
 +
 [%autowidth,frame=none]
 |===

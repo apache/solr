@@ -414,8 +414,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     File fullConfDir = new File(configSetDir.toFile(), srcConfigSet);
     String[] args =
         new String[] {
-          "-confname", dstConfigName,
-          "-confdir", fullConfDir.getAbsolutePath(),
+          "--conf-name", dstConfigName,
+          "--conf-dir", fullConfDir.getAbsolutePath(),
           "-z", zkAddr
         };
 

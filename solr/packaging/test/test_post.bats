@@ -107,7 +107,7 @@ teardown() {
 @test "crawling a directory as a dry-run" {
 
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler, and are running it as a dry run
-  run solr post --dry-run -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/foobar/update -skipcommit ${SOLR_TIP}/example/exampledocs
+  run solr post --dry-run -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/foobar/update --skip-commit ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial 'Dry run complete. 16 would have been indexed.'
   refute_output --partial '16 files indexed.'
@@ -148,7 +148,7 @@ teardown() {
   run solr create -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
 
-  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -skipcommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml --skip-commit --optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'COMMITting Solr index'

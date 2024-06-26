@@ -358,9 +358,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "upconfig",
-          "--confname",
+          "--conf-name",
           confsetname,
-          "--confdir",
+          "--conf-dir",
           ExternalPaths.TECHPRODUCTS_CONFIGSET,
           "-z",
           zkServer.getZkAddress()
@@ -380,7 +380,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     args =
         new String[] {
           "linkconfig",
-          "--confname",
+          "--conf-name",
           confsetname,
           "-c",
           "collection1",
@@ -406,9 +406,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     args =
         new String[] {
           "downconfig",
-          "--confname",
+          "--conf-name",
           confsetname,
-          "--confdir",
+          "--conf-dir",
           configSetDir.getAbsolutePath(),
           "-z",
           zkServer.getZkAddress()

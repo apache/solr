@@ -44,14 +44,14 @@ public class ConfigSetDownloadTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder()
-            .longOpt("confname")
+            .longOpt("conf-name")
             .hasArg()
             .argName("NAME")
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder()
-            .longOpt("confdir")
+            .longOpt("conf-dir")
             .hasArg()
             .argName("DIR")
             .required(true)
@@ -76,8 +76,8 @@ public class ConfigSetDownloadTool extends ToolBase {
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String confName = cli.getOptionValue("confname");
-      String confDir = cli.getOptionValue("confdir");
+      String confName = cli.getOptionValue("conf-name");
+      String confDir = cli.getOptionValue("conf-dir");
       Path configSetPath = Paths.get(confDir);
       // we try to be nice about having the "conf" in the directory, and we create it if it's not
       // there.

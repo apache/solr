@@ -86,7 +86,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     File confDir = new File(configSet.toFile(), "cloud-subdirs");
     String[] args =
         new String[] {
-          "--confname", "upconfig2", "--confdir", confDir.getAbsolutePath(), "-z", zkAddr
+          "--conf-name", "upconfig2", "--conf-dir", confDir.getAbsolutePath(), "-z", zkAddr
         };
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();
@@ -97,7 +97,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig2");
 
     // do we barf on a bogus path?
-    args = new String[] {"--confname", "upconfig3", "--confdir", "nothinghere", "-z", zkAddr};
+    args = new String[] {"--conf-name", "upconfig3", "--conf-dir", "nothinghere", "-z", zkAddr};
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
     assertTrue("tool should have returned non-zero for failure ", 0 != res);
@@ -125,7 +125,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {
-          "--confname", "downconfig1", "--confdir", tmp.toAbsolutePath().toString(), "-z", zkAddr,
+          "--conf-name", "downconfig1", "--conf-dir", tmp.toAbsolutePath().toString(), "-z", zkAddr,
         };
 
     ConfigSetDownloadTool downTool = new ConfigSetDownloadTool();
@@ -147,7 +147,12 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     downTool = new ConfigSetDownloadTool();
     args =
         new String[] {
-          "--confname", "downconfig2", "--confdir", tmp2.toAbsolutePath().toString(), "-z", zkAddr,
+          "--conf-name",
+          "downconfig2",
+          "--conf-dir",
+          tmp2.toAbsolutePath().toString(),
+          "-z",
+          zkAddr,
         };
 
     res =

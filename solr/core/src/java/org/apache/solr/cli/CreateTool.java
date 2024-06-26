@@ -104,7 +104,7 @@ public class CreateTool extends ToolBase {
                 "Number of copies of each document across the collection (replicas per shard); default is 1.")
             .build(),
         Option.builder("d")
-            .longOpt("confdir")
+            .longOpt("conf-dir")
             .argName("DIR")
             .hasArg()
             .desc(
@@ -112,8 +112,37 @@ public class CreateTool extends ToolBase {
                     + SolrCLI.DEFAULT_CONFIG_SET
                     + '.')
             .build(),
+        Option.builder("confdir")
+            .longOpt("confdir")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --conf-dir instead")
+                    .get())
+            .argName("DIR")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Configuration directory to copy when creating the new collection; default is "
+                    + SolrCLI.DEFAULT_CONFIG_SET
+                    + '.')
+            .build(),
         Option.builder("n")
+            .longOpt("conf-name")
+            .argName("NAME")
+            .hasArg()
+            .required(false)
+            .desc("Configuration name; default is the collection name.")
+            .build(),
+        Option.builder("confname")
             .longOpt("confname")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --conf-name instead")
+                    .get())
             .argName("NAME")
             .hasArg()
             .required(false)
@@ -144,7 +173,10 @@ public class CreateTool extends ToolBase {
     String solrUrl = cli.getOptionValue("solr-url", SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    final String confDirName = cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET);
+    final String confDirName =
+        cli.hasOption("confdir")
+            ? cli.getOptionValue("confdir")
+            : cli.getOptionValue("conf-dir", SolrCLI.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
     Path configsetDir = Paths.get(confDirName);
@@ -229,7 +261,10 @@ public class CreateTool extends ToolBase {
     String collectionName = cli.getOptionValue("name");
     final String solrInstallDir = System.getProperty("solr.install.dir");
     String confName = cli.getOptionValue("confname");
-    String confDir = cli.getOptionValue("confdir", "_default");
+    String confDir =
+        cli.hasOption("confdir")
+            ? cli.getOptionValue("confdir")
+            : cli.getOptionValue("conf-dir", SolrCLI.DEFAULT_CONFIG_SET);
     Path solrInstallDirPath = Paths.get(solrInstallDir);
     Path confDirPath = Paths.get(confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
@@ -353,7 +388,10 @@ public class CreateTool extends ToolBase {
   }
 
   private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
-    final String confDirectoryName = cli.getOptionValue("confdir", "_default");
+    final String confDirectoryName =
+        cli.hasOption("confdir")
+            ? cli.getOptionValue("confdir")
+            : cli.getOptionValue("conf-dir", SolrCLI.DEFAULT_CONFIG_SET);
     final String confName = cli.getOptionValue("confname", "");
 
     if (confDirectoryName.equals("_default")

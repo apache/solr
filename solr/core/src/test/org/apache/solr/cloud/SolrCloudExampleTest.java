@@ -79,9 +79,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "2",
           "--replication-factor",
           "2",
-          "-confname",
+          "-conf-name",
           testCollectionName,
-          "-confdir",
+          "-conf-dir",
           "_default",
           "--solr-url",
           solrUrl
