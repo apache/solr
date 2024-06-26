@@ -260,7 +260,10 @@ public class CreateTool extends ToolBase {
 
     String collectionName = cli.getOptionValue("name");
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    String confName = cli.getOptionValue("confname");
+    String confName =
+        cli.hasOption("conf-name")
+            ? cli.getOptionValue("conf-name")
+            : cli.getOptionValue("confname");
     String confDir =
         cli.hasOption("confdir")
             ? cli.getOptionValue("confdir")
