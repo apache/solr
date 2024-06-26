@@ -212,7 +212,7 @@ public class PostTool extends ToolBase {
             .argName("mode")
             .required(false)
             .desc(
-                "Files crawls files, web crawls website, args processes input args, and stdin reads a command from standard in. default: files.")
+                "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
             .build(),
         Option.builder("r")
             .longOpt("recursive")
@@ -385,7 +385,7 @@ public class PostTool extends ToolBase {
     try {
       if (type != null) {
         throw new IllegalArgumentException(
-            "Specifying content-type with \"-Ddata=web\" is not supported");
+            "Specifying content-type with \"--mode=web\" is not supported");
       }
 
       // Set Extracting handler as default

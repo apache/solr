@@ -62,11 +62,13 @@ usage: post
                                                   x,odt,odp,ods,ott,otp,ot
                                                   s,rtf,htm,html,txt,log
  -h,--help                                        Print this message.
-    --mode <mode>                                 Files crawls files, web
-                                                  crawls website, args
-                                                  processes input args,
-                                                  and stdin reads a
-                                                  command from standard
+    --mode <mode>                                 Which mode the Post tool
+                                                  is running in, 'files'
+                                                  crawls local directory,
+                                                  'web' crawls website,
+                                                  'args' processes input
+                                                  args, and 'stdin' reads
+                                                  a command from standard
                                                   in. default: files.
  -o,--optimize                                    Issue an optimize at end
                                                   of posting documents.
