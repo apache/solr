@@ -67,9 +67,9 @@ public class NodeFileStore extends JerseyResource implements NodeFileStoreApis {
     this.fileStore = fileStore;
   }
 
-  // TODO - this single "get" operation actually supports several different chunks of functionality:
-  //  syncing, directory listing, file-fetching, metadata-fetching. We should split it up into
-  //  multiple distinct APIs
+  // TODO SOLR-17351 - this single "get" operation actually supports several different chunks of
+  //  functionality: syncing, directory listing, file-fetching, metadata-fetching. We should split
+  //  it up into multiple distinct APIs
   @Override
   @PermissionName(FILESTORE_READ_PERM)
   public SolrJerseyResponse getFile(String path, Boolean sync, String getFrom, Boolean meta) {
