@@ -436,7 +436,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      * we're not supposed to hit it. This is just a protection to grow in memory too much when
      * receiving an abusive number of admin requests.
      */
-    private static final int MAX_TRACKED_REQUESTS = 10_000;
+    private static final int MAX_TRACKED_REQUESTS =
+        EnvUtils.getPropertyAsInteger("solr.admin.requests.running.max", 10_000);
 
     public static final String RUNNING = "running";
     public static final String COMPLETED = "completed";
