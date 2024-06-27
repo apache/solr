@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +88,7 @@ public class BackupRestoreUtils extends SolrTestCase {
       builder.append("&");
       builder.append(p.getKey());
       builder.append("=");
-      builder.append(p.getValue());
+      builder.append(URLEncoder.encode(p.getValue(), StandardCharsets.UTF_8));
     }
     String leaderUrl = builder.toString();
     executeHttpRequest(leaderUrl);
