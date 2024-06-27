@@ -462,9 +462,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       this(
           Ticker.systemTicker(),
           TimeUnit.MINUTES.toNanos(
-              EnvUtils.getEnvAsLong("solr.admin.requests.running.timeout.minutes", 60L)),
+              EnvUtils.getPropertyAsLong("solr.admin.requests.running.timeout.minutes", 60L)),
           TimeUnit.MINUTES.toNanos(
-              EnvUtils.getEnvAsLong("solr.admin.requests.completed.timeout.minutes", 5L)));
+              EnvUtils.getPropertyAsLong("solr.admin.requests.completed.timeout.minutes", 5L)));
     }
 
     /**
