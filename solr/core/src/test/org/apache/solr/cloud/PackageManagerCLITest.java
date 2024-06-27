@@ -84,49 +84,102 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
+        });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "add-repo",
           "fullstory",
-          "http://localhost:" + repositoryServer.getPort()
+          "http://localhost:" + repositoryServer.getPort(),
+          "--credentials",
+          SecurityJson.USER_PASS
         });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url", solrUrl, "list-available", "--credentials", SecurityJson.USER_PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer:1.0.0"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "install",
+          "question-answer:1.0.0",
+          "--credentials",
+          SecurityJson.USER_PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
+        });
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "question-answer",
+          "--credentials",
+          SecurityJson.USER_PASS
+        });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "deploy",
           "question-answer",
           "-y",
-          "-collections",
+          "--collections",
           "abc",
           "-p",
-          "RH-HANDLER-PATH=" + rhPath
+          "RH-HANDLER-PATH=" + rhPath,
+          "--credentials",
+          SecurityJson.USER_PASS
         });
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "question-answer",
+          "--credentials",
+          SecurityJson.USER_PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "-c", "abc"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "-c",
+          "abc",
+          "--credentials",
+          SecurityJson.USER_PASS
+        });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
     // functionality
@@ -139,46 +192,78 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl", solrUrl, "deploy", "question-answer:latest", "-y", "-collections", "abc"
+            "--solr-url",
+            solrUrl,
+            "deploy",
+            "question-answer:latest",
+            "-y",
+            "--collections",
+            "abc",
+            "--credentials",
+            SecurityJson.USER_PASS
           });
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
 
-      run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
-      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0");
+      run(
+          tool,
+          new String[] {
+            "--solr-url",
+            solrUrl,
+            "install",
+            "question-answer",
+            "--credentials",
+            SecurityJson.USER_PASS
+          });
+      assertPackageVersion(
+          "abc", "question-answer", "$LATEST", rhPath, "1.1.0", SecurityJson.USER_PASS);
     } else {
       log.info("Testing explicit deployment to a different/newer version");
 
-      run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
-      assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
+      run(
+          tool,
+          new String[] {
+            "--solr-url",
+            solrUrl,
+            "install",
+            "question-answer",
+            "--credentials",
+            SecurityJson.USER_PASS
+          });
+      assertPackageVersion(
+          "abc", "question-answer", "1.0.0", rhPath, "1.0.0", SecurityJson.USER_PASS);
 
       // even if parameters are not passed in, they should be picked up from previous deployment
       if (random().nextBoolean()) {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
               "-p",
-              "RH-HANDLER-PATH=" + rhPath
+              "RH-HANDLER-PATH=" + rhPath,
+              "--credentials",
+              SecurityJson.USER_PASS
             });
       } else {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
-              "abc"
+              "--collections",
+              "abc",
+              "--credentials",
+              SecurityJson.USER_PASS
             });
       }
       assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
@@ -187,9 +272,27 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     log.info("Running undeploy...");
     run(
         tool,
-        new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "undeploy",
+          "question-answer",
+          "--collections",
+          "abc",
+          "--credentials",
+          SecurityJson.USER_PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(
+        tool,
+        new String[] {
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "question-answer",
+          "--credentials",
+          SecurityJson.USER_PASS
+        });
   }
 
   void assertPackageVersion(

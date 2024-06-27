@@ -127,8 +127,8 @@ public class PackageTool extends ToolBase {
               }
               break;
             case "list-deployed":
-              if (cli.hasOption('c')) {
-                String collection = cli.getArgs()[1];
+              if (cli.hasOption("collection")) {
+                String collection = cli.getOptionValue("collection");
                 Map<String, SolrPackageInstance> packages =
                     packageManager.getPackagesDeployed(collection);
                 PackageUtils.printGreen("Packages deployed on " + collection + ":");
@@ -136,6 +136,9 @@ public class PackageTool extends ToolBase {
                   PackageUtils.printGreen("\t" + packages.get(packageName));
                 }
               } else {
+                // nuance that we use a arg here instead of requiring a --package parameter with a
+                // value
+                // in this code path
                 String packageName = cli.getArgs()[1];
                 Map<String, String> deployedCollections =
                     packageManager.getDeployedCollections(packageName);
@@ -177,8 +180,8 @@ public class PackageTool extends ToolBase {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean noprompt = cli.hasOption('y');
-                  boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                  boolean noprompt = cli.hasOption("no-prompt");
+                  boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
                           ? PackageUtils.validateCollections(
@@ -194,7 +197,7 @@ public class PackageTool extends ToolBase {
                       noprompt);
                 } else {
                   PackageUtils.printRed(
-                      "Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
+                      "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
                 }
                 break;
               }
@@ -289,7 +292,7 @@ public class PackageTool extends ToolBase {
         "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
     print("\n");
     print(
-        "Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
+        "Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).");
     print(
         "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
     print("\n");
@@ -318,48 +321,42 @@ public class PackageTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solrUrl")
-            .argName("URL")
+        Option.builder()
+            .longOpt("collections")
             .hasArg()
-            .required(false)
-            .desc(
-                "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.getDefaultSolrUrl()
-                    + '.')
-            .build(),
-        Option.builder("collections")
             .argName("COLLECTIONS")
-            .hasArg()
-            .required(false)
             .desc(
                 "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
             .build(),
-        Option.builder("cluster")
-            .required(false)
+        Option.builder()
+            .longOpt("cluster")
             .desc("Specifies that this action should affect cluster-level plugins only.")
             .build(),
         Option.builder("p")
-            .argName("PARAMS")
-            .hasArgs()
-            .required(false)
-            .desc("List of parameters to be used with deploy command.")
             .longOpt("param")
+            .hasArgs()
+            .argName("PARAMS")
+            .desc("List of parameters to be used with deploy command.")
             .build(),
-        Option.builder("u")
-            .required(false)
-            .desc("If a deployment is an update over a previous deployment.")
+        Option.builder()
             .longOpt("update")
+            .desc("If a deployment is an update over a previous deployment.")
             .build(),
         Option.builder("c")
-            .required(false)
-            .desc("The collection to apply the package to, not required.")
             .longOpt("collection")
+            .hasArg()
+            .argName("COLLECTION")
+            .desc("The collection to apply the package to, not required.")
             .build(),
         Option.builder("y")
-            .required(false)
+            .longOpt("no-prompt")
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
-            .longOpt("noprompt")
-            .build());
+            .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   private String getZkHost(CommandLine cli) throws Exception {

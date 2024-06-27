@@ -41,20 +41,26 @@ public class ZkMvTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("src")
-            .argName("src")
+        Option.builder()
+            .argName("SRC")
+            .longOpt("source")
             .hasArg()
             .required(true)
             .desc("Source Znode to move from.")
             .build(),
-        Option.builder("dst")
-            .argName("dst")
+        Option.builder()
+            .argName("DST")
+            .longOpt("destination")
             .hasArg()
             .required(true)
             .desc("Destination Znode to move to.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
@@ -70,8 +76,8 @@ public class ZkMvTool extends ToolBase {
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String src = cli.getOptionValue("src");
-      String dst = cli.getOptionValue("dst");
+      String src = cli.getOptionValue("source");
+      String dst = cli.getOptionValue("destination");
 
       if (src.toLowerCase(Locale.ROOT).startsWith("file:")
           || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {

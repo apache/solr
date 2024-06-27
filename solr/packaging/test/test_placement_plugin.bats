@@ -26,7 +26,7 @@ teardown() {
   save_home_on_failure
 
   delete_all_collections
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "Affinity placement plugin using sysprop" {

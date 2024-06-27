@@ -79,7 +79,7 @@ public class AssertTool extends ToolBase {
             .hasArg(true)
             .argName("url")
             .build(),
-        Option.builder("u")
+        Option.builder()
             .desc("Asserts that we run as same user that owns <directory>.")
             .longOpt("same-user")
             .hasArg(true)
@@ -197,8 +197,8 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("X")) {
       ret += assertFileNotExists(cli.getOptionValue("X"));
     }
-    if (cli.hasOption("u")) {
-      ret += sameUser(cli.getOptionValue("u"));
+    if (cli.hasOption("same-user")) {
+      ret += sameUser(cli.getOptionValue("same-user"));
     }
     if (cli.hasOption("s")) {
       ret += assertSolrRunning(cli.getOptionValue("s"));

@@ -29,7 +29,7 @@ How to Use
 To get started run
 
 ```
-  bin/solr -help
+  bin/solr --help
 ```
 
 Solr includes a few examples to help you get started.  For instance, if you want
@@ -56,7 +56,7 @@ Files included in an Apache Solr binary distribution
 
 server/
   A self-contained Solr instance, complete with a sample
-  configuration and documents to index. Please see: bin/solr start -help
+  configuration and documents to index. Please see: bin/solr start --help
   for more information about starting a Solr server.
 
 bin/
