@@ -48,7 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -209,7 +209,7 @@ public class PackageUtils {
     NamedList<Object> response = solrClient.request(request);
     String manifestJson = (String) response.get("response");
     String calculatedSHA512 =
-        BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
+        Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(
           ErrorCode.UNAUTHORIZED,
@@ -302,7 +302,7 @@ public class PackageUtils {
   }
 
   public static void uploadKey(byte[] bytes, String path, Path home) throws IOException {
-    FileStoreAPI.MetaData meta = FileStoreAPI._createJsonMetaData(bytes, null);
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
     DistribFileStore._persistToFile(
         home, path, ByteBuffer.wrap(bytes), ByteBuffer.wrap(Utils.toJSON(meta)));
   }

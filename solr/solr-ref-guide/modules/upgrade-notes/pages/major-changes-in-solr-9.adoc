@@ -67,6 +67,22 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.6
+=== Dependency upgrades
+Lucene is upgraded to 9.10.0 and a variety of library dependencies have been upgraded. See https://solr.apache.org/docs/9_6_0/changes/Changes.html for specific upgraded libraries.
+
+=== SolrJ
+* The `Http2SolrClient` classes powered by the Jetty Http library are no longer marked as experimental.
+* Solrj now offers a lightweight client based on java.net.http.HttpClient: `HttpJdkSolrClient`
+* SolrJ now offers an improved async request API
+
+=== Queries
+* Distributed stats can be disabled via request parameter
+* Query timeouts (limits) may now be based on either CPU time as well as wall clock
+
+=== Other
+* Inactive shards will now be cleaned up periodically
+
 == Solr 9.5
 === Dependency Upgrades
 <<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.

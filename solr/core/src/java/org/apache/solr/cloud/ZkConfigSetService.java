@@ -26,12 +26,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
@@ -62,7 +59,7 @@ public class ZkConfigSetService extends ConfigSetService {
     this.zkClient = cc.getZkController().getZkClient();
   }
 
-  /** This is for ZkCLI and some tests */
+  /** This is for some tests */
   public ZkConfigSetService(SolrZkClient zkClient) {
     super(null, false);
     this.zkController = null;
@@ -71,36 +68,18 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-    final String colName = cd.getCollectionName();
-
-    // For back compat with cores that can create collections without the collections API
-    try {
-      if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
-        // TODO remove this functionality or maybe move to a CLI mechanism
-        log.warn(
-            "Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-        CreateCollectionCmd.createCollectionZkNode(
-            zkController.getSolrCloudManager().getDistribStateManager(),
-            colName,
-            cd.getCloudDescriptor().getParams(),
-            zkController.getCoreContainer().getConfigSetService());
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
-    } catch (KeeperException e) {
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
+    // Currently, cd.getConfigSet() is always null. Except that it's explicitly set by
+    // {@link org.apache.solr.core.SyntheticSolrCore}.
+    // Should we consider setting it for all cores as a part of CoreDescriptor creation/loading
+    // process?
+    if (cd.getConfigSet() == null) {
+      String configSetName =
+          zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName();
+      cd.setConfigSet(configSetName);
     }
 
-    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
-    // populated in standalone
-    String configSetName = zkController.getClusterState().getCollection(colName).getConfigName();
-    cd.setConfigSet(configSetName);
-
     return new ZkSolrResourceLoader(
-        cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController);
+        cd.getInstanceDir(), cd.getConfigSet(), parentLoader.getClassLoader(), zkController);
   }
 
   @Override

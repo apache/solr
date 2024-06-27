@@ -91,7 +91,6 @@ public class MoveReplicaHdfsFailoverTest extends SolrCloudTestCase {
             .setNode(cluster.getJettySolrRunner(0).getNodeName())
             .process(cluster.getSolrClient());
 
-    ulogDir += "/tlog";
     ZkStateReader zkStateReader = cluster.getZkStateReader();
     assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
 

@@ -33,6 +33,10 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.
 
+=== Service installer
+
+The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
+
 === Deprecation removals
 
 * The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
@@ -51,3 +55,7 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 * The node configuration file `/solr.xml` can no longer be loaded from Zookeeper. Solr startup will fail if it is present.
 
 * The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead.
+
+* The `BlobRepository`, which was deprecated in 8x in favour of the `FileStore` approach is removed.   
+Users should migrate to the `FileStore` implementation (per node stored file) and the still existing `BlobHandler` (across the cluster storage backed by `.system` collection).
+Please note this also removes the ability to share resource intensive objects across multiple cores as this feature was tied to the `BlobRepository` implementation.

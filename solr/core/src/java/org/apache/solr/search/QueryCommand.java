@@ -36,10 +36,11 @@ public class QueryCommand {
   private int len;
   private int supersetMaxDoc;
   private int flags;
+  private boolean multiThreaded = false;
   private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
-  private boolean enableDistribStats = true;
+  private boolean distribStatsDisabled;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -152,6 +153,15 @@ public class QueryCommand {
     return this;
   }
 
+  public boolean getMultiThreaded() {
+    return multiThreaded;
+  }
+
+  public QueryCommand setMultiThreaded(boolean multiThreaded) {
+    this.multiThreaded = multiThreaded;
+    return this;
+  }
+
   public long getTimeAllowed() {
     return timeAllowed;
   }
@@ -222,11 +232,11 @@ public class QueryCommand {
     return isQueryCancellable;
   }
 
-  public void setEnableDistribStats(boolean enableDistribStats) {
-    this.enableDistribStats = enableDistribStats;
+  public void setDistribStatsDisabled(boolean distribStatsDisabled) {
+    this.distribStatsDisabled = distribStatsDisabled;
   }
 
-  public boolean isEnableDistribStats() {
-    return enableDistribStats;
+  public boolean isDistribStatsDisabled() {
+    return distribStatsDisabled;
   }
 }
