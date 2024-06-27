@@ -591,6 +591,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       } catch (SolrException e) {
         assertEquals("Duplicate request with the same requestid found.", e.getMessage());
       }
+
+      assertNotNull(task1.getStatus());
+      assertNull(task2.getStatus());
     } finally {
       asyncTracker.shutdown();
     }

@@ -537,7 +537,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
     private void addTask(TaskObject taskObject) {
       // Ensure task ID is not already in use
-      TaskObject taskInCache = requestStatusCache.get(taskObject.taskId, n -> taskObject);
+      TaskObject taskInCache =
+          requestStatusCache.get(
+              taskObject.taskId,
+              n -> {
+                taskObject.status = RUNNING;
+                return taskObject;
+              });
 
       // If we get a different task instance, it means one was already in the cache with the
       // same name. Just reject the new one.
@@ -547,7 +553,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
 
       taskObject.status = RUNNING;
-      requestStatusCache.put(taskObject.taskId, taskObject);
     }
 
     private void finishTask(TaskObject taskObject, boolean successful) {
