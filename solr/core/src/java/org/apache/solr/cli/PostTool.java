@@ -273,10 +273,10 @@ public class PostTool extends ToolBase {
     solrUpdateUrl = null;
     if (cli.hasOption("solr-update-url")) {
       String url = cli.getOptionValue("solr-update-url");
-      solrUpdateUrl = new URI(url);
+      solrUpdateUrl = new URI(url).toURL();
     } else if (cli.hasOption("name")) {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
-      solrUpdateUrl = new URI(url);
+      solrUpdateUrl = new URI(url).toURL();
     } else {
       throw new IllegalArgumentException(
           "Must specify either --solr-update-url or -c parameter to post documents.");

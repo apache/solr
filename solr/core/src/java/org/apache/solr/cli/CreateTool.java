@@ -16,17 +16,41 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.ConfigSetService;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 
+/** Supports create command in the bin/solr script. */
 public class CreateTool extends ToolBase {
 
   public CreateTool() {
@@ -172,8 +196,7 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(
-        solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName)) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -205,9 +228,12 @@ public class CreateTool extends ToolBase {
         echo(res.jsonStr());
         echo("\n");
       } else {
-        tool = new CreateCoreTool(stdout);
+        echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
       }
-      tool.runImpl(cli);
+    } catch (Exception e) {
+      /* create-core failed, cleanup the copied configset before propagating the error. */
+      PathUtils.deleteDirectory(coreInstanceDir);
+      throw e;
     }
   }
 
@@ -216,9 +242,7 @@ public class CreateTool extends ToolBase {
         new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
-            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(
-                cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS);
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
@@ -302,8 +326,7 @@ public class CreateTool extends ToolBase {
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
-    if (SolrCLI.safeCheckCollectionExists(
-        solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+    if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
       throw new IllegalStateException(
           "\nCollection '"
               + collectionName

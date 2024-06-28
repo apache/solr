@@ -114,7 +114,8 @@ public class AuthTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
+        SolrCLI.OPTION_CREDENTIALS,
+        SolrCLI.OPTION_CREDENTIALS_DEPRECATED);
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
@@ -274,18 +275,17 @@ public class AuthTool extends ToolBase {
   private int handleBasicAuth(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
     boolean prompt = Boolean.parseBoolean(cli.getOptionValue("prompt", "false"));
+    String credentials = resolveCredentials(cli);
     boolean updateIncludeFileOnly =
         Boolean.parseBoolean(cli.getOptionValue("update-include-file-only", "false"));
     switch (cmd) {
       case "enable":
-        if (!prompt && !cli.hasOption("credentials")) {
+        if (!prompt && credentials == null) {
           CLIO.out("Option --credentials or --prompt is required with enable.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);
-        } else if (!prompt
-            && (cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()) == null
-                || !cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()).contains(":"))) {
+        } else if (!prompt || !credentials.contains(":")) {
           CLIO.out("Option --credentials is not in correct format.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
@@ -325,8 +325,7 @@ public class AuthTool extends ToolBase {
         }
 
         String username, password;
-        if (cli.hasOption("credentials")) {
-          String credentials = cli.getOptionValue("credentials");
+        if (credentials != null) {
           username = credentials.split(":")[0];
           password = credentials.split(":")[1];
         } else {
@@ -432,6 +431,14 @@ public class AuthTool extends ToolBase {
     new HelpFormatter()
         .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
     return 1;
+  }
+
+  // Return credentials or null if not set
+  private String resolveCredentials(CommandLine cli) {
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    String deprecatedCredentials =
+        cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS_DEPRECATED.getOpt());
+    return credentials != null ? credentials : deprecatedCredentials;
   }
 
   private void checkSecurityJsonExists(SolrZkClient zkClient)

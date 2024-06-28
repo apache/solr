@@ -17,6 +17,10 @@
 
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.DEFAULT_CONFIG_SET;
+import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
+import static org.apache.solr.cli.SolrCLI.OPTION_VERBOSE;
+import static org.apache.solr.cli.SolrCLI.OPTION_ZKHOST;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.PrintStream;
@@ -59,7 +63,50 @@ public class CreateCollectionTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return SolrCLI.CREATE_COLLECTION_OPTIONS;
+    return List.of(
+        OPTION_ZKHOST,
+        OPTION_SOLRURL,
+        Option.builder(NAME)
+            .argName("NAME")
+            .hasArg()
+            .required(true)
+            .desc("Name of collection to create.")
+            .build(),
+        Option.builder("shards")
+            .argName("#")
+            .hasArg()
+            .required(false)
+            .desc("Number of shards; default is 1.")
+            .build(),
+        Option.builder("replicationFactor")
+            .argName("#")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Number of copies of each document across the collection (replicas per shard); default is 1.")
+            .build(),
+        Option.builder("confdir")
+            .argName("NAME")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Configuration directory to copy when creating the new collection; default is "
+                    + DEFAULT_CONFIG_SET
+                    + '.')
+            .build(),
+        Option.builder("confname")
+            .argName("NAME")
+            .hasArg()
+            .required(false)
+            .desc("Configuration name; default is the collection name.")
+            .build(),
+        Option.builder("configsetsDir")
+            .argName("DIR")
+            .hasArg()
+            .required(true)
+            .desc("Path to configsets directory on the local system.")
+            .build(),
+        OPTION_VERBOSE);
   }
 
   @Override
@@ -167,7 +214,7 @@ public class CreateCollectionTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (cli.hasOption(OPTION_VERBOSE.getOpt())) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());

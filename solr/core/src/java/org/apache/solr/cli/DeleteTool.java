@@ -122,7 +122,7 @@ public class DeleteTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (var solrClient = SolrCLI.getSolrClient(cli)) {
       Map<String, Object> systemInfo =
           solrClient
               .request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH))

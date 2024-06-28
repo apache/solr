@@ -19,9 +19,13 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
 import java.net.URL;
@@ -157,17 +161,30 @@ public class SolrCLI implements CLIO {
           // .type(Boolean.class)
           .build();
 
-  public static final List<Option> cloudOptions =
-      List.of(
-          OPTION_ZKHOST,
-          Option.builder("c")
-              .argName("COLLECTION")
-              .hasArg()
-              .required(false)
-              .desc("Name of collection")
-              .longOpt("collection")
-              .build(),
-          OPTION_VERBOSE);
+  public static final Option OPTION_CREDENTIALS =
+      Option.builder("u")
+          .longOpt("credentials")
+          .argName("credentials")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+          .build();
+
+  public static final Option OPTION_CREDENTIALS_DEPRECATED =
+      Option.builder("credentials")
+          .argName("credentials")
+          .hasArg()
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use -u or --credentials instead")
+                  .get())
+          .required(false)
+          .desc(
+              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+          .build();
 
   public static void exit(int exitStatus) {
     try {
@@ -282,6 +299,7 @@ public class SolrCLI implements CLIO {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();
     else if ("status".equals(toolType)) return new StatusTool();
     else if ("api".equals(toolType)) return new ApiTool();
+    // Keeping create_collection and create_core in 9.x even if the new 'create' tool is here
     else if ("create_collection".equals(toolType)) return new CreateCollectionTool();
     else if ("create_core".equals(toolType)) return new CreateCoreTool();
     else if ("create".equals(toolType)) return new CreateTool();
@@ -383,7 +401,7 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new GnuParser()).parse(options, args);
+      cli = (new DefaultParser()).parse(options, args);
     } catch (ParseException exp) {
       // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
@@ -489,6 +507,11 @@ public class SolrCLI implements CLIO {
         .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
         .withMaxConnectionsPerHost(32)
         .build();
+  }
+
+  public static SolrClient getSolrClient(CommandLine cli) throws Exception {
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    return getSolrClient(solrUrl);
   }
 
   private static final String JSON_CONTENT_TYPE = "application/json";
@@ -638,7 +661,7 @@ public class SolrCLI implements CLIO {
       return zkHost;
     }
 
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (var solrClient = getSolrClient(cli)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
@@ -728,6 +751,12 @@ public class SolrCLI implements CLIO {
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
+  }
+
+  public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
+    NamedList<Object> systemInfo =
+        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
+    return "solrcloud".equals(systemInfo.get("mode"));
   }
 
   public static class AssertionFailureException extends Exception {

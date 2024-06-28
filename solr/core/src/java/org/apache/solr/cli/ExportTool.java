@@ -128,8 +128,7 @@ public class ExportTool extends ToolBase {
             .hasArg()
             .argName("FIELDA,FIELDB")
             .desc("Comma separated list of fields to export. By default all fields are fetched.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+            .build());
   }
 
   public abstract static class Info {
@@ -238,8 +237,7 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("solr-collection-url");
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
-    Info info = new MultiThreadedRunner(url, credentials);
+    Info info = new MultiThreadedRunner(url);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(
         cli.getOptionValue("out"), cli.getOptionValue("format"), cli.hasOption("compress"));
