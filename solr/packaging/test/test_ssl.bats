@@ -52,7 +52,7 @@ teardown() {
   export SOLR_HOST=localhost
 
   solr start -c
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
@@ -90,7 +90,7 @@ teardown() {
   export SOLR_HOST=127.0.0.1
 
   solr start -c
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
@@ -152,7 +152,7 @@ teardown() {
   export SOLR_HOST=localhost
 
   solr start -c
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
   solr auth enable -type basicAuth -credentials name:password
 
   run curl -u name:password --basic --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
@@ -210,7 +210,7 @@ teardown() {
 
   run solr start -c
 
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   export SOLR_SSL_KEY_STORE=
   export SOLR_SSL_KEY_STORE_PASSWORD=
@@ -332,8 +332,8 @@ teardown() {
     export SOLR_SSL_TRUST_STORE=
     export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-    solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
-    solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
+    solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+    solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
 
     run solr create -c test -s 2
     assert_output --partial "Created collection 'test'"
@@ -469,8 +469,8 @@ teardown() {
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
-  solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
@@ -527,13 +527,13 @@ teardown() {
   export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
   solr start -c -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
-  solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
   solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT} -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
-  solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
+  solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
 
   # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
   run solr create -c test -s 2
