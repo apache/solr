@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - 'main'
+      - 'branch_9x'
     paths:
       - '.github/workflows/docker-test.yml'
       - 'solr/bin/**'
