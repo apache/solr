@@ -71,7 +71,8 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
     String solrUrl =
         ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
 
-    solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+    // NOCOMMIT: epugh, why was this added?
+    // solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
 
     String[] args = new String[] {"healthcheck", "-c", "bob", "--solr-url", solrUrl};
     assertEquals(0, runTool(args));
