@@ -214,9 +214,6 @@ set HADOOP_CREDSTORE_PASSWORD="credStorePass123"
 
 === Configure ZooKeeper
 
-NOTE: ZooKeeper does not support encrypted communication with clients like Solr.
-There are several related JIRA tickets where SSL support is being planned/worked on: https://issues.apache.org/jira/browse/ZOOKEEPER-235[ZOOKEEPER-235]; https://issues.apache.org/jira/browse/ZOOKEEPER-236[ZOOKEEPER-236]; https://issues.apache.org/jira/browse/ZOOKEEPER-1000[ZOOKEEPER-1000]; and https://issues.apache.org/jira/browse/ZOOKEEPER-2120[ZOOKEEPER-2120].
-
 After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
 
 This section assumes you have created and started an external ZooKeeper.
@@ -232,7 +229,7 @@ The examples below use the `zkcli` tool that comes with Solr to do this.
 [.tab-label]**nix Command*
 [source,terminal]
 ----
-$ server/scripts/cloud-scripts/zkcli.sh -zkhost server1:2181,server2:2181,server3:2181 -cmd clusterprop -name urlScheme -val https
+$ bin/solr cluster -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -241,7 +238,7 @@ $ server/scripts/cloud-scripts/zkcli.sh -zkhost server1:2181,server2:2181,server
 [.tab-label]*Windows Command*
 [source,powershell]
 ----
-C:\> server\scripts\cloud-scripts\zkcli.bat -zkhost server1:2181,server2:2181,server3:2181 -cmd clusterprop -name urlScheme -val https
+C:\> bin/solr.cmd -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 =====
 --
@@ -420,15 +417,13 @@ You should get a response that looks like this:
     "properties":{"urlScheme":"https"}}}
 ----
 
-=== Index Documents using post.jar
+=== Index Documents using bin/solr post
 
-Use `post.jar` to index some example documents to the SolrCloud collection created above:
+Use `bin/solr post` to index some example documents to the SolrCloud collection created above:
 
 [source,bash]
 ----
-$ cd example/exampledocs
-
-$ java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
+$ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/update example/exampledocs/*.xml
 ----
 
 === Query Using curl

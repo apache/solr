@@ -16,7 +16,11 @@
  */
 package org.apache.solr.handler.api;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+
+import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 public class V2ApiUtilsTest extends SolrTestCaseJ4 {
@@ -35,5 +39,26 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
     System.setProperty("disable.v2.api", "true");
     assertFalse(
         "v2 API should be disabled if sysprop explicitly disables it", V2ApiUtils.isEnabled());
+  }
+
+  @Test
+  public void testConvertsWtToMediaTypeString() {
+    assertEquals(
+        "someDefault",
+        V2ApiUtils.getMediaTypeFromWtParam(new ModifiableSolrParams(), "someDefault"));
+
+    var params = new ModifiableSolrParams();
+    params.add("wt", "json");
+    assertEquals(MediaType.APPLICATION_JSON, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    params.set("wt", "xml");
+    assertEquals(MediaType.APPLICATION_XML, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    params.set("wt", "javabin");
+    assertEquals(BINARY_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    // Defaults to, well the default, whenever an unknown/unexpected/typo'd 'wt' is provided
+    params.set("wt", "josn");
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(params, "someDefault"));
   }
 }
