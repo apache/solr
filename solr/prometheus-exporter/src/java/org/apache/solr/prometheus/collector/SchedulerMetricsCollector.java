@@ -74,7 +74,7 @@ public class SchedulerMetricsCollector implements Closeable {
   }
 
   public void start() {
-    scheduler.scheduleWithFixedDelay(this::collectMetrics, 0, duration, timeUnit);
+    scheduler.scheduleAtFixedRate(this::collectMetrics, 0, duration, timeUnit);
   }
 
   @SuppressWarnings("try")
