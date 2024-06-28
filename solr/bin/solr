@@ -877,6 +877,12 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
   exit $?
 fi
 
+# run a streaming expression
+if [[ "$SCRIPT_CMD" == "stream" ]]; then
+  run_tool $SCRIPT_CMD $@
+  exit $?
+fi
+
 # Prevent any zk subcommands from going through with out invoking zk command
 if [[ "$SCRIPT_CMD" == "upconfig" || $SCRIPT_CMD == "downconfig" || $SCRIPT_CMD == "cp" || $SCRIPT_CMD == "rm" || $SCRIPT_CMD == "mv" || $SCRIPT_CMD == "ls" || $SCRIPT_CMD == "mkroot" || $SCRIPT_CMD == "linkconfig" || $SCRIPT_CMD == "updateacls" ]]; then
   print_short_zk_usage "You must invoke this subcommand using the zk command.   bin/solr zk $SCRIPT_CMD."
