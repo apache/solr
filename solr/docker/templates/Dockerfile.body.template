@@ -72,6 +72,8 @@ RUN set -ex; \
 RUN set -ex; \
     apt-get update; \
     apt-get -y --no-install-recommends install acl lsof procps wget netcat gosu tini jattach; \
+    wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64"; \ 
+    chmod +x /usr/local/bin/gosu; \
     rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr
