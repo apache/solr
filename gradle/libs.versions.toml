@@ -1,0 +1,40 @@
+[versions]
+
+agp = "8.0.2"
+android-compileSdk = "33"
+android-minSdk = "24"
+common-custom-user-data = "1.12"
+fasterxml = "2.17.1"
+gradle-enterprise = "3.15.1"
+jakarta = "3.1.0"
+kotlin = "1.9.23"
+kotlinx-serialization = "1.6.3"
+nexus-publish = "2.0.0-rc-1"
+openapi = "7.6.0"
+slf4j = "2.0.12"
+semver4j = "5.3.0"
+swagger3 = "2.2.22"
+
+[plugins]
+
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+commonCustomUserData = { id = "com.gradle.common-custom-user-data-gradle-plugin", version.ref = "common-custom-user-data" }
+gradleEnterprise = { id = "com.gradle.enterprise", version.ref = "gradle-enterprise" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+openapiGenerator = { id = "org.openapi.generator", version.ref = "openapi" }
+swagger3Core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger3" }
+
+[libraries]
+
+jakarta-rsApi = { group = "jakarta.ws.rs", name = "jakarta.ws.rs-api", version.ref = "jakarta" }
+nexus-publish = { group = "io.github.gradle-nexus.publish-plugin", name = "io.github.gradle-nexus.publish-plugin.gradle.plugin", version.ref = "nexus-publish" }
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+fasterxml-jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "fasterxml" }
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+semver4j-semver4j = { group = "org.semver4j", name = "semver4j", version.ref = "semver4j" }
+swagger3-annotations-jakarta = { group = "io.swagger.core.v3", name = "swagger-annotations-jakarta", version.ref = "swagger3" }
+swagger3-jaxrs2-jakarta = { group = "io.swagger.core.v3", name = "swagger-jaxrs2-jakarta", version.ref = "swagger3" }

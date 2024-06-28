@@ -20,6 +20,8 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id 'base'
+  alias(libs.plugins.swagger3Core) apply false
+  alias(libs.plugins.openapiGenerator) apply false
   id 'com.palantir.consistent-versions' version '2.16.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
   id 'ca.cutterslade.analyze' version '1.9.1'
