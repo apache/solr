@@ -21,6 +21,8 @@ import java.time.format.DateTimeFormatter
 plugins {
   id 'base'
   id 'solr.build-infra'
+  alias(libs.plugins.kotlinMultiplatform) apply false
+  alias(libs.plugins.jetbrainsCompose) apply false
   id 'com.palantir.consistent-versions' version '2.16.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
   id 'ca.cutterslade.analyze' version '1.10.0'
@@ -29,6 +31,18 @@ plugins {
   id 'net.ltgt.errorprone' version '3.1.0' apply false
   id 'com.diffplug.spotless' version '6.5.2' apply false
   id 'com.github.node-gradle.node' version '7.0.1' apply false
+}
+
+allprojects {
+  repositories {
+    mavenCentral()
+    maven {
+      url = "https://maven.pkg.jetbrains.space/public/p/compose/dev"
+    }
+    maven {
+      url = "https://maven.pkg.jetbrains.space/kotlin/p/wasm/experimental"
+    }
+  }
 }
 
 apply from: file('build-tools/scriptDepVersions.gradle')
@@ -206,8 +220,8 @@ apply from: file('gradle/hacks/gradle-archives.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
-apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
-apply from: file('gradle/hacks/dummy-outputs.gradle')
+//apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
+//apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')

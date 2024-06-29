@@ -95,6 +95,13 @@ task downloadBrowserify(type: NpmTask) {
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
+task generateComposeUiFiles {
+  // Generate and add files of new UI to outputs for later referencing
+  dependsOn project(":solr:compose-ui").tasks.wasmJsBrowserDistribution
+
+  outputs.dir(project(':solr:compose-ui').file('build/dist/wasmJs/productionExecutable/'))
+}
+
 task generateJsClientBundle(type: NpxTask) {
   group = 'Solr JS Client'
   dependsOn tasks.downloadBrowserify
@@ -136,6 +143,11 @@ war {
 
   from (configurations.generatedJSClientBundle, {
     into "libs/solr"
+  })
+
+  // Include new UI files in webapp
+  from (tasks.generateComposeUiFiles, {
+    into "compose"
   })
 }
 

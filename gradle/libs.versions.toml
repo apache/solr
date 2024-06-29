@@ -1,25 +1,31 @@
 [versions]
 
-agp = "8.0.2"
-android-compileSdk = "33"
-android-minSdk = "24"
 common-custom-user-data = "1.12"
+compose = "1.6.11"
+decompose = "3.1.0"
+essenty = "2.1.0"
 fasterxml = "2.17.1"
 gradle-enterprise = "3.15.1"
 jakarta = "3.1.0"
-kotlin = "1.9.23"
+kotlin = "2.0.0"
+kotlinx-coroutines = "1.9.0-RC"
+kotlinx-datetime = "0.6.0"
 kotlinx-serialization = "1.6.3"
+ktor = "3.0.0-wasm2"
+mvikotlin = "4.1.0"
 nexus-publish = "2.0.0-rc-1"
 openapi = "7.6.0"
-slf4j = "2.0.12"
+oshai-logging = "7.0.0"
 semver4j = "5.3.0"
+slf4j = "2.0.12"
 swagger3 = "2.2.22"
 
 [plugins]
 
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
 commonCustomUserData = { id = "com.gradle.common-custom-user-data-gradle-plugin", version.ref = "common-custom-user-data" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 gradleEnterprise = { id = "com.gradle.enterprise", version.ref = "gradle-enterprise" }
+jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 openapiGenerator = { id = "org.openapi.generator", version.ref = "openapi" }
@@ -27,14 +33,27 @@ swagger3Core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = 
 
 [libraries]
 
+decompose-decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
+decompose-extensions-compose = { group = "com.arkivanov.decompose", name = "extensions-compose", version.ref = "decompose" }
+essenty-lifecycle = { group = "com.arkivanov.essenty", name = "lifecycle", version.ref = "essenty" }
 jakarta-rsApi = { group = "jakarta.ws.rs", name = "jakarta.ws.rs-api", version.ref = "jakarta" }
 nexus-publish = { group = "io.github.gradle-nexus.publish-plugin", name = "io.github.gradle-nexus.publish-plugin.gradle.plugin", version.ref = "nexus-publish" }
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 fasterxml-jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "fasterxml" }
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
+ktor-client-js = { group = "io.ktor", name = "ktor-client-js", version.ref = "ktor" }
+mvikotlin-extensions-coroutines = { group = "com.arkivanov.mvikotlin", name = "mvikotlin-extensions-coroutines", version.ref = "mvikotlin" }
+mvikotlin-logging = { group = "com.arkivanov.mvikotlin", name = "mvikotlin-logging", version.ref = "mvikotlin" }
+mvikotlin-main = { group = "com.arkivanov.mvikotlin", name = "mvikotlin-main", version.ref = "mvikotlin" }
+mvikotlin-mvikotlin = { group = "com.arkivanov.mvikotlin", name = "mvikotlin", version.ref = "mvikotlin" }
+mvikotlin-timetravel = { group = "com.arkivanov.mvikotlin", name = "mvikotlin-timetravel", version.ref = "mvikotlin" }
+oshai-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "oshai-logging" }
 semver4j-semver4j = { group = "org.semver4j", name = "semver4j", version.ref = "semver4j" }
 swagger3-annotations-jakarta = { group = "io.swagger.core.v3", name = "swagger-annotations-jakarta", version.ref = "swagger3" }
 swagger3-jaxrs2-jakarta = { group = "io.swagger.core.v3", name = "swagger-jaxrs2-jakarta", version.ref = "swagger3" }
