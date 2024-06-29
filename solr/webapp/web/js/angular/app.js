@@ -67,6 +67,9 @@ solrAdminApp.config([
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
       }).
+      when('/compose', {
+        redirectTo: 'compose/index.html'
+      }).
       when('/unknown', {
         templateUrl: 'partials/unknown.html',
         controller: 'UnknownController'
