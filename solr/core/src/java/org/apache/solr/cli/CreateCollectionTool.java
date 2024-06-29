@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.cli.SolrCLI.DEFAULT_CONFIG_SET;
 import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
+import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL_DEPRECATED;
 import static org.apache.solr.cli.SolrCLI.OPTION_VERBOSE;
 import static org.apache.solr.cli.SolrCLI.OPTION_ZKHOST;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -66,6 +67,7 @@ public class CreateCollectionTool extends ToolBase {
     return List.of(
         OPTION_ZKHOST,
         OPTION_SOLRURL,
+        OPTION_SOLRURL_DEPRECATED,
         Option.builder(NAME)
             .argName("NAME")
             .hasArg()
@@ -116,7 +118,7 @@ public class CreateCollectionTool extends ToolBase {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("solrUrl")
+              + SolrCLI.normalizeSolrUrl(cli)
               + " is running in standalone server mode, please use the create_core command instead;\n"
               + "create_collection can only be used when running in SolrCloud mode.\n");
     }
@@ -138,11 +140,7 @@ public class CreateCollectionTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null) {
-      String firstLiveNode = liveNodes.iterator().next();
-      solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-    }
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
     String collectionName = cli.getOptionValue(NAME);
 

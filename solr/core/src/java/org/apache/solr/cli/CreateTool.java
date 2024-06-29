@@ -89,7 +89,7 @@ public class CreateTool extends ToolBase {
             .desc(
                 "Number of copies of each document across the collection (replicas per shard); default is 1.")
             .build(),
-        Option.builder()
+        Option.builder("replicationFactor")
             .longOpt("replicationFactor")
             .deprecated(
                 DeprecatedAttributes.builder()

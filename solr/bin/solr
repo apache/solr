@@ -1138,7 +1138,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   if [ $# -gt 0 ]; then
     while true; do
       case "${1:-}" in
-          -c|-core|-collection)
+          -c|-core|-collection|--name)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
                 exit 1
@@ -1146,7 +1146,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
               CREATE_NAME="$2"
               shift 2
           ;;
-          -n|-confname)
+          -n|-confname|--conf-name)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
                 exit 1
@@ -1154,7 +1154,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
               CREATE_CONFNAME="$2"
               shift 2
           ;;
-          -d|-confdir)
+          -d|-confdir|--conf-dir)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
                 exit 1
@@ -1162,7 +1162,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
               CREATE_CONFDIR="$2"
               shift 2
           ;;
-          -s|-shards)
+          -s|-shards|--shards)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Shard count is required when using the $1 option!"
                 exit 1
@@ -1170,7 +1170,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
               CREATE_NUM_SHARDS="$2"
               shift 2
           ;;
-          -rf|-replicationFactor)
+          -rf|-replicationFactor|--replication-factor)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Replication factor is required when using the $1 option!"
                 exit 1
@@ -1223,7 +1223,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ -z "${CREATE_NAME:-}" ]; then
-    echo "Name (-c) argument is required!"
+    echo "Name (--name) argument is required!"
     print_usage "$SCRIPT_CMD"
     exit 1
   fi
@@ -1278,7 +1278,7 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "${1:-}" in
-          -c|-core|-collection)
+          -c|-core|-collection|--name)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
                 exit 1

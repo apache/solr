@@ -54,6 +54,7 @@ public class CreateCoreTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         Option.builder(NAME)
             .argName("NAME")
             .hasArg()
@@ -80,7 +81,7 @@ public class CreateCoreTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
