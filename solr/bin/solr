@@ -813,7 +813,7 @@ function get_status() {
         port=$(jetty_port "$ID")
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
-          run_tool status --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port" "$@"
+          run_tool status --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
@@ -831,7 +831,7 @@ function get_status() {
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
-            run_tool status --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port" "$@"
+            run_tool status --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
             echo ""
           fi
       done
@@ -1702,7 +1702,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth "${AUTH_PARAMS[@]}" --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" --auth-conf-dir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 

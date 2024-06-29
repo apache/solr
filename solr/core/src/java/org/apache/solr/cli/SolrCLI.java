@@ -262,7 +262,8 @@ public class SolrCLI implements CLIO {
     String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
     String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
     String port = EnvUtils.getEnv("SOLR_PORT", "8983");
-    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+    return String.format(
+        Locale.ROOT, "%s://%s:%s/solr", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
@@ -376,7 +377,8 @@ public class SolrCLI implements CLIO {
   /**
    * Returns the value of the option with the given name, or the value of the deprecated option with
    */
-  public static String getOptionWithDeprecatedAndDefault(CommandLine cli, String opt, String deprecated, String def) {
+  public static String getOptionWithDeprecatedAndDefault(
+      CommandLine cli, String opt, String deprecated, String def) {
     String val = cli.getOptionValue(opt);
     if (val == null) {
       val = cli.getOptionValue(deprecated);
@@ -587,17 +589,6 @@ public class SolrCLI implements CLIO {
 
   /**
    * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
-   * is used, and warns those users. In the future we'll have urls ending with /api as well.
-   *
-   * @param solrUrl The user supplied url to Solr.
-   * @return the solrUrl in the format that Solr expects to see internally.
-   */
-  public static String normalizeSolrUrl(String solrUrl) {
-    return normalizeSolrUrl(solrUrl, true);
-  }
-
-  /**
-   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
    * is used, and optionally logs a warning. In the future we'll have urls ending with /api as well.
    *
    * @param solrUrl The user supplied url to Solr.
@@ -653,7 +644,8 @@ public class SolrCLI implements CLIO {
 
           String firstLiveNode = liveNodes.iterator().next();
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-          solrUrl = normalizeSolrUrl(solrUrl, false);
+          // NOCOMMIT: Not normalizing URL to remove /solr
+          //solrUrl = normalizeSolrUrl(solrUrl, false);
         }
       }
     }
@@ -666,8 +658,7 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost =
-        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+    String zkHost = getOptionWithDeprecatedAndDefault(cli, "zk-host", "zkHost", null);
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }

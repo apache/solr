@@ -98,7 +98,9 @@ public class StatusTool extends ToolBase {
       return;
     }
 
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
+    int maxWaitSecs =
+        Integer.parseInt(
+            SolrCLI.getOptionWithDeprecatedAndDefault(cli, "max-wait-secs", "maxWaitSecs", "0"));
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
