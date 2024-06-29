@@ -373,6 +373,17 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
+  /**
+   * Returns the value of the option with the given name, or the value of the deprecated option with
+   */
+  public static String getOptionWithDeprecatedAndDefault(CommandLine cli, String opt, String deprecated, String def) {
+    String val = cli.getOptionValue(opt);
+    if (val == null) {
+      val = cli.getOptionValue(deprecated);
+    }
+    return val == null ? def : val;
+  }
+
   public static List<Option> joinOptions(List<Option> lhs, List<Option> rhs) {
     if (lhs == null) {
       return rhs == null ? List.of() : rhs;

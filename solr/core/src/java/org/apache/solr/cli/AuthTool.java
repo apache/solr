@@ -285,7 +285,7 @@ public class AuthTool extends ToolBase {
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);
-        } else if (!prompt || !credentials.contains(":")) {
+        } else if (!prompt && !credentials.contains(":")) {
           CLIO.out("Option --credentials is not in correct format.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
@@ -341,7 +341,8 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("block-unknown", "true"));
+        boolean blockUnknown = Boolean.parseBoolean(SolrCLI.getOptionWithDeprecatedAndDefault(
+            cli, "block-unknown", "blockUnknown", "true"));
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
@@ -436,9 +437,11 @@ public class AuthTool extends ToolBase {
   // Return credentials or null if not set
   private String resolveCredentials(CommandLine cli) {
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
-    String deprecatedCredentials =
-        cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS_DEPRECATED.getOpt());
-    return credentials != null ? credentials : deprecatedCredentials;
+    if (credentials != null) {
+      return credentials;
+    } else {
+      return cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS_DEPRECATED.getOpt());
+    }
   }
 
   private void checkSecurityJsonExists(SolrZkClient zkClient)
