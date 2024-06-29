@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -33,6 +34,7 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.request.macro.MacroSanitizer;
 import org.apache.solr.search.QueryParsing;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -164,7 +166,11 @@ public class RequestUtil {
       newMap.putAll(MultiMapSolrParams.asMultiMap(invariants));
     }
 
-    if (!isShard) { // Don't expand macros in shard requests
+    if (isShard) {
+      // sanitize all macros from fq parameters as they
+      // might corrupt handler local params
+      newMap = MacroSanitizer.sanitize(CommonParams.FQ, newMap);
+    } else { // Don't expand macros in shard requests
       String[] doMacrosStr = newMap.get("expandMacros");
       boolean doMacros = true;
       if (doMacrosStr != null) {
