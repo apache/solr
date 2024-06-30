@@ -845,7 +845,7 @@ public class RunExampleTool extends ToolBase {
       }
     }
 
-    // invoke the CreateCollectionTool
+    // invoke the CreateTool
     String[] createArgs =
         new String[] {
           "--name", collectionName,
@@ -856,11 +856,11 @@ public class RunExampleTool extends ToolBase {
           "--solr-url", solrUrl
         };
 
-    CreateCollectionTool createCollectionTool = new CreateCollectionTool(stdout);
+    CreateTool createTool = new CreateTool(stdout);
     int createCode =
-        createCollectionTool.runTool(
+        createTool.runTool(
             SolrCLI.processCommandLineArgs(
-                createCollectionTool.getName(), createCollectionTool.getOptions(), createArgs));
+                createTool.getName(), createTool.getOptions(), createArgs));
 
     if (createCode != 0)
       throw new Exception(

@@ -300,9 +300,6 @@ public class SolrCLI implements CLIO {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();
     else if ("status".equals(toolType)) return new StatusTool();
     else if ("api".equals(toolType)) return new ApiTool();
-    // Keeping create_collection and create_core in 9.x even if the new 'create' tool is here
-    else if ("create_collection".equals(toolType)) return new CreateCollectionTool();
-    else if ("create_core".equals(toolType)) return new CreateCoreTool();
     else if ("create".equals(toolType)) return new CreateTool();
     else if ("delete".equals(toolType)) return new DeleteTool();
     else if ("config".equals(toolType)) return new ConfigTool();
@@ -341,8 +338,6 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
     formatter.printHelp("status", getToolOptions(new StatusTool()));
     formatter.printHelp("api", getToolOptions(new ApiTool()));
-    formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
-    formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
     formatter.printHelp("create", getToolOptions(new CreateTool()));
     formatter.printHelp("delete", getToolOptions(new DeleteTool()));
     formatter.printHelp("config", getToolOptions(new ConfigTool()));
@@ -516,10 +511,24 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
-    return new Http2SolrClient.Builder(solrUrl)
-        .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-        .withMaxConnectionsPerHost(32)
-        .build();
+    return getSolrClient(solrUrl, false);
+  }
+
+  public static SolrClient getSolrClient(String solrUrl, boolean barePath) {
+    // today we require all urls to end in /solr, however in the future we will need to support the
+    // /api url end point instead.   Eventually we want to have this method always
+    // return a bare url, and then individual calls decide if they are /solr or /api
+    // The /solr/ check is because sometimes a full url is passed in, like
+    // http://localhost:8983/solr/films_shard1_replica_n1/.
+    if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+      solrUrl = solrUrl + "/solr";
+    }
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(solrUrl)
+            .withMaxConnectionsPerHost(32)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS);
+
+    return builder.build();
   }
 
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {

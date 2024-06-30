@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.CreateCollectionTool;
+import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
 import org.apache.solr.cli.PostTool;
@@ -90,7 +90,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    CreateCollectionTool tool = new CreateCollectionTool();
+    CreateTool tool = new CreateTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
