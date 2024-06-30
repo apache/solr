@@ -262,9 +262,8 @@ public class SolrCLI implements CLIO {
     String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
     String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
     String port = EnvUtils.getEnv("SOLR_PORT", "8983");
-    // NOCOMMIT: This change fixed some tests by adding /solr to the baseUrl, but maybe the fix should be applied elsewhere?
     return String.format(
-        Locale.ROOT, "%s://%s:%s/solr", scheme.toLowerCase(Locale.ROOT), host, port);
+        Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
@@ -645,8 +644,7 @@ public class SolrCLI implements CLIO {
 
           String firstLiveNode = liveNodes.iterator().next();
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-          // NOCOMMIT: Not normalizing URL to remove /solr
-          //solrUrl = normalizeSolrUrl(solrUrl, false);
+          solrUrl = normalizeSolrUrl(solrUrl, false);
         }
       }
     }
