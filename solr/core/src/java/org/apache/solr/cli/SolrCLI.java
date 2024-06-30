@@ -262,6 +262,7 @@ public class SolrCLI implements CLIO {
     String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
     String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
     String port = EnvUtils.getEnv("SOLR_PORT", "8983");
+    // NOCOMMIT: This change fixed some tests by adding /solr to the baseUrl, but maybe the fix should be applied elsewhere?
     return String.format(
         Locale.ROOT, "%s://%s:%s/solr", scheme.toLowerCase(Locale.ROOT), host, port);
   }
