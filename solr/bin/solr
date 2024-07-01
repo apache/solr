@@ -38,7 +38,7 @@
 # Note: This is particularly handy for running multiple instances on a
 # single installation, or for quick tests.
 #
-# Finally, developers and enthusiasts who frequently run from an SVN
+# Finally, developers and enthusiasts who frequently run from a Git
 # checkout, and do not want to locally modify bin/solr.in.sh, can put
 # a customized include file at ~/.solr.in.sh.
 #
@@ -1480,7 +1480,12 @@ fi
 if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
   # handoff this command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
-  exit $?
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    print_usage ""
+    exit $ret
+  fi
+  exit 0
 fi
 
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
