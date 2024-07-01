@@ -21,6 +21,9 @@
 Solr is the popular, blazing fast open source search platform for all your
 enterprise, e-commerce, and analytics needs, built on [Apache Lucene](https://lucene.apache.org/).
 
+[![Build Status](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/badge/icon?subject=Solr)](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/)
+[![Revved up by Develocity](https://img.shields.io/badge/Revved%20up%20by-Develocity-06A0CE?logo=Gradle&labelColor=02303A)](https://ge.apache.org/scans?search.buildToolType=gradle&search.rootProjectNames=solr-root)
+
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
 https://solr.apache.org/
