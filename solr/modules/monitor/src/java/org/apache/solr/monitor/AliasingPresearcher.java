@@ -24,8 +24,8 @@ import java.util.function.BiPredicate;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
+import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
@@ -71,7 +71,7 @@ public class AliasingPresearcher extends Presearcher {
   private Document alias(Document in) {
     Document out = new Document();
     for (var field : in) {
-      if (!MonitorFields.ANYTOKEN_FIELD.equals(field.name())
+      if (!TermFilteredPresearcher.ANYTOKEN_FIELD.equals(field.name())
           && field instanceof Field
           && ((Field) field).tokenStreamValue() != null) {
         out.add(

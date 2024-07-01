@@ -208,10 +208,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
     if (presearcher instanceof TermFilteredPresearcher
         || presearcher instanceof AliasingPresearcher) {
-      var anyTokenField = schema.getFieldOrNull(MonitorFields.ANYTOKEN_FIELD);
+      var anyTokenField = schema.getFieldOrNull(TermFilteredPresearcher.ANYTOKEN_FIELD);
       if (anyTokenField == null || !anyTokenField.tokenized() || !anyTokenField.multiValued()) {
         throw new IllegalStateException(
-            MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
+            TermFilteredPresearcher.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
       }
     }
   }

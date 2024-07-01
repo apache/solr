@@ -26,7 +26,6 @@ public class MonitorFields {
   public static final String QUERY_ID = QueryIndex.FIELDS.query_id + "_";
   public static final String CACHE_ID = QueryIndex.FIELDS.cache_id + "_";
   public static final String MONITOR_QUERY = QueryIndex.FIELDS.mq + "_";
-  public static final String ANYTOKEN_FIELD = TermFilteredPresearcher.ANYTOKEN_FIELD;
 
   public static final Set<String> REQUIRED_MONITOR_SCHEMA_FIELDS =
       Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY);
