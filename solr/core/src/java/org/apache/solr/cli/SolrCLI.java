@@ -268,8 +268,7 @@ public class SolrCLI implements CLIO {
     String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
     String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
     String port = EnvUtils.getEnv("SOLR_PORT", "8983");
-    return String.format(
-        Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
