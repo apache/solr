@@ -85,6 +85,8 @@ public class SolrCLI implements CLIO {
 
   public static final String ZK_HOST = "localhost:9983";
 
+  private static HelpFormatter formatter = HelpFormatter.builder().get();
+
   public static final Option OPTION_ZKHOST_DEPRECATED =
       Option.builder("zkHost")
           .longOpt("zkHost")
@@ -185,6 +187,10 @@ public class SolrCLI implements CLIO {
           .desc(
               "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
           .build();
+
+  static {
+    formatter.setWidth(120);
+  }
 
   public static void exit(int exitStatus) {
     try {
@@ -334,7 +340,6 @@ public class SolrCLI implements CLIO {
   }
 
   private static void displayToolOptions() throws Exception {
-    HelpFormatter formatter = new HelpFormatter();
     formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
     formatter.printHelp("status", getToolOptions(new StatusTool()));
     formatter.printHelp("api", getToolOptions(new ApiTool()));
@@ -364,7 +369,9 @@ public class SolrCLI implements CLIO {
     options.addOption(OPTION_VERBOSE);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
-      options.addOption(toolOpt);
+      if (!toolOpt.isDeprecated()) {
+        options.addOption(toolOpt);
+      }
     }
     return options;
   }
@@ -422,22 +429,31 @@ public class SolrCLI implements CLIO {
         }
       }
       if (!hasHelpArg) {
-        CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
+        CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage() + "\n");
+        formatter.printHelp(toolName, getOptionsNoDeprecation(options));
         exit(1);
       } else {
-        HelpFormatter formatter = HelpFormatter.builder().setShowDeprecated(true).get();
-        formatter.printHelp(toolName, options);
+        formatter.printHelp(toolName, getOptionsNoDeprecation(options));
         exit(0);
       }
     }
 
     if (cli.hasOption("help")) {
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(toolName, options);
+      formatter.printHelp(toolName, getOptionsNoDeprecation(options));
       exit(0);
     }
 
     return cli;
+  }
+
+  private static Options getOptionsNoDeprecation(Options options) {
+    Options newOptions = new Options();
+    for (Option option : options.getOptions()) {
+      if (!option.isDeprecated()) {
+        newOptions.addOption(option);
+      }
+    }
+    return newOptions;
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */

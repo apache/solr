@@ -483,17 +483,11 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "create" ]; then
     echo ""
-    echo "Usage: solr create [-c name] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port] [-V]"
+    echo "Usage: solr create [-c name] [-d confdir] [-n configName] [--shards #] [-rf #] [-p port] [-V]"
     echo ""
     echo "  Create a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
     echo "  mode (collection). In other words, this action detects which mode Solr is running in, and then takes"
-    echo "  the appropriate action (either create_core or create_collection). For detailed usage instructions, do:"
-    echo ""
-    echo "    bin/solr create_core -help"
-    echo ""
-    echo "       or"
-    echo ""
-    echo "    bin/solr create_collection -help"
+    echo "  the appropriate action."
     echo ""
   elif [ "$CMD" == "delete" ]; then
     echo ""
@@ -541,7 +535,7 @@ function print_usage() {
     echo "                        Solr instance and will use the port of the first server it finds."
     echo ""
     echo "  -force              If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
-    echo "                        It is possible to override this warning with the `-force` parameter."
+    echo "                        It is possible to override this warning with the '-force' parameter."
     echo ""
     echo "  -V/-verbose   Enable more verbose output for this script"
     echo ""
@@ -581,7 +575,7 @@ function print_usage() {
     echo "                                    Solr instance and will use the port of the first server it finds."
     echo ""
     echo "  -force                          If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
-    echo "                                    It is possible to override this warning with the `-force` parameter."
+    echo "                                    It is possible to override this warning with the '-force' parameter."
     echo ""
     echo "  -V/-verbose                     Enable more verbose output for this script."
     echo ""
@@ -1129,9 +1123,19 @@ fi
 
 # create a core or collection
 if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
-  run_tool create $@
-    exit $?
+  if [ $# -gt 0 ]; then
+    for arg in "$@"; do
+        case $arg in
+            -h|--help|-help)
+                print_usage create
+                ;;
+        esac
+    done
   fi
+
+  run_tool create $@
+  exit $?
+fi
 
 # delete a core or collection
 if [[ "$SCRIPT_CMD" == "delete" ]]; then
