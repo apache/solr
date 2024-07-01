@@ -30,11 +30,11 @@ import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.junit.Test;
 
 /** */
-public class StreamExpressionToExpessionTest extends SolrTestCase {
+public class StreamExpressionToExpressionTest extends SolrTestCase {
 
-  private StreamFactory factory;
+  private final StreamFactory factory;
 
-  public StreamExpressionToExpessionTest() {
+  public StreamExpressionToExpressionTest() {
     super();
 
     factory =
@@ -77,7 +77,6 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
                 "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", fq=\"a_s:one\", fq=\"a_s:two\")"),
             factory)) {
       expressionString = stream.toExpression(factory).toString();
-      System.out.println("ExpressionString: " + expressionString.toString());
       assertTrue(expressionString.contains("search(collection1,"));
       assertTrue(expressionString.contains("q=\"*:*\""));
       assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
@@ -550,7 +549,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
 
     // The purpose of this test is to ensure that a parameter with a contained " character is
     // properly escaped when it is turned back into an expression. This is important when an
-    // expression is passedto a worker (parallel stream) or even for other reasons when an
+    // expression is passed to a worker (parallel stream) or even for other reasons when an
     // expression is string-ified.
 
     // Basic test

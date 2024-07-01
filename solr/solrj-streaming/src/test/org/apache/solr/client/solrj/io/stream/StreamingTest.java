@@ -89,13 +89,12 @@ public class StreamingTest extends SolrCloudTestCase {
 
   private static String zkHost;
 
-  private static int numShards;
   private static int numWorkers;
   private static boolean useAlias;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
-    numShards = random().nextInt(2) + 1; // 1 - 3
+    int numShards = random().nextInt(2) + 1; // 1 - 3
     numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
     configureCluster(numShards)
         .addConfig(
