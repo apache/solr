@@ -102,7 +102,7 @@ There are two ways to do this: either use the CLI's `deploy` command or manually
 If the package author states support for it, the package can be deployed with the CLI's `deploy` command.
 [source,bash]
 ----
-$ bin/solr package deploy <package-name>:[version] -collections <collection1>[,<collection2>,...] [-p <param1>=<val1> -p <param2>=<val2> ...
+$ bin/solr package deploy <package-name>:[version] --collections <collection1>[,<collection2>,...] [-p <param1>=<val1> -p <param2>=<val2> ...
 ----
 
 or

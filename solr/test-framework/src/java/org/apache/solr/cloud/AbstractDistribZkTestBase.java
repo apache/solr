@@ -407,15 +407,16 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   //
   // copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", "configset-name", zk_address);
 
-  protected static void copyConfigUp(
+  public static void copyConfigUp(
       Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr)
       throws Exception {
+
+    File fullConfDir = new File(configSetDir.toFile(), srcConfigSet);
     String[] args =
         new String[] {
-          "-confname", dstConfigName,
-          "-confdir", srcConfigSet,
-          "-zkHost", zkAddr,
-          "-configsetsDir", configSetDir.toString(),
+          "--conf-name", dstConfigName,
+          "--conf-dir", fullConfDir.getAbsolutePath(),
+          "-z", zkAddr
         };
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();

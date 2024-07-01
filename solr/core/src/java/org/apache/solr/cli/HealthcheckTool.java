@@ -55,15 +55,17 @@ public class HealthcheckTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
-            .argName("COLLECTION")
+            .longOpt("name")
             .hasArg()
-            .required(false)
-            .desc("Name of collection; no default.")
-            .longOpt("collection")
-            .build());
+            .argName("COLLECTION")
+            .required(true)
+            .desc("Name of the collection to check.")
+            .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   enum ShardState {
@@ -104,7 +106,7 @@ public class HealthcheckTool extends ToolBase {
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("collection");
+    String collection = cli.getOptionValue("c");
     if (collection == null) {
       throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
     }

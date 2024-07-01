@@ -46,14 +46,17 @@ public class ZkMkrootTool extends ToolBase {
             .required(true)
             .desc("Path to create.")
             .build(),
-        Option.builder()
+        Option.builder() // This appears not to be wired into bin/solr commands.
             .longOpt("fail-on-exists")
             .hasArg()
             .required(false)
             .desc("Raise an error if the root exists.  Defaults to false.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_VERBOSE);
   }
 

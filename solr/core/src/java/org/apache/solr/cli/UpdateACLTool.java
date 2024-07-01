@@ -57,7 +57,8 @@ public class UpdateACLTool extends ToolBase {
             .required(true)
             .desc("The path to update.")
             .build(),
-        SolrCLI.OPTION_ZKHOST);
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   @Override

@@ -59,7 +59,7 @@ save_home_on_failure() {
 }
 
 shutdown_all() {
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 shutdown_exporter(){
