@@ -500,16 +500,6 @@ function print_usage() {
     echo ""
     echo "  Can be run on remote (non-Solr) hosts, as long as a valid SOLR_HOST is provided in solr.in.sh"
     echo ""
-    echo "  -c <name>               Name of the core / collection to delete"
-    echo ""
-    echo "  -deleteConfig <boolean> Delete the configuration directory from Zookeeper; default is true"
-    echo ""
-    echo "  -p or -port <port>      Port of a local Solr instance where you want to delete the core/collection"
-    echo "                            If not specified, the script will search the local system for a running"
-    echo "                            Solr instance and will use the port of the first server it finds."
-    echo ""
-    echo "  -V/-verbose             Enable more verbose output for this script."
-    echo ""
   elif [ "$CMD" == "create_core" ]; then
     echo ""
     echo "Usage: solr create_core [-c core] [-d confdir] [-p port] [-V]"
@@ -1118,88 +1108,17 @@ fi
 
 # delete a core or collection
 if [[ "$SCRIPT_CMD" == "delete" ]]; then
-
-  VERBOSE=""
-
   if [ $# -gt 0 ]; then
-    while true; do
-      case "${1:-}" in
-          -c|-core|-collection|--name)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
-                exit 1
-              fi
-              DELETE_NAME="$2"
-              shift 2
-          ;;
-          -p|-port)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
-                exit 1
-              fi
-              DELETE_PORT="$2"
-              shift 2
-          ;;
-          -deleteConfig)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "true|false is required when using the $1 option!"
-                exit 1
-              fi
-              DELETE_CONFIG="$2"
-              shift 2
-          ;;
-          -V|-verbose)
-              VERBOSE="-verbose"
-              shift
-          ;;
-          -help|-h)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ -n "${1:-}" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
+    for arg in "$@"; do
+        case $arg in
+            -h|--help|-help)
+                print_usage delete
+                ;;
+        esac
     done
   fi
 
-  if [ -z "$DELETE_NAME" ]; then
-    echo "Name (-c) argument is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
-  fi
-
-  # If not defined, use the collection name for the name of the configuration in Zookeeper
-  : "${DELETE_CONFIG:=true}"
-
-  if [ -z "${DELETE_PORT:-}" ]; then
-    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
-      do
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          DELETE_PORT=$port
-          break
-        fi
-    done
-  fi
-
-  if [ -z "${DELETE_PORT:-}" ]; then
-    echo "Failed to determine the port of a local Solr instance, cannot delete $DELETE_NAME!"
-    exit 1
-  fi
-
-  run_tool delete -name "$DELETE_NAME" -deleteConfig "$DELETE_CONFIG" \
-    -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$DELETE_PORT/solr" \
-    $VERBOSE
+  run_tool delete $@
   exit $?
 fi
 
