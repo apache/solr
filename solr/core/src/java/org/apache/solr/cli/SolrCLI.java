@@ -318,9 +318,7 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
-  /**
-   * Returns tool options for given tool, for usage display purposes. Hides deprecated options.
-   */
+  /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
@@ -335,8 +333,7 @@ public class SolrCLI implements CLIO {
   }
 
   /** Parses the command-line arguments passed by the user. */
-  public static CommandLine processCommandLineArgs(
-      Tool tool, String[] args) {
+  public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
     String toolName = tool.getName();
     Options options = new Options();
@@ -382,17 +379,18 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
-  /**
-   * Prints tool help for a given tool
-   */
+  /** Prints tool help for a given tool */
   private static void printToolHelp(Tool tool) {
     HelpFormatter formatter = HelpFormatter.builder().get();
     formatter.setWidth(120);
     Options optionsNoDeprecated = new Options();
-    tool.getOptions().stream().filter(option -> !option.isDeprecated()).forEach(optionsNoDeprecated::addOption);
+    tool.getOptions().stream()
+        .filter(option -> !option.isDeprecated())
+        .forEach(optionsNoDeprecated::addOption);
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
-    formatter.printHelp(usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
+    formatter.printHelp(
+        usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */

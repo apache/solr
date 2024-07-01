@@ -123,8 +123,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         };
 
     PostTool postTool = new PostTool();
-    CommandLine postCli =
-        SolrCLI.processCommandLineArgs(postTool, argsForPost);
+    CommandLine postCli = SolrCLI.processCommandLineArgs(postTool, argsForPost);
     postTool.runTool(postCli);
 
     int expectedXmlDocCount = 32;
