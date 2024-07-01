@@ -112,7 +112,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    boolean prsDefault = EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, false);
+    boolean prsDefault = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);
     final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
     if (log.isInfoEnabled()) {
       log.info(
