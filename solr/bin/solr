@@ -974,7 +974,11 @@ fi
 
 # status tool
 if [ "$SCRIPT_CMD" == "status" ]; then
-  get_status
+  if [ "$1" == "-h" ] || [ "$1" == "--help" ] || [ "$1" == "-help" ]; then
+    print_usage status
+  else
+    get_status
+  fi
   exit $?
 fi
 
