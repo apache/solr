@@ -91,7 +91,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // no-no in a JUnit test
 
     CreateTool tool = new CreateTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue(
@@ -124,7 +124,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     PostTool postTool = new PostTool();
     CommandLine postCli =
-        SolrCLI.processCommandLineArgs(postTool.getName(), postTool.getOptions(), argsForPost);
+        SolrCLI.processCommandLineArgs(postTool, argsForPost);
     postTool.runTool(postCli);
 
     int expectedXmlDocCount = 32;
@@ -159,7 +159,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "--zk-host", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
   }
 
@@ -170,7 +170,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "--solr-url", solrUrl
         };
     DeleteTool tool = new DeleteTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(
