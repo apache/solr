@@ -982,31 +982,10 @@ else
   exit
 fi
 
+# status tool
 if [ "$SCRIPT_CMD" == "status" ]; then
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -help|-h)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
-    done
-  fi
   get_status
-  exit
+  exit $?
 fi
 
 # assert tool
