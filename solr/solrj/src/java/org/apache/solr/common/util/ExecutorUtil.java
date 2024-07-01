@@ -201,6 +201,17 @@ public class ExecutorUtil {
         nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
   }
 
+  public static ExecutorService newMDCAwareFixedThreadPool(
+      int nThreads, int queueCapacity, ThreadFactory threadFactory) {
+    return new MDCAwareThreadPoolExecutor(
+        nThreads,
+        nThreads,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(queueCapacity),
+        threadFactory);
+  }
+
   /**
    * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}. Note the
    * thread is always active, even if no tasks are submitted to the executor.
