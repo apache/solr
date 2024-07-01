@@ -10,11 +10,11 @@ solr_metrics_jvm_buffers_bytes{item="TotalCapacity",pool="direct"}
 solr_metrics_jvm_buffers_bytes{item="TotalCapacity",pool="mapped"}
 solr_metrics_jvm_buffers_bytes{item="TotalCapacity",pool="mapped - 'non-volatile memory'"}
 # TYPE solr_metrics_jvm_gc gauge
-solr_metrics_jvm_gc{item="PS-MarkSweep"}
-solr_metrics_jvm_gc{item="PS-Scavenge"}
+solr_metrics_jvm_gc{}
+solr_metrics_jvm_gc{}
 # TYPE solr_metrics_jvm_gc_seconds gauge
-solr_metrics_jvm_gc_seconds{item="PS-MarkSweep"}
-solr_metrics_jvm_gc_seconds{item="PS-Scavenge"}
+solr_metrics_jvm_gc_seconds{}
+solr_metrics_jvm_gc_seconds{}
 # TYPE solr_metrics_jvm_heap gauge
 solr_metrics_jvm_heap{item="committed",memory="heap"}
 solr_metrics_jvm_heap{item="committed",memory="non-heap"}

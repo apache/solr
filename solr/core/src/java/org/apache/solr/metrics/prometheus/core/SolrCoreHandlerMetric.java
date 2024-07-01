@@ -35,6 +35,14 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     super(dropwizardMetric, coreName, metricName, cloudMode);
   }
 
+  /*
+   * Metric examples being exported
+   *
+   * QUERY./select.totalTime
+   * UPDATE./update.requests
+   * UPDATE./update.totalTime
+   */
+
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -44,13 +52,6 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * QUERY./select.requests
-   * QUERY./select.totalTime
-   * UPDATE./update.requests
-   * UPDATE./update.totalTime
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Meter) {

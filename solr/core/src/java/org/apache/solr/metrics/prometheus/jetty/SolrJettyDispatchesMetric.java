@@ -29,19 +29,18 @@ public class SolrJettyDispatchesMetric extends SolrJettyMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * org.eclipse.jetty.server.handler.DefaultHandler.dispatches
+   */
+
   @Override
   public SolrMetric parseLabels() {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * org.eclipse.jetty.server.handler.DefaultHandler.dispatches
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Timer) {
-      exporter.exportTimerCount(JETTY_DISPATCHES_TOTAL, (Timer) dropwizardMetric, getLabels());
-    }
+    exporter.exportTimerCount(JETTY_DISPATCHES_TOTAL, (Timer) dropwizardMetric, getLabels());
   }
 }

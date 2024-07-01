@@ -29,6 +29,12 @@ public class SolrCoreHighlighterMetric extends SolrCoreMetric {
     super(dropwizardMetric, coreName, metricName, cloudMode);
   }
 
+  /*
+   * Metric examples being exported
+   * HIGHLIGHTER.SolrBoundaryScanner.default.requests
+   * HIGHLIGHTER.SolrFragmentsBuilder.colored.requests
+   */
+
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -37,15 +43,8 @@ public class SolrCoreHighlighterMetric extends SolrCoreMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * HIGHLIGHTER.SolrBoundaryScanner.default.requests
-   * HIGHLIGHTER.SolrFragmentsBuilder.colored.requests
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Counter) {
-      exporter.exportCounter(CORE_HIGHLIGHER_METRICS, (Counter) dropwizardMetric, getLabels());
-    }
+    exporter.exportCounter(CORE_HIGHLIGHER_METRICS, (Counter) dropwizardMetric, getLabels());
   }
 }

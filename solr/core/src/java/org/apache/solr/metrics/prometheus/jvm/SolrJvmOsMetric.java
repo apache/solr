@@ -30,6 +30,12 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * os.availableProcessors
+   * threads.peak.count
+   */
+
   @Override
   public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -41,23 +47,12 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * os.availableProcessors
-   * threads.peak.count
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    String exportName = "";
-    if (dropwizardMetric instanceof Gauge) {
-      if (metricName.startsWith("threads.")) {
-        exportName = JVM_OS_THREADS;
-      } else {
-        exportName = JVM_OS;
-      }
-    }
-    if (!exportName.isEmpty()) {
-      exporter.exportGauge(exportName, (Gauge<?>) dropwizardMetric, getLabels());
+    if (metricName.startsWith("threads.")) {
+      exporter.exportGauge(JVM_OS_THREADS, (Gauge<?>) dropwizardMetric, getLabels());
+    } else {
+      exporter.exportGauge(JVM_OS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

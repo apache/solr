@@ -30,6 +30,12 @@ public class SolrNodeContainerMetric extends SolrNodeMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * CONTAINER.fs.coreRoot.totalSpace
+   * CONTAINER.cores.loaded
+   */
+
   @Override
   public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -37,22 +43,15 @@ public class SolrNodeContainerMetric extends SolrNodeMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * CONTAINER.fs.coreRoot.totalSpace
-   * CONTAINER.cores.loaded
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
-      if (metricName.startsWith("CONTAINER.cores.")) {
-        labels.put("item", parsedMetric[2]);
-        exporter.exportGauge(NODE_CORES, (Gauge<?>) dropwizardMetric, getLabels());
-      } else if (metricName.startsWith("CONTAINER.fs.coreRoot.")) {
-        labels.put("item", parsedMetric[3]);
-        exporter.exportGauge(NODE_CORE_FS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
-      }
+    if (metricName.startsWith("CONTAINER.cores.")) {
+      labels.put("item", parsedMetric[2]);
+      exporter.exportGauge(NODE_CORES, (Gauge<?>) dropwizardMetric, getLabels());
+    } else if (metricName.startsWith("CONTAINER.fs.coreRoot.")) {
+      labels.put("item", parsedMetric[3]);
+      exporter.exportGauge(NODE_CORE_FS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

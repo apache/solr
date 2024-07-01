@@ -1000,6 +1000,47 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  public void testPrometheusMetricsFilter() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            "prometheus",
+            "group",
+            "core",
+            "type",
+            "counter",
+            "prefix",
+            "QUERY"),
+        resp);
+
+    NamedList<?> values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList<?>) values.get("metrics");
+    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.core.collection1");
+    assertNotNull(exporter);
+    MetricSnapshots actualSnapshots = exporter.collect();
+    assertNotNull(actualSnapshots);
+
+    actualSnapshots.forEach(
+        (k) -> {
+          k.getDataPoints()
+              .forEach(
+                  (datapoint) -> {
+                    assertTrue(datapoint instanceof CounterSnapshot.CounterDataPointSnapshot);
+                    assertEquals("QUERY", datapoint.getLabels().get("category"));
+                  });
+        });
+
+    handler.close();
+  }
+
+  @Test
   public void testMetricsUnload() throws Exception {
 
     SolrCore core = h.getCoreContainer().getCore("collection1");

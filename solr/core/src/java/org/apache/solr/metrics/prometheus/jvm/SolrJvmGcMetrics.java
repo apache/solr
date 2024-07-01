@@ -30,6 +30,12 @@ public class SolrJvmGcMetrics extends SolrJvmMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * gc.G1-Old-Generation.time
+   * gc.G1-Young-Generation.count
+   */
+
   @Override
   public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -37,19 +43,12 @@ public class SolrJvmGcMetrics extends SolrJvmMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * gc.G1-Old-Generation.time
-   * gc.G1-Young-Generation.count
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Gauge) {
-      if (metricName.endsWith(".count")) {
-        exporter.exportGauge(JVM_GC, (Gauge<?>) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith(".time")) {
-        exporter.exportGauge(JVM_GC_SECONDS, (Gauge<?>) dropwizardMetric, getLabels());
-      }
+    if (metricName.endsWith(".count")) {
+      exporter.exportGauge(JVM_GC, (Gauge<?>) dropwizardMetric, getLabels());
+    } else if (metricName.endsWith(".time")) {
+      exporter.exportGauge(JVM_GC_SECONDS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

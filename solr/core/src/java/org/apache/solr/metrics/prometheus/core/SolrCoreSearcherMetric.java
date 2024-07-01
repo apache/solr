@@ -34,6 +34,12 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
     super(dropwizardMetric, coreName, metricName, cloudMode);
   }
 
+  /*
+   * Metric examples being exported
+   * SEARCHER.searcher.deletedDocs
+   * SEARCHER.new.time
+   */
+
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -43,11 +49,6 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * SEARCHER.searcher.deletedDocs
-   * SEARCHER.new.time
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

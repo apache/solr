@@ -29,6 +29,11 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
     super(dropwizardMetric, coreName, metricName, cloudMode);
   }
 
+  /*
+   * Metric examples being exported
+   * CACHE.searcher.documentCache
+   */
+
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -38,10 +43,6 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * CACHE.searcher.documentCache
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

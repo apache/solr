@@ -33,6 +33,12 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * ADMIN./admin/collections.requests
+   * UPDATE.updateShardHandler.maxConnections
+   */
+
   @Override
   public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -42,27 +48,17 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * ADMIN./admin/collections.requests
-   * UPDATE.updateShardHandler.maxConnections
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Meter) {
+    if (metricName.endsWith(".totalTime")) {
+      labels.remove("type");
+      exporter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
+    } else if (metricName.endsWith("Connections")) {
+      exporter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
+    } else if (dropwizardMetric instanceof Meter) {
       exporter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
-      if (metricName.endsWith(".requests")) {
-        exporter.exportCounter(NODE_REQUESTS, (Counter) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith(".totalTime")) {
-        // Do not need type label for total time
-        labels.remove("type");
-        exporter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
-      }
-    } else if (dropwizardMetric instanceof Gauge) {
-      if (metricName.endsWith("Connections")) {
-        exporter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
-      }
+      exporter.exportCounter(NODE_REQUESTS, (Counter) dropwizardMetric, getLabels());
     }
   }
 }

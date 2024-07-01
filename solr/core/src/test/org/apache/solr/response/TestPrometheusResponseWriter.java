@@ -18,8 +18,6 @@ package org.apache.solr.response;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.SettableGauge;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -78,14 +76,18 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
       assertNotNull("null response from server", res);
       String actual = (String) res.get("response");
       String expectedOutput =
-          Files.readString(
-              new File(TEST_PATH().toString(), "solr-prometheus-output.txt").toPath(),
-              StandardCharsets.UTF_8);
-      assertEquals(expectedOutput, actual.replaceAll("(?<=}).*", ""));
+          Files.readString(getFile("prometheus/solr-prometheus-output.txt").toPath());
+      // Expression to strip out ending numeric values and JVM item tag as we only want to test for
+      // Prometheus metric names
+      actual =
+          actual.replaceAll(
+              "(?<=}).*|(?<=solr_metrics_jvm_gc\\{)(.*)(?=})|(?<=solr_metrics_jvm_gc_seconds\\{)(.*)(?=})",
+              "");
+      assertEquals(expectedOutput, actual);
     }
   }
 
-  public static void registerGauge(
+  private static void registerGauge(
       SolrMetricManager metricManager, String registry, String metricName) {
     Gauge<Number> metric =
         new SettableGauge<>() {

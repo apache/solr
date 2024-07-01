@@ -29,6 +29,12 @@ public class SolrJvmBuffersMetric extends SolrJvmMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * buffers.direct.MemoryUsed
+   * buffers.mapped.Count
+   */
+
   @Override
   public SolrJvmMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -37,21 +43,14 @@ public class SolrJvmBuffersMetric extends SolrJvmMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * buffers.direct.MemoryUsed
-   * buffers.mapped.Count
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Gauge) {
-      String[] parsedMetric = metricName.split("\\.");
-      String metricType = parsedMetric[parsedMetric.length - 1];
-      if (metricType.equals("Count")) {
-        exporter.exportGauge(JVM_BUFFERS, (Gauge<?>) dropwizardMetric, getLabels());
-      } else if (metricType.equals(("MemoryUsed")) || metricType.equals(("TotalCapacity"))) {
-        exporter.exportGauge(JVM_BUFFERS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
-      }
+    String[] parsedMetric = metricName.split("\\.");
+    String metricType = parsedMetric[parsedMetric.length - 1];
+    if (metricType.equals("Count")) {
+      exporter.exportGauge(JVM_BUFFERS, (Gauge<?>) dropwizardMetric, getLabels());
+    } else if (metricType.equals(("MemoryUsed")) || metricType.equals(("TotalCapacity"))) {
+      exporter.exportGauge(JVM_BUFFERS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

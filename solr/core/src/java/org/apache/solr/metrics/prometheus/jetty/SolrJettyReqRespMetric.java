@@ -32,6 +32,12 @@ public class SolrJettyReqRespMetric extends SolrJettyMetric {
     super(dropwizardMetric, metricName);
   }
 
+  /*
+   * Metric examples being exported
+   * org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
+   * org.eclipse.jetty.server.handler.DefaultHandler.get-requests
+   */
+
   @Override
   public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
@@ -44,17 +50,10 @@ public class SolrJettyReqRespMetric extends SolrJettyMetric {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
-   * org.eclipse.jetty.server.handler.DefaultHandler.get-requests
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Meter) {
-      if (metricName.endsWith("xx-responses")) {
-        exporter.exportMeter(JETTY_RESPONSES_TOTAL, (Meter) dropwizardMetric, getLabels());
-      }
+    if (metricName.endsWith("xx-responses")) {
+      exporter.exportMeter(JETTY_RESPONSES_TOTAL, (Meter) dropwizardMetric, getLabels());
     } else if (metricName.endsWith("-requests")) {
       if (dropwizardMetric instanceof Counter) {
         exporter.exportCounter(JETTY_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());

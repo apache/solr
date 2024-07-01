@@ -30,13 +30,6 @@ public class SolrJvmMemoryMetric extends SolrJvmMetric {
     super(dropwizardMetric, metricName);
   }
 
-  @Override
-  public SolrMetric parseLabels() {
-    String[] parsedMetric = metricName.split("\\.");
-    labels.put("item", parsedMetric[parsedMetric.length - 1]);
-    return this;
-  }
-
   /*
    * Metric examples being exported
    * memory.heap.usage
@@ -44,23 +37,29 @@ public class SolrJvmMemoryMetric extends SolrJvmMetric {
    * memory.total.committed
    * memory.pools.CodeHeap-'non-nmethods'.committed
    */
+
+  @Override
+  public SolrMetric parseLabels() {
+    String[] parsedMetric = metricName.split("\\.");
+    labels.put("item", parsedMetric[parsedMetric.length - 1]);
+    return this;
+  }
+
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
-      String metricType = parsedMetric[1];
-      switch (metricType) {
-        case "heap":
-        case "non-heap":
-        case "total":
-          labels.put("memory", parsedMetric[1]);
-          exporter.exportGauge(JVM_MEMORY, (Gauge<?>) dropwizardMetric, getLabels());
-          break;
-        case "pools":
-          labels.put("space", parsedMetric[2]);
-          exporter.exportGauge(JVM_MEMORY_POOL_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
-          break;
-      }
+    String metricType = parsedMetric[1];
+    switch (metricType) {
+      case "heap":
+      case "non-heap":
+      case "total":
+        labels.put("memory", parsedMetric[1]);
+        exporter.exportGauge(JVM_MEMORY, (Gauge<?>) dropwizardMetric, getLabels());
+        break;
+      case "pools":
+        labels.put("space", parsedMetric[2]);
+        exporter.exportGauge(JVM_MEMORY_POOL_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+        break;
     }
   }
 }

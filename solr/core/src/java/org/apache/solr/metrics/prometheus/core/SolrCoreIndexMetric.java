@@ -29,21 +29,20 @@ public class SolrCoreIndexMetric extends SolrCoreMetric {
     super(dropwizardMetric, coreName, metricName, cloudMode);
   }
 
+  /*
+   * Metric examples being exported
+   * INDEX.sizeInBytes
+   */
+
   @Override
   public SolrCoreMetric parseLabels() {
     return this;
   }
 
-  /*
-   * Metric examples being exported
-   * INDEX.sizeInBytes
-   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Gauge) {
-      if (metricName.endsWith("sizeInBytes")) {
-        exporter.exportGauge(CORE_INDEX_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
-      }
+    if (metricName.endsWith("sizeInBytes")) {
+      exporter.exportGauge(CORE_INDEX_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }
