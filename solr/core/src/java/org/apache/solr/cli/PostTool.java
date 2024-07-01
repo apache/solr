@@ -69,8 +69,6 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -94,7 +92,6 @@ public class PostTool extends ToolBase {
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
   public static final String DEFAULT_CONTENT_TYPE = "application/json";
-  private static final Logger log = LogManager.getLogger(PostTool.class);
 
   // Input args
   int recursive = 0;
