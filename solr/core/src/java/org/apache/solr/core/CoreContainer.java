@@ -109,7 +109,7 @@ import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStore;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.NodeFileStore;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
@@ -302,7 +302,6 @@ public class CoreContainer {
   private DelegatingPlacementPluginFactory placementPluginFactory;
 
   private DistribFileStore fileStore;
-  private FileStoreAPI fileStoreAPI;
   private ClusterFileStore clusterFileStoreAPI;
   private SolrPackageLoader packageLoader;
 
@@ -866,10 +865,8 @@ public class CoreContainer {
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
       fileStore = new DistribFileStore(this);
-      fileStoreAPI = new FileStoreAPI(this);
-      registerV2ApiIfEnabled(fileStoreAPI.readAPI);
-      registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
       registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2ApiIfEnabled(NodeFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
