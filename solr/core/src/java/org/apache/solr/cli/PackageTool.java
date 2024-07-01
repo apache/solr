@@ -84,7 +84,10 @@ public class PackageTool extends ToolBase {
         return;
       }
 
-      solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+      String solrUrl =
+          cli.hasOption("solr-url")
+              ? cli.getOptionValue("solr-url")
+              : cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
@@ -359,10 +362,11 @@ public class PackageTool extends ToolBase {
   }
 
   private String getZkHost(CommandLine cli) throws Exception {
-    String zkHost = cli.getOptionValue("zkHost");
+    String zkHost =
+        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
     if (zkHost != null) return zkHost;
 
-    try (SolrClient solrClient = getSolrClient(solrUrl)) {
+    try (SolrClient solrClient = getSolrClient(cli)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
