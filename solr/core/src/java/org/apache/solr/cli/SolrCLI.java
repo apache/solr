@@ -503,19 +503,23 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
+  /**
+   * Get a SolrClient for the given URL. The URL can be with or without /solr suffix, the method
+   * will normalize it and add '/solr'. To support certain unit tests, the hostContext can be
+   * overridden via the system property 'hostContext'.
+   *
+   * <p>Note that from Solr 10.0 Solr will use / as base URL to support /api and other contexts, so
+   * handling of hostContext differs between Solr 9.x and 10.x.
+   *
+   * @param solrUrl the base URL of Solr
+   * @return a SolrClient initialized with correct hostContext, default '/solr'
+   */
   public static SolrClient getSolrClient(String solrUrl) {
-    return getSolrClient(solrUrl, false);
-  }
+    // SOLR-16824: Workaround for making SolrCloudExampleTest pass with custom host contexts
+    String hostContext = System.getProperty("hostContext", "/solr");
 
-  public static SolrClient getSolrClient(String solrUrl, boolean barePath) {
-    // today we require all urls to end in /solr, however in the future we will need to support the
-    // /api url end point instead.   Eventually we want to have this method always
-    // return a bare url, and then individual calls decide if they are /solr or /api
-    // The /solr/ check is because sometimes a full url is passed in, like
-    // http://localhost:8983/solr/films_shard1_replica_n1/.
-    if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
-      solrUrl = solrUrl + "/solr";
-    }
+    solrUrl = normalizeSolrUrl(solrUrl, true) + hostContext;
+    ;
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
