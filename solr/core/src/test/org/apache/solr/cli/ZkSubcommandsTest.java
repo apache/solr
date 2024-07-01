@@ -694,7 +694,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   }
 
   private int runTool(String[] args, Tool tool) throws Exception {
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 
