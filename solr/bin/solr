@@ -1008,7 +1008,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               ZK_HOST="$2"
               shift 2
           ;;
-          -help|-h)
+          -help|-h|--help)
               print_usage "$SCRIPT_CMD"
               exit 0
           ;;

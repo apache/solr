@@ -203,11 +203,13 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
-      CLIO.err(
-          "Invalid command-line args! Must pass the name of a tool to run.\n"
-              + "Supported tools:\n");
-      displayToolOptions();
+    final boolean hasNoCommand =
+        args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
+    final boolean isHelpCommand =
+        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+
+    if (hasNoCommand || isHelpCommand) {
+      printHelp();
       exit(1);
     }
 
@@ -336,30 +338,6 @@ public class SolrCLI implements CLIO {
     }
 
     throw new IllegalArgumentException(toolType + " is not a valid command!");
-  }
-
-  private static void displayToolOptions() throws Exception {
-    formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
-    formatter.printHelp("status", getToolOptions(new StatusTool()));
-    formatter.printHelp("api", getToolOptions(new ApiTool()));
-    formatter.printHelp("create", getToolOptions(new CreateTool()));
-    formatter.printHelp("delete", getToolOptions(new DeleteTool()));
-    formatter.printHelp("config", getToolOptions(new ConfigTool()));
-    formatter.printHelp("run_example", getToolOptions(new RunExampleTool()));
-    formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
-    formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
-    formatter.printHelp("rm", getToolOptions(new ZkRmTool()));
-    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
-    formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
-    formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
-    formatter.printHelp("export", getToolOptions(new ExportTool()));
-    formatter.printHelp("package", getToolOptions(new PackageTool()));
-
-    List<Class<? extends Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
-    for (Class<? extends Tool> next : toolClasses) {
-      Tool tool = next.getConstructor().newInstance();
-      formatter.printHelp(tool.getName(), getToolOptions(tool));
-    }
   }
 
   public static Options getToolOptions(Tool tool) {
