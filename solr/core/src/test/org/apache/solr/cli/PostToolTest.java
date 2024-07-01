@@ -17,11 +17,8 @@
 
 package org.apache.solr.cli;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -49,8 +46,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,39 +58,16 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
 
-  private static final String USER = "solr";
-  private static final String PASS = "SolrRocksAgain";
-
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON =
-        Utils.toJSONString(
-            Map.of(
-                "authorization",
-                Map.of(
-                    "class",
-                    RuleBasedAuthorizationPlugin.class.getName(),
-                    "user-role",
-                    singletonMap(USER, "admin"),
-                    "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
-                "authentication",
-                Map.of(
-                    "class",
-                    BasicAuthPlugin.class.getName(),
-                    "blockUnknown",
-                    true,
-                    "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)))));
-
     configureCluster(2)
         .addConfig("conf1", configset("cloud-minimal"))
-        .withSecurityJson(SECURITY_JSON)
+        .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
   }
 
   private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
-    req.setBasicAuthCredentials(USER, PASS);
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return req;
   }
 
@@ -116,7 +89,7 @@ public class PostToolTest extends SolrCloudTestCase {
       "--solr-update-url",
       cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
       "--credentials",
-      USER + ":" + PASS,
+      SecurityJson.USER_PASS,
       jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
@@ -154,7 +127,7 @@ public class PostToolTest extends SolrCloudTestCase {
     fw.flush();
 
     String[] args = {
-      "post", "-c", collection, "-credentials", USER + ":" + PASS, jsonDoc.getAbsolutePath()
+      "post", "-c", collection, "-credentials", SecurityJson.USER_PASS, jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
 
@@ -198,19 +171,24 @@ public class PostToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
+        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/foo/bar/"), "/index.html"));
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/foo.htm?baz#hello"), "fil.html"));
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
+    assertNull(webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+    assertNull(
+        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -237,10 +215,10 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() throws MalformedURLException {
+  public void testAppendUrlPath() throws URISyntaxException {
     assertEquals(
-        new URL("http://[ff01::114]/a?foo=bar"),
-        PostTool.appendUrlPath(new URL("http://[ff01::114]?foo=bar"), "/a"));
+        URI.create("http://[ff01::114]/a?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
   }
 
   @Test
@@ -258,7 +236,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -280,7 +258,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -291,7 +269,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://user:password@localhost:5150/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://user:password@localhost:5150/solr/fake/update");
 
     // Uses mock pageFetcher
     postTool.delay = 0;
@@ -316,8 +294,11 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
 
-    assertFalse(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
-    assertTrue(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
+    assertFalse(
+        postTool.pageFetcher.isDisallowedByRobots(URI.create("http://[ff01::114]/").toURL()));
+    assertTrue(
+        postTool.pageFetcher.isDisallowedByRobots(
+            URI.create("http://[ff01::114]/disallowed").toURL()));
     assertEquals(
         "There should be two entries parsed from robots.txt",
         2,
@@ -395,7 +376,7 @@ public class PostToolTest extends SolrCloudTestCase {
     }
 
     @Override
-    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
+    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URI postUri) {
       Set<URI> s = linkMap.get(PostTool.normalizeUrlEnding(url.toString()));
       if (s == null) {
         s = new HashSet<>();

@@ -178,6 +178,15 @@ Specifies the number of threads that will be assigned to replay updates in paral
 This pool is shared for all cores of the node.
 The default value is equal to the number of processors.
 
+`indexSearcherExecutorThreads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 4
+|===
++
+Specifies the number of threads that will be assigned for search queries.
+
 `coreRootDirectory`::
 +
 [%autowidth,frame=none]
@@ -357,7 +366,7 @@ By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It wil
 === The <solrcloud> Element
 
 This element defines several parameters that relate so SolrCloud.
-This section is ignored unless theSolr instance is started with either `-DzkRun` or `-DzkHost`
+This section is ignored unless the Solr instance is started with either `-DzkRun` or `-DzkHost`
 
 `distribUpdateConnTimeout`::
 +

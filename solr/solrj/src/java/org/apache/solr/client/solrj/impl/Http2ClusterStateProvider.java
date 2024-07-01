@@ -43,4 +43,8 @@ public class Http2ClusterStateProvider extends BaseHttpClusterStateProvider {
   protected SolrClient getSolrClient(String baseUrl) {
     return new Http2SolrClient.Builder(baseUrl).withHttpClient(httpClient).build();
   }
+
+  public Http2SolrClient getHttpClient() {
+    return httpClient;
+  }
 }

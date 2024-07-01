@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - 'main'
+      - 'branch_*'
     paths:
       - '.github/workflows/bin-solr-test.yml'
       - 'solr/bin/**'
