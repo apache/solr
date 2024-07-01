@@ -752,12 +752,10 @@ public class PostTool extends ToolBase {
   /** Does a simple commit operation */
   public void commit() throws IOException, SolrServerException {
     info("COMMITting Solr index changes to " + solrUpdateUrl + "...");
-    String url = solrUpdateUrl.toString();
-    // Pull collection name from URL and pass baseUrl to SolrClient
-    url = url.substring(0, url.lastIndexOf("/update"));
-    String collectionName = url.substring(url.lastIndexOf("/solr/") + 6);
-    url = url.substring(0, url.lastIndexOf("/solr/") + 6);
-    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
+    String updateUrl = solrUpdateUrl.toString();
+    String collectionName = getCollection(updateUrl);
+    String solrBaseUrl = getSolrBaseUrl(updateUrl);
+    try (final SolrClient client = SolrCLI.getSolrClient(solrBaseUrl)) {
       client.commit(collectionName);
     }
   }
@@ -765,11 +763,22 @@ public class PostTool extends ToolBase {
   /** Does a simple optimize operation */
   public void optimize() throws IOException, SolrServerException {
     info("Performing an OPTIMIZE to " + solrUpdateUrl + "...");
-    String url = solrUpdateUrl.toString();
-    url = url.substring(0, url.lastIndexOf("/update"));
-    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
-      client.optimize();
+    String updateUrl = solrUpdateUrl.toString();
+    String collectionName = getCollection(updateUrl);
+    String solrBaseUrl = getSolrBaseUrl(updateUrl);
+    try (final SolrClient client = SolrCLI.getSolrClient(solrBaseUrl)) {
+      client.optimize(collectionName);
     }
+  }
+
+  private String getSolrBaseUrl(String solrUpdateUrl) {
+    return solrUpdateUrl.substring(0, solrUpdateUrl.lastIndexOf("/solr/") + 5);
+  }
+
+  // Given a url ending in /update
+  private String getCollection(String solrUpdateUrl) {
+    return solrUpdateUrl.substring(
+        solrUpdateUrl.lastIndexOf("/solr/") + 6, solrUpdateUrl.lastIndexOf("/update"));
   }
 
   /**
