@@ -57,7 +57,8 @@ public class StatusTool extends ToolBase {
   }
 
   public static final Option OPTION_MAXWAITSECS =
-      Option.builder("maxWaitSecs")
+      Option.builder()
+          .longOpt("max-wait-secs")
           .argName("SECS")
           .hasArg()
           .required(false)
@@ -67,10 +68,12 @@ public class StatusTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        // The solrUrl option is not exposed to the end user, and is
-        // created by the bin/solr script and passed into this too.
-        Option.builder("solrUrl")
+        // The solr-url option is not exposed to the end user, and is
+        // created by the bin/solr script and passed into this command directly,
+        // therefore we don't use the SolrCLI.OPTION_SOLRURL.
+        Option.builder()
             .argName("URL")
+            .longOpt("solr-url")
             .hasArg()
             .required(false)
             .desc("Property set by calling scripts, not meant for user configuration.")
@@ -91,7 +94,7 @@ public class StatusTool extends ToolBase {
       return;
     }
 
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = new URI(solrUrl).getPort();
