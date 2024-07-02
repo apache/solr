@@ -18,11 +18,7 @@ package org.apache.solr.crossdc.test.util;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 
-
-/**
- * This ignores those threads in Solr for which there is no way to
- * clean up after a suite.
- */
+/** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrKafkaTestsIgnoredThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
@@ -44,8 +40,6 @@ public class SolrKafkaTestsIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("KafkaCrossDcConsumerWorker")) {
       return true;
     }
-
-
 
     return false;
   }

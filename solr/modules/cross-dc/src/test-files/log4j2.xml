@@ -35,6 +35,9 @@
     <Logger name="org.apache.solr.hadoop" level="INFO"/>
     <Logger name="org.eclipse.jetty" level="INFO"/>
 
+    <Logger name="org.apache.solr.crossdc.update.processor.KafkaRequestMirroringHandler" level="TRACE"/>
+
+
     <Root level="INFO">
       <AppenderRef ref="STDERR"/>
     </Root>

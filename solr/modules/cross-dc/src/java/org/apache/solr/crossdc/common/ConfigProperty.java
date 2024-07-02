@@ -53,16 +53,16 @@ public class ConfigProperty {
     return defaultValue;
   }
 
-  public String getValue(Map properties) {
+  public String getValue(Map<?, ?> properties) {
     String val = (String) properties.get(key);
     if (val == null) {
-     return defaultValue;
+      return defaultValue;
     }
     return val;
   }
 
-  public Integer getValueAsInt(Map properties) {
-    Object value = (Object) properties.get(key);
+  public Integer getValueAsInt(Map<?, ?> properties) {
+    Object value = properties.get(key);
     if (value != null) {
       if (value instanceof Integer) {
         return (Integer) value;
@@ -75,8 +75,8 @@ public class ConfigProperty {
     return Integer.parseInt(defaultValue);
   }
 
-  public Boolean getValueAsBoolean(Map properties) {
-    Object value = (Object) properties.get(key);
+  public Boolean getValueAsBoolean(Map<?, ?> properties) {
+    Object value = properties.get(key);
     if (value != null) {
       if (value instanceof Boolean) {
         return (Boolean) value;

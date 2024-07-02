@@ -18,10 +18,16 @@ package org.apache.solr.crossdc.manager;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -40,18 +46,15 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class, SolrKafkaTestsIgnoredThreadsFilter.class })
-@ThreadLeakLingering(linger = 5000) public class SolrAndKafkaReindexTest extends
-    SolrCloudTestCase {
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      SolrKafkaTestsIgnoredThreadsFilter.class
+    })
+@ThreadLeakLingering(linger = 5000)
+public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -78,11 +81,12 @@ import java.util.Properties;
     config.put("unclean.leader.election.enable", "true");
     config.put("enable.partition.eof", "false");
 
-    kafkaCluster = new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-      public String bootstrapServers() {
-        return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-      }
-    };
+    kafkaCluster =
+        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
+          public String bootstrapServers() {
+            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
+          }
+        };
     kafkaCluster.start();
 
     kafkaCluster.createTopic(TOPIC, 1, 1);
@@ -90,16 +94,20 @@ import java.util.Properties;
     System.setProperty("solr.crossdc.topicName", TOPIC);
     System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
 
-    solrCluster1 = configureCluster(3).addConfig("conf",
-        getFile("configs/cloud-minimal/conf").toPath()).configure();
+    solrCluster1 =
+        configureCluster(3)
+            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
+            .configure();
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
     solrCluster1.getSolrClient().request(create);
     solrCluster1.waitForActiveCollection(COLLECTION, 3, 6);
 
-    solrCluster2 = configureCluster(3).addConfig("conf",
-        getFile("configs/cloud-minimal/conf").toPath()).configure();
+    solrCluster2 =
+        configureCluster(3)
+            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
+            .configure();
 
     CollectionAdminRequest.Create create2 =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 3);
@@ -109,7 +117,6 @@ import java.util.Properties;
     String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
-
     Map<String, Object> properties = new HashMap<>();
     properties.put(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
     properties.put(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
@@ -117,7 +124,6 @@ import java.util.Properties;
     properties.put(KafkaCrossDcConf.GROUP_ID, "group1");
     properties.put(KafkaCrossDcConf.MAX_POLL_RECORDS, 3);
     consumer.start(properties);
-
   }
 
   @AfterClass
@@ -147,7 +153,6 @@ import java.util.Properties;
     solrCluster2 = null;
     kafkaCluster = null;
     consumer = null;
-
   }
 
   @After
@@ -166,7 +171,7 @@ import java.util.Properties;
 
     QueryResponse results = null;
     boolean foundUpdates = false;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 500; i++) {
       solrCluster2.getSolrClient().commit(COLLECTION);
       solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
       results = solrCluster2.getSolrClient().query(COLLECTION, new SolrQuery("*:*"));
@@ -179,7 +184,7 @@ import java.util.Properties;
 
     assertTrue("results=" + results, foundUpdates);
 
-    QueryResponse results1 =solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("first"));
+    QueryResponse results1 = solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("first"));
     QueryResponse results2 = solrCluster2.getSolrClient().query(COLLECTION, new SolrQuery("first"));
 
     assertEquals("results=" + results1, 7, results1.getResults().getNumFound());
@@ -205,7 +210,7 @@ import java.util.Properties;
     assertTrue("results=" + results, foundUpdates);
     System.out.println("Rest: " + results);
 
-    results1 =solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("text:second"));
+    results1 = solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("text:second"));
     results2 = solrCluster2.getSolrClient().query(COLLECTION, new SolrQuery("text:second"));
 
     assertEquals("results=" + results1, 7, results1.getResults().getNumFound());
@@ -230,14 +235,11 @@ import java.util.Properties;
     assertTrue("results=" + results, foundUpdates);
     System.out.println("Rest: " + results);
 
-    results1 =solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("text:third"));
+    results1 = solrCluster1.getSolrClient().query(COLLECTION, new SolrQuery("text:third"));
     results2 = solrCluster2.getSolrClient().query(COLLECTION, new SolrQuery("text:third"));
 
     assertEquals("results=" + results1, 7, results1.getResults().getNumFound());
     assertEquals("results=" + results2, 7, results2.getResults().getNumFound());
-
-
-
   }
 
   private void addDocs(CloudSolrClient client, String tag) throws SolrServerException, IOException {
@@ -261,7 +263,7 @@ import java.util.Properties;
     docs.add(doc1);
     docs.add(doc2);
 
-    client.add(docs);
+    client.add(COLLECTION, docs);
 
     client.commit(COLLECTION);
 
@@ -285,13 +287,12 @@ import java.util.Properties;
     doc7.addField("id", id7);
     doc7.addField("text", "some test seven " + tag);
 
-    client.add(doc3);
-    client.add(doc4);
-    client.add(doc5);
-    client.add(doc6);
-    client.add(doc7);
+    client.add(COLLECTION, doc3);
+    client.add(COLLECTION, doc4);
+    client.add(COLLECTION, doc5);
+    client.add(COLLECTION, doc6);
+    client.add(COLLECTION, doc7);
 
     client.commit(COLLECTION);
   }
-
 }

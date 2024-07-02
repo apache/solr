@@ -17,6 +17,6 @@
 package org.apache.solr.crossdc.common;
 
 public class CrossDcConstants {
-    // Requests containing this parameter will not be mirrored.
-    public static final String SHOULD_MIRROR = "shouldMirror";
+  // Requests containing this parameter will not be mirrored.
+  public static final String SHOULD_MIRROR = "shouldMirror";
 }
