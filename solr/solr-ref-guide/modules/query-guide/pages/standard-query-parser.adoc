@@ -315,7 +315,7 @@ or
 
 === The Boolean Operator "+"
 
-The `+` symbol (also known as the "required" operator) requires that the term after the `+` symbol exist somewhere in a field in at least one document in order for the query to return a match.
+The `\+` symbol (also known as the "required" operator) requires that the term after the `+` symbol exist somewhere in a field in at least one document in order for the query to return a match.
 
 For example, to search for documents that must contain "jakarta" and that may or may not contain "lucene," use the following query:
 
