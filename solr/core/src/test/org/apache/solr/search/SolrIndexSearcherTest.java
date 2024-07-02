@@ -256,6 +256,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
         .withSearcher(
             searcher -> {
               final QueryCommand cmd = new QueryCommand();
+              cmd.setLen(1); // make sure we get at least one doc to check later
               cmd.setFlags(SolrIndexSearcher.GET_SCORES | getDocSetFlag);
 
               if (doSort) {
