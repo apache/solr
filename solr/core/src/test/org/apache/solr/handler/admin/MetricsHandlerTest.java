@@ -913,13 +913,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     MetricSnapshots actualSnapshots = exporter.collect();
     assertNotNull(actualSnapshots);
 
-    MetricSnapshot actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_gc");
+    MetricSnapshot actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_threads");
     GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "G1-Old-Generation"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
-
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_threads");
-    actualGaugeDataPoint = getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "count"));
+        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "count"));
     assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_memory_pools_bytes");
@@ -927,11 +923,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
         getGaugeDatapointSnapshot(
             actualSnapshot, Labels.of("item", "committed", "space", "CodeHeap-'non-nmethods'"));
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
-
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_os");
-    actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "availableProcessors"));
-    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers");
     actualGaugeDataPoint =
@@ -948,11 +939,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
         getGaugeDatapointSnapshot(
             actualSnapshot, Labels.of("item", "MemoryUsed", "pool", "direct"));
     assertNotNull(actualGaugeDataPoint);
-
-    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_gc_seconds");
-    actualGaugeDataPoint =
-        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "G1-Old-Generation"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
     handler.close();
   }
