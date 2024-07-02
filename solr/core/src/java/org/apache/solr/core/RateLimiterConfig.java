@@ -21,24 +21,26 @@ import static org.apache.solr.servlet.RateLimitManager.DEFAULT_CONCURRENT_REQUES
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 
 public class RateLimiterConfig {
   public static final String RL_CONFIG_KEY = "rate-limiters";
 
-  public SolrRequest.SolrRequestType requestType;
-  public boolean isEnabled;
-  public long waitForSlotAcquisition;
-  public int allowedRequests;
-  public boolean isSlotBorrowingEnabled;
-  public int guaranteedSlotsThreshold;
+  public final SolrRequest.SolrRequestType requestType;
+  public final boolean isEnabled;
+  public final long waitForSlotAcquisition;
+  public final int allowedRequests;
+  public final boolean isSlotBorrowingEnabled;
+  public final int guaranteedSlotsThreshold;
+
+  /**
+   * We store the config definition in order to determine whether anything has changed that would
+   * call for re-initialization.
+   */
+  public final RateLimiterPayload definition;
 
   public RateLimiterConfig(SolrRequest.SolrRequestType requestType) {
-    this.requestType = requestType;
-    this.isEnabled = false;
-    this.allowedRequests = DEFAULT_CONCURRENT_REQUESTS;
-    this.isSlotBorrowingEnabled = false;
-    this.guaranteedSlotsThreshold = this.allowedRequests / 2;
-    this.waitForSlotAcquisition = DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
+    this(requestType, EMPTY);
   }
 
   public RateLimiterConfig(
@@ -48,11 +50,68 @@ public class RateLimiterConfig {
       long waitForSlotAcquisition,
       int allowedRequests,
       boolean isSlotBorrowingEnabled) {
+    this(
+        requestType,
+        makePayload(
+            isEnabled,
+            guaranteedSlotsThreshold,
+            waitForSlotAcquisition,
+            allowedRequests,
+            isSlotBorrowingEnabled));
+  }
+
+  private static RateLimiterPayload makePayload(
+      boolean isEnabled,
+      int guaranteedSlotsThreshold,
+      long waitForSlotAcquisition,
+      int allowedRequests,
+      boolean isSlotBorrowingEnabled) {
+    RateLimiterPayload ret = new RateLimiterPayload();
+    ret.enabled = isEnabled;
+    ret.allowedRequests = allowedRequests;
+    ret.guaranteedSlots = guaranteedSlotsThreshold;
+    ret.slotBorrowingEnabled = isSlotBorrowingEnabled;
+    ret.slotAcquisitionTimeoutInMS = Math.toIntExact(waitForSlotAcquisition);
+    return ret;
+  }
+
+  public RateLimiterConfig(SolrRequest.SolrRequestType requestType, RateLimiterPayload definition) {
     this.requestType = requestType;
-    this.isEnabled = isEnabled;
-    this.guaranteedSlotsThreshold = guaranteedSlotsThreshold;
-    this.waitForSlotAcquisition = waitForSlotAcquisition;
-    this.allowedRequests = allowedRequests;
-    this.isSlotBorrowingEnabled = isSlotBorrowingEnabled;
+    if (definition == null) {
+      definition = EMPTY;
+    }
+    allowedRequests =
+        definition.allowedRequests == null
+            ? DEFAULT_CONCURRENT_REQUESTS
+            : definition.allowedRequests;
+
+    isEnabled = definition.enabled == null ? false : definition.enabled; // disabled by default
+
+    guaranteedSlotsThreshold =
+        definition.guaranteedSlots == null ? this.allowedRequests / 2 : definition.guaranteedSlots;
+
+    isSlotBorrowingEnabled =
+        definition.slotBorrowingEnabled == null ? false : definition.slotBorrowingEnabled;
+
+    waitForSlotAcquisition =
+        definition.slotAcquisitionTimeoutInMS == null
+            ? DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS
+            : definition.slotAcquisitionTimeoutInMS.longValue();
+
+    this.definition = definition;
+  }
+
+  private static final RateLimiterPayload EMPTY = new RateLimiterPayload(); // use defaults;
+
+  public boolean shouldUpdate(RateLimiterPayload definition) {
+    if (definition == null) {
+      definition = EMPTY; // use defaults
+    }
+
+    if (definition.equals(this.definition)) {
+      return false;
+    }
+
+    return true;
   }
 }
