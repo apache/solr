@@ -26,6 +26,11 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 // TODO add similar text that previous releases have at this spot.
 
+=== Solr CLI and Scripts
+
+The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
+Users are urged to review all use of the `bin/solr` command, such as in scripts and documentation, to ensure that the correct options are being used.
+
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.

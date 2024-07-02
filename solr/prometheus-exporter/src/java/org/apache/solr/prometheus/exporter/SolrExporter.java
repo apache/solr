@@ -58,7 +58,7 @@ public class SolrExporter {
   private static final String ARG_BASE_URL_HELP =
       "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.";
 
-  private static final String[] ARG_ZK_HOST_FLAGS = {"-z", "--zkhost"};
+  private static final String[] ARG_ZK_HOST_FLAGS = {"-z", "--zk-host"};
   private static final String ARG_ZK_HOST_METAVAR = "ZK_HOST";
   private static final String ARG_ZK_HOST_DEST = "zkHost";
   private static final String ARG_ZK_HOST_DEFAULT = "";

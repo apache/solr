@@ -81,7 +81,7 @@ The script will start each node in order and show you the command it uses to sta
 
 [,console]
 ----
-$ bin/solr start -cloud -s example/cloud/node1/solr -p 8983
+$ bin/solr start --cloud -s example/cloud/node1/solr -p 8983
 ----
 
 The first node will also start an embedded ZooKeeper server bound to port 9983.
@@ -156,16 +156,16 @@ To stop Solr in SolrCloud mode, you would use the `bin/solr` script and issue th
 
 [,console]
 ----
-$ bin/solr stop -all
+$ bin/solr stop --all
 ----
 
-=== Starting with -noprompt
+=== Starting with --no-prompt
 
 You can also get SolrCloud started with all the defaults instead of the interactive session using the following command:
 
 [,console]
 ----
-$ bin/solr start -e cloud -noprompt
+$ bin/solr start -e cloud --no-prompt
 ----
 
 === Restarting Nodes
@@ -195,7 +195,7 @@ Once you start a SolrCloud cluster using the startup scripts, you can add a new 
 [,console]
 ----
 $ mkdir <solr.home for new Solr node>
-$ bin/solr start -cloud -s <solr.home>/solr -p <port num> -z <zk hosts string>
+$ bin/solr start --cloud -s <solr.home>/solr -p <port num> -z <zk hosts string>
 ----
 
 Notice that the above requires you to create a Solr home directory.
@@ -205,7 +205,7 @@ Example (with directory structure) that adds a node to an example started with "
 [,console]
 ----
 $ mkdir -p example/cloud/node3/solr
-$ bin/solr start -cloud -s example/cloud/node3/solr -p 8987 -z localhost:9983
+$ bin/solr start --cloud -s example/cloud/node3/solr -p 8987 -z localhost:9983
 ----
 
 The previous command will start another Solr node on port 8987 with Solr home set to `example/cloud/node3/solr`.
