@@ -128,6 +128,9 @@ public class CircuitBreakerRegistry implements Closeable {
             breaker.getRequestTypes());
       }
     }
+    if (coreContainer.isZooKeeperAware()) {
+      GlobalCircuitBreakerManager.init(coreContainer);
+    }
   }
 
   /** List all registered circuit breakers for global context */
