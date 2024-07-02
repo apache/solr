@@ -879,7 +879,11 @@ The response will look like this:
   ]}
 ----
 
-Like other request handlers, the Metrics API can also take the `wt` parameter to define the output format. The Metrics API also provides an additional special `wt` parameter `prometheus` that will output metrics in Prometheus format. This can be used for xref:monitoring-with-prometheus-and-grafana.adoc#metrics-api-with-prometheus-format[Monitoring with Prometheus and Grafana]
+Like other request handlers, the Metrics API can also take the `wt` parameter to define the output format.
+The Metrics API also provides an additional special `wt` parameter `prometheus` that will output metrics in Prometheus format.
+This can be used for xref:monitoring-with-prometheus-and-grafana.adoc#metrics-api-with-prometheus-format[Monitoring with Prometheus and Grafana]
+
+*Note: The `group`, `type`, and `prefix` query parameters are still available for filtering Prometheus metrics but `regex`, `property`, `key` and `compact` are not supported.*
 
 [[metrics_examples]]
 === Examples

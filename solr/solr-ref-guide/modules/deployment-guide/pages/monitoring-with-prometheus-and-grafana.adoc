@@ -26,7 +26,8 @@ It is not included in the `slim` Solr distribution.
 
 A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from the xref:metrics-reporting.adoc#metrics-api[Metrics API], but also facet counts which come from xref:query-guide:faceting.adoc[] and responses to xref:configuration-guide:collections-api.adoc[] commands and xref:ping.adoc[] requests.
 
-The Metrics API provides a Prometheus Response Writer to output Solr metrics natively to be scraped. It is more efficient and drops the need of running the Prometheus Exporter but at the cost of a fixed output and not as flexible in terms of configurability.  
+The Metrics API provides a Prometheus Response Writer to output Solr metrics natively to be scraped. 
+It is more efficient and drops the need of running the Prometheus Exporter but at the cost of a fixed output and not as flexible in terms of configurability.  
 
 == Prometheus Exporter
 
@@ -613,11 +614,13 @@ Prometheus Metrics are available natively directly from Solr by leveraging the M
 [source,text]
 localhost:8983/solr/admin/metrics?wt=prometheus
 
-The Metrics API with the `prometheus` parameter does not provide any configurability and the Prometheus output is fixed. Any metrics aggregations and/or filtering must be done on Grafana or the Prometheus server.
+The Metrics API with the `prometheus` parameter does not provide any configurability and the Prometheus output is fixed. 
+Any metrics aggregations and/or filtering must be done on Grafana or the Prometheus server.
 
 === Prometheus Configuration
 
-Like the Prometheus Exporter, the `prometheus.yml` needs to be configurated for the Prometheus Server to ingest metrics. The difference is it must instead scrape the Metrics API with the `wt=prometheus` parameter directly from each host/port Solr is running on as in this example:
+Like the Prometheus Exporter, the `prometheus.yml` needs to be configurated for the Prometheus Server to ingest metrics. 
+The difference is it must instead scrape the Metrics API with the `wt=prometheus` parameter directly from each host/port Solr is running on as in this example:
 
 [source,plain]
 ----
