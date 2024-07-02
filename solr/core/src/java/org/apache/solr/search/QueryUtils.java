@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.BooleanClause;
@@ -34,6 +35,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** */
@@ -80,6 +82,25 @@ public class QueryUtils {
       } else {
         return false;
       }
+    }
+  }
+
+  public static void ensurePrefixQueryObeysMinimumPrefixLength(
+      Query query, String prefix, int minPrefixLength) {
+    // TODO Should we provide a query-param to disable the limit on a request-by-request basis?  I
+    // can imagine scenarios where advanced users may want to enforce the limit on most fields,
+    // but ignore it for a few fields that they know to be low-cardinality and therefore "less
+    // risky"
+    if (prefix.length() < minPrefixLength) {
+      final var message =
+          String.format(
+              Locale.ROOT,
+              "Query [%s] does not meet the minimum prefix length [%d] (actual=[%d]).  Please try with a larger prefix, or adjust %s in your solrconfig.xml",
+              query,
+              minPrefixLength,
+              prefix.length(),
+              SolrConfig.MIN_PREFIX_LENGTH);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
     }
   }
 

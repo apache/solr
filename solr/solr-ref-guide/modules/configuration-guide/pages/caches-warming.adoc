@@ -235,6 +235,18 @@ This is the same system property used in the xref:configuring-solr-xml.adoc#glob
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
 
+=== <minPrefixLength> Element
+
+Prefix-based queries consume resources proportional to the number of terms in the index that start with the specified prefix.
+Particularly short prefixes, those with only one or two characters for instance, tend to match such a large proportion of the index that they're a frequent cause of resource contention and instability.
+This setting establishes a minimum prefix length for queries, giving administrators a way to block queries that might otherwise cause stability issues.
+Queries that don't match this minimum prefix length trigger an error.
+
+The setting aims to govern all prefix-based queries (e.g. `val_s:a*`, `{!prefix f=val_s}a`, `{!complexphrase}val_s:"a*"`) that target `string` or `text` type fields.
+
+In the default configset, the minimum-prefix is set to '2' (or the value of the `solr.min.prefixLength` system property if specified).
+If not specified in `solrconfig.xml`, no minimum-length is enforced.
+
 === <enableLazyFieldLoading> Element
 
 When this parameter is set to `true`, fields that are not directly requested will be loaded only as needed.

@@ -89,6 +89,18 @@
     -->
     <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
+    <!-- Minimum acceptable prefix-size for prefix-based queries on string fields.
+
+         Prefix-based queries consume memory in proportion to the number of terms in the index
+         that start with that prefix.  Short prefixes tend to match many many more indexed-terms
+         and consume more memory as a result, sometimes causing stability issues on the node.
+
+         This setting allows administrators to require that prefixes meet or exceed a specified
+         minimum length requirement.  Prefix queries that don't meet this requirement return an
+         error to users.
+    -->
+    <minPrefixLength>${solr.min.prefixLength:2}</minPrefixLength>
+
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
       -->
