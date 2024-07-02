@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -393,7 +394,7 @@ public class SolrCLI implements CLIO {
     Set<String> classes = new TreeSet<>();
     if (path.startsWith("file:") && path.contains("!")) {
       String[] split = path.split("!");
-      URL jar = new URL(split[0]);
+      URL jar = new URI(split[0]).toURL();
       try (ZipInputStream zip = new ZipInputStream(jar.openStream())) {
         ZipEntry entry;
         while ((entry = zip.getNextEntry()) != null) {

@@ -198,7 +198,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     // NOTE: Do we want to make sure this URL is normalized? (Christian thinks we should)
     String urlString = url.toString();
     String lps = landingPageSuffix(url);
-    return new URL(urlString.replaceFirst("/" + lps + "$", "/"));
+    return URI.create(urlString.replaceFirst("/" + lps + "$", "/")).toURL();
   }
 
   /**

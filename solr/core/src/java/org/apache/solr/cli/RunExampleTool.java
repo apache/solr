@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.Socket;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -871,7 +871,7 @@ public class RunExampleTool extends ToolBase {
     StatusTool statusTool = new StatusTool();
     if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
 
-    URL solrURL = new URL(solrUrl);
+    URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
         statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
     nodeStatus.put("baseUrl", solrUrl);
@@ -881,7 +881,7 @@ public class RunExampleTool extends ToolBase {
     if (verbose)
       echo(
           "\nSolr is running on "
-              + solrURL.getPort()
+              + solrURI.getPort()
               + " in "
               + mode
               + " mode with status:\n"
