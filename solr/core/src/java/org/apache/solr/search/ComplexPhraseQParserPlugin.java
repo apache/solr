@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -120,6 +119,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       String defaultField = getParam(CommonParams.DF);
 
       SolrQueryParserDelegate reverseAwareParser = new SolrQueryParserDelegate(this, defaultField);
+      final var qParserReference = this;
 
       lparser =
           new ComplexPhraseQueryParser(defaultField, getReq().getSchema().getQueryAnalyzer()) {
@@ -137,14 +137,9 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
 
             @Override
             protected Query getPrefixQuery(String field, String termStr) throws ParseException {
-              // TODO check the field type and call QueryUtils.ensureBlah here
               final var query = super.getPrefixQuery(field, termStr);
-              if (query instanceof PrefixQuery) {
-                final var minPrefixLength =
-                    getReq().getCore().getSolrConfig().prefixQueryMinPrefixLength;
-                QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(
-                    query, termStr, minPrefixLength);
-              }
+              QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(
+                  qParserReference, query, termStr);
               return query;
             }
 

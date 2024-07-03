@@ -360,8 +360,7 @@
       -->
     <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
-
-    <!-- Minimum acceptable prefix-size for prefix-based queries on string fields.
+    <!-- Minimum acceptable prefix-size for prefix-based queries.
 
          Prefix-based queries consume memory in proportion to the number of terms in the index
          that start with that prefix.  Short prefixes tend to match many many more indexed-terms
@@ -369,9 +368,12 @@
 
          This setting allows administrators to require that prefixes meet or exceed a specified
          minimum length requirement.  Prefix queries that don't meet this requirement return an
-         error to users.
+         error to users.  The limit may be overridden on a per-query basis by specifying a
+         'minPrefixQueryTermLength' local-param value.
+
+         The flag value of '-1' can be used to disable enforcement of this limit.
     -->
-    <minPrefixLength>${solr.min.prefixLength:2}</minPrefixLength>
+    <minPrefixQueryTermLength>${solr.query.minPrefixLength:-1}</minPrefixQueryTermLength>
 
     <!-- Solr Internal Query Caches
          Starting with Solr 9.0 the default cache implementation used is CaffeineCache.

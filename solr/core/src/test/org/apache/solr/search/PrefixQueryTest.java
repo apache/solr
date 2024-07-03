@@ -27,10 +27,11 @@ import org.junit.Test;
  */
 public class PrefixQueryTest extends SolrTestCaseJ4 {
 
-  private static final String[] MIN_PREFIX_SUPPORTING_FIELDS = new String[] {"val_s", "t_val"};
+  private static final String[] FIELDS_TO_TEST_PREFIX_LIMITING = new String[] {"val_s", "t_val"};
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    System.setProperty("solr.query.minPrefixLength", "2");
     initCore("solrconfig.xml", "schema.xml");
 
     assertU(createDocWithFieldVal("1", "aaa"));
@@ -47,7 +48,7 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
   // Sanity-check of a few queries we'll use in other tests
   @Test
   public void testPrefixQueryMatchesExpectedDocuments() {
-    for (String fieldName : MIN_PREFIX_SUPPORTING_FIELDS) {
+    for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
       assertQ(req(fieldName + ":*"), "//*[@numFound='6']");
       assertQ(req(fieldName + ":aa*"), "//*[@numFound='3']");
       assertQ(req(fieldName + ":bb*"), "//*[@numFound='2']");
@@ -56,7 +57,7 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPrefixQueryObeysMinPrefixLimit() {
-    for (String fieldName : MIN_PREFIX_SUPPORTING_FIELDS) {
+    for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
       assertQEx(
           "Prefix query didn't obey limit",
           "does not meet the minimum prefix length [2] (actual=[1])",
@@ -67,7 +68,7 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPrefixQParserObeysMinPrefixLimit() {
-    for (String fieldName : MIN_PREFIX_SUPPORTING_FIELDS) {
+    for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
       assertQEx(
           "Prefix query didn't obey limit",
           "does not meet the minimum prefix length [2] (actual=[1])",
@@ -78,12 +79,33 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testComplexPhraseQParserObeysMinPrefixLimit() {
-    for (String fieldName : MIN_PREFIX_SUPPORTING_FIELDS) {
+    for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
       assertQEx(
           "{!complex} query didn't obey min-prefix limit",
           "does not meet the minimum prefix length [2] (actual=[1])",
           req("q", "{!complexphrase inOrder=true}" + fieldName + ":\"a*\""),
           SolrException.ErrorCode.BAD_REQUEST);
+    }
+  }
+
+  @Test
+  public void testLocalParamCanBeUsedToOverrideConfiguredLimit() {
+    // The solr.xml configured limit is '2'; requests should fail when that is not overridden
+    for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
+      assertQEx(
+          "{!complex} query didn't obey min-prefix limit",
+          "does not meet the minimum prefix length [2] (actual=[1])",
+          req("q", "{!complexphrase inOrder=true}" + fieldName + ":\"a*\""),
+          SolrException.ErrorCode.BAD_REQUEST);
+    }
+
+    // When the configured limit *is* overridden to be more lenient, the requests should succeed!
+    for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
+      assertQ(
+          req(
+              "q",
+              "{!complexphrase inOrder=true minPrefixQueryTermLength=-1}" + fieldName + ":\"a*\""),
+          "//*[@numFound='4']");
     }
   }
 

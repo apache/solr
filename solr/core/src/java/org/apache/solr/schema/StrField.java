@@ -26,8 +26,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
@@ -35,7 +33,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryUtils;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 public class StrField extends PrimitiveFieldType {
@@ -69,20 +66,6 @@ public class StrField extends PrimitiveFieldType {
       fval = docval;
     }
     return Collections.singletonList(fval);
-  }
-
-  @Override
-  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    final var query = super.getPrefixQuery(parser, sf, termStr);
-
-    // Some internal usage (e.g. faceting) creates PrefixQueries without a surrounding QParser, so
-    // check for null here before using QParser to access the limit value
-    if (query instanceof PrefixQuery && parser != null) {
-      final var minPrefixLength =
-          parser.getReq().getCore().getSolrConfig().prefixQueryMinPrefixLength;
-      QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(query, termStr, minPrefixLength);
-    }
-    return query;
   }
 
   public static BytesRef getBytesRef(Object value) {

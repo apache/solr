@@ -298,7 +298,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
-    assertEquals("wrong config for minPrefixLength", 2, solrConfig.prefixQueryMinPrefixLength);
+    assertEquals("wrong config for minPrefixLength", -1, solrConfig.prefixQueryMinPrefixLength);
     assertTrue("wrong config for enableLazyFieldLoading", solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
   }
