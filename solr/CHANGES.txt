@@ -104,6 +104,9 @@ Other Changes
 * PR#2524: QueryResult refactoring so that it's only returned from SolrIndexSearcher instead of
   being provided to it.  Deprecated APIs in 9x; should be removed later. (David Smiley)
 
+* SOLR-17347: EnvUtils: Removed "env" methods, as they were problematic.  Code should almost never
+  refer to env vars.  (David Smiley)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
