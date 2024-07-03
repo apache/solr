@@ -496,54 +496,12 @@ function run_tool() {
 
   # shellcheck disable=SC2086
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
-    -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
+    -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" -Dsolr.pid.dir="$SOLR_PID_DIR" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.cli.SolrCLI "$@"
 
   return $?
 } # end run_tool function
-
-# get status about any Solr nodes running on this host
-function get_status() {
-  # first, see if Solr is running
-  numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
-  if [ "$numSolrs" != "0" ]; then
-    echo -e "\nFound $numSolrs Solr nodes: "
-    while read PIDF
-      do
-        ID=$(cat "$PIDF")
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          echo -e "\nSolr process $ID running on port $port"
-          run_tool status --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port" "$@"
-          echo ""
-        else
-          echo -e "\nSolr process $ID from $PIDF not found."
-        fi
-    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
-  else
-    # no pid files but check using ps just to be sure
-    numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
-    if [ "$numSolrs" != "0" ]; then
-      echo -e "\nFound $numSolrs Solr nodes: "
-      PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
-      for ID in $PROCESSES
-        do
-          port=$(jetty_port "$ID")
-          if [ "$port" != "" ]; then
-            echo ""
-            echo "Solr process $ID running on port $port"
-            run_tool status --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port" "$@"
-            echo ""
-          fi
-      done
-    else
-      echo -e "\nNo Solr nodes are running.\n"
-      run_tool status "$@"
-    fi
-  fi
-
-} # end get_status
 
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
@@ -635,12 +593,6 @@ else
   exit
 fi
 
-# status tool
-if [ "$SCRIPT_CMD" == "status" ]; then
-  get_status
-  exit $?
-fi
-
 # configure authentication
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
   : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
@@ -648,7 +600,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
-  
+
   if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
   elif [[ $SOLR_HOME != /* ]]; then
@@ -659,7 +611,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
       SOLR_PID_DIR="$SOLR_HOME"
     fi
   fi
-  
+
   if [ -z "${AUTH_PORT:-}" ]; then
     for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
       do
@@ -669,13 +621,13 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
           break
         fi
       done
-  fi  
-  
+  fi
+
   run_tool auth $@ --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
   exit $?
 fi
 
-# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.  
+# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation

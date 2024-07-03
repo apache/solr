@@ -17,17 +17,21 @@
 
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
+
 import java.io.PrintStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
+import org.apache.solr.cli.SolrProcessMgr.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,6 +40,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Supports status command in the bin/solr script.
@@ -43,12 +49,18 @@ import org.noggit.JSONWriter;
  * <p>Get the status of a Solr server.
  */
 public class StatusTool extends ToolBase {
+  private static final Logger log = LoggerFactory.getLogger(StatusTool.class);
+
+  private static Map<Long, ProcessHandle> processes;
+  private final SolrProcessMgr processMgr;
+
   public StatusTool() {
     this(CLIO.getOutStream());
   }
 
   public StatusTool(PrintStream stdout) {
     super(stdout);
+    processMgr = new SolrProcessMgr();
   }
 
   @Override
@@ -65,37 +77,115 @@ public class StatusTool extends ToolBase {
           .desc("Wait up to the specified number of seconds to see Solr running.")
           .build();
 
+  public static final Option OPTION_PORT =
+      Option.builder("p")
+          .longOpt("port")
+          .argName("PORT")
+          .required(false)
+          .hasArg()
+          .desc("Port on localhost to check status for")
+          .build();
+
+  public static final Option OPTION_SHORT =
+      Option.builder()
+          .longOpt("short")
+          .argName("SHORT")
+          .required(false)
+          .desc("Short format. Prints one URL per line for running instances")
+          .build();
+
   @Override
   public List<Option> getOptions() {
-    return List.of(
-        // The solr-url option is not exposed to the end user, and is
-        // created by the bin/solr script and passed into this command directly,
-        // therefore we don't use the SolrCLI.OPTION_SOLRURL.
-        Option.builder()
-            .argName("URL")
-            .longOpt("solr-url")
-            .hasArg()
-            .required(false)
-            .desc("Property set by calling scripts, not meant for user configuration.")
-            .build(),
-        OPTION_MAXWAITSECS);
+    return List.of(OPTION_SOLRURL, OPTION_MAXWAITSECS, OPTION_PORT, OPTION_SHORT);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    // Override the default help behaviour to put out a customized message that only list user
-    // settable Options.
-    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0)
-        || cli.hasOption("h")
-        || cli.hasOption("help")) {
-      final Options options = new Options();
-      options.addOption(OPTION_MAXWAITSECS);
-      new HelpFormatter().printHelp("status", options);
-      return;
+    String solrUrl = cli.getOptionValue(OPTION_SOLRURL);
+    Integer port =
+        cli.hasOption(OPTION_PORT) ? Integer.parseInt(cli.getOptionValue(OPTION_PORT)) : null;
+    boolean shortFormat = cli.hasOption(OPTION_SHORT);
+
+    if (port != null && solrUrl != null) {
+      CLIO.err("Please provide either --port or --solr-url, not both");
+      System.exit(1);
     }
 
+    if (port != null) {
+      Optional<SolrProcess> proc = processMgr.processForPort(port);
+      if (proc.isEmpty()) {
+        CLIO.err("Could not find a running Solr on port " + port);
+        System.exit(1);
+      } else {
+        solrUrl = proc.get().getLocalUrl();
+      }
+    }
+
+    if (solrUrl == null) {
+      if (!shortFormat) {
+        CLIO.out("Looking for running processes...");
+      }
+      Collection<SolrProcess> procs = processMgr.getAllRunning();
+      if (!shortFormat) {
+        CLIO.out(String.format("\nFound %s Solr nodes: ", procs.size()));
+      }
+      if (!procs.isEmpty()) {
+        for (SolrProcess process : procs) {
+          if (shortFormat) {
+            CLIO.out(process.getLocalUrl());
+          } else {
+            printProcessStatus(process, cli);
+          }
+        }
+      } else {
+        if (!shortFormat) {
+          CLIO.out("\nNo Solr nodes are running.\n");
+        }
+      }
+    } else {
+      int urlPort = portFromUrl(solrUrl);
+      if (shortFormat) {
+        if (processMgr.isRunningWithPort(urlPort)) {
+          CLIO.out(solrUrl);
+        }
+      } else {
+        CLIO.out(String.format("\nFound %s Solr nodes: ", 1));
+        Optional<SolrProcess> process = processMgr.processForPort(urlPort);
+        if (process.isPresent()) {
+          printProcessStatus(process.get(), cli);
+        } else {
+          CLIO.out("\nNo Solr running on port " + urlPort + ".");
+        }
+      }
+    }
+  }
+
+  private void printProcessStatus(SolrProcess process, CommandLine cli) throws Exception {
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    boolean shortFormat = cli.hasOption(OPTION_SHORT);
+    String pidUrl = process.getLocalUrl();
+    CLIO.out(
+        String.format("\nSolr process %s running on port %s", process.getPid(), process.getPort()));
+    if (shortFormat) {
+      CLIO.out(pidUrl);
+    } else {
+      statusFromRunningSolr(pidUrl, cli, maxWaitSecs);
+    }
+    CLIO.out("");
+  }
+
+  private Integer portFromUrl(String solrUrl) {
+    try {
+      return new URI(solrUrl).getPort();
+    } catch (URISyntaxException e) {
+      CLIO.err("Invalid URL provided, does not contain port");
+      System.exit(1);
+      return null;
+    }
+  }
+
+  public void statusFromRunningSolr(String solrUrl, CommandLine cli, int maxWaitSecs)
+      throws Exception {
     if (maxWaitSecs > 0) {
       int solrPort = new URI(solrUrl).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
