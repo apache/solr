@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -517,9 +518,13 @@ public class SolrCLI implements CLIO {
   public static SolrClient getSolrClient(String solrUrl) {
     // SOLR-16824: Workaround for making SolrCloudExampleTest pass with custom host contexts
     String hostContext = System.getProperty("hostContext", "/solr");
+    if (hostContext.isBlank()) {
+      log.warn("Invalid hostContext {} provided, setting to /solr", hostContext);
+      hostContext = "/solr";
+    }
 
     solrUrl = normalizeSolrUrl(solrUrl, true, hostContext) + hostContext;
-    ;
+
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
@@ -610,8 +615,17 @@ public class SolrCLI implements CLIO {
   public static String normalizeSolrUrl(
       String solrUrl, boolean logUrlFormatWarning, String hostContext) {
     if (solrUrl != null) {
-      if (solrUrl.contains(hostContext)) {
-        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf(hostContext));
+      URI uri = URI.create(solrUrl);
+      String urlPath = uri.getRawPath();
+      // Only consider URI path component when normalizing hostContext
+      if (urlPath.contains(hostContext)) {
+        String newSolrUrl =
+            String.format(
+                "%s://%s:%s%s",
+                uri.getScheme(),
+                uri.getHost(),
+                uri.getPort(),
+                urlPath.substring(0, urlPath.indexOf(hostContext)));
         if (logUrlFormatWarning) {
           CLIO.out(
               "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
