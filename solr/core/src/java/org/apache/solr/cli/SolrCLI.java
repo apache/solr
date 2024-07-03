@@ -518,7 +518,7 @@ public class SolrCLI implements CLIO {
     // SOLR-16824: Workaround for making SolrCloudExampleTest pass with custom host contexts
     String hostContext = System.getProperty("hostContext", "/solr");
 
-    solrUrl = normalizeSolrUrl(solrUrl, true) + hostContext;
+    solrUrl = normalizeSolrUrl(solrUrl, true, hostContext) + hostContext;
     ;
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder(solrUrl)
@@ -593,18 +593,25 @@ public class SolrCLI implements CLIO {
     print("such as:    ./solr start --help or ./solr stop -h");
   }
 
+  public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
+    return normalizeSolrUrl(solrUrl, logUrlFormatWarning, "/solr");
+  }
+
   /**
-   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
-   * is used, and optionally logs a warning. In the future we'll have urls ending with /api as well.
+   * Strips off the end of solrUrl any hostContext when a legacy solrUrl like
+   * http://localhost:8983/solr is used, and optionally logs a warning. In the future we'll have
+   * urls ending with /api as well.
    *
    * @param solrUrl The user supplied url to Solr.
    * @param logUrlFormatWarning If a warning message should be logged about the url format
+   * @param hostContext context path for Solr, is normally '/solr' but can be overridden here
    * @return the solrUrl in the format that Solr expects to see internally.
    */
-  public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
+  public static String normalizeSolrUrl(
+      String solrUrl, boolean logUrlFormatWarning, String hostContext) {
     if (solrUrl != null) {
-      if (solrUrl.contains("/solr")) { //
-        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+      if (solrUrl.contains(hostContext)) {
+        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf(hostContext));
         if (logUrlFormatWarning) {
           CLIO.out(
               "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
