@@ -1,4 +1,5 @@
 = Schema API
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -100,11 +101,11 @@ These request attributes are described in detail in the section xref:fields.adoc
 
 For example, to define a new stored field named "sell_by", of type "pdate", you would POST the following request:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1add]
+[tabs#add-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -116,9 +117,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2add]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -129,7 +130,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Delete a Field
 
@@ -138,11 +139,11 @@ If the field does not exist in the schema, or if the field is the source or dest
 
 For example, to delete a field named "sell_by", you would POST the following request:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1delete]
+[tabs#delete-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -151,9 +152,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2delete]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -161,7 +162,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Replace a Field
 
@@ -174,11 +175,11 @@ These request attributes are described in detail in the section xref:fields.adoc
 
 For example, to replace the definition of an existing field "sell_by", to make it be of type "date" and to not be stored, you would POST the following request:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1replace]
+[tabs#replace-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -190,9 +191,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2replace]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -203,7 +204,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Add a Dynamic Field Rule
 
@@ -214,11 +215,11 @@ The section xref:dynamic-fields.adoc[] has details on all of the attributes that
 
 For example, to create a new dynamic field rule where all incoming fields ending with "_s" would be stored and have field type "string", you can POST a request like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1add-dynamic]
+[tabs#add-dynamic-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -230,9 +231,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2add-dynamic]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -243,7 +244,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Delete a Dynamic Field Rule
 
@@ -252,11 +253,11 @@ If the dynamic field rule does not exist in the schema, or if the schema contain
 
 For example, to delete a dynamic field rule matching "*_s", you can POST a request like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1delete-dynamic]
+[tabs#delete-dynamic-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -265,9 +266,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2delete-dynamic]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -275,7 +276,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Replace a Dynamic Field Rule
 
@@ -288,11 +289,11 @@ The section xref:dynamic-fields.adoc[] has details on all of the attributes that
 
 For example, to replace the definition of the "*_s" dynamic field rule with one where the field type is "text_general" and it's not stored, you can POST a request like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1replace-dynamic]
+[tabs#replace-dynamic-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -304,9 +305,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2replace-dynamic]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -317,7 +318,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/solr/techproducts/schema
 ----
 ====
---
+======
 
 === Add a New Field Type
 
@@ -329,11 +330,11 @@ Details of all of the available options are described in the section xref:field-
 
 For example, to create a new field type named "myNewTxtField", you can POST a request as follows:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1-single-analyzer]
+[tabs#single-analyzer-request]
+======
+V1 API with Single Analysis::
++
 ====
-[tab-label]*V1 API with Single Analysis*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -357,10 +358,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 Note in this example that we have only defined a single analyzer section that will apply to index analysis and query analysis.
 ====
 
-[example.tab-pane#v1-two-analyzers]
+V1 API with Two Analyzers::
++
 ====
-[tab-label]*V1 API with Two Analyzers*
-
 If we wanted to define separate analysis, we would replace the `analyzer` section in the above example with separate sections for `indexAnalyzer` and `queryAnalyzer`.
 As in this example:
 
@@ -381,10 +381,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2-two-analyzers]
+V2 API with Two Analyzers::
++
 ====
-[tab-label]*V2 API with Two Analyzers*
-
 To define two analyzers with the V2 API, we just use a different endpoint:
 [source,bash]
 ----
@@ -402,7 +401,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Delete a Field Type
 
@@ -411,11 +410,11 @@ If the field type does not exist in the schema, or if any field or dynamic field
 
 For example, to delete the field type named "myNewTxtField", you can make a POST request as follows:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1delete-type]
+[tabs#delete-type-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -424,9 +423,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2delete-type]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -434,7 +433,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Replace a Field Type
 
@@ -448,11 +447,11 @@ Details of all of the available options are described in the section xref:field-
 
 For example, to replace the definition of a field type named "myNewTxtField", you can make a POST request as follows:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1replace-type]
+[tabs#replace-type-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -467,9 +466,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2replace-type]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -483,7 +482,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Add a New Copy Field Rule
 
@@ -521,11 +520,11 @@ The section xref:copy-fields.adoc[] has more details.
 
 For example, to define a rule to copy the field "shelf" to the "location" and "catchall" fields, you would POST the following request:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1add-copyfield]
+[tabs#add-copyfield-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -536,9 +535,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2add-copyfield]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -548,7 +547,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Delete a Copy Field Rule
 
@@ -559,11 +558,11 @@ The `source` and `dest` attributes are required by this command.
 
 For example, to delete a rule to copy the field "shelf" to the "location" field, you would POST the following request:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1delete-copyfield]
+[tabs#delete-copyfield-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -572,9 +571,9 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 ====
 
-[example.tab-pane#v2delete-copyfield]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
@@ -582,7 +581,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 }' http://localhost:8983/api/collections/techproducts/schema
 ----
 ====
---
+======
 
 === Multiple Commands in a Single POST
 
@@ -948,27 +947,27 @@ See the section xref:fields.adoc[] for more information about each parameter.
 
 ==== List Fields Examples
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-fields]
+[tabs#list-fields-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 http://localhost:8983/solr/techproducts/schema/fields
 ----
 ====
 
-[example.tab-pane#v2list-fields]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fields"
 ----
 ====
---
+======
 
 The sample output below has been truncated to only show a few fields.
 
@@ -1066,27 +1065,27 @@ See the section xref:dynamic-fields.adoc[] for more information about each param
 
 Get a list of all dynamic field declarations:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-dynamicfields]
+[tabs#dynamicfields-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 http://localhost:8983/techproducts/schema/dynamicfields
 ----
 ====
 
-[example.tab-pane#v2list-dynamicfields]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/dynamicfields"
 ----
 ====
---
+======
 
 The sample output below has been truncated.
 
@@ -1195,26 +1194,26 @@ See the section xref:field-type-definitions-and-properties.adoc[] for more infor
 
 Get a list of all field types.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-fieldtypes]
+[tabs#list-fieldtypes-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/fieldtypes
 ----
 ====
 
-[example.tab-pane#v2list-fieldtypes]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/fieldtypes"
 ----
 ====
---
+======
 
 The sample output below has been truncated to show a few different field types from different parts of the list.
 
@@ -1318,26 +1317,26 @@ For more information about copy fields, see the section xref:copy-fields.adoc[].
 
 Get a list of all copyFields.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-copyfields]
+[tabs#list-copyfields-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/copyfields
 ----
 ====
 
-[example.tab-pane#v2list-copyfields]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/copyfields"
 ----
 ====
---
+======
 
 The sample output below has been truncated to the first few copy definitions.
 
@@ -1408,26 +1407,26 @@ The output will be simply the name given to the schema.
 
 Get the schema name.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-schemaname]
+[tabs#list-schemaname-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/name
 ----
 ====
 
-[example.tab-pane#v2list-schemaname]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/name"
 ----
 ====
---
+======
 
 
 [source,json]
@@ -1478,26 +1477,26 @@ The output will simply be the schema version in use.
 
 Get the schema version:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-schemaversion]
+[tabs#list-schemaversion-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/version
 ----
 ====
 
-[example.tab-pane#v2list-schemaversion]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/version"
 ----
 ====
---
+======
 
 [source,json]
 ----
@@ -1547,26 +1546,26 @@ The output will include simply the field name that is defined as the uniqueKey f
 
 List the uniqueKey.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-schemauniquekey]
+[tabs#list-schemauniquekey-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/uniquekey
 ----
 ====
 
-[example.tab-pane#v2list-schemauniquekey]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/uniquekey"
 ----
 ====
---
+======
 
 [source,json]
 ----
@@ -1616,26 +1615,26 @@ The output will include the class name of the global similarity defined (if any)
 
 Get the similarity implementation.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1list-schemasimilarity]
+[tabs#list-schemasimilarity-request]
+======
+V1 API::
++
 ====
-[tab-label]*V1 API*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/schema/similarity
 ----
 ====
 
-[example.tab-pane#v2list-schemasimilarity]
+V2 API::
++
 ====
-[tab-label]*V2 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/api/collections/techproducts/schema/similarity"
 ----
 ====
---
+======
 
 [source,json]
 ----
