@@ -29,10 +29,9 @@ jobs:
           stale-pr-label: "stale"       # label to use when marking as stale
 
           stale-pr-message: >
-            This PR had no visible activity in the past 60 days, labeling it as stale.
-            Any new activity will remove the stale label. To attract more reviewers, please tag
-            someone or notify the dev@solr.apache.org mailing list.
+            This PR has had no activity for 60 days and is now labeled as stale. 
+            Any new activity or setting it as a draft will remove the stale label. 
+            To attract more reviewers, tag someone or notify the dev@solr.apache.org mailing list. 
             Thank you for your contribution!
 
-          # TODO: Increase budget after initial testing
-          operations-per-run: 30        # operations budget
+          operations-per-run: 100       # operations budget
