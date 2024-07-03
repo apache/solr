@@ -57,7 +57,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//doc[./str[@name='id']='1']");
 
     assertQ(
-        req("q", "{!complexphrase} \"jo* smyth~\""),
+        req("q", "{!complexphrase} \"j* smyth~\""),
         "//result[@numFound='2']",
         "//doc[./str[@name='id']='1']",
         "//doc[./str[@name='id']='2']");
@@ -121,7 +121,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
 
     assertQ(
         "wildcards and fuzzies are OK in phrases",
-        sumLRF.makeRequest("name:\"jo* smyth~\""),
+        sumLRF.makeRequest("name:\"j* smyth~\""),
         "//doc[./str[@name='id']='1']",
         "//doc[./str[@name='id']='2']",
         "//result[@numFound='2']");
@@ -252,7 +252,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//doc[./str[@name='id']='3']");
 
     assertQ(
-        req("q", "{!complexphrase} name:\"prot* dige*\" AND text:\"dn* ru*\""),
+        req("q", "{!complexphrase} name:\"prot* dige*\" AND text:\"d* r*\""),
         "//result[@numFound='1']",
         "//doc[./str[@name='id']='3']");
 

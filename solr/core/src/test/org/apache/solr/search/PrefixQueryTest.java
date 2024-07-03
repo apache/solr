@@ -90,7 +90,7 @@ public class PrefixQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLocalParamCanBeUsedToOverrideConfiguredLimit() {
-    // The solr.xml configured limit is '2'; requests should fail when that is not overridden
+    // The solrconfig.xml configured limit is '2'; requests should fail when that is not overridden
     for (String fieldName : FIELDS_TO_TEST_PREFIX_LIMITING) {
       assertQEx(
           "{!complex} query didn't obey min-prefix limit",

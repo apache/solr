@@ -64,7 +64,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
     String[] queries = {
       "foo_s:foo",
-      "foo_s:fo*",
+      "foo_s:f*",
       "*:*",
       "id:[* TO *]",
       "id:[0 TO 99]",

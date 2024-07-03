@@ -55,7 +55,6 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.min.prefixLength", String.valueOf(1));
     initCore("solrconfig.xml", "schema15.xml");
     createIndex();
   }
