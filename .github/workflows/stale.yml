@@ -31,7 +31,7 @@ jobs:
           stale-pr-message: >
             This PR has had no activity for 60 days and is now labeled as stale. 
             Any new activity or converting it to draft will remove the stale label. 
-            To attract more reviewers, tag someone or notify the dev@solr.apache.org mailing list. 
+            To attract more reviewers, please tag people who might be familiar with the code area and/or notify the dev@solr.apache.org mailing list. 
             Thank you for your contribution!
 
           operations-per-run: 100       # operations budget
