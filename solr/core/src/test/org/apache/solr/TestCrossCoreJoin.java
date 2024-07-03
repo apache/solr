@@ -39,10 +39,17 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   private static SolrCore fromCore;
 
+  private static String restoreDirectoryFactory;
+
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
+
+    // for some reason path access in creating `fromCore` is a problem for some DirectoryFactories
+    restoreDirectoryFactory = System.getProperty("solr.directoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+
     //    initCore("solrconfig.xml","schema12.xml");
 
     // File testHome = createTempDir().toFile();
@@ -247,5 +254,6 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   @AfterClass
   public static void nukeAll() {
     fromCore = null;
+    System.setProperty("solr.directoryFactory", restoreDirectoryFactory);
   }
 }

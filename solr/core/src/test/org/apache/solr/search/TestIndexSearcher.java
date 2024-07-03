@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Date;
@@ -223,6 +224,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     createCoreAndValidateListeners(1, 1, 2, 1);
   }
 
+  @SuppressWarnings("try")
   private void createCoreAndValidateListeners(
       int numTimesCalled,
       int numTimesCalledFirstSearcher,
@@ -236,7 +238,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     MockSearcherListener.numberOfTimesCalled = new AtomicInteger();
     MockSearcherListener.numberOfTimesCalledFirstSearcher = new AtomicInteger();
 
-    try {
+    String restoreDirFactory = System.getProperty("solr.directoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+    try (Closeable c = () -> System.setProperty("solr.directoryFactory", restoreDirFactory)) {
       // Create a new core, this should call all the firstSearcherListeners
       newCore =
           cores.create(
@@ -284,6 +288,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
         connection.request("/select", params, null).contains("<int name=\"status\">0</int>"));
   }
 
+  @SuppressWarnings("try")
   public void testDontUseColdSearcher() throws Exception {
     MockSearchComponent.registerFirstSearcherListener = false;
     MockSearchComponent.registerNewSearcherListener = false;
@@ -296,7 +301,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     CoreDescriptor cd = h.getCore().getCoreDescriptor();
     final SolrCore newCore;
     boolean coreCreated = false;
-    try {
+    String restoreDirFactory = System.getProperty("solr.directoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+    try (Closeable c = () -> System.setProperty("solr.directoryFactory", restoreDirFactory)) {
       // Create a new core, this should call all the firstSearcherListeners
       newCore =
           cores.create(
@@ -356,6 +363,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("try")
   public void testUseColdSearcher() throws Exception {
     MockSearchComponent.registerFirstSearcherListener = false;
     MockSearchComponent.registerNewSearcherListener = false;
@@ -368,7 +376,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     CoreDescriptor cd = h.getCore().getCoreDescriptor();
     final SolrCore newCore;
     boolean coreCreated = false;
-    try {
+    String restoreDirFactory = System.getProperty("solr.directoryFactory");
+    System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+    try (Closeable c = () -> System.setProperty("solr.directoryFactory", restoreDirFactory)) {
       System.setProperty("tests.solr.useColdSearcher", "true");
       // Create a new core, this should call all the firstSearcherListeners
       newCore =

@@ -42,6 +42,7 @@ import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -79,6 +80,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -96,6 +98,7 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Lock;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -434,6 +437,7 @@ public class IndexFetcher {
    * @return true on success, false if follower is already in sync
    * @throws IOException if an exception occurs
    */
+  @SuppressWarnings("try")
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload)
       throws IOException, InterruptedException {
 
@@ -624,7 +628,15 @@ public class IndexFetcher {
               .getDirectoryFactory()
               .get(indexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
 
-      try {
+      Lock lock = tmpIndexDir.obtainLock(IndexWriter.WRITE_LOCK_NAME);
+      AtomicBoolean releasedLock = new AtomicBoolean();
+
+      try (Closeable releaseLock =
+          () -> {
+            if (releasedLock.compareAndSet(false, true)) {
+              lock.close();
+            }
+          }) {
 
         // We will compare all the index files from the leader vs the index files on disk to see if
         // there is a mismatch in the metadata. If there is a mismatch for the same index file then
@@ -770,6 +782,7 @@ public class IndexFetcher {
             }
           }
           if (isFullCopyNeeded) {
+            releaseLock.close();
             solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
           }
 

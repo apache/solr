@@ -35,4 +35,4 @@ jobs:
     - name: Initialize gradle settings
       run: ./gradlew localSettings
     - name: Test Solr
-      run: ./gradlew test
+      run: ./gradlew test -Ptests.directory=org.apache.solr.storage.TeeDirectory

@@ -1269,7 +1269,11 @@ public class CoreContainer {
       // Now clear all the cores that are being operated upon.
       solrCores.close();
 
-      objectCache.clear();
+      try {
+        objectCache.close();
+      } catch (IOException ex) {
+        log.warn("error closing ObjectCache", ex);
+      }
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
       // up if so. Since all the pending operations queues have been drained, there should be
