@@ -30,6 +30,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -259,6 +260,7 @@ public final class CommitTracker implements Runnable {
     }
 
     MDCLoggingContext.setCore(core);
+    RTimer timer = timeUpperBound > 0 ? new RTimer() : null;
     try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;
@@ -280,6 +282,16 @@ public final class CommitTracker implements Runnable {
     } catch (Exception e) {
       log.error("auto commit error...", e);
     } finally {
+      if (timer != null) {
+        long elapsed = (long) timer.stop();
+        if (timeUpperBound > 0 && elapsed > timeUpperBound) {
+          log.warn(
+              "Spent {} millisec on {} auto-commit, which is longer than the configured commit interval of {} millisec",
+              elapsed,
+              softCommit ? "soft" : "hard",
+              timeUpperBound);
+        }
+      }
       MDCLoggingContext.clear();
     }
     // log.info("###done committing");
