@@ -56,15 +56,18 @@ public class HealthcheckTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
             .longOpt("name")
-            .argName("NAME")
             .hasArg()
+            .argName("COLLECTION")
             .required(true)
             .desc("Name of the collection to check.")
-            .build());
+            .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   enum ShardState {

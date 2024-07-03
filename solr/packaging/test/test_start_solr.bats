@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "SOLR-11740 check 'solr stop' connection" {
@@ -33,7 +33,7 @@ teardown() {
   solr start -p ${SOLR2_PORT}
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
-  run bash -c 'solr stop -all 2>&1'
+  run bash -c 'solr stop --all 2>&1'
   refute_output --partial 'forcefully killing'
 }
 
@@ -43,7 +43,7 @@ teardown() {
   solr start -p ${SOLR2_PORT}
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
-  
+
   run solr stop -p ${SOLR2_PORT}
   solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000

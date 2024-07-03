@@ -77,6 +77,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
@@ -250,9 +251,10 @@ public class SolrPluginUtils {
       }
 
       // get documents
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       DocIterator iter = docs.iterator();
       for (int i = 0; i < docs.size(); i++) {
-        searcher.doc(iter.nextDoc(), fieldFilter);
+        docFetcher.doc(iter.nextDoc(), fieldFilter);
       }
     }
   }
@@ -408,12 +410,13 @@ public class SolrPluginUtils {
       Query query, DocList docs, SolrIndexSearcher searcher, IndexSchema schema)
       throws IOException {
 
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     NamedList<Explanation> explainList = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Document doc = searcher.doc(id);
+      Document doc = docFetcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id));

@@ -113,6 +113,8 @@ New Features
 * SOLR-17277: Circuit breakers may now be configured in a "soft" or "warnOnly" mode in order to more easily test out new thresholds.  Soft breakers will log out a
   message on each relevant request when tripped, but will not otherwise impact or short circuit the requests.  (Jason Gerlowski)
 
+* SOLR-17335: New "vectorSimilarity" QParser for matching documents mased on a minimum vector similarity threshold. (hossman)
+
 Improvements
 ---------------------
 * SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
@@ -129,12 +131,30 @@ Improvements
 
 * SOLR-17109: Give security manager explicit read access to sharedLib (Tomás Fernández Löbbe via Eric Pugh)
 
+* SOLR-17331: OrderedNodePlacementPlugin will give an even more optimal replica placements during ReplicaMigration commands (Houston Putman, Yohann Callea)
+
+* SOLR-15591: Make using debugger in Solr easier by avoiding NPE in ExternalPaths.determineSourceHome.  (@charlygrappa via Eric Pugh)
+
+* SOLR-16824: Adopt Linux standard pattern of -- for long option commands, and make all commands "kebab" formatting.  I.e -zkHost is now -zk-host.  The old parameters
+  such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
+  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
   cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
 * SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
+
+* SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
+
+* SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
+
+* SOLR-16677: Update Solr to use new Lucene 9.5 storedFields() API. This removes the use of ThreadLocal for
+  stored field state, reducing heap usage especially for high-core-count, high-field-count, high-thread-count
+  cases (Vinayak Hegde, Christine Poerschke, Kevin Risden, David Smiley, Michael Gibney)
+
+* SOLR-17349: SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null (Michael Gibney)
 
 Bug Fixes
 ---------------------
@@ -161,9 +181,12 @@ Bug Fixes
   to the `<updateLog>` element in `solrconfig.xml`, which has long been silently ignored, will now be
   respected (Michael Gibney, David Smiley)
 
+* SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
+* SOLR-17325: Upgrade Lucene to 9.11.1 (hossman)
 
 Other Changes
 ---------------------
@@ -175,6 +198,10 @@ Other Changes
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+
+* SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
+
+* SOLR-17321: Remove Deprecated URL and replace it with URI in Preparation for Java 21 (Sanjay Dutt, David Smiley, Uwe Schindler)
 
 * PR#2524: QueryResult refactoring so that it's only returned from SolrIndexSearcher instead of
   being provided to it.  Deprecated APIs in 9x; should be removed later. (David Smiley)

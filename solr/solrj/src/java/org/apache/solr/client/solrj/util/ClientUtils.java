@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -103,9 +103,9 @@ public class ClientUtils {
   }
 
   private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+    URI oldURI = URI.create(basePath);
+    String newPath = oldURI.getPath().replaceFirst("/solr", "/api");
+    return oldURI.resolve(newPath).toString();
   }
 
   // ------------------------------------------------------------------------
@@ -246,14 +246,16 @@ public class ClientUtils {
   }
 
   /**
-   * Returns the value encoded properly so it can be appended after a
+   * Returns the (literal) value encoded properly so it can be appended after a <code>name=</code>
+   * local-param key.
    *
-   * <pre>name=</pre>
-   *
-   * local-param.
+   * <p>NOTE: This method assumes <code>$</code> is a literal character that must be quoted. (It
+   * does not assume strings starting <code>$</code> should be treated as param refrenes)
    */
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
+    if (0 == len) return "''"; // quoted empty string
+
     int i = 0;
     if (len > 0 && val.charAt(0) != '$') {
       for (; i < len; i++) {
