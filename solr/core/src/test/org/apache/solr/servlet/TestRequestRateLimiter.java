@@ -17,6 +17,8 @@
 
 package org.apache.solr.servlet;
 
+import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
+import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -35,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -48,6 +52,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.RateLimiterConfig;
+import org.eclipse.jetty.server.Request;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -106,6 +111,195 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
           mockQueryRateLimiter.incomingRequestCount.get(),
           mockQueryRateLimiter.acceptedNewRequestCount.get()
               + mockQueryRateLimiter.rejectedRequestCount.get());
+    }
+  }
+
+  @Test
+  @SuppressWarnings("try")
+  public void testSlotBorrowingAcquisitionTimeout()
+      throws InterruptedException, IOException, ExecutionException {
+    RateLimitManager mgr = new RateLimitManager();
+    Random r = random();
+    int slotLimit = r.nextInt(20) + 1;
+    int guaranteed = r.nextInt(slotLimit);
+    int slotAcqTimeMillis = 1000; // 1 second -- large enough to be reliably measurable
+    RateLimiterConfig queryConfig =
+        new RateLimiterConfig(
+            SolrRequest.SolrRequestType.QUERY,
+            true,
+            guaranteed,
+            slotAcqTimeMillis,
+            slotLimit /* allowedRequests */,
+            true /* isSlotBorrowing */);
+    // set allowed/guaranteed to the same, and very low, to force it to mainly borrow. It would also
+    // be theoretically possible to optimize a single-request-type config to bypass slot-borrowing
+    // logic altogether, so configuring a second ratelimiter eliminates the possibility that at
+    // some point the test could come to not evaluate what it's intended to evaluate.
+    RateLimiterConfig updateConfig =
+        new RateLimiterConfig(
+            SolrRequest.SolrRequestType.UPDATE,
+            true,
+            1,
+            slotAcqTimeMillis,
+            1 /* allowedRequests */,
+            true /* isSlotBorrowing */);
+    mgr.registerRequestRateLimiter(
+        new RequestRateLimiter(queryConfig), SolrRequest.SolrRequestType.QUERY);
+    mgr.registerRequestRateLimiter(
+        new RequestRateLimiter(updateConfig), SolrRequest.SolrRequestType.UPDATE);
+
+    RequestRateLimiter.SlotReservation[] acquired =
+        new RequestRateLimiter.SlotReservation[slotLimit + 1];
+    long threshold = TimeUnit.MILLISECONDS.toNanos(slotAcqTimeMillis);
+
+    long waitNanos = TimeUnit.MILLISECONDS.toNanos(slotAcqTimeMillis);
+
+    ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("slotBorrowing");
+    List<Future<?>> futures = new ArrayList<>(slotLimit + 1);
+    try (Closeable c = () -> ExecutorUtil.shutdownAndAwaitTermination(exec)) {
+      CountDownLatch cdl = new CountDownLatch(slotLimit);
+      for (int i = 0; i < slotLimit; i++) {
+        int idx = i;
+        futures.add(
+            exec.submit(
+                () -> {
+                  try {
+                    long start = System.nanoTime();
+                    RequestRateLimiter.SlotReservation res = mgr.handleRequest(QUERY_REQ);
+                    assertNotNull(res);
+                    acquired[idx] = res;
+                    // we should never have to wait to acquire a slot.
+                    assertTrue(System.nanoTime() - start < threshold);
+                  } finally {
+                    cdl.countDown();
+                  }
+                  return null;
+                }));
+      }
+
+      cdl.await();
+
+      for (Future<?> f : futures) {
+        f.get();
+      }
+
+      futures.clear();
+
+      long start = System.nanoTime();
+      assertNull(mgr.handleRequest(QUERY_REQ)); // we shouldn't acquire a slot
+      assertTrue(System.nanoTime() - start > waitNanos); // we should have waited a while though!
+
+      for (int i = 0; i < slotLimit; i++) {
+        acquired[i].close();
+      }
+
+      assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY).isEmpty());
+      assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE).isEmpty());
+
+      long borrowThreshold = waitNanos + threshold;
+      int otherAcquire = slotLimit - guaranteed + 1;
+      CountDownLatch otherLatch = new CountDownLatch(otherAcquire);
+      for (int i = 0; i < otherAcquire; i++) {
+        int idx = i;
+        futures.add(
+            exec.submit(
+                () -> {
+                  try {
+                    long startL = System.nanoTime();
+                    RequestRateLimiter.SlotReservation res = mgr.handleRequest(UPDATE_REQ);
+                    assertNotNull(res);
+                    acquired[idx] = res;
+                    // we should never have to wait to acquire a slot -- borrow many of these
+                    long waited = System.nanoTime() - startL;
+                    assertTrue(
+                        idx + " waited " + TimeUnit.NANOSECONDS.toMillis(waited) + "ms",
+                        waited < borrowThreshold);
+                  } finally {
+                    otherLatch.countDown();
+                  }
+                  return null;
+                }));
+      }
+
+      otherLatch.await();
+
+      for (Future<?> f : futures) {
+        f.get();
+      }
+
+      futures.clear();
+
+      start = System.nanoTime();
+      assertNull(mgr.handleRequest(UPDATE_REQ)); // no more borrowable slots!
+      long waited = System.nanoTime() - start;
+      assertTrue(
+          "waited " + TimeUnit.NANOSECONDS.toMillis(waited) + "ms",
+          waited > waitNanos); // we should have waited a while though!
+
+      CountDownLatch guaranteedLatch = new CountDownLatch(slotLimit - otherAcquire + 1);
+      for (int i = otherAcquire; i <= slotLimit; i++) {
+        int idx = i;
+        futures.add(
+            exec.submit(
+                () -> {
+                  try {
+                    long startL = System.nanoTime();
+                    RequestRateLimiter.SlotReservation res = mgr.handleRequest(QUERY_REQ);
+                    assertNotNull(res);
+                    acquired[idx] = res;
+                    // we should never have to wait to acquire guaranteed slots
+                    assertTrue(System.nanoTime() - startL < threshold);
+                  } finally {
+                    guaranteedLatch.countDown();
+                  }
+                  return null;
+                }));
+      }
+
+      guaranteedLatch.await();
+
+      for (Future<?> f : futures) {
+        f.get();
+      }
+    }
+
+    long start = System.nanoTime();
+    assertNull(mgr.handleRequest(QUERY_REQ)); // slots are all gone!
+    assertTrue(System.nanoTime() - start > waitNanos); // we should have waited a while though!
+
+    // now cleanup
+    for (RequestRateLimiter.SlotReservation res : acquired) {
+      res.close();
+    }
+
+    assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY).isEmpty());
+    assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE).isEmpty());
+  }
+
+  private static final HttpServletRequest QUERY_REQ = new DummyRequest(null, "QUERY");
+  private static final HttpServletRequest UPDATE_REQ = new DummyRequest(null, "UPDATE");
+
+  private static class DummyRequest extends Request {
+
+    private final String ctx;
+    private final String type;
+
+    public DummyRequest(String ctx, String type) {
+      super(null, null);
+      this.ctx = ctx;
+      this.type = type;
+    }
+
+    @Override
+    public String getHeader(String name) {
+      switch (name) {
+        case SOLR_REQUEST_CONTEXT_PARAM:
+          return ctx;
+        case SOLR_REQUEST_TYPE_PARAM:
+          return type;
+        default:
+          throw new IllegalArgumentException();
+      }
     }
   }
 

@@ -139,8 +139,9 @@ public class RequestRateLimiter {
     if (borrowableSlotsPool == null) {
       return null;
     }
-    if (totalSlotsPool.tryAcquire(
-        rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+    // by the time we get to slot borrowing, we have already waited for the borrowing request-type's
+    // max slot acquisition millis, so don't wait again. Borrow only if it's available immediately.
+    if (totalSlotsPool.tryAcquire()) {
       if (totalSlotsPool == borrowableSlotsPool) {
         // simple case: there are no guaranteed slots; do not double-acquire
         return new SingleSemaphoreReservation(borrowableSlotsPool);

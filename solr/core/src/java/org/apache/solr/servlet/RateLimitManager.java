@@ -111,6 +111,9 @@ public class RateLimitManager implements ClusterPropertiesListener {
       return RequestRateLimiter.UNLIMITED;
     }
 
+    // slot borrowing should be fallback behavior, so if `slotAcquisitionTimeoutInMS`
+    // is configured it will be applied here (blocking if necessary), to make a best
+    // effort to draw from the request's own slot pool.
     RequestRateLimiter.SlotReservation result = requestRateLimiter.handleRequest();
 
     if (result != null) {
