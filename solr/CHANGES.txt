@@ -101,6 +101,9 @@ Other Changes
 
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
+* PR#2524: QueryResult refactoring so that it's only returned from SolrIndexSearcher instead of
+  being provided to it.  Deprecated APIs in 9x; should be removed later. (David Smiley)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
