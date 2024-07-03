@@ -352,7 +352,7 @@ stop() {
   SOLR=${CLUSTER_WD}/$(find . -maxdepth 1 -name 'solr*' -type d -print0 | xargs -0 ls -1 -td | sed -E 's/\.\/(solr.*)/\1/' | head -n1)
   popd
 
-  "${SOLR}/bin/solr" stop -all
+  "${SOLR}/bin/solr" stop --all
 }
 
 ########################

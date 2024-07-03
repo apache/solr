@@ -94,7 +94,7 @@ The following command line will stop Solr and remove the directories for each of
 
 [,console]
 ----
-$ bin/solr stop -all
+$ bin/solr stop --all
 $ rm -Rf example/cloud/
 ----
 
