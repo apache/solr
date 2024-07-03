@@ -621,6 +621,7 @@ public class SolrCLI implements CLIO {
       if (urlPath.contains(hostContext)) {
         String newSolrUrl =
             String.format(
+                Locale.ROOT,
                 "%s://%s:%s%s",
                 uri.getScheme(),
                 uri.getHost(),
