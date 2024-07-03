@@ -1555,7 +1555,7 @@ With name::
   <tokenizer name="standard"/>
   <filter name="lowercase"/>
   <filter name="czechStem"/>
-<analyzer>
+</analyzer>
 ----
 ====
 
@@ -1568,7 +1568,7 @@ With class name (legacy)::
   <tokenizer class="solr.StandardTokenizerFactory"/>
   <filter class="solr.LowerCaseFilterFactory"/>
   <filter class="solr.CzechStemFilterFactory"/>
-<analyzer>
+</analyzer>
 ----
 ====
 ======

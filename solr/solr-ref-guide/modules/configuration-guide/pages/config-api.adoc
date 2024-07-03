@@ -779,6 +779,7 @@ A simple highlighter looks like this in `solrconfig.xml` (example has been trunc
       <encoder name="html" class="solr.highlight.HtmlEncoder" />
 ...
     </highlighting>
+</searchComponent>
 ----
 
 The same highlighter with the Config API:

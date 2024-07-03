@@ -853,7 +853,8 @@ curl http://localhost:8983/solr/techproducts/schema?wt=schema.xml
         <filter class="solr.PatternReplaceFilterFactory" replace="all" replacement="" pattern="([^a-z])"/>
       </analyzer>
     </fieldType>
-...
+  ...
+  </types>
   <copyField source="url" dest="text"/>
   <copyField source="price" dest="price_c"/>
   <copyField source="author" dest="author_s"/>
@@ -1121,7 +1122,7 @@ The sample output below has been truncated.
             "name": "*_txt",
             "stored": true,
             "type": "text_general"
-        }
+        },
 "..."
     ],
     "responseHeader": {
@@ -1359,7 +1360,7 @@ The sample output below has been truncated to the first few copy definitions.
         {
             "dest": "text",
             "source": "content_type"
-        },
+        }
     ],
     "responseHeader": {
         "QTime": 3,

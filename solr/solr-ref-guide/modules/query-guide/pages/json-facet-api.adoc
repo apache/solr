@@ -297,7 +297,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-json-query-facet-expanded]
 
 Example response:
 
-[source,java]
+[source,json]
 ----
 "high_popularity" : {
   "count" : 36,
@@ -344,7 +344,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-json-range-facet-simple]
 
 The output from the range facet above would look a bit like:
 
-[source,java]
+[source,json]
 ----
 "prices":{
   "buckets":[
@@ -812,20 +812,20 @@ In some situations the desired `sort` may be an aggregation function that is ver
 A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).
 Only after the top candidate buckets have been refined, will the actual `sort` be used.
 
-[source,java]
+[source,json]
 ----
 {
-  categories:{
-    type : terms,
-    field : cat,
-    refine: true,
-    limit: 10,
-    overrequest: 100,
-    prelim_sort: "sales_rank desc",
-    sort : "prod_quality desc",
-    facet : {
-      prod_quality : "avg(div(prod(rating,sales_rank),prod(num_returns,price)))"
-      sales_rank : "sum(sales_rank)"
+  "categories": {
+    "type" : "terms",
+    "field" : "cat",
+    "refine": true,
+    "limit": 10,
+    "overrequest": 100,
+    "prelim_sort": "sales_rank desc",
+    "sort": "prod_quality desc",
+    "facet": {
+      "prod_quality": "avg(div(prod(rating,sales_rank),prod(num_returns,price)))"
+      "sales_rank": "sum(sales_rank)"
     }
   }
 }
@@ -876,14 +876,14 @@ Suppose we have products with multiple SKUs, and we want to count products for e
 
 When searching against a set of SKU documents, we can ask for a facet on color, with a nested statistic counting all the "blocks" -- aka: products:
 
-[source,java]
+[source,json]
 ----
-color: {
-  type: terms,
-  field: color,
-  limit: -1,
-  facet: {
-    productsCount: "uniqueBlock(_root_)"
+"color": {
+  "type": "terms",
+  "field": "color",
+  "limit": -1,
+  "facet": {
+    "productsCount": "uniqueBlock(_root_)"
       // or "uniqueBlock({!v=type:product})"
   }
 }
@@ -891,12 +891,12 @@ color: {
 
 and get:
 
-[source,java]
+[source,json]
 ----
-color:{
-   buckets:[
-      { val:Blue, count:2, productsCount:2 },
-      { val:Red, count:2, productsCount:1 }
+"color": {
+   "buckets": [
+      { "val": "Blue", "count": 2, "productsCount": 2 },
+      { "val": "Red", "count": 2, "productsCount": 1 }
    ]
 }
 ----
@@ -943,9 +943,10 @@ This heuristic is _not_ used to determine default behavior, particularly because
 
 [source,json]
 ----
-{ "type": "func",
+{
+  "type": "func",
   "func": "relatedness($fore,$back)",
-  "min_popularity": 0.001,
+  "min_popularity": 0.001
 }
 ----
 
