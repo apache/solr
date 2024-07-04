@@ -437,7 +437,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      * receiving an abusive number of admin requests.
      */
     private static final int MAX_TRACKED_REQUESTS =
-        EnvUtils.getPropertyAsInteger("solr.admin.requests.running.max", 10_000);
+        EnvUtils.getPropertyAsInteger("solr.admin.async.max", 10_000);
 
     public static final String RUNNING = "running";
     public static final String COMPLETED = "completed";
@@ -452,7 +452,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             50, new SolrNamedThreadFactory("parallelCoreAdminAPIBaseExecutor"));
 
     // Executor for expensive tasks
-    // We keep the number number of max threads very low to have throttling for expensive tasks
+    // We keep the number of max threads very low to have throttling for expensive tasks
     private ExecutorService expensiveExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
             5,
@@ -463,9 +463,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       this(
           Ticker.systemTicker(),
           TimeUnit.MINUTES.toNanos(
-              EnvUtils.getPropertyAsLong("solr.admin.requests.running.timeout.minutes", 60L)),
+              EnvUtils.getPropertyAsLong("solr.admin.async.timeout.minutes", 60L)),
           TimeUnit.MINUTES.toNanos(
-              EnvUtils.getPropertyAsLong("solr.admin.requests.completed.timeout.minutes", 5L)));
+              EnvUtils.getPropertyAsLong("solr.admin.async.timeout.completed.minutes", 5L)));
     }
 
     /**
