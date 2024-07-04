@@ -66,10 +66,5 @@ public abstract class ToolBase implements Tool {
     return toolExitStatus;
   }
 
-  @Override
-  public String getUsage() {
-    return null; // Means auto generating usage string
-  }
-
   public abstract void runImpl(CommandLine cli) throws Exception;
 }

@@ -34,7 +34,6 @@ public interface Tool {
   default String getUsage() {
     return null;
   }
-  ;
 
   /**
    * Optional header to display before the options in help output. Defaults to 'List of options:'
