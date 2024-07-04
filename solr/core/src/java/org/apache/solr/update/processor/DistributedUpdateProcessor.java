@@ -202,6 +202,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
 
+  @VisibleForTesting
   protected UpdateLocks getUpdateLocks() {
     return ulog.getLocks();
   }
@@ -654,7 +655,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           condition.await(timeLeftInNanos, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
           throw new RuntimeException(e);
         }
       }

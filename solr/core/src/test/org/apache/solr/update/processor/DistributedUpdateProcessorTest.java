@@ -153,12 +153,12 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
    */
   private int runCommands(
       int threads,
-      int versionBucketLockTimeoutMs,
+      int docLockTimeoutMs,
       SolrQueryRequest req,
       Function<DistributedUpdateProcessor, Boolean> function)
       throws IOException {
 
-    try (DistributedUpdateProcessor processor = newDurp(req, versionBucketLockTimeoutMs)) {
+    try (DistributedUpdateProcessor processor = newDurp(req, docLockTimeoutMs)) {
       CountDownLatch latch = new CountDownLatch(1);
       Collection<Future<Boolean>> futures = new ArrayList<>();
       for (int t = 0; t < threads; ++t) {
@@ -192,7 +192,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       return new DistributedUpdateProcessor(req, null, null);
     }
     // customize UpdateLocks with the provided timeout.  And simulate docs taking longer to index
-    final var sleepMs = 5000;
+    final var sleepMs = lockTimeoutMs + 1000;
     assert sleepMs > lockTimeoutMs;
     var sleepUrp =
         new UpdateRequestProcessor(null) {

@@ -36,15 +36,10 @@ import org.apache.solr.util.IOFunction;
  * @lucene.internal
  */
 public class UpdateLocks {
-  // names are legacy oriented; TODO rename and use EnvUtils
-  private static final String SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS =
-      "bucketVersionLockTimeoutMs";
-  public static final int DEFAULT_TIMEOUT =
-      Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0"));
 
   private final long docLockTimeoutMs;
 
-  private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+  private final ReadWriteLock blockUpdatesLock = new ReentrantReadWriteLock(true);
 
   private final ConcurrentHashMap<BytesRef, LockAndCondition> idToLock = new ConcurrentHashMap<>();
 
@@ -97,8 +92,7 @@ public class UpdateLocks {
       } else {
         long remainingNs =
             TimeUnit.MILLISECONDS.toNanos(docLockTimeoutMs) - (System.nanoTime() - startTimeNanos);
-        boolean timedOut =
-            !lock.lock.tryLock(remainingNs - System.nanoTime(), TimeUnit.NANOSECONDS);
+        boolean timedOut = !lock.lock.tryLock(remainingNs, TimeUnit.NANOSECONDS);
         if (timedOut) {
           throw new SolrException(
               ErrorCode.SERVER_ERROR,
@@ -132,18 +126,18 @@ public class UpdateLocks {
   }
 
   public void lockForUpdate() {
-    lock.readLock().lock();
+    blockUpdatesLock.readLock().lock();
   }
 
   public void unlockForUpdate() {
-    lock.readLock().unlock();
+    blockUpdatesLock.readLock().unlock();
   }
 
   public void blockUpdates() {
-    lock.writeLock().lock();
+    blockUpdatesLock.writeLock().lock();
   }
 
   public void unblockUpdates() {
-    lock.writeLock().unlock();
+    blockUpdatesLock.writeLock().unlock();
   }
 }

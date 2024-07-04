@@ -66,6 +66,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -384,8 +385,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       log.warn("numVersionBuckets is obsolete");
     }
 
+    if (info.initArgs.get("versionBucketLockTimeoutMs") != null) {
+      log.warn("versionBucketLockTimeoutMs is mostly replaced by docLockTimeoutMs");
+    }
     int timeoutMs =
-        objToInt(info.initArgs.get("versionBucketLockTimeoutMs"), UpdateLocks.DEFAULT_TIMEOUT);
+        objToInt(
+            info.initArgs.get("docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
+            EnvUtils.getPropertyAsLong("solr.update.docLockTimeoutMs", 0L).intValue());
     updateLocks = new UpdateLocks(timeoutMs);
 
     log.info(

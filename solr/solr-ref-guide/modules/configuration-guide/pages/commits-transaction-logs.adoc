@@ -314,25 +314,3 @@ These can be triggered to occur after any commit (`event="postCommit"`) or only 
 
 Users can write custom update event listener classes in Solr plugins.
 As of Solr 7.1, `RunExecutableListener` was removed for security reasons.
-
-== Other <updateHandler> Options
-
-In some cases complex updates (such as spatial/shape) may take very long time to complete.
-In the default configuration other updates that fall into the same internal version bucket will wait indefinitely.
-Eventually these outstanding requests may pile up and lead to thread exhaustion and possibly to OutOfMemory errors.
-
-The parameter `versionBucketLockTimeoutMs` helps to prevent that by specifying a timeout for long-running update requests.
-If this limit is reached the update will fail but it won't block forever all other updates.
-
-There is a memory cost associated with this setting.
-Values greater than the default of `0` (unlimited timeout) cause Solr to use a different internal implementation of the version bucket, which increases memory consumption from ~1.5MB to ~6.8MB per Solr core.
-
-An example of specifying this option under `<config>` section of `solrconfig.xml`:
-
-[source,xml]
-----
-<updateHandler class="solr.DirectUpdateHandler2">
-  ...
-  <int name="versionBucketLockTimeoutMs">10000</int>
-</updateHandler>
-----
