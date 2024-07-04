@@ -50,7 +50,6 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -289,20 +288,6 @@ public class DistribFileStore implements FileStore {
         }
 
         @Override
-        public void writeMap(EntryWriter ew) throws IOException {
-          MetaData metaData = readMetaData();
-          ew.put(CommonParams.NAME, getSimpleName());
-          if (type == FileType.DIRECTORY) {
-            ew.put("dir", true);
-            return;
-          }
-
-          ew.put("size", size());
-          ew.put("timestamp", getTimeStamp());
-          if (metaData != null) metaData.writeMap(ew);
-        }
-
-        @Override
         public String getSimpleName() {
           int idx = path.lastIndexOf('/');
           if (idx == -1) return path;
@@ -503,7 +488,7 @@ public class DistribFileStore implements FileStore {
     for (String node : nodes) {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-      String url = baseUrl + "/node/files" + path;
+      String url = baseUrl + "/cluster/files" + path + "?localDelete=true";
       HttpDelete del = new HttpDelete(url);
       // invoke delete command on all nodes asynchronously
       coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));
