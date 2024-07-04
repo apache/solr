@@ -551,8 +551,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
       }
-
-      taskObject.status = RUNNING;
     }
 
     private void finishTask(TaskObject taskObject, boolean successful) {
