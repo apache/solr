@@ -18,8 +18,9 @@
   display: flex;
   font-weight: bold;
   line-height: 1.5;
-  padding: 0.25em 1em;
+  padding: 0.5em 1.25em;
   position: relative;
+  margin: 0 0 -1px !important;
 }
 
 .tablist > ul li:focus-visible {
@@ -57,6 +58,9 @@
 
 .tablist .is-selected {
   color: #d9411e;
+  border: 1px solid #5d5d5d;
+  border-radius: 5px 5px 0 0;
+  border-bottom: 1px solid transparent;
 }
 
 .tablist > ul p {
@@ -64,8 +68,10 @@
   margin: 0;
 }
 
-.tabpanel {
+.tabpanel .exampleblock > .content {
   background-color: #fff;
+  border: 1px solid #5d5d5d;
+  border-radius: 0 0 5px 5px;
 }
 
 .tabs.is-loading .tabpanel + .tabpanel,
