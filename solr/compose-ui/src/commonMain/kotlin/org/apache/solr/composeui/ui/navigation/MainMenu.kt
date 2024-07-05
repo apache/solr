@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.solr.composeui.ui.logging
+package org.apache.solr.composeui.ui.navigation
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import org.apache.solr.composeui.components.logging.LoggingComponent
-
-@Composable
-fun LoggingContent(
-    component: LoggingComponent,
-    modifier: Modifier = Modifier,
-) {
-    Text("Logging section")
-    // TODO Add logging content here
+/**
+ * An enum class that holds all the menu items of the main navigation.
+ *
+ * This enum is used as abstraction layer between UI and business logic. This is important because
+ * many UI-related elements, like icons and string resources, will depend on this enum and not a
+ * specific class of the business logic.
+ */
+enum class MainMenu {
+    Dashboard,
+    Metrics,
+    Cluster,
+    Security,
+    Configsets,
+    Collections,
+    QueriesAndOperations,
+    Environment,
+    Logging,
+    ThreadDump,
 }

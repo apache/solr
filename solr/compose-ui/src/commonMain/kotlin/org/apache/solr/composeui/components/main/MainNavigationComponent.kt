@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.composeui.components.root.integration
+package org.apache.solr.composeui.components.main
 
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import org.apache.solr.composeui.components.root.RootComponent
-import org.apache.solr.composeui.utils.AppComponentContext
+import org.apache.solr.composeui.components.navigation.NavigationComponent
 
-class DefaultRootComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
-) : RootComponent, AppComponentContext by componentContext {
+/**
+ * The abstracted navigation part of the [AbstractMainComponent].
+ *
+ * This navigation is limited to the destinations of defined by [Child] and [Configuration].
+ *
+ * @see Configuration
+ */
+interface MainNavigationComponent : NavigationComponent {
 
 }

@@ -18,22 +18,14 @@
 package org.apache.solr.composeui.ui.root
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import org.apache.solr.composeui.components.navigation.MainMenu
+import com.arkivanov.decompose.extensions.compose.stack.Children
 import org.apache.solr.composeui.components.root.RootComponent
+import org.apache.solr.composeui.ui.main.MainContent
 import org.apache.solr.composeui.ui.navigation.Footer
-import org.apache.solr.composeui.ui.navigation.NavigationSideBar
 
 /**
  * The root composable of the Compose application. This function is used as the shared entry
@@ -46,19 +38,18 @@ fun RootContent(
     component: RootComponent,
     modifier: Modifier = Modifier,
 ) {
-    // TODO Move selected to component / state store
-    var selected by remember { mutableStateOf(MainMenu.Logging) }
-
     Column(modifier = modifier.fillMaxSize()) {
-        Row(modifier = Modifier.weight(1f)) {
-            NavigationSideBar(
-                modifier = Modifier.fillMaxHeight()
-                    .width(224.dp),
-                selectedItem = selected,
-                onNavigate = { selected = it }, // TODO Add proper onNavigate handler
-            )
 
-            // TODO Add page-specific content here
+        Children(
+            stack = component.childStack,
+            modifier = Modifier.weight(1f),
+        ) {
+            when(val child = it.instance) {
+                is RootComponent.Child.Main -> MainContent(
+                    component = child.component,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
         Footer(modifier = Modifier.fillMaxWidth())
     }

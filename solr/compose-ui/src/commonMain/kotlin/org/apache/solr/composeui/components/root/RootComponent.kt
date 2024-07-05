@@ -17,4 +17,25 @@
 
 package org.apache.solr.composeui.components.root
 
-interface RootComponent
+import com.arkivanov.decompose.router.stack.ChildStack
+import com.arkivanov.decompose.value.Value
+import org.apache.solr.composeui.components.main.MainComponent
+
+/**
+ * Root component used by each target as an entry point to the application.
+ *
+ * This component checks the information available at start time and redirects the user accordingly.
+ * Implementations may check user session, access level, destination and more.
+ */
+interface RootComponent {
+
+    val childStack: Value<ChildStack<*, Child>>
+
+    sealed interface Child {
+
+        data class Main(val component: MainComponent): Child
+
+        // TODO Add child once authentication is checked
+        // data class Unauthenticated(val component: UnauthenticatedComponent): Child
+    }
+}

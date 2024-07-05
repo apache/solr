@@ -59,10 +59,13 @@ import org.apache.solr.compose_ui.generated.resources.nav_metrics
 import org.apache.solr.compose_ui.generated.resources.nav_queries_and_operations
 import org.apache.solr.compose_ui.generated.resources.nav_security
 import org.apache.solr.compose_ui.generated.resources.nav_thread_dump
-import org.apache.solr.composeui.components.navigation.MainMenu
 import org.apache.solr.composeui.ui.icons.SolrLogo
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * The application's main navigation / sidebar. It is used for navigation between the different
+ * sections.
+ */
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,
@@ -81,7 +84,7 @@ fun NavigationSideBar(
                     imageVector = getMenuIcon(item),
                     modifier = Modifier.fillMaxWidth(),
                     selected = item == selectedItem,
-                    enabled = item == MainMenu.Logging,
+                    enabled = isSectionAvailable(item),
                     onClick = { onNavigate(item) },
                 )
             }
@@ -161,4 +164,17 @@ private fun getMenuIcon(item: MainMenu) = when (item) {
     MainMenu.Environment -> Icons.Rounded.Memory
     MainMenu.Logging -> Icons.AutoMirrored.Rounded.TextSnippet
     MainMenu.ThreadDump -> Icons.AutoMirrored.Rounded.ViewList
+}
+
+/**
+ * Temporary function for disabling sections in the navigation that have not been implemented yet.
+ *
+ * @param item The menu item to check for availability.
+ * @return Returns `true` iff the user can navigate to the section.
+ * TODO Remove once all sections are added
+ */
+private fun isSectionAvailable(item: MainMenu): Boolean = when (item) {
+    MainMenu.Environment -> true
+    MainMenu.Logging -> true
+    else -> false
 }

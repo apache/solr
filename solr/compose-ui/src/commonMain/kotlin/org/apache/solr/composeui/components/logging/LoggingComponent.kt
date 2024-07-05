@@ -15,18 +15,6 @@
  * limitations under the License.
  */
 
-package org.apache.solr.composeui.ui.logging
+package org.apache.solr.composeui.components.logging
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import org.apache.solr.composeui.components.logging.LoggingComponent
-
-@Composable
-fun LoggingContent(
-    component: LoggingComponent,
-    modifier: Modifier = Modifier,
-) {
-    Text("Logging section")
-    // TODO Add logging content here
-}
+interface LoggingComponent
