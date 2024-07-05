@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.composeui.components.navigation
+package org.apache.solr.composeui.components.main.integration
 
-/**
- * An enum class that holds all the menu items of the main navigation.
- */
-enum class MainMenu {
-    Dashboard,
-    Metrics,
-    Cluster,
-    Security,
-    Configsets,
-    Collections,
-    QueriesAndOperations,
-    Environment,
-    Logging,
-    ThreadDump,
-}
+import org.apache.solr.composeui.components.main.MainComponent
+import org.apache.solr.composeui.ui.navigation.MainMenu
+
+
+val MainComponent.Child.asMainMenu: MainMenu
+    get() = when (this) {
+        // TODO Add additional mappings once more children are supported
+        is MainComponent.Child.Environment -> MainMenu.Environment
+        is MainComponent.Child.Logging -> MainMenu.Logging
+    }

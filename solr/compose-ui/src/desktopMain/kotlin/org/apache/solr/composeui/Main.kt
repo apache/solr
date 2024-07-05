@@ -32,7 +32,7 @@ import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
 import java.awt.Dimension
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.composeui.components.root.RootComponent
-import org.apache.solr.composeui.components.root.integration.DefaultRootComponent
+import org.apache.solr.composeui.components.root.integration.SimpleRootComponent
 import org.apache.solr.composeui.ui.root.RootContent
 import org.apache.solr.composeui.ui.theme.SolrTheme
 import org.apache.solr.composeui.utils.DefaultAppComponentContext
@@ -56,7 +56,7 @@ fun main() {
     val root: RootComponent = runOnUiThread {
         setMainThreadId(Thread.currentThread().id)
 
-        DefaultRootComponent(
+        SimpleRootComponent(
             componentContext = componentContext,
             storeFactory = storeFactory,
         )

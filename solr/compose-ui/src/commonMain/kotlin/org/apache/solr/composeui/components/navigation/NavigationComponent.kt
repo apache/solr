@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.composeui.ui.logging
+package org.apache.solr.composeui.components.navigation
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import org.apache.solr.composeui.components.logging.LoggingComponent
+/**
+ * Interface that provides the basic functionality for any navigation component. Navigation
+ * components can use this interface as base and extend it.
+ */
+interface NavigationComponent {
 
-@Composable
-fun LoggingContent(
-    component: LoggingComponent,
-    modifier: Modifier = Modifier,
-) {
-    Text("Logging section")
-    // TODO Add logging content here
+    /**
+     * This method is called when the user navigates back. It is used to perform any necessary
+     * actions or updates.
+     */
+    fun onNavigateBack()
 }

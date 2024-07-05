@@ -27,10 +27,12 @@ import androidx.compose.ui.window.ComposeViewport
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import io.ktor.http.Url
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.composeui.components.root.RootComponent
-import org.apache.solr.composeui.components.root.integration.DefaultRootComponent
+import org.apache.solr.composeui.components.root.integration.SimpleRootComponent
 import org.apache.solr.composeui.ui.root.RootContent
 import org.apache.solr.composeui.ui.theme.SolrTheme
 import org.apache.solr.composeui.utils.DefaultAppComponentContext
@@ -50,9 +52,13 @@ fun main() {
         ioContext = Dispatchers.Default,
     )
 
-    val component: RootComponent = DefaultRootComponent(
+    val url = Url(window.location.href)
+    val destination = url.parameters["dest"]
+
+    val component: RootComponent = SimpleRootComponent(
         componentContext = componentContext,
         storeFactory = DefaultStoreFactory(),
+        destination = destination,
     )
 
     ComposeViewport(document.body!!) {
