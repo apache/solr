@@ -21,6 +21,9 @@ import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
@@ -39,8 +42,8 @@ import org.apache.zookeeper.data.Stat;
 public class QueryRateLimiter extends RequestRateLimiter {
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
 
-  public QueryRateLimiter(SolrZkClient solrZkClient) {
-    super(constructQueryRateLimiterConfig(solrZkClient));
+  public QueryRateLimiter(RateLimiterConfig rateLimiterConfig) {
+    super(rateLimiterConfig);
   }
 
   public void processConfigChange(Map<String, Object> properties) throws IOException {
@@ -58,39 +61,51 @@ public class QueryRateLimiter extends RequestRateLimiter {
 
   // To be used in initialization
   @SuppressWarnings({"unchecked"})
-  private static RateLimiterConfig constructQueryRateLimiterConfig(SolrZkClient zkClient) {
+  static List<RateLimiterConfig> constructQueryRateLimiterConfig(SolrZkClient zkClient) {
     try {
-
       if (zkClient == null) {
-        return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+        return Collections.singletonList(new RateLimiterConfig());
       }
 
-      RateLimiterConfig rateLimiterConfig =
-          new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
               Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      byte[] configInput = Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY));
-
-      if (configInput.length == 0) {
-        // No Rate Limiter configuration defined in clusterprops.json. Return default configuration
-        // values
-        return rateLimiterConfig;
-      }
-
-      RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
-
-      constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
-
-      return rateLimiterConfig;
+      return parseConfigs(clusterPropsJson);
     } catch (KeeperException.NoNodeException e) {
-      return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+      return Collections.singletonList(new RateLimiterConfig());
     } catch (KeeperException | InterruptedException e) {
       throw new RuntimeException(
           "Error reading cluster property", SolrZkClient.checkInterrupted(e));
     } catch (IOException e) {
       throw new RuntimeException("Encountered an IOException " + e.getMessage());
     }
+  }
+
+  static List<RateLimiterConfig> parseConfigs(Map<String, Object> clusterPropsJson)
+      throws IOException {
+    List<RateLimiterConfig> cfgs = new ArrayList<>();
+    Object o = clusterPropsJson.get(RL_CONFIG_KEY);
+    if (o == null) {
+      cfgs.add(new RateLimiterConfig());
+      return cfgs;
+    }
+    if (o instanceof List) {
+      for (Object c : ((List<Object>) o)) {
+        cfgs.add(parseConfig(c));
+      }
+    } else {
+      cfgs.add(parseConfig(o));
+    }
+    return cfgs;
+  }
+
+  private static RateLimiterConfig parseConfig(Object o) throws IOException {
+    RateLimiterConfig rateLimiterConfig = new RateLimiterConfig();
+    RateLimiterPayload rateLimiterMeta =
+        mapper.readValue(Utils.toJSON(o), RateLimiterPayload.class);
+
+    constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
+    return rateLimiterConfig;
   }
 
   private static void constructQueryRateLimiterConfigInternal(
@@ -121,5 +136,6 @@ public class QueryRateLimiter extends RequestRateLimiter {
       rateLimiterConfig.waitForSlotAcquisition =
           rateLimiterMeta.slotAcquisitionTimeoutInMS.longValue();
     }
+    rateLimiterConfig.requestType = SolrRequest.SolrRequestType.parse(rateLimiterMeta.type);
   }
 }

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +59,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     SECURITY,
     ADMIN,
     STREAMING,
-    UNSPECIFIED
+    UNSPECIFIED;
+
+    public static SolrRequestType parse(String s) {
+      if (s == null) return QUERY;
+
+      s = s.toUpperCase(Locale.ROOT);
+      return Enum.valueOf(SolrRequestType.class, s);
+    }
   };
 
   public enum SolrClientContext {

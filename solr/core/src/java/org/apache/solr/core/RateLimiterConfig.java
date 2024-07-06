@@ -32,8 +32,10 @@ public class RateLimiterConfig {
   public boolean isSlotBorrowingEnabled;
   public int guaranteedSlotsThreshold;
 
-  public RateLimiterConfig(SolrRequest.SolrRequestType requestType) {
-    this.requestType = requestType;
+  public String type;
+
+  public RateLimiterConfig() {
+    this.requestType = SolrRequest.SolrRequestType.QUERY;
     this.isEnabled = false;
     this.allowedRequests = DEFAULT_CONCURRENT_REQUESTS;
     this.isSlotBorrowingEnabled = false;

@@ -19,18 +19,22 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.RateLimiterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +56,9 @@ public class RateLimitManager implements ClusterPropertiesListener {
   public static final int DEFAULT_CONCURRENT_REQUESTS =
       (Runtime.getRuntime().availableProcessors()) * 3;
   public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
-  private final Map<String, RequestRateLimiter> requestRateLimiterMap;
+  private volatile Map<String, RequestRateLimiter> requestRateLimiterMap;
+
+  private String currentConfig;
 
   private final Map<HttpServletRequest, RequestRateLimiter.SlotMetadata> activeRequestsMap;
 
@@ -63,19 +69,26 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
+    String old = currentConfig;
 
-    // Hack: We only support query rate limiting for now
-    QueryRateLimiter queryRateLimiter =
-        (QueryRateLimiter) getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
+    Object newRateLimitConfig = properties.get(RL_CONFIG_KEY);
+    if (newRateLimitConfig != null) newRateLimitConfig = Utils.toJSONString(newRateLimitConfig);
 
-    if (queryRateLimiter != null) {
-      try {
-        queryRateLimiter.processConfigChange(properties);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    if (Objects.equals(old, newRateLimitConfig)) {
+      // rate limit config is the same
+      return false;
     }
-
+    this.currentConfig = (String) newRateLimitConfig;
+    try {
+      List<RateLimiterConfig> cfgs = QueryRateLimiter.parseConfigs(properties);
+      Map<String, RequestRateLimiter> newRateLimiters = new HashMap<>();
+      for (RateLimiterConfig cfg : cfgs) {
+        requestRateLimiterMap.put(cfg.requestType.toString(), new QueryRateLimiter(cfg));
+      }
+      requestRateLimiterMap = newRateLimiters;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return false;
   }
 
@@ -198,9 +211,11 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
+      List<RateLimiterConfig> cfgs = QueryRateLimiter.constructQueryRateLimiterConfig(solrZkClient);
 
-      rateLimitManager.registerRequestRateLimiter(
-          new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
+      for (RateLimiterConfig cfg : cfgs) {
+        rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(cfg), cfg.requestType);
+      }
 
       return rateLimitManager;
     }
