@@ -531,7 +531,7 @@ To enable this feature, add `:tabs-sync-option:` below the page title.
 It is also possible to group tabbed sections to sync only a set of tabs, or disable the syncing entirely.
 See the https://github.com/asciidoctor/asciidoctor-tabs?tab=readme-ov-file#syntax[@asciidoctor/tabs syntax] fore more information.
 
-=== Tabs Exmaple
+=== Tabs Example
 
 . Define a tabs block and give it an optional ID.
 +
