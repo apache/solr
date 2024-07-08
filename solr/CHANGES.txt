@@ -87,6 +87,8 @@ Bug Fixes
 
 * SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
 
+* SOLR-17333: Rate-limiting feature: fix live-update of config (Michael Gibney)
+
 Dependency Upgrades
 ---------------------
 (No changes)
