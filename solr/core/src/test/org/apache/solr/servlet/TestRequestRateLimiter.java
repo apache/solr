@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -486,8 +485,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Test
   @SuppressWarnings("try")
-  public void testAdjustingConfig()
-      throws IOException, InterruptedException, ExecutionException, TimeoutException {
+  public void testAdjustingConfig() throws IOException, InterruptedException {
     Random r = random();
     int maxAllowed = 32;
     int allowed = r.nextInt(maxAllowed) + 1;
@@ -505,7 +503,6 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("tests");
     try (Closeable c = () -> ExecutorUtil.shutdownAndAwaitTermination(exec)) {
       for (int j = 0; j < 5; j++) {
-        System.err.println("for " + allowed + "/" + guaranteed);
         int allowedF = allowed;
         int borrowLimitF = borrowLimit;
         RequestRateLimiter limiterF = limiter;
