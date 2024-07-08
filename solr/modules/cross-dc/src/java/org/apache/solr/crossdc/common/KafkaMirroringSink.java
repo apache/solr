@@ -163,12 +163,9 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
         ProducerConfig.BUFFER_MEMORY_CONFIG, conf.getInt(KafkaCrossDcConf.BUFFER_MEMORY_BYTES));
     kafkaProducerProps.put(
         ProducerConfig.LINGER_MS_CONFIG, conf.getInt(KafkaCrossDcConf.LINGER_MS));
+    // should be less than time that causes consumer to be kicked out
     kafkaProducerProps.put(
-        ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG,
-        conf.getInt(
-            KafkaCrossDcConf
-                .REQUEST_TIMEOUT_MS)); // should be less than time that causes consumer to be kicked
-    // out
+        ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, conf.getInt(KafkaCrossDcConf.REQUEST_TIMEOUT_MS));
     kafkaProducerProps.put(
         ProducerConfig.COMPRESSION_TYPE_CONFIG, conf.get(KafkaCrossDcConf.ENABLE_DATA_COMPRESSION));
 

@@ -2163,7 +2163,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return file;
     }
     throw new RuntimeException(
-        "Cannot find resource in classpath or in file-system (relative to CWD): " + new File(name).getAbsolutePath());
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + new File(name).getAbsolutePath());
   }
 
   public static String TEST_HOME() {

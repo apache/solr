@@ -40,8 +40,8 @@ public class KafkaCrossDcConf extends CrossDcConf {
   public static final String DEFAULT_ENABLE_DATA_COMPRESSION = "none";
   private static final String DEFAULT_INDEX_UNMIRRORABLE_DOCS = "false";
   public static final String DEFAULT_SLOW_SEND_THRESHOLD = "1000";
-  public static final String DEFAULT_NUM_RETRIES =
-      null; // by default, we control retries with DELIVERY_TIMEOUT_MS_DOC
+  // by default, we control retries with DELIVERY_TIMEOUT_MS_DOC
+  public static final String DEFAULT_NUM_RETRIES = null;
   private static final String DEFAULT_RETRY_BACKOFF_MS = "500";
 
   private static final String DEFAULT_CONSUMER_PROCESSING_THREADS = "5";
@@ -115,20 +115,16 @@ public class KafkaCrossDcConf extends CrossDcConf {
 
   public static final String FETCH_MAX_BYTES = "solr.crossdc.fetchMaxBytes";
 
-  // The maximum delay between invocations of poll() when using consumer group management. This
-  // places
-  // an upper bound on the amount of time that the consumer can be idle before fetching more
-  // records.
-  // If poll() is not called before expiration of this timeout, then the consumer is considered
-  // failed
-  // and the group will rebalance in order to reassign the partitions to another member. For
-  // consumers
-  // using a non-null <code>group.instance.id</code> which reach this timeout, partitions will not
-  // be
-  // immediately reassigned. Instead, the consumer will stop sending heartbeats and partitions will
-  // be
-  // reassigned after expiration of <code>session.timeout.ms</code>. This mirrors the behavior of a
-  // static consumer which has shutdown.
+  /**
+   * The maximum delay between invocations of {@code poll()} when using consumer group management.
+   * This places an upper bound on the amount of time that the consumer can be idle before fetching
+   * more records. If {@code poll()} is not called before expiration of this timeout, then the
+   * consumer is considered failed and the group will rebalance in order to reassign the partitions
+   * to another member. For consumers using a non-null {@code group.instance.id} which reach this
+   * timeout, partitions will not be immediately reassigned. Instead, the consumer will stop sending
+   * heartbeats and partitions will be reassigned after expiration of {@code session.timeout.ms}.
+   * This mirrors the behavior of a static consumer which has shutdown.
+   */
   public static final String MAX_POLL_INTERVAL_MS = "solr.crossdc.maxPollIntervalMs";
 
   public static final String SESSION_TIMEOUT_MS = "solr.crossdc.sessionTimeoutMs";

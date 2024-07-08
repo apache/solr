@@ -90,11 +90,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final ThreadPoolExecutor executor;
 
   private final ExecutorService offsetCheckExecutor =
-      ExecutorUtil.newMDCAwareCachedThreadPool(
-          r -> {
-            Thread t = new Thread(r, "offset-check-thread");
-            return t;
-          });
+      ExecutorUtil.newMDCAwareCachedThreadPool(r -> new Thread(r, "offset-check-thread"));
   private final PartitionManager partitionManager;
 
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
@@ -158,10 +154,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             0L,
             TimeUnit.MILLISECONDS,
             queue,
-            r -> {
-              Thread t = new Thread(r, "KafkaCrossDcConsumerWorker");
-              return t;
-            });
+            r -> new Thread(r, "KafkaCrossDcConsumerWorker"));
     executor.prestartAllCoreThreads();
 
     solrClient = createSolrClient(conf);
@@ -187,9 +180,14 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   }
 
   /**
-   * This is where the magic happens. 1. Polls and gets the packets from the queue 2. Extract the
-   * MirroredSolrRequest objects 3. Send the request to the MirroredSolrRequestHandler that has the
-   * processing, retry, error handling logic.
+   * This is where the magic happens.
+   *
+   * <ol>
+   *   <li/>Polls and gets the packets from the queue
+   *   <li/>Extract the MirroredSolrRequest objects
+   *   <li/>Send the request to the MirroredSolrRequestHandler that has the processing, retry, error
+   *       handling logic.
+   * </ol>
    */
   @Override
   public void run() {

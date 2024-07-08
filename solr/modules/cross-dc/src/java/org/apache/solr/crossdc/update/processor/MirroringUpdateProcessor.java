@@ -289,10 +289,8 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
           log.debug("processDelete doMirroring={} isLeader={} cmd={}", true, isLeader, cmd);
       } else {
         // DBQs are sent to each shard leader, so we mirror from the original node to only mirror
-        // once
-        // In general there's no way to guarantee that these run identically on the mirror since
-        // there are no
-        // external doc versions.
+        // once. In general there's no way to guarantee that these run identically on the mirror
+        // since there are no external doc versions.
         // TODO: Can we actually support this considering DBQs aren't versioned.
 
         if (distribPhase == DistributedUpdateProcessor.DistribPhase.NONE) {
@@ -336,9 +334,9 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     Slice slice = coll.getRouter().getTargetSlice(id, doc, route, req.getParams(), coll);
 
     if (slice == null) {
-      // No slice found.  Most strict routers will have already thrown an exception, so a null
-      // return is
-      // a signal to use the slice of this core.
+      // No slice found.
+      // Most strict routers will have already thrown an exception, so a null return is a signal to
+      // use the slice of this core.
       // TODO: what if this core is not in the targeted collection?
       String shardId = cloudDesc.getShardId();
       slice = coll.getSlice(shardId);

@@ -44,9 +44,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Message processor implements all the logic to process a MirroredSolrRequest. It handles: 1.
- * Sending the update request to Solr 2. Discarding or retrying failed requests 3. Flagging requests
- * for resubmission by the underlying consumer implementation.
+ * Message processor implements all the logic to process a MirroredSolrRequest. It handles:
+ * <li/>Sending the update request to Solr
+ * <li/>Discarding or retrying failed requests
+ * <li/>Flagging requests for resubmission by the underlying consumer implementation
  */
 public class SolrMessageProcessor extends MessageProcessor
     implements IQueueHandler<MirroredSolrRequest<?>> {
@@ -71,8 +72,9 @@ public class SolrMessageProcessor extends MessageProcessor
         MDC.putCloseable("collection", getCollectionFromRequest(mirroredSolrRequest))) {
       connectToSolrIfNeeded();
 
-      // preventCircularMirroring(mirroredSolrRequest); TODO: isn't this handled by the mirroring
-      // handler?
+      // TODO: isn't this handled by the mirroring handler?
+
+      // preventCircularMirroring(mirroredSolrRequest);
 
       return processMirroredRequest(mirroredSolrRequest);
     }
@@ -96,13 +98,14 @@ public class SolrMessageProcessor extends MessageProcessor
     }
 
     // TODO: isn't this handled by the mirroring handler?
-    //        final String shouldMirror = requestParams.get("shouldMirror");
+
+    //  final String shouldMirror = requestParams.get("shouldMirror");
     //
-    //        if ("false".equalsIgnoreCase(shouldMirror)) {
-    //            log.warn("Skipping mirrored request because shouldMirror is set to false.
+    //  if ("false".equalsIgnoreCase(shouldMirror)) {
+    //    log.warn("Skipping mirrored request because shouldMirror is set to false.
     // request={}", requestParams);
-    //            return new Result<>(ResultStatus.FAILED_NO_RETRY);
-    //        }
+    //    return new Result<>(ResultStatus.FAILED_NO_RETRY);
+    //  }
     logFirstAttemptLatency(mirroredSolrRequest);
 
     Result<MirroredSolrRequest<?>> result;
@@ -141,8 +144,8 @@ public class SolrMessageProcessor extends MessageProcessor
     long sleepTimeMs = 1000;
     String backoffTimeSuggested = solrException.getMetadata("backoffTime-ms");
     if (backoffTimeSuggested != null && !"0".equals(backoffTimeSuggested)) {
-      // If backoff policy is not configured (returns "0" by default), then sleep 1 second. If
-      // configured, do as it says.
+      // If backoff policy is not configured (returns "0" by default), then sleep 1 second.
+      // If configured, do as it says.
       sleepTimeMs = Math.max(1, Long.parseLong(backoffTimeSuggested));
     }
     log.info("Consumer backoff. sleepTimeMs={}", sleepTimeMs);
@@ -384,8 +387,7 @@ public class SolrMessageProcessor extends MessageProcessor
           Thread.sleep(backoffMs);
         } catch (final InterruptedException ex) {
           // we're about to exit the method anyway, so just log this and return the item. Let the
-          // caller
-          // handle it.
+          // caller handle it.
           log.warn("Thread interrupted while backing off before retry");
           Thread.currentThread().interrupt();
         }
