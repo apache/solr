@@ -129,6 +129,14 @@ if [[ -n "$CLUSTER_ID" ]]; then
   EXPORTER_ARGS+=(-i "$CLUSTER_ID")
 fi
 
+if [[ -n "$CREDENTIALS" ]]; then
+  EXPORTER_ARGS+=(-u "$CREDENTIALS")
+fi
+
+if [[ -n "$SSL_ENABLED" ]]; then
+  EXPORTER_ARGS+=(-ssl "$SSL_ENABLED")
+fi
+
 exec "$JAVACMD" \
   $JAVA_MEM_OPTS \
   $GC_TUNE \

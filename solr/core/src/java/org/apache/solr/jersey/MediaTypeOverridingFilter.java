@@ -25,6 +25,7 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 import org.apache.solr.api.JerseyResource;
@@ -62,7 +63,9 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) requestContext.getProperty(SOLR_QUERY_REQUEST);
-    final String mediaType = V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, null);
+    final String mediaType =
+        V2ApiUtils.getMediaTypeFromWtParam(
+            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
     if (mediaType != null) {
       responseContext.getHeaders().putSingle(CONTENT_TYPE, mediaType);
     }

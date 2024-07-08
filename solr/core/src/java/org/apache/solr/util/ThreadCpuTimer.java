@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +30,13 @@ import org.slf4j.LoggerFactory;
  * {@link java.lang.management.ThreadMXBean}.
  *
  * <p>Calling code should create an instance of this class when starting the operation, and then can
- * get the {@link #getCpuTimeMs()} at any time thereafter.
+ * get the {@link #getElapsedCpuMs()} at any time thereafter.
+ *
+ * <p>This class is irrevocably not thread safe. Never allow instances of this class to be exposed
+ * to more than one thread. Acquiring an external lock will not be sufficient. This class can be
+ * considered "lock-hostile" due to its caching of timing information for a specific thread.
  */
+@NotThreadSafe
 public class ThreadCpuTimer {
   private static final long UNSUPPORTED = -1;
   public static final String CPU_TIME = "cpuTime";
@@ -56,15 +62,11 @@ public class ThreadCpuTimer {
   private final long startCpuTimeNanos;
 
   /**
-   * Create an instance to track the current thread's usage of CPU. The usage information can later
-   * be retrieved by any thread by calling {@link #getCpuTimeMs()}.
+   * Create an instance to track the current thread's usage of CPU. Usage information can later be
+   * retrieved by calling {@link #getElapsedCpuMs()}. Timing starts immediately upon construction.
    */
   public ThreadCpuTimer() {
-    if (THREAD_MX_BEAN != null) {
-      this.startCpuTimeNanos = THREAD_MX_BEAN.getCurrentThreadCpuTime();
-    } else {
-      this.startCpuTimeNanos = UNSUPPORTED;
-    }
+    this.startCpuTimeNanos = getThreadTotalCpuNs();
   }
 
   public static boolean isSupported() {
@@ -72,45 +74,47 @@ public class ThreadCpuTimer {
   }
 
   /**
-   * Return the initial value of CPU time for this thread when this instance was first created.
-   * NOTE: absolute value returned by this method has no meaning by itself, it should only be used
-   * when comparing elapsed time between this value and {@link #getCurrentCpuTimeNs()}.
+   * Return CPU time consumed by this thread since the construction of this timer object.
    *
    * @return current value, or {@link #UNSUPPORTED} if not supported.
    */
-  public long getStartCpuTimeNs() {
-    return startCpuTimeNanos;
+  public long getElapsedCpuNs() {
+    return this.startCpuTimeNanos != UNSUPPORTED
+        ? getThreadTotalCpuNs() - this.startCpuTimeNanos
+        : UNSUPPORTED;
   }
 
   /**
-   * Return current value of CPU time for this thread.
+   * Get the cpu time for the current thread since {@link Thread#start()} without throwing an
+   * exception.
    *
-   * @return current value, or {@link #UNSUPPORTED} if not supported.
+   * @see ThreadMXBean#getCurrentThreadCpuTime() for important details
+   * @return the number of nanoseconds of cpu consumed by this thread since {@code Thread.start()}.
    */
-  public long getCurrentCpuTimeNs() {
+  private long getThreadTotalCpuNs() {
     if (THREAD_MX_BEAN != null) {
-      return this.startCpuTimeNanos != UNSUPPORTED
-          ? THREAD_MX_BEAN.getCurrentThreadCpuTime() - this.startCpuTimeNanos
-          : UNSUPPORTED;
+      return THREAD_MX_BEAN.getCurrentThreadCpuTime();
     } else {
       return UNSUPPORTED;
     }
   }
 
   /**
-   * Get the CPU usage information for the thread that created this {@link ThreadCpuTimer}. The
-   * information will track the thread's cpu since the creation of this {@link ThreadCpuTimer}
-   * instance, if the VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
+   * Get the CPU usage information for the current thread since it created this {@link
+   * ThreadCpuTimer}. The result is undefined if called by any other thread.
+   *
+   * @return the thread's cpu since the creation of this {@link ThreadCpuTimer} instance. If the
+   *     VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
    */
-  public Optional<Long> getCpuTimeMs() {
-    long cpuTimeNs = getCurrentCpuTimeNs();
+  public Optional<Long> getElapsedCpuMs() {
+    long cpuTimeNs = getElapsedCpuNs();
     return cpuTimeNs != UNSUPPORTED
         ? Optional.of(TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS))
-        : Optional.of(UNSUPPORTED);
+        : Optional.empty();
   }
 
   @Override
   public String toString() {
-    return getCpuTimeMs().toString();
+    return getElapsedCpuMs().map(String::valueOf).orElse("UNSUPPORTED");
   }
 }

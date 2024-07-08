@@ -25,7 +25,6 @@
 ** xref:taking-solr-to-production.adoc[]
 ** xref:jvm-settings.adoc[]
 ** xref:upgrading-a-solr-cluster.adoc[]
-*** xref:indexupgrader-tool.adoc[]
 ** xref:backup-restore.adoc[]
 ** xref:solr-in-docker.adoc[]
 *** xref:docker-faq.adoc[]

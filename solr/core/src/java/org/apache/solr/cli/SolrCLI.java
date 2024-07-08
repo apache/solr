@@ -28,7 +28,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,6 +47,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -54,11 +58,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -78,9 +84,15 @@ public class SolrCLI implements CLIO {
 
   public static final String ZK_HOST = "localhost:9983";
 
-  public static final Option OPTION_ZKHOST =
-      Option.builder("z")
+  public static final Option OPTION_ZKHOST_DEPRECATED =
+      Option.builder("zkHost")
           .longOpt("zkHost")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use --zk-host instead")
+                  .get())
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -88,20 +100,55 @@ public class SolrCLI implements CLIO {
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + ZK_HOST
                   + '.')
-          .longOpt("zkHost")
           .build();
-  public static final Option OPTION_SOLRURL =
-      Option.builder("solrUrl")
+
+  public static final Option OPTION_ZKHOST =
+      Option.builder("z")
+          .longOpt("zk-host")
           .argName("HOST")
           .hasArg()
           .required(false)
           .desc(
-              "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
+              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                  + ZK_HOST
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRURL_DEPRECATED =
+      Option.builder("solrUrl")
+          .longOpt("solrUrl")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use --solr-url instead")
+                  .get())
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
+                  + getDefaultSolrUrl()
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRURL =
+      Option.builder("url")
+          .longOpt("solr-url")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + getDefaultSolrUrl()
                   + '.')
           .build();
   public static final Option OPTION_VERBOSE =
-      Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
+      Option.builder("v")
+          .longOpt("verbose")
+          .required(false)
+          .desc("Enable verbose command output.")
+          .build();
+  public static final Option OPTION_HELP =
+      Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
   // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
@@ -198,9 +245,10 @@ public class SolrCLI implements CLIO {
   }
 
   public static String getDefaultSolrUrl() {
-    String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
-    String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
-    String port = EnvUtils.getEnv("SOLR_PORT", "8983");
+    // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
+    String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
+    String host = EnvUtils.getProperty("solr.tool.host", "localhost");
+    String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
@@ -248,6 +296,9 @@ public class SolrCLI implements CLIO {
     else if ("mv".equals(toolType)) return new ZkMvTool();
     else if ("cp".equals(toolType)) return new ZkCpTool();
     else if ("ls".equals(toolType)) return new ZkLsTool();
+    else if ("cluster".equals(toolType)) return new ClusterTool();
+    else if ("updateacls".equals(toolType)) return new UpdateACLTool();
+    else if ("linkconfig".equals(toolType)) return new LinkConfigTool();
     else if ("mkroot".equals(toolType)) return new ZkMkrootTool();
     else if ("assert".equals(toolType)) return new AssertTool();
     else if ("auth".equals(toolType)) return new AuthTool();
@@ -270,7 +321,7 @@ public class SolrCLI implements CLIO {
 
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
@@ -284,7 +335,7 @@ public class SolrCLI implements CLIO {
       String toolName, List<Option> customOptions, String[] args) {
     Options options = new Options();
 
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
 
     if (customOptions != null) {
@@ -301,7 +352,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg) || "-help".equals(arg)) {
             hasHelpArg = true;
             break;
           }
@@ -311,7 +362,7 @@ public class SolrCLI implements CLIO {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
         exit(1);
       } else {
-        HelpFormatter formatter = new HelpFormatter();
+        HelpFormatter formatter = HelpFormatter.builder().setShowDeprecated(true).get();
         formatter.printHelp(toolName, options);
         exit(0);
       }
@@ -354,7 +405,7 @@ public class SolrCLI implements CLIO {
     Set<String> classes = new TreeSet<>();
     if (path.startsWith("file:") && path.contains("!")) {
       String[] split = path.split("!");
-      URL jar = new URL(split[0]);
+      URL jar = new URI(split[0]).toURL();
       try (ZipInputStream zip = new ZipInputStream(jar.openStream())) {
         ZipEntry entry;
         while ((entry = zip.getNextEntry()) != null) {
@@ -493,8 +544,8 @@ public class SolrCLI implements CLIO {
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print("Pass -help or -h after any COMMAND to see command-specific usage information,");
-    print("such as:    ./solr start -help or ./solr stop -h");
+    print("Pass --help or -h after any COMMAND to see command-specific usage information,");
+    print("such as:    ./solr start --help or ./solr stop -h");
   }
 
   /**
@@ -505,15 +556,29 @@ public class SolrCLI implements CLIO {
    * @return the solrUrl in the format that Solr expects to see internally.
    */
   public static String normalizeSolrUrl(String solrUrl) {
+    return normalizeSolrUrl(solrUrl, true);
+  }
+
+  /**
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and optionally logs a warning. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @param logUrlFormatWarning If a warning message should be logged about the url format
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
     if (solrUrl != null) {
       if (solrUrl.contains("/solr")) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
-        CLIO.out(
-            "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
-                + solrUrl
-                + "] to ["
-                + newSolrUrl
-                + "].");
+        if (logUrlFormatWarning) {
+          CLIO.out(
+              "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                  + solrUrl
+                  + "] to ["
+                  + newSolrUrl
+                  + "].");
+        }
         solrUrl = newSolrUrl;
       }
       if (solrUrl.endsWith("/")) {
@@ -524,25 +589,25 @@ public class SolrCLI implements CLIO {
   }
 
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
+   * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl =
+        cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      String zkHost = cli.getOptionValue("zkHost");
+      String zkHost =
+          cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
-                "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
                     + solrUrl
                     + ".");
       } else {
 
-        try (CloudSolrClient cloudSolrClient =
-            new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-                .build()) {
+        try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
           if (liveNodes.isEmpty())
@@ -551,6 +616,7 @@ public class SolrCLI implements CLIO {
 
           String firstLiveNode = liveNodes.iterator().next();
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+          solrUrl = normalizeSolrUrl(solrUrl, false);
         }
       }
     }
@@ -559,12 +625,13 @@ public class SolrCLI implements CLIO {
   }
 
   /**
-   * Get the ZooKeeper connection string from either the zkHost command-line option or by looking it
-   * up from a running Solr instance based on the solrUrl option.
+   * Get the ZooKeeper connection string from either the zk-host command-line option or by looking
+   * it up from a running Solr instance based on the solr-url option.
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = cli.getOptionValue("zkHost");
+    String zkHost =
+        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
@@ -590,6 +657,34 @@ public class SolrCLI implements CLIO {
     }
 
     return zkHost;
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli) throws Exception {
+    return getSolrZkClient(cli, getZkHost(cli));
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
+    if (zkHost == null) {
+      throw new IllegalStateException(
+          "Solr at "
+              + cli.getOptionValue("solrUrl")
+              + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
+    }
+    return new SolrZkClient.Builder()
+        .withUrl(zkHost)
+        .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
+    return getCloudHttp2SolrClient(zkHost, null);
+  }
+
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(
+      String zkHost, Http2SolrClient.Builder builder) {
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+        .withInternalClientBuilder(builder)
+        .build();
   }
 
   public static boolean safeCheckCollectionExists(
@@ -638,5 +733,10 @@ public class SolrCLI implements CLIO {
     NamedList<Object> systemInfo =
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
+  }
+
+  public static Path getConfigSetsDir(Path solrInstallDir) {
+    Path configSetsPath = Paths.get("server/solr/configsets/");
+    return solrInstallDir.resolve(configSetsPath);
   }
 }
