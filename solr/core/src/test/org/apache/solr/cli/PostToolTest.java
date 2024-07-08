@@ -114,8 +114,8 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testRunWithCollectionParam() throws Exception {
     final String collection = "testRunWithCollectionParam";
 
-    // Provide the port as an environment variable for the PostTool to look up.
-    EnvUtils.setEnv("SOLR_PORT", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    // Provide the port for the PostTool to look up.
+    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
