@@ -97,7 +97,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
   /**
    * @param conf The Kafka consumer configuration
-   * @param startLatch
+   * @param startLatch To inform the caller when the Consumer has started
    */
   public KafkaCrossDcConsumer(KafkaCrossDcConf conf, CountDownLatch startLatch) {
 

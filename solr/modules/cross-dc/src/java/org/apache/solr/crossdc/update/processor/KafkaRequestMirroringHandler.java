@@ -38,7 +38,7 @@ public class KafkaRequestMirroringHandler implements RequestMirroringHandler {
   /**
    * When called, should handle submitting the request to the queue
    *
-   * @param request
+   * @param request to mirror
    */
   @Override
   public void mirror(UpdateRequest request) throws MirroringException {
