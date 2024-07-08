@@ -183,9 +183,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
    * This is where the magic happens.
    *
    * <ol>
-   *   <li/>Polls and gets the packets from the queue
-   *   <li/>Extract the MirroredSolrRequest objects
-   *   <li/>Send the request to the MirroredSolrRequestHandler that has the processing, retry, error
+   *   <li>Polls and gets the packets from the queue
+   *   <li>Extract the MirroredSolrRequest objects
+   *   <li>Send the request to the MirroredSolrRequestHandler that has the processing, retry, error
    *       handling logic.
    * </ol>
    */

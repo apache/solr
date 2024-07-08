@@ -45,9 +45,12 @@ import org.slf4j.MDC;
 
 /**
  * Message processor implements all the logic to process a MirroredSolrRequest. It handles:
- * <li/>Sending the update request to Solr
- * <li/>Discarding or retrying failed requests
- * <li/>Flagging requests for resubmission by the underlying consumer implementation
+ *
+ * <ul>
+ *   <li>Sending the update request to Solr
+ *   <li>Discarding or retrying failed requests
+ *   <li>Flagging requests for resubmission by the underlying consumer implementation
+ * </ul>
  */
 public class SolrMessageProcessor extends MessageProcessor
     implements IQueueHandler<MirroredSolrRequest<?>> {
