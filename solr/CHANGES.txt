@@ -183,6 +183,8 @@ Bug Fixes
 
 * SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
 
+* SOLR-17333: Rate-limiting feature: fix live-update of config (Michael Gibney)
+
 Dependency Upgrades
 ---------------------
 (No changes)
