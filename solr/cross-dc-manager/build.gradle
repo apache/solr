@@ -84,3 +84,7 @@ assemblePackaging {
     include "conf/**"
   })
 }
+
+test {
+  jvmArgs '-Djdk.attach.allowAttachSelf=true'
+}

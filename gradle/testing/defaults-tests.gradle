@@ -148,6 +148,7 @@ allprojects {
 
       // Set up cwd and temp locations.
       systemProperty("java.io.tmpdir", testsTmpDir)
+      systemProperty("system.tmpdir", "${System.env.getOrDefault("TMPDIR", System.env.TMP)}")
       doFirst {
         testsCwd.mkdirs()
         testsTmpDir.mkdirs()
