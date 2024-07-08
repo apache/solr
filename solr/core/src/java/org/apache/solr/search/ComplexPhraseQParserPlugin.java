@@ -65,6 +65,8 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
    */
   static class ComplexPhraseQParser extends QParser {
 
+    // Allows method-overrides for ComplexPhraseQueryParser to access 'protected'-scoped
+    // SolrQueryParser functionality
     static final class SolrQueryParserDelegate extends SolrQueryParser {
       private SolrQueryParserDelegate(QParser parser, String defaultField) {
         super(parser, defaultField);
@@ -74,6 +76,11 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
       protected org.apache.lucene.search.Query getWildcardQuery(String field, String termStr)
           throws SyntaxError {
         return super.getWildcardQuery(field, termStr);
+      }
+
+      @Override
+      protected Query getPrefixQuery(String field, String termStr) throws SyntaxError {
+        return super.getPrefixQuery(field, termStr);
       }
 
       @Override
@@ -135,12 +142,21 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
               }
             }
 
+            /*
+             * SolrQueryParser is used to create the prefix query so that schema-aware logic
+             * and sanity checks (such as the "minimum prefix length") can be enforced.
+             *
+             * NOTE: This changes isn't viable, as it breaks some type assumptions made by
+             * ComplexPhraseQueryParser on the Lucene side.  See 'instanceof' checks there, or
+             * run 'TestComplexPhraseQParserPlugin' for some examples.
+             */
             @Override
-            protected Query getPrefixQuery(String field, String termStr) throws ParseException {
-              final var query = super.getPrefixQuery(field, termStr);
-              QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(
-                  qParserReference, query, termStr);
-              return query;
+            protected Query getPrefixQuery(String field, String termStr) {
+              try {
+                return reverseAwareParser.getPrefixQuery(field, termStr);
+              } catch (SyntaxError e) {
+                throw new RuntimeException(e);
+              }
             }
 
             private Query setRewriteMethod(org.apache.lucene.search.Query query) {
