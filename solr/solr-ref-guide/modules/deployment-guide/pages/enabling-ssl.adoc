@@ -305,7 +305,7 @@ If you created the SSL key without all DNS names or IP addresses on which Solr n
 [.tab-label]*\*nix*
 [source,terminal]
 ----
-$ bin/solr start -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+$ bin/solr start --cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 
@@ -314,7 +314,7 @@ $ bin/solr start -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181
 [.tab-label]*Windows*
 [source,powershell]
 ----
-C:\> bin\solr.cmd -cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
+C:\> bin\solr.cmd --cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
 
 ----
 ====
@@ -362,13 +362,13 @@ Create a 2-shard, replicationFactor=1 collection named mycollection using the `_
 .*nix command
 [source,bash]
 ----
-bin/solr create -c mycollection -shards 2
+bin/solr create -c mycollection --shards 2
 ----
 
 .Windows command
 [source,text]
 ----
-bin\solr.cmd create -c mycollection -shards 2
+bin\solr.cmd create -c mycollection --shards 2
 ----
 
 The `create` action will pass the `SOLR_SSL_*` properties set in your include file to the SolrJ code used to create the collection.
@@ -417,15 +417,13 @@ You should get a response that looks like this:
     "properties":{"urlScheme":"https"}}}
 ----
 
-=== Index Documents using post.jar
+=== Index Documents using bin/solr post
 
-Use `post.jar` to index some example documents to the SolrCloud collection created above:
+Use `bin/solr post` to index some example documents to the SolrCloud collection created above:
 
 [source,bash]
 ----
-$ cd example/exampledocs
-
-$ java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
+$ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/update example/exampledocs/*.xml
 ----
 
 === Query Using curl
