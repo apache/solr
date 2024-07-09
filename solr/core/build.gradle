@@ -155,6 +155,13 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
+  // For the PrometheusResponseWriter
+  implementation 'io.prometheus:prometheus-metrics-model:1.1.0'
+  implementation('io.prometheus:prometheus-metrics-exposition-formats:1.1.0', {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+  })
+
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
