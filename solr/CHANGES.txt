@@ -115,6 +115,8 @@ New Features
 
 * SOLR-17335: New "vectorSimilarity" QParser for matching documents mased on a minimum vector similarity threshold. (hossman)
 
+* SOLR-10654: Introduce output of Prometheus metrics directly from Solr. (Matthew Biscocho via David Smiley)
+
 * SOLR-17195: Configsets now include a `minPrefixQueryTermLength` setting, which instructs Solr to reject prefix queries whose prefixes are "too short".  This can
   be used as one line of defense against "runaway wildcard queries" consuming too many resources.  The setting is disabled ('-1') in the default configset but can be
   overridden with a property ('solr.query.minPrefixLength').  Users may also override their collection-wide setting for individual queries by providing a
@@ -187,6 +189,8 @@ Bug Fixes
   respected (Michael Gibney, David Smiley)
 
 * SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
+
+* SOLR-17333: Rate-limiting feature: fix live-update of config (Michael Gibney)
 
 Dependency Upgrades
 ---------------------
