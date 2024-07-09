@@ -130,10 +130,10 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
   }
 
   /**
-   * Create and init the producer using {@link this#conf} All producer configs are listed here
-   * https://kafka.apache.org/documentation/#producerconfigs
+   * Create and init the producer using {@link KafkaMirroringSink#conf}. All producer configs are
+   * listed <a href="https://kafka.apache.org/documentation/#producerconfigs">here</a>.
    *
-   * @return
+   * @return the producer
    */
   private Producer<String, MirroredSolrRequest<?>> initProducer() {
     // Initialize and return Kafka producer

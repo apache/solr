@@ -24,25 +24,22 @@ dependencies {
   api project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
+
+  implementation 'org.slf4j:slf4j-api'
   implementation 'org.apache.kafka:kafka-clients'
   implementation 'com.google.guava:guava'
-
-  implementation 'com.google.guava:guava'
-  implementation 'org.slf4j:slf4j-api'
-
-  implementation 'org.apache.kafka:kafka_2.13'
-  implementation 'org.apache.kafka:kafka-streams'
+  implementation 'io.dropwizard.metrics:metrics-core'
+  implementation 'org.apache.httpcomponents:httpclient'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation 'commons-io:commons-io'
   testImplementation 'org.mockito:mockito-core'
+  testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation 'org.apache.zookeeper:zookeeper-jute'
 
   testImplementation "org.apache.kafka:kafka-clients:3.5.1:test"
-  testImplementation 'org.apache.kafka:kafka_2.13:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-server-common:3.5.1:test'
 
   testFixturesApi 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }

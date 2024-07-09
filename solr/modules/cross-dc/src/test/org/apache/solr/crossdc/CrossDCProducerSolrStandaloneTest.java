@@ -99,7 +99,6 @@ public class CrossDCProducerSolrStandaloneTest extends SolrTestCaseJ4 {
    * @param sourceLocation the location of schema and solrconfig files to copy
    * @param solrConfigName the name of the solrconfig file to use for this core
    * @param coreDirectory an empty preexisting location use as a core directory.
-   * @throws IOException
    */
   private static void populateCoreDirectory(
       String sourceLocation, String solrConfigName, Path coreDirectory) throws IOException {
