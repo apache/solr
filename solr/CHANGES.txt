@@ -115,6 +115,8 @@ New Features
 
 * SOLR-17335: New "vectorSimilarity" QParser for matching documents mased on a minimum vector similarity threshold. (hossman)
 
+* SOLR-10654: Introduce output of Prometheus metrics directly from Solr. (Matthew Biscocho via David Smiley)
+
 Improvements
 ---------------------
 * SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
