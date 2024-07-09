@@ -30,7 +30,6 @@ grant {
   // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
-  permission java.io.FilePermission "${system.tmpdir}${/}-", "read,write,delete";
 
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
   // DirectoryFactoryTest messes with these (wtf?)
@@ -86,19 +85,13 @@ grant {
   // needed by bytebuddy
   permission java.lang.RuntimePermission "defineClass";
   permission java.lang.RuntimePermission "net.bytebuddy.createJavaDispatcher";
-  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.misc";
-  permission java.lang.RuntimePermission "loadLibrary.attach";
+  permission java.lang.RuntimePermission "net.bytebuddy.agent.getInstrumentation";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.method";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
-  permission com.sun.tools.attach.AttachPermission "createAttachProvider";
-  permission com.sun.tools.attach.AttachPermission "attachVirtualMachine";
   // Allow execution of 'java.exe' anywhere on the system for Windows
   permission java.io.FilePermission "${java.home}\bin\java.exe", "execute";
-   // Allow execution of 'java' anywhere on the system for Linux
-  permission java.io.FilePermission "${java.home}/bin/java", "execute";
-  permission java.io.FilePermission "<<ALL FILES>>/java", "execute";
 
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";

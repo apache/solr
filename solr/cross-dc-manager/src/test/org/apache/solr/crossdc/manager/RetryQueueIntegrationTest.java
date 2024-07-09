@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
@@ -54,6 +55,7 @@ import org.slf4j.LoggerFactory;
       SolrKafkaTestsIgnoredThreadsFilter.class
     })
 @ThreadLeakLingering(linger = 5000)
+@LuceneTestCase.Nightly // this test is currently too slow for non-nightly
 public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
