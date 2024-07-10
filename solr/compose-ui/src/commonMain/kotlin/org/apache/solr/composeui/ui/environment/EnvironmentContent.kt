@@ -64,7 +64,7 @@ private fun EnvironmentContentExpanded(
     ) {
         VersionsCard(
             modifier = Modifier.fillMaxWidth(),
-            versions = model.lucene,
+            versions = model.versions,
             jvm = model.jvm,
         )
         JavaPropertiesCard(
@@ -88,7 +88,7 @@ private fun EnvironmentContentMedium(
 ) {
     VersionsCard(
         modifier = Modifier.fillMaxWidth(),
-        versions = model.lucene,
+        versions = model.versions,
         jvm = model.jvm,
     )
     JavaPropertiesCard(
