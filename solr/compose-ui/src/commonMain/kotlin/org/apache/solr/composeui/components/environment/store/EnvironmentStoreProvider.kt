@@ -22,7 +22,7 @@ internal class EnvironmentStoreProvider(
     fun provide(): EnvironmentStore = object :
         EnvironmentStore,
         Store<Intent, State, Nothing> by storeFactory.create(
-            name = "HomeMainStore",
+            name = "EnvironmentStore",
             initialState = State(),
             bootstrapper = SimpleBootstrapper(Action.FetchInitialSystemData),
             executorFactory = ::ExecutorImpl,
