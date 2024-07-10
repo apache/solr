@@ -64,5 +64,10 @@ public interface ClusterFileStoreApis {
   SolrJerseyResponse deleteFile(
       @Parameter(description = "Path to a file or directory within the filestore")
           @PathParam("path")
-          String path);
+          String path,
+      @Parameter(
+              description =
+                  "Indicates whether the deletion should only be done on the receiving node.  For internal use only")
+          @QueryParam("localDelete")
+          Boolean localDelete);
 }
