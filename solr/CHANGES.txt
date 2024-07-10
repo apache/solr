@@ -129,6 +129,8 @@ Improvements
 
 * SOLR-17109: Give security manager explicit read access to sharedLib (Tomás Fernández Löbbe via Eric Pugh)
 
+* SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
