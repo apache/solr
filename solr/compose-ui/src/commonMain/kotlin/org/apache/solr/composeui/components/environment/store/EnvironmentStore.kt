@@ -10,13 +10,27 @@ import org.apache.solr.composeui.components.environment.data.Versions
 import org.apache.solr.composeui.components.environment.store.EnvironmentStore.Intent
 import org.apache.solr.composeui.components.environment.store.EnvironmentStore.State
 
+/**
+ * State store interface of the environment.
+ *
+ * Implementations of this state store manage detailed information of the environment.
+ */
 internal interface EnvironmentStore : Store<Intent, State, Nothing> {
 
+    /**
+     * Intent for interacting with the environment store.
+     */
     sealed interface Intent {
 
+        /**
+         * Intent for requesting system data.
+         */
         data object FetchSystemData: Intent
     }
 
+    /**
+     * State class that holds the data of the [EnvironmentStore].
+     */
     data class State(
         val mode: SystemMode = SystemMode.Unknown,
         val zkHost: String = "",

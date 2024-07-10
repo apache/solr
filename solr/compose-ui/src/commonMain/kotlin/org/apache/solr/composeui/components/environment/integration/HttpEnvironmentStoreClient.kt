@@ -9,6 +9,15 @@ import org.apache.solr.composeui.components.environment.data.JavaProperty
 import org.apache.solr.composeui.components.environment.data.SystemData
 import org.apache.solr.composeui.components.environment.store.EnvironmentStoreProvider
 
+/**
+ * Client implementation of the [EnvironmentStoreProvider.Client] that makes use
+ * of a preconfigured HTTP client for accessing the Solr API.
+ *
+ * @property httpClient HTTP client to use for accessing the API. The client has to be
+ * configured with a default request that includes the host, port and schema. The client
+ * should also include the necessary authentication data if authentication / authorization
+ * is enabled.
+ */
 class HttpEnvironmentStoreClient(
     private val httpClient: HttpClient,
 ) : EnvironmentStoreProvider.Client {
@@ -28,6 +37,8 @@ class HttpEnvironmentStoreClient(
 
         return when {
             response.status.isSuccess() -> {
+
+                // Map the response data to a list of JavaProperty for better readability
                 val javaProperties = response.body<JavaPropertiesResponse>()
                     .properties
                     .map { (key, value) -> key to value }
