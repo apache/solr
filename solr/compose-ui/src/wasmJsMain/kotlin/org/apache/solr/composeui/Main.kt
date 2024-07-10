@@ -19,6 +19,7 @@ package org.apache.solr.composeui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -27,6 +28,8 @@ import androidx.compose.ui.window.ComposeViewport
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.Url
 import kotlinx.browser.document
 import kotlinx.browser.window
@@ -36,6 +39,7 @@ import org.apache.solr.composeui.components.root.integration.SimpleRootComponent
 import org.apache.solr.composeui.ui.root.RootContent
 import org.apache.solr.composeui.ui.theme.SolrTheme
 import org.apache.solr.composeui.utils.DefaultAppComponentContext
+import org.apache.solr.composeui.utils.getDefaultClient
 
 /**
  * Entry point of the Compose application for all wasmJs (browser) targets.
@@ -55,15 +59,22 @@ fun main() {
     val url = Url(window.location.href)
     val destination = url.parameters["dest"]
 
+    // TODO Set default request url to values from window location
+    val httpClient = getDefaultClient()
+
     val component: RootComponent = SimpleRootComponent(
         componentContext = componentContext,
         storeFactory = DefaultStoreFactory(),
+        httpClient = httpClient,
         destination = destination,
     )
 
     ComposeViewport(document.body!!) {
         SolrTheme(useDarkTheme = isSystemInDarkTheme()) {
-            Surface(modifier = Modifier.fillMaxSize()) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+            ) {
                 RootContent(component)
             }
         }

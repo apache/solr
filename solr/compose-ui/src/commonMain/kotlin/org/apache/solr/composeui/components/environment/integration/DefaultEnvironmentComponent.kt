@@ -17,11 +17,33 @@
 
 package org.apache.solr.composeui.components.environment.integration
 
+import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
+import io.ktor.client.HttpClient
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.apache.solr.composeui.components.environment.EnvironmentComponent
+import org.apache.solr.composeui.components.environment.store.EnvironmentStoreProvider
 import org.apache.solr.composeui.utils.AppComponentContext
+import org.apache.solr.composeui.utils.coroutineScope
+import org.apache.solr.composeui.utils.map
 
 class DefaultEnvironmentComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
-) : EnvironmentComponent, AppComponentContext by componentContext
+    httpClient: HttpClient,
+) : EnvironmentComponent, AppComponentContext by componentContext {
+
+    private val mainScope = coroutineScope(mainContext)
+
+    private val store = instanceKeeper.getStore {
+        EnvironmentStoreProvider(
+            storeFactory = storeFactory,
+            client = HttpEnvironmentStoreClient(httpClient),
+            ioContext = ioContext,
+        ).provide()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val model = store.stateFlow.map(mainScope, environmentStateToModel)
+}

@@ -22,6 +22,7 @@ import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import org.apache.solr.composeui.components.main.MainComponent
 import org.apache.solr.composeui.components.main.integration.DefaultMainComponent
@@ -55,6 +56,7 @@ class SimpleRootComponent(
     constructor(
         componentContext: AppComponentContext,
         storeFactory: StoreFactory,
+        httpClient: HttpClient,
         destination: String? = null,
     ) : this(
         componentContext = componentContext,
@@ -63,6 +65,7 @@ class SimpleRootComponent(
             DefaultMainComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
+                httpClient = httpClient,
                 destination = destination,
             )
         },

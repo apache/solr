@@ -19,6 +19,7 @@ package org.apache.solr.composeui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
@@ -29,6 +30,8 @@ import com.arkivanov.decompose.extensions.compose.lifecycle.LifecycleController
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.mvikotlin.core.utils.setMainThreadId
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.defaultRequest
 import java.awt.Dimension
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.composeui.components.root.RootComponent
@@ -36,6 +39,7 @@ import org.apache.solr.composeui.components.root.integration.SimpleRootComponent
 import org.apache.solr.composeui.ui.root.RootContent
 import org.apache.solr.composeui.ui.theme.SolrTheme
 import org.apache.solr.composeui.utils.DefaultAppComponentContext
+import org.apache.solr.composeui.utils.getDefaultClient
 
 /**
  * Entry point of the Compose application for all JVM-based (desktop) targets.
@@ -53,12 +57,16 @@ fun main() {
 
     val storeFactory = DefaultStoreFactory()
 
+    // TODO Let the user provide the URL via input field on desktop
+    val httpClient = getDefaultClient()
+
     val root: RootComponent = runOnUiThread {
         setMainThreadId(Thread.currentThread().id)
 
         SimpleRootComponent(
             componentContext = componentContext,
             storeFactory = storeFactory,
+            httpClient = httpClient,
         )
     }
 
@@ -73,8 +81,11 @@ fun main() {
         ) {
             window.minimumSize = Dimension(720, 560)
 
-            SolrTheme(useDarkTheme = isSystemInDarkTheme()) {
-                Surface(modifier = Modifier.fillMaxSize()) {
+            SolrTheme(useDarkTheme = false) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
                     RootContent(root)
                 }
             }

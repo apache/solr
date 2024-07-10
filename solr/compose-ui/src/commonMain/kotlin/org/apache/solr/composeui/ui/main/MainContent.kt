@@ -19,20 +19,18 @@ package org.apache.solr.composeui.ui.main
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import org.apache.solr.composeui.components.main.MainComponent
-import org.apache.solr.composeui.ui.navigation.MainMenu
-import org.apache.solr.composeui.components.main.MainNavigationComponent
 import org.apache.solr.composeui.components.main.integration.asMainMenu
 import org.apache.solr.composeui.ui.environment.EnvironmentContent
 import org.apache.solr.composeui.ui.logging.LoggingContent
@@ -49,6 +47,7 @@ fun MainContent(
     modifier: Modifier = Modifier,
 ) {
     val childStack by component.childStack.subscribeAsState()
+    val scrollState = rememberScrollState()
 
     Row(modifier = modifier) {
         NavigationSideBar(
@@ -65,11 +64,13 @@ fun MainContent(
             when(val child = it.instance) {
                 is MainComponent.Child.Environment -> EnvironmentContent(
                     component = child.component,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .padding(16.dp),
                 )
                 is MainComponent.Child.Logging -> LoggingContent(
                     component = child.component,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

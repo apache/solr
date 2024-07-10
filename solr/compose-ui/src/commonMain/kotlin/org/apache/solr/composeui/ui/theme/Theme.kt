@@ -435,7 +435,7 @@ fun SolrTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         shapes = SolrShapes,
-        typography = SolrCodeTypography,
+        typography = SolrTypography(),
         content = content,
     )
 }
