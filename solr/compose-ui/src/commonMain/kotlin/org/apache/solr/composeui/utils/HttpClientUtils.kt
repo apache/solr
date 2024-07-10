@@ -14,10 +14,12 @@ fun getDefaultClient() = HttpClient {
     defaultRequest {
         url("http://localhost:8983/")
     }
+
     install(ContentNegotiation) {
         json(
             Json {
                 ignoreUnknownKeys = true
+                allowSpecialFloatingPointValues = true
             }
         )
     }
