@@ -13,6 +13,13 @@ import org.apache.solr.composeui.components.environment.data.SystemData
 import org.apache.solr.composeui.components.environment.store.EnvironmentStore.Intent
 import org.apache.solr.composeui.components.environment.store.EnvironmentStore.State
 
+/**
+ * Store provider that [provide]s instances of [EnvironmentStore].
+ *
+ * @property storeFactory Store factory to use for creating the store.
+ * @property client Client implementation to use for resolving [Intent]s and [Action]s.
+ * @property ioContext Coroutine context used for IO activity.
+ */
 internal class EnvironmentStoreProvider(
     private val storeFactory: StoreFactory,
     private val client: Client,
@@ -31,28 +38,52 @@ internal class EnvironmentStoreProvider(
 
     private sealed interface Action {
 
+        /**
+         * Action used for initiating the initial fetch of environment data.
+         */
         data object FetchInitialSystemData: Action
     }
 
     private sealed interface Message {
 
+        /**
+         * Message that is dispatched when system data have been retrieved / updated.
+         *
+         * @property data New system data that have been received.
+         */
         data class SystemDataUpdated(val data: SystemData) : Message
 
+        /**
+         * Message that is dispatched when java properties have been retrieved / updated.
+         *
+         * @property properties New list of java properties.
+         */
         data class JavaPropertiesUpdated(val properties: List<JavaProperty>) : Message
     }
 
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Action, State, Message, Nothing>() {
 
         override fun executeAction(action: Action) = when(action) {
-            Action.FetchInitialSystemData -> fetchSystemData()
+            Action.FetchInitialSystemData -> {
+                fetchSystemData()
+                fetchJavaProperties()
+            }
         }
 
         override fun executeIntent(intent: Intent) {
             when (intent) {
-                Intent.FetchSystemData -> fetchSystemData()
+                Intent.FetchSystemData -> {
+                    fetchSystemData()
+                    fetchJavaProperties()
+                }
             }
         }
 
+        /**
+         * Fetches the system data that are part of the environment state.
+         *
+         * If successful, a [Message.SystemDataUpdated] with the new properties is dispatched.
+         */
         private fun fetchSystemData() {
             scope.launch { // TODO Add coroutine exception handler
                 withContext(ioContext) {
@@ -69,8 +100,27 @@ internal class EnvironmentStoreProvider(
                 // TODO Add error handling
             }
         }
+
+        /**
+         * Fetches the java properties that are part of the environment state.
+         *
+         * If successful, a [Message.JavaPropertiesUpdated] with the new properties is dispatched.
+         */
+        private fun fetchJavaProperties() {
+            scope.launch { // TODO Add coroutine exception handler
+                withContext(ioContext) {
+                    client.getJavaProperties()
+                }.onSuccess {
+                    dispatch(Message.JavaPropertiesUpdated(it))
+                }
+                // TODO Add error handling
+            }
+        }
     }
 
+    /**
+     * Reducer implementation that consumes [Message]s and updates the store's [State].
+     */
     private object ReducerImpl : Reducer<State, Message> {
         override fun State.reduce(msg: Message): State = when (msg) {
             is Message.SystemDataUpdated -> copy(
@@ -90,6 +140,9 @@ internal class EnvironmentStoreProvider(
         }
     }
 
+    /**
+     * Client interface for fetching environment information.
+     */
     interface Client {
 
         /**

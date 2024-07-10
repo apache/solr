@@ -28,6 +28,9 @@ import org.apache.solr.composeui.utils.AppComponentContext
 import org.apache.solr.composeui.utils.coroutineScope
 import org.apache.solr.composeui.utils.map
 
+/**
+ * Default implementation of the [EnvironmentComponent].
+ */
 class DefaultEnvironmentComponent(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
