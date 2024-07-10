@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.automirrored.rounded.TextSnippet
@@ -41,6 +43,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,18 +71,24 @@ import org.jetbrains.compose.resources.stringResource
  * The application's main navigation / sidebar. It is used for navigation between the different
  * sections.
  */
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,
     selectedItem: MainMenu? = null,
     modifier: Modifier = Modifier,
 ) = Row(modifier = modifier) {
+    val scrollState = rememberScrollState(48 * (selectedItem?.ordinal ?: 0))
+
     Column(Modifier.fillMaxHeight()) {
         SolrLogo(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f)
+                .verticalScroll(scrollState),
+        ) {
             MainMenu.entries.forEach { item ->
                 MenuElement(
                     text = stringResource(getMainMenuText(item)),
@@ -88,15 +99,15 @@ fun NavigationSideBar(
                     onClick = { onNavigate(item) },
                 )
             }
-        }
 
-        // TODO Add condition for displaying logout button if user identity / auth present
-        MenuElement(
-            text = stringResource(Res.string.logout),
-            imageVector = Icons.AutoMirrored.Rounded.Logout,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {}, // TODO Call logout on auth component
-        )
+            // TODO Add condition for displaying logout button if user identity / auth present
+            MenuElement(
+                text = stringResource(Res.string.logout),
+                imageVector = Icons.AutoMirrored.Rounded.Logout,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {}, // TODO Call logout on auth component
+            )
+        }
     }
     VerticalDivider()
 }
