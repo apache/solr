@@ -20,25 +20,21 @@ package org.apache.solr.composeui.components.environment
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.composeui.components.environment.data.JavaProperty
 import org.apache.solr.composeui.components.environment.data.JvmData
-import org.apache.solr.composeui.components.environment.data.SecurityConfig
-import org.apache.solr.composeui.components.environment.data.SystemInformation
-import org.apache.solr.composeui.components.environment.data.SystemMode
 import org.apache.solr.composeui.components.environment.data.Versions
 
+/**
+ * Component interface that represents the environment section.
+ */
 interface EnvironmentComponent {
 
     val model: StateFlow<Model>
 
+    /**
+     * State class that holds values of the [EnvironmentComponent]'s sate.
+     */
     data class Model(
-        val mode: SystemMode = SystemMode.Unknown,
-        val zkHost: String = "",
-        val solrHome: String = "",
-        val coreRoot: String = "",
-        val lucene: Versions = Versions(),
+        val versions: Versions = Versions(),
         val jvm: JvmData = JvmData(),
-        val security: SecurityConfig = SecurityConfig(),
-        val system: SystemInformation = SystemInformation(),
-        val node: String = "",
         val javaProperties: List<JavaProperty> = emptyList(),
     )
 }
