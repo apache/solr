@@ -21,7 +21,7 @@ Improvements
 
 * SOLR-17077: When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. (Pierre Salagnac)
 
-* SOLR-17105: A base "location" is no required when using LocalFileSystemRepository for backup/restore. (Houston Putman, David Smiley, janhoy)
+* SOLR-17105: A base "location" is now required when using LocalFileSystemRepository for backup/restore. (Houston Putman, David Smiley, janhoy)
 
 Optimizations
 ---------------------
