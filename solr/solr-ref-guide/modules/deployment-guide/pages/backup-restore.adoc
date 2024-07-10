@@ -414,16 +414,16 @@ Defines whether the backup repository should check the index files integrity bef
 
 === LocalFileSystemRepository
 
-LocalFileSystemRepository stores and retrieves backup files anywhere on the accessible filesystem.
+`LocalFileSystemRepository` stores and retrieves backup files anywhere on the accessible filesystem.
 Files can be stored on "local" disk, or on network-mounted drives that appear local to the filesystem.
 
-WARNING: SolrCloud administrators looking to use LocalFileSystemRepository in tandem with network drives should be careful to make the drive available at the same location on each Solr node.
+WARNING: SolrCloud administrators looking to use `LocalFileSystemRepository` in tandem with network drives should be careful to make the drive available at the same location on each Solr node.
 Strictly speaking, the mount only needs to be present on the node doing the backup (or restore), and on the node currently serving as the "Overseer".
 However since the "overseer" role often moves from node to node in a cluster, it is generally recommended that backup drives be added to all nodes uniformly.
 
-A LocalFileSystemRepository instance is used as a default by any backup and restore commands that don't explicitly provide a `repository` parameter or have a default specified in `solr.xml`.
+A `LocalFileSystemRepository` instance is used as a default by any backup and restore commands that don't explicitly provide a `repository` parameter or have a default specified in `solr.xml`.
 
-LocalFileSystemRepository accepts the following configuration option:
+`LocalFileSystemRepository` accepts the following configuration option:
 
 `location`::
 +
@@ -432,12 +432,14 @@ LocalFileSystemRepository accepts the following configuration option:
 |Required |Default: none
 |===
 +
-A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
+A valid *absolute* file path (accessible to Solr locally) to use for backup storage and retrieval.
 Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
-When a user does provide a `location` parameter in their Backup or Restore API command, the path must be a subpath of the repository's `location`.
+When a user does provide a `location` parameter that is an absolute-path in their Backup or Restore API command, the path must be a subpath of the repository's `location`.
 +
 Note: this location should be included in the configured xref:configuration-guide:configuring-solr-xml.adoc#the-solr-element[solr.xml's "allowPaths"].
-
++
+This can be provided for the implicit (default) `LocalFileSystemRepository` via the `solr.backups.path` system property or `SOLR_BACKUPS_PATH` environment variable.
++
 An example configuration using this property can be found below.
 
 [source,xml]
@@ -456,7 +458,7 @@ Stores and retrieves backup files from HDFS directories.
 
 This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
-HdfsBackupRepository accepts the following configuration options:
+`HdfsBackupRepository` accepts the following configuration options:
 
 `solr.hdfs.buffer.size`::
 +
@@ -516,7 +518,7 @@ Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
 
 This is provided via the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
-GCSBackupRepository accepts the following options for overall configuration:
+`GCSBackupRepository` accepts the following options for overall configuration:
 
 `gcsBucket`::
 +
@@ -526,7 +528,7 @@ GCSBackupRepository accepts the following options for overall configuration:
 |===
 +
 The GCS bucket to read and write all backup files to.
-If not specified, GCSBackupRepository will use the value of the `GCS_BUCKET` environment variable.
+If not specified, `GCSBackupRepository` will use the value of the `GCS_BUCKET` environment variable.
 If both values are absent, the value `solrBackupsBucket` will be used as a default.
 
 `gcsCredentialPath`::
@@ -537,7 +539,7 @@ If both values are absent, the value `solrBackupsBucket` will be used as a defau
 |===
 +
 A path on the local filesystem (accessible by Solr) to a https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Google Cloud service account key] file.
-If not specified, GCSBackupRepository will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
+If not specified, `GCSBackupRepository` will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
 If both values are absent and Solr is running inside GCP, the GCS client will attempt to authenticate using GCP's "Compute Engine Metadata Server" or https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity[Workload Identity] features.
 If both values are absent and Solr is running outside of GCP, it will be unable to authenticate and any backup or restore operations will fail.
 
@@ -552,10 +554,10 @@ A valid "directory" path in the given GCS bucket to us for backup storage and re
 (GCS uses a flat storage model, but Solr's backup functionality names blobs in a way that approximates hierarchical directory storage.)
 Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands.
 
-In addition to these properties for overall configuration, GCSBackupRepository gives users detailed control over the client used to communicate with GCS.
+In addition to these properties for overall configuration, `GCSBackupRepository` gives users detailed control over the client used to communicate with GCS.
 These properties are unlikely to interest most users, but may be valuable for those looking to micromanage performance or subject to a flaky network.
 
-GCSBackupRepository accepts the following advanced client-configuration options:
+`GCSBackupRepository` accepts the following advanced client-configuration options:
 
 `gcsWriteBufferSizeBytes`::
 +
@@ -755,7 +757,7 @@ An example configuration to enable S3 backups and restore can be seen below:
 </backup>
 ----
 
-S3BackupRepository accepts the following options (in `solr.xml`) for overall configuration:
+`S3BackupRepository` accepts the following options (in `solr.xml`) for overall configuration:
 
 `s3.bucket.name`::
 +

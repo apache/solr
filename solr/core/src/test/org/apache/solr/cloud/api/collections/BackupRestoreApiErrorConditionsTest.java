@@ -78,7 +78,6 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     final RequestStatusState backupState =
         CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
             .setRepositoryName(VALID_REPOSITORY_NAME)
-            .setLocation(fullBackupDir.toString())
             .setLocation(validBackupLocation.toString())
             .processAndWait(cluster.getSolrClient(), ASYNC_COMMAND_WAIT_PERIOD_MILLIS);
     assertEquals(RequestStatusState.COMPLETED, backupState);

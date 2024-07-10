@@ -1627,6 +1627,7 @@ s|Required |Default: none
 +
 The location on a shared drive for the backup command to write to.
 This parameter is required, unless a default location is defined on the repository configuration, or set as a xref:cluster-node-management.adoc#clusterprop[cluster property].
+If the path is not absolute then given `location` will be computed relative to the xref:backup-restore.adoc#backuprestore-storage-repositories[Backup Repository's] default `location`.
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.

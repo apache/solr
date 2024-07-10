@@ -37,6 +37,7 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
@@ -58,7 +59,7 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
         Optional.<String>ofNullable(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))
             .map(Path::of)
             .or(
-                () -> Optional.ofNullable(System.getProperty("solr.backups.path")).map(Path::of)
+                () -> Optional.ofNullable(EnvUtils.getProperty("solr.backups.path")).map(Path::of)
             )
             .orElseThrow(
                 () ->
@@ -67,6 +68,12 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
                         "Required init param "
                             + CoreAdminParams.BACKUP_LOCATION
                             + " was not provided."));
+    if (!baseLocation.isAbsolute()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Default backup location is not absolute: "
+              + baseLocation);
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -79,30 +86,42 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
    * This method returns the location where the backup should be stored (or restored from). An error
    * will be thrown if the given directory is outside of the repository's base location.
    *
-   * @param override The location parameter supplied by the user.
-   * @return If <code>override</code> is not null then return the same value Otherwise return the
-   *     default configuration value for the {@linkplain CoreAdminParams#BACKUP_LOCATION} parameter.
+   * <ul>
+   *   <li>If the given <code>override</code> is not <code>null</code>:
+   *   <ul>
+   *     <li>If the given <code>override</code> is a relative path, then the <code>backupLocation</code> will be the <code>override</code> path relative to the repository's {@link #baseLocation}.
+   *     <li>If the given <code>override</code> is an absolute path, then the <code>backupLocation</code> will be the <code>override</code> path.
+   *   </ul>
+   *   <li>If the given <code>override</code> is <code>null</code>, then the <code>backupLocation</code> will be the repository's {@link #baseLocation}.
+   * </ul>
+   *
+   * The resulting <code>backupLocation</code> must be a subdirectory of the repository's {@link #baseLocation} or the directory itself, for security purposes.
+   *
+   * @param override The location parameter supplied by the user. This can be a path or a URI.
+   * @return the calculated <code>backupLocation</code>
    * @throws SolrException if the given path cannot be resolved as a subdirectory of the
-   *     repository's base location
+   *     repository's {@link #baseLocation}
    */
   @Override
   public String getBackupLocation(String override) {
     if (override == null) {
       return baseLocation.toString();
     }
-    URI overrideUri = null;
+    String overridePathString = override;
     try {
-      overrideUri = new URI(override);
-      if (!overrideUri.isAbsolute()) {
-        overrideUri = Path.of(override).toUri();
-      }
+      URI overrideUri = new URI(override);
+      // If no exception was thrown, then that means a URI was passed in.
+      // Use the path from the URI instead of the URI string itself.
+      // URI Paths must be absolute.
+      overridePathString = overrideUri.getPath();
     } catch (URISyntaxException ex) {
-      overrideUri = Path.of(override).toUri();
+      // Just ignore this, the override is not a URI
     }
-    Path overridePath = Path.of(overrideUri.getPath());
+    Path overridePath = Path.of(overridePathString);
     if (!overridePath.isAbsolute()) {
       overridePath = baseLocation.resolve(overridePath);
     }
+    overridePath = overridePath.normalize();
     if (!overridePath.startsWith(baseLocation)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
