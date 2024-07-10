@@ -41,8 +41,7 @@
 # By default the script sets up a local Solr cloud with 4 nodes, in a local
 # directory with ISO date as the name. A local zookeeper at 2181 or the
 # specified port is presumed to be available, a new zk chroot is used for each
-# cluster based on the file system path to the cluster directory. the default
-# solr.xml is added to this solr root dir in zookeeper.
+# cluster based on the file system path to the cluster directory.
 #
 # Debugging ports are automatically opened for each node starting with port 5001
 #
@@ -60,6 +59,9 @@
 #           that not using the embedded zookeeper is key to being able
 #           switch between testing setups and to test vs alternate versions
 #           of zookeeper if desired.
+# 
+#           An option is:
+#           docker run --name my-zookeeper -p 2181:2181 -d zookeeper
 #
 # SETUP: 1. Place this script in a directory intended to hold all your
 #           testing installations of solr.
@@ -80,7 +82,7 @@
 #
 #   ./cloud.sh stop
 #
-# Compile and push new code to a running cluster (incl bounce the cluster)
+# Compile and push new code to a running cluster (including bounce the cluster)
 #
 #   ./cloud.sh restart -r
 #
@@ -311,13 +313,9 @@ start(){
   findSolr
 
   echo "SOLR=$SOLR"
-  SOLR_ROOT=$("${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd getfile "/solr_${SAFE_DEST}" /dev/stdout);
-  if [[ -z ${SOLR_ROOT} ]]; then
-    # Need a fresh root in zookeeper...
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd makepath "/solr_${SAFE_DEST}";
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd put "/solr_${SAFE_DEST}" "created by cloud.sh"; # so we can test for existence next time
-  fi
-
+  # Create the root if it doesn't already exist
+  ${SOLR}/bin/solr zk mkroot "/solr_${SAFE_DEST}" -z localhost:${ZK_PORT}
+  
   ACTUAL_NUM_NODES=$(ls -1 -d ${CLUSTER_WD}/n* | wc -l )
   if [[ "$NUM_NODES" -eq 0 ]]; then
     NUM_NODES=${ACTUAL_NUM_NODES}
@@ -338,7 +336,7 @@ start(){
     mkdir -p "${CLUSTER_WD}/n${i}"
     argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -p 898${i} -m $MEMORY \
     -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i} \
-    -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
+    -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
     ${SOLR}/bin/solr start "${argsArray[@]}"
@@ -354,7 +352,7 @@ stop() {
   SOLR=${CLUSTER_WD}/$(find . -maxdepth 1 -name 'solr*' -type d -print0 | xargs -0 ls -1 -td | sed -E 's/\.\/(solr.*)/\1/' | head -n1)
   popd
 
-  "${SOLR}/bin/solr" stop -all
+  "${SOLR}/bin/solr" stop --all
 }
 
 ########################

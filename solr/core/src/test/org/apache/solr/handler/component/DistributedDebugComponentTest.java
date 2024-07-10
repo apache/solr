@@ -63,8 +63,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = getBaseUrl();
 
-    collection1 = getHttpSolrClient(url + "/collection1");
-    collection2 = getHttpSolrClient(url + "/collection2");
+    collection1 = getHttpSolrClient(url, "collection1");
+    collection2 = getHttpSolrClient(url, "collection2");
 
     String urlCollection1 = getBaseUrl() + "/" + "collection1";
     String urlCollection2 = getBaseUrl() + "/" + "collection2";
@@ -403,7 +403,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
 
   public void testTolerantSearch() throws SolrServerException, IOException {
-    String badShard = DEAD_HOST_1;
+    String badShard = DEAD_HOST_1 + "/solr/collection1";
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.set("debug", "true");

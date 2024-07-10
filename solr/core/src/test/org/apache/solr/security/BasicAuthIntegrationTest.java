@@ -298,7 +298,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
       assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
-      String[] toolArgs = new String[] {"status", "-solrUrl", baseUrl};
+      String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
       StatusTool tool = new StatusTool(stdoutSim);
@@ -330,7 +330,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       assertPkiAuthMetricsMinimums(3, 3, 0, 0, 0, 0);
 
       // Query that succeeds
-      GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params);
+      final var req = new QueryRequest(params);
       req.setBasicAuthCredentials("harry", "HarryIsUberCool");
       cluster.getSolrClient().request(req, COLLECTION);
 

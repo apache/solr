@@ -31,14 +31,14 @@ import org.apache.solr.common.params.CollectionAdminParams;
 public interface ClusterStateProvider extends SolrCloseable {
 
   static ClusterStateProvider newZkClusterStateProvider(
-      Collection<String> zkHosts, String zkChroot) {
+      Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
     // instantiate via reflection so that we don't depend on ZK
     try {
       var constructor =
           Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider")
               .asSubclass(ClusterStateProvider.class)
-              .getConstructor(Collection.class, String.class);
-      return constructor.newInstance(zkHosts, zkChroot);
+              .getConstructor(Collection.class, String.class, Boolean.TYPE);
+      return constructor.newInstance(zkHosts, zkChroot, canUseZkACLs);
     } catch (InvocationTargetException e) {
       if (e.getCause() instanceof RuntimeException) {
         throw (RuntimeException) e.getCause();
@@ -53,7 +53,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   /**
    * Obtain the state of the collection (cluster status).
    *
-   * @return the collection state, or null is collection doesn't exist
+   * @return the collection state, or null only if collection doesn't exist
    */
   ClusterState.CollectionRef getState(String collection);
 

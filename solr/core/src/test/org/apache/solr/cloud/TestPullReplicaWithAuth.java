@@ -16,13 +16,10 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.TestPullReplica.assertNumberOfReplicas;
 import static org.apache.solr.cloud.TestPullReplica.assertUlogPresence;
 import static org.apache.solr.cloud.TestPullReplica.waitForDeletion;
 import static org.apache.solr.cloud.TestPullReplica.waitForNumDocsInAllReplicas;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -43,48 +40,24 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
-  private static final String USER = "solr";
-  private static final String PASS = "SolrRocksAgain";
   private static final String collectionName = "testPullReplicaWithAuth";
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON =
-        Utils.toJSONString(
-            Map.of(
-                "authorization",
-                Map.of(
-                    "class",
-                    RuleBasedAuthorizationPlugin.class.getName(),
-                    "user-role",
-                    singletonMap(USER, "admin"),
-                    "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
-                "authentication",
-                Map.of(
-                    "class",
-                    BasicAuthPlugin.class.getName(),
-                    "blockUnknown",
-                    true,
-                    "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)))));
-
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
-        .withSecurityJson(SECURITY_JSON)
+        .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
   }
 
   private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
-    req.setBasicAuthCredentials(USER, PASS);
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return req;
   }
 
@@ -117,17 +90,18 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
         assertEquals(
             numDocs,
             queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
       }
 
       List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
-      waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
+      waitForNumDocsInAllReplicas(
+          numDocs, pullReplicas, "*:*", SecurityJson.USER, SecurityJson.PASS);
 
       for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+        try (SolrClient pullReplicaClient = getHttpSolrClient(r)) {
           QueryResponse statsResponse =
               queryWithBasicAuth(
                   pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
@@ -170,7 +144,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     s = docCollection.getSlices().iterator().next();
     pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
     assertEquals(numPullReplicas, pullReplicas.size());
-    waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
+    waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", SecurityJson.USER, SecurityJson.PASS);
 
     withBasicAuth(CollectionAdminRequest.deleteCollection(collectionName))
         .process(cluster.getSolrClient());

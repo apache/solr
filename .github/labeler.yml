@@ -1,0 +1,242 @@
+# Add 'dependencies' label to any PR updating dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+        - versions.props
+        - versions.lock
+        - solr/licenses/**
+
+# Add 'documentation' label to any changes within ref-guide or dev-docs
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+        - dev-docs/**
+        - solr/solr-ref-guide/**
+        - solr/documentation/**
+        - help/**
+        - solr/README.adoc
+        - CONTRIBUTING.md
+        - README.md
+
+# Add 'examples' label to examples
+examples:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/example/**
+
+# Add 'bats-tests' label
+bats-tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/packaging/tests/**
+
+# Add 'docker' label for changes to docker
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+        - solr/docker/**
+
+# Add 'tool:build' label for changes to gradle build files
+tool:build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.gradle'
+          - settings.gradle
+          - build.gradle
+          - gradle/**
+          - buildSrc/**
+
+# Add 'tools' label for changes to dev tools
+scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - dev-tools/**
+          - solr/server/scripts/cloud-scripts/**
+
+# Add jetty related labels
+jetty-server:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/server/etc/**
+          - solr/server/contexts/**
+          - solr/server/resources/**
+          - solr/server/modules/**
+          - '**/org/apache/solr/servlet/**'
+          - '**/org/apache/solr/logging/**'
+
+# Add 'start-scripts' label for changes to start scripts
+start-scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/bin/**
+
+# Add 'configs' label
+configs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/server/solr/**
+
+# Add 'client:solrj' labels
+client:solrj:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/solrj/**
+          - solr/solrj-*/**
+
+# Add 'test-framework' label
+test-framework:
+    - changed-files:
+        - any-glob-to-any-file:
+            - solr/test-framework/**
+
+# Add 'admin-ui' label
+admin-ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/webapp/**
+
+# Add 'prometheus-exporter' label
+prometheus-exporter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/prometheus-exporter/**
+
+# Add labels for changes to solr modules
+module:analysis-extras:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/analytics-extras/**
+
+module:clustering:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/clustering/**
+
+module:extraction:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/extraction/**
+
+module:gcs-repository:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/gcs-repository/**
+
+module:hadoop-auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/hadoop-auth/**
+
+module:hdfs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/hdfs/**
+
+module:jwt-auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/jwt-auth/**
+
+module:langid:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/langid/**
+
+module:ltr:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/ltr/**
+
+module:opentelemetry:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/opentelemetry/**
+
+module:s3-repository:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/s3-repository/**
+
+module:scripting:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/scripting/**
+
+module:sql:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/sql/**
+
+# Any test source files
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/src/test/**'
+          - '**/src/test-files/**'
+
+# Add category labels loosely based on java packages
+# Add 'api' label
+cat:api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/api/**
+          - solr/core/src/java/org/apache/solr/api/**
+          - solr/core/src/java/org/apache/solr/cloud/api/**
+          - solr/core/src/java/org/apache/solr/jersey/**
+
+cat:cli:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/cli/**'
+
+cat:cloud:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/cloud/**'
+          - '**/org/apache/solr/cluster/**'
+
+cat:index:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/index/**'
+          - '**/org/apache/solr/hdfs/index/**'
+          - '**/org/apache/solr/update/**'
+          - '**/org/apache/solr/hdfs/update/**'
+          - '**/org/apache/solr/scripting/update/**'
+          - '**/org/apache/solr/handler/loader/**'
+
+cat:metrics:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/metrics/**'
+
+cat:packagemanager:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/packagemanager/**'
+          - '**/org/apache/solr/pkg/**'
+          - '**/org/apache/solr/filestore/**'
+
+cat:schema:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/rest/**'
+          - '**/org/apache/solr/schema/**'
+
+cat:search:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/search/**'
+          - '**/org/apache/solr/highlight/**'
+          - '**/org/apache/solr/request/**'
+          - '**/org/apache/solr/response/**'
+          - '**/org/apache/solr/parser/**'
+          - '**/org/apache/solr/query/**'
+          - '**/org/apache/solr/spelling/**'
+          - '**/org/apache/solr/analysis/**'
+          - '**/org/apache/solr/handler/component/**'
+
+cat:security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/security/**'

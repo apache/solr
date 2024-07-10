@@ -939,8 +939,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(5.5D, avgf, 0.0);
       assertEquals(5.477225575051661D, stdi, 0.0);
       assertEquals(3.0276503540974917D, stdf, 0.0);
-      assertEquals(7.0D, peri, 0.0);
-      assertEquals(5.5D, perf, 0.0);
+      assertEquals(10.0D, peri, 0.0);
+      assertEquals(6.0D, perf, 0.0);
       assertEquals(10, count, 0.0);
       assertEquals(countDist.longValue(), 3L);
 
@@ -986,8 +986,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(5.5D, avgf, 0.0);
       assertEquals(5.477225575051661D, stdi, 0.0);
       assertEquals(3.0276503540974917D, stdf, 0.0);
-      assertEquals(7.0D, peri, 0.0);
-      assertEquals(5.5D, perf, 0.0);
+      assertEquals(10.0D, peri, 0.0);
+      assertEquals(6.0D, perf, 0.0);
       assertEquals(10, count, 0.0);
 
       // Test with shards parameter
@@ -1036,8 +1036,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(5.5D, avgf, 0.0);
       assertEquals(5.477225575051661D, stdi, 0.0);
       assertEquals(3.0276503540974917D, stdf, 0.0);
-      assertEquals(7.0D, peri, 0.0);
-      assertEquals(5.5D, perf, 0.0);
+      assertEquals(10.0D, peri, 0.0);
+      assertEquals(6.0D, perf, 0.0);
       assertEquals(10, count, 0.0);
 
       // Execersise the /stream hander
@@ -1424,8 +1424,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(2, count, 0.0);
     assertEquals(4.949747468305833D, stdi, 0.0);
     assertEquals(2.1213203435596424D, stdf, 0.0);
-    assertEquals(7.5D, peri, 0.0);
-    assertEquals(5.5D, perf, 0.0);
+    assertEquals(11.0D, peri, 0.0);
+    assertEquals(7.0D, perf, 0.0);
     assertEquals(countDist.longValue(), 2);
 
     tuple = tuples.get(1);
@@ -1457,8 +1457,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(4, count, 0.0);
     assertEquals(6.551081335677848D, stdi, 0.0);
     assertEquals(4.041451884327381D, stdf, 0.0);
-    assertEquals(1.5D, peri, 0.0);
-    assertEquals(3.5D, perf, 0.0);
+    assertEquals(2.0D, peri, 0.0);
+    assertEquals(5.0D, perf, 0.0);
     assertEquals(countDist.longValue(), 4);
 
     tuple = tuples.get(2);
@@ -1490,8 +1490,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(4, count, 0.0);
     assertEquals(4.509249752822894D, stdi, 0.0);
     assertEquals(2.6457513110645907D, stdf, 0.0);
-    assertEquals(11.0D, peri, 0.0);
-    assertEquals(7.0D, perf, 0.0);
+    assertEquals(12.0D, peri, 0.0);
+    assertEquals(8.0D, perf, 0.0);
     assertEquals(countDist.longValue(), 4);
 
     // Reverse the Sort.
@@ -1547,8 +1547,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(4, count, 0.0);
     assertEquals(4.509249752822894D, stdi, 0.0);
     assertEquals(2.6457513110645907D, stdf, 0.0);
-    assertEquals(11.0D, peri, 0.0);
-    assertEquals(7.0D, perf, 0.0);
+    assertEquals(12.0D, peri, 0.0);
+    assertEquals(8.0D, perf, 0.0);
 
     tuple = tuples.get(1);
     bucket = tuple.getString("a_s");
@@ -1578,8 +1578,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(4, count, 0.0);
     assertEquals(6.551081335677848D, stdi, 0.0);
     assertEquals(4.041451884327381D, stdf, 0.0);
-    assertEquals(1.5D, peri, 0.0);
-    assertEquals(3.5D, perf, 0.0);
+    assertEquals(2.0D, peri, 0.0);
+    assertEquals(5.0D, perf, 0.0);
 
     tuple = tuples.get(2);
     bucket = tuple.getString("a_s");
@@ -1609,8 +1609,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(2, count, 0.0);
     assertEquals(4.949747468305833D, stdi, 0.0);
     assertEquals(2.1213203435596424D, stdf, 0.0);
-    assertEquals(7.5D, peri, 0.0);
-    assertEquals(5.5D, perf, 0.0);
+    assertEquals(11.0D, peri, 0.0);
+    assertEquals(7.0D, perf, 0.0);
 
     clause =
         "facet("
@@ -1803,8 +1803,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(2, count, 0.0);
     assertEquals(4.949747468305833D, stdi, 0.0);
     assertEquals(2.1213203435596424D, stdf, 0.0);
-    assertEquals(7.5D, peri, 0.0);
-    assertEquals(5.5D, perf, 0.0);
+    assertEquals(11.0D, peri, 0.0);
+    assertEquals(7.0D, perf, 0.0);
 
     tuple = tuples.get(1);
     bucket = tuple.getString("a_s");
@@ -1834,8 +1834,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(4, count, 0.0);
     assertEquals(4.509249752822894D, stdi, 0.0);
     assertEquals(2.6457513110645907D, stdf, 0.0);
-    assertEquals(11.0D, peri, 0.0);
-    assertEquals(7.0D, perf, 0.0);
+    assertEquals(12.0D, peri, 0.0);
+    assertEquals(8.0D, perf, 0.0);
 
     tuple = tuples.get(2);
     bucket = tuple.getString("a_s");
@@ -1865,8 +1865,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals(4, count, 0.0);
     assertEquals(6.551081335677848D, stdi, 0.0);
     assertEquals(4.041451884327381D, stdf, 0.0);
-    assertEquals(1.5D, peri, 0.0);
-    assertEquals(3.5D, perf, 0.0);
+    assertEquals(2.0D, peri, 0.0);
+    assertEquals(5.0D, perf, 0.0);
 
     // Test index sort
 
@@ -2477,12 +2477,23 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     double stdi = tuple.getDouble("std(a_i)");
     double peri = tuple.getDouble("per(a_i,50)");
 
+    assertEquals("hello0", bucket1);
+    assertEquals("b", bucket2);
+    assertEquals(9.192388155425117D, stdi, 0.0);
+    assertEquals(14.0D, peri, 0.0);
+
+    tuple = tuples.get(1);
+    bucket1 = tuple.getString("level1_s");
+    bucket2 = tuple.getString("level2_s");
+    stdi = tuple.getDouble("std(a_i)");
+    peri = tuple.getDouble("per(a_i,50)");
+
     assertEquals("hello3", bucket1);
     assertEquals("b", bucket2);
     assertEquals(1.5275252316519468D, stdi, 0.0);
-    assertEquals(12.0D, peri, 0.0);
+    assertEquals(12.0, peri, 0.0);
 
-    tuple = tuples.get(1);
+    tuple = tuples.get(2);
     bucket1 = tuple.getString("level1_s");
     bucket2 = tuple.getString("level2_s");
     stdi = tuple.getDouble("std(a_i)");
@@ -2491,18 +2502,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals("hello4", bucket1);
     assertEquals("b", bucket2);
     assertEquals(0.0D, stdi, 0.0);
-    assertEquals(11.0, peri, 0.0);
-
-    tuple = tuples.get(2);
-    bucket1 = tuple.getString("level1_s");
-    bucket2 = tuple.getString("level2_s");
-    stdi = tuple.getDouble("std(a_i)");
-    peri = tuple.getDouble("per(a_i,50)");
-
-    assertEquals("hello0", bucket1);
-    assertEquals("b", bucket2);
-    assertEquals(9.192388155425117D, stdi, 0.0);
-    assertEquals(7.5D, peri, 0.0);
+    assertEquals(11.0D, peri, 0.0);
 
     tuple = tuples.get(3);
     bucket1 = tuple.getString("level1_s");
@@ -2535,7 +2535,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals("hello0", bucket1);
     assertEquals("a", bucket2);
     assertEquals(1.4142135623730951D, stdi, 0.0);
-    assertEquals(1.0D, peri, 0.0);
+    assertEquals(2.0D, peri, 0.0);
   }
 
   @Test
@@ -3638,6 +3638,33 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Tuple tuple = tuples.get(0);
     assertEquals("hello", tuple.get("id"));
     assertEquals("l b c d c e", tuple.get("test_t"));
+
+    // Below is the case when the search token itself contains a ` and is escaped
+    UpdateRequest updateRequest2 = new UpdateRequest();
+    updateRequest2.add(id, "hello2", "test_t", "l b c d color`s e");
+    updateRequest2.add(id, "hello3", "test_t", "b c d colors e");
+    updateRequest2.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr2 =
+        "search("
+            + COLLECTIONORALIAS
+            + ", q=\"`c d color\\`s e`\", fl=\"id,test_t\", sort=\"id desc\")";
+
+    ModifiableSolrParams paramsLoc2 = new ModifiableSolrParams();
+    paramsLoc2.set("expr", expr2);
+    paramsLoc2.set("qt", "/stream");
+
+    String url2 =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream2 = new SolrStream(url2, paramsLoc2);
+
+    StreamContext context2 = new StreamContext();
+    solrStream2.setStreamContext(context2);
+    List<Tuple> tuples2 = getTuples(solrStream2);
+    assertEquals(1, tuples2.size());
+    Tuple tuple2 = tuples2.get(0);
+    assertEquals("hello2", tuple2.get("id"));
+    assertEquals("l b c d color`s e", tuple2.get("test_t"));
   }
 
   private Map<String, Double> getIdToLabel(TupleStream stream, String outField) throws IOException {

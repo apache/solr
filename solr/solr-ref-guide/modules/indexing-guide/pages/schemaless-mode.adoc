@@ -222,7 +222,7 @@ Automatic field creation can be disabled with the `update.autoCreateFields` prop
 To do this, you can use xref:deployment-guide:solr-control-script-reference.adoc#set-or-unset-configuration-properties[`bin/solr config`] with a command such as:
 
 [source,bash]
-bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false
+bin/solr config -c mycollection -p 8983 --action set-user-property --property update.autoCreateFields --value false
 
 == Examples of Indexed Documents
 

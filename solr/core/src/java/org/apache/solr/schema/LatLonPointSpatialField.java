@@ -37,6 +37,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.SpatialStrategy;
@@ -270,7 +271,7 @@ public class LatLonPointSpatialField
 
           @SuppressWarnings("unchecked")
           final FieldComparator<Double> comparator =
-              (FieldComparator<Double>) getSortField(false).getComparator(1, false);
+              (FieldComparator<Double>) getSortField(false).getComparator(1, Pruning.NONE);
 
           final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
           final double mult = multiplier; // so it's a local field

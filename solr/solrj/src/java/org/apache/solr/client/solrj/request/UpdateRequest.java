@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -228,23 +229,18 @@ public class UpdateRequest extends AbstractUpdateRequest {
     return process(client, collection);
   }
 
-  private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(UpdateRequest request, List<String> servers);
-  }
-
-  private <T extends LBSolrClient.Req> Map<String, T> getRoutes(
+  private Map<String, LBSolrClient.Req> getRoutes(
       DocRouter router,
       DocCollection col,
       Map<String, List<String>> urlMap,
       ModifiableSolrParams params,
-      String idField,
-      ReqSupplier<T> reqSupplier) {
+      String idField) {
     if ((documents == null || documents.size() == 0)
         && (deleteById == null || deleteById.size() == 0)) {
       return null;
     }
 
-    Map<String, T> routes = new HashMap<>();
+    Map<String, LBSolrClient.Req> routes = new HashMap<>();
     if (documents != null) {
       Set<Entry<SolrInputDocument, Map<String, Object>>> entries = documents.entrySet();
       for (Entry<SolrInputDocument, Map<String, Object>> entry : entries) {
@@ -262,7 +258,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         String leaderUrl = urls.get(0);
-        T request = routes.get(leaderUrl);
+        LBSolrClient.Req request = routes.get(leaderUrl);
         if (request == null) {
           UpdateRequest updateRequest = new UpdateRequest();
           updateRequest.setMethod(getMethod());
@@ -272,7 +268,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           updateRequest.setResponseParser(getResponseParser());
           updateRequest.addHeaders(getHeaders());
-          request = reqSupplier.get(updateRequest, urls);
+          request =
+              new LBSolrClient.Req(
+                  updateRequest,
+                  urls.stream()
+                      .map(url -> LBSolrClient.Endpoint.from(url))
+                      .collect(Collectors.toList()));
           routes.put(leaderUrl, request);
         }
         UpdateRequest urequest = (UpdateRequest) request.getRequest();
@@ -315,7 +316,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           return null;
         }
         String leaderUrl = urls.get(0);
-        T request = routes.get(leaderUrl);
+        LBSolrClient.Req request = routes.get(leaderUrl);
         if (request != null) {
           UpdateRequest urequest = (UpdateRequest) request.getRequest();
           urequest.deleteById(deleteId, route, version);
@@ -325,7 +326,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
           urequest.deleteById(deleteId, route, version);
           urequest.setCommitWithin(getCommitWithin());
           urequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
-          request = reqSupplier.get(urequest, urls);
+          request =
+              new LBSolrClient.Req(
+                  urequest,
+                  urls.stream()
+                      .map(url -> LBSolrClient.Endpoint.from(url))
+                      .collect(Collectors.toList()));
           routes.put(leaderUrl, request);
         }
       }
@@ -348,7 +354,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
       Map<String, List<String>> urlMap,
       ModifiableSolrParams params,
       String idField) {
-    return getRoutes(router, col, urlMap, params, idField, LBSolrClient.Req::new);
+    return getRoutes(router, col, urlMap, params, idField);
   }
 
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {

@@ -157,18 +157,17 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
       if (shardName.equals("shard1")) {
-        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_ONE_LEADER_CLIENT = getHttpSolrClient(leaderUrl, COLLECTION_NAME);
+        S_ONE_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl, COLLECTION_NAME);
       } else if (shardName.equals("shard2")) {
-        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
-        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
+        S_TWO_LEADER_CLIENT = getHttpSolrClient(leaderUrl, COLLECTION_NAME);
+        S_TWO_NON_LEADER_CLIENT = getHttpSolrClient(passiveUrl, COLLECTION_NAME);
       } else {
         fail("unexpected shard: " + shardName);
       }
     }
     assertEquals("Should be exactly one server left (not hosting either shard)", 1, urlMap.size());
-    NO_COLLECTION_CLIENT =
-        getHttpSolrClient(urlMap.values().iterator().next() + "/" + COLLECTION_NAME + "/");
+    NO_COLLECTION_CLIENT = getHttpSolrClient(urlMap.values().iterator().next(), COLLECTION_NAME);
 
     assertNotNull(S_ONE_LEADER_CLIENT);
     assertNotNull(S_TWO_LEADER_CLIENT);

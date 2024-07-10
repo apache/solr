@@ -45,7 +45,7 @@ import org.apache.solr.core.DirectoryFactory;
  * Solr indexes to a local file-system. (Note - This can even be used for a shared file-system if it
  * is exposed via a local file-system interface e.g. NFS).
  */
-public class LocalFileSystemRepository implements BackupRepository {
+public class LocalFileSystemRepository extends AbstractBackupRepository {
 
   private NamedList<?> config = null;
 
@@ -154,7 +154,7 @@ public class LocalFileSystemRepository implements BackupRepository {
   public void createDirectory(URI path) throws IOException {
     Path p = Path.of(path);
     if (!Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
-      Files.createDirectory(p);
+      Files.createDirectories(p);
     }
   }
 

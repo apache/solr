@@ -80,7 +80,7 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
       backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
     }
 
-    configureCluster(NUM_SHARDS) // nodes
+    configureCluster(NUM_NODES) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(

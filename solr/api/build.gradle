@@ -28,7 +28,7 @@ ext {
     jsClientDir = "${buildDir}/generated/js"
     pythonClientDir = "${buildDir}/generated/python"
     openApiSpecDir = "${buildDir}/generated/openapi"
-    openApiSpecFile = "${project.openApiSpecDir}/openapi.json"
+    openApiSpecFile = "${project.openApiSpecDir}/solr-openapi-${version}.json"
 }
 
 configurations {
@@ -44,12 +44,16 @@ configurations {
         canBeConsumed = true
         canBeResolved = false
     }
+
+    swaggerBuild.extendsFrom implementation
 }
 
 resolve {
   classpath = sourceSets.main.runtimeClasspath
+  buildClasspath = sourceSets.main.runtimeClasspath.plus(configurations.getByName("swaggerBuild"))
   resourcePackages = ["org.apache.solr.client.api.util", "org.apache.solr.client.api.endpoint"]
   outputDir = file(project.openApiSpecDir)
+  outputFileName = "solr-openapi-${version}"
   prettyPrint = true
 }
 
@@ -58,12 +62,14 @@ dependencies {
     
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
-    api 'io.swagger.core.v3:swagger-annotations'
+    api 'io.swagger.core.v3:swagger-annotations-jakarta'
     implementation 'org.semver4j:semver4j'
 
     testImplementation project(':solr:test-framework')
     testImplementation project(':solr:api')
     testImplementation 'org.apache.lucene:lucene-test-framework'
+
+    swaggerBuild 'io.swagger.core.v3:swagger-jaxrs2-jakarta'
 }
 
 // Non-Java client generation tasks below:
@@ -91,7 +97,7 @@ tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
 
 artifacts {
     // Ensure the OAS is available to other modules who want to generate code (i.e. solrj)
-    openapiSpec resolve.outputDir, {
+    openapiSpec file(openApiSpecFile), {
         builtBy resolve
     }
 

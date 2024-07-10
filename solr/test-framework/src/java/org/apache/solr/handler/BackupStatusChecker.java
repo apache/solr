@@ -190,6 +190,7 @@ public final class BackupStatusChecker {
     final String label = (null == backupName ? "latest backup" : backupName);
     final SimpleSolrResponse rsp =
         new GenericSolrRequest(GenericSolrRequest.METHOD.GET, path, params("command", "details"))
+            .setRequiresCollection(true)
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Status of {}: {}", label, data);
@@ -266,6 +267,7 @@ public final class BackupStatusChecker {
     assertNotNull("backumpName must not be null", backupName);
     final SimpleSolrResponse rsp =
         new GenericSolrRequest(GenericSolrRequest.METHOD.GET, path, params("command", "details"))
+            .setRequiresCollection(true)
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Deletion Status of {}: {}", backupName, data);

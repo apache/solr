@@ -3,11 +3,12 @@ name: Gradle Precommit
 on: 
   pull_request:
     branches:
-    - '**'
+      - 'main'
+      - 'branch_*'
 
 jobs:
   test:
-    name: gradle precommit w/ Java 11
+    name: gradle check w/ Java 11
 
     runs-on: ubuntu-latest
 

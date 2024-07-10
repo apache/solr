@@ -97,18 +97,16 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.
 Communicates directly with a single Solr node.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2.
-This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2 using the Jetty Http library.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - General-purpose client using the JDK's built-in Http Client. Supports both Http/2 and Http/1.1. Supports async. Targeted for those users wishing to minimize application dependencies.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes.
 Adjusts the list of "in-service" nodes based on node health.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead.
-This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead, with the Jetty Http library.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - geared towards communicating with SolrCloud deployments.
 Uses already-recorded ZooKeeper state to discover and route requests to healthy Solr nodes.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - just like `ConcurrentUpdateSolrClient` but using `Http2SolrClient` instead.
-This class is experimental therefore its API's might change or be removed in minor versions of SolrJ.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - just like `ConcurrentUpdateSolrClient` but using `Http2SolrClient` instead, with the Jetty Http library.
 
 === Common Configuration Options
 
@@ -117,51 +115,48 @@ The most common/important of these are discussed below.
 For comprehensive information on how to tweak your `SolrClient`, see the Javadocs for the involved client, and its corresponding builder object.
 
 ==== Base URLs
-Most `SolrClient` implementations (except for `CloudSolrClient` and `Http2SolrClient`) require users to specify one or more Solr base URLs, which the client then uses to send HTTP requests to Solr.
-The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
+Many `SolrClient` implementations require users to specify one or more Solr URLs, which the client then uses to send HTTP requests to Solr.
+Unless otherwise specified, SolrJ expects these URLs to point to the root Solr path (i.e. "/solr").
 
-. A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).
-When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.
-However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).
-When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
+A few notable exceptions to this are described below:
 
-Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.
-Where more flexibility is required, the collection/core should be excluded.
-
-==== Base URLs of Http2SolrClient
-The `Http2SolrClient` manages connections to different nodes efficiently.
-`Http2SolrClient` does not require a `baseUrl`.
-In case a `baseUrl` is not provided, then `SolrRequest.basePath` must be set, so
-`Http2SolrClient` knows which nodes to send requests to.
-If not an `IllegalArgumentException` will be thrown.
-
-==== Base URLs of CloudSolrClient
-
-It is also possible to specify base URLs for `CloudSolrClient`, but URLs are expected to point to the root Solr path (e.g., `\http://hostname:8983/solr`).
-They should not include any collections, cores, or other path components.
-
+- *Http2SolrClient* - Users of `Http2SolrClient` may choose to skip providing a root URL to their client, in favor of specifing the URL on a request-by-request basis using `SolrRequest.setBasePath`.
+`Http2SolrClient` will throw an `IllegalArgumentException` if neither the client nor the request specify a URL.
+- *LBHttpSolrClient* and *LBHttp2SolrClient* - Solr's "load balancing" clients are frequently used to round-robin requests across a set of replicas or cores.
+URLs are still expected to point to the Solr root (i.e. "/solr"), but to support this use-case the URLs are often supplemented by an additional parameter to specify the targeted core.
+Alternatively, some "load balancing" methods make use of an `Endpoint` abstraction to provide this URL and core information in a more structured way.
+- *CloudSolrClient* - Like many clients, CloudSolrClient accepts a series of URLs pointing to the Solr root path (i.e. "/solr").
++
 [source,java,indent=0]
 ----
 include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-baseurl]
 ----
-
-In case a `baseUrl` is not provided, then a list of ZooKeeper hosts (with ports) and ZooKeeper root must be provided.
-If no ZooKeeper root is used then `java.util.Optional.empty()` has to be provided as part of the method.
-
-[source,java,indent=0]
-----
-include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-zookeepernoroot]
-----
-
++
+However, unlike other clients, these URLs aren't used to send user-provided requests, but instead serve to fetch information about the layout and health of the Solr cluster.
+If Solr URLs are not known, users may instead specify a list of ZooKeeper hosts (with ports) and ZooKeeper root path, for the `CloudSolrClient` to fetch this information from ZooKeeper directly.
++
 [source,java,indent=0]
 ----
 include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-zookeeperroot]
 ----
-
-Additionally, you will need to depend on the `solr-solrj-zookeeper` artifact or else you will get a `ClassNotFoundException`.
-
++
+If no ZooKeeper root path is used then `java.util.Optional.empty()` should be provided.
++
+[source,java,indent=0]
+----
+include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-zookeepernoroot]
+----
++
+`CloudSolrClient` users who wish to provide ZooKeeper connection information, must depend on the `solr-solrj-zookeeper` artifact to have all of the necessary classes available.
 The ZooKeeper based connection is the most reliable and performant means for CloudSolrClient to work.  On the other hand, it means exposing ZooKeeper more broadly than to Solr nodes, which is a security risk.  It also adds more JAR dependencies.
+
+==== Default Collections
+
+Most `SolrClient` methods allow users to specify the core or collection they wish to query, etc. as a `String` parameter.
+However continually specifying this parameter can become tedious, especially for users who always work with the same collection.
+
+Users can avoid this pattern by specifying a "default" collection when creating their client, using the `withDefaultCollection(String)` method available on the relevant `SolrClient` Builder object.
+If specified on a Builder, the created `SolrClient` will use this default for making requests whenever a collection or core is needed (and no overriding value is specified).
 
 ==== Timeouts
 All `SolrClient` implementations allow users to specify the connection and read timeouts for communicating with Solr.

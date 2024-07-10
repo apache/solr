@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,8 +50,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.BlobRepository;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
@@ -133,7 +133,7 @@ public class RepositoryManager {
           true);
     }
 
-    try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
+    try (InputStream is = new URI(uri + "/publickey.der").toURL().openStream()) {
       addKey(is.readAllBytes(), repoName + ".der");
     }
   }
@@ -146,9 +146,9 @@ public class RepositoryManager {
     String solrHome = (String) systemInfo.get("solr_home");
 
     // put the public key into package store's trusted key store and request a sync.
-    String path = FileStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
+    String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
-    PackageUtils.getJsonStringFromUrl(
+    PackageUtils.getJsonStringFromNonCollectionApi(
         solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
   }
 
@@ -193,8 +193,7 @@ public class RepositoryManager {
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 =
-          BlobRepository.sha512Digest(
-              ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
+          Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
       PackageUtils.postFile(
           solrClient,
           ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)),

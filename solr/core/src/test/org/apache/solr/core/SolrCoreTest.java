@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -32,6 +35,7 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -294,6 +298,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
+    assertEquals(
+        "wrong config for minPrefixQueryTermLength", -1, solrConfig.prefixQueryMinPrefixLength);
     assertTrue("wrong config for enableLazyFieldLoading", solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
   }
@@ -325,6 +331,62 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     // Check that all cores are closed and no searcher references are leaked.
     assertTrue("SolrCore " + core + " is not closed", core.isClosed());
     assertTrue(core.areAllSearcherReferencesEmpty());
+  }
+
+  /**
+   * Best effort attempt to recreate a deadlock between SolrCore initialization and Index metrics
+   * poll.
+   *
+   * <p>See https://issues.apache.org/jira/browse/SOLR-17060
+   */
+  @Test
+  public void testCoreInitDeadlockMetrics() throws Exception {
+    SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
+    CoreContainer coreContainer = h.getCoreContainer();
+
+    String coreName = "tmpCore";
+    AtomicBoolean created = new AtomicBoolean(false);
+    AtomicBoolean atLeastOnePoll = new AtomicBoolean(false);
+
+    final ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            1, new SolrNamedThreadFactory("testCoreInitDeadlockMetrics"));
+    executor.submit(
+        () -> {
+          while (!created.get()) {
+            var metrics =
+                metricManager.getMetrics(
+                    "solr.core." + coreName,
+                    MetricFilter.startsWith(SolrInfoBean.Category.INDEX.toString()));
+            for (var m : metrics.values()) {
+              if (m instanceof Gauge) {
+                var v = ((Gauge<?>) m).getValue();
+                atLeastOnePoll.compareAndSet(false, v != null);
+              }
+            }
+
+            try {
+              TimeUnit.MILLISECONDS.sleep(5);
+            } catch (InterruptedException e1) {
+              throw new RuntimeException(e1);
+            }
+          }
+        });
+
+    TimeUnit.MILLISECONDS.sleep(25);
+    try (var tmpCore = coreContainer.create(coreName, Map.of("configSet", "minimal"))) {
+      tmpCore.open();
+      for (int i = 0; i < 10; i++) {
+        TimeUnit.MILLISECONDS.sleep(50); // to allow metrics to be checked at least once
+        if (atLeastOnePoll.get()) {
+          break;
+        }
+      }
+    } finally {
+      created.set(true);
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+    assertTrue(atLeastOnePoll.get());
   }
 
   private static class NewSearcherRunnable implements Runnable {

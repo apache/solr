@@ -34,6 +34,9 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.api.ClusterPluginsSource;
+import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -79,7 +82,6 @@ public class NodeConfig {
 
   private final PluginInfo shardHandlerFactoryConfig;
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
-  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -103,6 +105,8 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
+  private final int indexSearcherExecutorThreads;
+
   @Deprecated private final int transientCacheSize;
 
   private final boolean useSchemaCache;
@@ -117,6 +121,8 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
+  private final PluginInfo[] clusterPlugins;
+
   private final String defaultZkHost;
 
   private NodeConfig(
@@ -130,7 +136,6 @@ public class NodeConfig {
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
-      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -141,6 +146,7 @@ public class NodeConfig {
       CloudConfig cloudConfig,
       Integer coreLoadThreads,
       int replayUpdatesThreads,
+      int indexSearcherExecutorThreads,
       int transientCacheSize,
       boolean useSchemaCache,
       String managementPath,
@@ -151,6 +157,7 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
+      PluginInfo[] clusterPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -169,7 +176,6 @@ public class NodeConfig {
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
-    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -180,6 +186,7 @@ public class NodeConfig {
     this.cloudConfig = cloudConfig;
     this.coreLoadThreads = coreLoadThreads;
     this.replayUpdatesThreads = replayUpdatesThreads;
+    this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
     this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
@@ -190,6 +197,7 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
+    this.clusterPlugins = clusterPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -210,6 +218,17 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+
+    if (this.clusterPlugins != null
+        && this.clusterPlugins.length > 0
+        && !ClusterPluginsSource.resolveClassName()
+            .equals(NodeConfigClusterPluginsSource.class.getName())) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Cluster plugins found in solr.xml but the property "
+              + ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED
+              + " is set to true. Cluster plugins may only be declared in solr.xml with immutable configs.");
+    }
 
     setupSharedLib();
     initModules();
@@ -308,10 +327,6 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  public PluginInfo getReplicaPlacementFactoryConfig() {
-    return replicaPlacementFactoryConfig;
-  }
-
   public int getCoreLoadThreadCount(boolean zkAware) {
     return coreLoadThreads == null
         ? (zkAware
@@ -322,6 +337,10 @@ public class NodeConfig {
 
   public int getReplayUpdatesThreads() {
     return replayUpdatesThreads;
+  }
+
+  public int getIndexSearcherExecutorThreads() {
+    return indexSearcherExecutorThreads;
   }
 
   /**
@@ -415,6 +434,10 @@ public class NodeConfig {
 
   public PluginInfo getTracerConfiguratorPluginInfo() {
     return tracerConfig;
+  }
+
+  public PluginInfo[] getClusterPlugins() {
+    return clusterPlugins;
   }
 
   /**
@@ -571,7 +594,6 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
-    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
@@ -583,6 +605,7 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
+    private int indexSearcherExecutorThreads = DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS;
     @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
@@ -591,6 +614,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
+    private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
@@ -602,6 +626,8 @@ public class NodeConfig {
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
+
+    public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS = 4;
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";
@@ -689,12 +715,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
-        PluginInfo replicaPlacementFactoryConfig) {
-      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
-      return this;
-    }
-
     public NodeConfigBuilder setCoreAdminHandlerClass(String coreAdminHandlerClass) {
       this.coreAdminHandlerClass = coreAdminHandlerClass;
       return this;
@@ -746,6 +766,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setIndexSearcherExecutorThreads(int indexSearcherExecutorThreads) {
+      this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
+      return this;
+    }
+
     // Remove in Solr 10.0
 
     @Deprecated
@@ -786,6 +811,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setTracerConfig(PluginInfo tracerConfig) {
       this.tracerConfig = tracerConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setClusterPlugins(PluginInfo[] clusterPlugins) {
+      this.clusterPlugins = clusterPlugins;
       return this;
     }
 
@@ -880,7 +910,6 @@ public class NodeConfig {
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
-          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,
@@ -891,6 +920,7 @@ public class NodeConfig {
           cloudConfig,
           coreLoadThreads,
           replayUpdatesThreads,
+          indexSearcherExecutorThreads,
           transientCacheSize,
           useSchemaCache,
           managementPath,
@@ -901,6 +931,7 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
+          clusterPlugins,
           defaultZkHost,
           allowPaths,
           allowUrls,

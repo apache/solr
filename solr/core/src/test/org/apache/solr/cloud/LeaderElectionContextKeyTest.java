@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -115,11 +114,11 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       }
       assertTrue(found);
       // There are no leader election was kicked off on testCollection2
-      MatcherAssert.assertThat(
+      assertThat(
           collection2Shard1Nodes,
           CoreMatchers.is(
               getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient())));
-      MatcherAssert.assertThat(
+      assertThat(
           collection2Shard2Nodes,
           CoreMatchers.is(
               getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient())));

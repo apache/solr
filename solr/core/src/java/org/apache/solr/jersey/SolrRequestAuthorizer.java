@@ -17,17 +17,17 @@
 
 package org.apache.solr.jersey;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuthorizationContext;
@@ -77,9 +77,11 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
      *
      * Since we don't invoke Jersey code in those particular cases we can ignore those checks here.
      */
-    if (coreContainer.getAuthorizationPlugin() == null) {
+    if (coreContainer.getAuthorizationPlugin() == null
+        || isAlreadyAuthorizedByPKI(coreContainer, servletRequest)) {
       return;
     }
+
     final AuthorizationContext authzContext =
         getAuthzContext(servletRequest, requestType, collectionNames, solrParams);
     log.debug("Attempting authz with context {}", authzContext);
@@ -90,6 +92,18 @@ public class SolrRequestAuthorizer implements ContainerRequestFilter {
           Response.status(authzFailure.getStatusCode()).entity(authzFailure.getMessage()).build();
       requestContext.abortWith(failureResponse);
     }
+  }
+
+  private boolean isAlreadyAuthorizedByPKI(CoreContainer coreContainer, HttpServletRequest req) {
+    if (coreContainer.getPkiAuthenticationSecurityBuilder() != null
+        && req.getUserPrincipal() != null) {
+      boolean needsAuthz =
+          coreContainer.getPkiAuthenticationSecurityBuilder().needsAuthorization(req);
+      log.debug("PkiAuthenticationPlugin says authorization required : {} ", needsAuthz);
+      return !needsAuthz;
+    }
+
+    return false;
   }
 
   private AuthorizationContext getAuthzContext(
