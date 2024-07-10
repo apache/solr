@@ -81,7 +81,7 @@ fun main() {
         ) {
             window.minimumSize = Dimension(720, 560)
 
-            SolrTheme(useDarkTheme = false) {
+            SolrTheme(useDarkTheme = isSystemInDarkTheme()) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
