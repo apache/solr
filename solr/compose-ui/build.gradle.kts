@@ -71,15 +71,21 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
                 implementation(compose.materialIconsExtended)
 
+                implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.decompose.decompose)
                 implementation(libs.essenty.lifecycle)
                 implementation(libs.decompose.extensions.compose)
+                implementation(libs.mvikotlin.extensions.coroutines)
                 implementation(libs.mvikotlin.mvikotlin)
                 implementation(libs.mvikotlin.main)
                 implementation(libs.mvikotlin.logging)
 
+                implementation(libs.chrisbanes.material3.windowSizeClass)
+
                 implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.contentNegotiation)
+                implementation(libs.ktor.client.serialization.json)
 
                 implementation(libs.oshai.logging)
                 implementation(libs.slf4j.api)
@@ -96,12 +102,14 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.cio)
+                implementation(libs.kotlinx.coroutines.swing)
             }
         }
 
         val wasmJsMain by getting {
             dependencies {
                 implementation(libs.ktor.client.js)
+                implementation(libs.kotlinx.coroutines.js)
             }
         }
     }

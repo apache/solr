@@ -17,13 +17,14 @@
 
 package org.apache.solr.composeui.ui.theme
 
-import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.font.FontFamily
+import org.apache.solr.compose_ui.generated.resources.Res
+import org.apache.solr.compose_ui.generated.resources.firacode_variable
+import org.jetbrains.compose.resources.Font
 
-/**
- * Custom typography that styles headlines and titles with a different font.
- */
-val SolrCodeTypography = Typography(
-    // TODO Override headlines and titles
-)
+object Fonts {
 
-// TODO Add fonts for code blocks
+    @Composable
+    fun firaCode() = FontFamily(Font(Res.font.firacode_variable))
+}

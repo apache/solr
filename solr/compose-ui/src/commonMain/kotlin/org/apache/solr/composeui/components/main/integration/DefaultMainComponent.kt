@@ -23,6 +23,7 @@ import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.mvikotlin.core.store.StoreFactory
+import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import org.apache.solr.composeui.components.environment.EnvironmentComponent
 import org.apache.solr.composeui.components.environment.integration.DefaultEnvironmentComponent
@@ -54,6 +55,7 @@ class DefaultMainComponent internal constructor(
     constructor(
         componentContext: AppComponentContext,
         storeFactory: StoreFactory,
+        httpClient: HttpClient,
         destination: String? = null,
     ) : this(
         componentContext = componentContext,
@@ -63,6 +65,7 @@ class DefaultMainComponent internal constructor(
             DefaultEnvironmentComponent(
                 componentContext = childContext,
                 storeFactory = storeFactory,
+                httpClient = httpClient,
             )
         },
         loggingComponent = { childContext ->
