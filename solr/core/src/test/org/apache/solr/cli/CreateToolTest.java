@@ -47,7 +47,7 @@ public class CreateToolTest extends SolrCloudTestCase {
       collectionName,
       "-n",
       "cloud-minimal",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
       "-credentials",
       SecurityJson.USER_PASS,

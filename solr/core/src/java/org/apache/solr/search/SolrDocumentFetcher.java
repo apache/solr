@@ -150,7 +150,6 @@ public class SolrDocumentFetcher {
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.nLeaves = searcher.getTopReaderContext().leaves().size();
-    this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
     if (cachingEnabled) {
       documentCache =
           solrConfig.documentCacheConfig == null
@@ -159,6 +158,9 @@ public class SolrDocumentFetcher {
     } else {
       documentCache = null;
     }
+
+    // lazy loading makes no sense if we don't have a `documentCache`
+    this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading && documentCache != null;
 
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
