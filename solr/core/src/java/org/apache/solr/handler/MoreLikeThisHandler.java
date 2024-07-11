@@ -63,6 +63,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
@@ -162,14 +163,15 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         if (reader != null) {
           mltDocs = mlt.getMoreLikeThis(reader, start, rows, filters, flags);
         } else if (q != null) {
-          // Matching options
-          boolean includeMatch = params.getBool(MoreLikeThisParams.MATCH_INCLUDE, true);
-          int matchOffset = params.getInt(MoreLikeThisParams.MATCH_OFFSET, 0);
-          // Find the base match
           DocList match =
-              searcher.getDocList(
-                  query, null, null, matchOffset, 1, flags); // only get the first one...
-          if (includeMatch) {
+              new QueryCommand()
+                  .setQuery(query)
+                  .setOffset(params.getInt(MoreLikeThisParams.MATCH_OFFSET, 0))
+                  .setLen(1) // only get the first one...
+                  .setFlags(flags)
+                  .search(searcher)
+                  .getDocList();
+          if (params.getBool(MoreLikeThisParams.MATCH_INCLUDE, true)) {
             rsp.add("match", match);
           }
 
