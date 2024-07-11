@@ -139,6 +139,8 @@ Improvements
   such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
   commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski)
 
+* SOLR-16198: Introduce tabbed sections again in the Ref Guide.  (Christos Malliaridis via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
