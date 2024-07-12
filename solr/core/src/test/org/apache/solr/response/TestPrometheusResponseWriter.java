@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Tests the {@link PrometheusResponseWriter} behavior */
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17368")
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
