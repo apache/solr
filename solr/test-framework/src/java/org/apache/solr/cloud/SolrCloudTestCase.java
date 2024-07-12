@@ -101,7 +101,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * beforeClass method.
    */
   public static boolean isPRS() {
-    return EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, false);
+    return EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);
   }
 
   /**
@@ -134,7 +134,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     if (target != null && target.isAnnotationPresent(NoPrs.class)) {
       usePrs = false;
     } else {
-      usePrs = EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, LuceneTestCase.random().nextBoolean());
+      usePrs = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, LuceneTestCase.random().nextBoolean());
     }
     System.setProperty(PRS_DEFAULT_PROP, usePrs ? "true" : "false");
   }

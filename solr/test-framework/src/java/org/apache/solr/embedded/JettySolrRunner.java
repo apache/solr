@@ -26,6 +26,8 @@ import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -782,7 +784,9 @@ public class JettySolrRunner {
   /** Returns a base URL like {@code http://localhost:8983/solr} */
   public URL getBaseUrl() {
     try {
-      return new URL(protocol, host, jettyPort, "/solr");
+      return new URI(protocol, null, host, jettyPort, "/solr", null, null).toURL();
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -790,8 +794,10 @@ public class JettySolrRunner {
 
   public URL getBaseURLV2() {
     try {
-      return new URL(protocol, host, jettyPort, "/api");
+      return new URI(protocol, null, host, jettyPort, "/api", null, null).toURL();
     } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -802,8 +808,10 @@ public class JettySolrRunner {
    */
   public URL getProxyBaseUrl() {
     try {
-      return new URL(protocol, host, getLocalPort(), "/solr");
+      return new URI(protocol, null, host, getLocalPort(), "/solr", null, null).toURL();
     } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }

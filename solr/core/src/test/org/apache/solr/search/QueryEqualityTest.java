@@ -1469,6 +1469,80 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryVecSim() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "0");
+    doc.addField("vector", Arrays.asList(1, 2, 3, 4));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    final String common = "!vectorSimilarity minReturn=0.3 f=vector";
+    final String qvec = "[1.0,2.0,3.0,4.0]";
+
+    try (SolrQueryRequest req0 = req()) {
+
+      // no filters
+      final Query fqNull =
+          assertQueryEqualsAndReturn(
+              "vectorSimilarity",
+              req0,
+              "{" + common + "}" + qvec,
+              "{" + common + " minTraverse='-Infinity'}" + qvec,
+              "{" + common + " preFilter=''}" + qvec,
+              "{" + common + " v=" + qvec + "}");
+
+      try (SolrQueryRequest req1 = req("fq", "{!tag=t1}id:1", "xxx", "id:1")) {
+        // either global fq, or (same) preFilter as localparam
+        final Query fqOne =
+            assertQueryEqualsAndReturn(
+                "vectorSimilarity",
+                req1,
+                "{" + common + "}" + qvec,
+                "{" + common + " includeTags=t1}" + qvec,
+                "{" + common + " preFilter='id:1'}" + qvec,
+                "{" + common + " preFilter=$xxx}" + qvec,
+                "{" + common + " v=" + qvec + "}");
+        QueryUtils.checkUnequal(fqNull, fqOne);
+
+        try (SolrQueryRequest req2 = req("fq", "{!tag=t2}id:2", "xxx", "id:1", "yyy", "")) {
+          // override global fq with local param to use different preFilter
+          final Query fqOneOverride =
+              assertQueryEqualsAndReturn(
+                  "vectorSimilarity",
+                  req2,
+                  "{" + common + " preFilter='id:1'}" + qvec,
+                  "{" + common + " preFilter=$xxx}" + qvec);
+          QueryUtils.checkEqual(fqOne, fqOneOverride);
+
+          // override global fq with local param to use no preFilters
+          final Query fqNullOverride =
+              assertQueryEqualsAndReturn(
+                  "vectorSimilarity",
+                  req2,
+                  "{" + common + " preFilter=''}" + qvec,
+                  "{" + common + " excludeTags=t2}" + qvec,
+                  "{" + common + " preFilter=$yyy}" + qvec);
+          QueryUtils.checkEqual(fqNull, fqNullOverride);
+        }
+      }
+
+      try (SolrQueryRequest reqPostFilter = req("fq", "{!tag=post frange cache=false l=0}9.9")) {
+        // global post-filter fq should always be ignored
+        final Query fqPostFilter =
+            assertQueryEqualsAndReturn(
+                "vectorSimilarity",
+                reqPostFilter,
+                "{" + common + "}" + qvec,
+                "{" + common + " includeTags=post}" + qvec);
+        QueryUtils.checkEqual(fqNull, fqPostFilter);
+      }
+
+    } finally {
+      delQ("id:0");
+      assertU(commit());
+    }
+  }
+
   /**
    * NOTE: defType is not only used to pick the parser, but also to record the parser being tested
    * for coverage sanity checking
