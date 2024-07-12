@@ -23,27 +23,27 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation platform('io.opentelemetry:opentelemetry-bom')
-  implementation 'org.slf4j:slf4j-api'
+  implementation platform(libs.opentelemetry.bom)
+  implementation libs.slf4j.api
 
-  implementation 'io.opentelemetry:opentelemetry-api'
-  implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
-  runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'
+  implementation libs.opentelemetry.api
+  implementation libs.opentelemetry.sdkextension.autoconfigure
+  runtimeOnly libs.opentelemetry.exporter.otlp
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
   // NOTE: sdk-autoconfigure needs both opentelemetry-sdk-metrics and opentelemetry-sdk-logs even if we don't use them
 
   // gRPC transport via netty - since we already ship netty this is more lightweight than netty-shaded
-  runtimeOnly 'io.grpc:grpc-netty'
-  runtimeOnly 'io.grpc:grpc-protobuf'
-  runtimeOnly 'io.grpc:grpc-stub'
-  runtimeOnly 'io.grpc:grpc-context'
+  runtimeOnly libs.grpc.netty
+  runtimeOnly libs.grpc.protobuf
+  runtimeOnly libs.grpc.stub
+  runtimeOnly libs.grpc.context
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
-  compileOnly 'org.apache.tomcat:annotations-api'
+  compileOnly libs.apache.tomcat.annotationsapi
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'junit:junit'
-  testImplementation 'io.opentelemetry:opentelemetry-sdk'
-  testImplementation 'io.opentelemetry:opentelemetry-sdk-trace'
-  testImplementation 'io.opentelemetry:opentelemetry-sdk-testing'
+  testImplementation libs.junit.junit
+  testImplementation libs.opentelemetry.sdk
+  testImplementation libs.opentelemetry.sdktrace
+  testImplementation libs.opentelemetry.sdktesting
 }

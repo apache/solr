@@ -16,11 +16,10 @@
  */
 
 plugins {
-  id "org.openapi.generator" version "6.6.0"
+  alias(libs.plugins.openapi.generator)
+  alias(libs.plugins.diffplug.spotless)
+  id 'java-library'
 }
-
-apply plugin: 'java-library'
-apply plugin: 'com.diffplug.spotless'
 
 import com.diffplug.gradle.spotless.JavaExtension
 
@@ -28,29 +27,29 @@ import com.diffplug.gradle.spotless.JavaExtension
 description = 'Solrj - Solr Java Client'
 
 dependencies {
-  implementation 'com.fasterxml.jackson.core:jackson-databind'
-  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation libs.fasterxml.jackson.core.databind
+  implementation libs.fasterxml.jackson.core.annotations
   api project(":solr:api")
 
-  implementation 'org.slf4j:slf4j-api'
-  runtimeOnly 'org.slf4j:jcl-over-slf4j'
+  implementation libs.slf4j.api
+  runtimeOnly libs.slf4j.jcloverslf4j
 
-  api 'org.eclipse.jetty.http2:http2-client'
-  implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
-  implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'org.eclipse.jetty:jetty-client'
-  implementation 'org.eclipse.jetty:jetty-util'
-  implementation 'org.eclipse.jetty:jetty-io'
-  runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
+  api libs.eclipse.jetty.http2.client
+  implementation libs.eclipse.jetty.http2.httpclienttransport
+  implementation libs.eclipse.jetty.http
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.util
+  implementation libs.eclipse.jetty.io
+  runtimeOnly libs.eclipse.jetty.alpnjavaclient
 
-  api('org.apache.httpcomponents:httpmime', {
+  api(libs.apache.httpcomponents.httpmime, {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"
   })
-  implementation 'org.apache.httpcomponents:httpclient'
-  implementation 'org.apache.httpcomponents:httpcore'
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
 
-  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+  compileOnly libs.stephenc.jcip.annotations
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
@@ -58,41 +57,41 @@ dependencies {
 
   // ideally ZK centric tests move to solrj-zookeeper but sometimes we depend on ZK here anyway
   testImplementation project(':solr:solrj-zookeeper')
-  testImplementation('org.apache.zookeeper:zookeeper', {
+  testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
-  testImplementation 'org.apache.zookeeper:zookeeper-jute'
+  permitTestUnusedDeclared libs.apache.zookeeper.zookeeper
+  testImplementation libs.apache.zookeeper.jute
 
-  testImplementation 'org.apache.lucene:lucene-core'
-  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation libs.apache.lucene.core
+  testImplementation libs.apache.lucene.testframework
 
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
-  testImplementation 'commons-io:commons-io'
-  testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
+  testImplementation libs.commonsio.commonsio
+  testImplementation libs.fasterxml.jackson.dataformat.cbor
 
-  testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  testImplementation libs.eclipse.jetty.toolchain.servletapi
 
-  testImplementation 'org.eclipse.jetty:jetty-server'
-  testImplementation 'org.eclipse.jetty:jetty-servlet'
-  testImplementation 'org.eclipse.jetty:jetty-webapp'
-  testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-server', {
+  testImplementation libs.eclipse.jetty.server
+  testImplementation libs.eclipse.jetty.servlet
+  testImplementation libs.eclipse.jetty.webapp
+  testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
-  testImplementation('org.mockito:mockito-core', {
+  testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testRuntimeOnly('org.mockito:mockito-subclass', {
+  testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl", {
+  testRuntimeOnly(libs.apache.log4j.slf4j2impl, {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
-  testImplementation 'org.apache.commons:commons-lang3'
-  testImplementation 'io.dropwizard.metrics:metrics-core'
+  testImplementation libs.apache.commons.lang3
+  testImplementation libs.dropwizard.metrics.core
 }
 
 /**

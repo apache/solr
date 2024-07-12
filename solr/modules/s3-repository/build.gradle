@@ -25,34 +25,34 @@ dependencies {
 
   implementation 'org.apache.lucene:lucene-core'
 
-  implementation platform(group: 'software.amazon.awssdk', name: 'bom')
-  implementation(group: 'software.amazon.awssdk', name: 'auth')
-  implementation(group: 'software.amazon.awssdk', name: 'apache-client')
-  implementation(group: 'software.amazon.awssdk', name: 'aws-core')
-  implementation(group: 'software.amazon.awssdk', name: 'regions')
-  implementation(group: 'software.amazon.awssdk', name: 's3') {
+  implementation platform(libs.amazon.awssdk.bom)
+  implementation libs.amazon.awssdk.auth
+  implementation libs.amazon.awssdk.apacheclient
+  implementation libs.amazon.awssdk.awscore
+  implementation libs.amazon.awssdk.regions
+  implementation(libs.amazon.awssdk.s3) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
-  implementation(group: 'software.amazon.awssdk', name: 'sdk-core')
-  runtimeOnly(group: 'software.amazon.awssdk', name: 'sts') {
+  implementation libs.amazon.awssdk.sdkcore
+  runtimeOnly(libs.amazon.awssdk.sts) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
 
-  implementation 'com.google.guava:guava'
-  implementation 'org.slf4j:slf4j-api'
+  implementation libs.google.guava
+  implementation libs.slf4j.api
 
-  runtimeOnly(group: 'com.fasterxml.woodstox', name: 'woodstox-core')
-  runtimeOnly(group: 'org.codehaus.woodstox', name: 'stax2-api')
+  runtimeOnly libs.fasterxml.woodstox.core
+  runtimeOnly libs.codehaus.woodstox.stax2api
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'software.amazon.awssdk:profiles'
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.amazon.awssdk.profiles
 
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation libs.hamcrest.hamcrest
 
-  testImplementation('com.adobe.testing:s3mock-junit4') {
+  testImplementation(libs.adobe.testing.s3mock.junit4) {
     // Don't pull in separate versions of these libs, just use what Solr already has
     exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
     exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -64,7 +64,7 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
   }
-  testImplementation('com.adobe.testing:s3mock-testsupport-common') {
+  testImplementation(libs.adobe.testing.s3mock.testsupportcommon) {
     // Don't pull in separate versions of these libs, just use what Solr already has
     exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
     exclude group: 'ch.qos.logback', module: 'logback-classic'
@@ -77,14 +77,14 @@ dependencies {
     exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
   }
 
-  testImplementation 'commons-io:commons-io'
+  testImplementation libs.commonsio.commonsio
 
-  testRuntimeOnly 'org.eclipse.jetty:jetty-webapp'
+  testRuntimeOnly libs.eclipse.jetty.webapp
 
-  testImplementation('org.mockito:mockito-core', {
+  testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testRuntimeOnly('org.mockito:mockito-subclass', {
+  testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 }

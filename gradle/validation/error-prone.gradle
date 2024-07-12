@@ -48,13 +48,13 @@ allprojects { prj ->
         errorprone
       }
       dependencies {
-        errorprone("com.google.errorprone:error_prone_core")
+        errorprone libs.google.errorprone.core
       }
     } else {
       prj.apply plugin: 'net.ltgt.errorprone'
 
       dependencies {
-        errorprone("com.google.errorprone:error_prone_core")
+        errorprone libs.google.errorprone.core
       }
 
       tasks.withType(JavaCompile) { task ->

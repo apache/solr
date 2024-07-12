@@ -25,10 +25,10 @@ dependencies {
   implementation project(':solr:solrj-streaming')
   implementation project(':solr:solrj-zookeeper')
 
-  implementation 'org.slf4j:slf4j-api'
+  implementation libs.slf4j.api
 
   // SQL Parser via Calcite
-  implementation ('org.apache.calcite:calcite-core', {
+  implementation(libs.apache.calcite.core, {
     exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
     exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
     exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
@@ -36,15 +36,15 @@ dependencies {
     exclude group: 'net.minidev', module: 'json-smart'
     exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
   })
-  compileOnly 'org.immutables:value-annotations' // needed due to Calcite requiring this CALCITE-4787
+  compileOnly libs.immutables.valueannotations // needed due to Calcite requiring this CALCITE-4787
   // sub-deps of calcite-core that we reference directly
-  implementation 'org.apache.calcite:calcite-linq4j'
-  implementation 'org.apache.calcite.avatica:avatica-core'
-  permitUnusedDeclared 'org.apache.calcite.avatica:avatica-core'
+  implementation libs.apache.calcite.linq4j
+  implementation libs.apache.calcite.avatica.core
+  permitUnusedDeclared libs.apache.calcite.avatica.core
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'junit:junit'
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
 }

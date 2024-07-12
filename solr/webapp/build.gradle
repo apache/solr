@@ -34,7 +34,6 @@ ext {
   jsClientWorkspace = layout.buildDirectory.dir("jsClientWorkspace").get()
   jsClientBuildDir = layout.buildDirectory.dir("jsClientBuild").get()
   jsClientBundleDir = layout.buildDirectory.dir("jsClientBundle").get()
-  browserifyVersion = "17.0.0"
 }
 
 dependencies {
@@ -89,9 +88,9 @@ task jsClientBuild(type: NpmTask) {
 
 task downloadBrowserify(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "browserify@${browserifyVersion}"]
+  args = ["install", "browserify@${libs.versions.browserify.get()}"]
 
-  inputs.property("browserify version", browserifyVersion)
+  inputs.property("browserify version", libs.versions.browserify.get())
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
@@ -105,7 +104,7 @@ task generateJsClientBundle(type: NpxTask) {
   workingDir = file(jsClientWorkspace)
 
   inputs.dir(jsClientWorkspace)
-  inputs.property("browserify version", browserifyVersion)
+  inputs.property("browserify version", libs.versions.browserify.get())
 
   outputs.file("${jsClientBuildDir}/index.js")
 }

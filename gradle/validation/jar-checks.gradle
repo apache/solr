@@ -32,7 +32,7 @@ buildscript {
   }
 
   dependencies {
-    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+    classpath libs.commonscodec.commonscodec
   }
 }
 

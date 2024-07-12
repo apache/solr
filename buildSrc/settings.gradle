@@ -15,24 +15,12 @@
  * limitations under the License.
  */
 
-repositories {
-  mavenCentral()
-}
-
-ext {
-  // Minimum Java version required to compile buildSrc.
-  minJavaVersion = JavaVersion.VERSION_11
-}
-
-// Make sure the build environment is consistent.
-apply from: file('../gradle/validation/check-environment.gradle')
-
-// Load common buildSrc and script deps.
-apply from: file("scriptDepVersions.gradle")
-
-dependencies {
-  implementation gradleApi()
-  implementation localGroovy()
-
-  implementation libs.commonscodec.commonscodec
+// Use project's version catalog for centralized dependency management for
+// buildSrc scripts too
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
 }
