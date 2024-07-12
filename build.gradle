@@ -109,8 +109,6 @@ ext {
   }
 }
 
-apply from: file('buildSrc/scriptDepVersions.gradle')
-
 // Include smaller chunks configuring dedicated build areas.
 // Some of these intersect or add additional functionality.
 // The order of inclusion of these files shouldn't matter (but may
