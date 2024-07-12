@@ -115,6 +115,13 @@ New Features
 
 * SOLR-17335: New "vectorSimilarity" QParser for matching documents mased on a minimum vector similarity threshold. (hossman)
 
+* SOLR-10654: Introduce output of Prometheus metrics directly from Solr. (Matthew Biscocho via David Smiley)
+
+* SOLR-17195: Configsets now include a `minPrefixQueryTermLength` setting, which instructs Solr to reject prefix queries whose prefixes are "too short".  This can
+  be used as one line of defense against "runaway wildcard queries" consuming too many resources.  The setting is disabled ('-1') in the default configset but can be
+  overridden with a property ('solr.query.minPrefixLength').  Users may also override their collection-wide setting for individual queries by providing a
+  `minPrefixQueryTermLength` local-param.  (Jason Gerlowski, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
@@ -134,6 +141,12 @@ Improvements
 * SOLR-17331: OrderedNodePlacementPlugin will give an even more optimal replica placements during ReplicaMigration commands (Houston Putman, Yohann Callea)
 
 * SOLR-15591: Make using debugger in Solr easier by avoiding NPE in ExternalPaths.determineSourceHome.  (@charlygrappa via Eric Pugh)
+
+* SOLR-16824: Adopt Linux standard pattern of -- for long option commands, and make all commands "kebab" formatting.  I.e -zkHost is now -zk-host.  The old parameters
+  such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
+  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski)
+
+* SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
 
 Optimizations
 ---------------------
@@ -179,9 +192,12 @@ Bug Fixes
 
 * SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
 
+* SOLR-17333: Rate-limiting feature: fix live-update of config (Michael Gibney)
+
 Dependency Upgrades
 ---------------------
 (No changes)
+* SOLR-17325: Upgrade Lucene to 9.11.1 (hossman)
 
 Other Changes
 ---------------------
@@ -197,6 +213,12 @@ Other Changes
 * SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
 
 * SOLR-17321: Remove Deprecated URL and replace it with URI in Preparation for Java 21 (Sanjay Dutt, David Smiley, Uwe Schindler)
+
+* PR#2524: QueryResult refactoring so that it's only returned from SolrIndexSearcher instead of
+  being provided to it.  Deprecated APIs in 9x; should be removed later. (David Smiley)
+
+* SOLR-17347: EnvUtils: Removed "env" methods, as they were problematic.  Code should almost never
+  refer to env vars.  (David Smiley)
 
 ==================  9.6.1 ==================
 Bug Fixes

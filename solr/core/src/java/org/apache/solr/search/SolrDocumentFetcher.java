@@ -150,7 +150,6 @@ public class SolrDocumentFetcher {
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.nLeaves = searcher.getTopReaderContext().leaves().size();
-    this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
     if (cachingEnabled) {
       documentCache =
           solrConfig.documentCacheConfig == null
@@ -159,6 +158,9 @@ public class SolrDocumentFetcher {
     } else {
       documentCache = null;
     }
+
+    // lazy loading makes no sense if we don't have a `documentCache`
+    this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading && documentCache != null;
 
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
@@ -359,15 +361,9 @@ public class SolrDocumentFetcher {
       super(toLoad);
       this.docId = docId;
       this.doc = getDocument();
-      if (documentCache == null) {
-        // lazy loading makes no sense if we don't have a `documentCache`
-        this.lazyFieldProducer = null;
-        this.addLargeFieldsLazily = false;
-      } else {
-        this.lazyFieldProducer =
-            toLoad != null && enableLazyFieldLoading ? new LazyDocument(reader, docId) : null;
-        this.addLargeFieldsLazily = !largeFields.isEmpty();
-      }
+      this.lazyFieldProducer =
+          toLoad != null && enableLazyFieldLoading ? new LazyDocument(reader, docId) : null;
+      this.addLargeFieldsLazily = (documentCache != null && !largeFields.isEmpty());
       // TODO can we return Status.STOP after a val is loaded and we know there are no other fields
       // of interest?
       //    When: toLoad is one single-valued field, no lazyFieldProducer

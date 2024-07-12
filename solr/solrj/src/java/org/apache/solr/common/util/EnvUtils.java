@@ -34,13 +34,14 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 
 /**
- * This class is a unified provider of environment variables and system properties. It exposes a
- * mutable copy of the environment variables. It also converts 'SOLR_FOO' variables to system
- * properties 'solr.foo' and provide various convenience accessors for them.
+ * Provides convenient access to System Properties for Solr. It also converts 'SOLR_FOO' env vars to
+ * system properties 'solr.foo', which is done on first access of this class. All Solr code should
+ * use this in lieu of JDK equivalents.
  */
 public class EnvUtils {
-  private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
+  /** Maps ENV keys to sys prop keys for special/custom mappings */
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
+
   private static final Map<String, String> camelCaseToDotsMap = new ConcurrentHashMap<>();
 
   static {
@@ -52,80 +53,12 @@ public class EnvUtils {
         for (String key : props.stringPropertyNames()) {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
-        init(false);
+        init(false, System.getenv());
       }
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "Failed loading env.var->properties mapping", e);
     }
-  }
-
-  /**
-   * Get Solr's mutable copy of all environment variables.
-   *
-   * @return sorted map of environment variables
-   */
-  public static SortedMap<String, String> getEnvs() {
-    return ENV;
-  }
-
-  /** Get a single environment variable as string */
-  public static String getEnv(String key) {
-    return ENV.get(key);
-  }
-
-  /** Get a single environment variable as string, or default */
-  public static String getEnv(String key, String defaultValue) {
-    return ENV.getOrDefault(key, defaultValue);
-  }
-
-  /** Get an environment variable as long */
-  public static long getEnvAsLong(String key) {
-    return Long.parseLong(ENV.get(key));
-  }
-
-  /** Get an environment variable as long, or default value */
-  public static long getEnvAsLong(String key, long defaultValue) {
-    String value = ENV.get(key);
-    if (value == null) {
-      return defaultValue;
-    }
-    return Long.parseLong(value);
-  }
-
-  /** Get an env var as boolean */
-  public static boolean getEnvAsBool(String key) {
-    return StrUtils.parseBool(ENV.get(key));
-  }
-
-  /** Get an env var as boolean, or default value */
-  public static boolean getEnvAsBool(String key, boolean defaultValue) {
-    String value = ENV.get(key);
-    if (value == null) {
-      return defaultValue;
-    }
-    return StrUtils.parseBool(value);
-  }
-
-  /** Get comma separated strings from env as List */
-  public static List<String> getEnvAsList(String key) {
-    return getEnv(key) != null ? stringValueToList(getEnv(key)) : null;
-  }
-
-  /** Get comma separated strings from env as List */
-  public static List<String> getEnvAsList(String key, List<String> defaultValue) {
-    return ENV.get(key) != null ? getEnvAsList(key) : defaultValue;
-  }
-
-  /** Set an environment variable */
-  public static void setEnv(String key, String value) {
-    ENV.put(key, value);
-  }
-
-  /** Set all environment variables */
-  public static synchronized void setEnvs(Map<String, String> env) {
-    ENV.clear();
-    ENV.putAll(env);
   }
 
   /** Get all Solr system properties as a sorted map */
@@ -245,17 +178,15 @@ public class EnvUtils {
 
   /**
    * Re-reads environment variables and updates the internal map. Mainly for internal and test use.
-   *
-   * @param overwrite if true, overwrite existing system properties with environment variables
    */
-  static synchronized void init(boolean overwrite) {
+  static synchronized void init(boolean overwrite, Map<String, String> env) {
     // Convert eligible environment variables to system properties
-    for (String key : ENV.keySet()) {
+    for (String key : env.keySet()) {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
         String sysPropKey = envNameToSyspropName(key);
         // Existing system properties take precedence
         if (!sysPropKey.isBlank() && (overwrite || getProperty(sysPropKey, null) == null)) {
-          setProperty(sysPropKey, ENV.get(key));
+          setProperty(sysPropKey, env.get(key));
         }
       }
     }
