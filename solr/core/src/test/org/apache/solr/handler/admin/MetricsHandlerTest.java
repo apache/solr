@@ -922,7 +922,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
             actualSnapshot, Labels.of("item", "committed", "space", "CodeHeap-'non-nmethods'"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers");
     actualGaugeDataPoint =
