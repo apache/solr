@@ -28,7 +28,7 @@ configurations {
 }
 
 dependencies {
-  constraintsOnly(platform("com.fasterxml.jackson:jackson-bom"))
+  constraintsOnly(platform(libs.fasterxml.jackson.bom))
 
   implementation project(':solr:core')
   implementation project(':solr:solrj')

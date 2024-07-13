@@ -59,11 +59,10 @@ carrotsearch-hppc = "0.9.1"
 carrotsearch-randomizedtesting = "2.8.1"
 codehaus-woodstox = "4.2.2"
 commons-cli = "1.8.0"
-commons-codec = "1.16.0"
+commons-codec = "1.17.0"
 commons-collections = "3.2.2"
 commons-io = "2.15.1"
 cybozulabs-langdetect = "1.1-20120112"
-common-custom-user-data = "1.12"
 cutterslade-analyze = "1.9.1"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.25"
@@ -76,6 +75,7 @@ fasterxml-woodstox = "6.6.2"
 flexmark = "0.64.8"
 google-api-gax = "2.33.0"
 google-auth = "1.19.0"
+google-cloud-bom = "0.204.0"
 google-cloud-core = "2.23.0"
 google-cloud-nio = "0.127.3"
 google-cloud-storage = "2.27.0"
@@ -83,7 +83,6 @@ google-errorprone = "2.23.0"
 google-guava = "32.1.3-jre"
 google-re2j = "1.7"
 grpc = "1.61.1"
-gradle-enterprise = "3.15.1"
 gulp-cli = "2.3.0"
 hamcrest = "2.2"
 hk2 = "3.0.5"
@@ -108,7 +107,6 @@ mockito = "5.12.0"
 morethan-jmhreport = "0.9.0"
 navsecurity = "0.5.10"
 netty = "4.1.108.Final"
-nexus-publish = "2.0.0-rc-1"
 nimbusds-josejwt = "9.30.2"
 nodegradle-node = "7.0.1"
 openapi = "7.6.0"
@@ -116,7 +114,7 @@ opentelemetry-bom = "1.35.0"
 osgi-annotation = "8.1.0"
 owasp-dependencycheck = "9.0.8"
 palantir-consistentversions = "2.16.0"
-prometheus = "1.1.0"
+prometheus-metrics = "1.1.0"
 prometheus-simpleclient = "0.16.0"
 quicktheories = "0.26"
 openjdk-jmh = "1.37"
@@ -138,10 +136,8 @@ xerial-snappy = "1.1.10.5"
 
 [plugins]
 
-commonCustomUserData = { id = "com.gradle.common-custom-user-data-gradle-plugin", version.ref = "common-custom-user-data" }
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id  = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
-gradle-enterprise = { id = "com.gradle.enterprise", version.ref = "gradle-enterprise" }
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "johnrengelman-shadow" }
 ltgt-errorprone = { id = "net.ltgt.errorprone", version.ref = "ltgt-errorprone" }
 morethan-jmhreport = { id = "io.morethan.jmhreport", version.ref = "morethan-jmhreport" }
@@ -162,10 +158,10 @@ udnercouch-download = { id = "de.undercouch.download", version.ref = "undercouch
 
 adobe-testing-s3mock-junit4 = { group = "com.adobe.testing", name = "s3mock-junit4", version.ref = "adobe-testing-s3mock" }
 adobe-testing-s3mock-testsupportcommon = { group = "com.adobe.testing", name = "s3mock-testsupport-common", version.ref = "adobe-testing-s3mock" }
-amazon-awssdk-bom = { group = "software.amazon.awssdk", name = "bom", version.ref = "amazon-awssdk" }
 amazon-awssdk-apacheclient = { group = "software.amazon.awssdk", name = "apache-client", version.ref = "amazon-awssdk" }
 amazon-awssdk-auth = { group = "software.amazon.awssdk", name = "auth", version.ref = "amazon-awssdk" }
 amazon-awssdk-awscore = { group = "software.amazon.awssdk", name = "aws-core", version.ref = "amazon-awssdk" }
+amazon-awssdk-bom = { group = "software.amazon.awssdk", name = "bom", version.ref = "amazon-awssdk" }
 amazon-awssdk-profiles = { group = "software.amazon.awssdk", name = "profiles", version.ref = "amazon-awssdk" }
 amazon-awssdk-regions = { group = "software.amazon.awssdk", name = "regions", version.ref = "amazon-awssdk" }
 amazon-awssdk-s3 = { group = "software.amazon.awssdk", name = "s3", version.ref = "amazon-awssdk" }
@@ -281,6 +277,7 @@ eclipse-jetty-util = { group = "org.eclipse.jetty", name = "jetty-util", version
 eclipse-jetty-webapp = { group = "org.eclipse.jetty", name = "jetty-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "eclipse-jetty" }
 eclipse-jgit-jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "eclipse-jgit" }
+fasterxml-jackson-bom = { group = "com.fasterxml.jackson", name = "jackson-bom", version.ref = "fasterxml" }
 fasterxml-jackson-core-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "fasterxml" }
 fasterxml-jackson-core-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "fasterxml" }
 fasterxml-jackson-core-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "fasterxml" }
@@ -293,6 +290,7 @@ flexmark-extensions-attributes = { group = "com.vladsch.flexmark", name = "flexm
 flexmark-extensions-autolink = { group = "com.vladsch.flexmark", name = "flexmark-ext-autolink", version.ref = "flexmark" }
 google-api-gax = { group = "com.google.api", name = "gax", version.ref = "google-api-gax" }
 google-auth-oauth2http = { group = "com.google.auth", name = "google-auth-library-oauth2-http", version.ref = "google-auth" }
+google-cloud-bom = { group = "com.google.cloud", name = "google-cloud-bom", version.ref = "google-cloud-bom" }
 google-cloud-core = { group = "com.google.cloud", name = "google-cloud-core", version.ref = "google-cloud-core" }
 google-cloud-corehttp = { group = "com.google.cloud", name = "google-cloud-core-http", version.ref = "google-cloud-core" }
 google-cloud-nio = { group = "com.google.cloud", name = "google-cloud-nio", version.ref = "google-cloud-nio" }
@@ -328,7 +326,6 @@ mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mo
 mockito-subclass = { group = "org.mockito", name = "mockito-subclass", version.ref = "mockito" }
 navsecurity-mockoauth2server = { group = "no.nav.security", name = "mock-oauth2-server", version.ref = "navsecurity"}
 netty-codechttp = { group = "io.netty", name = "netty-codec-http", version.ref = "netty" }
-nexus-publish = { group = "io.github.gradle-nexus.publish-plugin", name = "io.github.gradle-nexus.publish-plugin.gradle.plugin", version.ref = "nexus-publish" }
 nimbusds-josejwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 openjdk-jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "openjdk-jmh" }
@@ -341,8 +338,8 @@ opentelemetry-sdktrace = { group = "io.opentelemetry", name = "opentelemetry-sdk
 opentelemetry-sdktesting = { group = "io.opentelemetry", name = "opentelemetry-sdk-testing", version.ref = "opentelemetry-bom" }
 opentelemetry-sdkextension-autoconfigure = { group = "io.opentelemetry", name = "opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry-bom" }
 osgi-annotation = { group = "org.osgi", name = "osgi.annotation", version.ref = "osgi-annotation" }
-prometheus-metrics-expositionformats = { group = "io.prometheus", name = "prometheus-metrics-exposition-formats", version.ref = "prometheus" }
-prometheus-metrics-model = { group = "io.prometheus", name = "prometheus-metrics-model", version.ref = "prometheus" }
+prometheus-metrics-expositionformats = { group = "io.prometheus", name = "prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
+prometheus-metrics-model = { group = "io.prometheus", name = "prometheus-metrics-model", version.ref = "prometheus-metrics" }
 prometheus-simpleclient = { group = "io.prometheus", name = "simpleclient", version.ref = "prometheus-simpleclient" }
 prometheus-simpleclient-httpserver = { group = "io.prometheus", name = "simpleclient_httpserver", version.ref = "prometheus-simpleclient" }
 quicktheories-quicktheories = { group = "org.quicktheories", name = "quicktheories", version.ref = "quicktheories" }
