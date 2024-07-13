@@ -110,7 +110,7 @@ netty = "4.1.108.Final"
 nimbusds-josejwt = "9.30.2"
 nodegradle-node = "7.0.1"
 openapi = "7.6.0"
-opentelemetry-bom = "1.35.0"
+opentelemetry = "1.35.0"
 osgi-annotation = "8.1.0"
 owasp-dependencycheck = "9.0.8"
 palantir-consistentversions = "2.16.0"
@@ -329,14 +329,14 @@ netty-codechttp = { group = "io.netty", name = "netty-codec-http", version.ref =
 nimbusds-josejwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 openjdk-jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "openjdk-jmh" }
-opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api", version.ref = "opentelemetry-bom" }
-opentelemetry-bom = { group = "io.opentelemetry", name = "opentelemetry-bom", version.ref = "opentelemetry-bom" }
-opentelemetry-context = { group = "io.opentelemetry", name = "opentelemetry-context", version.ref = "opentelemetry-bom" }
-opentelemetry-exporter-otlp = { group = "io.opentelemetry", name = "opentelemetry-exporter-otlp", version.ref = "opentelemetry-bom" }
-opentelemetry-sdk = { group = "io.opentelemetry", name = "opentelemetry-sdk", version.ref = "opentelemetry-bom" }
-opentelemetry-sdktrace = { group = "io.opentelemetry", name = "opentelemetry-sdk-trace", version.ref = "opentelemetry-bom" }
-opentelemetry-sdktesting = { group = "io.opentelemetry", name = "opentelemetry-sdk-testing", version.ref = "opentelemetry-bom" }
-opentelemetry-sdkextension-autoconfigure = { group = "io.opentelemetry", name = "opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry-bom" }
+opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api", version.ref = "opentelemetry" }
+opentelemetry-bom = { group = "io.opentelemetry", name = "opentelemetry-bom", version.ref = "opentelemetry" }
+opentelemetry-context = { group = "io.opentelemetry", name = "opentelemetry-context", version.ref = "opentelemetry" }
+opentelemetry-exporter-otlp = { group = "io.opentelemetry", name = "opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
+opentelemetry-sdk = { group = "io.opentelemetry", name = "opentelemetry-sdk", version.ref = "opentelemetry" }
+opentelemetry-sdktrace = { group = "io.opentelemetry", name = "opentelemetry-sdk-trace", version.ref = "opentelemetry" }
+opentelemetry-sdktesting = { group = "io.opentelemetry", name = "opentelemetry-sdk-testing", version.ref = "opentelemetry" }
+opentelemetry-sdkextension-autoconfigure = { group = "io.opentelemetry", name = "opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 osgi-annotation = { group = "org.osgi", name = "osgi.annotation", version.ref = "osgi-annotation" }
 prometheus-metrics-expositionformats = { group = "io.prometheus", name = "prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { group = "io.prometheus", name = "prometheus-metrics-model", version.ref = "prometheus-metrics" }

@@ -20,7 +20,6 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id 'base'
-  alias(libs.plugins.palantir.consistentversions)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
@@ -98,7 +97,7 @@ ext {
   }
   
   luceneBaseVersionProvider = project.provider { 
-    def luceneVersion = getVersion('org.apache.lucene:lucene-core')
+    def luceneVersion = libs.versions.apache.lucene.get()
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
       throw GradleException("Can't strip base version from " + luceneVersion)
@@ -137,7 +136,7 @@ apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE support, settings and specials.
 apply from: file('gradle/ide/intellij-idea.gradle')
-apply from: file('gradle/ide/eclipse.gradle')
+// apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
 apply from: file('gradle/validation/measure-task-times.gradle')

@@ -111,17 +111,17 @@ task buildLocalAntoraYaml {
         // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
         // These variable names must use underscores, not dashes or periods
         props.putAll([
-            ["dep_version_commons_codec", "commons-codec", "commons-codec"],
-            ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
-            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
-            ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
-            ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
-            ["dep_version_tika", "org.apache.tika", "tika-core"],
-            ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
-            ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
-            ["dep_version_opentelemetry", "io.opentelemetry", "opentelemetry-sdk"],
-        ].collectEntries { propKey, depGroup, depId ->
-            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
+            ["dep_version_commons_codec", libs.versions.commons.codec],
+            ["dep_version_dropwizard", libs.versions.dropwizard.metrics],
+            ["dep_version_hadoop", libs.versions.apache.hadoop.asProvider()],
+            ["dep_version_log4j", libs.versions.apache.log4j],
+            ["dep_version_opennlp", libs.versions.apache.opennlp],
+            ["dep_version_tika", libs.versions.apache.tika],
+            ["dep_version_zookeeper", libs.versions.apache.zookeeper],
+            ["dep_version_lucene", libs.versions.apache.lucene],
+            ["dep_version_opentelemetry", libs.versions.opentelemetry],
+        ].collectEntries { propKey, dependencyVersion ->
+            [propKey, "${-> dependencyVersion == libs.versions.apache.lucene ? luceneBaseVersionProvider.get() : dependencyVersion.get()}"] })
 
 
         copy {
