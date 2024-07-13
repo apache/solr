@@ -26,7 +26,7 @@ dependencies {
     implementation libs.apache.lucene.core
     implementation libs.slf4j.api
 
-    implementation platform(group: 'com.google.cloud', name: 'google-cloud-bom')
+    implementation platform(libs.google.cloud.bom)
     implementation libs.google.api.gax
     implementation libs.google.auth.oauth2http
     implementation libs.google.auth.credentials

@@ -23,7 +23,7 @@ dependencies {
   api project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation 'org.apache.lucene:lucene-core'
+  implementation libs.apache.lucene.core
 
   implementation platform(libs.amazon.awssdk.bom)
   implementation libs.amazon.awssdk.auth

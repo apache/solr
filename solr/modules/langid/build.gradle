@@ -26,7 +26,6 @@ dependencies {
   implementation(libs.apache.tika.core) { transitive = false }
   implementation libs.commonsio.commonsio
   implementation libs.cybozulabs.langdetect
-  // NOTE: Currently not defined in versions.props since we need to stay on same version as Lucene due to opennlp
   implementation libs.apache.opennlp.tools
   implementation libs.slf4j.api
 
