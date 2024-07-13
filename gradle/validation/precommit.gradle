@@ -24,7 +24,6 @@ configure(rootProject) {
 
     // Root-level validation tasks.
     dependsOn ":verifyLocks"
-    dependsOn ":versionsPropsAreSorted"
     dependsOn ":checkWorkingCopyClean"
 
     // Solr validation tasks.
