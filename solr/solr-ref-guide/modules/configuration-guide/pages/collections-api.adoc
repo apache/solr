@@ -1,5 +1,6 @@
 = Collections API
 :page-show-toc: false
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -46,11 +47,11 @@ However, there is a limit of 10,000 on the number of async call responses stored
 
 *Input*
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1asyncexample]
+[tabs#asyncexample]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 
 [source,bash]
 ----
@@ -59,10 +60,9 @@ http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=collec
 ----
 ====
 
-[example.tab-pane#v2asyncexample]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Content-Type: application/json' -d '
@@ -75,7 +75,7 @@ curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Conten
 '
 ----
 ====
---
+======
 
 
 [source,text]
@@ -101,29 +101,26 @@ curl -X POST http://localhost:8983/api/collections/collection1/shards -H 'Conten
 Request the status and response of an already submitted <<Asynchronous Calls,Asynchronous Collection API>> (below) call.
 This call is also used to clear up the stored statuses.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1asyncrequeststatus]
+[tabs#asyncrequeststatus]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1000
 
 ----
 ====
-
-[example.tab-pane#v2asyncrequeststatus]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/cluster/command-status/1000
 ----
 ====
---
+======
 
 === REQUESTSTATUS Parameters
 
@@ -190,12 +187,11 @@ http://localhost:8983/solr/admin/collections?action=REQUESTSTATUS&requestid=1004
 
 Deletes the stored response of an already failed or completed <<Asynchronous Calls,Asynchronous Collection API>> call.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1asyncdeletestatus]
+[tabs#asyncdeletestatus]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=1000
@@ -203,10 +199,9 @@ http://localhost:8983/solr/admin/collections?action=DELETESTATUS&requestid=1000
 ----
 ====
 
-[example.tab-pane#v2asyncdeletestatus]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 Delete a single request response:
 [source,bash]
 ----
@@ -219,7 +214,7 @@ Flush out all stored completed and failed async request responses:
 curl -X DELETE http://localhost:8983/api/cluster/command-status?flush=true
 ----
 ====
---
+======
 
 === DELETESTATUS Parameters
 

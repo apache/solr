@@ -1,4 +1,5 @@
 = Enabling SSL
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -66,13 +67,14 @@ $ openssl pkcs12 -nokeys -in solr-ssl.keystore.p12 -out solr-ssl.cacert.pem
 The Solr Control Script is already setup to pass SSL-related Java system properties to the JVM.
 To activate the SSL settings, uncomment and update the set of properties beginning with `SOLR_SSL_*` in `bin/solr.in.sh` on *nix systems or `bin\solr.in.cmd` on Windows.
 
-[.dynamic-tabs]
---
-[example.tab-pane#solr-in-sh]
+[tabs#solr-in]
+======
+*nix::
++
 ====
-[.tab-label]**nix (solr.in.sh)*
-
 NOTE: If you setup Solr as a service on Linux using the steps outlined in xref:taking-solr-to-production.adoc[], then make these changes in `/var/solr/solr.in.sh`.
+
+.solr.in.sh
 
 [source,bash]
 ----
@@ -96,9 +98,10 @@ SOLR_SSL_CHECK_PEER_NAME=true
 ----
 ====
 
-[example.tab-pane#solr-in-cmd]
+Windows::
++
 ====
-[.tab-label]*Windows (solr.in.cmd)*
+.solr.in.cmd
 [source,powershell]
 ----
 REM Enables HTTPS. It is implicitly true if you set SOLR_SSL_KEY_STORE. Use this config
@@ -120,7 +123,7 @@ REM This will also be used for the default value of whether SNI Host checking sh
 set SOLR_SSL_CHECK_PEER_NAME=true
 ----
 ====
---
+======
 
 .Client Authentication Settings
 WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH` but not both at the same time.
@@ -187,11 +190,12 @@ s|Required |Default: none
 +
 The password to the credential store.
 
-[.dynamic-tabs]
---
-[example.tab-pane#credstore-unix]
+[tabs#credstore]
+======
+*nix::
++
 ====
-[.tab-label]**nix (solr.in.sh)*
+.solr.in.sh
 [source,bash]
 ----
 SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
@@ -200,17 +204,18 @@ HADOOP_CREDSTORE_PASSWORD="credStorePass123"
 ----
 ====
 
-[example.tab-pane#credstore-windows]
-=====
-[.tab-label]*Windows (solr.in.cmd)*
+Windows::
++
+====
+.solr.in.cmd
 [source,powershell]
 ----
 set SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
 set SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
 set HADOOP_CREDSTORE_PASSWORD="credStorePass123"
 ----
-=====
---
+====
+======
 
 === Configure ZooKeeper
 
@@ -222,26 +227,26 @@ See xref:zookeeper-ensemble.adoc[] for more information.
 The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
 The examples below use the `zkcli` tool that comes with Solr to do this.
 
-[.dynamic-tabs]
---
-[example.tab-pane#zkclusterprops-unix]
+[tabs#zkclusterprops]
+======
+*nix::
++
 ====
-[.tab-label]**nix Command*
 [source,terminal]
 ----
 $ bin/solr cluster -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 
-[example.tab-pane#zkclusterprops-windows]
-=====
-[.tab-label]*Windows Command*
+Windows::
++
+====
 [source,powershell]
 ----
 C:\> bin/solr.cmd -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
-=====
---
+====
+======
 
 Be sure to use the correct `zkhost` value for your system.
 If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkhost` string, e.g., `-zkhost server1:2181,server2:2181,server3:2181/solr`.
@@ -268,26 +273,26 @@ Once this and all other steps are complete, you can go ahead and start Solr.
 Start Solr using the Solr control script as shown in the examples below.
 Customize the values for the parameters shown as needed and add any used in your system.
 
-[.dynamic-tabs]
---
-[example.tab-pane#single-unix]
+[tabs#single]
+======
+*nix::
++
 ====
-[.tab-label]**nix Command*
 [source,terminal]
 ----
 $ bin/solr start -p 8984
 ----
 ====
 
-[example.tab-pane#single-windows]
+Windows::
++
 ====
-[.tab-label]*Windows Command*
 [source,powershell]
 ----
 C:\> bin\solr.cmd -p 8984
 ----
 ====
---
+======
 
 === Start SolrCloud
 
@@ -298,27 +303,27 @@ Customize the values for the parameters shown as necessary and add any used in y
 
 If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.checkPeerName=false` system property.
 
-[.dynamic-tabs]
---
-[example.tab-pane#cloud-unix]
+[tabs#cloud]
+======
+*nix::
++
 ====
-[.tab-label]*\*nix*
 [source,terminal]
 ----
 $ bin/solr start -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 
-[example.tab-pane#cloud-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
 [source,powershell]
 ----
 C:\> bin\solr.cmd -cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
 
 ----
 ====
---
+======
 
 == Automatically reloading KeyStore/TrustStore
 === Solr Server
@@ -359,17 +364,26 @@ NOTE: If your operating system does not include curl, you can download binaries 
 
 Create a 2-shard, replicationFactor=1 collection named mycollection using the `_default` configset:
 
-.*nix command
+[tabs]
+======
+*nix::
++
+====
 [source,bash]
 ----
 bin/solr create -c mycollection -shards 2
 ----
+====
 
-.Windows command
+Windows::
++
+====
 [source,text]
 ----
 bin\solr.cmd create -c mycollection -shards 2
 ----
+====
+======
 
 The `create` action will pass the `SOLR_SSL_*` properties set in your include file to the SolrJ code used to create the collection.
 
