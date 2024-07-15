@@ -1,4 +1,5 @@
 = MoreLikeThis
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -187,12 +188,11 @@ Multi-shard support is, however, available with the MoreLikeThis request handler
 The MoreLikeThis request handler is not configured by default and needs to be set up before using it.
 You can do this by manually editing `solrconfig.xml` or with the Config API:
 
-[.dynamic-tabs]
---
-[example.tab-pane#manualconfig]
+[tabs#manual-config]
+======
+Manual Configuration::
++
 ====
-[.tab-label]*Manual Configuration*
-
 [source,xml]
 ----
 <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
@@ -201,10 +201,9 @@ You can do this by manually editing `solrconfig.xml` or with the Config API:
 ----
 ====
 
-[example.tab-pane#configapi]
+Config API::
++
 ====
-[.tab-label]*Config API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d {
@@ -216,7 +215,7 @@ curl -X POST -H 'Content-type:application/json' -d {
 } http://localhost:8983/solr/<collection>/config
 ----
 ====
---
+======
 
 Both of the above examples set the `mlt.fl` parameter to "body" for the request handler.
 This means that all requests to the handler will use that value for the parameter unless specifically overridden in an individual request.
