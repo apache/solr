@@ -148,6 +148,8 @@ Improvements
 
 * SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
 
+* SOLR-16198: Introduce tabbed sections again in the Ref Guide.  (Christos Malliaridis via Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather

@@ -1,4 +1,5 @@
 = Configsets
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -55,23 +56,20 @@ This path can be configured with the `configSetBaseDir` parameter in `solr.xml` 
 To create a new core using a configset, pass `configSet` as one of the core properties.
 For example, if you do this via the CoreAdmin API:
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1use-configset]
+[tabs#use-configset]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/admin/cores?action=CREATE&name=mycore&instanceDir=path/to/instance&configSet=configset2
 ----
 ====
 
-[example.tab-pane#v2use-configset]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -v -X POST -H 'Content-type: application/json' -d '{
@@ -82,7 +80,7 @@ curl -v -X POST -H 'Content-type: application/json' -d '{
     http://localhost:8983/api/cores
 ----
 ====
---
+======
 
 == Configsets in SolrCloud Clusters
 
