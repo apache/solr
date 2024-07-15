@@ -49,7 +49,6 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
     System.setProperty("solr.crossdc.topicName", "doesnotmatter");
     cluster1 =
         configureCluster(2)
-            //  .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
             .configure();
 
     CloudSolrClient cloudClient1 = cluster1.getSolrClient();

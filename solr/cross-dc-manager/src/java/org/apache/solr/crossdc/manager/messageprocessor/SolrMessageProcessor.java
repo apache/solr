@@ -100,15 +100,6 @@ public class SolrMessageProcessor extends MessageProcessor
       log.debug("handleSolrRequest start params={}", requestParams);
     }
 
-    // TODO: isn't this handled by the mirroring handler?
-
-    //  final String shouldMirror = requestParams.get("shouldMirror");
-    //
-    //  if ("false".equalsIgnoreCase(shouldMirror)) {
-    //    log.warn("Skipping mirrored request because shouldMirror is set to false.
-    // request={}", requestParams);
-    //    return new Result<>(ResultStatus.FAILED_NO_RETRY);
-    //  }
     logFirstAttemptLatency(mirroredSolrRequest);
 
     Result<MirroredSolrRequest<?>> result;

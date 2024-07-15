@@ -43,3 +43,17 @@ dependencies {
 
   testFixturesApi 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }
+
+// Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf
+task zipCloudConfigSet(type: Zip) {
+  from "${projectDir}/src/test-files/configs/cloud-minimal/conf/"
+  getArchiveFileName().set("cloud-minimal.zip")
+  setDestinationDirectory(file("${projectDir.toString()}/src/test-files/configs"))
+
+  // Make the zip reproducable
+  includeEmptyDirs = false
+  preserveFileTimestamps = false
+  reproducibleFileOrder = true
+}
+
+tasks.processTestResources.dependsOn(tasks.zipCloudConfigSet)
