@@ -1614,7 +1614,7 @@ Provided as a query parameter for v1 requests, and as a path segment for v2 requ
 s|Required |Default: none
 |===
 +
-What to name the backup that is created. 
+What to name the backup that is created.
 Provided as a query parameter for v1 requests, or as a path segment for v2 requests.
 +
 For incremental backups, the backup name should be reused to add new backup points to the existing backup. For non-incremental backups (deprecated), this name is checked to ensure it doesn't already exist, and an error message is raised if it does. 
