@@ -911,6 +911,10 @@ public class PostTool extends ToolBase {
       return true;
     }
 
+    if (cli.hasOption("params")) {
+      uri = new URI(appendParam(uri.toString(), cli.getOptionValue("params"));
+    }
+
     boolean success = true;
     if (type == null) {
       type = DEFAULT_CONTENT_TYPE;
