@@ -111,6 +111,20 @@ public class EnvUtils {
   }
 
   /** Get property as integer */
+  public static Integer getPropertyAsInteger(String key) {
+    return getPropertyAsInteger(key, null);
+  }
+
+  /** Get property as integer, or default value */
+  public static Integer getPropertyAsInteger(String key, Integer defaultValue) {
+    String value = getProperty(key);
+    if (value == null) {
+      return defaultValue;
+    }
+    return Integer.parseInt(value);
+  }
+
+  /** Get property as long */
   public static Long getPropertyAsLong(String key) {
     return getPropertyAsLong(key, null);
   }
