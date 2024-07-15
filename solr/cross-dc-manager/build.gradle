@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -53,6 +55,10 @@ dependencies {
 
 ext {
   mainClass = 'org.apache.solr.crossdc.manager.consumer.Consumer'
+
+  // Use of the security manager is not supported on windows.
+  // Mockito does not work with it enabled.
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
 task run(type: JavaExec) {

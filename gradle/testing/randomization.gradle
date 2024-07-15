@@ -200,7 +200,12 @@ allprojects {
 
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
-        if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
+        def useSecurityManager = ManagerBoolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"]);
+        // Allow the project to override this
+        if (project.ext.has("useSecurityManager")) {
+          useSecurityManager = project.ext.get("useSecurityManager")
+        }
+        if (useSecurityManager) {
           def commonSolrDir = project(':solr').layout.projectDirectory
           def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
           jvmArgumentProviders.add(
