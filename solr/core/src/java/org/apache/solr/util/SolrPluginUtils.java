@@ -74,8 +74,10 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
@@ -223,7 +225,7 @@ public class SolrPluginUtils {
       ResponseBuilder rb, DocList docs, Query query, SolrQueryRequest req, SolrQueryResponse res)
       throws IOException {
     SolrIndexSearcher searcher = req.getSearcher();
-    if (!searcher.getDocFetcher().isLazyFieldLoadingEnabled()) {
+    if (!searcher.interrogateDocFetcher(SolrDocumentFetcher::isLazyFieldLoadingEnabled)) {
       // nothing to do
       return;
     }
@@ -249,9 +251,10 @@ public class SolrPluginUtils {
       }
 
       // get documents
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       DocIterator iter = docs.iterator();
       for (int i = 0; i < docs.size(); i++) {
-        searcher.doc(iter.nextDoc(), fieldFilter);
+        docFetcher.doc(iter.nextDoc(), fieldFilter);
       }
     }
   }
@@ -302,6 +305,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
+  @Deprecated // move to DebugComponent
   public static NamedList<Object> doStandardDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -316,6 +320,7 @@ public class SolrPluginUtils {
     return dbg;
   }
 
+  @Deprecated // move to DebugComponent
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -336,6 +341,7 @@ public class SolrPluginUtils {
     }
   }
 
+  @Deprecated
   public static void doStandardResultsDebug(
       SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
       throws IOException {
@@ -404,12 +410,13 @@ public class SolrPluginUtils {
       Query query, DocList docs, SolrIndexSearcher searcher, IndexSchema schema)
       throws IOException {
 
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     NamedList<Explanation> explainList = new SimpleOrderedMap<>();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Document doc = searcher.doc(id);
+      Document doc = docFetcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id));
@@ -427,6 +434,7 @@ public class SolrPluginUtils {
   }
 
   /** Executes a basic query */
+  @Deprecated
   public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
       throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq, ';');
@@ -442,8 +450,13 @@ public class SolrPluginUtils {
         sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
       }
 
-      DocList results = req.getSearcher().getDocList(query, sort, start, limit);
-      return results;
+      return new QueryCommand()
+          .setQuery(query)
+          .setSort(sort)
+          .setOffset(start)
+          .setLen(limit)
+          .search(req.getSearcher())
+          .getDocList();
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
     }

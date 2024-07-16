@@ -101,44 +101,42 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-installed", "-credentials", SecurityJson.USER_PASS
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
-          "-credentials",
-          SecurityJson.USER_PASS,
           "add-repo",
           "fullstory",
           "http://localhost:" + repositoryServer.getPort(),
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-available", "-credentials", SecurityJson.USER_PASS
+          "--solr-url", solrUrl, "list-available", "--credentials", SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "install",
           "question-answer:1.0.0",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-installed", "-credentials", SecurityJson.USER_PASS
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
         });
 
     withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
@@ -151,27 +149,27 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "deploy",
           "question-answer",
           "-y",
-          "-collections",
+          "--collections",
           "abc",
           "-p",
           "RH-HANDLER-PATH=" + rhPath,
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
     assertPackageVersion(
@@ -180,18 +178,24 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-deployed", "-c", "abc", "-credentials", SecurityJson.USER_PASS
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "-c",
+          "abc",
+          "--credentials",
+          SecurityJson.USER_PASS
         });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
@@ -205,14 +209,14 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solr-url",
             solrUrl,
             "deploy",
             "question-answer:latest",
             "-y",
-            "-collections",
+            "--collections",
             "abc",
-            "-credentials",
+            "--credentials",
             SecurityJson.USER_PASS
           });
       assertPackageVersion(
@@ -221,11 +225,11 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solr-url",
             solrUrl,
             "install",
             "question-answer",
-            "-credentials",
+            "--credentials",
             SecurityJson.USER_PASS
           });
       assertPackageVersion(
@@ -236,11 +240,11 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solr-url",
             solrUrl,
             "install",
             "question-answer",
-            "-credentials",
+            "--credentials",
             SecurityJson.USER_PASS
           });
       assertPackageVersion(
@@ -251,32 +255,32 @@ public class PackageToolTest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
               "-p",
               "RH-HANDLER-PATH=" + rhPath,
-              "-credentials",
+              "--credentials",
               SecurityJson.USER_PASS
             });
       } else {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
-              "-credentials",
+              "--credentials",
               SecurityJson.USER_PASS
             });
       }
@@ -288,24 +292,24 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "undeploy",
           "question-answer",
-          "-collections",
+          "--collections",
           "abc",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS
         });
   }

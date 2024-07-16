@@ -26,7 +26,7 @@ You can review instructions for running Solr in Docker in the xref:running-in-do
 === Whats the fastest build lifecycle for frontend work on Solr Admin?
 
 Run `gradle dev`, and then `cd ./packaging/build/dev/`.  Fire up your cluster
-via `bin/solr start -e cloud -noprompt` and then as you make changes to assets in `/solr/webapp/web`,
+via `bin/solr start -e cloud --no-prompt` and then as you make changes to assets in `/solr/webapp/web`,
 run `gradle dev` to redeploy the web assets. Do a  hard refresh in your browser
 to pick up your changes.
 
@@ -97,4 +97,3 @@ If you don't yet have an account, you have to ask for one in the 'users' or 'dev
 * http://fucit.org/solr-jenkins-reports/failure-report.html
 * https://ge.apache.org/scans/tests?search.relativeStartTime=P90D&search.rootProjectNames=solr*
 * https://lists.apache.org[Solr mailing list archives especially builds]
-

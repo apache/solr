@@ -73,4 +73,3 @@ The upgrade from 7.x to 8.0 introduced several *major* changes that you should b
 Please do a thorough review of the section xref:major-changes-in-solr-8.adoc[] before starting your upgrade.
 
 A summary of the significant changes between Solr 6.x and Solr 7.0 is in the section xref:major-changes-in-solr-7.adoc[].
-
