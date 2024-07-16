@@ -84,8 +84,8 @@
       "changelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
     }
   ],
-  "schedule": ["* * * * 0"],
-  "prConcurrentLimit": 50,
+  "schedule": ["* * * * *"],
+  "prConcurrentLimit": 100,
   "prHourlyLimit": 10,
   "minimumReleaseAge": "5 days"
 }
