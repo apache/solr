@@ -3,8 +3,8 @@
   "description": "Runs Renovate with solrbot, see dev-docs/dependency-upgrades.adoc for more",
   "enabled": true,
   "dependencyDashboard": false,
-  "enabledManagers": ["gradle"],
-  "includePaths": ["versions.*", "build.gradle"],
+  "enabledManagers": ["gradle", "github-actions"],
+  "includePaths": ["versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": ["./gradlew updateLicenses"],
     "fileFilters": ["solr/licenses/*.sha1"],
@@ -14,7 +14,11 @@
     {
       "description": "Fix for non-semantic versions for older artifacts",
       "matchDatasources": ["maven"],
-      "matchPackageNames": ["commons-collections:commons-collections", "commons-io:commons-io", "commons-lang:commons-lang"],
+      "matchPackageNames": [
+        "commons-collections:commons-collections",
+        "commons-io:commons-io",
+        "commons-lang:commons-lang"
+      ],
       "versioning": "regex:^(?<major>\\d{1,4})\\.(?<minor>\\d+)(\\.(?<patch>\\d+))?$"
     },
     {
@@ -55,29 +59,33 @@
     },
     {
       "description": "Changelog for commons-io",
-      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-io.git"],
-      "customChangelogUrl": "https://commons.apache.org/proper/commons-io/changes-report.html"
+      "matchSourceUrls": [
+        "https://gitbox.apache.org/repos/asf?p=commons-io.git"
+      ],
+      "changelogUrl": "https://commons.apache.org/proper/commons-io/changes-report.html"
     },
     {
       "description": "Changelog for zookeeper",
       "matchSourceUrls": ["https://gitbox.apache.org/repos/asf/zookeeper.git"],
-      "customChangelogUrl": "https://zookeeper.apache.org/releases.html"
+      "changelogUrl": "https://zookeeper.apache.org/releases.html"
     },
     {
       "description": "Changelog for commons-compress",
-      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-compress.git"],
-      "customChangelogUrl": "https://commons.apache.org/proper/commons-compress/changes-report.html"
+      "matchSourceUrls": [
+        "https://gitbox.apache.org/repos/asf?p=commons-compress.git"
+      ],
+      "changelogUrl": "https://commons.apache.org/proper/commons-compress/changes-report.html"
     },
     {
       "description": "Changelog for commons-configuration",
-      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-configuration.git"],
-      "customChangelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
+      "matchSourceUrls": [
+        "https://gitbox.apache.org/repos/asf?p=commons-configuration.git"
+      ],
+      "changelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
     }
   ],
-  "schedule": [
-    "* * * * 0"
-  ],
+  "schedule": ["* * * * 0"],
   "prConcurrentLimit": 50,
   "prHourlyLimit": 10,
-  "stabilityDays": 5
+  "minimumReleaseAge": "5 days"
 }
