@@ -5169,12 +5169,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
-    return assertOrderOf(tuples, "id", ids);
+  protected void assertOrder(List<Tuple> tuples, int... ids) throws Exception {
+    assertOrderOf(tuples, "id", ids);
   }
 
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... ids)
-      throws Exception {
+  protected void assertOrderOf(List<Tuple> tuples, String fieldName, int... ids) throws Exception {
     int i = 0;
     for (int val : ids) {
       Tuple t = tuples.get(i);
@@ -5184,10 +5183,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
       ++i;
     }
-    return true;
   }
 
-  protected boolean assertFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (!tuple.getFields().containsKey(field)) {
@@ -5195,10 +5193,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
-  protected boolean assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (tuple.getFields().containsKey(field)) {
@@ -5206,7 +5203,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
