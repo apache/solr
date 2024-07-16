@@ -47,9 +47,7 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
   public static void beforeSimpleSolrIntegrationTest() throws Exception {
     System.setProperty("solr.crossdc.bootstrapServers", "doesnotmatter:9092");
     System.setProperty("solr.crossdc.topicName", "doesnotmatter");
-    cluster1 =
-        configureCluster(2)
-            .configure();
+    cluster1 = configureCluster(2).configure();
 
     CloudSolrClient cloudClient1 = cluster1.getSolrClient();
 
