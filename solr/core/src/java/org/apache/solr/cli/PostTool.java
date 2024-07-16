@@ -108,6 +108,7 @@ public class PostTool extends ToolBase {
   boolean dryRun; // Avoids actual network traffic to Solr
 
   String[] args;
+  String params;
 
   boolean auto = true;
   private int currentDepth;
@@ -310,6 +311,8 @@ public class PostTool extends ToolBase {
     credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
 
     args = cli.getArgs();
+
+    params = cli.hasOption("params") ? cli.getOptionValue("params") : "";
 
     execute(mode);
   }
@@ -911,8 +914,12 @@ public class PostTool extends ToolBase {
       return true;
     }
 
-    if (cli.hasOption("params")) {
-      uri = new URI(appendParam(uri.toString(), cli.getOptionValue("params"));
+    if (params.length() > 0) {
+      try {
+        uri = new URI(appendParam(uri.toString(), params));
+      } catch (URISyntaxException e) {
+        warn("Malformed params");
+      }
     }
 
     boolean success = true;
