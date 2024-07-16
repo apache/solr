@@ -16,10 +16,7 @@
  */
 package org.apache.solr.crossdc.common;
 
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.common.config.SslConfigs;
-import org.apache.kafka.common.config.internals.BrokerSecurityConfigs;
+import static org.apache.solr.crossdc.common.SensitivePropRedactionUtils.redactPropertyIfNecessary;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,8 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import static org.apache.solr.crossdc.common.SensitivePropRedactionUtils.redactPropertyIfNecessary;
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.config.internals.BrokerSecurityConfigs;
+import org.apache.solr.common.util.CollectionUtil;
 
 public class KafkaCrossDcConf extends CrossDcConf {
 
@@ -39,8 +39,9 @@ public class KafkaCrossDcConf extends CrossDcConf {
   public static final String DEFAULT_MAX_REQUEST_SIZE = "5242880";
   public static final String DEFAULT_ENABLE_DATA_COMPRESSION = "none";
   private static final String DEFAULT_INDEX_UNMIRRORABLE_DOCS = "false";
-  public static final String DEFAULT_SLOW_SEND_THRESHOLD= "1000";
-  public static final String DEFAULT_NUM_RETRIES = null; // by default, we control retries with DELIVERY_TIMEOUT_MS_DOC
+  public static final String DEFAULT_SLOW_SEND_THRESHOLD = "1000";
+  // by default, we control retries with DELIVERY_TIMEOUT_MS_DOC
+  public static final String DEFAULT_NUM_RETRIES = null;
   private static final String DEFAULT_RETRY_BACKOFF_MS = "500";
 
   private static final String DEFAULT_CONSUMER_PROCESSING_THREADS = "5";
@@ -114,14 +115,16 @@ public class KafkaCrossDcConf extends CrossDcConf {
 
   public static final String FETCH_MAX_BYTES = "solr.crossdc.fetchMaxBytes";
 
-  // The maximum delay between invocations of poll() when using consumer group management. This places
-  // an upper bound on the amount of time that the consumer can be idle before fetching more records.
-  // If poll() is not called before expiration of this timeout, then the consumer is considered failed
-  // and the group will rebalance in order to reassign the partitions to another member. For consumers
-  // using a non-null <code>group.instance.id</code> which reach this timeout, partitions will not be
-  // immediately reassigned. Instead, the consumer will stop sending heartbeats and partitions will be
-  // reassigned after expiration of <code>session.timeout.ms</code>. This mirrors the behavior of a
-  // static consumer which has shutdown.
+  /**
+   * The maximum delay between invocations of {@code poll()} when using consumer group management.
+   * This places an upper bound on the amount of time that the consumer can be idle before fetching
+   * more records. If {@code poll()} is not called before expiration of this timeout, then the
+   * consumer is considered failed and the group will rebalance in order to reassign the partitions
+   * to another member. For consumers using a non-null {@code group.instance.id} which reach this
+   * timeout, partitions will not be immediately reassigned. Instead, the consumer will stop sending
+   * heartbeats and partitions will be reassigned after expiration of {@code session.timeout.ms}.
+   * This mirrors the behavior of a static consumer which has shutdown.
+   */
   public static final String MAX_POLL_INTERVAL_MS = "solr.crossdc.maxPollIntervalMs";
 
   public static final String SESSION_TIMEOUT_MS = "solr.crossdc.sessionTimeoutMs";
@@ -144,43 +147,43 @@ public class KafkaCrossDcConf extends CrossDcConf {
   public static final String GROUP_ID = "solr.crossdc.groupId";
 
   static {
-    List<ConfigProperty> configProperties = new ArrayList<>(
-        List.of(new ConfigProperty(TOPIC_NAME),
-            new ConfigProperty(DLQ_TOPIC_NAME),
-            new ConfigProperty(MAX_ATTEMPTS, "3"),
-            new ConfigProperty(BOOTSTRAP_SERVERS),
-            new ConfigProperty(BATCH_SIZE_BYTES, DEFAULT_BATCH_SIZE_BYTES),
-            new ConfigProperty(BUFFER_MEMORY_BYTES, DEFAULT_BUFFER_MEMORY_BYTES),
-            new ConfigProperty(LINGER_MS, DEFAULT_LINGER_MS),
-            new ConfigProperty(REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT),
-            new ConfigProperty(MAX_REQUEST_SIZE_BYTES, DEFAULT_MAX_REQUEST_SIZE),
-            new ConfigProperty(ENABLE_DATA_COMPRESSION, DEFAULT_ENABLE_DATA_COMPRESSION),
-            new ConfigProperty(INDEX_UNMIRRORABLE_DOCS, DEFAULT_INDEX_UNMIRRORABLE_DOCS),
-            new ConfigProperty(SLOW_SUBMIT_THRESHOLD_MS, DEFAULT_SLOW_SEND_THRESHOLD),
-            new ConfigProperty(NUM_RETRIES, DEFAULT_NUM_RETRIES),
-            new ConfigProperty(RETRY_BACKOFF_MS, DEFAULT_RETRY_BACKOFF_MS),
-            new ConfigProperty(DELIVERY_TIMEOUT_MS, DEFAULT_DELIVERY_TIMEOUT_MS),
+    List<ConfigProperty> configProperties =
+        new ArrayList<>(
+            List.of(
+                new ConfigProperty(TOPIC_NAME),
+                new ConfigProperty(DLQ_TOPIC_NAME),
+                new ConfigProperty(MAX_ATTEMPTS, "3"),
+                new ConfigProperty(BOOTSTRAP_SERVERS),
+                new ConfigProperty(BATCH_SIZE_BYTES, DEFAULT_BATCH_SIZE_BYTES),
+                new ConfigProperty(BUFFER_MEMORY_BYTES, DEFAULT_BUFFER_MEMORY_BYTES),
+                new ConfigProperty(LINGER_MS, DEFAULT_LINGER_MS),
+                new ConfigProperty(REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT),
+                new ConfigProperty(MAX_REQUEST_SIZE_BYTES, DEFAULT_MAX_REQUEST_SIZE),
+                new ConfigProperty(ENABLE_DATA_COMPRESSION, DEFAULT_ENABLE_DATA_COMPRESSION),
+                new ConfigProperty(INDEX_UNMIRRORABLE_DOCS, DEFAULT_INDEX_UNMIRRORABLE_DOCS),
+                new ConfigProperty(SLOW_SUBMIT_THRESHOLD_MS, DEFAULT_SLOW_SEND_THRESHOLD),
+                new ConfigProperty(NUM_RETRIES, DEFAULT_NUM_RETRIES),
+                new ConfigProperty(RETRY_BACKOFF_MS, DEFAULT_RETRY_BACKOFF_MS),
+                new ConfigProperty(DELIVERY_TIMEOUT_MS, DEFAULT_DELIVERY_TIMEOUT_MS),
 
-            // Consumer only zkConnectString
-            new ConfigProperty(ZK_CONNECT_STRING, null),
-            new ConfigProperty(FETCH_MIN_BYTES, DEFAULT_FETCH_MIN_BYTES),
-            new ConfigProperty(FETCH_MAX_BYTES, DEFAULT_FETCH_MAX_BYTES),
-            new ConfigProperty(FETCH_MAX_WAIT_MS, DEFAULT_FETCH_MAX_WAIT_MS),
-            new ConfigProperty(CONSUMER_PROCESSING_THREADS, DEFAULT_CONSUMER_PROCESSING_THREADS),
-            new ConfigProperty(MAX_POLL_INTERVAL_MS, DEFAULT_MAX_POLL_INTERVAL_MS),
-            new ConfigProperty(SESSION_TIMEOUT_MS, DEFAULT_SESSION_TIMEOUT_MS),
-
-            new ConfigProperty(MIRROR_COLLECTIONS, DEFAULT_MIRROR_COLLECTIONS),
-            new ConfigProperty(MIRROR_COMMITS, DEFAULT_MIRROR_COMMITS),
-            new ConfigProperty(EXPAND_DBQ, DEFAULT_EXPAND_DBQ),
-            new ConfigProperty(COLLAPSE_UPDATES, DEFAULT_COLLAPSE_UPDATES),
-            new ConfigProperty(MAX_COLLAPSE_RECORDS, DEFAULT_MAX_COLLAPSE_RECORDS),
-
-            new ConfigProperty(MAX_PARTITION_FETCH_BYTES, DEFAULT_MAX_PARTITION_FETCH_BYTES),
-            new ConfigProperty(MAX_POLL_RECORDS, DEFAULT_MAX_POLL_RECORDS),
-            new ConfigProperty(PORT, DEFAULT_PORT),
-            new ConfigProperty(GROUP_ID, DEFAULT_GROUP_ID)));
-
+                // Consumer only zkConnectString
+                new ConfigProperty(ZK_CONNECT_STRING, null),
+                new ConfigProperty(FETCH_MIN_BYTES, DEFAULT_FETCH_MIN_BYTES),
+                new ConfigProperty(FETCH_MAX_BYTES, DEFAULT_FETCH_MAX_BYTES),
+                new ConfigProperty(FETCH_MAX_WAIT_MS, DEFAULT_FETCH_MAX_WAIT_MS),
+                new ConfigProperty(
+                    CONSUMER_PROCESSING_THREADS, DEFAULT_CONSUMER_PROCESSING_THREADS),
+                new ConfigProperty(MAX_POLL_INTERVAL_MS, DEFAULT_MAX_POLL_INTERVAL_MS),
+                new ConfigProperty(SESSION_TIMEOUT_MS, DEFAULT_SESSION_TIMEOUT_MS),
+                new ConfigProperty(MIRROR_COLLECTIONS, DEFAULT_MIRROR_COLLECTIONS),
+                new ConfigProperty(MIRROR_COMMITS, DEFAULT_MIRROR_COMMITS),
+                new ConfigProperty(EXPAND_DBQ, DEFAULT_EXPAND_DBQ),
+                new ConfigProperty(COLLAPSE_UPDATES, DEFAULT_COLLAPSE_UPDATES),
+                new ConfigProperty(MAX_COLLAPSE_RECORDS, DEFAULT_MAX_COLLAPSE_RECORDS),
+                new ConfigProperty(MAX_PARTITION_FETCH_BYTES, DEFAULT_MAX_PARTITION_FETCH_BYTES),
+                new ConfigProperty(MAX_POLL_RECORDS, DEFAULT_MAX_POLL_RECORDS),
+                new ConfigProperty(PORT, DEFAULT_PORT),
+                new ConfigProperty(GROUP_ID, DEFAULT_GROUP_ID)));
 
     SECURITY_CONFIG_PROPERTIES =
         List.of(
@@ -202,20 +205,17 @@ public class KafkaCrossDcConf extends CrossDcConf {
             new ConfigProperty(SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG),
             new ConfigProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG),
             new ConfigProperty(SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG),
-
             new ConfigProperty(BrokerSecurityConfigs.SSL_CLIENT_AUTH_CONFIG),
-
 
             // From Common and Admin Client Security
             new ConfigProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG),
-            new ConfigProperty(AdminClientConfig.SECURITY_PROVIDERS_CONFIG)
-        );
+            new ConfigProperty(AdminClientConfig.SECURITY_PROVIDERS_CONFIG));
 
     configProperties.addAll(SECURITY_CONFIG_PROPERTIES);
     CONFIG_PROPERTIES = Collections.unmodifiableList(configProperties);
 
     Map<String, ConfigProperty> configPropertiesMap =
-        new HashMap<String, ConfigProperty>(CONFIG_PROPERTIES.size());
+        CollectionUtil.newHashMap(CONFIG_PROPERTIES.size());
     for (ConfigProperty prop : CONFIG_PROPERTIES) {
       configPropertiesMap.put(prop.getKey(), prop);
     }
@@ -226,11 +226,12 @@ public class KafkaCrossDcConf extends CrossDcConf {
 
   public KafkaCrossDcConf(Map<String, Object> properties) {
     List<String> nullValueKeys = new ArrayList<String>();
-    properties.forEach((k, v) -> {
-      if (v == null) {
-        nullValueKeys.add(k);
-      }
-    });
+    properties.forEach(
+        (k, v) -> {
+          if (v == null) {
+            nullValueKeys.add(k);
+          }
+        });
     nullValueKeys.forEach(properties::remove);
     this.properties = properties;
   }
@@ -263,47 +264,51 @@ public class KafkaCrossDcConf extends CrossDcConf {
     }
     return prop.getValueAsBoolean(properties);
   }
-  
-  public Map<String,Object> getAdditionalProperties() {
+
+  public Map<String, Object> getAdditionalProperties() {
     Map<String, Object> additional = new HashMap<>(properties);
     for (ConfigProperty configProperty : CONFIG_PROPERTIES) {
       additional.remove(configProperty.getKey());
     }
     Map<String, Object> integerProperties = new HashMap<>();
-    additional.forEach((key, v) -> {
-      try {
-        int intVal = Integer.parseInt((String) v);
-        integerProperties.put(key.toString(), intVal);
-      } catch (NumberFormatException ignored) {
+    additional.forEach(
+        (key, v) -> {
+          try {
+            int intVal = Integer.parseInt((String) v);
+            integerProperties.put(key.toString(), intVal);
+          } catch (NumberFormatException ignored) {
 
-      }
-    });
+          }
+        });
     additional.putAll(integerProperties);
     return additional;
   }
 
-  public static void readZkProps(Map<String,Object> properties, Properties zkProps) {
+  public static void readZkProps(Map<String, Object> properties, Properties zkProps) {
     Map<Object, Object> zkPropsUnprocessed = new HashMap<>(zkProps);
     for (ConfigProperty configKey : KafkaCrossDcConf.CONFIG_PROPERTIES) {
-      if (properties.get(configKey.getKey()) == null || ((String)properties.get(configKey.getKey())).isBlank()) {
-        properties.put(configKey.getKey(), (String) zkProps.getProperty(
-            configKey.getKey()));
+      if (properties.get(configKey.getKey()) == null
+          || ((String) properties.get(configKey.getKey())).isBlank()) {
+        properties.put(configKey.getKey(), zkProps.getProperty(configKey.getKey()));
         zkPropsUnprocessed.remove(configKey.getKey());
       }
     }
-    zkPropsUnprocessed.forEach((key, val) -> {
-      if (properties.get(key) == null) {
-        properties.put((String) key, (String) val);
-      }
-    });
+    zkPropsUnprocessed.forEach(
+        (key, val) -> {
+          if (properties.get(key) == null) {
+            properties.put((String) key, val);
+          }
+        });
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     StringBuilder sb = new StringBuilder(128);
     for (ConfigProperty configProperty : CONFIG_PROPERTIES) {
       if (properties.get(configProperty.getKey()) != null) {
-        final String printablePropertyValue = redactPropertyIfNecessary(configProperty.getKey(),
-                String.valueOf(properties.get(configProperty.getKey())));
+        final String printablePropertyValue =
+            redactPropertyIfNecessary(
+                configProperty.getKey(), String.valueOf(properties.get(configProperty.getKey())));
         sb.append(configProperty.getKey()).append("=").append(printablePropertyValue).append(",");
       }
     }

@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,35 +22,47 @@ apply plugin: 'java-test-fixtures'
 
 description = 'Cross-DC Replication Plugins'
 
+ext {
+  // Use of the security manager is not supported on windows.
+  // Mockito does not work with it enabled.
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+}
+
 dependencies {
   api project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
+
+  implementation 'org.slf4j:slf4j-api'
   implementation 'org.apache.kafka:kafka-clients'
   implementation 'com.google.guava:guava'
-
-  implementation 'com.google.guava:guava'
-  implementation 'org.slf4j:slf4j-api'
-
-  implementation 'org.apache.kafka:kafka_2.13'
-  implementation 'org.apache.kafka:kafka-streams'
+  implementation 'io.dropwizard.metrics:metrics-core'
+  implementation 'org.apache.httpcomponents:httpclient'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation 'commons-io:commons-io'
   testImplementation 'org.mockito:mockito-core'
+  testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation 'org.apache.zookeeper:zookeeper-jute'
 
-  testImplementation "org.apache.kafka:kafka-clients:3.5.1:test"
-  testImplementation 'org.apache.kafka:kafka_2.13:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-server-common:3.5.1:test'
+  testImplementation "org.apache.kafka:kafka-clients:3.7.1:test"
 
   testFixturesApi 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }
 
-test {
-  jvmArgs '-Djava.security.egd=file:/dev/./urandom'
-  minHeapSize = "128m"
-  maxHeapSize = "512m"
+// Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf
+// We keep this checked into github, so that the unit tests can be run in intelliJ without gradle
+task zipCloudConfigSet(type: Zip) {
+  from "${projectDir}/src/test-files/configs/cloud-minimal/conf/"
+  getArchiveFileName().set("cloud-minimal.zip")
+  setDestinationDirectory(file("${projectDir.toString()}/src/test-files/configs"))
+
+  // Make the zip reproducable
+  includeEmptyDirs = false
+  preserveFileTimestamps = false
+  reproducibleFileOrder = true
 }
+
+tasks.processTestResources.dependsOn(tasks.zipCloudConfigSet)

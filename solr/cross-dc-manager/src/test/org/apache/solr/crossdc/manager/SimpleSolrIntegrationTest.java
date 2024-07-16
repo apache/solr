@@ -16,6 +16,9 @@
  */
 package org.apache.solr.crossdc.manager;
 
+import static org.mockito.Mockito.spy;
+
+import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -27,13 +30,9 @@ import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.util.Map;
-
-import static org.mockito.Mockito.spy;
-
 public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
   static final String VERSION_FIELD = "_version_";
-
+  private static final String COLLECTION = "collection1";
 
   protected static volatile MiniSolrCloudCluster cluster1;
 
@@ -46,21 +45,20 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeSimpleSolrIntegrationTest() throws Exception {
-
+    System.setProperty("solr.crossdc.bootstrapServers", "doesnotmatter:9092");
+    System.setProperty("solr.crossdc.topicName", "doesnotmatter");
     cluster1 =
         configureCluster(2)
-            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
             .configure();
 
-    String collection = "collection1";
     CloudSolrClient cloudClient1 = cluster1.getSolrClient();
 
     processor = new SolrMessageProcessor(cloudClient1, null);
 
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(collection, "conf", 1, 1);
+        CollectionAdminRequest.createCollection(COLLECTION, 1, 1);
     cloudClient1.request(create);
-    cluster1.waitForActiveCollection(collection, 1, 1);
+    cluster1.waitForActiveCollection(COLLECTION, 1, 1);
   }
 
   @AfterClass
@@ -76,25 +74,27 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
     UpdateRequest request = spy(new UpdateRequest());
 
     // Add docs with and without version
-    request.add(new SolrInputDocument() {
-      {
-        setField("id", 1);
-        setField(VERSION_FIELD, 1);
-      }
-    });
-    request.add(new SolrInputDocument() {
-      {
-        setField("id", 2);
-      }
-    });
-
+    request.add(
+        new SolrInputDocument() {
+          {
+            setField("id", 1);
+            setField(VERSION_FIELD, 1);
+          }
+        });
+    request.add(
+        new SolrInputDocument() {
+          {
+            setField("id", 2);
+          }
+        });
     // Delete by id with and without version
     request.deleteById("1");
     request.deleteById("2", 10L);
 
     request.setParam("shouldMirror", "true");
+    request.setParam("collection", COLLECTION);
 
-    processor.handleItem(new MirroredSolrRequest(request));
+    processor.handleItem(new MirroredSolrRequest<>(request));
 
     // After processing, check that all version fields are stripped
     for (SolrInputDocument doc : request.getDocuments()) {

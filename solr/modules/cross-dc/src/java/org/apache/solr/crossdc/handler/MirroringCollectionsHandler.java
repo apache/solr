@@ -17,6 +17,12 @@
 package org.apache.solr.crossdc.handler;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -27,6 +33,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.crossdc.common.ConfUtil;
 import org.apache.solr.crossdc.common.CrossDcConstants;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
@@ -34,17 +41,9 @@ import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.crossdc.common.ConfUtil;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class MirroringCollectionsHandler extends CollectionsHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,7 +60,10 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
     log.info("Using MirroringCollectionsHandler.");
     Map<String, Object> properties = new HashMap<>();
     try {
-      SolrZkClient solrClient = coreContainer.getZkController() != null ? coreContainer.getZkController().getZkClient() : null;
+      SolrZkClient solrClient =
+          coreContainer.getZkController() != null
+              ? coreContainer.getZkController().getZkClient()
+              : null;
       ConfUtil.fillProperties(solrClient, properties);
       ConfUtil.verifyProperties(properties);
       KafkaCrossDcConf conf = new KafkaCrossDcConf(properties);
@@ -83,7 +85,8 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(req, CrossDcConstants.SHOULD_MIRROR);
+    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(
+        req, CrossDcConstants.SHOULD_MIRROR);
     // throw any errors before mirroring
     baseHandleRequestBody(req, rsp);
     if (rsp.getException() != null) {
@@ -97,7 +100,8 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
       log.debug("doMirroring=false, skipping...");
       return;
     }
-    CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(req.getParams().get(CoreAdminParams.ACTION));
+    CollectionParams.CollectionAction action =
+        CollectionParams.CollectionAction.get(req.getParams().get(CoreAdminParams.ACTION));
     if (action == null) {
       if (log.isDebugEnabled()) {
         log.debug("unrecognized action, skipping mirroring. Params: {}", req.getParams());
@@ -122,10 +126,16 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
     // make sure to turn this off to prevent looping
     mirrorParams.set(CrossDcConstants.SHOULD_MIRROR, Boolean.FALSE.toString());
     if (log.isDebugEnabled()) {
-      log.debug("mirroring mirrorParams={}, original responseHeader={}, responseValues={}", mirrorParams, rsp.getResponseHeader(), rsp.getValues());
+      log.debug(
+          "mirroring mirrorParams={}, original responseHeader={}, responseValues={}",
+          mirrorParams,
+          rsp.getResponseHeader(),
+          rsp.getValues());
     }
-    SolrRequest<CollectionAdminResponse> solrRequest = new MirroredSolrRequest.MirroredAdminRequest(action, mirrorParams);
-    MirroredSolrRequest mirror = new MirroredSolrRequest(MirroredSolrRequest.Type.ADMIN, solrRequest);
+    SolrRequest<CollectionAdminResponse> solrRequest =
+        new MirroredSolrRequest.MirroredAdminRequest(action, mirrorParams);
+    MirroredSolrRequest<?> mirror =
+        new MirroredSolrRequest<>(MirroredSolrRequest.Type.ADMIN, solrRequest);
     sink.submit(mirror);
   }
 

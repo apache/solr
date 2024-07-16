@@ -108,5 +108,15 @@
            autowarmCount="${myPerSegmentCache.autowarmCount:0}"/>
   </query>
 
-</config>
+  <updateRequestProcessorChain  name="mirrorUpdateChain" default="true">
+    <processor class="solr.MirroringUpdateRequestProcessorFactory">
+      <bool name="enabled">${solr.crossdc.enabled:true}</bool>
+      <bool name="indexUnmirrorableDocs">${solr.crossdc.indexUnmirrorableDocs:false}</bool>
+      <str name="bootstrapServers">${solr.crossdc.bootstrapServers:}</str>
+      <str name="topicName">${solr.crossdc.topicName:}</str>
+    </processor>
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
+</config>

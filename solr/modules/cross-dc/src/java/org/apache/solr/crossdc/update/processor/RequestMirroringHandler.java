@@ -18,8 +18,10 @@ package org.apache.solr.crossdc.update.processor;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 
-/** Plugin classes must implement this interface to be usable as the handlers for request mirroring */
+/**
+ * Plugin classes must implement this interface to be usable as the handlers for request mirroring
+ */
 public interface RequestMirroringHandler {
-    /** When called, should handle submitting the request to the replica clusters  */
-    void mirror(UpdateRequest request) throws Exception;
+  /** When called, should handle submitting the request to the replica clusters */
+  void mirror(UpdateRequest request) throws Exception;
 }

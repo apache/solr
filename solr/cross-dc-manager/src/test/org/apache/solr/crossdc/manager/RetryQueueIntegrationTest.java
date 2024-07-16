@@ -18,20 +18,24 @@ package org.apache.solr.crossdc.manager;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
 import org.apache.solr.crossdc.test.util.SolrKafkaTestsIgnoredThreadsFilter;
@@ -43,16 +47,16 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
-@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class, SolrKafkaTestsIgnoredThreadsFilter.class })
-@ThreadLeakLingering(linger = 5000) public class RetryQueueIntegrationTest extends
-    SolrTestCaseJ4 {
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      SolrKafkaTestsIgnoredThreadsFilter.class
+    })
+@ThreadLeakLingering(linger = 5000)
+@LuceneTestCase.Nightly // this test is currently too slow for non-nightly
+public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -84,11 +88,12 @@ import java.util.Properties;
     config.put("unclean.leader.election.enable", "true");
     config.put("enable.partition.eof", "false");
 
-    kafkaCluster = new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-      public String bootstrapServers() {
-        return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-      }
-    };
+    kafkaCluster =
+        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
+          public String bootstrapServers() {
+            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
+          }
+        };
     kafkaCluster.start();
 
     kafkaCluster.createTopic(TOPIC, 1, 1);
@@ -128,7 +133,7 @@ import java.util.Properties;
     String bootstrapServers = kafkaCluster.bootstrapServers();
     log.info("bootstrapServers={}", bootstrapServers);
 
-    Map<String,Object> properties = new HashMap<>();
+    Map<String, Object> properties = new HashMap<>();
     properties.put(KafkaCrossDcConf.BOOTSTRAP_SERVERS, bootstrapServers);
     properties.put(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
     properties.put(KafkaCrossDcConf.TOPIC_NAME, TOPIC);
@@ -137,13 +142,19 @@ import java.util.Properties;
     consumer.start(properties);
   }
 
-  private static MiniSolrCloudCluster startCluster(MiniSolrCloudCluster solrCluster, ZkTestServer zkTestServer, Path baseDir) throws Exception {
+  private static MiniSolrCloudCluster startCluster(
+      MiniSolrCloudCluster solrCluster, ZkTestServer zkTestServer, Path baseDir) throws Exception {
     MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(1, baseDir, MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
-            JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build(), zkTestServer, false);
+        new MiniSolrCloudCluster(
+            1,
+            baseDir,
+            MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
+            JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build(),
+            zkTestServer,
+            false);
 
-        //new SolrCloudTestCase.Builder(1, baseDir).addConfig("conf",
-        //getFile("configs/cloud-minimal/conf").toPath()).configure();
+    // new SolrCloudTestCase.Builder(1, baseDir).addConfig("conf",
+    // getFile("configs/cloud-minimal/conf").toPath()).configure();
     cluster.uploadConfigSet(getFile("configs/cloud-minimal/conf").toPath(), "conf");
 
     CollectionAdminRequest.Create create2 =
@@ -205,19 +216,19 @@ import java.util.Properties;
     doc.addField("id", String.valueOf(System.nanoTime()));
     doc.addField("text", "some test");
 
-    client.add(doc);
+    client.add(COLLECTION, doc);
 
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField("id", String.valueOf(System.nanoTime()));
     doc2.addField("text", "some test");
 
-    client.add(doc2);
+    client.add(COLLECTION, doc2);
 
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.addField("id", String.valueOf(System.nanoTime()));
     doc3.addField("text", "some test");
 
-    client.add(doc3);
+    client.add(COLLECTION, doc3);
 
     client.commit(COLLECTION);
 
@@ -242,11 +253,9 @@ import java.util.Properties;
     }
 
     assertTrue("expected updates not found, results=" + results, foundUpdates);
-    System.out.println("Rest: " + results);
-
   }
 
-    @Test
+  @Test
   public void testRetryQueueZKDown() throws Exception {
     Path zkDir = zkTestServer2.getZkDir();
     int zkPort = zkTestServer2.getPort();
@@ -257,23 +266,21 @@ import java.util.Properties;
     doc.addField("id", String.valueOf(System.nanoTime()));
     doc.addField("text", "some test");
 
-    client.add(doc);
+    client.add(COLLECTION, doc);
 
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField("id", String.valueOf(System.nanoTime()));
     doc2.addField("text", "some test");
 
-    client.add(doc2);
+    client.add(COLLECTION, doc2);
 
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.addField("id", String.valueOf(System.nanoTime()));
     doc3.addField("text", "some test");
 
-    client.add(doc3);
+    client.add(COLLECTION, doc3);
 
     client.commit(COLLECTION);
-
-    System.out.println("Sent producer record");
 
     Thread.sleep(15000);
 
@@ -296,7 +303,5 @@ import java.util.Properties;
     }
 
     assertTrue("expected updates not found, results=" + results, foundUpdates);
-    System.out.println("Rest: " + results);
-
   }
 }

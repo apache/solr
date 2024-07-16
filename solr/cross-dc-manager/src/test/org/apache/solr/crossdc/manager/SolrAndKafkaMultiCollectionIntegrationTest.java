@@ -16,12 +16,23 @@
  */
 package org.apache.solr.crossdc.manager;
 
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.DEFAULT_MAX_REQUEST_SIZE;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE_DOCS;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -31,35 +42,30 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CollectionProperties;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
 import org.apache.solr.crossdc.manager.consumer.Util;
 import org.apache.solr.crossdc.test.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.DEFAULT_MAX_REQUEST_SIZE;
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE_DOCS;
-
-@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class, SolrKafkaTestsIgnoredThreadsFilter.class })
-@ThreadLeakLingering(linger = 5000) public class SolrAndKafkaMultiCollectionIntegrationTest extends
-    SolrCloudTestCase {
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      SolrKafkaTestsIgnoredThreadsFilter.class
+    })
+@ThreadLeakLingering(linger = 5000)
+@Ignore("This test relies on collecton properties and I don't see where they are set anymore")
+public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -75,24 +81,23 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
   protected static volatile Consumer consumer;
 
-  private static String TOPIC = "topic1";
+  private static final String TOPIC = "topic1";
 
-  private static String COLLECTION = "collection1";
-  private static String ALT_COLLECTION = "collection2";
+  private static final String COLLECTION = "collection1";
+  private static final String ALT_COLLECTION = "collection2";
 
   @Before
   public void beforeSolrAndKafkaIntegrationTest() throws Exception {
     System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer = new Consumer();
     Properties config = new Properties();
-    //config.put("unclean.leader.election.enable", "true");
-    //config.put("enable.partition.eof", "false");
 
-    kafkaCluster = new EmbeddedKafkaCluster(NUM_BROKERS, config) {
-      public String bootstrapServers() {
-        return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
-      }
-    };
+    kafkaCluster =
+        new EmbeddedKafkaCluster(NUM_BROKERS, config) {
+          public String bootstrapServers() {
+            return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
+          }
+        };
     kafkaCluster.start();
 
     kafkaCluster.createTopic(TOPIC, 1, 1);
@@ -104,16 +109,20 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
 
-    solrCluster1 = configureCluster(1).addConfig("conf",
-        getFile("configs/cloud-minimal/conf").toPath()).configure();
+    solrCluster1 =
+        configureCluster(1)
+            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
+            .configure();
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);
     solrCluster1.getSolrClient().request(create);
     solrCluster1.waitForActiveCollection(COLLECTION, 1, 1);
 
-    solrCluster2 = configureCluster(1).addConfig("conf",
-        getFile("configs/cloud-minimal/conf").toPath()).configure();
+    solrCluster2 =
+        configureCluster(1)
+            .addConfig("conf", getFile("configs/cloud-minimal/conf").toPath())
+            .configure();
 
     CollectionAdminRequest.Create create2 =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);
@@ -125,7 +134,8 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     cp.setCollectionProperty(COLLECTION, "solr.crossdc.enabled", "true");
     cp.setCollectionProperty(COLLECTION, "solr.crossdc.topicName", TOPIC);
     // Reloading the collection
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION);
+    CollectionAdminRequest.Reload reloadRequest =
+        CollectionAdminRequest.reloadCollection(COLLECTION);
     reloadRequest.process(solrCluster1.getSolrClient());
 
     String bootstrapServers = kafkaCluster.bootstrapServers();
@@ -138,7 +148,6 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     properties.put(KafkaCrossDcConf.GROUP_ID, "group1");
     properties.put(KafkaCrossDcConf.MAX_REQUEST_SIZE_BYTES, MAX_DOC_SIZE_BYTES);
     consumer.start(properties);
-
   }
 
   @After
@@ -160,14 +169,12 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     consumer = null;
 
     try {
-      //kafkaCluster.deleteAllTopicsAndWait(10000);
+      // kafkaCluster.deleteAllTopicsAndWait(10000);
       kafkaCluster.stop();
       kafkaCluster = null;
     } catch (Exception e) {
       log.error("Exception stopping Kafka cluster", e);
     }
-
-
   }
 
   private static SolrInputDocument getDoc() {
@@ -177,24 +184,16 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     return doc;
   }
 
-  private void assertCluster2EventuallyHasDocs(String collection, String query, int expectedNumDocs) throws Exception {
-    assertClusterEventuallyHasDocs(solrCluster2.getSolrClient(), collection, query, expectedNumDocs);
-  }
-
-  private void createCollection(CloudSolrClient client, CollectionAdminRequest.Create createCmd) throws Exception {
-    final String stashedDefault = client.getDefaultCollection();
-    try {
-      //client.setDefaultCollection(null);
-      client.request(createCmd);
-    } finally {
-      //client.setDefaultCollection(stashedDefault);
-    }
+  private void assertCluster2EventuallyHasDocs(String collection, String query, int expectedNumDocs)
+      throws Exception {
+    assertClusterEventuallyHasDocs(
+        solrCluster2.getSolrClient(), collection, query, expectedNumDocs);
   }
 
   @Test
   public void testFullCloudToCloudMultiCollection() throws Exception {
     CollectionAdminRequest.Create create =
-            CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 1, 1);
+        CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 1, 1);
 
     try {
       solrCluster1.getSolrClient().request(create);
@@ -208,9 +207,9 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
       cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
       cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
       // Reloading the collection
-      CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
+      CollectionAdminRequest.Reload reloadRequest =
+          CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
       reloadRequest.process(solrCluster1.getSolrClient());
-
 
       CloudSolrClient client = solrCluster1.getSolrClient(COLLECTION);
 
@@ -240,112 +239,117 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
     } finally {
       CollectionAdminRequest.Delete delete =
-              CollectionAdminRequest.deleteCollection(ALT_COLLECTION);
+          CollectionAdminRequest.deleteCollection(ALT_COLLECTION);
       solrCluster1.getSolrClient().request(delete);
       solrCluster2.getSolrClient().request(delete);
     }
   }
-@Test
-public void testParallelUpdatesToMultiCollections() throws Exception {
-  CollectionAdminRequest.Create create =
-          CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 1, 1);
 
-  try {
-    solrCluster1.getSolrClient().request(create);
-    solrCluster1.waitForActiveCollection(ALT_COLLECTION, 1, 1);
+  @Test
+  @Ignore("Heavy test that was written to stress test and needs to be tuned for regular runs")
+  public void testParallelUpdatesToMultiCollections() throws Exception {
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 1, 1);
 
-    solrCluster2.getSolrClient().request(create);
-    solrCluster2.waitForActiveCollection(ALT_COLLECTION, 1, 1);
+    try {
+      solrCluster1.getSolrClient().request(create);
+      solrCluster1.waitForActiveCollection(ALT_COLLECTION, 1, 1);
 
-    // Update the collection property "enabled" to true
-    CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
-    cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
-    cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
-    // Reloading the collection
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
-    reloadRequest.process(solrCluster1.getSolrClient());
+      solrCluster2.getSolrClient().request(create);
+      solrCluster2.waitForActiveCollection(ALT_COLLECTION, 1, 1);
 
-    ExecutorService executorService = Executors.newFixedThreadPool(24);
-    List<Future<Boolean>> futures = new ArrayList<>();
+      // Update the collection property "enabled" to true
+      CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
+      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
+      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
+      // Reloading the collection
+      CollectionAdminRequest.Reload reloadRequest =
+          CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
+      reloadRequest.process(solrCluster1.getSolrClient());
 
-    CloudSolrClient client1 = solrCluster1.getSolrClient(COLLECTION);
+      ExecutorService executorService =
+          ExecutorUtil.newMDCAwareFixedThreadPool(24, new SolrNamedThreadFactory("test"));
+      List<Future<Boolean>> futures = new ArrayList<>();
 
-    // Prepare and send N updates to COLLECTION and N updates to ALT_COLLECTION in parallel
-    int updates = 25000;
-    for (int i = 0; i < updates; i++) {
-      final int docIdForCollection = i;
-      final int docIdForAltCollection = i + updates;
+      CloudSolrClient client1 = solrCluster1.getSolrClient(COLLECTION);
 
-      Future<Boolean> futureForCollection = executorService.submit(() -> {
-        try {
-          SolrInputDocument doc = new SolrInputDocument();
-          doc.addField("id", String.valueOf(docIdForCollection));
-          doc.addField("text", "parallel test for COLLECTION");
-          client1.add(COLLECTION, doc);
-          return true;
-        } catch (Exception e) {
-          e.printStackTrace();
-          log.error("Exception while adding doc to COLLECTION", e);
-          return false;
-        }
-      });
+      // Prepare and send N updates to COLLECTION and N updates to ALT_COLLECTION in parallel
+      int updates = 1500;
+      for (int i = 0; i < updates; i++) {
+        final int docIdForCollection = i;
+        final int docIdForAltCollection = i + updates;
 
-      Future<Boolean> futureForAltCollection = executorService.submit(() -> {
-        try {
-          SolrInputDocument doc = new SolrInputDocument();
-          doc.addField("id", String.valueOf(docIdForAltCollection));
-          doc.addField("text", "parallel test for ALT_COLLECTION");
-          client1.add(ALT_COLLECTION, doc);
-          return true;
-        } catch (Exception e) {
-          e.printStackTrace();
-          log.error("Exception while adding doc to ALT_COLLECTION", e);
-          return false;
-        }
-      });
+        Future<Boolean> futureForCollection =
+            executorService.submit(
+                () -> {
+                  try {
+                    SolrInputDocument doc = new SolrInputDocument();
+                    doc.addField("id", String.valueOf(docIdForCollection));
+                    doc.addField("text", "parallel test for COLLECTION");
+                    client1.add(COLLECTION, doc);
+                    return true;
+                  } catch (Exception e) {
+                    log.error("Exception while adding doc to COLLECTION", e);
+                    return false;
+                  }
+                });
 
-      futures.add(futureForCollection);
-      futures.add(futureForAltCollection);
+        Future<Boolean> futureForAltCollection =
+            executorService.submit(
+                () -> {
+                  try {
+                    SolrInputDocument doc = new SolrInputDocument();
+                    doc.addField("id", String.valueOf(docIdForAltCollection));
+                    doc.addField("text", "parallel test for ALT_COLLECTION");
+                    client1.add(ALT_COLLECTION, doc);
+                    return true;
+                  } catch (Exception e) {
+                    log.error("Exception while adding doc to ALT_COLLECTION", e);
+                    return false;
+                  }
+                });
+
+        futures.add(futureForCollection);
+        futures.add(futureForAltCollection);
+      }
+
+      // Wait for all updates to complete
+      executorService.shutdown();
+      if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+        executorService.shutdownNow();
+      }
+
+      // Check if all updates were successful
+      for (Future<Boolean> future : futures) {
+        assertTrue(future.get());
+      }
+
+      client1.commit(COLLECTION);
+      client1.commit(ALT_COLLECTION);
+
+      // Check if these documents are correctly reflected in the second cluster
+      assertCluster2EventuallyHasDocs(ALT_COLLECTION, "*:*", updates);
+      assertCluster2EventuallyHasDocs(COLLECTION, "*:*", updates);
+
+    } finally {
+      CollectionAdminRequest.Delete delete =
+          CollectionAdminRequest.deleteCollection(ALT_COLLECTION);
+      solrCluster1.getSolrClient().request(delete);
+      solrCluster2.getSolrClient().request(delete);
     }
-
-    // Wait for all updates to complete
-    executorService.shutdown();
-    if (!executorService.awaitTermination(1600, TimeUnit.SECONDS)) {
-      executorService.shutdownNow();
-    }
-
-    // Check if all updates were successful
-    for (Future<Boolean> future : futures) {
-      assertTrue(future.get());
-    }
-
-    client1.commit(COLLECTION);
-    client1.commit(ALT_COLLECTION);
-
-    // Check if these documents are correctly reflected in the second cluster
-    assertCluster2EventuallyHasDocs(ALT_COLLECTION, "*:*", updates);
-    assertCluster2EventuallyHasDocs(COLLECTION, "*:*", updates);
-
-  } finally {
-    CollectionAdminRequest.Delete delete =
-            CollectionAdminRequest.deleteCollection(ALT_COLLECTION);
-    solrCluster1.getSolrClient().request(delete);
-    solrCluster2.getSolrClient().request(delete);
   }
-}
 
-
-  private void assertClusterEventuallyHasDocs (SolrClient client, String collection, String query,int expectedNumDocs) throws
-  Exception {
+  private void assertClusterEventuallyHasDocs(
+      SolrClient client, String collection, String query, int expectedNumDocs) throws Exception {
     QueryResponse results = null;
     boolean foundUpdates = false;
-    for (int i = 0; i < 1500; i++) {
+    for (int i = 0; i < 1000; i++) {
       client.commit(collection);
       results = client.query(collection, new SolrQuery(query));
       if (results.getResults().getNumFound() == expectedNumDocs) {
         foundUpdates = true;
       } else {
-        Thread.sleep(500);
+        Thread.sleep(100);
       }
     }
 

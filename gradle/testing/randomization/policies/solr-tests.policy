@@ -85,10 +85,12 @@ grant {
   // needed by bytebuddy
   permission java.lang.RuntimePermission "defineClass";
   permission java.lang.RuntimePermission "net.bytebuddy.createJavaDispatcher";
+  permission java.lang.RuntimePermission "net.bytebuddy.agent.getInstrumentation";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.method";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
+
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
   permission java.lang.RuntimePermission "reflectionFactoryAccess";
@@ -156,6 +158,7 @@ grant {
   permission java.lang.RuntimePermission "manageProcess";
   permission java.io.FilePermission "${/}proc${/}self${/}io", "read";
   permission java.io.FilePermission "${java.home}${/}bin${/}java", "execute";
+  permission java.io.FilePermission "${java.home}${/}bin${/}java.exe", "execute";
 
   // SSL related properties for Solr tests
   permission javax.net.ssl.SSLPermission "setDefaultSSLContext";

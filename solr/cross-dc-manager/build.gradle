@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,15 +29,15 @@ dependencies {
 
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'io.dropwizard.metrics:metrics-servlets'
-  implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-server'
   implementation 'org.eclipse.jetty:jetty-servlet'
-  implementation 'org.slf4j:slf4j-simple'
+  implementation 'org.slf4j:slf4j-api'
   runtimeOnly ('com.google.protobuf:protobuf-java-util')
   runtimeOnly ('commons-codec:commons-codec')
 
-  implementation 'org.apache.kafka:kafka_2.13'
-  implementation 'org.apache.kafka:kafka-streams'
+  implementation 'org.apache.kafka:kafka-clients'
+  runtimeOnly 'org.apache.kafka:kafka_2.13'
+  runtimeOnly 'org.apache.kafka:kafka-streams'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-api'
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
@@ -47,20 +49,20 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
   testImplementation 'org.mockito:mockito-core'
 
-  testImplementation 'org.apache.httpcomponents:httpclient'
-  testImplementation 'org.apache.httpcomponents:httpcore'
-
-  testImplementation 'org.apache.kafka:kafka_2.13:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-clients:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-server-common:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-streams:3.7.1:test'
+  testImplementation 'org.apache.kafka:kafka-clients:3.7.1:test'
+  testRuntimeOnly 'org.apache.kafka:kafka_2.13:3.7.1:test'
+  testRuntimeOnly 'org.apache.kafka:kafka-server-common:3.7.1:test'
 }
 
 ext {
   mainClass = 'org.apache.solr.crossdc.manager.consumer.Consumer'
+
+  // Use of the security manager is not supported on windows.
+  // Mockito does not work with it enabled.
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
 task run(type: JavaExec) {

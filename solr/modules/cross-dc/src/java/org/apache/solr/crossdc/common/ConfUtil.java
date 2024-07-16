@@ -16,20 +16,21 @@
  */
 package org.apache.solr.crossdc.common;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.BOOTSTRAP_SERVERS;
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
-
+@SuppressForbidden(reason = "load properties from byte array")
 public class ConfUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,15 +57,22 @@ public class ConfUtil {
     Properties zkProps = new Properties();
     if (solrClient != null) {
       try {
-        if (solrClient.exists(System.getProperty(CrossDcConf.ZK_CROSSDC_PROPS_PATH,
-            CrossDcConf.CROSSDC_PROPERTIES), true)) {
-          byte[] data = solrClient.getData(System.getProperty(CrossDcConf.ZK_CROSSDC_PROPS_PATH,
-              CrossDcConf.CROSSDC_PROPERTIES), null, null, true);
+        if (solrClient.exists(
+            System.getProperty(CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES),
+            true)) {
+          byte[] data =
+              solrClient.getData(
+                  System.getProperty(
+                      CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES),
+                  null,
+                  null,
+                  true);
 
           if (data == null) {
             log.error(CrossDcConf.CROSSDC_PROPERTIES + " file in Zookeeper has no data");
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, CrossDcConf.CROSSDC_PROPERTIES
-                + " file in Zookeeper has no data");
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                CrossDcConf.CROSSDC_PROPERTIES + " file in Zookeeper has no data");
           }
 
           zkProps.load(new ByteArrayInputStream(data));
@@ -77,7 +85,10 @@ public class ConfUtil {
         throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
       } catch (Exception e) {
         log.error("Exception looking for CrossDC configuration in Zookeeper", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception looking for CrossDC configuration in Zookeeper", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Exception looking for CrossDC configuration in Zookeeper",
+            e);
       }
     }
   }
@@ -87,14 +98,18 @@ public class ConfUtil {
       log.error(
           "solr.crossdc.bootstrapServers not specified for producer in CrossDC configuration props={}",
           properties);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "solr.crossdc.bootstrapServers not specified in configuration");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "solr.crossdc.bootstrapServers not specified in configuration");
     }
 
     if (properties.get(TOPIC_NAME) == null) {
       log.error(
           "solr.crossdc.topicName not specified for producer in CrossDC configuration props={}",
           properties);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "solr.crossdc.topicName not specified in configuration");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "solr.crossdc.topicName not specified in configuration");
     }
   }
 }

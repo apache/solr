@@ -62,8 +62,8 @@ Implementing the Solr CrossDC involves the following steps:
        </updateRequestProcessorChain>
 ----
        
-. Add an external version constraint UpdateProcessor to the update chain added to solrconfig.xml to accept user-provided update versions.
-   See the documentation for both xref:configuration-guide:update-request-processors.adoc#general-use-updateprocessorfactories[UpdateRequestProcessorFactories] and the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessor.html[DocBasedVersionConstraintsProcessor].
+. Add an external version constraint UpdateProcessor to the update chain added to `solrconfig.xml` to accept user-provided update versions.
+   See the documentation for both xref:configuration-guide:update-request-processors.adoc#general-use-updateprocessorfactories[UpdateRequestProcessorFactories] and the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessor.html[DocBasedVersionConstraintsProcessor].
 [source,xml]
 ----
        <updateRequestProcessorChain  name="mirrorUpdateChain" default="true">
