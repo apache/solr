@@ -65,4 +65,8 @@ task zipCloudConfigSet(type: Zip) {
   reproducibleFileOrder = true
 }
 
-tasks.processTestResources.dependsOn(tasks.zipCloudConfigSet)
+sourceSets {
+  test.resources.srcDir(files("${projectDir}/src/test-files") {
+    builtBy tasks.zipCloudConfigSet
+  })
+}
