@@ -312,7 +312,7 @@ public class PostTool extends ToolBase {
 
     args = cli.getArgs();
 
-    params = cli.hasOption("params") ? cli.getOptionValue("params") : "";
+    params = cli.getOptionValue("params", "");
 
     execute(mode);
   }
