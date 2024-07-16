@@ -89,7 +89,7 @@ public class PackageTool extends ToolBase {
               ? cli.getOptionValue("solr-url")
               : cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
-      log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
+      log.debug("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
       if (zkHost == null) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");
