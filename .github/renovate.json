@@ -3,8 +3,8 @@
   "description": "Runs Renovate with solrbot, see dev-docs/dependency-upgrades.adoc for more",
   "enabled": true,
   "dependencyDashboard": false,
-  "enabledManagers": ["gradle"],
-  "includePaths": ["versions.*", "build.gradle"],
+  "enabledManagers": ["gradle", "github-actions"],
+  "includePaths": ["versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": ["./gradlew updateLicenses"],
     "fileFilters": ["solr/licenses/*.sha1"],
