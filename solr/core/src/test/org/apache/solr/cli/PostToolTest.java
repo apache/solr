@@ -164,7 +164,16 @@ public class PostToolTest extends SolrCloudTestCase {
     fw.close();
 
     String[] args = {
-      "post", "-c", collection, "-credentials", SecurityJson.USER_PASS, "-params", "\"separator=%09&header=false&fieldnames=id,title_s\"", "-type", "text/csv", tsvDoc.getAbsolutePath()
+      "post",
+      "-c",
+      collection,
+      "-credentials",
+      SecurityJson.USER_PASS,
+      "-params",
+      "\"separator=%09&header=false&fieldnames=id,title_s\"",
+      "-type",
+      "text/csv",
+      tsvDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
 
