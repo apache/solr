@@ -36,7 +36,7 @@ public class StreamExecutorHelperTest extends SolrTestCase {
     List<Long> results = new ArrayList<>();
     results.addAll(StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test"));
     Collections.sort(results);
-    List<Long> expected = List.of(0l, 1l, 2l, 3l, 4l);
+    List<Long> expected = List.of(0L, 1L, 2L, 3L, 4L);
     assertEquals(expected, results);
   }
 
