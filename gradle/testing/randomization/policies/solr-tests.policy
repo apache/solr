@@ -90,8 +90,6 @@ grant {
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
-  // Needed for windows testing
-  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
 
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";

@@ -36,6 +36,8 @@ dependencies {
   runtimeOnly ('commons-codec:commons-codec')
 
   implementation 'org.apache.kafka:kafka-clients'
+  runtimeOnly 'org.apache.kafka:kafka_2.13'
+  runtimeOnly 'org.apache.kafka:kafka-streams'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-api'
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
@@ -51,6 +53,8 @@ dependencies {
 
   testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
   testImplementation 'org.apache.kafka:kafka-clients:3.5.1:test'
+  testRuntimeOnly 'org.apache.kafka:kafka_2.13:3.5.1:test'
+  testRuntimeOnly 'org.apache.kafka:kafka-server-common:3.5.1:test'
 }
 
 ext {
