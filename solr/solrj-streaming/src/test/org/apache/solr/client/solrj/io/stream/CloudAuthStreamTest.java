@@ -253,7 +253,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     assertEquals("hello world", tuples.get(0).get("echo"));
   }
 
-  public void testEchoStreamNoCredentials() throws Exception {
+  public void testEchoStreamNoCredentials() {
     final SolrStream solrStream =
         new SolrStream(
             solrUrl + "/" + COLLECTION_X,
@@ -270,7 +270,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
         });
   }
 
-  public void testEchoStreamInvalidCredentials() throws Exception {
+  public void testEchoStreamInvalidCredentials() {
     final SolrStream solrStream =
         new SolrStream(
             solrUrl + "/" + COLLECTION_X,
@@ -952,8 +952,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  /** Sigh. DaemonStream requires polling the same core where the stream was exectured. */
-  protected static String getRandomCoreUrl(final String collection) throws Exception {
+  /** Sigh. DaemonStream requires polling the same core where the stream was executed. */
+  protected static String getRandomCoreUrl(final String collection) {
     final List<String> replicaUrls =
         cluster
             .getZkStateReader()
