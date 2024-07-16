@@ -51,10 +51,10 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'org.mockito:mockito-core'
 
-  testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
-  testImplementation 'org.apache.kafka:kafka-clients:3.5.1:test'
-  testRuntimeOnly 'org.apache.kafka:kafka_2.13:3.5.1:test'
-  testRuntimeOnly 'org.apache.kafka:kafka-server-common:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-streams:3.7.1:test'
+  testImplementation 'org.apache.kafka:kafka-clients:3.7.1:test'
+  testRuntimeOnly 'org.apache.kafka:kafka_2.13:3.7.1:test'
+  testRuntimeOnly 'org.apache.kafka:kafka-server-common:3.7.1:test'
 }
 
 ext {

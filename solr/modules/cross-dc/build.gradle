@@ -47,7 +47,7 @@ dependencies {
   testImplementation 'org.apache.zookeeper:zookeeper'
   testImplementation 'org.apache.zookeeper:zookeeper-jute'
 
-  testImplementation "org.apache.kafka:kafka-clients:3.5.1:test"
+  testImplementation "org.apache.kafka:kafka-clients:3.7.1:test"
 
   testFixturesApi 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }
