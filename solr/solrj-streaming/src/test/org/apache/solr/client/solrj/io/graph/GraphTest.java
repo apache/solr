@@ -89,9 +89,9 @@ public class GraphTest extends SolrCloudTestCase {
         .add(id, "13", "from_s", "mary", "to_s", "steve", "predicate_s", "knows")
         .commit(cluster.getSolrClient(), COLLECTION);
 
-    List<Tuple> tuples;
-    Set<String> paths;
-    ShortestPathStream stream;
+    List<Tuple> tuples = null;
+    Set<String> paths = null;
+    ShortestPathStream stream = null;
     String zkHost = cluster.getZkServer().getZkAddress();
     StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
