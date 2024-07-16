@@ -25,7 +25,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
@@ -94,7 +93,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   public static void setupDatabase() throws Exception {
 
     // Initialize Database
-    // Ok, so.....hsqldb is doing something totally weird so I thought I'd take a moment to explain
+    // Ok, so.....hsqldb is doing something totally weird, so I thought I'd take a moment to explain
     // it.
     // According to http://www.hsqldb.org/doc/1.8/guide/guide.html#N101EF, section "Components of
     // SQL Expressions", clause "name", "When an SQL statement is issued, any lowercase characters
@@ -279,7 +278,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
     // Load Solr
     new UpdateRequest()
-        .add(id, "0", "code_s", "GB", "name_s", "Great Britian")
+        .add(id, "0", "code_s", "GB", "name_s", "Great Britain")
         .add(id, "1", "code_s", "CA", "name_s", "Canada")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
@@ -323,7 +322,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
           "name_s",
           "Algeria",
           "Canada",
-          "Great Britian",
+          "Great Britain",
           "Netherlands",
           "Norway",
           "Nepal",
@@ -773,7 +772,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... values)
+  protected void assertOrderOf(List<Tuple> tuples, String fieldName, int... values)
       throws Exception {
     int i = 0;
     for (int val : values) {
@@ -784,11 +783,9 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       }
       ++i;
     }
-    return true;
   }
 
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, double... values)
-      throws Exception {
+  protected void assertOrderOf(List<Tuple> tuples, String fieldName, double... values) {
     int i = 0;
     for (double val : values) {
       Tuple t = tuples.get(i);
@@ -796,10 +793,9 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       assertEquals("Found value:" + tip + " expecting:" + val, val, tip, 0.00001);
       ++i;
     }
-    return true;
   }
 
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, String... values)
+  protected void assertOrderOf(List<Tuple> tuples, String fieldName, String... values)
       throws Exception {
     int i = 0;
     for (String val : values) {
@@ -807,7 +803,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
 
       if (null == val) {
         if (null != t.get(fieldName)) {
-          throw new Exception("Found value:" + (String) t.get(fieldName) + " expecting:null");
+          throw new Exception("Found value:" + t.get(fieldName) + " expecting:null");
         }
       } else {
         String tip = (String) t.get(fieldName);
@@ -817,29 +813,6 @@ public class JDBCStreamTest extends SolrCloudTestCase {
       }
       ++i;
     }
-    return true;
-  }
-
-  protected boolean assertFields(List<Tuple> tuples, String... fields) throws Exception {
-    for (Tuple tuple : tuples) {
-      for (String field : fields) {
-        if (!tuple.getFields().containsKey(field)) {
-          throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
-        }
-      }
-    }
-    return true;
-  }
-
-  protected boolean assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
-    for (Tuple tuple : tuples) {
-      for (String field : fields) {
-        if (tuple.getFields().containsKey(field)) {
-          throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
-        }
-      }
-    }
-    return true;
   }
 
   public boolean assertLong(Tuple tuple, String fieldName, long l) throws Exception {
@@ -862,9 +835,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
     String actual = (String) tuple.get(fieldName);
 
-    if ((null == expected && null != actual)
-        || (null != expected && null == actual)
-        || (null != expected && !expected.equals(actual))) {
+    if ((null == expected && null != actual) || (null != expected && !expected.equals(actual))) {
       throw new Exception("Longs not equal:" + expected + " : " + actual);
     }
 
