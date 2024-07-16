@@ -57,21 +57,25 @@ public class UpdateLocks {
       while (true) {
         lock = idToLock.computeIfAbsent(id, (k) -> new LockAndCondition());
         synchronized (lock) {
-          if (lock.refCount < 0) {
-            continue; // is being removed; try again
+          if (lock.refCount >= 0) { // always true, notwithstanding a race
+            lock.refCount++;
+            break;
           }
-          lock.refCount++;
-          break;
         }
+        // race condition -- existing lock was removed; try again
+        Thread.yield();
       }
       // try-finally ensuring we decrement the refCount
       try {
         return runWithLockInternal(id, function, lock, startTimeNanos);
       } finally {
+        assert idToLock.get(id) == lock : "lock shouldn't have changed";
         synchronized (lock) {
           assert lock.refCount > 0; // because we incremented it
-          lock.refCount--;
-          if (lock.refCount == 0) {
+          if (lock.refCount > 1) {
+            lock.refCount--;
+          } else { // == 1  (most typical)
+            lock.refCount = -1; // unused
             idToLock.remove(id);
           }
         }
