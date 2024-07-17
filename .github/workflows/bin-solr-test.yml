@@ -42,7 +42,7 @@ jobs:
       run: ./gradlew integrationTests
     - name: Archive logs
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: logs
         path: solr/packaging/build/test-output
