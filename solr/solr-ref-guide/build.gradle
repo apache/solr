@@ -238,6 +238,14 @@ task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
+task downloadAsciidoctorTabsExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "-D", "@asciidoctor/tabs@${libs.versions.asciidoctor.tabs.get()}"]
+
+    inputs.property("asciidoctor-tabs version", libs.versions.asciidoctor.tabs.get())
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@asciidoctor/tabs")
+}
+
 task downloadAntora {
     group = 'Build Dependency Download'
     description "Download all Antora build dependencies for site generation."
@@ -246,6 +254,7 @@ task downloadAntora {
     dependsOn tasks.downloadAntoraSiteGenerator
     dependsOn tasks.downloadAntoraLunrExtension
     dependsOn tasks.downloadAsciidoctorMathjaxExtension
+    dependsOn tasks.downloadAsciidoctorTabsExtension
 }
 
 task downloadLinkValidator(type: NpmTask) {
