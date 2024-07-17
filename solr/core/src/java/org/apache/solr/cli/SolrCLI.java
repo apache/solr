@@ -610,7 +610,8 @@ public class SolrCLI implements CLIO {
    *
    * @param solrUrl The user supplied url to Solr.
    * @param logUrlFormatWarning If a warning message should be logged about the url format
-   * @param hostContext context path for Solr, is normally '/solr' but can be overridden here
+   * @param hostContext context path for Solr, is normally '/solr' but can be overridden here.
+   *     Should not end with '/'
    * @return the solrUrl in the format that Solr expects to see internally.
    */
   public static String normalizeSolrUrl(
@@ -618,6 +619,9 @@ public class SolrCLI implements CLIO {
     if (solrUrl != null) {
       URI uri = URI.create(solrUrl);
       String urlPath = uri.getRawPath();
+      if (hostContext != null && hostContext.endsWith("/")) {
+        hostContext = hostContext.substring(0, hostContext.length() - 1);
+      }
       // Only consider URI path component when normalizing hostContext
       if (urlPath.contains(hostContext)) {
         String newSolrUrl =
