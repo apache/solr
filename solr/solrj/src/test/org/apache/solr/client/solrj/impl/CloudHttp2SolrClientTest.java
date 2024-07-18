@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4.RandomizingCloudSolrClientBuilder;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -44,6 +45,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -70,6 +72,8 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -245,6 +249,47 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertEquals(
         2, client.query(null, paramsWithMixedCollectionAndAlias).getResults().getNumFound());
   }
+
+  @Test
+  @LogLevel("org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider=DEBUG")
+  public void testHttpCSPPerf() throws Exception {
+
+    String COLLECTION = "TEST_COLLECTION";
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+    httpBasedCloudSolrClient.add(COLLECTION, doc);
+    httpBasedCloudSolrClient.commit(COLLECTION);
+
+    LogListener entireClusterStateLogs =
+        LogListener.debug(BaseHttpClusterStateProvider.class)
+            .substring("Making a call to Solr to fetch entire cluster state");
+    LogListener collectionClusterStateLogs =
+        LogListener.debug(BaseHttpClusterStateProvider.class)
+            .substring("Making a call to Solr to fetch cluster state for collection");
+
+    for (int i = 0; i < 3; i++) {
+      assertEquals(
+          1,
+          httpBasedCloudSolrClient
+              .query(COLLECTION, params("q", "*:*"))
+              .getResults()
+              .getNumFound());
+      assertTrue(entireClusterStateLogs.getQueue().size() == 0);
+      entireClusterStateLogs.pollMessage();
+      int collectionClusterStateCalls = collectionClusterStateLogs.getQueue().size();
+      log.info("collectionClusterStateCalls = " + collectionClusterStateCalls);
+      // we should be left with 2 calls to resolveAliases() per query request
+      assertTrue(collectionClusterStateCalls == 2);
+      for (int j = 0; j < collectionClusterStateCalls; j++) {
+        collectionClusterStateLogs.pollMessage();
+      }
+    }
+  }
+
+
 
   @Test
   public void testRouting() throws Exception {

@@ -61,6 +61,15 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
+  public Set<String> resolveAliases( List<String> aliases ) {
+    if(delegate != null) {
+      return delegate.resolveAliases(aliases);
+    } else {
+      return Collections.emptySet();
+    }
+  }
+
+  @Override
   public Map<String, String> getAliasProperties(String alias) {
     if (delegate != null) {
       return delegate.getAliasProperties(alias);
@@ -75,6 +84,15 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
       return delegate.resolveSimpleAlias(alias);
     } else {
       return alias;
+    }
+  }
+
+  @Override
+  public Object getClusterProperty(String propertyName) {
+    if (delegate != null) {
+      return delegate.getClusterProperty(propertyName);
+    } else {
+      return null;
     }
   }
 

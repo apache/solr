@@ -22,12 +22,7 @@ import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrExc
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -124,7 +119,10 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       throws SolrServerException, IOException, NotACollectionException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (collection != null) {
+      log.debug("Making a call to Solr to fetch cluster state for collection: ", collection);
       params.set("collection", collection);
+    } else {
+      log.debug("Making a call to Solr to fetch entire cluster state");
     }
     params.set("action", "CLUSTERSTATUS");
     params.set("prs", "true");

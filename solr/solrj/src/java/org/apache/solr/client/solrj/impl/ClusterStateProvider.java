@@ -18,10 +18,8 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -31,7 +29,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 public interface ClusterStateProvider extends SolrCloseable {
 
   static ClusterStateProvider newZkClusterStateProvider(
-      Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
+          Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
     // instantiate via reflection so that we don't depend on ZK
     try {
       var constructor =
@@ -65,6 +63,28 @@ public interface ClusterStateProvider extends SolrCloseable {
    * list of the input if it's not an alias.
    */
   List<String> resolveAlias(String alias);
+
+  /**
+   * Given a list of input aliases, returns a list of collections it points to. Doesn't validate
+   * collection existence
+   */
+  default Set<String> resolveAliases(List<String> inputCollections) {
+    if (inputCollections.isEmpty()) {
+      return Collections.emptySet();
+    }
+    LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
+    for (String collectionName : inputCollections) {
+
+      //check if collectionName is an alias
+      if (getState(collectionName) == null) {
+        // perhaps it's an alias
+        uniqueNames.addAll(resolveAlias(collectionName));
+      } else {
+        uniqueNames.add(collectionName); // it's a collection
+      }
+    }
+    return uniqueNames;
+  }
 
   /** Return alias properties, or an empty map if the alias has no properties. */
   Map<String, String> getAliasProperties(String alias);
@@ -108,15 +128,13 @@ public interface ClusterStateProvider extends SolrCloseable {
   /** Obtain a cluster property, or the default value if it doesn't exist. */
   default <T> T getClusterProperty(String key, T defaultValue) {
     @SuppressWarnings({"unchecked"})
-    T value = (T) getClusterProperties().get(key);
+    T value = (T) getClusterProperty(key);
     if (value == null) return defaultValue;
     return value;
   }
 
   /** Obtain a cluster property, or null if it doesn't exist. */
-  default Object getClusterProperty(String propertyName) {
-    return getClusterProperties().get(propertyName);
-  }
+  Object getClusterProperty(String propertyName);
 
   /** Get the collection-specific policy */
   String getPolicyNameByCollection(String coll);
