@@ -85,7 +85,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
     assertJQ(
         "/schema",
         "/schema/name=='test-rest'",
-        "/schema/version==1.6",
+        "/schema/version==1.7",
         "/schema/uniqueKey=='id'",
         "/schema/fieldTypes/[0]/name=='HTMLstandardtok'",
         "/schema/fieldTypes/[1]/name=='HTMLwhitetok'",
@@ -117,7 +117,7 @@ public class TestSchemaResource extends SolrRestletTestBase {
     assertQ(
         "/schema?wt=schema.xml",
         "/schema/@name = 'test-rest'",
-        "/schema/@version = '1.6'",
+        "/schema/@version = '1.7'",
         "/schema/uniqueKey = 'id'",
         "(/schema/fieldType)[1]/@name = 'HTMLstandardtok'",
         "(/schema/fieldType)[2]/@name = 'HTMLwhitetok'",

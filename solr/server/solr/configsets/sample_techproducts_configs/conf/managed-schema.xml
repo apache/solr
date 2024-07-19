@@ -347,7 +347,7 @@
 
     <!-- KD-tree versions of date fields -->
     <fieldType name="pdate" class="solr.DatePointField" />
-    <fieldType name="pdates" class="solr.DatePointField"" multiValued="true"/>
+    <fieldType name="pdates" class="solr.DatePointField" multiValued="true"/>
 
     <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
     <fieldType name="binary" class="solr.BinaryField"/>
