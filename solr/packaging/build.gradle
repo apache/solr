@@ -121,10 +121,8 @@ distributions {
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
           "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
           "**/bin/solr",
-          "**/bin/init.d/solr",
+          "**/bin/systemd/solr.service",
       ]) { copy ->
         copy.setMode(0755)
       }
@@ -269,6 +267,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2
   environment ZK_PORT: solrPort + 1000
+  environment SOLR_EXPORTER_PORT: solrPort + 100
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir

@@ -42,7 +42,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
@@ -349,7 +348,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
               add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.SERVER_ERROR.code, ex.code());
-    MatcherAssert.assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
+    assertThat(ex.getMessage(), containsString("Can't find document with id=6000"));
 
     // Reordered DBQ with Child-nodes (SOLR-10114)
     docsAdded.clear();
@@ -414,7 +413,9 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     QueryResponse qacResponse;
     qacResponse =
         queryAndCompare(
-            params("q", "*:*", "rows", "10000", "sort", "_version_ desc"), client0, client1);
+            params("q", "*:*", "rows", "10000", "sort", "_version_ desc,id desc"),
+            client0,
+            client1);
     validateQACResponse(docsAdded, qacResponse);
   }
 

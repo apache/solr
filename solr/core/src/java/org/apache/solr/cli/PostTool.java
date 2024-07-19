@@ -67,6 +67,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -86,9 +87,8 @@ public class PostTool extends ToolBase {
   static final String DATA_MODE_FILES = "files";
   static final String DATA_MODE_ARGS = "args";
   static final String DATA_MODE_STDIN = "stdin";
-  static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
-  static final String FORMAT_SOLR = "solr";
   static final String DATA_MODE_WEB = "web";
+  static final String FORMAT_SOLR = "solr";
 
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
@@ -98,17 +98,17 @@ public class PostTool extends ToolBase {
   int recursive = 0;
   int delay = 0;
   String fileTypes = PostTool.DEFAULT_FILE_TYPES;
-  URL solrUpdateUrl;
+  URI solrUpdateUrl;
   String credentials;
   OutputStream out = null;
   String type;
   String format;
-  String mode = DEFAULT_DATA_MODE;
   boolean commit;
   boolean optimize;
   boolean dryRun; // Avoids actual network traffic to Solr
 
   String[] args;
+  String params;
 
   boolean auto = true;
   private int currentDepth;
@@ -172,70 +172,90 @@ public class PostTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .argName("url")
             .longOpt("solr-update-url")
             .hasArg()
-            .required(false)
+            .argName("UPDATEURL")
             .desc("Solr Update URL, the full url to the update handler, including the /update.")
             .build(),
         Option.builder("c")
             .longOpt("name")
-            .argName("NAME")
             .hasArg()
+            .argName("NAME")
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("skipcommit")
+        Option.builder()
+            .longOpt("skip-commit")
             .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
-        Option.builder("optimize")
+        Option.builder()
+            .longOpt("skipcommit")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --skip-commit instead")
+                    .get())
+            .required(false)
+            .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
+            .build(),
+        Option.builder("o")
+            .longOpt("optimize")
             .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
-        Option.builder("mode")
+        Option.builder()
+            .longOpt("mode")
+            .hasArg()
             .argName("mode")
-            .hasArg(true)
             .required(false)
             .desc(
-                "Files crawls files, web crawls website, args processes input args, and stdin reads a command from standard in. default: files.")
+                "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
             .build(),
-        Option.builder("recursive")
+        Option.builder("r")
+            .longOpt("recursive")
+            .hasArg()
             .argName("recursive")
-            .hasArg(true)
             .required(false)
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
-        Option.builder("delay")
+        Option.builder("d")
+            .longOpt("delay")
+            .hasArg()
             .argName("delay")
-            .hasArg(true)
             .required(false)
             .desc(
                 "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
-        Option.builder("type")
+        Option.builder("t")
+            .longOpt("type")
+            .hasArg()
             .argName("content-type")
-            .hasArg(true)
             .required(false)
             .desc("Specify a specific mimetype to use, such as application/json.")
             .build(),
-        Option.builder("filetypes")
+        Option.builder("ft")
+            .longOpt("filetypes")
+            .hasArg()
             .argName("<type>[,<type>,...]")
-            .hasArg(true)
             .required(false)
             .desc("default: " + DEFAULT_FILE_TYPES)
             .build(),
-        Option.builder("params")
+        Option.builder("p")
+            .longOpt("params")
+            .hasArg()
             .argName("<key>=<value>[&<key>=<value>...]")
-            .hasArg(true)
             .required(false)
             .desc("values must be URL-encoded; these pass through to Solr update request.")
             .build(),
-        Option.builder("out")
+        Option.builder()
+            .longOpt("out")
             .required(false)
-            .desc("sends Solr response outputs to console")
+            .desc("sends Solr response outputs to console.")
             .build(),
-        Option.builder("format")
+        Option.builder("f")
+            .longOpt("format")
             .required(false)
             .desc(
                 "sends application/json content as Solr commands to /update instead of /update/json/docs.")
@@ -254,24 +274,20 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
-    if (cli.hasOption("url")) {
-      String url = cli.getOptionValue("url");
-      solrUpdateUrl = new URL(url);
-    } else if (cli.hasOption("c")) {
-      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
-      solrUpdateUrl = new URL(url);
+    if (cli.hasOption("solr-update-url")) {
+      String url = cli.getOptionValue("solr-update-url");
+      solrUpdateUrl = new URI(url);
+    } else if (cli.hasOption("name")) {
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
+      solrUpdateUrl = new URI(url);
     } else {
       throw new IllegalArgumentException(
-          "Must specify either -url or -c parameter to post documents.");
+          "Must specify either --solr-update-url or -c parameter to post documents.");
     }
 
-    if (cli.hasOption("mode")) {
-      mode = cli.getOptionValue("mode");
-    }
+    String mode = cli.getOptionValue("mode", DATA_MODE_FILES);
 
-    if (cli.hasOption("dry-run")) {
-      dryRun = true;
-    }
+    dryRun = cli.hasOption("dry-run");
 
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
@@ -289,21 +305,23 @@ public class PostTool extends ToolBase {
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    commit = cli.hasOption("skipcommit") ? false : true;
+    commit = !(cli.hasOption("skipcommit") || cli.hasOption("skip-commit"));
     optimize = cli.hasOption("optimize");
 
     credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
 
     args = cli.getArgs();
 
-    execute();
+    params = cli.getOptionValue("params", "");
+
+    execute(mode);
   }
 
   /**
    * After initialization, call execute to start the post job. This method delegates to the correct
    * mode method.
    */
-  public void execute() throws SolrServerException, IOException {
+  public void execute(String mode) throws SolrServerException, IOException {
     final RTimer timer = new RTimer();
     if (PostTool.DATA_MODE_FILES.equals(mode)) {
       doFilesMode();
@@ -338,7 +356,9 @@ public class PostTool extends ToolBase {
       info("Entering auto mode. File endings considered are " + fileTypes);
     }
     if (recursive > 0) {
-      info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
+      if (recursionPossible(args)) {
+        info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
+      }
     }
     fileFilter = getFileFilterFromFileTypes(fileTypes);
     int numFilesPosted = postFiles(args, 0, out, type);
@@ -358,11 +378,11 @@ public class PostTool extends ToolBase {
 
   private void doWebMode() {
     reset();
-    int numPagesPosted = 0;
+    int numPagesPosted;
     try {
       if (type != null) {
         throw new IllegalArgumentException(
-            "Specifying content-type with \"-Ddata=web\" is not supported");
+            "Specifying content-type with \"--mode=web\" is not supported");
       }
 
       // Set Extracting handler as default
@@ -387,7 +407,7 @@ public class PostTool extends ToolBase {
       numPagesPosted = postWebPages(args, 0, out);
       info(numPagesPosted + " web pages indexed.");
 
-    } catch (MalformedURLException e) {
+    } catch (URISyntaxException e) {
       warn("Wrong URL trying to append /extract to " + solrUpdateUrl);
     }
   }
@@ -415,6 +435,24 @@ public class PostTool extends ToolBase {
 
   private boolean checkIsValidPath(File srcFile) {
     return Files.exists(srcFile.toPath());
+  }
+
+  /**
+   * Check all the arguments looking to see if any are directories, and if so then we can recurse
+   * into them.
+   *
+   * @param args array of file names
+   * @return if we have a directory to recurse into
+   */
+  boolean recursionPossible(String[] args) {
+    boolean recursionPossible = false;
+    for (String arg : args) {
+      File f = new File(arg);
+      if (f.isDirectory()) {
+        recursionPossible = true;
+      }
+    }
+    return recursionPossible;
   }
 
   /**
@@ -495,7 +533,7 @@ public class PostTool extends ToolBase {
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
-      } catch (InterruptedException | MalformedURLException e) {
+      } catch (InterruptedException | URISyntaxException e) {
         throw new RuntimeException(e);
       }
     }
@@ -603,8 +641,8 @@ public class PostTool extends ToolBase {
         PostTool.PageFetcherResult result = pageFetcher.readPageFromUrl(url);
         if (result.httpStatus == 200) {
           url = (result.redirectUrl != null) ? result.redirectUrl : url;
-          URL postUrl =
-              new URL(
+          URI postUri =
+              new URI(
                   appendParam(
                       solrUpdateUrl.toString(),
                       "literal.id="
@@ -618,7 +656,7 @@ public class PostTool extends ToolBase {
                   null,
                   out,
                   result.contentType,
-                  postUrl);
+                  postUri);
           if (success) {
             info("POSTed web resource " + url + " (depth: " + level + ")");
             Thread.sleep(delay * 1000L);
@@ -631,7 +669,7 @@ public class PostTool extends ToolBase {
                       new ByteArrayInputStream(
                           content.array(), content.arrayOffset(), content.limit()),
                       result.contentType,
-                      postUrl);
+                      postUri);
               subStack.addAll(children);
             }
           } else {
@@ -747,25 +785,31 @@ public class PostTool extends ToolBase {
    */
   public static String appendParam(String url, String param) {
     String[] pa = param.split("&");
+    StringBuilder urlBuilder = new StringBuilder(url);
     for (String p : pa) {
       if (p.trim().length() == 0) {
         continue;
       }
       String[] kv = p.split("=");
       if (kv.length == 2) {
-        url = url + (url.contains("?") ? "&" : "?") + kv[0] + "=" + kv[1];
+        urlBuilder
+            .append(urlBuilder.toString().contains("?") ? "&" : "?")
+            .append(kv[0])
+            .append("=")
+            .append(kv[1]);
       } else {
         warn("Skipping param " + p + " which is not on form key=value");
       }
     }
+    url = urlBuilder.toString();
     return url;
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type) throws MalformedURLException {
+  public void postFile(File file, OutputStream output, String type) throws URISyntaxException {
     InputStream is = null;
 
-    URL url = solrUpdateUrl;
+    URI uri = solrUpdateUrl;
     String suffix = "";
     if (auto) {
       if (type == null) {
@@ -777,7 +821,7 @@ public class PostTool extends ToolBase {
       if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
         suffix = "/json/docs";
         String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
-        url = new URL(urlStr);
+        uri = new URI(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
           || type.equals("application/json")) {
@@ -795,7 +839,7 @@ public class PostTool extends ToolBase {
           urlStr =
               appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
         }
-        url = new URL(urlStr);
+        uri = new URI(urlStr);
       }
     } else {
       if (type == null) {
@@ -818,7 +862,7 @@ public class PostTool extends ToolBase {
                 + " to [base]"
                 + suffix);
         is = new FileInputStream(file);
-        postData(is, file.length(), output, type, url);
+        postData(is, file.length(), output, type, uri);
       } catch (IOException e) {
         warn("Can't open/read file: " + file);
       } finally {
@@ -836,18 +880,13 @@ public class PostTool extends ToolBase {
   /**
    * Appends to the path of the URL
    *
-   * @param url the URL
+   * @param uri the URI
    * @param append the path to append
    * @return the final URL version
    */
-  protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
-    return new URL(
-        url.getProtocol()
-            + "://"
-            + url.getAuthority()
-            + url.getPath()
-            + append
-            + (url.getQuery() != null ? "?" + url.getQuery() : ""));
+  protected static URI appendUrlPath(URI uri, String append) throws URISyntaxException {
+    var newPath = uri.getPath() + append;
+    return new URI(uri.getScheme(), uri.getAuthority(), newPath, uri.getQuery(), uri.getFragment());
   }
 
   /**
@@ -870,9 +909,17 @@ public class PostTool extends ToolBase {
    * @return true if success
    */
   public boolean postData(
-      InputStream data, Long length, OutputStream output, String type, URL url) {
+      InputStream data, Long length, OutputStream output, String type, URI uri) {
     if (dryRun) {
       return true;
+    }
+
+    if (params.length() > 0) {
+      try {
+        uri = new URI(appendParam(uri.toString(), params));
+      } catch (URISyntaxException e) {
+        warn("Malformed params");
+      }
     }
 
     boolean success = true;
@@ -882,7 +929,7 @@ public class PostTool extends ToolBase {
     HttpURLConnection urlConnection = null;
     try {
       try {
-        urlConnection = (HttpURLConnection) url.openConnection();
+        urlConnection = (HttpURLConnection) (uri.toURL()).openConnection();
         try {
           urlConnection.setRequestMethod("POST");
         } catch (ProtocolException e) {
@@ -1068,8 +1115,7 @@ public class PostTool extends ToolBase {
   public static Document makeDom(byte[] in)
       throws SAXException, IOException, ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(in);
-    Document dom = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
-    return dom;
+    return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
   }
 
   /** Inner class to filter files based on glob wildcards */
@@ -1180,9 +1226,9 @@ public class PostTool extends ToolBase {
         disallows = new ArrayList<>();
         URL urlRobot;
         try {
-          urlRobot = new URL(strRobot);
+          urlRobot = new URI(strRobot).toURL();
           disallows = parseRobotsTxt(urlRobot.openStream());
-        } catch (MalformedURLException e) {
+        } catch (URISyntaxException | MalformedURLException e) {
           return true; // We cannot trust this robots URL, should not happen
         } catch (IOException e) {
           // There is no robots.txt, will cache an empty disallow list
@@ -1230,17 +1276,16 @@ public class PostTool extends ToolBase {
      * @param url the URL of the web page
      * @param is the input stream of the page
      * @param type the content-type
-     * @param postUrl the URL (typically /solr/extract) in order to pull out links
+     * @param postUri the URI (typically /solr/extract) in order to pull out links
      * @return a set of URIs parsed from the page
      */
-    protected Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
+    protected Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URI postUri) {
       Set<URI> linksFromPage = new HashSet<>();
 
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
-        extractUrl = new URL(appendParam(extractUrl.toString(), "wt=xml"));
-        boolean success = postData(is, null, os, type, extractUrl);
+        URI extractUri = new URI(appendParam(postUri.toString(), "extractOnly=true"));
+        boolean success = postData(is, null, os, type, extractUri);
         if (success) {
           Document d = makeDom(os.toByteArray());
           String innerXml = getXP(d, "/response/str/text()[1]", false);
@@ -1259,7 +1304,7 @@ public class PostTool extends ToolBase {
             }
           }
         }
-      } catch (MalformedURLException e) {
+      } catch (URISyntaxException e) {
         warn("Malformed URL " + url);
       } catch (IOException e) {
         warn("IOException opening URL " + url + ": " + e.getMessage());

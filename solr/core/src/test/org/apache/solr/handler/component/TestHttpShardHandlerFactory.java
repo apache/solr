@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.core.CoreContainer;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -93,7 +92,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       final QueryRequest queryRequest = null;
       final List<String> urls = new ArrayList<>();
       for (int ii = 0; ii < 10; ++ii) {
-        urls.add(null);
+        urls.add("http://localhost" + ii + ":8983/solr");
       }
 
       // create LBHttpSolrClient request
@@ -134,7 +133,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       cc = CoreContainer.createAndLoad(home, home.resolve("solr.xml"));
       factory = cc.getShardHandlerFactory();
       assertTrue(factory instanceof HttpShardHandlerFactory);
-      MatcherAssert.assertThat(
+      assertThat(
           cc.getAllowListUrlChecker().getHostAllowList(),
           equalTo(new HashSet<>(Arrays.asList("abc:8983", "def:8984"))));
     } finally {
@@ -150,9 +149,9 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
         new HashSet<>(Arrays.asList("1.2.3.4:8983_solr", "1.2.3.4:9000_", "1.2.3.4:9001_solr-2"));
     ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
     Set<String> hostSet = cs.getHostAllowList();
-    MatcherAssert.assertThat(hostSet.size(), is(3));
-    MatcherAssert.assertThat(hostSet, hasItem("1.2.3.4:8983"));
-    MatcherAssert.assertThat(hostSet, hasItem("1.2.3.4:9000"));
-    MatcherAssert.assertThat(hostSet, hasItem("1.2.3.4:9001"));
+    assertThat(hostSet.size(), is(3));
+    assertThat(hostSet, hasItem("1.2.3.4:8983"));
+    assertThat(hostSet, hasItem("1.2.3.4:9000"));
+    assertThat(hostSet, hasItem("1.2.3.4:9001"));
   }
 }

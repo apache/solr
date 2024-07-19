@@ -64,15 +64,15 @@ public class AuthToolTest extends SolrCloudTestCase {
     String[] args = {
       "auth",
       "enable",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-authConfDir",
+      "--auth-conf-dir",
       dir.toAbsolutePath().toString(),
-      "-solrIncludeFile",
+      "--solr-include-file",
       solrIncludeFile.toAbsolutePath().toString(),
       "-credentials",
       "solr:solr",
-      "-blockUnknown",
+      "--block-unknown",
       "true"
     };
     assertEquals(0, runTool(args));
@@ -81,7 +81,7 @@ public class AuthToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof AuthTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 }

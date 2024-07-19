@@ -35,14 +35,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
@@ -140,29 +137,39 @@ public class V2HttpCall extends HttpSolrCall {
       if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
-        DocCollection collection =
-            resolveDocCollection(queryParams.get(COLLECTION_PROP, origCorename));
-        if (collection == null) {
+        String collectionStr = queryParams.get(COLLECTION_PROP, origCorename);
+        collectionsList =
+            resolveCollectionListOrAlias(collectionStr); // &collection= takes precedence
+        if (collectionsList.isEmpty()) {
           if (!path.endsWith(CommonParams.INTROSPECT)) {
             throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
+                SolrException.ErrorCode.BAD_REQUEST, "Resolved list of collections is empty");
           }
+        } else if (collectionsList.size() > 1) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Request must be sent to a single collection "
+                  + "or an alias that points to a single collection,"
+                  + " but '"
+                  + collectionStr
+                  + "' resolves to "
+                  + this.collectionsList);
         } else {
+          String collectionName = collectionsList.get(0);
           // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
           if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
             initAdminRequest(path);
             return;
           }
           boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
-          core = getCoreByCollection(collection.getName(), isPreferLeader);
+          core = getCoreByCollection(collectionName, isPreferLeader);
           if (core == null) {
             // this collection exists , but this node does not have a replica for that collection
-            extractRemotePath(collection.getName(), collection.getName());
+            extractRemotePath(collectionName, collectionName);
             if (action == REMOTEQUERY) {
               action = ADMIN_OR_REMOTEQUERY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
-              this.path =
-                  path = path.substring(prefix.length() + collection.getName().length() + 2);
+              this.path = path = path.substring(prefix.length() + collectionName.length() + 2);
               return;
             }
           }
@@ -216,54 +223,6 @@ public class V2HttpCall extends HttpSolrCall {
     // With a valid handler and a valid core...
 
     if (solrReq == null) solrReq = parser.parse(core, path, req);
-  }
-
-  /**
-   * Lookup the collection from the collection string (maybe comma delimited). Also sets {@link
-   * #collectionsList} by side-effect. if {@code secondTry} is false then we'll potentially
-   * recursively try this all one more time while ensuring the alias and collection info is sync'ed
-   * from ZK.
-   */
-  protected DocCollection resolveDocCollection(String collectionStr) {
-    if (!cores.isZooKeeperAware()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
-    }
-    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-
-    Supplier<DocCollection> logic =
-        () -> {
-          this.collectionsList = resolveCollectionListOrAlias(collectionStr); // side-effect
-          if (collectionsList.size() > 1) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "Request must be sent to a single collection "
-                    + "or an alias that points to a single collection,"
-                    + " but '"
-                    + collectionStr
-                    + "' resolves to "
-                    + this.collectionsList);
-          }
-          String collectionName = collectionsList.get(0); // first
-          // TODO an option to choose another collection in the list if can't find a local replica
-          // of the first?
-
-          return zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-        };
-
-    DocCollection docCollection = logic.get();
-    if (docCollection != null) {
-      return docCollection;
-    }
-    // ensure our view is up to date before trying again
-    try {
-      zkStateReader.aliasesManager.update();
-      zkStateReader.forceUpdateCollection(collectionsList.get(0));
-    } catch (Exception e) {
-      log.error("Error trying to update state while resolving collection.", e);
-      // don't propagate exception on purpose
-    }
-    return logic.get();
   }
 
   public static Api getApiInfo(

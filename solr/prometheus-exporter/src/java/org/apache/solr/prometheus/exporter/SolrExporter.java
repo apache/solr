@@ -21,6 +21,7 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
+import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -57,7 +58,7 @@ public class SolrExporter {
   private static final String ARG_BASE_URL_HELP =
       "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.";
 
-  private static final String[] ARG_ZK_HOST_FLAGS = {"-z", "--zkhost"};
+  private static final String[] ARG_ZK_HOST_FLAGS = {"-z", "--zk-host"};
   private static final String ARG_ZK_HOST_METAVAR = "ZK_HOST";
   private static final String ARG_ZK_HOST_DEST = "zkHost";
   private static final String ARG_ZK_HOST_DEFAULT = "";
@@ -102,6 +103,13 @@ public class SolrExporter {
   private static final String ARG_CREDENTIALS_DEFAULT = "";
   private static final String ARG_CREDENTIALS_HELP =
       "Specify the credentials in the format username:password. Example: --credentials solr:SolrRocks";
+
+  private static final String[] ARG_SSL_FLAGS = {"-ssl", "--ssl-enabled"};
+  private static final String ARG_SSL_METAVAR = "SSL_ENABLED";
+  private static final String ARG_SSL_DEST = "ssl_enabled";
+  private static final boolean ARG_SSL_DEFAULT = false;
+  private static final String ARG_SSL_HELP =
+      "Enable TLS connection to Solr. Expects following env variables: SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE, SOLR_SSL_TRUST_STORE_PASSWORD. Example: --ssl-enabled";
 
   public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
@@ -257,6 +265,14 @@ public class SolrExporter {
         .setDefault(ARG_CREDENTIALS_DEFAULT)
         .help(ARG_CREDENTIALS_HELP);
 
+    parser
+        .addArgument(ARG_SSL_FLAGS)
+        .metavar(ARG_SSL_METAVAR)
+        .dest(ARG_SSL_DEST)
+        .type(Boolean.class)
+        .setDefault(ARG_SSL_DEFAULT)
+        .help(ARG_SSL_HELP);
+
     try {
       Namespace res = parser.parseArgs(args);
 
@@ -287,6 +303,16 @@ public class SolrExporter {
           String[] credentialsArray = credentials.split(":", 2);
           scrapeConfiguration.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
         }
+      }
+
+      if (Boolean.TRUE.equals(res.getBoolean(ARG_SSL_DEST))) {
+        log.info("SSL ENABLED");
+
+        scrapeConfiguration.withSslConfiguration(
+            Paths.get(getSystemVariable("SOLR_SSL_KEY_STORE")),
+            getSystemVariable("SOLR_SSL_KEY_STORE_PASSWORD"),
+            Paths.get(getSystemVariable("SOLR_SSL_TRUST_STORE")),
+            getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 
       SolrExporter solrExporter =
@@ -328,5 +354,9 @@ public class SolrExporter {
       log.error("Could not load scrape configuration from {}", configPath);
       throw new RuntimeException(e);
     }
+  }
+
+  private static String getSystemVariable(String name) {
+    return System.getProperty(name, System.getenv(name));
   }
 }

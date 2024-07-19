@@ -178,6 +178,15 @@ Specifies the number of threads that will be assigned to replay updates in paral
 This pool is shared for all cores of the node.
 The default value is equal to the number of processors.
 
+`indexSearcherExecutorThreads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 4
+|===
++
+Specifies the number of threads that will be assigned for search queries.
+
 `coreRootDirectory`::
 +
 [%autowidth,frame=none]
@@ -357,7 +366,7 @@ By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It wil
 === The <solrcloud> Element
 
 This element defines several parameters that relate so SolrCloud.
-This section is ignored unless theSolr instance is started with either `-DzkRun` or `-DzkHost`
+This section is ignored unless the Solr instance is started with either `-DzkRun` or `-DzkHost`
 
 `distribUpdateConnTimeout`::
 +
@@ -726,7 +735,7 @@ If a default value is not specified, then the property must be specified at runt
 Any JVM system properties usually specified using the `-D` flag when starting the JVM, can be used as variables in the `solr.xml` file.
 
 For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "60000".
-However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "60000".
+However, if you start Solr using `bin/solr start -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "60000".
 
 [source,xml]
 ----

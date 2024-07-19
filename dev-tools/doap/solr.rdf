@@ -70,6 +70,20 @@
     <!-- NOTE: please insert releases in numeric order, NOT chronologically. -->
     <release>
          <Version>
+           <name>solr-9.6.1</name>
+           <created>2024-05-29</created>
+           <revision>9.6.1</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
+           <name>solr-9.6.0</name>
+           <created>2024-04-27</created>
+           <revision>9.6.0</revision>
+         </Version>
+    </release>
+    <release>
+         <Version>
            <name>solr-9.5.0</name>
            <created>2024-02-12</created>
            <revision>9.5.0</revision>
