@@ -123,7 +123,7 @@ Thus if values 4, 5, 2, 4, 1 are inserted, the values returned will be 1, 2, 4, 
 == Disabling DocValues
 
 DocValues are enabled by default for all field types that support them (when using a schemaVersion >= 1.7).
-Disabling docValues on a field or fieldType only requires adding `docValues="true"` to the definition:
+Disabling docValues on a field or fieldType only requires adding `docValues="false"` to the definition:
 
 [source,xml]
 ----

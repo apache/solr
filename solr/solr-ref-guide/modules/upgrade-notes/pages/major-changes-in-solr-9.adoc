@@ -75,6 +75,9 @@ With the new schema version, all fields and fieldTypes that support docValues (S
 will have docValues enabled by default.
 
 In order to upgrade from schemaVersion 1.6 to 1.7, a re-index of all data will generally be required.
+**This re-index cannot be in-place**.
+https://issues.apache.org/jira/browse/LUCENE-9334[Lucene does not allow adding docValues to existing fields.]
+
 However, if any of the following is true, a re-index is not required:
 
 * All applicable fields already have docValues enabled in the original schema
