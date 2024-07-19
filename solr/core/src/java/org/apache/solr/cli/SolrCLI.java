@@ -406,7 +406,7 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
-  /** Prints tool help for a given tool */
+  /** Prints tool help for a given tool. */
   private static void printToolHelp(Tool tool) {
     HelpFormatter formatter = HelpFormatter.builder().get();
     formatter.setWidth(120);
