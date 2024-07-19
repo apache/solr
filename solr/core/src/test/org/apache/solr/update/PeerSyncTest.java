@@ -687,24 +687,34 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   }
 
   private static void missedUpdatesFinderTests() {
-    testMissedUpdatesFinderSmallOverlapOursIsNewer(false /* ourHighestIsDelete */, false /* otherHighestIsDelete */);
-    testMissedUpdatesFinderSmallOverlapOursIsNewer(false /* ourHighestIsDelete */, true /* otherHighestIsDelete */);
-    testMissedUpdatesFinderSmallOverlapOursIsNewer(true /* ourHighestIsDelete */, false /* otherHighestIsDelete */);
-    testMissedUpdatesFinderSmallOverlapOursIsNewer(true /* ourHighestIsDelete */, true /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsNewer(
+        false /* ourHighestIsDelete */, false /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsNewer(
+        false /* ourHighestIsDelete */, true /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsNewer(
+        true /* ourHighestIsDelete */, false /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsNewer(
+        true /* ourHighestIsDelete */, true /* otherHighestIsDelete */);
 
-    testMissedUpdatesFinderSmallOverlapOursIsOlder(false /* highestIsDelete */, false /* otherHighestIsDelete */);
-    testMissedUpdatesFinderSmallOverlapOursIsOlder(false /* highestIsDelete */, true /* otherHighestIsDelete */);
-    testMissedUpdatesFinderSmallOverlapOursIsOlder(true /* highestIsDelete */, false /* otherHighestIsDelete */);
-    testMissedUpdatesFinderSmallOverlapOursIsOlder(true /* highestIsDelete */, true /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsOlder(
+        false /* highestIsDelete */, false /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsOlder(
+        false /* highestIsDelete */, true /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsOlder(
+        true /* highestIsDelete */, false /* otherHighestIsDelete */);
+    testMissedUpdatesFinderSmallOverlapOursIsOlder(
+        true /* highestIsDelete */, true /* otherHighestIsDelete */);
   }
 
-  private static void testMissedUpdatesFinderSmallOverlapOursIsNewer(boolean ourHighestIsDelete, boolean otherHighestIsDelete) {
+  private static void testMissedUpdatesFinderSmallOverlapOursIsNewer(
+      boolean ourHighestIsDelete, boolean otherHighestIsDelete) {
     // overlap: -30 or 30 and 20 and 19
 
     Long ourHighest = ourHighestIsDelete ? -100L : 100L;
     Long otherHighest = otherHighestIsDelete ? -30L : 30L;
 
-    LinkedList<Long> ourUpdates = new LinkedList<>(List.of(ourHighest, 90L, 80L, 70L, 60L, 50L, 40L, otherHighest, 20L, 19L));
+    LinkedList<Long> ourUpdates =
+        new LinkedList<>(List.of(ourHighest, 90L, 80L, 70L, 60L, 50L, 40L, otherHighest, 20L, 19L));
     String logPrefix = "";
     long nUpdates = 100L;
     long ourLowThreshold = PeerSync.percentile(ourUpdates, 0.8f);
@@ -712,10 +722,12 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertEquals(20L, ourLowThreshold);
     assertEquals(80L, ourHighThreshold);
 
-    PeerSync.MissedUpdatesFinder finder = new PeerSync.MissedUpdatesFinder(ourUpdates, logPrefix, nUpdates,
-        ourLowThreshold, ourHighThreshold);
-    
-    LinkedList<Long> otherVersions = new LinkedList<>(List.of(otherHighest, 20L, 19L, 9L, 8L, 7L, 6L, 5L, 4L, 3L));
+    PeerSync.MissedUpdatesFinder finder =
+        new PeerSync.MissedUpdatesFinder(
+            ourUpdates, logPrefix, nUpdates, ourLowThreshold, ourHighThreshold);
+
+    LinkedList<Long> otherVersions =
+        new LinkedList<>(List.of(otherHighest, 20L, 19L, 9L, 8L, 7L, 6L, 5L, 4L, 3L));
     long otherLowThreshold = PeerSync.percentile(otherVersions, 0.8f);
     long otherHighThreshold = PeerSync.percentile(otherVersions, 0.2f);
     assertEquals(4L, otherLowThreshold);
@@ -733,11 +745,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertTrue(MissedUpdatesRequest.ALREADY_IN_SYNC == mur);
   }
 
-  private static void testMissedUpdatesFinderSmallOverlapOursIsOlder(boolean ourHighestIsDelete, boolean otherHighestIsDelete) {
+  private static void testMissedUpdatesFinderSmallOverlapOursIsOlder(
+      boolean ourHighestIsDelete, boolean otherHighestIsDelete) {
     // overlap: 20 and 19
 
     Long ourHighest = ourHighestIsDelete ? -100L : 100L;
-    LinkedList<Long> ourUpdates = new LinkedList<>(List.of(ourHighest, 90L, 80L, 70L, 60L, 50L, 40L, 30L, 20L, 19L));
+    LinkedList<Long> ourUpdates =
+        new LinkedList<>(List.of(ourHighest, 90L, 80L, 70L, 60L, 50L, 40L, 30L, 20L, 19L));
     String logPrefix = "";
     long nUpdates = 100L;
     long ourLowThreshold = PeerSync.percentile(ourUpdates, 0.8f);
@@ -745,11 +759,13 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertEquals(20L, ourLowThreshold);
     assertEquals(80L, ourHighThreshold);
 
-    PeerSync.MissedUpdatesFinder finder = new PeerSync.MissedUpdatesFinder(ourUpdates, logPrefix, nUpdates,
-        ourLowThreshold, ourHighThreshold);
+    PeerSync.MissedUpdatesFinder finder =
+        new PeerSync.MissedUpdatesFinder(
+            ourUpdates, logPrefix, nUpdates, ourLowThreshold, ourHighThreshold);
 
     Long otherHighest = otherHighestIsDelete ? -130L : 130L;
-    LinkedList<Long> otherVersions = new LinkedList<>(List.of(otherHighest, 20L, 19L, 9L, 8L, 7L, 6L, 5L, 4L, 3L));
+    LinkedList<Long> otherVersions =
+        new LinkedList<>(List.of(otherHighest, 20L, 19L, 9L, 8L, 7L, 6L, 5L, 4L, 3L));
     long otherLowThreshold = PeerSync.percentile(otherVersions, 0.8f);
     long otherHighThreshold = PeerSync.percentile(otherVersions, 0.2f);
     assertEquals(4L, otherLowThreshold);
@@ -765,7 +781,6 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
       return;
     }
     assertEquals(8L, mur.totalRequestedUpdates);
-    assertEquals("3...9,"+otherHighest+"..."+otherHighest, mur.versionsAndRanges);
+    assertEquals("3...9," + otherHighest + "..." + otherHighest, mur.versionsAndRanges);
   }
-
 }
