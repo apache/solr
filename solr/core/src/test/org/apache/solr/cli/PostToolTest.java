@@ -139,7 +139,7 @@ public class PostToolTest extends SolrCloudTestCase {
     // Provide the port for the PostTool to look up.
     EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
-    withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0)
         .processAndWait(cluster.getSolrClient(), 10);
 
     File tsvDoc = File.createTempFile("temp", ".tsv");
@@ -152,8 +152,6 @@ public class PostToolTest extends SolrCloudTestCase {
       "post",
       "-c",
       collection,
-      "-credentials",
-      SecurityJson.USER_PASS,
       "--params",
       "\"separator=%09&header=false&fieldnames=id,title_s\"",
       "--type",
@@ -166,7 +164,7 @@ public class PostToolTest extends SolrCloudTestCase {
     int expectedDocCount = 1;
 
     for (int idx = 0; idx < 100; ++idx) {
-      QueryRequest req = withBasicAuth(new QueryRequest(params("q", "*:*")));
+      QueryRequest req = new QueryRequest(params("q", "*:*"));
       QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
 
       numFound = (int) rsp.getResults().getNumFound();
