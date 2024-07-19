@@ -43,8 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
@@ -85,8 +83,6 @@ public class SolrCLI implements CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ZK_HOST = "localhost:9983";
-
-  private static HelpFormatter formatter = HelpFormatter.builder().get();
 
   public static final Option OPTION_ZKHOST_DEPRECATED =
       Option.builder("zkHost")
@@ -189,10 +185,6 @@ public class SolrCLI implements CLIO {
               "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
           .build();
 
-  static {
-    formatter.setWidth(120);
-  }
-
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
@@ -205,7 +197,7 @@ public class SolrCLI implements CLIO {
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
     final boolean hasNoCommand =
-        args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
+        args == null || args.length == 0 || args[0] == null || args[0].trim().isEmpty();
     final boolean isHelpCommand =
         !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
 
@@ -228,7 +220,7 @@ public class SolrCLI implements CLIO {
       CLIO.err(iae.getMessage());
       System.exit(1);
     }
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     System.exit(tool.runTool(cli));
   }
 
@@ -237,7 +229,7 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
-  public static CommandLine parseCmdLine(String toolName, String[] args, List<Option> toolOptions) {
+  public static CommandLine parseCmdLine(Tool tool, String[] args) {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<>();
     List<String> dashDList = new ArrayList<>();
@@ -252,7 +244,7 @@ public class SolrCLI implements CLIO {
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
     // process command-line args to configure this application
-    CommandLine cli = processCommandLineArgs(toolName, toolOptions, toolArgs);
+    CommandLine cli = processCommandLineArgs(tool, toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -342,6 +334,7 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
+  /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
@@ -367,21 +360,9 @@ public class SolrCLI implements CLIO {
     return val == null ? def : val;
   }
 
-  public static List<Option> joinOptions(List<Option> lhs, List<Option> rhs) {
-    if (lhs == null) {
-      return rhs == null ? List.of() : rhs;
-    }
-
-    if (rhs == null) {
-      return lhs;
-    }
-
-    return Stream.concat(lhs.stream(), rhs.stream()).collect(Collectors.toUnmodifiableList());
-  }
-
   /** Parses the command-line arguments passed by the user. */
-  public static CommandLine processCommandLineArgs(
-      String toolName, List<Option> customOptions, String[] args) {
+  public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
+    List<Option> customOptions = tool.getOptions();
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
@@ -409,30 +390,34 @@ public class SolrCLI implements CLIO {
       }
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage() + "\n");
-        formatter.printHelp(toolName, getOptionsNoDeprecation(options));
+        printToolHelp(tool);
         exit(1);
       } else {
-        formatter.printHelp(toolName, getOptionsNoDeprecation(options));
+        printToolHelp(tool);
         exit(0);
       }
     }
 
     if (cli.hasOption("help")) {
-      formatter.printHelp(toolName, getOptionsNoDeprecation(options));
+      printToolHelp(tool);
       exit(0);
     }
 
     return cli;
   }
 
-  private static Options getOptionsNoDeprecation(Options options) {
-    Options newOptions = new Options();
-    for (Option option : options.getOptions()) {
-      if (!option.isDeprecated()) {
-        newOptions.addOption(option);
-      }
-    }
-    return newOptions;
+  /** Prints tool help for a given tool. */
+  private static void printToolHelp(Tool tool) {
+    HelpFormatter formatter = HelpFormatter.builder().get();
+    formatter.setWidth(120);
+    Options optionsNoDeprecated = new Options();
+    tool.getOptions().stream()
+        .filter(option -> !option.isDeprecated())
+        .forEach(optionsNoDeprecated::addOption);
+    String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
+    boolean autoGenerateUsage = tool.getUsage() == null;
+    formatter.printHelp(
+        usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */
@@ -718,11 +703,7 @@ public class SolrCLI implements CLIO {
     return zkHost;
   }
 
-  public static SolrZkClient getSolrZkClient(CommandLine cli) throws Exception {
-    return getSolrZkClient(cli, getZkHost(cli));
-  }
-
-  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
