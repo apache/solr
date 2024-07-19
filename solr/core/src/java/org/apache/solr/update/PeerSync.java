@@ -873,7 +873,7 @@ public class PeerSync implements SolrMetricProducer {
         return MissedUpdatesRequest.UNABLE_TO_SYNC;
       }
 
-      if (ourLowThreshold > otherHigh && ourHighest >= otherHighest) {
+      if (ourLowThreshold > otherHigh && Math.abs(ourHighest) >= Math.abs(otherHighest)) {
         // Small overlap between windows and ours is newer.
         // Using this list to sync would result in requesting/replaying results we don't need
         // and possibly bringing deleted docs back to life.
