@@ -124,10 +124,14 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       throws SolrServerException, IOException, NotACollectionException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (collection != null) {
-      log.debug("Making a call to Solr to fetch cluster state for collection: ", collection);
+      if (log.isDebugEnabled()) {
+        log.debug("Making a call to Solr to fetch cluster state for collection: {}", collection);
+      }
       params.set("collection", collection);
     } else {
-      log.debug("Making a call to Solr to fetch entire cluster state");
+      if (log.isDebugEnabled()) {
+        log.debug("Making a call to Solr to fetch entire cluster state");
+      }
     }
     params.set("action", "CLUSTERSTATUS");
     params.set("prs", "true");
