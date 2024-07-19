@@ -15,4 +15,38 @@
  * limitations under the License.
  */
 
-rootProject.name = "missing-doclet"
+plugins {
+  id "java-gradle-plugin"
+}
+
+repositories {
+  mavenCentral()
+}
+
+group = "org.apache"
+
+gradlePlugin {
+  automatedPublishing = false
+
+  plugins {
+    buildInfra {
+      id = 'solr.build-infra'
+      implementationClass = 'org.apache.lucene.gradle.buildinfra.BuildInfraPlugin'
+    }
+  }
+}
+
+// Make sure the build environment is consistent.
+apply from: file('../../gradle/validation/check-environment.gradle')
+
+java {
+  sourceCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
+  targetCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
+}
+
+dependencies {
+  implementation gradleApi()
+  implementation localGroovy()
+
+  implementation libs.commonscodec.commonscodec
+}

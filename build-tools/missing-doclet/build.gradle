@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
-repositories {
-  mavenCentral()
+plugins {
+  id 'java-library'
 }
 
-ext {
-  // Minimum Java version required to compile buildSrc.
-  minJavaVersion = JavaVersion.VERSION_11
+version = "1.0.0-SNAPSHOT"
+group = "org.apache.solr.tools"
+description = 'Doclet-based javadoc validation'
+
+java {
+  sourceCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
+  targetCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
 }
 
-// Make sure the build environment is consistent.
-apply from: file('../gradle/validation/check-environment.gradle')
-
-dependencies {
-  implementation gradleApi()
-  implementation localGroovy()
-
-  implementation libs.commonscodec.commonscodec
+tasks.withType(JavaCompile).configureEach {
+  options.compilerArgs += ["--release", targetCompatibility.toString()]
+  options.encoding = "UTF-8"
 }
