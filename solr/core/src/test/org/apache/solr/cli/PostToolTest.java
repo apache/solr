@@ -169,9 +169,9 @@ public class PostToolTest extends SolrCloudTestCase {
       collection,
       "-credentials",
       SecurityJson.USER_PASS,
-      "-params",
+      "--params",
       "\"separator=%09&header=false&fieldnames=id,title_s\"",
-      "-type",
+      "--type",
       "text/csv",
       tsvDoc.getAbsolutePath()
     };
