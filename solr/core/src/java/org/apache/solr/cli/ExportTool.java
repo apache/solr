@@ -94,7 +94,41 @@ public class ExportTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return OPTIONS;
+    return List.of(
+        Option.builder("url")
+            .longOpt("solr-collection-url")
+            .hasArg()
+            .argName("URL")
+            .required()
+            .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
+            .build(),
+        Option.builder("out")
+            .hasArg()
+            .argName("PATH")
+            .desc(
+                "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
+            .build(),
+        Option.builder("format")
+            .hasArg()
+            .argName("FORMAT")
+            .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+            .build(),
+        Option.builder("compress").desc("Compress the output.").build(),
+        Option.builder("limit")
+            .hasArg()
+            .argName("#")
+            .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+            .build(),
+        Option.builder("query")
+            .hasArg()
+            .argName("QUERY")
+            .desc("A custom query, default is '*:*'.")
+            .build(),
+        Option.builder("fields")
+            .hasArg()
+            .argName("FIELDA,FIELDB")
+            .desc("Comma separated list of fields to export. By default all fields are fetched.")
+            .build());
   }
 
   public abstract static class Info {
@@ -202,7 +236,7 @@ public class ExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
+    String url = cli.getOptionValue("solr-collection-url");
     Info info = new MultiThreadedRunner(url);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(
@@ -230,41 +264,6 @@ public class ExportTool extends ToolBase {
 
     void end() throws IOException {}
   }
-
-  private static final List<Option> OPTIONS =
-      List.of(
-          Option.builder("url")
-              .hasArg()
-              .required()
-              .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
-              .build(),
-          Option.builder("out")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
-              .build(),
-          Option.builder("format")
-              .hasArg()
-              .required(false)
-              .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-              .build(),
-          Option.builder("compress").required(false).desc("Compress the output.").build(),
-          Option.builder("limit")
-              .hasArg()
-              .required(false)
-              .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-              .build(),
-          Option.builder("query")
-              .hasArg()
-              .required(false)
-              .desc("A custom query, default is '*:*'.")
-              .build(),
-          Option.builder("fields")
-              .hasArg()
-              .required(false)
-              .desc("Comma separated list of fields to export. By default all fields are fetched.")
-              .build());
 
   static class JsonWithLinesSink extends DocsSink {
     private final CharArr charArr = new CharArr(1024 * 2);

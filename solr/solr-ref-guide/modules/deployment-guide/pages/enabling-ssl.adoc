@@ -310,7 +310,7 @@ If you created the SSL key without all DNS names or IP addresses on which Solr n
 ====
 [source,terminal]
 ----
-$ bin/solr start -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+$ bin/solr start --cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 
@@ -319,7 +319,7 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin\solr.cmd -cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
+C:\> bin\solr.cmd --cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
 
 ----
 ====
@@ -371,7 +371,7 @@ Create a 2-shard, replicationFactor=1 collection named mycollection using the `_
 ====
 [source,bash]
 ----
-bin/solr create -c mycollection -shards 2
+bin/solr create -c mycollection --shards 2
 ----
 ====
 
@@ -380,7 +380,7 @@ Windows::
 ====
 [source,text]
 ----
-bin\solr.cmd create -c mycollection -shards 2
+bin\solr.cmd create -c mycollection --shards 2
 ----
 ====
 ======

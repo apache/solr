@@ -24,7 +24,7 @@ setup_file() {
 
 teardown_file() {
   common_setup
-  solr stop -all
+  solr stop --all
 }
 
 setup() {
@@ -47,10 +47,34 @@ teardown() {
   assert_output --partial "aliases.json"
 }
 
-@test "get zk host using solr url" {
+@test "connecting to solr via various solr urls and zk hosts" {
   sleep 1
   run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}/solr
   assert_output --partial "aliases.json"
+  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
+  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
+
+  run solr zk ls / -s http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
+  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
+
+  run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+
+  run solr zk ls /
+  assert_output --partial "aliases.json"
+
+  run solr zk ls / -z localhost:${ZK_PORT}
+  assert_output --partial "aliases.json"
+
+  run solr zk ls / --zk-host localhost:${ZK_PORT}
+  assert_output --partial "aliases.json"
+
+  run solr zk ls / -zkHost localhost:${ZK_PORT}
+  assert_output --partial "aliases.json"
+  # We do mapping in bin/solr script from -zkHost to --zk-host that prevents deprecation warning
+  #assert_output --partial "Deprecated for removal since 9.7: Use --zk-host instead"
 }
 
 @test "copying files around" {
@@ -67,7 +91,7 @@ teardown() {
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile2.txt"
-  
+
   touch myfile3.txt
   run solr zk cp myfile3.txt zk:/myfile3.txt -z localhost:${ZK_PORT}
   assert_output --partial "Copying from 'myfile3.txt' to 'zk:/myfile3.txt'. ZooKeeper at localhost:${ZK_PORT}"
@@ -115,15 +139,14 @@ teardown() {
 
 @test "bin/solr zk cp gets 'solrhome' from '--solr-home' command line option" {
   touch afile.txt
-  
+
   run solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} -verbose --solr-home ${SOLR_TIP}/server/solr
   assert_output --partial "Using SolrHome: ${SOLR_TIP}/server/solr"
   refute_output --partial 'Failed to load solr.xml from ZK or SolrHome'
-  
+
   # The -DminStateByteLenForCompression variable substitution on solr start is not seen
   # by the ZkCpTool.java, so therefore we do not have compression unless solr.xml is directly edited.
   #assert_output --partial 'Compression of state.json has been enabled'
-  
-  
+
   rm afile.txt
 }

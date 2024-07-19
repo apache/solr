@@ -60,7 +60,7 @@ bin/solr zk upconfig -z 127.0.0.1:9983 -n my_new_config -d server/solr/configset
 
 [source,bash]
 ----
-./bin/solr zk linkconfig --confname my_new_config -c gettingstarted -z 127.0.0.1:9983
+./bin/solr zk linkconfig --conf-name my_new_config -c gettingstarted -z 127.0.0.1:9983
 ----
 
 === Create a New ZooKeeper Path
