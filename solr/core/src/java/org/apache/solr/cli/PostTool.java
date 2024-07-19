@@ -107,6 +107,7 @@ public class PostTool extends ToolBase {
   boolean dryRun; // Avoids actual network traffic to Solr
 
   String[] args;
+  String params;
 
   boolean auto = true;
   private int currentDepth;
@@ -306,6 +307,8 @@ public class PostTool extends ToolBase {
     optimize = cli.hasOption("optimize");
 
     args = cli.getArgs();
+
+    params = cli.getOptionValue("params", "");
 
     execute(mode);
   }
@@ -922,6 +925,14 @@ public class PostTool extends ToolBase {
       InputStream data, Long length, OutputStream output, String type, URL url) {
     if (dryRun) {
       return true;
+    }
+
+    if (params.length() > 0) {
+      try {
+        uri = new URI(appendParam(uri.toString(), params));
+      } catch (URISyntaxException e) {
+        warn("Malformed params");
+      }
     }
 
     boolean success = true;
