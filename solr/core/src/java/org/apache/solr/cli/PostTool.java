@@ -929,8 +929,8 @@ public class PostTool extends ToolBase {
 
     if (params.length() > 0) {
       try {
-        uri = new URI(appendParam(uri.toString(), params));
-      } catch (URISyntaxException e) {
+        url = new URL(appendParam(url.toString(), params));
+      } catch (MalformedURLException e) {
         warn("Malformed params");
       }
     }
