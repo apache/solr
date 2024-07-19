@@ -69,7 +69,7 @@ Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.7
 === SchemaVersion upgraded to 1.7
-Starting with Solr 9.5, the default schemaVersion is 1.7.
+The default schemaVersion is now 1.7.
 With the new schema version, all fields and fieldTypes that support docValues (StrField, *PointField, BoolField, etc.)
 will have docValues enabled by default.
 
