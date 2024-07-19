@@ -16,7 +16,7 @@
  */
 
 configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(":solr:webapp")]) {
-    apply plugin: "com.github.node-gradle.node"
+    apply plugin: libs.plugins.nodegradle.node.get().pluginId
 
     def npmRegistry = "${ -> propertyOrEnvOrDefault("solr.npm.registry", "SOLR_NPM_REGISTRY", '') }"
     if (!npmRegistry.isEmpty()) {
