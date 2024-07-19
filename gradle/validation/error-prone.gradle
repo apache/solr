@@ -52,7 +52,7 @@ allprojects { prj ->
       }
       configurations.annotationProcessor.extendsFrom(configurations.errorprone)
     } else {
-      prj.apply plugin: 'net.ltgt.errorprone'
+      prj.apply plugin: libs.plugins.ltgt.errorprone.get().pluginId
 
       dependencies {
         errorprone libs.google.errorprone.core

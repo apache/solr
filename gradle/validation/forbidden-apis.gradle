@@ -23,7 +23,7 @@ def resources = scriptResources(buildscript)
 // Only apply forbidden-apis to java projects.
 allprojects { prj ->
   plugins.withId("java", {
-    prj.apply plugin: 'de.thetaphi.forbiddenapis'
+    prj.apply plugin: libs.plugins.thetaphi.forbiddenapis.get().pluginId
 
     // This helper method appends signature files based on a set of true
     // dependencies from a given configuration.
