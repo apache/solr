@@ -227,7 +227,7 @@
 
     <!-- since fields of this type are by default not stored or indexed,
        any data added to them will be ignored outright.  -->
-    <fieldType name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />
+    <fieldType name="ignored" stored="false" indexed="false" multiValued="true" docValues="false" class="solr.StrField" />
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime

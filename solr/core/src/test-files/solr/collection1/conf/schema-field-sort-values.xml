@@ -30,7 +30,7 @@
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="payload" type="${solr.tests.payload.fieldtype}" indexed="false"
-         stored="true" multiValued="false" required="true"/>
+         stored="true" multiValued="false" docValues="true" required="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>

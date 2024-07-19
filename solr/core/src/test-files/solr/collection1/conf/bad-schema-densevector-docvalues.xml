@@ -24,7 +24,7 @@
 
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="vector" type="knn_vector"/>
+  <field name="vector" type="knn_vector" docValues="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>

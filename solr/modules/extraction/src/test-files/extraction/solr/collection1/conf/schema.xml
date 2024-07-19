@@ -97,7 +97,7 @@
 
 
   <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
-  <fieldType name="highlittext" class="solr.TextField" compressThreshold="345"/>
+  <fieldType name="highlittext" class="solr.TextField"/>
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>

@@ -41,9 +41,6 @@
     -->
 
     <!-- The StrField type is not analyzed, but indexed/stored verbatim.
-       - StrField and TextField support an optional compressThreshold which
-       limits compression (if enabled in the derived fields) to values which
-       exceed a certain size (in characters).
     -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 

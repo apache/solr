@@ -102,7 +102,7 @@
 
 
     <!-- HighlitText optimizes storage for (long) columns which will be highlit -->
-    <fieldType name="highlittext" class="solr.TextField" compressThreshold="345"/>
+    <fieldType name="highlittext" class="solr.TextField"/>
 
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
@@ -660,7 +660,7 @@
     <field name="dateRemove" type="date" indexed="true" stored="true" multiValued="true"/>
     <field name="floatRemove" type="float" indexed="true" stored="true" multiValued="true"/>
 
-    <field name="binaryRemove" type="binary" indexed="true" stored="true" multiValued="true"/>
+    <field name="binaryRemove" type="binary" indexed="true" stored="true" multiValued="true" docValues="false"/>
     <field name="booleanRemove" type="boolean" indexed="true" stored="true" multiValued="true"/>
     <field name="collationRemove" type="collation" indexed="true" stored="true" multiValued="true"/>
     <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>

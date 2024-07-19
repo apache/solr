@@ -157,7 +157,7 @@
   </fieldType>
 
   <fieldType name="uuid" class="solr.UUIDField"/>
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
 
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>

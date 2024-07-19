@@ -36,7 +36,7 @@
 
   <uniqueKey>id</uniqueKey>
 
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
