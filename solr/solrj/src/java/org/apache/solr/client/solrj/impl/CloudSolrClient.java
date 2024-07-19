@@ -788,7 +788,8 @@ public abstract class CloudSolrClient extends SolrClient {
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = getClusterStateProvider().resolveAliases(inputCollections);
+      Set<String> requestedCollectionNames =
+          getClusterStateProvider().resolveAliases(inputCollections);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -1137,7 +1138,6 @@ public abstract class CloudSolrClient extends SolrClient {
     LBSolrClient.Rsp rsp = getLbClient().request(req);
     return rsp.getResponse();
   }
-
 
   /**
    * If true, this client has been configured such that it will generally prefer to send {@link

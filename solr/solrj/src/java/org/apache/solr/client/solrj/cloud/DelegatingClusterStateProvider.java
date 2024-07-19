@@ -61,8 +61,8 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public Set<String> resolveAliases( List<String> aliases ) {
-    if(delegate != null) {
+  public Set<String> resolveAliases(List<String> aliases) {
+    if (delegate != null) {
       return delegate.resolveAliases(aliases);
     } else {
       return Collections.emptySet();

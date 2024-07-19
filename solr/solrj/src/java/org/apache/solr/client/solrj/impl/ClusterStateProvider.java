@@ -18,8 +18,12 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -29,7 +33,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 public interface ClusterStateProvider extends SolrCloseable {
 
   static ClusterStateProvider newZkClusterStateProvider(
-          Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
+      Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
     // instantiate via reflection so that we don't depend on ZK
     try {
       var constructor =
@@ -75,7 +79,7 @@ public interface ClusterStateProvider extends SolrCloseable {
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
 
-      //check if collectionName is an alias
+      // check if collectionName is an alias
       if (getState(collectionName) == null) {
         // perhaps it's an alias
         uniqueNames.addAll(resolveAlias(collectionName));

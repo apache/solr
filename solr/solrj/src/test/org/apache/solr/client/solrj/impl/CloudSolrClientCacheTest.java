@@ -156,6 +156,15 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       public <T> T getClusterProperty(String propertyName, T def) {
         return def;
       }
+
+      @Override
+      public Set<String> resolveAliases(List<String> inputCollections) {
+        Set<String> res = new HashSet<>();
+        for (String c : inputCollections) {
+          res.add(c);
+        }
+        return res;
+      }
     };
   }
 
