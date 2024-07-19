@@ -20,6 +20,8 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id 'base'
+  id 'solr.build-infra'
+
   alias(libs.plugins.carrotsearch.dependencychecks)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)

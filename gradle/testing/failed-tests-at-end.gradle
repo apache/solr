@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import org.apache.lucene.gradle.ErrorReportingTestListener
-
 // Display all failed tests at the end of the build.
 
 def failedTests = new LinkedHashSet() // for dedupe due to weird afterTest classMethod issue
@@ -29,7 +27,7 @@ def genFailInfo(def task, TestDescriptor desc) {
     historyUrl += "&tests.test=$desc.name"
     historyUrl += " http://fucit.org/solr-jenkins-reports/history-trend-of-recent-failures.html#series/$name"
   }
-  def logName = ErrorReportingTestListener.getOutputLogName(desc.parent ?: desc)
+  def logName = buildinfra.getOutputLogName(desc.parent ?: desc)
   def output = file("${task.testOutputsDir}/${logName}")
   def repro = "./gradlew ${task.project.path}:test --tests \"${name}\" ${task.project.testOptionsForReproduceLine}"
   return ["name": name, "project": "${task.project.path}", "historyUrl": historyUrl, "output": output, "reproduce": repro]
