@@ -56,6 +56,7 @@ benmanes-caffeine = "3.1.8"
 bouncycastle = "1.77"
 browserify = "17.0.0"
 carrot2-core = "4.5.1"
+carrotsearch-dependencychecks = "0.0.9"
 carrotsearch-hppc = "0.9.1"
 carrotsearch-randomizedtesting = "2.8.1"
 codehaus-woodstox = "4.2.2"
@@ -137,6 +138,7 @@ xerial-snappy = "1.1.10.5"
 
 [plugins]
 
+carrotsearch-dependencychecks = { id = "com.carrotsearch.gradle.dependencychecks", version.ref = "carrotsearch-dependencychecks" }
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id  = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "johnrengelman-shadow" }

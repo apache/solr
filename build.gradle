@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id 'base'
+  alias(libs.plugins.carrotsearch.dependencychecks)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
