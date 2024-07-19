@@ -188,7 +188,7 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
-    if (schemaVersion >= 1.7f) properties |= DOC_VALUES;
+    if (schemaVersion >= 1.7f && doesTypeSupportDocValues()) properties |= DOC_VALUES;
 
     properties |= UNINVERTIBLE;
 
@@ -1159,6 +1159,17 @@ public abstract class FieldType extends FieldProperties {
   protected void checkSupportsDocValues() {
     throw new SolrException(
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+  }
+
+  /** Returns whether this field type supports docValues. By default none do. */
+  protected boolean doesTypeSupportDocValues() {
+    try {
+      // TODO: In Solr 10.0 change this such that checkSupportsDocValues() calls this method instead
+      checkSupportsDocValues();
+      return true;
+    } catch (Exception ignored) {
+      return false;
+    }
   }
 
   public static final String TYPE = "type";
