@@ -24,7 +24,7 @@ Then you will index some sample data that ships with Solr and do some basic sear
 To launch Solr, run: `bin/solr start -e cloud` on Unix or MacOS; `bin\solr.cmd start -e cloud` on Windows.
 
 This will start an interactive session that will start two Solr "servers" on your machine.
-This command has an option to run without prompting you for input (`-noprompt`), but we want to modify two of the defaults so we won't use that option now.
+This command has an option to run without prompting you for input (`--no-prompt`), but we want to modify two of the defaults so we won't use that option now.
 
 [,console]
 ----
@@ -71,14 +71,14 @@ Cloning /solr-{solr-full-version}/example/cloud/node1 into
    /solr-{solr-full-version}/example/cloud/node2
 
 Starting up Solr on port 8983 using command:
-"bin/solr" start -cloud -p 8983 -s "example/cloud/node1/solr"
+"bin/solr" start --cloud -p 8983 -s "example/cloud/node1/solr"
 
 Waiting up to 180 seconds to see Solr running on port 8983 [\]
 Started Solr server on port 8983 (pid=34942). Happy searching!
 
 
 Starting up Solr on port 7574 using command:
-"bin/solr" start -cloud -p 7574 -s "example/cloud/node2/solr" -z localhost:9983
+"bin/solr" start --cloud -p 7574 -s "example/cloud/node2/solr" -z localhost:9983
 
 Waiting up to 180 seconds to see Solr running on port 7574 [\]
 Started Solr server on port 7574 (pid=35036). Happy searching!
@@ -159,13 +159,10 @@ image::solr-tutorial/tutorial-solrcloud.png[]
 
 Your Solr server is up and running, but it doesn't contain any data yet, so we can't do any queries.
 
-Solr includes the `bin/post` tool in order to facilitate indexing various types of documents easily.
+Solr includes the `bin/solr post` tool in order to facilitate indexing various types of documents easily.
 We'll use this tool for the indexing examples below.
 
 You'll need a command shell to run some of the following examples, rooted in the Solr install directory; the shell from where you launched Solr works just fine.
-
-NOTE: Currently the `bin/post` tool does not have a comparable Windows script, but the underlying Java program invoked is available.
-We'll show examples below for Windows, but you can also see the section xref:indexing-guide:post-tool.adoc#post-tool-windows-support[Post Tool Windows Support].
 
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
@@ -173,20 +170,19 @@ The documents are in a mix of document formats (JSON, CSV, etc.), and fortunatel
 .Linux/Mac
 [,console]
 ----
-$ bin/post -c techproducts example/exampledocs/*
+$ bin/solr post -c techproducts example/exampledocs/*
 ----
 
 .Windows
 [,console]
 ----
-$ java -jar -Dc=techproducts -Dauto example\exampledocs\post.jar example\exampledocs\*
+$ bin/solr post -c techproducts example\exampledocs\*
 ----
 
 You should see output similar to the following:
 
 [,console]
 ----
-SimplePostTool version 5.0.0
 Posting files to [base] url http://localhost:8983/solr/techproducts/update...
 Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 POSTing file books.csv (text/csv) to [base]
@@ -202,7 +198,6 @@ POSTing file monitor.xml (application/xml) to [base]
 POSTing file monitor2.xml (application/xml) to [base]
 POSTing file more_books.jsonl (application/json) to [base]/json/docs
 POSTing file mp500.xml (application/xml) to [base]
-POSTing file post.jar (application/octet-stream) to [base]/extract
 POSTing file sample.html (text/html) to [base]/extract
 POSTing file sd500.xml (application/xml) to [base]
 POSTing file solr-word.pdf (application/pdf) to [base]/extract
@@ -210,7 +205,7 @@ POSTing file solr.xml (application/xml) to [base]
 POSTing file test_utf8.sh (application/octet-stream) to [base]/extract
 POSTing file utf8-example.xml (application/xml) to [base]
 POSTing file vidcard.xml (application/xml) to [base]
-21 files indexed.
+20 files indexed.
 COMMITting Solr index changes to http://localhost:8983/solr/techproducts/update...
 Time spent: 0:00:00.822
 ----
@@ -300,8 +295,8 @@ This is, again, default behavior.
 If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names.
 This is one of the available fields on the query form in the Admin UI.
 
-Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] agai
-Or, to specify it with curl:
+Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again.
+Or, specify it with curl:
 
 [,console]
 ----
@@ -507,7 +502,7 @@ To stop both of the Solr nodes we started, issue the command:
 
 [,console]
 ----
-$ bin/solr stop -all
+$ bin/solr stop --all
 ----
 
 For more information on start/stop and collection options with `bin/solr`, see xref:deployment-guide:solr-control-script-reference.adoc[].

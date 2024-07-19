@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -102,8 +103,10 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl()).withRequestWriter(new RequestWriter()).build()) {
-
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new RequestWriter())
+            .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -112,7 +115,8 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new BinaryRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
@@ -277,7 +281,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
-    URL url = new URL(urlString);
+    URL url = URI.create(urlString).toURL();
 
     conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");

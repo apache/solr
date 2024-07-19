@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -65,8 +66,8 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    if (System.getProperty("host") != null) {
-      addOtelResourceAttributes(Map.of("host.name", System.getProperty("host")));
+    if (EnvUtils.getProperty("host") != null) {
+      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("host")));
     }
 
     final String currentConfig = getCurrentOtelConfigAsString();
@@ -139,13 +140,13 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     currentEnv.entrySet().stream()
         .filter(e -> e.getKey().startsWith("OTEL_"))
         .forEach(entry -> currentConfig.put(entry.getKey(), entry.getValue()));
-    System.getProperties().entrySet().stream()
-        .filter(e -> e.getKey().toString().startsWith("otel."))
+    EnvUtils.getProperties().entrySet().stream()
+        .filter(e -> e.getKey().startsWith("otel."))
         .forEach(
             entry -> {
-              String key = entry.getKey().toString();
+              String key = entry.getKey();
               String envKey = key.toUpperCase(Locale.ROOT).replace('.', '_');
-              String value = entry.getValue().toString();
+              String value = entry.getValue();
               currentConfig.put(envKey, value);
             });
     return currentConfig;
@@ -171,7 +172,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   void setDefaultIfNotConfigured(String envName, String defaultValue) {
     String incomingValue = getEnvOrSysprop(envName);
     if (incomingValue == null) {
-      System.setProperty(envNameToSyspropName(envName), defaultValue);
+      EnvUtils.setProperty(envNameToSyspropName(envName), defaultValue);
       if (log.isDebugEnabled()) {
         log.debug("Using default setting {}={}", envName, getEnvOrSysprop(envName));
       }

@@ -100,7 +100,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     solrClientCache = new SolrClientCache();
   }
 
-  /** setup the testbed with necessary collections, documents, and alias */
+  /** set up the testbed with necessary collections, documents, and alias */
   public static void setupCollectionsAndAlias() throws Exception {
 
     final NormalDistribution[] dists = new NormalDistribution[CARDINALITY];
@@ -299,7 +299,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     assertNull(statsStream.parallelizedStream);
   }
 
-  // execute the provided expression with tiered=true and compare to results of tiered=false
+  // execute the provided expression with tiered=true and compare to result of tiered=false
   private void compareTieredStreamWithNonTiered(String facetExprTmpl, int dims) throws IOException {
     String facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "true");
 

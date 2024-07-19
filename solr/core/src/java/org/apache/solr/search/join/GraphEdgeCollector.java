@@ -17,6 +17,8 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeSet;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DocValues;
@@ -169,11 +171,11 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
           AutomatonQuery autnQuery = new AutomatonQuery(new Term(matchField.getName()), autn);
           q = autnQuery;
         } else {
-          BytesRef[] termList = new BytesRef[collectorTerms.size()];
+          List<BytesRef> termList = new ArrayList<BytesRef>(collectorTerms.size());
           for (int i = 0; i < collectorTerms.size(); i++) {
             BytesRef ref = new BytesRef();
             collectorTerms.get(i, ref);
-            termList[i] = ref;
+            termList.add(ref);
           }
           q =
               (matchField.hasDocValues() && !matchField.indexed())

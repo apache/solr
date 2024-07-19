@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import java.util.Locale;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +78,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     }
   }
 
-  public void setThreshold(double thresholdValueInPercentage) {
+  public MemoryCircuitBreaker setThreshold(double thresholdValueInPercentage) {
     long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
     if (currentMaxHeap <= 0) {
@@ -90,6 +91,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     if (heapMemoryThreshold <= 0) {
       throw new IllegalStateException("Memory limit cannot be less than or equal to zero");
     }
+    return this;
   }
 
   @Override
@@ -129,5 +131,15 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
         averagingMetricProvider.decref();
       }
     }
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        Locale.ROOT,
+        "%s(threshold=%d, warnOnly=%b)",
+        getClass().getSimpleName(),
+        heapMemoryThreshold,
+        isWarnOnly());
   }
 }

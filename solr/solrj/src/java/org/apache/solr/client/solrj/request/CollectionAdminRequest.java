@@ -128,21 +128,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     return SolrRequestType.ADMIN.toString();
   }
 
-  private static void writeNumReplicas(ReplicaCount numReplicas, ModifiableSolrParams params) {
-    if (numReplicas.contains(Replica.Type.NRT)) {
-      params.add(
-          CollectionAdminParams.NRT_REPLICAS, String.valueOf(numReplicas.get(Replica.Type.NRT)));
-    }
-    if (numReplicas.contains(Replica.Type.TLOG)) {
-      params.add(
-          CollectionAdminParams.TLOG_REPLICAS, String.valueOf(numReplicas.get(Replica.Type.TLOG)));
-    }
-    if (numReplicas.contains(Replica.Type.PULL)) {
-      params.add(
-          CollectionAdminParams.PULL_REPLICAS, String.valueOf(numReplicas.get(Replica.Type.PULL)));
-    }
-  }
-
   /**
    * Take the request specific basic auth creds on this admin request and propagate them to a
    * related request if does not already have credentials set, such as a
@@ -461,7 +446,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         ImplicitDocRouter.NAME,
         null,
         checkNotNull("shards", shards),
-        new ReplicaCount(numNrtReplicas, numTlogReplicas, numPullReplicas));
+        ReplicaCount.of(numNrtReplicas, numTlogReplicas, numPullReplicas));
   }
 
   /**
@@ -505,7 +490,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           null,
           numShards,
           null,
-          new ReplicaCount(numNrtReplicas, numTlogReplicas, numPullReplicas));
+          ReplicaCount.of(numNrtReplicas, numTlogReplicas, numPullReplicas));
     }
 
     /**
@@ -698,7 +683,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (properties != null) {
         addProperties(params, properties);
       }
-      writeNumReplicas(numReplicas, params);
+      numReplicas.writeProps(params);
       if (Boolean.TRUE.equals(perReplicaState)) {
         params.set(CollectionAdminParams.PER_REPLICA_STATE, perReplicaState);
       }
@@ -1390,7 +1375,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (replicationFactor != null) {
         params.set(CollectionAdminParams.REPLICATION_FACTOR, replicationFactor);
       }
-      writeNumReplicas(numReplicas, params);
+      numReplicas.writeProps(params);
       if (properties != null) {
         addProperties(params, properties);
       }
@@ -2426,8 +2411,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // ADDREPLICA request
   public static class AddReplica extends AsyncCollectionAdminRequest {
 
-    private static final String REPLICA_TYPE_PARAM = "type";
-
     protected String collection;
     protected String shard;
     protected String node;
@@ -2597,12 +2580,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.add(CoreAdminParams.NAME, coreName);
       }
       if (type != null) {
-        params.add(REPLICA_TYPE_PARAM, type.name());
+        params.add(CollectionAdminParams.REPLICA_TYPE, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);
       }
-      writeNumReplicas(numReplicas, params);
+      numReplicas.writeProps(params);
       if (createNodeSet != null) {
         params.add(CREATE_NODE_SET_PARAM, createNodeSet);
       }

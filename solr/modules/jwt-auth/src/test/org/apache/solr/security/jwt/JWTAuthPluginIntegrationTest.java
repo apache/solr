@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -102,6 +104,14 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
+    Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
+    tempDir.toFile().deleteOnExit();
+    Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
+    new KeystoreGenerator()
+        .generateKeystore(
+            p12Cert, modifiedP12Cert, InetAddress.getLoopbackAddress().getCanonicalHostName());
+    p12Cert = modifiedP12Cert;
+
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
     mockOAuthToken =
@@ -112,7 +122,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
     }
@@ -380,7 +390,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private Pair<String, Integer> get(String url, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) createConn.setRequestProperty("Authorization", "Bearer " + token);
     BufferedReader br2 =
@@ -393,7 +403,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private Map<String, String> getHeaders(String url, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) conn.setRequestProperty("Authorization", "Bearer " + token);
     conn.connect();
@@ -406,7 +416,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
     con.setRequestMethod("POST");
     con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -485,11 +495,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    * and trusting its SSL
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
-    String wellKnown =
-        mockOAuth2Server
-            .wellKnownUrl("default")
-            .toString()
-            .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
+    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
             .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON

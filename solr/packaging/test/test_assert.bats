@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "assert for non cloud mode" {
@@ -38,7 +38,7 @@ teardown() {
   run solr assert --cloud http://localhost:${SOLR_PORT}
   assert_output --partial "ERROR: Solr is not running in cloud mode"
 
-  run ! solr assert --cloud http://localhost:${SOLR_PORT}/solr -e
+  run ! solr assert --cloud http://localhost:${SOLR_PORT} -e
 }
 
 @test "assert for cloud mode" {

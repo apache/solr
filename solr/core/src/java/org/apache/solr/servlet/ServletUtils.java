@@ -199,10 +199,8 @@ public abstract class ServletUtils {
       HttpServletResponse response,
       Runnable limitedExecution)
       throws ServletException, IOException {
-    boolean accepted = false;
-    try {
-      accepted = rateLimitManager.handleRequest(request);
-      if (!accepted) {
+    try (RequestRateLimiter.SlotReservation accepted = rateLimitManager.handleRequest(request)) {
+      if (accepted == null) {
         response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
       }
@@ -212,10 +210,6 @@ public abstract class ServletUtils {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-    } finally {
-      if (accepted) {
-        rateLimitManager.decrementActiveRequests(request);
-      }
     }
   }
 
@@ -233,11 +227,17 @@ public abstract class ServletUtils {
     Context context = TraceUtils.extractContext(request);
     Span span = TraceUtils.startHttpRequestSpan(request, context);
 
+    final Thread currentThread = Thread.currentThread();
+    final String oldThreadName = currentThread.getName();
     try (var scope = context.with(span).makeCurrent()) {
       assert scope != null; // prevent javac warning about scope being unused
       TraceUtils.setSpan(request, span);
       TraceUtils.ifValidTraceId(
           span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
+      String traceId = MDCLoggingContext.getTraceId();
+      if (traceId != null) {
+        currentThread.setName(oldThreadName + "-" + traceId);
+      }
       tracedExecution.run();
     } catch (ExceptionWhileTracing e) {
       if (e.e instanceof SolrAuthenticationException) {
@@ -256,6 +256,7 @@ public abstract class ServletUtils {
         throw new RuntimeException(e.e);
       }
     } finally {
+      currentThread.setName(oldThreadName);
       TraceUtils.setHttpStatus(span, response.getStatus());
       span.end();
     }

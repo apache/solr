@@ -17,20 +17,24 @@
 
 package org.apache.solr.client.api.endpoint;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
 
+@Path("/collections/{collName}/snapshots/{snapshotName}")
 public interface DeleteCollectionSnapshotApi {
 
   /** This API is analogous to V1's (POST /solr/admin/collections?action=DELETESNAPSHOT) */
   @DELETE
-  @Path("/collections/{collName}/snapshots/{snapshotName}")
-  DeleteCollectionSnapshotResponse deleteSnapshot(
+  @Operation(
+      summary = "Delete an existing collection-snapshot by name.",
+      tags = {"collection-snapshots"})
+  DeleteCollectionSnapshotResponse deleteCollectionSnapshot(
       @Parameter(description = "The name of the collection.", required = true)
           @PathParam("collName")
           String collName,

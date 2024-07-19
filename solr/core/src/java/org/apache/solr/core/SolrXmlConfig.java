@@ -38,8 +38,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -95,22 +98,12 @@ public class SolrXmlConfig {
   }
 
   public static NodeConfig fromConfig(
-      Path solrHome,
-      Properties substituteProperties,
-      boolean fromZookeeper,
-      ConfigNode root,
-      SolrResourceLoader loader) {
+      Path solrHome, Properties substituteProperties, ConfigNode root, SolrResourceLoader loader) {
 
     checkForIllegalConfig(root);
 
-    // sanity check: if our config came from zookeeper, then there *MUST* be Node Properties that
-    // tell us what zkHost was used to read it (either via webapp context attribute, or that
-    // SolrDispatchFilter filled in for us from system properties)
-    assert ((!fromZookeeper)
-        || (null != substituteProperties && null != substituteProperties.getProperty(ZK_HOST)));
-
-    // Regardless of where/how we this XmlConfigFile was loaded from, if it contains a zkHost
-    // property, we're going to use that as our "default" and only *directly* check the system
+    // If solr.xml contains a zkHost property, we're going to use that as our "default" and only
+    // *directly* check the system
     // property if it's not specified.
     //
     // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In
@@ -173,13 +166,13 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    configBuilder.setClusterPlugins(getClusterPlugins(loader, root));
     // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
     // <hiddenSysProps> is not provided under <solr>.
     // Remove this line in 10.0
     configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
     configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
-    configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
     return fillSolrSection(configBuilder, root);
@@ -222,11 +215,6 @@ public class SolrXmlConfig {
 
   public static NodeConfig fromInputStream(
       Path solrHome, InputStream is, Properties substituteProps) {
-    return fromInputStream(solrHome, is, substituteProps, false);
-  }
-
-  public static NodeConfig fromInputStream(
-      Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     if (substituteProps == null) {
       substituteProps = new Properties();
@@ -239,7 +227,6 @@ public class SolrXmlConfig {
         return fromConfig(
             solrHome,
             substituteProps,
-            fromZookeeper,
             new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement())),
             loader);
       }
@@ -351,6 +338,9 @@ public class SolrXmlConfig {
               case "coresLocator":
                 builder.setCoresLocatorClass(it.txt());
                 break;
+              case "coreSorter":
+                builder.setCoreSorterClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;
@@ -389,6 +379,9 @@ public class SolrXmlConfig {
                 break;
               case "replayUpdatesThreads":
                 builder.setReplayUpdatesThreads(it.intVal(-1));
+                break;
+              case "indexSearcherExecutorThreads":
+                builder.setIndexSearcherExecutorThreads(it.intVal(-1));
                 break;
               case "transientCacheSize":
                 log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
@@ -646,17 +639,73 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo[] getBackupRepositoryPluginInfos(List<ConfigNode> cfg) {
-    if (cfg.isEmpty()) {
+    return cfg.stream()
+        .map(c -> new PluginInfo(c, "BackupRepositoryFactory", true, true))
+        .filter(PluginInfo::isEnabled)
+        .toArray(PluginInfo[]::new);
+  }
+
+  private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
+    List<PluginInfo> clusterPlugins = new ArrayList<>();
+
+    Collections.addAll(
+        clusterPlugins, getClusterSingletonPluginInfos(loader, root.getAll("clusterSingleton")));
+
+    PluginInfo replicaPlacementFactory = getPluginInfo(root.get("replicaPlacementFactory"));
+    if (replicaPlacementFactory != null) {
+      if (replicaPlacementFactory.name != null
+          && !replicaPlacementFactory.name.equals(PlacementPluginFactory.PLUGIN_NAME)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "The replicaPlacementFactory name attribute must be "
+                + PlacementPluginFactory.PLUGIN_NAME);
+      }
+      clusterPlugins.add(replicaPlacementFactory);
+    }
+
+    return clusterPlugins.toArray(new PluginInfo[0]);
+  }
+
+  private static PluginInfo[] getClusterSingletonPluginInfos(
+      SolrResourceLoader loader, List<ConfigNode> nodes) {
+    if (nodes == null || nodes.isEmpty()) {
       return new PluginInfo[0];
     }
 
-    PluginInfo[] configs = new PluginInfo[cfg.size()];
-    for (int i = 0; i < cfg.size(); i++) {
-      ConfigNode c = cfg.get(i);
-      configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
+    List<PluginInfo> plugins =
+        nodes.stream()
+            .map(n -> new PluginInfo(n, n.name(), true, true))
+            .filter(PluginInfo::isEnabled)
+            .collect(Collectors.toList());
+
+    // Cluster plugin names must be unique
+    Set<String> names = CollectionUtil.newHashSet(nodes.size());
+    Set<String> duplicateNames =
+        plugins.stream()
+            .filter(p -> !names.add(p.name))
+            .map(p -> p.name)
+            .collect(Collectors.toSet());
+    if (!duplicateNames.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Multiple clusterSingleton sections with name '"
+              + String.join("', '", duplicateNames)
+              + "' found in solr.xml");
     }
 
-    return configs;
+    try {
+      plugins.forEach(
+          p -> {
+            loader.findClass(p.className, ClusterSingleton.class);
+          });
+    } catch (ClassCastException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "clusterSingleton plugins must implement the interface "
+              + ClusterSingleton.class.getName());
+    }
+
+    return plugins.toArray(new PluginInfo[0]);
   }
 
   private static MetricsConfig getMetricsConfig(ConfigNode metrics) {
@@ -729,6 +778,9 @@ public class SolrXmlConfig {
     boolean hasJmxReporter = false;
     for (ConfigNode node : metrics.getAll("reporter")) {
       PluginInfo info = getPluginInfo(node);
+      if (info == null) {
+        continue;
+      }
       String clazz = info.className;
       if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
         hasJmxReporter = true;
@@ -773,6 +825,7 @@ public class SolrXmlConfig {
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {
     if (cfg == null || !cfg.exists()) return null;
-    return new PluginInfo(cfg, cfg.name(), false, true);
+    final var pluginInfo = new PluginInfo(cfg, cfg.name(), false, true);
+    return pluginInfo.isEnabled() ? pluginInfo : null;
   }
 }

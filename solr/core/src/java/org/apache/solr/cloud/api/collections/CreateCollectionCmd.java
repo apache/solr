@@ -17,10 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -80,6 +76,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -98,6 +95,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
+  public static final String PRS_DEFAULT_PROP = "solr.prs.default";
+
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
   }
@@ -113,7 +112,16 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, false);
+    boolean prsDefault = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);
+    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
+    if (log.isInfoEnabled()) {
+      log.info(
+          "solr.prs.default : {} and collection prs : {}, isPRS : {}",
+          System.getProperty("solr.prs.default", null),
+          message.getStr(CollectionStateProps.PER_REPLICA_STATE),
+          isPRS);
+    }
+
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
@@ -139,7 +147,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);
     ReplicaCount numReplicas = getNumReplicas(message);
-    numReplicas.validate();
 
     DocCollection newColl = null;
     final String collectionPath = DocCollection.getCollectionPath(collectionName);
@@ -508,7 +515,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         Assign.getLiveOrLiveAndCreateNodeSetList(
             clusterState.getLiveNodes(),
             message,
-            CollectionHandlingUtils.RANDOM,
+            Utils.RANDOM,
             cloudManager.getDistribStateManager());
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ({}) without cores.", collectionName);
@@ -590,12 +597,22 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     return shardNames;
   }
 
-  private static ReplicaCount getNumReplicas(ZkNodeProps message) {
-    int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
-    int numNrtReplicas =
-        message.getInt(
-            NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas > 0 ? 0 : 1));
-    return new ReplicaCount(numNrtReplicas, numTlogReplicas, message.getInt(PULL_REPLICAS, 0));
+  private ReplicaCount getNumReplicas(ZkNodeProps message) {
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message);
+    boolean hasLeaderEligibleReplica = numReplicas.hasLeaderReplica();
+    if (!hasLeaderEligibleReplica && !numReplicas.contains(Replica.Type.defaultType())) {
+      // Ensure that there is at least one replica that can become leader if the user did
+      // not force a replica count.
+      numReplicas.put(Replica.Type.defaultType(), 1);
+    } else if (!hasLeaderEligibleReplica) {
+      // This can still fail if the user manually forced "0" replica counts.
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Unexpected number of replicas ("
+              + numReplicas
+              + "), there must be at least one leader-eligible replica");
+    }
+    return numReplicas;
   }
 
   String getConfigName(String coll, ZkNodeProps message) throws IOException {

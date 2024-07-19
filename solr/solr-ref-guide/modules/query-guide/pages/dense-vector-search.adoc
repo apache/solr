@@ -1,4 +1,5 @@
 = Dense Vector Search
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -97,16 +98,15 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 
 [NOTE]
+the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
+
+[NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
-and the hyper-parameter of the HNSW algorithm make sure you set this configuration in `solrconfig.xml`:
-[source,xml]
-<config>
-<codecFactory class="solr.SchemaCodecFactory"/>
-...
+and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
 
-Here's how `DenseVectorField` can be configured with the advanced hyper-parameters:
+Here's how `DenseVectorField` can be configured with the advanced hyperparameters:
 
 [source,xml]
 <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswMaxConnections="10" hnswBeamWidth="40"/>
@@ -178,11 +178,11 @@ currently multivalue is not supported
 
 Here's how a `DenseVectorField` should be indexed:
 
-[.dynamic-tabs]
---
-[example.tab-pane#json]
+[tabs#densevectorfield-index]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,json]
 ----
 [{ "id": "1",
@@ -195,9 +195,9 @@ Here's how a `DenseVectorField` should be indexed:
 ----
 ====
 
-[example.tab-pane#xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -219,9 +219,9 @@ Here's how a `DenseVectorField` should be indexed:
 ----
 ====
 
-[example.tab-pane#solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 final SolrClient client = getSolrClient();
@@ -238,17 +238,15 @@ d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
 client.add(Arrays.asList(d1, d2));
 ----
 ====
---
+======
 
 == Query Time
-This is the Apache Solr query approach designed to support dense vector search:
 
-=== knn Query Parser
-The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
+Apache Solr provides two query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, and the `vectorSimilarity` query parser.
 
-The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
+Both parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (with out needing to compute their vector similarity distances).
 
-It takes the following parameters:
+Common parameters for both query parsers are:
 
 `f`::
 +
@@ -259,6 +257,41 @@ s|Required |Default: none
 +
 The `DenseVectorField` to search in.
 
+`preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: Depends on usage, see below.
+|===
++
+Specifies an explicit list of Pre-Filter query strings to use.
+
+`includeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Indicates that only `fq` filters with the specified `tag` should be considered for implicit Pre-Filtering.  Must not be combined with `preFilter`.
+
+
+`excludeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Indicates that `fq` filters with the specified `tag` should be excluded from consideration for implicit Pre-Filtering.  Must not be combined with `preFilter`.
+
+
+=== knn Query Parser
+
+The `knn` k-nearest neighbors query parser matches k-nearest documents to the target vector.
+
+In addition to the common parameters described above, it takes the following parameters:
+
 `topK`::
 +
 [%autowidth,frame=none]
@@ -268,51 +301,129 @@ The `DenseVectorField` to search in.
 +
 How many k-nearest results to return.
 
-Here's how to run a KNN search:
+Here's an example of a simple `knn` search:
 
 [source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The search results retrieved are the k-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
 
-==== Usage with Filter Queries
-The `knn` query parser can be used in filter queries:
-[source,text]
-&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+=== vectorSimilarity Query Parser
 
-The `knn` query parser can be used with filter queries:
-[source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
+The `vectorSimilarity` vector similarity query parser matches documents whose similarity with the target vector is a above a minimum threshold.
 
-[IMPORTANT]
-====
-Filter queries are executed as pre-filters: the main query refines the sub-set of search results derived from the application of all the filter queries combined as 'MUST' clauses(boolean AND).
+In addition to the common parameters described above, it takes the following parameters:
 
-This means that in
-[source,text]
-&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The results are prefiltered by the topK knn retrieval and then only the documents from this subset, matching the query 'q=id:(1 2 3)' are returned.
+`minReturn`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Minimum similarity threshold of nodes in the graph to be returned as matches
 
-In
-[source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
+`minTraverse`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: -Infinity
+|===
++
+Minimum similarity of nodes in the graph to continue traversal of their neighbors
 
-The results are prefiltered by the fq=id:(1 2 3) and then only the documents from this subset are considered as candidates for the topK knn retrieval.
-
-If you want to run some of the filter queries as post-filters you can follow the standard approach for post-filtering in Apache Solr, using the cache and cost local parameters.
-
-e.g.
+Here's an example of a simple `vectorSimilarity` search:
 
 [source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq={!frange cache=false l=0.99}$q
-====
+?q={!vectorSimilarity f=vector minReturn=0.7}[1.0, 2.0, 3.0, 4.0]
+
+The search results retrieved are all documents whose similarity with the input vector `[1.0, 2.0, 3.0, 4.0]` is at least `0.7` based on the `similarityFunction` configured at indexing time
 
 
-==== Usage as Re-Ranking Query
-The `knn` query parser can be used to rerank first pass query results:
+=== Graph Pre-Filtering
+
+Pre-Filtering the set of candidate documents considered when walking the graph can be specified either explicitly, or implicitly (based on existing `fq` params) depending on how and when these dense vector query parsers are used.
+
+==== Explicit Pre-Filtering
+
+The `preFilter` parameter can be specified explicitly to reduce the number of candidate documents evaluated for the distance calculation:
+
+[source,text]
+?q={!vectorSimilarity f=vector minReturn=0.7 preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
+
+In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the `vectorSimilarity` search against the specified vector.
+
+The `preFilter` parameter may be blank (ex: `preFilter=""`) to indicate that no Pre-Filtering should be performed; or it may be multi-valued -- either through repetition, or via duplicated xref:local-params.adoc#parameter-dereferencing[Parameter References].
+
+These two examples are equivalent:
+
+[source,text]
+?q={!knn f=vector topK=10 preFilter=category:AAA preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
+
+[source,text]
+----
+?q={!knn f=vector topK=10 preFilter=$knnPreFilter}[1.0, 2.0, 3.0, 4.0]
+&knnPreFilter=category:AAA
+&knnPreFilter=inStock:true
+----
+
+==== Implicit Pre-Filtering
+
+While the `preFilter` parameter may be explicitly specified on *_any_* usage of the `knn` or `vectorSimilarity` query parsers, the default Pre-Filtering behavior (when no `preFilter` parameter is specified) will vary based on how the query parser is used:
+
+* When used as the main `q` param: `fq` filters in the request (that are not xref:common-query-parameters.adoc#cache-local-parameter[Solr Post Filters]) will be combined to form an implicit Graph Pre-Filter.
+** This default behavior optimizes the number of vector distance calculations considered, eliminating documents that would eventually be excluded by an `fq` filter anyway.
+** `includeTags` and `excludeTags` may be used to limit the set of `fq` filters used in the Pre-Filter.
+* When a vector search query parser is used as an `fq` param, or as a subquery clause in a larger query: No implicit Pre-Filter is used.
+** `includeTags` and `excludeTags` must not be used in these situations.
+
+
+The example request below shows two usages of vector query parsers that will get _no_ implicit Pre-Filtering from any of the `fq` parameters, because neither usage is as the main `q` param:
+
+[source,text]
+----
+?q=(color_str:red OR {!vectorSimilarity f=color_vector minReturn=0.7 v="[1.0, 2.0, 3.0, 4.0]"})
+&fq={!knn f=title_vector topK=10}[9.0, 8.0, 7.0, 6.0]
+&fq=inStock:true
+----
+
+
+However, the next example shows a basic request where all `fq` parameters will be used as implicit Pre-Filters on the main `knn` query:
+
+[source,text]
+----
+?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+&fq=category:AAA
+&fq=inStock:true
+----
+
+If we modify the above request to add tags to the `fq` parameters, we can specify an `includeTags` option on the `knn` parser to limit which `fq` filters are used for Pre-Filtering:
+
+[source,text]
+----
+?q={!knn f=vector topK=10 includeTags=for_knn}[1.0, 2.0, 3.0, 4.0]
+&fq=category:AAA
+&fq={!tag=for_knn}inStock:true
+----
+
+In this example, only the `inStock:true` filter will be used for Pre-Filtering to find the the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
+
+
+Some use cases where `includeTags` and/or `excludeTags` may be more useful then an explicit `preFilter` parameters:
+
+* You have some `fq` parameters that are xref:configuration-guide:requesthandlers-searchcomponents.adoc#paramsets-and-useparams[re-used on many requests] (even when you don't use search dense vector fields) that you wish to be used as Pre-Filters when you _do_ search dense vector fields.
+* You typically want all `fq` params to be used as graph Pre-Filters on your `knn` queries, but when users "drill down" on Facets, you want the `fq` parameters you add to be excluded from the Pre-Filtering so that the result set gets smaller; instead of just computing a new `topK` set.
+
+
+
+=== Usage in Re-Ranking Query
+
+Both dense vector search query parsers can be used to rerank first pass query results:
+
 [source,text]
 &q=id:(3 4 9 2)&rq={!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=1}&rqq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+
 
 [IMPORTANT]
 ====

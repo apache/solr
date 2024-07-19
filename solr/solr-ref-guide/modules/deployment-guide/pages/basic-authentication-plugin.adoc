@@ -1,4 +1,5 @@
 = Basic Authentication Plugin
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -29,7 +30,7 @@ This file and where to put it is described in detail in the section xref:authent
 If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
 
 For Basic authentication, `security.json` must have an `authentication` block which defines the class being used for authentication.
-Usernames and passwords (as a sha256(password+salt) hash) could be added when the file is created, or can be added later with the Authentication API, described below.
+Usernames and passwords (Format: `base64(sha256(sha256(salt+password))) base64(salt)`) could be added when the file is created, or can be added later with the Authentication API, described below.
 
 An example `security.json` showing `authentication` and `authorization` blocks is shown below to show how authentication and authorization plugins can work together:
 
@@ -55,7 +56,7 @@ There are several options defined in this example:
 
 <1> The first block defines the authentication plugin to be used and its parameters.
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
-<3> A user called 'solr', with a password `'SolrRocks'` has been defined.
+<3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined.
 <4> We override the `realm` property to display another text on the login prompt.
 <5> The parameter `"forwardCredentials":false` means we let Solr's PKI authenticaion handle distributed request instead of forwarding the Basic Auth header.
 
@@ -151,27 +152,26 @@ If users need to be restricted to a specific collection, that can be done with t
 The `set-user` command allows you to add users and change their passwords.
 For example, the following defines two users and their passwords:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1set-user]
+[tabs#set-user]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
 ----
 ====
 
-[example.tab-pane#v2set-user]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d '{"set-user": {"tom":"TomIsCool", "harry":"HarrysSecret"}}'
 ----
 ====
---
+======
 
 === Delete a User
 
@@ -179,80 +179,76 @@ The `delete-user` command allows you to remove a user.
 The user password does not need to be sent to remove a user.
 In the following example, we've asked that user IDs 'tom' and 'harry' be removed from the system.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1delete-user]
+[tabs#delete-user]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
 ----
 ====
 
-[example.tab-pane#v2delete-user]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"delete-user": ["tom", "harry"]}'
 ----
 ====
---
+======
 
 === Set a Property
 
 Set properties for the authentication plugin.
 The currently supported properties for the Basic Authentication plugin are `blockUnknown`, `realm`, and `forwardCredentials`.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1set-property-blockUnknown]
+[tabs#set-property-blockUnknown]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
 ----
 ====
 
-[example.tab-pane#v2set-property-blockUnknown]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"blockUnknown":false}}'
 ----
 ====
---
+======
 
 The authentication realm defaults to `solr` and is displayed in the `WWW-Authenticate` HTTP header and in the Admin UI login page.
 To change the realm, set the `realm` property:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1set-property-realm]
+[tabs#set-property-realm]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
 ----
 ====
 
-[example.tab-pane#v2set-property-realm]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -d  '{"set-property": {"realm":"My Solr users"}}'
 ----
 ====
---
+======
 
 === Edit Plugin Configuration Using the MultiAuthPlugin
 

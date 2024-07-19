@@ -100,6 +100,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -119,7 +120,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -149,7 +149,6 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -224,7 +223,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
+        assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }
@@ -367,19 +366,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_1 = "[::1]:4";
+  public static final String DEAD_HOST_1 = "127.0.0.1:4";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_2 = "[::1]:6";
+  public static final String DEAD_HOST_2 = "127.0.0.1:6";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_3 = "[::1]:8";
+  public static final String DEAD_HOST_3 = "127.0.0.1:8";
 
   /**
    * Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if
@@ -489,10 +488,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           sslRandomizer.debug);
     }
     return result;
-  }
-
-  protected static JettyConfig buildJettyConfig() {
-    return JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
 
   protected static String buildUrl(final int port) {
@@ -2655,9 +2650,28 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   *
+   * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new HttpSolrClient.Builder(url).build();
+  }
+
+  /** Create a basic HttpSolrClient pointed at the specified replica */
+  public static HttpSolrClient getHttpSolrClient(Replica replica) {
+    return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
+  }
+
+  /**
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   *
+   * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
+   * @param defaultCoreName the name of a core that the created client should default to when making
+   *     core-aware requests
+   */
+  public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
+    return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**

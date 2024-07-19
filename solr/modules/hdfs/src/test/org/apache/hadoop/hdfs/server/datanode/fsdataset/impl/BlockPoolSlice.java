@@ -55,6 +55,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -497,7 +498,7 @@ public class BlockPoolSlice {
           File.pathSeparator + "." + file.getName() + ".restart");
       Scanner sc = null;
       try {
-        sc = new Scanner(restartMeta, "UTF-8");
+        sc = new Scanner(restartMeta, StandardCharsets.UTF_8);
         // The restart meta file exists
         if (sc.hasNextLong() && (sc.nextLong() > timer.now())) {
           // It didn't expire. Load the replica as a RBW.

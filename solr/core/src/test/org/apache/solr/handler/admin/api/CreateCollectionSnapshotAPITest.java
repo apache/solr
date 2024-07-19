@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class CreateCollectionSnapshotAPITest extends SolrTestCaseJ4 {
@@ -34,11 +33,10 @@ public class CreateCollectionSnapshotAPITest extends SolrTestCaseJ4 {
   @Test
   public void testConstructsValidOverseerMessage() {
     final ZkNodeProps messageOne =
-        CreateCollectionSnapshotAPI.createRemoteMessage(
-            "myCollName", false, "mySnapshotName", null);
+        CreateCollectionSnapshot.createRemoteMessage("myCollName", false, "mySnapshotName", null);
     final Map<String, Object> rawMessageOne = messageOne.getProperties();
     assertEquals(4, rawMessageOne.size());
-    MatcherAssert.assertThat(
+    assertThat(
         rawMessageOne.keySet(),
         containsInAnyOrder(
             QUEUE_OPERATION, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
@@ -48,11 +46,11 @@ public class CreateCollectionSnapshotAPITest extends SolrTestCaseJ4 {
     assertEquals(false, rawMessageOne.get(FOLLOW_ALIASES));
 
     final ZkNodeProps messageTwo =
-        CreateCollectionSnapshotAPI.createRemoteMessage(
+        CreateCollectionSnapshot.createRemoteMessage(
             "myCollName", true, "mySnapshotName", "myAsyncId");
     final Map<String, Object> rawMessageTwo = messageTwo.getProperties();
     assertEquals(5, rawMessageTwo.size());
-    MatcherAssert.assertThat(
+    assertThat(
         rawMessageTwo.keySet(),
         containsInAnyOrder(
             QUEUE_OPERATION, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES, ASYNC));

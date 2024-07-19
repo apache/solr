@@ -97,7 +97,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     in = reader;
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
-      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null, false);
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
@@ -109,9 +109,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      int createdVersionMajor =
-          reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
-      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
+      LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
+      metaData =
+          new LeafMetaData(
+              leafMetaData.getCreatedVersionMajor(),
+              minVersion,
+              leafMetaData.getSort(),
+              leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
@@ -309,6 +313,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
   public Fields getTermVectors(int docID) throws IOException {
     return in.getTermVectors(docID);
   }
@@ -338,6 +343,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  @Deprecated
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
     ensureOpen();
     in.document(docID, visitor);

@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrException;
  * communicate with Zookeeper to discover Solr endpoints for SolrCloud collections, and then use the
  * {@link LBHttp2SolrClient} to issue requests.
  *
- * @lucene.experimental
  * @since solr 8.0
  */
 @SuppressWarnings("serial")
@@ -55,17 +54,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    if (builder.httpClient == null) {
-      this.clientIsInternal = true;
-      if (builder.internalClientBuilder == null) {
-        this.myClient = new Http2SolrClient.Builder().build();
-      } else {
-        this.myClient = builder.internalClientBuilder.build();
-      }
-    } else {
-      this.clientIsInternal = false;
-      this.myClient = builder.httpClient;
-    }
+    this.clientIsInternal = builder.httpClient == null;
+    this.myClient = createOrGetHttpClientFromBuilder(builder);
+    this.stateProvider =
+        builder.zkHosts.isEmpty()
+            ? createHttp2ClusterStateProvider(builder.solrUrls, myClient)
+            : createZkClusterStateProvider(builder);
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
     if (builder.requestWriter != null) {
@@ -74,7 +68,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     if (builder.responseParser != null) {
       this.myClient.setParser(builder.responseParser);
     }
-    this.stateProvider = builder.stateProvider;
 
     this.collectionStateCache.timeToLiveMs =
         TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
@@ -86,14 +79,64 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
   }
 
+  private Http2SolrClient createOrGetHttpClientFromBuilder(Builder builder) {
+    if (builder.httpClient != null) {
+      return builder.httpClient;
+    } else if (builder.internalClientBuilder != null) {
+      return builder.internalClientBuilder.build();
+    } else {
+      return new Http2SolrClient.Builder().build();
+    }
+  }
+
+  private ClusterStateProvider createZkClusterStateProvider(Builder builder) {
+    try {
+      ClusterStateProvider stateProvider =
+          ClusterStateProvider.newZkClusterStateProvider(
+              builder.zkHosts, builder.zkChroot, builder.canUseZkACLs);
+      if (stateProvider instanceof SolrZkClientTimeoutAware) {
+        var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
+        timeoutAware.setZkClientTimeout(builder.zkClientTimeout);
+        timeoutAware.setZkConnectTimeout(builder.zkConnectTimeout);
+      }
+      return stateProvider;
+    } catch (Exception e) {
+      closeMyClientIfNeeded();
+      throw (e);
+    }
+  }
+
+  private ClusterStateProvider createHttp2ClusterStateProvider(
+      List<String> solrUrls, Http2SolrClient httpClient) {
+    try {
+      return new Http2ClusterStateProvider(solrUrls, httpClient);
+    } catch (Exception e) {
+      closeMyClientIfNeeded();
+      throw new RuntimeException(
+          "Couldn't initialize a HttpClusterStateProvider (is/are the "
+              + "Solr server(s), "
+              + solrUrls
+              + ", down?)",
+          e);
+    }
+  }
+
+  private void closeMyClientIfNeeded() {
+    try {
+      if (clientIsInternal && myClient != null) {
+        myClient.close();
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Exception on closing myClient", e);
+    }
+  }
+
   @Override
   public void close() throws IOException {
     stateProvider.close();
     lbClient.close();
 
-    if (clientIsInternal && myClient != null) {
-      myClient.close();
-    }
+    closeMyClientIfNeeded();
 
     super.close();
   }
@@ -138,6 +181,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private int parallelCacheRefreshesLocks = 3;
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    private boolean canUseZkACLs = true;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -187,6 +231,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       this.zkHosts = zkHosts;
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
+
+    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
     }
 
     /**
@@ -315,8 +365,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String collection) {
-      this.defaultCollection = collection;
+    public Builder withDefaultCollection(String defaultCollection) {
+      this.defaultCollection = defaultCollection;
       return this;
     }
 
@@ -401,31 +451,11 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
     /** Create a {@link CloudHttp2SolrClient} based on the provided configuration. */
     public CloudHttp2SolrClient build() {
-      if (stateProvider == null) {
-        if (!zkHosts.isEmpty() && !solrUrls.isEmpty()) {
-          throw new IllegalArgumentException(
-              "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
-        } else if (!zkHosts.isEmpty()) {
-          stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
-          if (stateProvider instanceof SolrZkClientTimeoutAware) {
-            var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
-            timeoutAware.setZkClientTimeout(zkClientTimeout);
-            timeoutAware.setZkConnectTimeout(zkConnectTimeout);
-          }
-        } else if (!solrUrls.isEmpty()) {
-          try {
-            stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);
-          } catch (Exception e) {
-            throw new RuntimeException(
-                "Couldn't initialize a HttpClusterStateProvider (is/are the "
-                    + "Solr server(s), "
-                    + solrUrls
-                    + ", down?)",
-                e);
-          }
-        } else {
-          throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
-        }
+      if (!zkHosts.isEmpty() && !solrUrls.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
+      } else if (zkHosts.isEmpty() && solrUrls.isEmpty()) {
+        throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
       }
       return new CloudHttp2SolrClient(this);
     }

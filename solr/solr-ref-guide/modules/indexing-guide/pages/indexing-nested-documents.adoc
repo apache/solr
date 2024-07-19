@@ -1,4 +1,5 @@
 = Indexing Nested Documents
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,8 +22,8 @@ Solr supports indexing nested documents, described here, and ways to xref:query-
 By way of examples: nested documents in Solr can be used to bind a blog post (parent document) with comments (child documents) -- or as a way to model major product lines as parent documents,
 with multiple types of child documents representing individual SKUs (with unique sizes / colors) and supporting documentation (either directly nested under the products, or under individual SKUs.
 
-The "top most" parent with all children is referred to as a "root" document or formerly "block
-document" and it explains some of the nomenclature of related features.
+The "top most" parent with all children is referred to as a "root" document (or formerly "block
+document"), and it explains some of the nomenclature of related features.
 
 At query time, the xref:query-guide:block-join-query-parser.adoc[] can search these relationships, and the xref:query-guide:document-transformers.adoc#child-childdoctransformerfactory[`[child]`] Document Transformer can attach child (or other "descendent") documents to the result documents.
 In terms of performance, indexing the relationships between documents usually yields much faster queries than an equivalent xref:query-guide:join-query-parser.adoc["query time join"],
@@ -57,14 +58,14 @@ There is no "child document" field type.
 ====
 
 //
-// DO NOT MODIFY THESE EXAMPLE DOCS WITH OUT REVIEWING ALL PAGES THAT INCLUDE/REFER BACK TO THESE EXAMPLES
+// DO NOT MODIFY THESE EXAMPLE DOCS WITHOUT REVIEWING ALL PAGES THAT INCLUDE/REFER BACK TO THESE EXAMPLES
 // INCLUDING THE SEMI-EQUIVALENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
 //
-[.dynamic-tabs]
---
-[example.tab-pane#json]
+[tabs#sample-indexing-deeply-nested-documents]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 // tag::sample-indexing-deeply-nested-documents[]
 [source,json]
 ----
@@ -126,9 +127,9 @@ The xref:indexing-with-update-handlers#json-update-convenience-paths[`/update/js
 =====
 ====
 
-[example.tab-pane#xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -208,15 +209,15 @@ The xref:indexing-with-update-handlers#json-update-convenience-paths[`/update/js
 ----
 ====
 
-[example.tab-pane#solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$IndexingNestedDocuments.java[tag=nest-path]
 ----
 ====
---
+======
 
 
 == Schema Configuration
@@ -232,7 +233,7 @@ Indexing nested documents _requires_ an indexed field named `\_root_`:
 xref:reindexing.adoc#changes-that-require-reindex[You must reindex].*
 
 * Solr automatically populates this field in _all_ documents with the `id` value of it's root document
--- it's highest ancestor, possibly itself.
+-- its highest ancestor, possibly itself.
 * This field must be indexed (`indexed="true"`) but doesn't need to
 be either stored (`stored="true"`) or use doc values (`docValues="true"`), however you are free to do so if you find it useful.
 If you want to use `uniqueBlock(\_root_)` xref:query-guide:json-facet-api#stat-facet-functions[field type limitation], then you should enable docValues.
@@ -285,20 +286,20 @@ xref:partial-document-updates.adoc#updating-child-documents[atomic updates] to i
 == Maintaining Integrity with Updates and Deletes
 
 Nested document trees can be modified with
-xref:partial-document-updates.adoc#atomic-updates,atomic updates>> to
+xref:partial-document-updates.adoc#atomic-updates[atomic updates] to
 manipulate any document in a nested tree, and even to add new child documents.
-This aspect isn't different than updating any normal document -- Solr internally deletes the old
-nested document tree and it adds the newly modified one.
+This aspect isn't different from updating any normal document -- Solr internally deletes the old
+nested document tree and adds the newly modified one.
 Just be mindful to add a `_root_` field if the partial update is to a child doc so that Solr
 knows which Root doc it's related to.
 
 Solr demands that the `id` of _all_ documents in a collection be unique.
-Solr enforces this for root documents within a shard but it doesn't for child documents to avoid the expense of checking.
+Solr enforces this for root documents within a shard, but not for child documents to avoid the expense of checking.
 Clients should be very careful to *never* violate this.
 
 To delete an entire nested document tree, you can simply delete-by-ID using the `id` of the root document.
 Delete-by-ID will not work with the `id` of a child document, since only root document IDs are considered.
-Instead, use delete-by-query (most efficient) or xref:partial-document-updates.adoc#atomic-updates[atomic updates] to remove the child document from it's parent.
+Instead, use delete-by-query (most efficient) or xref:partial-document-updates.adoc#atomic-updates[atomic updates] to remove the child document from its parent.
 
 If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is structured to ensure no descendent children remain of any documents that are being deleted.
 *_Doing otherwise will violate integrity assumptions that Solr expects._*
@@ -307,11 +308,11 @@ If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any
 
 Although not recommended, it is also possible to index child documents "anonymously":
 
-[.dynamic-tabs]
---
-[example.tab-pane#anon_json]
+[tabs#anon]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,json]
 ----
 [{ "id": "P11!prod",
@@ -353,9 +354,9 @@ Although not recommended, it is also possible to index child documents "anonymou
 ----
 ====
 
-[example.tab-pane#anon_xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -402,17 +403,15 @@ Although not recommended, it is also possible to index child documents "anonymou
 ----
 ====
 
-[example.tab-pane#anon_solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$IndexingNestedDocuments.java[tag=anon-kids]
 ----
 ====
-
---
-
+======
 
 This simplified approach was common in older versions of Solr, and can still be used with "Root-Only" schemas that do not contain any other nested related fields apart from `\_root_`.
 Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.
@@ -422,11 +421,11 @@ This approach should *NOT* be used when schemas include a `\_nest_path_` field, 
 The results of indexing anonymous nested children with a "Root-Only" schema are similar to what happens if you attempt to index "pseudo field" nested documents using a "Root-Only" schema.
 Notably: since there is no nested path information for the xref:query-guide:searching-nested-documents.adoc#child-doc-transformer[`[child]`] transformer to use to reconstruct the structure of a nest of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
 
-[.dynamic-tabs]
---
-[example.tab-pane#anon_json_out]
+[tabs#anon-out]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,bash]
 ----
 $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=id:P11!prod&fl=*,[child%20parentFilter=%22type_s:PRODUCT%22]'
@@ -475,10 +474,9 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
   }}
 ----
 ====
-
-[example.tab-pane#anon_xml_out]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,bash]
 ----
 $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=id:P11!prod&fl=*,[child%20parentFilter=%22type_s:PRODUCT%22]&wt=xml'
@@ -529,6 +527,4 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
 </response>
 ----
 ====
-
-
---
+======

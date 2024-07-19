@@ -129,6 +129,7 @@ public class MiniSolrCloudCluster {
           + "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
+          + "    <str name=\"zkCredentialsInjector\">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str> \n"
           + "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n"
           + "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n"
           + "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:"
@@ -161,6 +162,7 @@ public class MiniSolrCloudCluster {
   private final Path baseDir;
   private CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
+  private final String solrXml;
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
@@ -275,6 +277,7 @@ public class MiniSolrCloudCluster {
     Objects.requireNonNull(securityJson);
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
+    this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
     this.trackJettyMetrics = trackJettyMetrics;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
@@ -301,8 +304,8 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr/solr.xml", true)) {
-        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
+      if (!zkClient.exists("/solr/initialized", true)) {
+        zkClient.makePath("/solr/initialized", "yes".getBytes(Charset.defaultCharset()), true);
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
@@ -318,7 +321,7 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
-      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig));
+      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig, solrXml));
     }
 
     final ExecutorService executorLauncher =
@@ -447,23 +450,6 @@ public class MiniSolrCloudCluster {
   /**
    * Start a new Solr instance
    *
-   * @param hostContext context path of Solr servers used by Jetty
-   * @param extraServlets Extra servlets to be started by Jetty
-   * @param extraRequestFilters extra filters to be started by Jetty
-   * @return new Solr instance
-   */
-  public JettySolrRunner startJettySolrRunner(
-      String name,
-      String hostContext,
-      SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters)
-      throws Exception {
-    return startJettySolrRunner(name, extraServlets, extraRequestFilters, null);
-  }
-
-  /**
-   * Start a new Solr instance
-   *
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
    * @param sslConfig SSL configuration
@@ -481,7 +467,8 @@ public class MiniSolrCloudCluster {
             .withServlets(extraServlets)
             .withFilters(extraRequestFilters)
             .withSSLConfig(sslConfig)
-            .build());
+            .build(),
+        null);
   }
 
   public JettySolrRunner getJettySolrRunner(int index) {
@@ -493,14 +480,20 @@ public class MiniSolrCloudCluster {
    *
    * @param name the instance name
    * @param config a JettyConfig for the instance's {@link org.apache.solr.embedded.JettySolrRunner}
+   * @param solrXml the string content of the solr.xml file to use, or null to just use the
+   *     cluster's default
    * @return a JettySolrRunner
    */
-  public JettySolrRunner startJettySolrRunner(String name, JettyConfig config) throws Exception {
-    // tell solr node to look in zookeeper for solr.xml
+  public JettySolrRunner startJettySolrRunner(String name, JettyConfig config, String solrXml)
+      throws Exception {
     final Properties nodeProps = new Properties();
     nodeProps.setProperty("zkHost", zkServer.getZkAddress());
 
     Path runnerPath = createInstancePath(name);
+    if (solrXml == null) {
+      solrXml = this.solrXml;
+    }
+    Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
     JettyConfig newConfig = JettyConfig.builder(config).build();
     JettySolrRunner jetty =
         !trackJettyMetrics
@@ -520,7 +513,7 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner() throws Exception {
-    return startJettySolrRunner(newNodeName(), jettyConfig);
+    return startJettySolrRunner(newNodeName(), jettyConfig, null);
   }
 
   /**
@@ -1052,10 +1045,6 @@ public class MiniSolrCloudCluster {
       this.baseDir = baseDir;
 
       jettyConfigBuilder = JettyConfig.builder();
-      if (SolrTestCaseJ4.sslConfig != null) {
-        jettyConfigBuilder =
-            jettyConfigBuilder.withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig());
-      }
     }
 
     /** Use a JettyConfig.Builder to configure the cluster's jetty servers */

@@ -118,7 +118,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public DirectUpdateHandler2(SolrCore core) {
-    super(core);
+    super(core, null, false);
 
     solrCoreState = core.getSolrCoreState();
 
@@ -156,10 +156,13 @@ public class DirectUpdateHandler2 extends UpdateHandler
       commitWithinSoftCommit = false;
       commitTracker.setOpenSearcher(true);
     }
+    if (ulog != null) {
+      initUlog(true);
+    }
   }
 
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
-    super(core, updateHandler.getUpdateLog());
+    super(core, updateHandler.getUpdateLog(), false);
     solrCoreState = core.getSolrCoreState();
 
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig().getUpdateHandlerInfo();
@@ -190,11 +193,14 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     commitWithinSoftCommit = updateHandlerInfo.commitWithinSoftCommit;
 
-    UpdateLog existingLog = updateHandler.getUpdateLog();
-    if (this.ulog != null && this.ulog == existingLog) {
+    if (ulog != null) {
       // If we are reusing the existing update log, inform the log that its update handler has
       // changed. We do this as late as possible.
-      this.ulog.init(this, core);
+      // TODO: not sure _why_ we "do this as late as possible". Consider simplifying by
+      //  moving `ulog.init(UpdateHandler, SolrCore)` entirely into the `UpdateHandler` ctor,
+      //  avoiding the need for the `UpdateHandler(SolrCore, UpdateLog, boolean)` ctor
+      //  (with the extra boolean `initUlog` param).
+      initUlog(ulog != updateHandler.getUpdateLog());
     }
   }
 
@@ -379,13 +385,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        long currentTlogSize = getCurrentTLogSize();
         if (commitWithinSoftCommit) {
-          commitTracker.addedDocument(-1, currentTlogSize);
+          commitTracker.addedDocument(-1, this::getCurrentTLogSize);
           softCommitTracker.addedDocument(cmd.commitWithin);
         } else {
           softCommitTracker.addedDocument(-1);
-          commitTracker.addedDocument(cmd.commitWithin, currentTlogSize);
+          commitTracker.addedDocument(cmd.commitWithin, this::getCurrentTLogSize);
         }
       }
 
@@ -484,8 +489,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
 
-      long currentTlogSize = getCurrentTLogSize();
-      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(this::getCurrentTLogSize);
 
       if (softCommitTracker.getTimeUpperBound() > 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());

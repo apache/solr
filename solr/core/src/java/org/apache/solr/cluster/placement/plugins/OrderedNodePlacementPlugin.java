@@ -69,23 +69,26 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     Set<Node> allNodes = new HashSet<>();
     Set<SolrCollection> allCollections = new HashSet<>();
 
-    Deque<PendingPlacementRequest> pendingRequests = new ArrayDeque<>(requests.size());
+    // This helps us keep track if we have made a full lap of the outstanding requests
+    // without doing a placement or not.
+    int placementCount = 0;
+    Deque<OutstandingPlacementRequest> outstandingRequests = new ArrayDeque<>(requests.size());
     for (PlacementRequest request : requests) {
-      PendingPlacementRequest pending = new PendingPlacementRequest(request);
-      pendingRequests.add(pending);
+      OutstandingPlacementRequest outstanding = new OutstandingPlacementRequest(request);
+      outstandingRequests.add(outstanding);
       placementPlans.add(
           placementContext
               .getPlacementPlanFactory()
-              .createPlacementPlan(request, pending.getComputedPlacementSet()));
+              .createPlacementPlan(request, outstanding.getComputedPlacementSet()));
       allNodes.addAll(request.getTargetNodes());
       allCollections.add(request.getCollection());
     }
 
     Collection<WeightedNode> weightedNodes =
         getWeightedNodes(placementContext, allNodes, allCollections, true).values();
-    while (!pendingRequests.isEmpty()) {
-      PendingPlacementRequest request = pendingRequests.poll();
-      if (!request.isPending()) {
+    while (!outstandingRequests.isEmpty()) {
+      OutstandingPlacementRequest request = outstandingRequests.poll();
+      if (request.isComplete()) {
         continue;
       }
 
@@ -94,9 +97,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
       SolrCollection solrCollection = request.getCollection();
       // Now place all replicas of all shards on available nodes
-      for (String shardName : request.getPendingShards()) {
-        for (Replica.ReplicaType replicaType : request.getPendingReplicaTypes(shardName)) {
-          int replicaCount = request.getPendingReplicas(shardName, replicaType);
+      for (String shardName : request.getOutstandingShards()) {
+        for (Replica.ReplicaType replicaType : request.getOutstandingReplicaTypes(shardName)) {
+          int replicaCount = request.getOutstandingReplicas(shardName, replicaType);
           if (log.isDebugEnabled()) {
             log.debug(
                 "Placing {} replicas for Collection: {}, Shard: {}, ReplicaType: {}",
@@ -131,12 +134,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             // options than we have replicas to place, that's ok, because the replicas will likely
             // be put on all the tie options.
             //
-            // Only skip the request if it can be requeued, and there are other pending requests to
-            // compute.
+            // Only skip the request if it can be requeued, and there are other outstanding requests
+            // to
+            // compute. If the next outstanding request cannot be requeued,
             int numWeightTies = nodesForReplicaType.peekTies();
-            if (!pendingRequests.isEmpty()
-                && request.canBeRequeued()
-                && numWeightTies > (replicaCount - replicasPlaced)) {
+            if (numWeightTies > (replicaCount - replicasPlaced)
+                && !outstandingRequests.isEmpty()
+                && request.canBeRequeued(placementCount)) {
               log.debug(
                   "There is a tie for best weight. There are more options ({}) than replicas to place ({}), so try this placement request later: {}",
                   numWeightTies,
@@ -151,6 +155,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                 node.addReplica(
                     createProjectedReplica(solrCollection, shardName, replicaType, node.getNode()));
             replicasPlaced += 1;
+            placementCount += 1;
             request.addPlacement(
                 placementContext
                     .getPlacementPlanFactory()
@@ -185,9 +190,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           }
         }
       }
-      if (request.isPending()) {
-        request.requeue();
-        pendingRequests.add(request);
+      if (!request.isComplete()) {
+        request.requeue(placementCount);
+        outstandingRequests.add(request);
       }
     }
     return placementPlans;
@@ -404,9 +409,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     private final Node node;
     private final Map<String, Map<String, Set<Replica>>> replicas;
 
+    // a flattened list of all replicas, as computing from the map could be costly
+    private final Set<Replica> allReplicas;
+
     public WeightedNode(Node node) {
       this.node = node;
       this.replicas = new HashMap<>();
+      this.allReplicas = new HashSet<>();
     }
 
     public Node getNode() {
@@ -414,10 +423,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<Replica> getAllReplicasOnNode() {
-      return replicas.values().stream()
-          .flatMap(shard -> shard.values().stream())
-          .flatMap(Collection::stream)
-          .collect(Collectors.toSet());
+      return new HashSet<>(allReplicas);
+    }
+
+    public int getAllReplicaCount() {
+      return allReplicas.size();
     }
 
     public Set<String> getCollectionsOnNode() {
@@ -454,6 +464,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     private boolean addReplicaToInternalState(Replica replica) {
+      allReplicas.add(replica);
       return replicas
           .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
           .computeIfAbsent(replica.getShard().getShardName(), k -> CollectionUtil.newHashSet(1))
@@ -508,6 +519,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                 (shard, reps) -> {
                   if (reps.remove(replica)) {
                     hasReplica.set(true);
+                    allReplicas.remove(replica);
                   }
                   return reps.isEmpty() ? null : reps;
                 });
@@ -801,8 +813,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   }
 
   /** Context for a placement request still has replicas that need to be placed. */
-  static class PendingPlacementRequest {
-    boolean hasBeenRequeued;
+  static class OutstandingPlacementRequest {
+    int requeuedAtPlacementCount;
 
     final SolrCollection collection;
 
@@ -814,8 +826,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     // A live view on how many replicas still need to be placed for each shard & replica type
     final Map<String, Map<Replica.ReplicaType, Integer>> replicasToPlaceForShards;
 
-    public PendingPlacementRequest(PlacementRequest request) {
-      hasBeenRequeued = false;
+    public OutstandingPlacementRequest(PlacementRequest request) {
+      requeuedAtPlacementCount = -1;
       collection = request.getCollection();
       targetNodes = request.getTargetNodes();
       Set<String> shards = request.getShardNames();
@@ -836,13 +848,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * Determine if this request is not yet complete, and there are requested replicas that have not
+     * Determine if this request is complete, and there are no requested replicas that have not yet
      * had placements computed.
      *
-     * @return if there are still replica placements that need to be computed
+     * @return if all replica placements have been computed
      */
-    public boolean isPending() {
-      return !replicasToPlaceForShards.isEmpty();
+    public boolean isComplete() {
+      return replicasToPlaceForShards.isEmpty();
     }
 
     public SolrCollection getCollection() {
@@ -857,7 +869,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      * The set of ReplicaPlacements computed for this request.
      *
      * <p>The list that is returned is the same list used internally, so it will be augmented until
-     * {@link #isPending()} returns false.
+     * {@link #isComplete()} returns true.
      *
      * @return The live set of replicaPlacements for this request.
      */
@@ -872,7 +884,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      *
      * @return list of unfinished shards
      */
-    public Collection<String> getPendingShards() {
+    public Collection<String> getOutstandingShards() {
       return new ArrayList<>(replicasToPlaceForShards.keySet());
     }
 
@@ -883,7 +895,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      * @param shard name of the shard to check for uncomputed placements
      * @return the set of unfinished replica types
      */
-    public Collection<Replica.ReplicaType> getPendingReplicaTypes(String shard) {
+    public Collection<Replica.ReplicaType> getOutstandingReplicaTypes(String shard) {
       return Optional.ofNullable(replicasToPlaceForShards.get(shard))
           .map(Map::keySet)
           // Use a sorted TreeSet to make sure that tests are repeatable
@@ -899,30 +911,36 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      * @param type type of replica to be placed
      * @return the number of replicas that have not yet had placements computed
      */
-    public int getPendingReplicas(String shard, Replica.ReplicaType type) {
+    public int getOutstandingReplicas(String shard, Replica.ReplicaType type) {
       return Optional.ofNullable(replicasToPlaceForShards.get(shard))
           .map(m -> m.get(type))
           .orElse(0);
     }
 
     /**
-     * Currently, only of requeue is allowed per pending request.
+     * The request can be requeued as long as there have been placements since the last time it was
+     * requeued. If no placements have been made since, we will not allow a requeue which will force
+     * placements to be determined. This removes the possibility of a never-ending loop.
      *
      * @return true if the request has not been requeued already
      */
-    public boolean canBeRequeued() {
-      return !hasBeenRequeued;
-    }
-
-    /** Let the pending request know that it has been requeued */
-    public void requeue() {
-      hasBeenRequeued = true;
+    public boolean canBeRequeued(int placementCount) {
+      return requeuedAtPlacementCount < placementCount;
     }
 
     /**
-     * Track the given replica placement for this pending request.
+     * Let the request know that it has been requeued
      *
-     * @param replica placement that has been made for the pending request
+     * @param placementCount the number of placements made at the time of the requeue
+     */
+    public void requeue(int placementCount) {
+      requeuedAtPlacementCount = placementCount;
+    }
+
+    /**
+     * Track the given replica placement for this request.
+     *
+     * @param replica placement that has been made for the request
      */
     public void addPlacement(ReplicaPlacement replica) {
       computedPlacements.add(replica);

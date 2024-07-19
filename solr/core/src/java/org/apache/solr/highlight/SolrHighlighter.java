@@ -29,6 +29,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.util.SolrPluginUtils;
 
 public abstract class SolrHighlighter {
@@ -73,7 +74,11 @@ public abstract class SolrHighlighter {
     } else {
       fields =
           expandWildcardsInFields(
-              () -> request.getSearcher().getDocFetcher().getStoredHighlightFieldNames(), fields);
+              () ->
+                  request
+                      .getSearcher()
+                      .interrogateDocFetcher(SolrDocumentFetcher::getStoredHighlightFieldNames),
+              fields);
     }
 
     // Trim them now in case they haven't been yet.  Not needed for all code-paths above but do it

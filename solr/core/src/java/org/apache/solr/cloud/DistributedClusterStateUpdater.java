@@ -31,6 +31,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -39,7 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
-import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.NodeMutator;
@@ -534,7 +534,7 @@ public class DistributedClusterStateUpdater {
         // exponential backoff instead. With "per replica states" collections, concurrent attempts
         // of even just two threads are expected to be extremely rare.
         Thread.sleep(
-            CollectionHandlingUtils.RANDOM.nextInt(
+            Utils.RANDOM.nextInt(
                 attempt < 13 ? 1 << attempt : 1 << 13)); // max wait 2^13ms=8.192 sec
       }
 
@@ -636,7 +636,8 @@ public class DistributedClusterStateUpdater {
               data,
               Collections.emptySet(),
               updater.getCollectionName(),
-              zkStateReader.getZkClient());
+              zkStateReader.getZkClient(),
+              Instant.ofEpochMilli(stat.getCtime()));
 
       return clusterState;
     }

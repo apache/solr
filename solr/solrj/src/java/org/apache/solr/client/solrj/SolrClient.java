@@ -52,6 +52,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   private static final long serialVersionUID = 1L;
 
   private DocumentObjectBinder binder;
+  protected String defaultCollection;
 
   /**
    * Adds a collection of documents
@@ -1181,7 +1182,7 @@ public abstract class SolrClient implements Serializable, Closeable {
       throws SolrServerException, IOException;
 
   /**
-   * Execute a request against a Solr server
+   * Execute a request against a Solr server using the default collection
    *
    * @param request the request to execute
    * @return a {@link NamedList} containing the response from the server
@@ -1214,5 +1215,14 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
+  }
+
+  /**
+   * Gets the collection used by default for collection or core-based requests
+   *
+   * <p>If no value is specified at client-creation time, this method will return null.
+   */
+  public String getDefaultCollection() {
+    return defaultCollection;
   }
 }

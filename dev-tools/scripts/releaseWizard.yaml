@@ -389,7 +389,9 @@ groups:
   - !Todo
     id: create_minor_branch
     title: Create a new minor branch off the stable branch
-    description: In our case we'll create {{ release_branch }}
+    description: |
+      In our case we'll create {{ release_branch }}.
+      Also edit `.asf.yaml` to add the new branch under `protected_branches`.
     types:
     - major
     - minor
@@ -414,6 +416,15 @@ groups:
         tee: true
       - !Command
         cmd: git push --set-upstream origin {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: "{{ editor }} .asf.yaml"
+        comment: |
+          Add the new branch {{ release_branch }} under `protected_branches` in `.asf.yaml`. An editor will open.
+        stdout: true
+      - !Command
+        cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ release_branch }}" && git push
+        logfile: commit-branch-protection.log
         tee: true
   - !Todo
     id: update_minor_branch_prerelease_antora
@@ -519,14 +530,44 @@ groups:
     links:
     - https://projects.apache.org/doap.html
   - !Todo
-    id: jenkins_builds
-    title: Add Jenkins task for the release branch
-    description: '...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.'
+    id: new_jenkins_builds
+    title: Add Jenkins tasks for new branch(es)
+    description: |
+      This will make sure we are continuously testing the new branch(es) we have created.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to create:
+        {% if release_type == 'major' %}
+        *-{{release_version_major}}.x (The new stable branch)
+        {% endif %}
+        *-{{release_version_major}}.{{release_version_minor}} (The new release branch)
     types:
     - major
     - minor
     links:
-    - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
+  - !Todo
+    id: old_jenkins_builds
+    title: Remove old Jenkins tasks for decommissioned branches
+    description: |
+      This will make sure we aren't using resources to test branches no longer in development.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to delete:
+        {% if release_type == 'major' %}
+        *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
+        *-{{latest_version_major}}.x (The previous stable branch)
+        {% else %}
+        *-{{latest_version_major}}.{{latest_version_minor}} (The previous release branch)
+        {% endif %}
+    depends: new_jenkins_builds
+    types:
+      - major
+      - minor
+    links:
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
   - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch
@@ -1067,7 +1108,12 @@ groups:
           comment: Add the new slim distribution Dockerfile to the repo
           logfile: solr_docker_add_dockerfile_slim.log
         - !Command
-          cmd: 'git add {{ docker_version }}/Dockerfile {{ docker_version }}-slim/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cmd: "{% if docker_version_to_remove %}rm -rf {{ docker_version_to_remove }} {{ docker_version_to_remove }}-slim{% else %}echo Nothing to delete{% endif %}"
+          cwd: solr-docker
+          comment: "{% if docker_version_to_remove %}Mark docker image version {{ docker_version_to_remove }} as not supported{% else %}N/A - No docker versions to delete for this release{% endif %}"
+          logfile: solr_remove_old_docker_images.log
+        - !Command
+          cmd: 'git add . && git commit -m "Apache Solr release {{ release_version }}"'
           cwd: solr-docker
           comment: Commit the new Dockerfile
           logfile: solr_docker_commit.log

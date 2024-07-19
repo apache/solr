@@ -54,10 +54,6 @@ grant {
   permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
-  // "dead hosts", we try to keep it fast
-  permission java.net.SocketPermission "[::1]:4", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:6", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:8", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
@@ -151,6 +147,7 @@ grant {
 
   // Needed by JWT integration tests & S3 clients
   permission java.lang.RuntimePermission "setFactory";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.default";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
@@ -193,6 +190,9 @@ grant {
 
   permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,readlink";
 
+  permission java.io.FilePermission "${solr.jetty.keystoreParentPath}", "read,readlink";
+  permission java.io.FilePermission "${javax.net.ssl.keyStoreParentPath}", "read,readlink";
+
   permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.dir}${/}-", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.symDir}", "read,write,delete,readlink";
@@ -215,6 +215,9 @@ grant {
 
   permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.sharedLib}", "read,readlink";
+  permission java.io.FilePermission "${solr.sharedLib}${/}-", "read,readlink";
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
 

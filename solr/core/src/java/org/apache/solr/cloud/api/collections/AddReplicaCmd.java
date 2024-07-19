@@ -21,10 +21,7 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREA
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -38,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -134,19 +131,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 
-    ReplicaCount numReplicas =
-        new ReplicaCount(
-            message.getInt(NRT_REPLICAS, 0),
-            message.getInt(TLOG_REPLICAS, 0),
-            message.getInt(PULL_REPLICAS, 0));
-    if (numReplicas.total() <= 0) {
-      Replica.Type replicaType =
-          Replica.Type.valueOf(
-              message
-                  .getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name())
-                  .toUpperCase(Locale.ROOT));
-      numReplicas.increment(replicaType);
-    }
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, null, 1);
 
     int totalReplicas = numReplicas.total();
     if (totalReplicas > 1) {
@@ -252,10 +237,10 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       CreateReplica createReplica)
       throws InterruptedException, KeeperException {
     if (!skipCreateReplicaInClusterState) {
-      ZkNodeProps props =
-          new ZkNodeProps(
+      Map<String, Object> replicaProps =
+          Utils.makeMap(
               Overseer.QUEUE_OPERATION,
-              ADDREPLICA.toLower(),
+              (Object) ADDREPLICA.toLower(),
               ZkStateReader.COLLECTION_PROP,
               collectionName,
               ZkStateReader.SHARD_ID_PROP,
@@ -271,8 +256,11 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.REPLICA_TYPE,
               createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
-        props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
+        replicaProps.put(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
       }
+      CollectionHandlingUtils.addPropertyParams(message, replicaProps);
+
+      ZkNodeProps props = new ZkNodeProps(replicaProps);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -339,6 +327,9 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     if (createReplica.coreNodeName != null) {
       params.set(CoreAdminParams.CORE_NODE_NAME, createReplica.coreNodeName);
     }
+    // Inherit user-defined properties from collection.
+    CollectionHandlingUtils.addPropertyParams(coll, params);
+    // Inherit user-defined properties from replica.
     CollectionHandlingUtils.addPropertyParams(message, params);
 
     return params;
@@ -443,7 +434,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       // the same node, but we've got to accommodate.
       positions = new ArrayList<>(totalReplicas);
       int i = 0;
-      for (Replica.Type type : Replica.Type.values()) {
+      for (Replica.Type type : numReplicas.keySet()) {
         for (int j = 0; j < numReplicas.get(type); j++) {
           positions.add(new ReplicaPosition(collectionName, sliceName, i++, type, node));
         }

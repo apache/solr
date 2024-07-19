@@ -17,9 +17,7 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.STATUS;
 
 import com.codahale.metrics.Counter;
 import java.io.PrintWriter;
@@ -61,15 +59,16 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -117,7 +116,7 @@ public class SearchHandler extends RequestHandlerBase
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(8);
+    ArrayList<String> names = new ArrayList<>(9);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(FacetComponent.COMPONENT_NAME);
     names.add(FacetModule.COMPONENT_NAME);
@@ -380,15 +379,7 @@ public class SearchHandler extends RequestHandlerBase
         trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
       }
 
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                CircuitBreaker.getErrorCode(trippedCircuitBreakers),
-                "Circuit Breakers tripped " + errorMessage));
-        return true;
-      }
+      return CircuitBreakerUtils.reportErrorIfBreakersTripped(rsp, trippedCircuitBreakers);
     }
     return false;
   }
@@ -457,7 +448,6 @@ public class SearchHandler extends RequestHandlerBase
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
-      SolrQueryTimeoutImpl.set(req);
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
@@ -498,12 +488,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      } finally {
-        SolrQueryTimeoutImpl.reset();
+        rb.rsp.setPartialResults();
       }
     } else {
       // a distributed request
@@ -514,6 +499,7 @@ public class SearchHandler extends RequestHandlerBase
       rb.finished = new ArrayList<>();
 
       int nextStage = 0;
+      long totalShardCpuTime = 0L;
       do {
         rb.stage = nextStage;
         nextStage = ResponseBuilder.STAGE_DONE;
@@ -540,7 +526,7 @@ public class SearchHandler extends RequestHandlerBase
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.setShardAttributesToParams(sreq.purpose);
+              ShardHandler.setShardAttributesToParams(params, sreq.purpose);
 
               // Distributed request -- need to send queryID as a part of the distributed request
               params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
@@ -580,16 +566,23 @@ public class SearchHandler extends RequestHandlerBase
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
                 shardHandler1.cancelAll();
-                if (srsp.getException() instanceof SolrException) {
-                  throw (SolrException) srsp.getException();
-                } else {
-                  throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
-                }
+                throwSolrException(srsp.getException());
               } else {
-                rsp.getResponseHeader()
-                    .asShallowMap()
-                    .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
+                boolean includesTopIdsPurpose =
+                    (srsp.getShardRequest().purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0;
+                // Check if all responses have exceptions
+                boolean allResponsesHaveExceptions =
+                    srsp.getShardRequest().responses.stream()
+                        .allMatch(response -> response.getException() != null);
+                // Check if all shards have failed for PURPOSE_GET_TOP_IDS
+                boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
+                // if all shards fail, fail the request despite shards.tolerant
+                if (allShardsFailed) {
+                  throwSolrException(srsp.getException());
+                } else {
+                  rsp.setPartialResults();
+                }
               }
             }
 
@@ -598,6 +591,11 @@ public class SearchHandler extends RequestHandlerBase
             // let the components see the responses to the request
             for (SearchComponent c : components) {
               c.handleResponses(rb, srsp.getShardRequest());
+            }
+
+            // Compute total CpuTime used by all shards.
+            if (publishCpuTime) {
+              totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
             }
           }
         }
@@ -608,6 +606,11 @@ public class SearchHandler extends RequestHandlerBase
 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
+
+      if (publishCpuTime) {
+        rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+        rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+      }
     }
 
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
@@ -646,6 +649,35 @@ public class SearchHandler extends RequestHandlerBase
           pos != -1 ? rb.shortCircuitedURL.substring(pos + 3) : rb.shortCircuitedURL;
       shardInfo.add(shardInfoName, nl);
       rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
+    }
+  }
+
+  private long computeShardCpuTime(List<ShardResponse> responses) {
+    long totalShardCpuTime = 0;
+    for (ShardResponse response : responses) {
+      if ((response.getSolrResponse() != null)
+          && (response.getSolrResponse().getResponse() != null)
+          && (response.getSolrResponse().getResponse().get("responseHeader") != null)) {
+        @SuppressWarnings("unchecked")
+        SimpleOrderedMap<Object> header =
+            (SimpleOrderedMap<Object>)
+                response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
+        if (header != null) {
+          Long shardCpuTime = (Long) header.get(ThreadCpuTimer.CPU_TIME);
+          if (shardCpuTime != null) {
+            totalShardCpuTime += shardCpuTime;
+          }
+        }
+      }
+    }
+    return totalShardCpuTime;
+  }
+
+  private static void throwSolrException(Throwable shardResponseException) throws SolrException {
+    if (shardResponseException instanceof SolrException) {
+      throw (SolrException) shardResponseException;
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
     }
   }
 

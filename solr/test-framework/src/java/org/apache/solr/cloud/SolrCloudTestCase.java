@@ -17,10 +17,18 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.api.collections.CreateCollectionCmd.PRS_DEFAULT_PROP;
+
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +53,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
@@ -74,8 +83,6 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Boolean USE_PER_REPLICA_STATE =
-      Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -90,6 +97,14 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   /**
+   * if the system property is not specified, default to false. The SystemProperty will be set in a
+   * beforeClass method.
+   */
+  public static boolean isPRS() {
+    return EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, false);
+  }
+
+  /**
    * Call this to configure a cluster of n nodes. It will be shut down automatically after the
    * tests.
    *
@@ -101,7 +116,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
     // collection API strategy to use (distributed or Overseer based) and which cluster update
     // strategy to use (distributed if collection API is distributed, but Overseer based or
-    // distributed randomly chosen if Collection API is Overseer based)
+    // distributed randomly chosen if Collection API is Overseer based), and whether to use PRS
+
+    configurePrsDefault();
 
     boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
     boolean useDistributedClusterStateUpdate =
@@ -109,6 +126,17 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
         .withDistributedClusterStateUpdates(
             useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
+  }
+
+  public static void configurePrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    boolean usePrs;
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) {
+      usePrs = false;
+    } else {
+      usePrs = EnvUtils.getPropertyAsBool(PRS_DEFAULT_PROP, LuceneTestCase.random().nextBoolean());
+    }
+    System.setProperty(PRS_DEFAULT_PROP, usePrs ? "true" : "false");
   }
 
   @AfterClass
@@ -181,19 +209,20 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and active replicas
+   * numbers of shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
       if (collectionState.getSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(
+          expectedReplicas, liveNodes, collectionState.getSlices());
     };
   }
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of active shards and active replicas
+   * numbers of active shards and active replicas on these shards
    */
   public static CollectionStatePredicate activeClusterShape(
       int expectedShards, int expectedReplicas) {
@@ -206,7 +235,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
             expectedShards);
       }
       if (collectionState.getActiveSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(
+          expectedReplicas, liveNodes, collectionState.getActiveSlices());
     };
   }
 
@@ -235,10 +265,19 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     };
   }
 
+  /**
+   * Checks if the actual count of active replicas on a set of nodes for a collection of shards
+   * matches the expected count
+   *
+   * @param expectedReplicas number of active replicas expected by the test
+   * @param liveNodes nodes on which the active replicas should be counted
+   * @param slices collection of slices whose replicas should be counted
+   * @return true if the actual count of active replicas matches the expected count
+   */
   private static boolean compareActiveReplicaCountsForShards(
-      int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+      int expectedReplicas, Set<String> liveNodes, Collection<Slice> slices) {
     int activeReplicas = 0;
-    for (Slice slice : collectionState) {
+    for (Slice slice : slices) {
       for (Replica replica : slice) {
         if (replica.isActive(liveNodes)) {
           activeReplicas++;
@@ -373,4 +412,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     return replicaTypeMap;
   }
+
+  /**
+   * A marker interface to Ignore PRS in tests. This is for debugging purposes to ensure that PRS is
+   * causing test failures
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface NoPrs {}
 }

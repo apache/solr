@@ -34,6 +34,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -130,8 +131,8 @@ public class TermVectorComponent extends SearchComponent {
       return;
     }
 
-    NamedList<Object> termVectors = new NamedList<>();
-    rb.rsp.add(TERM_VECTORS, termVectors);
+    NamedList<Object> termVectorsNL = new NamedList<>();
+    rb.rsp.add(TERM_VECTORS, termVectorsNL);
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
@@ -236,7 +237,7 @@ public class TermVectorComponent extends SearchComponent {
       warnings.add("noPayloads", noPay);
     }
     if (warnings.size() > 0) {
-      termVectors.add(TV_KEY_WARNINGS, warnings);
+      termVectorsNL.add(TV_KEY_WARNINGS, warnings);
     }
 
     DocListAndSet listAndSet = rb.getResults();
@@ -251,6 +252,7 @@ public class TermVectorComponent extends SearchComponent {
     SolrIndexSearcher searcher = rb.req.getSearcher();
 
     IndexReader reader = searcher.getIndexReader();
+    TermVectors termVectors = reader.termVectors();
     // the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
 
     // Only load the id field to get the uniqueKey of that
@@ -268,16 +270,16 @@ public class TermVectorComponent extends SearchComponent {
         String uKey = schema.printableUniqueKey(solrDoc);
         assert null != uKey;
         docNL.add("uniqueKey", uKey);
-        termVectors.add(uKey, docNL);
+        termVectorsNL.add(uKey, docNL);
       } else {
         // support for schemas w/o a unique key,
-        termVectors.add("doc-" + docId, docNL);
+        termVectorsNL.add("doc-" + docId, docNL);
       }
 
       if (null != fields) {
         for (Map.Entry<String, FieldOptions> entry : fieldOptions.entrySet()) {
           final String field = entry.getKey();
-          final Terms vector = reader.getTermVector(docId, field);
+          final Terms vector = termVectors.get(docId, field);
           if (vector != null) {
             TermsEnum termsEnum = vector.iterator();
             mapOneVector(docNL, entry.getValue(), reader, docId, termsEnum, field);
@@ -285,7 +287,7 @@ public class TermVectorComponent extends SearchComponent {
         }
       } else {
         // extract all fields
-        final Fields vectors = reader.getTermVectors(docId);
+        final Fields vectors = termVectors.get(docId);
         // There can be no documents with vectors
         if (vectors != null) {
           for (String field : vectors) {

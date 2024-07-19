@@ -1,4 +1,5 @@
 = Cluster and Node Management Commands
+:tabs-sync-option:
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -43,12 +44,11 @@ No active replicas *OR* there's no shard leader.
 
 The collection health state is reported as the worst state of any shard, e.g., for a collection with all shards GREEN except for one YELLOW the collection health will be reported as YELLOW.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1clusterstatus]
+[tabs#clusterstatus-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
@@ -56,17 +56,16 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ----
 ====
 
-[example.tab-pane#v2clusterstatus]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/cluster
 
 ----
 ====
---
+======
 
 === CLUSTERSTATUS Parameters
 
@@ -187,12 +186,11 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 
 Add, edit or delete a cluster-wide property.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1clusterprop]
+[tabs#clusterprop-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
@@ -200,10 +198,9 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 ----
 ====
 
-[example.tab-pane#v2clusterprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d '
@@ -216,8 +213,7 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 '
 ----
 ====
---
-
+======
 
 === CLUSTERPROP Parameters
 
@@ -275,20 +271,17 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 It is possible to set cluster-wide default values for certain attributes of a collection, using the `defaults` parameter.
 
 *Set/update default values*
-[.dynamic-tabs]
---
-[example.tab-pane#v1setobjproperty]
+[tabs#setobjproperty-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 There is no V1 equivalent of this action.
 
 ====
-
-[example.tab-pane#v2setobjproperty]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -306,9 +299,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 ====
---
-
-
+======
 
 *Unset the only value of `nrtReplicas`*
 
@@ -334,12 +325,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
     "defaults" : null
 }' http://localhost:8983/api/cluster
 ----
-
-NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key which is now deprecated and
-replaced with `defaults`.
-Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
- but the format of the properties will automatically be converted to the new nested structure.
-Support for the "collectionDefaults" key will be removed in Solr 9.
 
 === Default Shard Preferences
 
@@ -372,10 +357,11 @@ will be used to decide:
 * Which nodes those replicas should be placed
 * When the cluster has reached an "equilibrium"
 
-[example.tab-pane#v2balancereplicas]
+[tabs#balancereplicas-request]
+======
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type: application/json' -d '
@@ -386,6 +372,7 @@ curl -X POST http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type
 '
 ----
 ====
+======
 
 ===  Parameters
 
@@ -439,12 +426,11 @@ Ensures that a particular property is distributed evenly amongst the physical no
 If the property already exists on a replica, every effort is made to leave it there.
 If the property is *not* on any replica on a shard, one is chosen and the property is added.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1balanceshardunique]
+[tabs#balanceshardunique-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=techproducts&property=preferredLeader
@@ -452,10 +438,9 @@ http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collectio
 ----
 ====
 
-[example.tab-pane#v2balanceshardunique]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/balance-shard-unique -H 'Content-Type: application/json' -d '
@@ -465,7 +450,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/balance-shard-un
 '
 ----
 ====
---
+======
 
 === BALANCESHARDUNIQUE Parameters
 
@@ -550,10 +535,11 @@ If more than one node is used as a targetNode (either explicitly, or by default)
 xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin] will be used to determine
 which targetNode should be used for each migrated replica.
 
-[example.tab-pane#v2migratereplicas]
+[tabs#migratereplicas-request]
+======
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type: application/json' -d '
@@ -565,6 +551,7 @@ curl -X POST http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type
 '
 ----
 ====
+======
 
 ===  Parameters
 
@@ -573,19 +560,17 @@ curl -X POST http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type
 +
 [%autowidth,frame=none]
 |===
-|Required |Default: `[]`
+|Required |Default: none
 |===
 +
 The nodes over which replicas will be balanced.
 Replicas that live outside this set of nodes will not be included in the balancing.
-+
-If this parameter is not provided, all live data nodes will be used.
 
 `targetNodes`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `[]`
+|Optional |Default: none
 |===
 +
 The nodes which the migrated replicas will be moved to.
@@ -641,12 +626,11 @@ If no targetNode is provided, then the configured
 xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin] will be used to determine
 which node each recreated replica should be placed on.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1replacenode]
+[tabs#replacenode-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REPLACENODE&sourceNode=source-node&targetNode=target-node
@@ -654,10 +638,9 @@ http://localhost:8983/solr/admin/collections?action=REPLACENODE&sourceNode=sourc
 ----
 ====
 
-[example.tab-pane#v2replacenode]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
@@ -668,9 +651,8 @@ curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replac
     }
 '
 ----
-
 ====
---
+======
 
 === REPLACENODE Parameters
 
@@ -744,12 +726,12 @@ So don't perform other collection operations in this period.
 
 Deletes all replicas of all collections in that node.
 Please note that the node itself will remain as a live node after this operation.
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletenode]
-====
-[.tab-label]*V1 API*
 
+[tabs#deletenode-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETENODE&node=nodeName
@@ -757,10 +739,9 @@ http://localhost:8983/solr/admin/collections?action=DELETENODE&node=nodeName
 ----
 ====
 
-[example.tab-pane#v2deletenode]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
@@ -769,9 +750,8 @@ curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/
     }
 '
 ----
-
 ====
---
+======
 
 === DELETENODE Parameters
 
@@ -805,12 +785,11 @@ This is useful in large clusters where an Overseer is likely to get overloaded.
 If available, one among the list of nodes which are assigned the 'overseer' role would become the overseer.
 The system would assign the role to any other node if none of the designated nodes are up and running.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1addrole]
+[tabs#addrole-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=localhost:8983_solr
@@ -818,10 +797,9 @@ http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=l
 ----
 ====
 
-[example.tab-pane#v2addrole]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d '
@@ -834,7 +812,7 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 '
 ----
 ====
---
+======
 
 === ADDROLE Parameters
 
@@ -890,12 +868,11 @@ http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=1
 Remove an assigned role.
 This API is used to undo the roles assigned using ADDROLE operation
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1removerole]
+[tabs#removerole-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=localhost:8983_solr
@@ -903,10 +880,9 @@ http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&nod
 ----
 ====
 
-[example.tab-pane#v2removerole]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d '
@@ -919,7 +895,7 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 '
 ----
 ====
---
+======
 
 === REMOVEROLE Parameters
 
@@ -974,12 +950,11 @@ http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&nod
 
 Returns the current status of the overseer, performance statistics of various overseer APIs, and the last 10 failures per operation type.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1overseerstatus]
+[tabs#overseerstatus-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
@@ -987,16 +962,15 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
 ----
 ====
 
-[example.tab-pane#v2overseerstatus]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/cluster/overseer
 ----
 ====
---
+======
 
 === Examples using OVERSEERSTATUS
 

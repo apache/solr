@@ -17,22 +17,19 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -495,7 +492,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
       assertNotNull(collection);
       assertEquals("conf1", collection.get("configName"));
-      //      assertEquals("1", collection.get("nrtReplicas"));
+
+      Instant creationTime = Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
+      assertEquals(
+          creationTime, client.getClusterState().getCollection(COLLECTION_NAME).getCreationTime());
     }
   }
 
@@ -537,23 +537,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(newVersion);
       assertTrue(newVersion > znodeVersion);
     }
-  }
-
-  private static long totalexpectedV2Calls;
-
-  public static <T extends SolrResponse> SolrRequest<T> setV2(SolrRequest<T> req) {
-    if (V2Request.v2Calls.get() == null) V2Request.v2Calls.set(new AtomicLong());
-    totalexpectedV2Calls = V2Request.v2Calls.get().get();
-    if (random().nextBoolean()) {
-      req.setUseV2(true);
-      req.setUseBinaryV2(random().nextBoolean());
-      totalexpectedV2Calls++;
-    }
-    return req;
-  }
-
-  public static void assertV2CallsCount() {
-    assertEquals(totalexpectedV2Calls, V2Request.v2Calls.get().get());
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {

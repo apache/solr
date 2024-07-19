@@ -67,6 +67,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
@@ -96,35 +97,37 @@ public class ExportTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
+            .longOpt("solr-collection-url")
             .hasArg()
+            .argName("URL")
             .required()
             .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
             .build(),
         Option.builder("out")
             .hasArg()
-            .required(false)
+            .argName("PATH")
             .desc(
                 "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
             .build(),
         Option.builder("format")
             .hasArg()
-            .required(false)
+            .argName("FORMAT")
             .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
             .build(),
-        Option.builder("compress").required(false).desc("Compress the output.").build(),
+        Option.builder("compress").desc("Compress the output.").build(),
         Option.builder("limit")
             .hasArg()
-            .required(false)
+            .argName("#")
             .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
             .build(),
         Option.builder("query")
             .hasArg()
-            .required(false)
+            .argName("QUERY")
             .desc("A custom query, default is '*:*'.")
             .build(),
         Option.builder("fields")
             .hasArg()
-            .required(false)
+            .argName("FIELDA,FIELDB")
             .desc("Comma separated list of fields to export. By default all fields are fetched.")
             .build(),
         SolrCLI.OPTION_CREDENTIALS);
@@ -219,9 +222,10 @@ public class ExportTool extends ToolBase {
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/schema/uniquekey",
-                  new MapSolrParams(Collections.singletonMap("collection", coll))));
+                      SolrRequest.METHOD.GET,
+                      "/schema/uniquekey",
+                      new MapSolrParams(Collections.singletonMap("collection", coll)))
+                  .setRequiresCollection(true));
       uniqueKey = (String) response.get("uniqueKey");
     }
 
@@ -246,7 +250,7 @@ public class ExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
+    String url = cli.getOptionValue("solr-collection-url");
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
     Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue("query", "*:*");
@@ -620,7 +624,7 @@ public class ExportTool extends ToolBase {
 
         try (SolrClient client = SolrCLI.getSolrClient(baseurl, credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
-          GenericSolrRequest request;
+          QueryRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
           if (fields != null) params.add(FL, fields);
@@ -644,12 +648,10 @@ public class ExportTool extends ToolBase {
             if (failed) return false;
             if (docsWritten.get() > limit) return true;
             params.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-            request =
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET, "/" + replica.getCoreName() + "/select", params);
+            request = new QueryRequest(params);
             request.setResponseParser(responseParser);
             try {
-              NamedList<Object> rsp = client.request(request);
+              NamedList<Object> rsp = client.request(request, replica.getCoreName());
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
                 if (output != null) {
@@ -692,9 +694,8 @@ public class ExportTool extends ToolBase {
     SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + coreName + "/select", q);
-    NamedList<Object> res = client.request(request);
+    final var request = new QueryRequest(q);
+    NamedList<Object> res = client.request(request, coreName);
     SolrDocumentList sdl = (SolrDocumentList) res.get("response");
     return sdl.getNumFound();
   }

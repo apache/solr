@@ -22,7 +22,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.http.Get;
@@ -77,7 +80,7 @@ public class JWTIssuerConfig {
   private Collection<X509Certificate> trustedCerts;
 
   public static boolean ALLOW_OUTBOUND_HTTP =
-      Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+      Boolean.parseBoolean(EnvUtils.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
       "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
   private static final String DEFAULT_AUTHORIZATION_FLOW =
@@ -116,7 +119,7 @@ public class JWTIssuerConfig {
     }
     if (wellKnownUrl != null) {
       try {
-        wellKnownDiscoveryConfig = fetchWellKnown(new URL(wellKnownUrl));
+        wellKnownDiscoveryConfig = fetchWellKnown(URI.create(wellKnownUrl).toURL());
       } catch (MalformedURLException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -423,6 +426,14 @@ public class JWTIssuerConfig {
     return jwkConfigured > 0;
   }
 
+  private static void disableHostVerificationIfLocalhost(URL url, Get httpGet) {
+    InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
+    if (loopbackAddress.getCanonicalHostName().equals(url.getHost())
+        || loopbackAddress.getHostName().equals(url.getHost())) {
+      httpGet.setHostnameVerifier((hostname, session) -> true);
+    }
+  }
+
   public void setTrustedCerts(Collection<X509Certificate> trustedCerts) {
     this.trustedCerts = trustedCerts;
   }
@@ -459,7 +470,7 @@ public class JWTIssuerConfig {
     private HttpsJwks create(String url) {
       final URL jwksUrl;
       try {
-        jwksUrl = new URL(url);
+        jwksUrl = URI.create(url).toURL();
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
       } catch (MalformedURLException e) {
         throw new SolrException(
@@ -472,9 +483,7 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        if ("localhost".equals(jwksUrl.getHost())) {
-          getWithCustomTrust.setHostnameVerifier((hostname, session) -> true);
-        }
+        disableHostVerificationIfLocalhost(jwksUrl, getWithCustomTrust);
         httpsJkws.setSimpleHttpGet(getWithCustomTrust);
       }
       return httpsJkws;
@@ -498,7 +507,7 @@ public class JWTIssuerConfig {
     }
 
     public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
-      return parse(new URL(urlString), null);
+      return parse(URI.create(urlString).toURL(), null);
     }
 
     /**
@@ -525,9 +534,7 @@ public class JWTIssuerConfig {
           Get httpGet = new Get();
           if (trustedCerts != null) {
             httpGet.setTrustedCertificates(trustedCerts);
-            if ("localhost".equals(url.getHost())) {
-              httpGet.setHostnameVerifier((hostname, session) -> true);
-            }
+            disableHostVerificationIfLocalhost(url, httpGet);
           }
           SimpleResponse resp = httpGet.get(url.toString());
           return parse(new ByteArrayInputStream(resp.getBody().getBytes(StandardCharsets.UTF_8)));

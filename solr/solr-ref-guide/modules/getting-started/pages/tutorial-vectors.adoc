@@ -1,0 +1,202 @@
+= Exercise 5: Using Vectors
+:experimental:
+:tabs-sync-option:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[[exercise-5]]
+== Exercise 5: Using Vectors in Solr
+
+This exercise will use the Films example that we looked at previously in Exercise 4.
+
+=== Getting Ready
+
+Make sure you have a running Solr, following the steps in xref:tutorial-films.adoc#restart-solr[].
+Then go ahead to the next section.
+
+=== Preparing for the Vector data
+
+[,console]
+----
+$ bin/solr create -c films
+----
+
+Because we didn't specify a ConfigSet when we created the collection, we will use the `_default` ConfigSet.
+
+First we need to update our schema to add the vector field type, the field to hold the vector values and some supporting fields.
+
+[,console]
+----
+$ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-field-type" : {
+    "name":"knn_vector_10",
+    "class":"solr.DenseVectorField",
+    "vectorDimension":10,
+    "similarityFunction":"cosine",
+    "knnAlgorithm":"hnsw"
+  },
+  "add-field" : [
+      {
+        "name":"film_vector",
+        "type":"knn_vector_10",
+        "indexed":true,
+        "stored":true
+      },
+      {
+        "name":"name",
+        "type":"text_general",
+        "multiValued":false,
+        "stored":true
+      },
+      {
+        "name":"initial_release_date",
+        "type":"pdate",
+        "stored":true
+      }
+    ]  
+}'
+----
+
+=== Now index the Films data with Vectors
+
+We have the vectors embedded in our `films.json` file, so let's index that data, taking advantage of our new schema field we just defined.
+
+[tabs#index-json]
+======
+Linux/Mac::
++
+====
+[,console]
+----
+$ bin/solr post -c films example/films/films.json
+
+----
+====
+
+Windows::
++
+====
+[,console]
+----
+$ bin/solr post -c films example\films\films.json
+----
+====
+======
+
+=== Let's do some Vector searches
+Before making the queries, we define an example target vector, simulating a person that 
+watched 3 movies: _Finding Nemo_, _Bee Movie_, and _Harry Potter and the Chamber of Secrets_. 
+We get the vector of each movie, then calculate the resulting average vector, which will 
+be used as the input vector for all the following example queries.
+        
+```
+[-0.1784, 0.0096, -0.1455, 0.4167, -0.1148, -0.0053, -0.0651, -0.0415, 0.0859, -0.1789]
+```
+
+[NOTE]
+====
+Interested in calculating the vector using Solr's xref:query-guide:streaming-expressions.adoc[streaming capability]?   
+Here is an example of a streaming expression that you can run via the xref:query-guide:stream-screen.adoc[Solr Admin Stream UI]:
+```
+let(
+  a=select(      
+        search(films,
+          qt="/select",
+          q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
+          fl="id,name,film_vector"),
+        film_vector),
+  b=col(a, film_vector),
+  m=matrix(valueAt(b, 0), valueAt(b, 1), valueAt(b, 2)),
+  average=scalarDivide(3, sumColumns(m))
+  )
+```
+
+The output is:
+```
+{
+  "result-set": {
+    "docs": [
+      {
+        "average": [
+          -0.17840398,
+          0.00960978666666667,
+          -0.14545916333333334,
+          0.41671050333333337,
+          -0.11476575433333332,
+          -0.005306495043333334,
+          -0.06507552800000001,
+          -0.041544396666666664,
+          0.085892911,
+          -0.1788737366666667
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 129
+      }
+    ]
+  }
+}
+```
+
+====
+
+
+// Solr URL examples below all have [ and ] characters which, when used with Curl, causes encoding issues so just putting plain http links
+
+Search for the top 10 movies most similar to the target vector that we previously calculated (KNN Query for recommendation):
+
+       'http://localhost:8983/solr/films/query?q={%21knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]'
+
+* Notice that among the results, there are some animation family movies, such as _Curious George_ and _Bambi_, which makes sense, since the target vector was created with two other animation family movies (_Finding Nemo_ and _Bee Movie_).
+* We also notice that among the results there are two movies that the person already watched. In the next example we will filter them out.
+
+Search for the top 10 movies most similar to the resulting vector, excluding the movies already watched (KNN query with Filter Query):
+
+       http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&fq=-id:("%2Fen%2Ffinding_nemo"%20"%2Fen%2Fbee_movie"%20"%2Fen%2Fharry_potter_and_the_chamber_of_secrets_2002")
+
+  - Search for movies with "cinderella" in the name among the top 50 movies most similar to the target vector (KNN as Filter Query):
+
+       http://localhost:8983/solr/films/query?q=name:cinderella&fq={!knn%20f=film_vector%20topK=50}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]
+
+       * There are 3 "cinderella" movies in the index, but only 1 is among the top 50 most similar to the target vector (_Cinderella III: A Twist in Time_).
+
+     - Search for movies with "animation" in the genre, and rerank the top 5 documents by combining (sum) the original query score with twice (2x) the similarity to the target vector (KNN with ReRanking):
+
+       http://localhost:8983/solr/films/query?q=genre:animation&rqq={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&rq={!rerank%20reRankQuery=$rqq%20reRankDocs=5%20reRankWeight=2}
+
+       * To guarantee we calculate the vector similarity score for all the movies, we set `topK=10000`, a number higher than the total number of documents (`1100`).
+
+   * It's possible to combine the vector similarity scores with other scores, by using Sub-query, 
+     xref:query-guide:function-queries.adoc[Function Queries] and xref:query-guide:local-params.adoc#parameter-dereferencing[Parameter Dereferencing] Solr features:
+
+     - Search for "harry potter" movies, ranking the results by the similarity to the target vector instead of the lexical query score. Beside the `q` parameter, we define a "sub-query" named `q_vector`, that will calculate the similarity score between all the movies (since we set `topK=10000`). Then we use the sub-query parameter name as input for the `sort`, specifying that we want to rank descending according to the vector similarity score (`sort=$q_vector desc`):
+
+       http://localhost:8983/solr/films/query?q=name:"harry%20potter"&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&sort=$q_vector%20desc
+
+     - Search for movies with "the" in the name, keeping the original lexical query ranking, but returning only movies with similarity to the target vector of 0.8 or higher. Like previously, we define the sub-query `q_vector`, but this time we use it as input for the `frange` filter, specifying that we want documents with at least 0.8 of vector similarity score:
+
+       http://localhost:8983/solr/films/query?q=name:the&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&fq={!frange%20l=0.8}$q_vector
+
+     - Search for "batman" movies, ranking the results by combining 70% of the original lexical query score and 30% of the similarity to the target vector. Besides the `q` main query and the `q_vector` sub-query, we also specify the `q_lexical` query, which will hold the lexical score of the main `q` query. Then we specify a parameter variable called `score_combined`, which scales the lexical and similarity scores, applies the 0.7 and 0.3 weights, then sum the result. We set the `sort` parameter to order according the combined score, and also set the `fl` parameter so that we can view the intermediary and the combined score values in the response:
+
+       http://localhost:8983/solr/films/query?q=name:batman&q_lexical={!edismax%20v=$q}&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&score_combined=sum(mul(scale($q_lexical,0,1),0.7),mul(scale($q_vector,0,1),0.3))&sort=$score_combined%20desc&fl=name,score,$q_lexical,$q_vector,$score_combined
+
+
+=== Exercise 5 Wrap Up
+
+In this exercise, we used the Schema API to add the vector field, and then learned how to index and query Solr using vector data structure.
