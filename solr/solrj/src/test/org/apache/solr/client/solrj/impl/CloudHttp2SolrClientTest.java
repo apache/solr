@@ -280,7 +280,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertTrue(entireClusterStateLogs.getQueue().size() == 0);
       entireClusterStateLogs.pollMessage();
       int collectionClusterStateCalls = collectionClusterStateLogs.getQueue().size();
-      log.info("collectionClusterStateCalls = " + collectionClusterStateCalls);
+      log.info("collectionClusterStateCalls = {}", collectionClusterStateCalls);
       // we should be left with 2 calls to resolveAliases() per query request
       assertTrue(collectionClusterStateCalls == 2);
       for (int j = 0; j < collectionClusterStateCalls; j++) {
