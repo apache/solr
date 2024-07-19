@@ -21,16 +21,16 @@ jobs:
 
     steps:
     # Setup
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up JDK 11
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: 11
         java-package: jdk
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
@@ -42,7 +42,7 @@ jobs:
       run: ./gradlew integrationTests
     - name: Archive logs
       if: ${{ failure() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: logs
         path: solr/packaging/build/test-output

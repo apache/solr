@@ -122,6 +122,8 @@ New Features
   overridden with a property ('solr.query.minPrefixLength').  Users may also override their collection-wide setting for individual queries by providing a
   `minPrefixQueryTermLength` local-param.  (Jason Gerlowski, David Smiley)
 
+* SOLR-10255: Add support for docValues to solr.BinaryField. (Alexey Serba via Mikhail Khludnev, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
