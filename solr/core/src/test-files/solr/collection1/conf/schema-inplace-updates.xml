@@ -15,32 +15,32 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
-<schema name="inplace-updates" version="1.6">
+<schema name="inplace-updates" version="1.7">
   
   <uniqueKey>id</uniqueKey>
-  <field name="id" type="string" indexed="true" stored="true" docValues="true"/>
-  <field name="_root_" type="string" indexed="true" stored="true" docValues="true"/>
-  <field name="_version_" type="long" indexed="false" stored="false"  docValues="true" />
+  <field name="id" type="string" indexed="true" stored="true"/>
+  <field name="_root_" type="string" indexed="true" stored="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false"  />
   <field name="shardName" type="string" multiValued="false" indexed="false" required="false" stored="true"/>
 
   <!-- specific schema fields for dv in-place updates -->
-  <field name="inplace_updatable_float" type="float" indexed="false" stored="false" docValues="true" />
-  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true" />
+  <field name="inplace_updatable_float" type="float" indexed="false" stored="false" />
+  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" />
 
   <field name="inplace_updatable_float_with_default"
-         type="float" indexed="false" stored="false" docValues="true" default="42.0"/>
+         type="float" indexed="false" stored="false" default="42.0"/>
   <field name="inplace_updatable_int_with_default"
-         type="int"   indexed="false" stored="false" docValues="true" default="666"/>
+         type="int"   indexed="false" stored="false" default="666"/>
 
   <!-- dynamic fields which *ONLY* use docValues so they can be updated in place -->
-  <dynamicField name="*_i_dvo" multiValued="false" type="int"   docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_f_dvo" multiValued="false" type="float" docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_l_dvo" multiValued="false" type="long"  docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_i_dvo" multiValued="false" type="int"   indexed="false" stored="false"/>
+  <dynamicField name="*_f_dvo" multiValued="false" type="float" indexed="false" stored="false"/>
+  <dynamicField name="*_l_dvo" multiValued="false" type="long"  indexed="false" stored="false"/>
 
   <!-- dynamic fields that must *NOT* support in place updates -->
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
-  <dynamicField name="*_i" type="int"    indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_l" type="long"   indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_i" type="int"    indexed="true" stored="true"/>
+  <dynamicField name="*_l" type="long"   indexed="true" stored="true"/>
   
   <!-- Copy fields -->
   
@@ -48,11 +48,11 @@
   <copyField source="id" dest="id_field_copy_that_does_not_support_in_place_update_s"/>
   
   <!-- copyfield1: src and dest are both updatable -->
-  <field name="copyfield1_src__both_updatable" type="int" indexed="false" stored="false" docValues="true" />
+  <field name="copyfield1_src__both_updatable" type="int" indexed="false" stored="false" />
   <copyField source="copyfield1_src__both_updatable" dest="copyfield1_dest__both_updatable_i_dvo"/>
 
   <!-- copyfield2: src is updatable but dest is not -->
-  <field name="copyfield2_src__only_src_updatable" type="int" indexed="false" stored="false" docValues="true" />
+  <field name="copyfield2_src__only_src_updatable" type="int" indexed="false" stored="false" />
   <copyField source="copyfield2_src__only_src_updatable" dest="copyfield2_dest__only_src_updatable_i"/>
     
 

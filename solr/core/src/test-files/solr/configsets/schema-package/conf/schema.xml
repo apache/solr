@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="minimal" version="1.1">
+<schema name="minimal" version="1.7">
   <uniqueKey>id</uniqueKey>
   <fieldType name="composite_id_prefix" class="solr.TextField">
     <analyzer>

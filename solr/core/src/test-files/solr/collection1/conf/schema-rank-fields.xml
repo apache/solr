@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="rank_fields" version="1.6">
+<schema name="rank_fields" version="1.7">
     <fieldType name="string" class="solr.StrField" />
     <fieldType name="rank" class="solr.RankField" />
     <fields>

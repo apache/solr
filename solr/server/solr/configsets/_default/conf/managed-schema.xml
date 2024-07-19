@@ -211,8 +211,8 @@
 
     <!--
       Numeric field types that index values using KD-trees.
-      Point fields don't support FieldCache, so they must have docValues="true" if needed for sorting, faceting, functions, etc.
-      docValues="true" is the default, so it does not need to be set explicitly.
+      Point fields don't support FieldCache, so they must have if needed for sorting, faceting, functions, etc.
+      is the default, so it does not need to be set explicitly.
     -->
     <fieldType name="pint" class="solr.IntPointField"/>
     <fieldType name="pfloat" class="solr.FloatPointField"/>
@@ -534,7 +534,7 @@
     <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
 
     <!-- A specialized field for geospatial search filters and distance sorting. -->
-    <fieldType name="location" class="solr.LatLonPointSpatialField" docValues="true"/>
+    <fieldType name="location" class="solr.LatLonPointSpatialField"/>
 
     <!-- A geospatial field type that supports multiValued and polygon shapes.
       For more information about this and other spatial fields see:

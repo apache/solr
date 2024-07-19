@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="cloud-dynamic" version="1.6">
+<schema name="cloud-dynamic" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -30,6 +30,7 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
@@ -220,7 +221,7 @@
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
-  <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
+  <field name="multi_int_with_docvals" type="tint" multiValued="true" indexed="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>

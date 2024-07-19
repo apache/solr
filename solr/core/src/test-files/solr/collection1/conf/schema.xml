@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
 
   <!-- field type definitions... note that the "name" attribute is
        just a label to be used by field definitions.  The "class"
@@ -45,11 +45,11 @@
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
   
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
   <!-- Dense Vector Fields -->
   <fieldType name="knn_vector_cosine" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
@@ -114,7 +114,7 @@
     -->
   <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" docValues="${solr.tests.numeric.dv}"/>
   <fieldType name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6" docValues="${solr.tests.numeric.dv}"/>
-  <fieldType name="tdatedv" class="${solr.tests.DateFieldType}" precisionStep="6" docValues="true"/>
+  <fieldType name="tdatedv" class="${solr.tests.DateFieldType}" precisionStep="6"/>
 
   <fieldType name="dateRange" class="solr.DateRangeField"/>
   <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
@@ -431,7 +431,7 @@
   <fieldType name="uuid" class="solr.UUIDField"/>
 
   <!-- Try out some point types -->
-  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"  docValues="true"/>
+  <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double" />
   <fieldType name="x" class="solr.PointType" dimension="1" subFieldType="double"/>
   <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="_d1"/>
@@ -653,11 +653,11 @@
 
   <field name="textgap" type="textgap" indexed="true" stored="true"/>
 
-  <field name="timestamp" type="date" indexed="true" stored="true" docValues="true" default="NOW" multiValued="false"/>
+  <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
   <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
   <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
   <field name="intDvoDefault" type="int" indexed="false" stored="false" multiValued="false"
-         useDocValuesAsStored="true" docValues="true" default="42" />
+         useDocValuesAsStored="true" default="42" />
   <field name="intRemove" type="int" indexed="true" stored="true" multiValued="true"/>
   <field name="dateRemove" type="date" indexed="true" stored="true" multiValued="true"/>
   <field name="floatRemove" type="float" indexed="true" stored="true" multiValued="true"/>
@@ -687,11 +687,11 @@
   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
   <field name="tlong" type="tlong" indexed="true" stored="true"/>
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false" multiValued="false" useDocValuesAsStored="true"/>
 
   <field name="title_stringNoNorms" type="string" omitNorms="true" indexed="true" stored="true"/>
 
-  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
+  <field name="store" type="location" indexed="true" stored="true"/>
 
   <field name="lower" type="lowerfilt" indexed="false" stored="true" multiValued="true"/>
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -701,7 +701,7 @@
   <field name="sortabuse_not_uninvertible" type="string" indexed="true" multiValued="false" uninvertible="false" />
   
   <!-- EnumType -->
-  <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
+  <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false"/>
 
   <field name="max_chars" type="string" indexed="false" stored="true"/>
   <field name="no_max_chars" type="string" indexed="false" stored="true"/>
@@ -725,7 +725,7 @@
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_i1" type="int" indexed="true" stored="true" multiValued="false" sortMissingLast="true"/>
   <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true" sortMissingLast="true"/>
-  <dynamicField name="*_idv" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_idv" type="int" indexed="true" stored="true" multiValued="false"/>
 
 
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
@@ -741,7 +741,7 @@
   <dynamicField name="*_f1" type="float" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_d1" type="double" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_d1_dv" type="double" indexed="true" docValues="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_d1_dv" type="double" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
 
@@ -797,41 +797,41 @@
   <dynamicField name="*_ancestor" type="ancestor_path" indexed="true" stored="true" omitNorms="true"
                 multiValued="true"/>
 
-  <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" multiValued="true"/>
 
   <!-- With DocValues=true -->
-  <dynamicField name="*_i_dv" type="int" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_l_dv" type="long" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_f_dv" type="float" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_d_dv" type="double" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_f1_dv" type="float" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_i_dv" type="int" indexed="true" stored="true"/>
+  <dynamicField name="*_l_dv" type="long" indexed="true" stored="true"/>
+  <dynamicField name="*_f_dv" type="float" indexed="true" stored="true"/>
+  <dynamicField name="*_d_dv" type="double" indexed="true" stored="true"/>
+  <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_f1_dv" type="float" indexed="true" stored="true" multiValued="false"/>
 
   <!--  Non-stored, DocValues=true -->
-  <dynamicField name="*_i_dvo" multiValued="false" type="int" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_i_dvo" multiValued="false" type="int" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_d_dvo" multiValued="false" type="double" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_s_dvo" multiValued="false" type="string" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_b_dvo" multiValued="false" type="boolean" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_b_dvo" multiValued="false" type="boolean" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_l_dvo" multiValued="false" type="long" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_l_dvo" multiValued="false" type="long" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_f_dvo" multiValued="false" type="float" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_f_dvo" multiValued="false" type="float" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_dt_dvo" multiValued="false" type="date" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_dt_dvo" multiValued="false" type="date" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
                 
-  <dynamicField name="*_ii_dvo" multiValued="true" type="int" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_ii_dvo" multiValued="true" type="int" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
-  <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="false" stored="false"
+  <dynamicField name="*_dd_dvo" multiValued="true" type="double" indexed="false" stored="false"
                 useDocValuesAsStored="true"/>
                 
   <!-- Indexed, but NOT uninvertible -->
   <dynamicField name="*_s_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" />
   <!-- docValues, but NOT uninvertible -->
-  <dynamicField name="*_s_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" />
+  <dynamicField name="*_s_not_uninvert_dv" type="string" indexed="true" stored="false" uninvertible="false" />
 
 
   
@@ -846,36 +846,36 @@
   <field name="single_i_dvn" multiValued="false" type="int" indexed="true" stored="true"/>
   <field name="single_d_dvn" multiValued="false" type="double" indexed="true" stored="true"/>
   <field name="single_s_dvn" multiValued="false" type="string" indexed="true" stored="true"/>
-  <field name="copy_single_i_dvn" multiValued="false" type="int" docValues="true" indexed="true" stored="false"
+  <field name="copy_single_i_dvn" multiValued="false" type="int" indexed="true" stored="false"
          useDocValuesAsStored="false"/>
-  <field name="copy_single_d_dvn" multiValued="false" type="double" docValues="true" indexed="true" stored="false"
+  <field name="copy_single_d_dvn" multiValued="false" type="double" indexed="true" stored="false"
          useDocValuesAsStored="false"/>
-  <field name="copy_single_s_dvn" multiValued="false" type="string" docValues="true" indexed="true" stored="false"
+  <field name="copy_single_s_dvn" multiValued="false" type="string" indexed="true" stored="false"
          useDocValuesAsStored="false"/>
          
    <!-- Test point fields explicitly -->
-   <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_is_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_i_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_is_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_l_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_ls_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_l_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_ls_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_f_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_fs_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_f_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_fs_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_d_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-   <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-   <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_is_p"      type="pint"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_i_ni_p"   type="pint"    indexed="false"  stored="true" multiValued="false"/>
+   <dynamicField name="*_is_ni_p"   type="pint"    indexed="false"  stored="true" multiValued="true"/>
+   <dynamicField name="*_l_p"      type="plong"    indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_ls_p"      type="plong"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_l_ni_p"   type="plong"    indexed="false"  stored="true" multiValued="false"/>
+   <dynamicField name="*_ls_ni_p"   type="plong"    indexed="false"  stored="true" multiValued="true"/>
+   <dynamicField name="*_f_p"      type="pfloat"    indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_fs_p"      type="pfloat"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_f_ni_p"   type="pfloat"    indexed="false"  stored="true" multiValued="false"/>
+   <dynamicField name="*_fs_ni_p"   type="pfloat"    indexed="false"  stored="true" multiValued="true"/>
+   <dynamicField name="*_d_p"      type="pdouble"    indexed="true"  stored="true" multiValued="false"/>
+   <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" multiValued="false"/>
+   <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" multiValued="true"/>
    <dynamicField name="*_sortable"  type="sortable_text" indexed="true" multiValued="false" stored="true" />
 
-  <dynamicField name="*_date_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_dates_p"     type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_date_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_dates_ni_p"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_date_p"      type="pdate"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_dates_p"     type="pdate"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_date_ni_p"   type="pdate"    indexed="false"  stored="true" multiValued="false"/>
+  <dynamicField name="*_dates_ni_p"  type="pdate"    indexed="false"  stored="true" multiValued="true"/>
 
   <copyField source="single_i_dvn" dest="copy_single_i_dvn"/>
   <copyField source="single_d_dvn" dest="copy_single_d_dvn"/>

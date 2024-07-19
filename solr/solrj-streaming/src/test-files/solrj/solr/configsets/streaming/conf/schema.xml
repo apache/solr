@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.6">
+<schema name="test" version="1.7">
 
     <!-- field type definitions... note that the "name" attribute is
          just a label to be used by field definitions.  The "class"
@@ -40,9 +40,9 @@
     -->
 
 
-    <fieldType name="int" docValues="true" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="float" docValues="true" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" docValues="true" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
     <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -110,13 +110,13 @@
 
 
     <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-    <fieldtype name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+    <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
     <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
          seconds part (.999) is optional.
       -->
-    <fieldtype name="date" class="${solr.tests.DateFieldType}" precisionStep="0" docValues="true"/>
-    <fieldtype name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6" docValues="true"/>
+    <fieldtype name="date" class="${solr.tests.DateFieldType}" precisionStep="0"/>
+    <fieldtype name="tdate" class="${solr.tests.DateFieldType}" precisionStep="6"/>
 
 
     <!-- solr.TextField allows the specification of custom
@@ -356,7 +356,7 @@
     <fieldType name="uuid" class="solr.UUIDField" />
 
     <!-- A specialized field for geospatial search filters and distance sorting. -->
-    <fieldType name="location" class="solr.LatLonPointSpatialField" docValues="true"/>
+    <fieldType name="location" class="solr.LatLonPointSpatialField"/>
 
   <!--  some per-field similarity examples -->
 
@@ -393,21 +393,21 @@
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
     <field name="signatureField" type="string" indexed="true" stored="false"/>
 
-    <field name="s_multi" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
-    <field name="i_multi" type="int" indexed="true" stored="true" docValues="true" multiValued="true"/>
-    <field name="f_multi" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
-    <field name="l_multi" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
-    <field name="d_multi" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
-    <field name="dt_multi" type="date" indexed="true" stored="true" docValues="true" multiValued="true"/>
-    <field name="b_multi" type="boolean" indexed="true" stored="true" docValues="true" multiValued="true"/>
+    <field name="s_multi" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="i_multi" type="int" indexed="true" stored="true" multiValued="true"/>
+    <field name="f_multi" type="float" indexed="true" stored="true" multiValued="true"/>
+    <field name="l_multi" type="long" indexed="true" stored="true" multiValued="true"/>
+    <field name="d_multi" type="double" indexed="true" stored="true" multiValued="true"/>
+    <field name="dt_multi" type="date" indexed="true" stored="true" multiValued="true"/>
+    <field name="b_multi" type="boolean" indexed="true" stored="true" multiValued="true"/>
 
-    <field name="s_sing" type="string" indexed="true" stored="true" docValues="true" multiValued="false"/>
-    <field name="i_sing" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>
-    <field name="f_sing" type="float" indexed="true" stored="true" docValues="true" multiValued="false"/>
-    <field name="l_sing" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>
-    <field name="d_sing" type="double" indexed="true" stored="true" docValues="true" multiValued="false"/>
-    <field name="dt_sing" type="tdate" indexed="true" stored="true" docValues="true" multiValued="false"/>
-    <field name="b_sing" type="boolean" indexed="true" stored="true" docValues="true" multiValued="false"/>
+    <field name="s_sing" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="i_sing" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="f_sing" type="float" indexed="true" stored="true" multiValued="false"/>
+    <field name="l_sing" type="long" indexed="true" stored="true" multiValued="false"/>
+    <field name="d_sing" type="double" indexed="true" stored="true" multiValued="false"/>
+    <field name="dt_sing" type="tdate" indexed="true" stored="true" multiValued="false"/>
+    <field name="b_sing" type="boolean" indexed="true" stored="true" multiValued="false"/>
 
 
   <field name="uuid" type="uuid" stored="true" />

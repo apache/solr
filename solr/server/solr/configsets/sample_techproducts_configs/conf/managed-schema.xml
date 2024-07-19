@@ -135,7 +135,7 @@
    <field name="pre" type="preanalyzed" indexed="true" stored="true"/>
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
    <field name="name" type="text_general" indexed="true" stored="true"/>
-   <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" useDocValuesAsStored="true"/>
+   <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false" useDocValuesAsStored="true"/>
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="features" type="text_general" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" />
@@ -186,11 +186,11 @@
 
    <!-- non-tokenized version of manufacturer to make it easier to sort or group
         results by manufacturer.  copied from "manu" via copyField -->
-   <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" />
+   <field name="manu_exact" type="string" indexed="false" stored="false" />
 
    <!-- non-tokenized version of name to make it easier to sort or group
         results by product name.  copied from "name" via copyField -->
-   <field name="name_exact" type="string" indexed="false" stored="false" docValues="true" />
+   <field name="name_exact" type="string" indexed="false" stored="false" />
 
    <field name="payloads" type="payloads" indexed="true" stored="true"/>
 
@@ -311,8 +311,8 @@
 
     <!--
       Numeric field types that index values using KD-trees.
-      Point fields don't support FieldCache, so they must have docValues="true" if needed for sorting, faceting, functions, etc.
-      docValues="true" is the default, so it does not need to be set explicitly.
+      Point fields don't support FieldCache, so they must have if needed for sorting, faceting, functions, etc.
+      is the default, so it does not need to be set explicitly.
     -->
     <fieldType name="pint" class="solr.IntPointField"/>
     <fieldType name="pfloat" class="solr.FloatPointField"/>
@@ -703,7 +703,7 @@
     <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
 
     <!-- A specialized field for geospatial search filters and distance sorting. -->
-    <fieldType name="location" class="solr.LatLonPointSpatialField" docValues="true"/>
+    <fieldType name="location" class="solr.LatLonPointSpatialField"/>
 
     <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
       For more information about this and other Spatial fields new to Solr 4, see:

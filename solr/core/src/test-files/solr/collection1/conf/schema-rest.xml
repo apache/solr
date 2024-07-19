@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="test-rest" version="1.6">
+<schema name="test-rest" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -30,6 +30,7 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
@@ -529,20 +530,20 @@
   <!--
     Numeric field types that index values using KD-trees. *Point fields are faster and more efficient than Trie* fields both, at
     search time and at index time, but some features are still not supported.
-    Point fields don't support FieldCache, so they must have docValues="true" if needed for sorting, faceting, functions, etc.
+    Point fields don't support FieldCache, so they must have if needed for sorting, faceting, functions, etc.
   -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="pints" class="solr.IntPointField" multiValued="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" multiValued="true"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="plongs" class="solr.LongPointField" multiValued="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" multiValued="true"/>
 
   <!-- KD-tree versions of date fields -->
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
-  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
+  <fieldType name="pdates" class="solr.DatePointField" multiValued="true"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>

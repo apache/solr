@@ -15,7 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<schema name="root" version="1.6">
+<schema name="root" version="1.7">
   <field name="id" type="string" indexed="true" stored="true"/>
 
   <!-- points to the root document of a block of nested documents -->
@@ -23,7 +23,7 @@
 
   <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
   <field name="intDvoDefault" type="int" indexed="false" stored="false" multiValued="false"
-         useDocValuesAsStored="true" docValues="true" default="42" />
+         useDocValuesAsStored="true" default="42" />
 
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
 

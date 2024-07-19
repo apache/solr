@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="test" version="1.6">
+<schema name="test" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -29,7 +29,8 @@
        1.3: removed optional field compress feature
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
-       1.6: useDocValuesAsStored defaults to true.
+       1.6: useDocValuesAsStored defaults to true
+       1.7: docValues defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
@@ -538,7 +539,7 @@
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
   <field name="xy" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
+  <field name="store" type="location" indexed="true" stored="true"/>
 
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
 
@@ -552,13 +553,13 @@
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <!-- for versioning -->
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false"/>
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
   <!-- for nested documents (relationship tracking) -->
   <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
 
-  <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
+  <field name="multi_int_with_docvals" type="tint" multiValued="true" indexed="false"/>
 
   <field name="min_hash_analysed" type="text_min_hash" multiValued="false" indexed="true" stored="false"/>
 
@@ -574,13 +575,13 @@
                 termVectors="true" termPositions="true" termOffsets="true"/>
 
   <!-- for in-place updates -->
-  <dynamicField name="*_i_dvo" multiValued="false" type="int"   docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_f_dvo" multiValued="false" type="float" docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_l_dvo" multiValued="false" type="long"  docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_dt_dvo" multiValued="false" type="date" docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="false" stored="false"/>
-  <dynamicField name="*_b_dvo" multiValued="false" type="boolean" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_i_dvo" multiValued="false" type="int"   indexed="false" stored="false"/>
+  <dynamicField name="*_f_dvo" multiValued="false" type="float" indexed="false" stored="false"/>
+  <dynamicField name="*_d_dvo" multiValued="false" type="double" indexed="false" stored="false"/>
+  <dynamicField name="*_l_dvo" multiValued="false" type="long"  indexed="false" stored="false"/>
+  <dynamicField name="*_dt_dvo" multiValued="false" type="date" indexed="false" stored="false"/>
+  <dynamicField name="*_s_dvo" multiValued="false" type="string" indexed="false" stored="false"/>
+  <dynamicField name="*_b_dvo" multiValued="false" type="boolean" indexed="false" stored="false"/>
   
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 

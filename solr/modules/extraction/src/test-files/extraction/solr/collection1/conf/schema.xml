@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
 
 
   <!--
@@ -331,11 +331,11 @@
   </fieldType>
 
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>

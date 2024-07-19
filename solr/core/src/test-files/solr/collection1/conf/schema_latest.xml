@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="example" version="1.6">
+<schema name="example" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        version="x.y" is Solr's version number for the schema syntax and
        semantics.  It should not normally be changed by applications.
@@ -33,6 +33,7 @@
        1.5: omitNorms defaults to true for primitive field types
             (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
 
   <!-- Valid attributes for fields:
@@ -80,7 +81,7 @@
   <!-- If you remove this field, you must _also_ disable the update log in solrconfig.xml
      or Solr won't start. _version_ and update log are required for SolrCloud
   -->
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false"/>
 
   <!-- points to the root document of a block of nested documents. Required for nested
      document support, may be removed otherwise
@@ -154,9 +155,9 @@
   <!--
     Some fields such as popularity and manu_exact could be modified to
     leverage doc values:
-    <field name="popularity" type="int" indexed="true" stored="true" docValues="true" />
-    <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" />
-    <field name="cat" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
+    <field name="popularity" type="int" indexed="true" stored="true" />
+    <field name="manu_exact" type="string" indexed="false" stored="false" />
+    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
 
 
     Although it would make indexing slightly slower and the index bigger, it
@@ -173,68 +174,68 @@
   <!-- docvalues and stored are exclusive -->
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_id" type="int" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_ids" type="int" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_id" type="int" indexed="true" stored="false"/>
+  <dynamicField name="*_ids" type="int" indexed="true" stored="false" multiValued="true"/>
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_sd" type="string" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_sds" type="string" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_sd" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sds" type="string" indexed="true" stored="false" multiValued="true"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_ls" type="long" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_ld" type="long" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_lds" type="long" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_ld" type="long" indexed="true" stored="false"/>
+  <dynamicField name="*_lds" type="long" indexed="true" stored="false" multiValued="true"/>
   <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
   <dynamicField name="*_fs" type="float" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_fd" type="float" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_fds" type="float" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_fd" type="float" indexed="true" stored="false"/>
+  <dynamicField name="*_fds" type="float" indexed="true" stored="false" multiValued="true"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_ds" type="double" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_dd" type="double" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_dds" type="double" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dd" type="double" indexed="true" stored="false"/>
+  <dynamicField name="*_dds" type="double" indexed="true" stored="false" multiValued="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
   <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_dtd" type="date" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_dtds" type="date" indexed="true" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_dtd" type="date" indexed="true" stored="false"/>
+  <dynamicField name="*_dtds" type="date" indexed="true" stored="false" multiValued="true"/>
 
   <dynamicField name="*_drf" type="dateRange" indexed="true" stored="true"/>
   <dynamicField name="*_drfs" type="dateRange" indexed="true" multiValued="true" stored="true"/>
 
   <!-- docvalues and stored (S suffix) -->
-  <dynamicField name="*_idS" type="int" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_idsS" type="int" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_sdS" type="string" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_sdsS" type="string" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_ldS" type="long" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_ldsS" type="long" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_fdS" type="float" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_fdsS" type="float" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_ddS" type="double" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_ddsS" type="double" indexed="true" stored="true" multiValued="true" docValues="true"/>
-  <dynamicField name="*_dtdS" type="date" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true" docValues="true"/>
+  <dynamicField name="*_idS" type="int" indexed="true" stored="true"/>
+  <dynamicField name="*_idsS" type="int" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_sdS" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_sdsS" type="string" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_ldS" type="long" indexed="true" stored="true"/>
+  <dynamicField name="*_ldsS" type="long" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_fdS" type="float" indexed="true" stored="true"/>
+  <dynamicField name="*_fdsS" type="float" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_ddS" type="double" indexed="true" stored="true"/>
+  <dynamicField name="*_ddsS" type="double" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_dtdS" type="date" indexed="true" stored="true"/>
+  <dynamicField name="*_dtdsS" type="date" indexed="true" stored="true" multiValued="true"/>
 
   <!-- docvalues, not indexed (N suffix) and not stored -->
-  <dynamicField name="*_sdN" type="string" indexed="false" stored="false" docValues="true"/>
-  <dynamicField name="*_sdsN" type="string" indexed="false" stored="false" multiValued="true" docValues="true"/>
+  <dynamicField name="*_sdN" type="string" indexed="false" stored="false"/>
+  <dynamicField name="*_sdsN" type="string" indexed="false" stored="false" multiValued="true"/>
 
   <!-- explicit points with docValues (since they can't be uninverted with FieldCache -->
-  <dynamicField name="*_ip"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ips"     type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_lp"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_lps"     type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_fp"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_fps"     type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_dp"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_dps"     type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_ip"      type="pint"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_ips"     type="pint"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_lp"      type="plong"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_lps"     type="plong"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_fp"      type="pfloat"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_fps"     type="pfloat"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_dp"      type="pdouble"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_dps"     type="pdouble"    indexed="true"  stored="true" multiValued="true"/>
 
 
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_bs" type="boolean" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_bd" type="boolean" indexed="true" docValues="true" stored="false"/>
-  <dynamicField name="*_bds" type="boolean" indexed="true" docValues="true" stored="false" multiValued="true"/>
-  <dynamicField name="*_bdS" type="boolean" indexed="true" docValues="true" stored="true"/>
-  <dynamicField name="*_bdsS" type="boolean" indexed="true" docValues="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_bd" type="boolean" indexed="true" stored="false"/>
+  <dynamicField name="*_bds" type="boolean" indexed="true" stored="false" multiValued="true"/>
+  <dynamicField name="*_bdS" type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_bdsS" type="boolean" indexed="true" stored="true" multiValued="true"/>
 
   <dynamicField name="*_t" type="text_general" indexed="true" stored="true"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true" multiValued="true"/>
@@ -271,8 +272,8 @@
   <field name="where_s_multi_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="true" />
   <field name="where_s_single_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="false" />
   <!-- docValues, but NOT uninvertible -->
-  <field name="where_s_multi_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" multiValued="true" />
-  <field name="where_s_single_not_uninvert_dv" type="string" indexed="true" stored="false" docValues="true" uninvertible="false" multiValued="false" />
+  <field name="where_s_multi_not_uninvert_dv" type="string" indexed="true" stored="false" uninvertible="false" multiValued="true" />
+  <field name="where_s_single_not_uninvert_dv" type="string" indexed="true" stored="false" uninvertible="false" multiValued="false" />
 
   <!-- Field to use to determine and enforce document uniqueness.
        Unless this field is marked with required="false", it will be a required field
@@ -353,11 +354,11 @@
   -->
 
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
   <!--
     Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.

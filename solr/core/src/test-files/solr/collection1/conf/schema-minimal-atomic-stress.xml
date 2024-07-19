@@ -15,19 +15,19 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
-<schema name="minimal-atomic-stress" version="1.6">
+<schema name="minimal-atomic-stress" version="1.7">
   <!-- minimal fields needed to stress test atomic updates
        See: TestStressCloudBlindAtomicUpdates
   -->
   <uniqueKey>id</uniqueKey>
-  <field name="id" type="string" indexed="true" stored="true" docValues="true"/>
-  <field name="_version_" type="long" indexed="false" stored="false"  docValues="true" />
+  <field name="id" type="string" indexed="true" stored="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false"  />
 
   <!-- atomic updates should work on all of these permutations -->
-  <field name="long_dv"  type="long" indexed="false" stored="false"  docValues="true" />
-  <field name="long_dv_stored"  type="long" indexed="false" stored="true"  docValues="true" />
-  <field name="long_dv_stored_idx"  type="long" indexed="true" stored="true"  docValues="true" />
-  <field name="long_dv_idx"  type="long" indexed="true" stored="false"  docValues="true" />
+  <field name="long_dv"  type="long" indexed="false" stored="false"  />
+  <field name="long_dv_stored"  type="long" indexed="false" stored="true"  />
+  <field name="long_dv_stored_idx"  type="long" indexed="true" stored="true"  />
+  <field name="long_dv_idx"  type="long" indexed="true" stored="false"  />
   <field name="long_stored_idx"  type="long" indexed="true" stored="true"  docValues="false" />
 
   <fieldType name="string" class="solr.StrField" multiValued="false" indexed="false" stored="false" docValues="false" />
