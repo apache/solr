@@ -53,7 +53,7 @@ teardown() {
   solr create -c foo-1.2
 
   # Deploy package - the package doesn't need to exist before the collection validation kicks in
-  run solr package deploy PACKAGE_NAME -collections foo-1.2
+  run solr package deploy PACKAGE_NAME --collections foo-1.2
   # assert_output --partial "Deployment successful"
   refute_output --partial "Invalid collection"
   
