@@ -52,6 +52,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -755,5 +756,21 @@ public class SolrCLI implements CLIO {
   public static Path getConfigSetsDir(Path solrInstallDir) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath);
+  }
+
+  public static void print(Object message) {
+    print(null, message);
+  }
+
+  @SuppressForbidden(
+      reason = "Need to use System.out.println() instead of log4j/slf4j for cleaner output")
+  public static void print(String color, Object message) {
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      System.out.println(color + String.valueOf(message) + RESET);
+    } else {
+      System.out.println(message);
+    }
   }
 }

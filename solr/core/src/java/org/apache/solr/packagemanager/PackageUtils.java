@@ -269,13 +269,17 @@ public class PackageUtils {
     PackageUtils.print(PackageUtils.GREEN, message);
   }
 
+  public static void printGreen(StringBuffer sb, Object message) {
+    print(sb, PackageUtils.GREEN, message);
+  }
+
   /** Console print using red color */
   public static void printRed(Object message) {
     PackageUtils.print(PackageUtils.RED, message);
   }
 
-  public static void print(Object message) {
-    print(null, message);
+  public static void print(StringBuffer sb, Object message) {
+    print(sb, null, message);
   }
 
   @SuppressForbidden(
@@ -287,6 +291,16 @@ public class PackageUtils {
       System.out.println(color + String.valueOf(message) + RESET);
     } else {
       System.out.println(message);
+    }
+  }
+
+  public static void print(StringBuffer sb, String color, Object message) {
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      sb.append(color + String.valueOf(message) + RESET + "\n");
+    } else {
+      sb.append(message + "\n");
     }
   }
 
