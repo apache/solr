@@ -75,27 +75,10 @@ $ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicat
 
 We have the vectors embedded in our `films.json` file, so let's index that data, taking advantage of our new schema field we just defined.
 
-[tabs#index-json]
-======
-Linux/Mac::
-+
-====
 [,console]
 ----
 $ bin/solr post -c films example/films/films.json
-
 ----
-====
-
-Windows::
-+
-====
-[,console]
-----
-$ bin/solr post -c films example\films\films.json
-----
-====
-======
 
 === Let's do some Vector searches
 Before making the queries, we define an example target vector, simulating a person that 
