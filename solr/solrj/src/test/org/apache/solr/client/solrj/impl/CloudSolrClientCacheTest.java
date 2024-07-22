@@ -159,11 +159,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
       @Override
       public Set<String> resolveAliases(List<String> inputCollections) {
-        Set<String> res = new HashSet<>();
-        for (String c : inputCollections) {
-          res.add(c);
-        }
-        return res;
+        return new HashSet<>(inputCollections);
       }
     };
   }

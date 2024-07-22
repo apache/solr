@@ -35,9 +35,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4.RandomizingCloudSolrClientBuilder;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -71,6 +71,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
@@ -250,8 +251,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LogLevel("org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider=DEBUG")
-  public void testHttpCSPPerf() throws Exception {
+  @LogLevel("org.apache.solr.servlet.HttpSolrCall=INFO")
+  public void testHttpCspPerf() throws Exception {
 
     String COLLECTION = "TEST_COLLECTION";
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
@@ -262,12 +263,18 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     httpBasedCloudSolrClient.add(COLLECTION, doc);
     httpBasedCloudSolrClient.commit(COLLECTION);
 
+    Pattern patternWithCollection =
+        Pattern.compile(
+            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS[^}]*collection=[^&}]+[^}]*\\}");
+
+    Pattern patternWithoutCollection =
+        Pattern.compile(
+            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS(?![^}]*collection=)[^}]*\\}");
+
     LogListener entireClusterStateLogs =
-        LogListener.debug(BaseHttpClusterStateProvider.class)
-            .substring("Making a call to Solr to fetch entire cluster state");
+        LogListener.info(HttpSolrCall.class).regex(patternWithoutCollection);
     LogListener collectionClusterStateLogs =
-        LogListener.debug(BaseHttpClusterStateProvider.class)
-            .substring("Making a call to Solr to fetch cluster state for collection");
+        LogListener.info(HttpSolrCall.class).regex(patternWithCollection);
 
     for (int i = 0; i < 3; i++) {
       assertEquals(

@@ -1,0 +1,21 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+actor "CloudHttp2SolrClientTest" as CloudHttp2SolrClientTest
+participant "SolrClient" as SolrClient
+participant "SolrRequest" as SolrRequest
+participant "CloudSolrClient" as CloudSolrClient
+participant "ClusterStateProvider" as ClusterStateProvider
+participant "BaseHttpClusterStateProvider" as BaseHttpClusterStateProvider
+participant "Solr Server" as SolrServer
+
+CloudHttp2SolrClientTest->SolrClient: query()
+SolrClient->SolrRequest: process()
+SolrRequest->CloudSolrClient: request()
+CloudSolrClient->CloudSolrClient: requestWithRetryOnStaleState()
+CloudSolrClient->CloudSolrClient: sendRequest()
+CloudSolrClient->ClusterStateProvider: getClusterProperty()
+ClusterStateProvider->BaseHttpClusterStateProvider: getClusterProperties()
+BaseHttpClusterStateProvider->BaseHttpClusterStateProvider: fetchClusterState()
+BaseHttpClusterStateProvider->SolrServer: action=CLUSTERSTATUS
+@enduml
