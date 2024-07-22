@@ -17,7 +17,7 @@
 -->
 <schema name="minimal" version="1.7">
 
-  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" />
+  <field name="inplace_updatable_int"   type="int"   indexed="false" stored="false" docValues="true" />
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
 
   <!-- for versioning -->

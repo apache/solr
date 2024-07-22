@@ -413,11 +413,11 @@
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
 
-  <field name="s_multi" type="string" indexed="true" stored="true" multiValued="true"/>
-  <field name="i_multi" type="int" indexed="true" stored="true" multiValued="true"/>
-  <field name="f_multi" type="float" indexed="true" stored="true" multiValued="true"/>
-  <field name="l_multi" type="long" indexed="true" stored="true" multiValued="true"/>
-  <field name="d_multi" type="double" indexed="true" stored="true" multiValued="true"/>
+  <field name="s_multi" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <field name="i_multi" type="int" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <field name="f_multi" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <field name="l_multi" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <field name="d_multi" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
 
   <field name="uuid" type="uuid" stored="true"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>

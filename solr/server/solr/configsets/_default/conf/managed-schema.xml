@@ -154,7 +154,7 @@
     <dynamicField name="ignored_*" type="ignored"/>
 
     <!-- Type used for data-driven schema, to add a string copy for each text field -->
-    <dynamicField name="*_str" type="strings" stored="false" indexed="false" useDocValuesAsStored="false"/>
+    <dynamicField name="*_str" type="strings" stored="false" docValues="true" indexed="false" useDocValuesAsStored="false"/>
 
     <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
     <dynamicField name="*_srpt"  type="location_rpt" indexed="true" stored="true"/>
@@ -211,8 +211,8 @@
 
     <!--
       Numeric field types that index values using KD-trees.
-      Point fields don't support FieldCache, so they must have if needed for sorting, faceting, functions, etc.
-      is the default, so it does not need to be set explicitly.
+      Point fields don't support FieldCache, so they must have docValues enabled if needed for sorting, faceting, functions, etc.
+      This is the default, so it does not need to be set explicitly.
     -->
     <fieldType name="pint" class="solr.IntPointField"/>
     <fieldType name="pfloat" class="solr.FloatPointField"/>

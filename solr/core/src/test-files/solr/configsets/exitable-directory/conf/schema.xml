@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 <schema name="minimal" version="1.7">
-  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="string" class="solr.StrField" docValues="false"/>
   <fieldType name="string_dv"  class="solr.StrField"/>
   <fieldType name="string_dvs"  class="solr.StrField" multiValued="true"/>
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>

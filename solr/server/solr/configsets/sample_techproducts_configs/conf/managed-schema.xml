@@ -311,8 +311,8 @@
 
     <!--
       Numeric field types that index values using KD-trees.
-      Point fields don't support FieldCache, so they must have if needed for sorting, faceting, functions, etc.
-      is the default, so it does not need to be set explicitly.
+      Point fields don't support FieldCache, so they must have docValues enabled if needed for sorting, faceting, functions, etc.
+      This is the default, so it does not need to be set explicitly.
     -->
     <fieldType name="pint" class="solr.IntPointField"/>
     <fieldType name="pfloat" class="solr.FloatPointField"/>
