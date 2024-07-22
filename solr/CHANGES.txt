@@ -152,7 +152,7 @@ Optimizations
 
 * SOLR-17349: SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null (Michael Gibney)
 
-* JIRA-17340: Add cache on top of system metrics BeanInfos to make call to /admin/info/system faster (Pierre Salagnac)
+* SOLR-17340: Add cache on top of system metrics BeanInfos to make calls to /admin/info/system faster (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
