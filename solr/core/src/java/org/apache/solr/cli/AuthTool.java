@@ -64,7 +64,7 @@ public class AuthTool extends ToolBase {
   public String getUsage() {
     // Jan, the return "" causes
     // Exception in thread "main" java.lang.IllegalArgumentException: cmdLineSyntax not provided
-    //	at org.apache.commons.cli.HelpFormatter.printHelp(HelpFormatter.java:584)
+    // at org.apache.commons.cli.HelpFormatter.printHelp(HelpFormatter.java:584)
     // however return " " seems okay.
     // return " ";
     return "\n  bin/solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
