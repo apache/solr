@@ -19,7 +19,7 @@
    Test Schema for a simple Classification Test
   -->
 <schema name="classification" version="1.7">
-  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="string" class="solr.StrField" docValues="false"/>
   <fieldType name="text_en" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>

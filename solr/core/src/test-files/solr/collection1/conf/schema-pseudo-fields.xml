@@ -18,7 +18,7 @@
 <schema name="test" version="1.7">
   
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-  <field name="_version_" type="long" indexed="false" stored="false" multiValued="false"/>
+  <field name="_version_" type="long" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="subject" type="text" indexed="true" stored="true"/>
   <field name="ssto" type="string" indexed="false" stored="true"/>

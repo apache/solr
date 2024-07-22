@@ -18,7 +18,7 @@
 
 <!-- Test schema file for DenseVectorField -->
 
-<schema name="schema-densevector" version="1.7">
+<schema name="schema-densevector" version="1.0">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>  
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>

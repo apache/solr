@@ -23,7 +23,7 @@
 
   <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
   <field name="intDvoDefault" type="int" indexed="false" stored="false" multiValued="false"
-         useDocValuesAsStored="true" default="42" />
+         useDocValuesAsStored="true" docValues="true" default="42" />
 
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
 

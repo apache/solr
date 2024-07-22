@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.7  -->
+<!-- The Solr schema file, version 1.6  -->
 
-<schema name="test" version="1.7">
+<schema name="test" version="1.6">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -29,8 +29,7 @@
        1.3: removed optional field compress feature
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
-       1.6: useDocValuesAsStored defaults to true
-       1.7: docValues defaults to true.
+       1.6: useDocValuesAsStored defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
@@ -436,7 +435,7 @@
   </fieldType>
 
   <fieldType name="uuid" class="solr.UUIDField"/>
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
 
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
@@ -539,7 +538,7 @@
   <field name="timestamp" type="date" indexed="true" stored="true"/>
 
   <field name="xy" type="xy" indexed="true" stored="true" multiValued="false"/>
-  <field name="store" type="location" indexed="true" stored="true"/>
+  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
 
   <field name="amount" type="currency" indexed="true" stored="true" multiValued="false"/>
 
@@ -553,7 +552,7 @@
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <!-- for versioning -->
-  <field name="_version_" type="long" indexed="false" stored="false"/>
+  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
   <!-- for nested documents (relationship tracking) -->
