@@ -269,7 +269,7 @@ public class PackageUtils {
     PackageUtils.print(PackageUtils.GREEN, message);
   }
 
-  public static void printGreen(StringBuffer sb, Object message) {
+  public static void printGreen(StringBuilder sb, Object message) {
     print(sb, PackageUtils.GREEN, message);
   }
 
@@ -278,7 +278,7 @@ public class PackageUtils {
     PackageUtils.print(PackageUtils.RED, message);
   }
 
-  public static void print(StringBuffer sb, Object message) {
+  public static void print(StringBuilder sb, Object message) {
     print(sb, null, message);
   }
 
@@ -294,7 +294,7 @@ public class PackageUtils {
     }
   }
 
-  public static void print(StringBuffer sb, String color, Object message) {
+  public static void print(StringBuilder sb, String color, Object message) {
     String RESET = "\u001B[0m";
 
     if (color != null) {

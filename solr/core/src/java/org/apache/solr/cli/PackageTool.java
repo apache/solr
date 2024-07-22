@@ -243,7 +243,7 @@ public class PackageTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     print(sb, "\n");
     print(sb, "Package Manager\n---------------");
     printGreen(sb, "bin/solr package add-repo <repository-name> <repository-url>");
