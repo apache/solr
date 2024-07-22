@@ -69,26 +69,10 @@ and for the release date also to be single valued.
 
 Now that we have updated our Schema, we need to index the sample film data, or, if you already have indexed it, then re-index it to take advantage of the new field definitions we added.  
 
-[tabs#index-json]
-======
-Linux/Mac::
-+
-====
 [,console]
 ----
 $ bin/solr post -c films example/films/films.json
 ----
-====
-
-Windows::
-+
-====
-[,console]
-----
-$ bin/solr post -c films example\films\films.json
-----
-====
-======
 
 === Let's get Searching!
 

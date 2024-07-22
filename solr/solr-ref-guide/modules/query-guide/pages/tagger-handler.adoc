@@ -275,18 +275,18 @@ should be almost 7MB file expanding to a cities1000.txt file around
 population.
 
 Using bin/solr post:
-[source,bash]
+[,console]
 ----
-bin/solr post -c geonames -t text/csv \
+$ bin/solr post -c geonames -t text/csv \
   --params 'optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
   /tmp/cities1000.txt
 ----
 
 or using curl:
 
-[source,bash]
+[,console]
 ----
-curl -X POST --data-binary @/path/to/cities1000.txt -H 'Content-type:application/csv' \
+$ curl -X POST --data-binary @/path/to/cities1000.txt -H 'Content-type:application/csv' \
   'http://localhost:8983/solr/geonames/update?commit=true&optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate'
 ----
 
@@ -306,9 +306,9 @@ This is a trivial example tagging a small piece of text.
 For more
 options, see the earlier documentation.
 
-[source,bash]
+[,console]
 ----
-curl -X POST \
+$ curl -X POST \
   'http://localhost:8983/solr/geonames/tag?overlaps=NO_SUB&tagsLimit=5000&fl=id,name,countrycode&wt=json&indent=on' \
   -H 'Content-Type:text/plain' -d 'Hello New York City'
 ----
