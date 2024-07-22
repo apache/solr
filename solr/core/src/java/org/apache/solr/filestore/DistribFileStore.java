@@ -50,7 +50,6 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -216,8 +215,9 @@ public class DistribFileStore implements FileStore {
     }
 
     boolean fetchFromAnyNode() {
-      ArrayList<String> l = coreContainer.getFileStoreAPI().shuffledNodes();
-      for (String liveNode : l) {
+      ArrayList<String> nodesToAttemptFetchFrom =
+          FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
+      for (String liveNode : nodesToAttemptFetchFrom) {
         try {
           String baseUrl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
@@ -242,12 +242,6 @@ public class DistribFileStore implements FileStore {
       }
 
       return false;
-    }
-
-    String getSimpleName() {
-      int idx = path.lastIndexOf('/');
-      if (idx == -1) return path;
-      return path.substring(idx + 1);
     }
 
     public Path realPath() {
@@ -294,17 +288,10 @@ public class DistribFileStore implements FileStore {
         }
 
         @Override
-        public void writeMap(EntryWriter ew) throws IOException {
-          MetaData metaData = readMetaData();
-          ew.put(CommonParams.NAME, getSimpleName());
-          if (type == FileType.DIRECTORY) {
-            ew.put("dir", true);
-            return;
-          }
-
-          ew.put("size", size());
-          ew.put("timestamp", getTimeStamp());
-          if (metaData != null) metaData.writeMap(ew);
+        public String getSimpleName() {
+          int idx = path.lastIndexOf('/');
+          if (idx == -1) return path;
+          return path.substring(idx + 1);
         }
       };
     }
@@ -353,7 +340,7 @@ public class DistribFileStore implements FileStore {
     }
     tmpFiles.put(info.path, info);
 
-    List<String> nodes = coreContainer.getFileStoreAPI().shuffledNodes();
+    List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
@@ -496,12 +483,12 @@ public class DistribFileStore implements FileStore {
   @Override
   public void delete(String path) {
     deleteLocal(path);
-    List<String> nodes = coreContainer.getFileStoreAPI().shuffledNodes();
+    List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
     HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     for (String node : nodes) {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-      String url = baseUrl + "/node/files" + path;
+      String url = baseUrl + "/cluster/files" + path + "?localDelete=true";
       HttpDelete del = new HttpDelete(url);
       // invoke delete command on all nodes asynchronously
       coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));
@@ -583,7 +570,7 @@ public class DistribFileStore implements FileStore {
   }
 
   public static synchronized Path getFileStoreDirPath(Path solrHome) {
-    var path = solrHome.resolve(FileStoreAPI.FILESTORE_DIRECTORY);
+    var path = solrHome.resolve(ClusterFileStore.FILESTORE_DIRECTORY);
     if (!Files.exists(path)) {
       try {
         Files.createDirectories(path);
@@ -632,7 +619,7 @@ public class DistribFileStore implements FileStore {
   // reads local keys file
   private static Map<String, byte[]> _getKeys(Path solrHome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
-    Path keysDir = _getRealPath(FileStoreAPI.KEYS_DIR, solrHome);
+    Path keysDir = _getRealPath(ClusterFileStore.KEYS_DIR, solrHome);
 
     File[] keyFiles = keysDir.toFile().listFiles();
     if (keyFiles == null) return result;

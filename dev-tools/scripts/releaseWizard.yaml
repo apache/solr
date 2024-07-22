@@ -530,14 +530,44 @@ groups:
     links:
     - https://projects.apache.org/doap.html
   - !Todo
-    id: jenkins_builds
-    title: Add Jenkins task for the release branch
-    description: '...so that builds run for the new branch. Consult the JenkinsReleaseBuilds page.'
+    id: new_jenkins_builds
+    title: Add Jenkins tasks for new branch(es)
+    description: |
+      This will make sure we are continuously testing the new branch(es) we have created.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to create:
+        {% if release_type == 'major' %}
+        *-{{release_version_major}}.x (The new stable branch)
+        {% endif %}
+        *-{{release_version_major}}.{{release_version_minor}} (The new release branch)
     types:
     - major
     - minor
     links:
-    - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
+  - !Todo
+    id: old_jenkins_builds
+    title: Remove old Jenkins tasks for decommissioned branches
+    description: |
+      This will make sure we aren't using resources to test branches no longer in development.
+      Consult the JenkinsReleaseBuilds page for more information.
+      
+      Job Suffixes to delete:
+        {% if release_type == 'major' %}
+        *-{{latest_lts_version_major}}.{{latest_lts_version_minor}} (The previous LTS release branch)
+        *-{{latest_version_major}}.x (The previous stable branch)
+        {% else %}
+        *-{{latest_version_major}}.{{latest_version_minor}} (The previous release branch)
+        {% endif %}
+    depends: new_jenkins_builds
+    types:
+      - major
+      - minor
+    links:
+      - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
+      - https://ci-builds.apache.org/job/Solr/
   - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch

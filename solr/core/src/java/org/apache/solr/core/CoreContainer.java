@@ -104,7 +104,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.DistribFileStore;
+import org.apache.solr.filestore.FileStore;
+import org.apache.solr.filestore.NodeFileStore;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
@@ -294,7 +297,8 @@ public class CoreContainer {
   private volatile ClusterEventProducer clusterEventProducer;
   private DelegatingPlacementPluginFactory placementPluginFactory;
 
-  private FileStoreAPI fileStoreAPI;
+  private DistribFileStore fileStore;
+  private ClusterFileStore clusterFileStoreAPI;
   private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
@@ -723,8 +727,8 @@ public class CoreContainer {
     return packageLoader;
   }
 
-  public FileStoreAPI getFileStoreAPI() {
-    return fileStoreAPI;
+  public FileStore getFileStore() {
+    return fileStore;
   }
 
   public SolrCache<?, ?> getCache(String name) {
@@ -856,9 +860,9 @@ public class CoreContainer {
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
-      fileStoreAPI = new FileStoreAPI(this);
-      registerV2ApiIfEnabled(fileStoreAPI.readAPI);
-      registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
+      fileStore = new DistribFileStore(this);
+      registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2ApiIfEnabled(NodeFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
@@ -1154,6 +1158,15 @@ public class CoreContainer {
               new AbstractBinder() {
                 @Override
                 protected void configure() {
+                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                      .to(DistribFileStore.class)
+                      .in(Singleton.class);
+                }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
                   bindFactory(
                           new InjectionFactories.SingletonFactory<>(
                               coreAdminHandler.getCoreAdminAsyncTracker()))
@@ -1242,6 +1255,7 @@ public class CoreContainer {
     return isShutDown;
   }
 
+  /** Close / shut down. Only called by {@link org.apache.solr.servlet.CoreContainerProvider}. */
   public void shutdown() {
 
     ZkController zkController = getZkController();

@@ -49,6 +49,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
@@ -103,6 +104,7 @@ public class MoreLikeThisComponent extends SearchComponent {
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
           NamedList<NamedList<?>> mltQueryByDocKey = new NamedList<>();
           QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+          SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
           for (DocIterator results = rb.getResults().docList.iterator(); results.hasNext(); ) {
             int docId = results.nextDoc();
             final List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
@@ -114,7 +116,7 @@ public class MoreLikeThisComponent extends SearchComponent {
               break;
             }
             final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
-            final Document document = rb.req.getSearcher().doc(docId);
+            final Document document = docFetcher.doc(docId);
             final String uniqueVal = rb.req.getSchema().printableUniqueKey(document);
             final NamedList<String> mltQ =
                 mltViaQueryParams(rb.req.getSchema(), interestingTerms, uniqueKey, uniqueVal);
@@ -423,12 +425,13 @@ public class MoreLikeThisComponent extends SearchComponent {
 
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
 
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     while (iterator.hasNext()) {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
 
       DocListAndSet similarDocuments = mltHelper.getMoreLikeThis(id, 0, rows, null, flags);
-      String name = schema.printableUniqueKey(searcher.doc(id));
+      String name = schema.printableUniqueKey(docFetcher.doc(id));
       mltResponse.add(name, similarDocuments.docList);
 
       if (dbg != null) {
@@ -440,7 +443,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         DocIterator similarDocumentsIterator = similarDocuments.docList.iterator();
         while (similarDocumentsIterator.hasNext()) {
           int mltid = similarDocumentsIterator.nextDoc();
-          String key = schema.printableUniqueKey(searcher.doc(mltid));
+          String key = schema.printableUniqueKey(docFetcher.doc(mltid));
           explains.add(key, searcher.explain(mltHelper.getRealMLTQuery(), mltid));
         }
         docDbg.add("explain", explains);

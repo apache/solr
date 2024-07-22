@@ -115,7 +115,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     NodeValueFetcher nodeValueFetcher = new NodeValueFetcher();
     RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
-    nodeValueFetcher.getTags(node, new HashSet<>(tags), ctx);
+    nodeValueFetcher.getTags(new HashSet<>(tags), ctx);
     return ctx.tags;
   }
 
@@ -228,7 +228,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     ZkClientClusterStateProvider zkClientClusterStateProvider;
     CloudLegacySolrClient solrClient;
     public final Map<String, Object> tags = new HashMap<>();
-    private String node;
+    private final String node;
     public Map<String, Object> session;
 
     public boolean isNodeAlive(String node) {
