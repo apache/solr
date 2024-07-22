@@ -76,8 +76,7 @@ public class StreamToolTest extends SolrCloudTestCase {
           "--fields", "field9, field2, field3, field4",
         };
     StreamTool streamTool = new StreamTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(streamTool.getName(), streamTool.getOptions(), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(streamTool, args);
     String[] outputFields = StreamTool.getOutputFields(cli);
     assert outputFields != null;
     assertEquals(outputFields.length, 4);
@@ -313,7 +312,7 @@ public class StreamToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof StreamTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 }
