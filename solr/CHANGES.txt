@@ -114,6 +114,8 @@ Bug Fixes
 
 * SOLR-17367: Restore the use of -params option to PostTool. (Bostoi via Eric Pugh)
 
+* SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
