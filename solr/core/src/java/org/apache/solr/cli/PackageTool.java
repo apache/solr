@@ -210,7 +210,7 @@ public class PackageTool extends ToolBase {
                   packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
                 } else {
                   PackageUtils.printRed(
-                      "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
+                      "Either specify --cluster to undeploy cluster level plugins or --collections <list-of-collections> to undeploy collection level plugins");
                 }
                 break;
               }
