@@ -62,17 +62,20 @@ public class AuthTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "eriic this must be something that isn't ''";
+    // Jan, the return "" causes
+    // Exception in thread "main" java.lang.IllegalArgumentException: cmdLineSyntax not provided
+    //	at org.apache.commons.cli.HelpFormatter.printHelp(HelpFormatter.java:584)
+    // however return " " seems okay.
+    // return " ";
+    return "\n  bin/solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
+        + "  bin/solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
+        + "  bin/solr auth enable --type kerberos --config \\\"<kerberos configs>\\\" [--update-include-file-only <true|false>] [-v]\n"
+        + "  bin/solr auth disable [--update-include-file-only <true|false>] [-v]\n";
   }
 
   @Override
   public String getHeader() {
-    return "\nusages:\n"
-        + "       bin/solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
-        + "       bin/solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
-        + "       bin/solr auth enable --type kerberos --config \\\"<kerberos configs>\\\" [--update-include-file-only <true|false>] [-v]\n"
-        + "       bin/solr auth disable [--update-include-file-only <true|false>] [-v]\n"
-        + "\n  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.\n"
+    return "\nUpdates or enables/disables authentication.  Must be run on the machine hosting Solr.\n"
         + "\n"
         + "List of options:";
   }

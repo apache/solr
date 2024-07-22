@@ -785,7 +785,6 @@ fi
 
 # configure authentication
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
-  echo "About to run auht"
   : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
   if [ ! -e "$SOLR_SERVER_DIR" ]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
