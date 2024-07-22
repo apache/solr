@@ -20,8 +20,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
@@ -52,7 +50,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -78,6 +75,11 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 public class SolrCLI implements CLIO {
+
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
@@ -762,15 +764,23 @@ public class SolrCLI implements CLIO {
     print(null, message);
   }
 
-  @SuppressForbidden(
-      reason = "Need to use System.out.println() instead of log4j/slf4j for cleaner output")
+  /** Console print using green color */
+  public static void printGreen(Object message) {
+    print(GREEN, message);
+  }
+
+  /** Console print using red color */
+  public static void printRed(Object message) {
+    print(RED, message);
+  }
+
   public static void print(String color, Object message) {
     String RESET = "\u001B[0m";
 
     if (color != null) {
-      System.out.println(color + String.valueOf(message) + RESET);
+      CLIO.out(color + String.valueOf(message) + RESET);
     } else {
-      System.out.println(message);
+      CLIO.out(String.valueOf(message));
     }
   }
 }

@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -255,31 +256,13 @@ public class PackageUtils {
     return str;
   }
 
-  public static String BLACK = "\u001B[30m";
-  public static String RED = "\u001B[31m";
-  public static String GREEN = "\u001B[32m";
-  public static String YELLOW = "\u001B[33m";
-  public static String BLUE = "\u001B[34m";
-  public static String PURPLE = "\u001B[35m";
-  public static String CYAN = "\u001B[36m";
-  public static String WHITE = "\u001B[37m";
-
   /** Console print using green color */
-  public static void printGreen(Object message) {
-    PackageUtils.print(PackageUtils.GREEN, message);
+  public static void formatGreen(StringBuilder sb, Object message) {
+    format(sb, SolrCLI.GREEN, message);
   }
 
-  public static void printGreen(StringBuilder sb, Object message) {
-    print(sb, PackageUtils.GREEN, message);
-  }
-
-  /** Console print using red color */
-  public static void printRed(Object message) {
-    PackageUtils.print(PackageUtils.RED, message);
-  }
-
-  public static void print(StringBuilder sb, Object message) {
-    print(sb, null, message);
+  public static void format(StringBuilder sb, Object message) {
+    format(sb, null, message);
   }
 
   @SuppressForbidden(
@@ -294,7 +277,7 @@ public class PackageUtils {
     }
   }
 
-  public static void print(StringBuilder sb, String color, Object message) {
+  public static void format(StringBuilder sb, String color, Object message) {
     String RESET = "\u001B[0m";
 
     if (color != null) {

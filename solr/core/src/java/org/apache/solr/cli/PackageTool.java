@@ -16,8 +16,10 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.packagemanager.PackageUtils.print;
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
+import static org.apache.solr.cli.SolrCLI.printGreen;
+import static org.apache.solr.cli.SolrCLI.printRed;
+import static org.apache.solr.packagemanager.PackageUtils.format;
+import static org.apache.solr.packagemanager.PackageUtils.formatGreen;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -90,7 +92,7 @@ public class PackageTool extends ToolBase {
               String repoName = cli.getArgs()[1];
               String repoUrl = cli.getArgs()[2];
               repositoryManager.addRepository(repoName, repoUrl);
-              PackageUtils.printGreen("Added repository: " + repoName);
+              printGreen("Added repository: " + repoName);
               break;
             case "add-key":
               String keyFilename = cli.getArgs()[1];
@@ -98,17 +100,17 @@ public class PackageTool extends ToolBase {
               repositoryManager.addKey(Files.readAllBytes(path), path.getFileName().toString());
               break;
             case "list-installed":
-              PackageUtils.printGreen("Installed packages:\n-----");
+              printGreen("Installed packages:\n-----");
               for (SolrPackageInstance pkg : packageManager.fetchInstalledPackageInstances()) {
-                PackageUtils.printGreen(pkg);
+                printGreen(pkg);
               }
               break;
             case "list-available":
-              PackageUtils.printGreen("Available packages:\n-----");
+              printGreen("Available packages:\n-----");
               for (SolrPackage pkg : repositoryManager.getPackages()) {
-                PackageUtils.printGreen(pkg.name + " \t\t" + pkg.description);
+                printGreen(pkg.name + " \t\t" + pkg.description);
                 for (SolrPackageRelease version : pkg.versions) {
-                  PackageUtils.printGreen("\tVersion: " + version.version);
+                  printGreen("\tVersion: " + version.version);
                 }
               }
               break;
@@ -117,9 +119,9 @@ public class PackageTool extends ToolBase {
                 String collection = cli.getOptionValue("collection");
                 Map<String, SolrPackageInstance> packages =
                     packageManager.getPackagesDeployed(collection);
-                PackageUtils.printGreen("Packages deployed on " + collection + ":");
+                printGreen("Packages deployed on " + collection + ":");
                 for (String packageName : packages.keySet()) {
-                  PackageUtils.printGreen("\t" + packages.get(packageName));
+                  printGreen("\t" + packages.get(packageName));
                 }
               } else {
                 // nuance that we use a arg here instead of requiring a --package parameter with a
@@ -129,10 +131,9 @@ public class PackageTool extends ToolBase {
                 Map<String, String> deployedCollections =
                     packageManager.getDeployedCollections(packageName);
                 if (!deployedCollections.isEmpty()) {
-                  PackageUtils.printGreen(
-                      "Collections on which package " + packageName + " was deployed:");
+                  printGreen("Collections on which package " + packageName + " was deployed:");
                   for (String collection : deployedCollections.keySet()) {
-                    PackageUtils.printGreen(
+                    printGreen(
                         "\t"
                             + collection
                             + "("
@@ -142,8 +143,7 @@ public class PackageTool extends ToolBase {
                             + ")");
                   }
                 } else {
-                  PackageUtils.printGreen(
-                      "Package " + packageName + " not deployed on any collection.");
+                  printGreen("Package " + packageName + " not deployed on any collection.");
                 }
               }
               break;
@@ -154,9 +154,9 @@ public class PackageTool extends ToolBase {
                 String version = parsedVersion.second();
                 boolean success = repositoryManager.install(packageName, version);
                 if (success) {
-                  PackageUtils.printGreen(packageName + " installed.");
+                  printGreen(packageName + " installed.");
                 } else {
-                  PackageUtils.printRed(packageName + " installation failed.");
+                  printRed(packageName + " installation failed.");
                 }
                 break;
               }
@@ -182,7 +182,7 @@ public class PackageTool extends ToolBase {
                       isUpdate,
                       noprompt);
                 } else {
-                  PackageUtils.printRed(
+                  printRed(
                       "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
                 }
                 break;
@@ -205,7 +205,7 @@ public class PackageTool extends ToolBase {
                           : new String[] {};
                   packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
                 } else {
-                  PackageUtils.printRed(
+                  printRed(
                       "Either specify -cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
                 }
                 break;
@@ -244,56 +244,56 @@ public class PackageTool extends ToolBase {
   @Override
   public String getHeader() {
     StringBuilder sb = new StringBuilder();
-    print(sb, "\n");
-    print(sb, "Package Manager\n---------------");
-    printGreen(sb, "bin/solr package add-repo <repository-name> <repository-url>");
-    print(sb, "Add a repository to Solr.");
-    print(sb, "");
-    printGreen(sb, "bin/solr package add-key <file-containing-trusted-key>");
-    print(sb, "Add a trusted key to Solr.");
-    print(sb, "");
-    printGreen(sb, "bin/solr package install <package-name>[:<version>] ");
-    print(
+    format(sb, "\n");
+    format(sb, "Package Manager\n---------------");
+    formatGreen(sb, "bin/solr package add-repo <repository-name> <repository-url>");
+    format(sb, "Add a repository to Solr.");
+    format(sb, "");
+    formatGreen(sb, "bin/solr package add-key <file-containing-trusted-key>");
+    format(sb, "Add a trusted key to Solr.");
+    format(sb, "");
+    formatGreen(sb, "bin/solr package install <package-name>[:<version>] ");
+    format(
         sb,
         "Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
-    print(sb, "");
-    printGreen(
+    format(sb, "");
+    formatGreen(
         sb,
         "bin/solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
-    print(
+    format(
         sb,
         "Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
-    print(sb, "");
-    printGreen(sb, "bin/solr package list-installed");
-    print(sb, "Print a list of packages installed in Solr.");
-    print(sb, "");
-    printGreen(sb, "bin/solr package list-available");
-    print(sb, "Print a list of packages available in the repositories.");
-    print(sb, "");
-    printGreen(sb, "bin/solr package list-deployed -c <collection>");
-    print(sb, "Print a list of packages deployed on a given collection.");
-    print(sb, "");
-    printGreen(sb, "bin/solr package list-deployed <package-name>");
-    print(sb, "Print a list of collections on which a given package has been deployed.");
-    print(sb, "");
-    printGreen(
+    format(sb, "");
+    formatGreen(sb, "bin/solr package list-installed");
+    format(sb, "Print a list of packages installed in Solr.");
+    format(sb, "");
+    formatGreen(sb, "bin/solr package list-available");
+    format(sb, "Print a list of packages available in the repositories.");
+    format(sb, "");
+    formatGreen(sb, "bin/solr package list-deployed -c <collection>");
+    format(sb, "Print a list of packages deployed on a given collection.");
+    format(sb, "");
+    formatGreen(sb, "bin/solr package list-deployed <package-name>");
+    format(sb, "Print a list of collections on which a given package has been deployed.");
+    format(sb, "");
+    formatGreen(
         sb, "bin/solr package undeploy <package-name> -collections <comma-separated-collections>");
-    print(sb, "Undeploy a package from specified collection(s)");
-    print(sb, "");
-    printGreen(sb, "bin/solr package uninstall <package-name>:<version>");
-    print(
+    format(sb, "Undeploy a package from specified collection(s)");
+    format(sb, "");
+    formatGreen(sb, "bin/solr package uninstall <package-name>:<version>");
+    format(
         sb,
         "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
-    print(sb, "\n");
-    print(
+    format(sb, "\n");
+    format(
         sb,
         "Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).");
-    print(
+    format(
         sb,
         "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
-    print(sb, "\n");
-    print(sb, "\n");
-    print(sb, "List of options:");
+    format(sb, "\n");
+    format(sb, "\n");
+    format(sb, "List of options:");
     return sb.toString();
   }
 
