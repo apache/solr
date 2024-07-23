@@ -70,8 +70,6 @@ public class StreamTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
         Option.builder()
             .longOpt("workers")
             .hasArg()
@@ -112,6 +110,10 @@ public class StreamTool extends ToolBase {
             .required(false)
             .desc("The delimiter multi-valued fields. (default=|)")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
@@ -238,7 +240,6 @@ public class StreamTool extends ToolBase {
 
     Lang.register(streamFactory);
 
-    streamFactory.withFunctionName("stdin", StandardInStream.class);
     stream = StreamTool.constructStream(streamFactory, streamExpression);
 
     pushBackStream = new PushBackStream(stream);
