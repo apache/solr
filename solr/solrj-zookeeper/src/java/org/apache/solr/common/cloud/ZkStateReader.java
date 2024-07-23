@@ -695,10 +695,6 @@ public class ZkStateReader implements SolrCloseable {
    * changes.
    */
   public void registerCloudCollectionsListener(CloudCollectionsListener cloudCollectionsListener) {
-    if (cloudCollectionsListeners.isEmpty()) {
-      // save current state when first listener register.
-      lastFetchedCollectionSet.set(getCurrentCollections());
-    }
     cloudCollectionsListeners.add(cloudCollectionsListener);
     notifyNewCloudCollectionsListener(cloudCollectionsListener);
   }
@@ -717,11 +713,6 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private void notifyCloudCollectionsListeners(boolean notifyIfSame) {
-    if (cloudCollectionsListeners.isEmpty()) {
-      // early skip if no listeners.
-      return;
-    }
-
     synchronized (refreshCollectionsSetLock) {
       final Set<String> newCollections = getCurrentCollections();
       final Set<String> oldCollections = lastFetchedCollectionSet.getAndSet(newCollections);
