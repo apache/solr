@@ -20,6 +20,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.SettableGauge;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
@@ -38,9 +39,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
-
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
   public static JettySolrRunner jetty;
+  public static final List<String> VALID_PROMETHEUS_VALUES = Arrays.asList("NaN", "+Inf", "-Inf");
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -82,7 +83,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
             try {
               Float.parseFloat(actualValue);
             } catch (NumberFormatException e) {
-              throw new AssertionError("Prometheus value not parsed as a float: " + actualValue);
+              assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
+              throw new AssertionError("Value not a valid Prometheus Value: " + actualValue);
             }
           });
     }
