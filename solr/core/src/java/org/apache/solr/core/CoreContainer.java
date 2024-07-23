@@ -446,11 +446,16 @@ public class CoreContainer {
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
-    this.collectorExecutor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            cfg.getIndexSearcherExecutorThreads(), // thread count
-            cfg.getIndexSearcherExecutorThreads() * 1000, // queue size
-            new SolrNamedThreadFactory("searcherCollector"));
+    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (0 < indexSearcherExecutorThreads) {
+      this.collectorExecutor =
+          ExecutorUtil.newMDCAwareCachedThreadPool(
+              indexSearcherExecutorThreads, // thread count
+              indexSearcherExecutorThreads * 1000, // queue size
+              new SolrNamedThreadFactory("searcherCollector"));
+    } else {
+      this.collectorExecutor = null;
+    }
   }
 
   @SuppressWarnings({"unchecked"})
