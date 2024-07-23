@@ -400,6 +400,7 @@ public class StreamTool extends ToolBase {
       // LocalCatStream has no Solr core to pull from the context
     }
 
+    @Override
     protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
       for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
