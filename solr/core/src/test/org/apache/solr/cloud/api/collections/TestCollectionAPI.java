@@ -25,8 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -166,7 +166,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail("Trying to unset an unknown property should have failed");
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         // expected
         assertTrue(e.getMessage().contains("no supported values provided"));
       }
@@ -188,7 +188,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(
             errorMessage.contains(
@@ -1112,7 +1112,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1135,7 +1135,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1156,7 +1156,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1189,7 +1189,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      } catch (SolrClient.RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1261,9 +1261,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
-      BaseHttpSolrClient.RemoteSolrException rse =
+      SolrClient.RemoteSolrException rse =
           expectThrows(
-              BaseHttpSolrClient.RemoteSolrException.class,
+              SolrClient.RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2)
                     .process(client);

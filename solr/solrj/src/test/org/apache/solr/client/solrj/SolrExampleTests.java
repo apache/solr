@@ -42,7 +42,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -751,7 +750,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          RemoteSolrException.class,
+          SolrClient.RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),

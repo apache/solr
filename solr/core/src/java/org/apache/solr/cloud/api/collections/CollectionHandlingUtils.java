@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -447,8 +446,8 @@ public class CollectionHandlingUtils {
       String shard,
       Set<String> okayExceptions) {
     String rootThrowable = null;
-    if (e instanceof BaseHttpSolrClient.RemoteSolrException) {
-      rootThrowable = ((BaseHttpSolrClient.RemoteSolrException) e).getRootThrowable();
+    if (e instanceof SolrClient.RemoteSolrException) {
+      rootThrowable = ((SolrClient.RemoteSolrException) e).getRootThrowable();
     }
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {

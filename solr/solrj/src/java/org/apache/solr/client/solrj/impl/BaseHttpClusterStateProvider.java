@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
+import static org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -316,7 +316,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
         return fetchClusterState(client, null, null);
-      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
+      } catch (SolrServerException | SolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // not possible! (we passed in null for collection so it can't be an alias)
@@ -343,7 +343,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         Map<String, Object> clusterProperties = new HashMap<>();
         fetchClusterState(client, null, clusterProperties);
         return clusterProperties;
-      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
+      } catch (SolrServerException | SolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // not possible! (we passed in null for collection so it can't be an alias)
