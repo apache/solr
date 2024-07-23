@@ -9,6 +9,7 @@ on:
       - '.github/workflows/bin-solr-test.yml'
       - 'solr/bin/**'
       - 'solr/packaging/**'
+      - 'solr/core/src/java/org/apache/solr/cli/**'
 
 jobs:
   test:
