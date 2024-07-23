@@ -446,8 +446,8 @@ public class CoreContainer {
     if (0 < indexSearcherExecutorThreads) {
       this.collectorExecutor =
           ExecutorUtil.newMDCAwareFixedThreadPool(
-              cfg.getIndexSearcherExecutorThreads(), // thread count
-              cfg.getIndexSearcherExecutorThreads() * 1000, // queue size
+              indexSearcherExecutorThreads, // thread count
+              indexSearcherExecutorThreads * 1000, // queue size
               new SolrNamedThreadFactory("searcherCollector"));
     } else {
       this.collectorExecutor = null;
