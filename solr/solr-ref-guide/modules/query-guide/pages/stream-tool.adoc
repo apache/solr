@@ -23,7 +23,7 @@ To run it, open a window and enter:
 
 [,console]
 ----
-$ bin/solr stream -header --delimiter=\| search(techproducts,q="name:memory",fl="name,price",sort="price desc")
+$ bin/solr stream --header -c techproducts --delimiter=\| 'search(techproducts,q="name:memory",fl="name,price")'
 ----
 
 This will run the provide streaming expression on the `techproducts` collection and produce:  
@@ -36,29 +36,29 @@ CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Me
 A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM|
 ----
 
-TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe.
+TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe with in the shell script.
 
 You can also specify a file with the suffix `.expr` containing your streaming expression.
+This is useful for longer expressions or if you having command line parsing issues with your expression.
 
 Assuming you have create the file `stream.expr` with the contents:
 
 ----
 # Stream a search
-let(
-  search(
-    techproducts,
-    q="name:memory",
-    fl="name,price",
-    sort="price desc")
-  )
+
+search(
+  techproducts,
+  q="name:memory",
+  fl="name,price",
+  sort="price desc"
 )
 ----
 
-Then you can run it, specifying you want a header row:
+Then you can run it on the Solr collection `techproducts`, specifying you want a header row:
 
 [,console]
 ----
-$ bin/solr stream -header stream.expr
+$ bin/solr stream --header -c techproducts stream.expr
 ----
 
 And this will produce:
@@ -71,15 +71,78 @@ CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Me
 A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM
 ----
 
+The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream --help)`.
 
+== Using the bin/solr stream Tool
 
-The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream -help)`.
+To use the tool you need to provide the streaming expression either inline as the last argument, or provide a file ending in `.expr` that contains the expression.
 
+The basic usage of `bin/solr stream` is:
 
-You can do variable interpolation via having `$1`, `$2` etc in your streaming expression, and then passing those values.
+[source,plain]
+----
+usage: bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-f <FIELDS>] [--header]
+       [-u <credentials>] [-url <HOST>] [--workers <arg>] [-z <HOST>]
+
+List of options:
+    --array-delimiter <CHARACTER>   The delimiter multi-valued fields. (default=|)
+ -c,--name <NAME>                   Name of the collection to execute on if workers are 'solr'.  Required for 'solr'
+                                    worker.
+    --delimiter <CHARACTER>         The output delimiter. (default=tab).
+ -f,--fields <FIELDS>               The fields in the tuples to output. (defaults to fields in the first tuple of result
+                                    set).
+    --header                        Whether or not to include a header line. (default=false)
+ -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
+ -url,--solr-url <HOST>             Base Solr URL, which can be used to determine the zk-host if that's not known;
+                                    defaults to: http://localhost:8983.
+ -e,--execution <CONTEXT>           Execution context is either 'local' or 'solr'. Default is 'solr'
+ -z,--zk-host <HOST>                Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;
+                                    otherwise, defaults to localhost:9983.
+----
+
+== Examples Using bin/solr stream
+
+There are several ways to use `bin/solr stream`.
+This section presents several examples.
+
+=== Variable interpolation
+
+You can do variable interpolation via having `$1`, `$2` etc in your streaming expression, and then passing those values as arguments.
 
 [,console]
 ----
-$ bin/solr stream echo($1) "Hello World"
+$ bin/solr stream -c techproducts 'echo("$1")' "Hello World"
 Hello World
 ----
+
+=== Executing Expression Locally
+
+Streaming Expressions by default are executed in the Solr cluster.  
+However there are use cases where you want to interact with data in your local environment, or even run a streaming expression independent of Solr.
+
+The Stream Tool allows you to specify `--execution local` to process the expression in the tools' JVM.
+
+Assuming you have create the file `load_data.expr` with the contents:
+
+----
+# Index CSV File
+
+search(
+  techproducts,
+  q="name:memory",
+  fl="name,price",
+  sort="price desc"
+)
+----
+
+[,console]
+----
+$ bin/solr stream --execution local load_data.expr
+----
+
+Caveats:
+ * You don't get to use any of the parallelization support locally.
+
+=== Piping data to an expression
+
+Index all JSON files into `gettingstarted`.

@@ -46,11 +46,9 @@ teardown() {
   echo 'q="name:memory",' >> "${solr_stream_file}"
   echo 'fl="name,price",' >> "${solr_stream_file}"
   echo 'sort="price desc"' >> "${solr_stream_file}"
-  echo ')' >> "${solr_stream_file}"
-              
+  echo ')' >> "${solr_stream_file}"  
   
-  #run solr stream -header ${solr_stream_file}
-  run solr stream --workers local --header --credentials name:password ${solr_stream_file}
+  run solr stream --execution local --header --credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
   assert_output --partial 'CORSAIR  XMS'
@@ -65,10 +63,8 @@ teardown() {
   echo 'fl="name,price",' >> "${solr_stream_file}"
   echo 'sort="price desc"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
-              
   
-  #run solr stream -header ${solr_stream_file}
-  run solr stream --workers remote --name techproducts -solrUrl http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
+  run solr stream -e remote --name techproducts --solr-url http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
   assert_output --partial 'CORSAIR  XMS'
@@ -83,9 +79,8 @@ teardown() {
   echo 'fl="name,price",' >> "${solr_stream_file}"
   echo 'sort="price $2"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
-              
   
-  run solr stream --workers local --header --credentials name:password ${solr_stream_file} apple asc
+  run solr stream --execution local --header --credentials name:password ${solr_stream_file} apple asc
 
   assert_output --partial 'name   price'
   assert_output --partial 'Apple 60 GB iPod'

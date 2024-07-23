@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.CatStream;
 
 /** Supports stream command in the bin/solr script. */
 public class StreamTool extends ToolBase {
@@ -70,11 +71,12 @@ public class StreamTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("workers")
+        Option.builder("e")
+            .longOpt("execution")
             .hasArg()
+            .argName("CONTEXT")
             .required(false)
-            .desc("Workers are either 'local' or 'solr'. Default is 'solr'")
+            .desc("Execution context is either 'local' or 'solr'. Default is 'solr'")
             .build(),
         Option.builder("c")
             .longOpt("name")
@@ -123,7 +125,7 @@ public class StreamTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     String expressionArgument = cli.getArgs()[0];
-    String worker = cli.getOptionValue("workers", "solr");
+    String execution = cli.getOptionValue("execution", "solr");
     String arrayDelimiter = cli.getOptionValue("array-delimiter", "|");
     String delimiter = cli.getOptionValue("delimiter", "   ");
     boolean includeHeaders = cli.hasOption("header");
@@ -148,7 +150,7 @@ public class StreamTool extends ToolBase {
     }
 
     PushBackStream pushBackStream;
-    if (worker.equalsIgnoreCase("local")) {
+    if (execution.equalsIgnoreCase("local")) {
       pushBackStream = doLocalMode(cli, expr);
     } else {
       pushBackStream = doRemoteMode(cli, expr);
@@ -235,6 +237,10 @@ public class StreamTool extends ToolBase {
     // stdin is ONLY available in the local mode, not in the remote mode as it
     // requires access to System.in
     streamFactory.withFunctionName("stdin", StandardInStream.class);
+
+    // LocalCatStream extends CatStream and disables the Solr cluster specific
+    // logic about where to read data from.
+    streamFactory.withFunctionName("cat", LocalCatStream.class);
 
     streamFactory.withDefaultZkHost(zkHost);
 
@@ -371,6 +377,12 @@ public class StreamTool extends ToolBase {
 
     } else {
       return null;
+    }
+  }
+
+  public class LocalCatStream extends CatStream {
+    public LocalCatStream(StreamExpression expression, StreamFactory factory) throws IOException {
+      super(expression, factory);
     }
   }
 

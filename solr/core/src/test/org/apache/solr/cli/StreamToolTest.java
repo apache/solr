@@ -190,12 +190,12 @@ public class StreamToolTest extends SolrCloudTestCase {
     String[] args =
         new String[] {
           "stream",
-          "-workers",
+          "-e",
           "remote",
-          "-name",
+          "--name",
           "fakeCollection",
-          "-verbose",
-          "-zkHost",
+          "--verbose",
+          "--zk-host",
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
@@ -209,10 +209,10 @@ public class StreamToolTest extends SolrCloudTestCase {
     String[] args =
         new String[] {
           "stream",
-          "-workers",
+          "-e",
           "local",
-          "-verbose",
-          "-zkHost",
+          "-v",
+          "-z",
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
@@ -232,10 +232,10 @@ public class StreamToolTest extends SolrCloudTestCase {
     // notice that we do not pass in zkHost or solrUrl for a simple echo run locally.
     String[] args = {
       "stream",
-      "-workers",
+      "-e",
       "local",
-      "-verbose",
-      "-zkHost",
+      "--verbose",
+      "-zk-host",
       cluster.getZkClient().getZkServerAddress(),
       expressionFile.getAbsolutePath()
     };
@@ -246,10 +246,10 @@ public class StreamToolTest extends SolrCloudTestCase {
     args =
         new String[] {
           "stream",
-          "-workers",
+          "--execution",
           "local",
-          "-verbose",
-          "-zkHost",
+          "--verbose",
+          "--zk-host",
           cluster.getZkClient().getZkServerAddress(),
           expression
         };
@@ -276,14 +276,14 @@ public class StreamToolTest extends SolrCloudTestCase {
     // test passing in the file
     String[] args = {
       "stream",
-      "-workers",
+      "-e",
       "remote",
-      "-name",
+      "-c",
       collectionName,
-      "-verbose",
-      "-zkHost",
+      "--v-erbose",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
+      "--credentials",
       SecurityJson.USER_PASS,
       expressionFile.getAbsolutePath()
     };
@@ -294,14 +294,14 @@ public class StreamToolTest extends SolrCloudTestCase {
     args =
         new String[] {
           "stream",
-          "-workers",
+          "--execution",
           "remote",
-          "-name",
+          "--name",
           collectionName,
-          "-verbose",
-          "-zkHost",
+          "--verbose",
+          "--zk-host",
           cluster.getZkClient().getZkServerAddress(),
-          "-credentials",
+          "--credentials",
           SecurityJson.USER_PASS,
           expression
         };
