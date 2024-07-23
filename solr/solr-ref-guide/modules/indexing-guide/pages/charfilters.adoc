@@ -1,4 +1,5 @@
 = CharFilters
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -29,11 +30,11 @@ This filter requires specifying a `mapping` argument, which is the path and name
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-charfilter]
+[tabs#charfilter]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -43,9 +44,10 @@ Example:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-charfilter]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -55,7 +57,7 @@ Example:
 </analyzer>
 ----
 ====
---
+======
 
 Mapping file syntax:
 
@@ -122,11 +124,11 @@ The table below presents examples of HTML stripping.
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-charfilter-htmlstrip]
+[tabs#charfilter-htmlstrip]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -136,9 +138,10 @@ Example:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-charfilter-htmlstrip]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -148,7 +151,7 @@ Example:
 </analyzer>
 ----
 ====
---
+======
 
 == solr.ICUNormalizer2CharFilterFactory
 
@@ -189,11 +192,11 @@ Default is `[]`, as a null set, no filtering (all codepoints are subject to norm
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-charfilter-icunormalizer2]
+[tabs#charfilter-icunormalizer2]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -203,9 +206,10 @@ Example:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-charfilter-icunormalizer2]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -215,7 +219,7 @@ Example:
 </analyzer>
 ----
 ====
---
+======
 
 == solr.PatternReplaceCharFilterFactory
 
@@ -243,11 +247,11 @@ The text to use to replace matching patterns.
 
 You can configure this filter in the schema like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-charfilter-patternreplace]
+[tabs#charfilter-patternreplace]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -258,9 +262,10 @@ You can configure this filter in the schema like this:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-charfilter-patternreplace]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -271,7 +276,7 @@ You can configure this filter in the schema like this:
 </analyzer>
 ----
 ====
---
+======
 
 The table below presents examples of regex-based pattern replacement:
 

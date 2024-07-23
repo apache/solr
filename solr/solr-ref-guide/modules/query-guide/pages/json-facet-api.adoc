@@ -1,5 +1,6 @@
 = JSON Facet API
 :page-children: json-faceting-domain-changes
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -40,11 +41,11 @@ There are two main types of facets:
 
 Here's an example of a bucketing facet, that partitions documents into bucket based on the `cat` field (short for category), and returns the top 3 buckets:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curljsonsimpletermsfacet]
+[tabs#json-simple-terms-facet]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -61,21 +62,20 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrjjsonsimpletermsfacet]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
 ----
 ====
---
+======
 
 The response below shows us that 32 documents match the default root domain.
 Twelve documents have `cat:electronics`, 4 documents have `cat:currency`, etc.
 
-[source,java]
+[source,json]
 ----
 [...]
   "facets":{
@@ -101,11 +101,11 @@ Stat (also called `aggregation` or `analytic`) facets are useful for displaying 
 For example, stat facets can be used to provide context to users on an e-commerce site looking for memory.
 The example below computes the average price (and other statistics) and would allow a user to gauge whether the memory stick in their cart is a good price.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-metrics-facet-1]
+[tabs#json-metrics-facet-1]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -119,16 +119,15 @@ json.facet={
 ----
 ====
 
-[example.tab-pane#solrj-json-metrics-facet-1]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-1]
 ----
 ====
---
+======
 
 The response to the facet request above will start with documents matching the root domain (docs containing "memory" with inStock:true) followed by the requested statistics in a `facets` block:
 
@@ -155,11 +154,11 @@ Each of these facet-types are covered in detail below.
 
 A `terms` facet buckets the domain based on the unique values in a field.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-terms-facet-2]
+[tabs#json-terms-facet-2]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -176,16 +175,15 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-terms-facet-2]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-terms-facet-2]
 ----
 ====
---
+======
 
 [width="100%",cols="20%,90%",options="header",]
 |===
@@ -232,11 +230,11 @@ This parameter indicates the facet algorithm to use:
 
 The query facet produces a single bucket of documents that match the domain as well as the specified query.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-query-facet-simple]
+[tabs#json-query-facet-simple]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -252,24 +250,23 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-query-facet-simple]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-facet-simple]
 ----
 ====
---
+======
 
 Users may also specify sub-facets (either "bucketing" facets or metrics):
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-query-facet-expanded]
+[tabs#json-query-facet-expanded]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -288,20 +285,19 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-query-facet-expanded]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-query-facet-expanded]
 ----
 ====
---
+======
 
 Example response:
 
-[source,java]
+[source,json]
 ----
 "high_popularity" : {
   "count" : 36,
@@ -313,11 +309,11 @@ Example response:
 
 The range facet produces multiple buckets over a date or numeric field.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-range-facet-simple]
+[tabs#json-range-facet-simple]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -336,20 +332,19 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-range-facet-simple]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-range-facet-simple]
 ----
 ====
---
+======
 
 The output from the range facet above would look a bit like:
 
-[source,java]
+[source,json]
 ----
 "prices":{
   "buckets":[
@@ -512,11 +507,11 @@ For example `geom` here corresponds to `facet.heatmap.geom` in a facet.heatmap c
 
 NOTE: Unlike other facets that partition the domain into buckets, `heatmap` facets do not currently support <<Nested Facets>>.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-heatmap-facet-1]
+[tabs#json-heatmap-facet-1]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/spatialdata/query -d '
@@ -534,16 +529,15 @@ curl http://localhost:8983/solr/spatialdata/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-heatmap-facet-1]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiHeatmapFacetingTest.java[tag=solrj-json-heatmap-facet-1]
 ----
 ====
---
+======
 
 And the facet response will look like:
 [source,json]
@@ -593,11 +587,11 @@ Numeric aggregation functions such as `avg` can be on any numeric field, or on a
 
 The most common way of requesting an aggregation function is as a simple String containing the expression you wish to compute:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-metrics-facet-simple]
+[tabs#json-metrics-facet-simple]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -614,25 +608,24 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-metrics-facet-simple]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-simple]
 ----
 ====
---
+======
 
 An expanded form allows for xref:local-params.adoc[] to be specified.
 These may be used explicitly by some specialized aggregations such as <<relatedness-options,`relatedness()`>>, but can also be used as parameter references to make aggregation expressions more readable, without needing to use (global) request parameters:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-metrics-facet-expanded]
+[tabs#json-metrics-facet-expanded]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -654,16 +647,15 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-metrics-facet-expanded]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-expanded]
 ----
 ====
---
+======
 
 
 == Nested Facets
@@ -678,11 +670,11 @@ Technically, every facet command is actually a sub-facet since we start off with
 
 Let's start off with a simple non-nested terms facet on the category field `cat`:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-unnested-cat-facet]
+[tabs#json-unnested-cat-facet]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -699,26 +691,25 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-unnested-cat-facet]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-simple-terms-facet]
 ----
 ====
---
+======
 
 The response for the facet above will show the top category and the number of documents that falls into each category bucket.
 Nested facets can be used to gather additional information about each bucket of documents.
 For example, using the nested facet below, we can find the top categories as well as who the leading manufacturer is in each category:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-nested-cat-facet]
+[tabs#json-nested-cat-facet]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -742,16 +733,15 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-nested-cat-facet]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet]
 ----
 ====
---
+======
 
 And the response will look something like:
 
@@ -783,11 +773,11 @@ The default sort for a field or terms facet is by bucket count descending.
 We can optionally `sort` ascending or descending by any facet function that appears in each bucket.
 
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-json-nested-cat-facet-sorted]
+[tabs#json-nested-cat-facet-sorted]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/query -d '
@@ -808,35 +798,34 @@ curl http://localhost:8983/solr/techproducts/query -d '
 ----
 ====
 
-[example.tab-pane#solrj-json-nested-cat-facet-sorted]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
-
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-json-nested-cat-facet-sorted]
 ----
 ====
---
+======
 
 In some situations the desired `sort` may be an aggregation function that is very costly to compute for every bucket.
 A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).
 Only after the top candidate buckets have been refined, will the actual `sort` be used.
 
-[source,java]
+[source,json]
 ----
 {
-  categories:{
-    type : terms,
-    field : cat,
-    refine: true,
-    limit: 10,
-    overrequest: 100,
-    prelim_sort: "sales_rank desc",
-    sort : "prod_quality desc",
-    facet : {
-      prod_quality : "avg(div(prod(rating,sales_rank),prod(num_returns,price)))"
-      sales_rank : "sum(sales_rank)"
+  "categories": {
+    "type" : "terms",
+    "field" : "cat",
+    "refine": true,
+    "limit": 10,
+    "overrequest": 100,
+    "prelim_sort": "sales_rank desc",
+    "sort": "prod_quality desc",
+    "facet": {
+      "prod_quality": "avg(div(prod(rating,sales_rank),prod(num_returns,price)))"
+      "sales_rank": "sum(sales_rank)"
     }
   }
 }
@@ -887,14 +876,14 @@ Suppose we have products with multiple SKUs, and we want to count products for e
 
 When searching against a set of SKU documents, we can ask for a facet on color, with a nested statistic counting all the "blocks" -- aka: products:
 
-[source,java]
+[source,json]
 ----
-color: {
-  type: terms,
-  field: color,
-  limit: -1,
-  facet: {
-    productsCount: "uniqueBlock(_root_)"
+"color": {
+  "type": "terms",
+  "field": "color",
+  "limit": -1,
+  "facet": {
+    "productsCount": "uniqueBlock(_root_)"
       // or "uniqueBlock({!v=type:product})"
   }
 }
@@ -902,12 +891,12 @@ color: {
 
 and get:
 
-[source,java]
+[source,json]
 ----
-color:{
-   buckets:[
-      { val:Blue, count:2, productsCount:2 },
-      { val:Red, count:2, productsCount:1 }
+"color": {
+   "buckets": [
+      { "val": "Blue", "count": 2, "productsCount": 2 },
+      { "val": "Red", "count": 2, "productsCount": 1 }
    ]
 }
 ----
@@ -954,9 +943,10 @@ This heuristic is _not_ used to determine default behavior, particularly because
 
 [source,json]
 ----
-{ "type": "func",
+{
+  "type": "func",
   "func": "relatedness($fore,$back)",
-  "min_popularity": 0.001,
+  "min_popularity": 0.001
 }
 ----
 

@@ -43,23 +43,25 @@ public class ConfigSetDownloadTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("n")
-            .longOpt("confname")
-            .argName("NAME")
+        Option.builder()
+            .longOpt("conf-name")
             .hasArg()
+            .argName("NAME")
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        Option.builder("d")
-            .longOpt("confdir")
-            .argName("DIR")
+        Option.builder()
+            .longOpt("conf-dir")
             .hasArg()
+            .argName("DIR")
             .required(true)
             .desc("Local directory with configs.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -74,8 +76,8 @@ public class ConfigSetDownloadTool extends ToolBase {
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String confName = cli.getOptionValue("confname");
-      String confDir = cli.getOptionValue("confdir");
+      String confName = cli.getOptionValue("conf-name");
+      String confDir = cli.getOptionValue("conf-dir");
       Path configSetPath = Paths.get(confDir);
       // we try to be nice about having the "conf" in the directory, and we create it if it's not
       // there.

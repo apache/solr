@@ -129,9 +129,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           localFile.getAbsolutePath(),
-          "-dst",
+          "--destination",
           "zk:/data.txt",
           "-z",
           zkServer.getZkAddress()
@@ -180,9 +180,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           localFile.getAbsolutePath(),
-          "-dst",
+          "--destination",
           "zk:/state.json",
           "-z",
           zkServer.getZkAddress()
@@ -210,9 +210,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           localFile.getAbsolutePath(),
-          "-dst",
+          "--destination",
           "zk:/state.json",
           "-z",
           zkServer.getZkAddress()
@@ -234,9 +234,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           SOLR_HOME + File.separator + "solr-stress-new.xml",
-          "-dst",
+          "--destination",
           "zk:/foo.xml",
           "-z",
           zkServer.getZkAddress()
@@ -258,9 +258,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           SOLR_HOME + File.separator + "solr-stress-new.xml",
-          "-dst",
+          "--destination",
           "zk:foo.xml",
           "-z",
           zkServer.getZkAddress()
@@ -285,9 +285,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           SOLR_HOME + File.separator + "solr-stress-new.xml",
-          "-dst",
+          "--destination",
           "zk:/state.json",
           "-z",
           zkServer.getZkAddress()
@@ -316,9 +316,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           SOLR_HOME + File.separator + "not-there.xml",
-          "-dst",
+          "--destination",
           "zk:/foo.xml",
           "-z",
           zkServer.getZkAddress()
@@ -332,7 +332,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   public void testLs() throws Exception {
     zkClient.makePath("/test/path", true);
 
-    String[] args = new String[] {"ls", "-path", "/", "-r", "true", "-z", zkServer.getZkAddress()};
+    String[] args = new String[] {"ls", "--path", "/", "-r", "true", "-z", zkServer.getZkAddress()};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
     final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
@@ -358,9 +358,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "upconfig",
-          "--confname",
+          "--conf-name",
           confsetname,
-          "--confdir",
+          "--conf-dir",
           ExternalPaths.TECHPRODUCTS_CONFIGSET,
           "-z",
           zkServer.getZkAddress()
@@ -380,7 +380,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     args =
         new String[] {
           "linkconfig",
-          "--confname",
+          "--conf-name",
           confsetname,
           "-c",
           "collection1",
@@ -406,9 +406,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     args =
         new String[] {
           "downconfig",
-          "--confname",
+          "--conf-name",
           confsetname,
-          "--confdir",
+          "--conf-dir",
           configSetDir.getAbsolutePath(),
           "-z",
           zkServer.getZkAddress()
@@ -463,7 +463,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test reset zk
     args =
         new String[] {
-          "rm", "-path", "zk:/configs/confsetone", "-r", "true", "-z", zkServer.getZkAddress()
+          "rm", "--path", "zk:/configs/confsetone", "-r", "true", "-z", zkServer.getZkAddress()
         };
 
     ZkRmTool zkRmTool = new ZkRmTool();
@@ -483,9 +483,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           "zk:" + getNode,
-          "-dst",
+          "--destination",
           localFile.getAbsolutePath(),
           "-z",
           zkServer.getZkAddress()
@@ -522,9 +522,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           "zk:" + getNode,
-          "-dst",
+          "--destination",
           localFile.getAbsolutePath(),
           "-z",
           zkServer.getZkAddress()
@@ -550,9 +550,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           "zk:" + getNode,
-          "-dst",
+          "--destination",
           file.toAbsolutePath().toString(),
           "-z",
           zkServer.getZkAddress()
@@ -582,9 +582,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           "zk:" + getNode,
-          "-dst",
+          "--destination",
           file.toAbsolutePath().toString(),
           "-z",
           zkServer.getZkAddress()
@@ -605,9 +605,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "cp",
-          "-src",
+          "--source",
           "zk:" + getNode,
-          "-dst",
+          "--destination",
           file.getAbsolutePath(),
           "-z",
           zkServer.getZkAddress()
@@ -620,7 +620,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testInvalidZKAddress() throws Exception {
 
-    String[] args = new String[] {"ls", "-path", "/", "-r", "true", "-z", "----------:33332"};
+    String[] args = new String[] {"ls", "--path", "/", "-r", "true", "-z", "----------:33332"};
 
     ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
     final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
@@ -694,7 +694,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   }
 
   private int runTool(String[] args, Tool tool) throws Exception {
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 

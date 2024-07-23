@@ -73,7 +73,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
   private static final String FILESTREAM_COLLECTION = "filestream_collection";
-  private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
   private static boolean useAlias;
@@ -256,7 +255,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertOrder(tuples, 0, 2, 1, 3, 4);
       assertLong(tuples.get(0), "a_i", 0);
 
-      // Execersise the /stream hander
+      // Exercise the /stream handler
 
       // Add the shards http parameter for the myCollection
       StringBuilder buf = new StringBuilder();
@@ -1040,7 +1039,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(6.0D, perf, 0.0);
       assertEquals(10, count, 0.0);
 
-      // Execersise the /stream hander
+      // Exercise the /stream handler
 
       // Add the shards http parameter for the myCollection
       StringBuilder buf = new StringBuilder();
@@ -1112,8 +1111,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .add(id, "9", "diseases_s", "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
         .add(id, "10", "diseases_s", "diabetes", "symptoms_s", "thirsty", "cases_i", "20")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-    StreamExpression expression;
-    TupleStream stream;
+
     List<Tuple> tuples;
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -3667,15 +3665,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertEquals("l b c d color`s e", tuple2.get("test_t"));
   }
 
-  private Map<String, Double> getIdToLabel(TupleStream stream, String outField) throws IOException {
-    Map<String, Double> idToLabel = new HashMap<>();
-    List<Tuple> tuples = getTuples(stream);
-    for (Tuple tuple : tuples) {
-      idToLabel.put(tuple.getString("id"), tuple.getDouble(outField));
-    }
-    return idToLabel;
-  }
-
   @Test
   public void testBasicTextLogitStream() throws Exception {
     Assume.assumeTrue(!useAlias);
@@ -4047,7 +4036,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(5600, tuples.get(1).getLong("background").longValue());
       assertEquals(5000, tuples.get(1).getLong("foreground").longValue());
 
-      // Execersise the /stream hander
+      // Exercise the /stream handler
 
       // Add the shards http parameter for the myCollection
       StringBuilder buf = new StringBuilder();
@@ -4108,7 +4097,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(cache);
     // use filter() to allow being parsed as 'terms in set' query instead of a (weighted/scored)
-    // BooleanQuery so we don't trip too many boolean clauses
+    // BooleanQuery, so we don't trip too many boolean clauses
     String longQuery =
         "\"filter(id:("
             + IntStream.range(0, 4000).mapToObj(i -> "a").collect(Collectors.joining(" ", "", ""))
@@ -4374,7 +4363,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   /**
    * Creates a tree of files underneath a provided data-directory.
    *
-   * <p>The filetree created looks like:
+   * <p>The file tree created looks like:
    *
    * <pre>
    * dataDir

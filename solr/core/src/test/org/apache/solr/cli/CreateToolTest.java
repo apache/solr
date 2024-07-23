@@ -47,7 +47,7 @@ public class CreateToolTest extends SolrCloudTestCase {
       collectionName,
       "-n",
       "cloud-minimal",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
       "-credentials",
       SecurityJson.USER_PASS,
@@ -60,7 +60,7 @@ public class CreateToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof CreateTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 }

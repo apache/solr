@@ -114,8 +114,8 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testRunWithCollectionParam() throws Exception {
     final String collection = "testRunWithCollectionParam";
 
-    // Provide the port as an environment variable for the PostTool to look up.
-    EnvUtils.setEnv("SOLR_PORT", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    // Provide the port for the PostTool to look up.
+    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -147,10 +147,56 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
   }
 
+  @Test
+  public void testRunCsvWithCustomSeparatorParam() throws Exception {
+    final String collection = "testRunCsvWithCustomSeparatorParam";
+
+    // Provide the port for the PostTool to look up.
+    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
+
+    withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
+        .processAndWait(cluster.getSolrClient(), 10);
+
+    File tsvDoc = File.createTempFile("temp", ".tsv");
+
+    FileWriter fw = new FileWriter(tsvDoc, StandardCharsets.UTF_8);
+    fw.write("1\tmytitle\n");
+    fw.close();
+
+    String[] args = {
+      "post",
+      "-c",
+      collection,
+      "-credentials",
+      SecurityJson.USER_PASS,
+      "--params",
+      "\"separator=%09&header=false&fieldnames=id,title_s\"",
+      "--type",
+      "text/csv",
+      tsvDoc.getAbsolutePath()
+    };
+    assertEquals(0, runTool(args));
+
+    int numFound = 0;
+    int expectedDocCount = 1;
+
+    for (int idx = 0; idx < 100; ++idx) {
+      QueryRequest req = withBasicAuth(new QueryRequest(params("q", "*:*")));
+      QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
+
+      numFound = (int) rsp.getResults().getNumFound();
+      if (numFound == expectedDocCount) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
+  }
+
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof PostTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 
@@ -171,19 +217,24 @@ public class PostToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
+        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/foo/bar/"), "/index.html"));
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/foo.htm?baz#hello"), "fil.html"));
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
+    assertNull(webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+    assertNull(
+        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -210,10 +261,10 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() throws MalformedURLException {
+  public void testAppendUrlPath() throws URISyntaxException {
     assertEquals(
-        new URL("http://[ff01::114]/a?foo=bar"),
-        PostTool.appendUrlPath(new URL("http://[ff01::114]?foo=bar"), "/a"));
+        URI.create("http://[ff01::114]/a?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
   }
 
   @Test
@@ -231,7 +282,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -253,7 +304,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -264,7 +315,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://user:password@localhost:5150/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://user:password@localhost:5150/solr/fake/update");
 
     // Uses mock pageFetcher
     postTool.delay = 0;
@@ -289,8 +340,11 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
 
-    assertFalse(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
-    assertTrue(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
+    assertFalse(
+        postTool.pageFetcher.isDisallowedByRobots(URI.create("http://[ff01::114]/").toURL()));
+    assertTrue(
+        postTool.pageFetcher.isDisallowedByRobots(
+            URI.create("http://[ff01::114]/disallowed").toURL()));
     assertEquals(
         "There should be two entries parsed from robots.txt",
         2,
@@ -368,7 +422,7 @@ public class PostToolTest extends SolrCloudTestCase {
     }
 
     @Override
-    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
+    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URI postUri) {
       Set<URI> s = linkMap.get(PostTool.normalizeUrlEnding(url.toString()));
       if (s == null) {
         s = new HashSet<>();
