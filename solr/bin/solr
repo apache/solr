@@ -879,7 +879,7 @@ fi
 
 # run a streaming expression
 if [[ "$SCRIPT_CMD" == "stream" ]]; then
-  run_tool $SCRIPT_CMD $@
+  run_tool $SCRIPT_CMD "$@"
   exit $?
 fi
 
