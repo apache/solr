@@ -27,6 +27,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +51,7 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.CatStream;
 
@@ -269,7 +274,7 @@ public class StreamTool extends ToolBase {
     }
     String collection = cli.getOptionValue("name");
 
-    if (expr.toLowerCase(Locale.ROOT).indexOf("stdin(") > -1) {
+    if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
       throw new IllegalStateException(
           "The stdin() expression is only usable with --worker local set up.");
     }
@@ -380,9 +385,36 @@ public class StreamTool extends ToolBase {
     }
   }
 
-  public class LocalCatStream extends CatStream {
+  public static class LocalCatStream extends CatStream {
+
     public LocalCatStream(StreamExpression expression, StreamFactory factory) throws IOException {
       super(expression, factory);
+    }
+
+    public LocalCatStream(String commaDelimitedFilepaths, int maxLines) {
+      super(commaDelimitedFilepaths, maxLines);
+    }
+
+    @Override
+    public void setStreamContext(StreamContext context) {
+      // LocalCatStream has no Solr core to pull from the context
+    }
+
+    protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
+      final List<CrawlFile> crawlSeeds = new ArrayList<>();
+      for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
+        Path crawlRootPath = Paths.get(crawlRootStr).normalize();
+
+        if (!Files.exists(crawlRootPath)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "file/directory to stream doesn't exist: " + crawlRootStr);
+        }
+
+        crawlSeeds.add(new CrawlFile(crawlRootStr, crawlRootPath));
+      }
+
+      return crawlSeeds;
     }
   }
 

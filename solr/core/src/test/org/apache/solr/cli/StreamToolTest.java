@@ -20,6 +20,7 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -28,6 +29,9 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -173,6 +177,39 @@ public class StreamToolTest extends SolrCloudTestCase {
 
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
+  public void testLocalCatStream() throws Exception {
+    File localFile = File.createTempFile("topLevel1", ".txt");
+    populateFileWithData(localFile.toPath());
+
+    StreamTool.LocalCatStream catStream =
+        new StreamTool.LocalCatStream(localFile.getAbsolutePath(), -1);
+    List<Tuple> tuples = new ArrayList();
+    try {
+      catStream.open();
+      while (true) {
+        Tuple tuple = catStream.read();
+        if (tuple.EOF) {
+          break;
+        } else {
+          tuples.add(tuple);
+        }
+      }
+
+    } finally {
+      catStream.close();
+    }
+
+    assertEquals(4, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals(localFile.getName() + " line " + (i + 1), t.get("line"));
+      assertEquals(localFile.getAbsolutePath(), t.get("file"));
+    }
+  }
+
+  @Test
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testListToString() {
     List stuff = new ArrayList();
     stuff.add("test1");
@@ -280,7 +317,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       "remote",
       "-c",
       collectionName,
-      "--v-erbose",
+      "--verbose",
       "-z",
       cluster.getZkClient().getZkServerAddress(),
       "--credentials",
@@ -314,5 +351,16 @@ public class StreamToolTest extends SolrCloudTestCase {
     assertTrue(tool instanceof StreamTool);
     CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
+  }
+
+  // Copied from StreamExpressionTest.java
+  private static void populateFileWithData(Path dataFile) throws Exception {
+    // Files.createFile(dataFile);
+    try (final BufferedWriter writer = Files.newBufferedWriter(dataFile, StandardCharsets.UTF_8)) {
+      for (int i = 1; i <= 4; i++) {
+        writer.write(dataFile.getFileName() + " line " + i);
+        writer.newLine();
+      }
+    }
   }
 }

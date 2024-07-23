@@ -37,8 +37,6 @@ teardown() {
   save_home_on_failure
 }
 
-
-
 @test "searching solr via locally executed streaming expression" {
   
   local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"

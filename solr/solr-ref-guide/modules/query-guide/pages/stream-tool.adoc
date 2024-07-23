@@ -26,7 +26,7 @@ To run it, open a window and enter:
 $ bin/solr stream --header -c techproducts --delimiter=\| 'search(techproducts,q="name:memory",fl="name,price")'
 ----
 
-This will run the provide streaming expression on the `techproducts` collection and produce:  
+This will run the provided streaming expression on the `techproducts` collection and produce:  
 
 [,console]
 ----
@@ -105,6 +105,55 @@ List of options:
 There are several ways to use `bin/solr stream`.
 This section presents several examples.
 
+=== Executing Expression Locally
+
+Streaming Expressions by default are executed in the Solr cluster.  
+However there are use cases where you want to interact with data in your local environment, or even run a streaming expression independent of Solr.
+
+The Stream Tool allows you to specify `--execution local` to process the expression in the Solr CLI's JVM.
+
+Assuming you have create the file `load_data.expr` with the contents:
+
+----
+# Index CSV File
+
+update(
+  gettingstarted,
+  parseCSV(
+    cat(./example/exampledocs/books.csv, maxLines=2)
+  )
+)
+----
+
+Running this expression will read in the local file and send the first two lines to the collection `gettingstarted`.
+
+TIP: Want to send data to a remote Solr?  pass in `--solr-url http://solr.remote:8983`.
+
+
+[,console]
+----
+$ bin/solr stream --execution local --header load_data.expr
+----
+
+
+The StreamTool adds some Streaming Expressions specifically for local use:
+
+* stdin() lets you pipe data directly into the streaming expression.
+* cat() that allows you to read ANY file on your local system.  This is different from the xref:stream-source-reference.adoc#cat[`cat`] operator that runs in Solr that only accesses `$SOLR_HOME/userfiles/`.
+
+Caveats:
+
+ * You don't get to use any of the parallelization support that is available when you run the expression on the cluster.
+
+=== Piping data to an expression
+
+Index a CSV file into `gettingstarted` collection.
+
+[,console]
+----
+$ cat example/exampledocs/books.csv | bin/solr stream -e local 'update(gettingstarted,parseCSV(stdin()))'
+----
+
 === Variable interpolation
 
 You can do variable interpolation via having `$1`, `$2` etc in your streaming expression, and then passing those values as arguments.
@@ -115,34 +164,4 @@ $ bin/solr stream -c techproducts 'echo("$1")' "Hello World"
 Hello World
 ----
 
-=== Executing Expression Locally
-
-Streaming Expressions by default are executed in the Solr cluster.  
-However there are use cases where you want to interact with data in your local environment, or even run a streaming expression independent of Solr.
-
-The Stream Tool allows you to specify `--execution local` to process the expression in the tools' JVM.
-
-Assuming you have create the file `load_data.expr` with the contents:
-
-----
-# Index CSV File
-
-search(
-  techproducts,
-  q="name:memory",
-  fl="name,price",
-  sort="price desc"
-)
-----
-
-[,console]
-----
-$ bin/solr stream --execution local load_data.expr
-----
-
-Caveats:
- * You don't get to use any of the parallelization support locally.
-
-=== Piping data to an expression
-
-Index all JSON files into `gettingstarted`.
+This also works with a `.expr` files.
