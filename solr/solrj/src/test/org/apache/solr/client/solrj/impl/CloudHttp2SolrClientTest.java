@@ -81,7 +81,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
-@LogLevel("org.apache.solr.servlet.HttpSolrCall=INFO")
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -94,21 +93,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static CloudSolrClient httpBasedCloudSolrClient = null;
   private static CloudSolrClient zkBasedCloudSolrClient = null;
 
-  private static LogListener entireClusterStateLogs;
-  private static LogListener collectionClusterStateLogs;
-  private static LogListener commandLogs;
 
-  static {
-    Pattern patternWithCollection =
-        Pattern.compile(
-            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS[^}]*collection=[^&}]+[^}]*\\}");
-    Pattern patternWithoutCollection =
-        Pattern.compile(
-            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS(?![^}]*collection=)[^}]*\\}");
-    entireClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(patternWithoutCollection);
-    collectionClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(patternWithCollection);
-    commandLogs = LogListener.info(HttpSolrCall.class);
-  }
+  private static final Pattern PATTERN_WITH_COLLECTION = Pattern.compile("path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS" +
+          "[^}]*collection=[^&}]+[^}]*\\}");
+  private static final Pattern PATTERN_WITHOUT_COLLECTION = Pattern.compile("path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS" +
+          "(?![^}]*collection=)[^}]*\\}");
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -135,6 +124,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
+
     if (httpBasedCloudSolrClient != null) {
       try {
         httpBasedCloudSolrClient.close();
@@ -268,34 +258,79 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LogLevel("org.apache.solr.servlet.HttpSolrCall=INFO")
+  @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
 
-    String COLLECTION = "TEST_COLLECTION";
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 2, 2);
+    performTest(false, "HTTPCSPTEST", 1, 10, 15, 15);
 
-    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-    httpBasedCloudSolrClient.add(COLLECTION, doc);
-    httpBasedCloudSolrClient.commit(COLLECTION);
-
-    for (int i = 0; i < 3; i++) {
-      assertEquals(
-          1,
-          httpBasedCloudSolrClient
-              .query(COLLECTION, params("q", "*:*"))
-              .getResults()
-              .getNumFound());
-    }
-
-    // still left with a call to fetch entire cluster state - to be addressed in a separate PR
-    assertTrue(entireClusterStateLogs.getQueue().size() == 1);
-
-    // Originates from CSP.resolveAliases() - 2 calls per request: 1 add, 1 commit, and 3 queries.
-    // This issue is not being addressed in this PR.
-    assertTrue(collectionClusterStateLogs.getQueue().size() == 10);
   }
+  @Test
+  @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
+  public void testZkCspPerf() throws Exception {
+
+    performTest(true, "ZKCSPTEST", 0,0, 3, 15);
+
+  }
+
+  private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    return new CloudHttp2SolrClient.Builder(solrUrls).build();
+  }
+  private CloudSolrClient createZkCloudSolrClient() {
+    return new CloudHttp2SolrClient.Builder(
+            Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .build();
+  }
+
+  private void performTest(boolean isZkCSP, String collectionName,
+                           int expectedEntireClusterStateCount, int expectedCollectionClusterStateCallCount,
+                           int expectedAdminRequestCount, int expectedNonAdminRequestCount) throws Exception {
+
+    CloudSolrClient solrClient = null;
+    try (LogListener entireClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITHOUT_COLLECTION);
+         LogListener collectionClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION);
+         LogListener nonAdminRequestLogs = LogListener.debug(HttpSolrCall.class).substring("Received request");
+         LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
+
+
+
+      if(isZkCSP){
+        solrClient = createZkCloudSolrClient();
+      } else{
+        solrClient = createHttpCSPBasedCloudSolrClient();
+      }
+      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collectionName, 2, 2);
+      SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+      solrClient.add(collectionName, doc);
+      solrClient.commit(collectionName);
+      for (int i = 0; i < 3; i++) {
+        assertEquals(1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+      }
+
+
+      assertLogCount(nonAdminRequestLogs, expectedNonAdminRequestCount);
+      assertLogCount(adminRequestLogs, expectedAdminRequestCount);
+
+      assertLogCount(collectionClusterStateLogs, expectedCollectionClusterStateCallCount);
+      assertLogCount(entireClusterStateLogs, expectedEntireClusterStateCount);
+    } finally{
+      solrClient.close();
+    }
+  }
+
+
+  private void assertLogCount(LogListener logListener, int expectedCount) {
+    int logCount = logListener.getCount();
+    assertEquals(expectedCount, logCount);
+    if (logCount > 0) {
+      for (int i = 0; i < logCount; i++) {
+        logListener.pollMessage();
+      }
+    }
+  }
+
 
   @Test
   public void testRouting() throws Exception {
