@@ -261,57 +261,15 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
 
-    performTest(false, "HTTPCSPTEST",
-            1,
-            10,
-            //1 create collection, 2 /admin/core , 1 LISTALIASES, 1 CLUSTERSTATUS, 10 CLUSTERSTATUS with coll param
-            15,
-            15);
-
-  }
-  @Test
-  @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
-  public void testZkCspPerf() throws Exception {
-
-    performTest(true, "ZKCSPTEST",
-            0,
-            0,
-            //1 create collection, 2 /admin/core
-            3,
-            15);
-
-  }
-
-  private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
-    final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    return new CloudHttp2SolrClient.Builder(solrUrls).build();
-  }
-  private CloudSolrClient createZkCloudSolrClient() {
-    return new CloudHttp2SolrClient.Builder(
-            Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
-            .build();
-  }
-
-  private void performTest(boolean isZkCSP, String collectionName,
-                           int expectedEntireClusterStateCallCount, int expectedCollectionClusterStateCallCount,
-                           int expectedAdminRequestCount, int expectedNonAdminRequestCount) throws Exception {
+    String collectionName = "HTTPCSPTEST";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
 
     CloudSolrClient solrClient = null;
-    try (LogListener entireClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITHOUT_COLLECTION);
-         LogListener collectionClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION);
-         LogListener nonAdminRequestLogs = LogListener.debug(HttpSolrCall.class).substring("Received request");
-         LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
+    try (LogListener entireClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITHOUT_COLLECTION); LogListener collectionClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION); LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
 
+      solrClient = createHttpCSPBasedCloudSolrClient();
 
-
-      if(isZkCSP){
-        solrClient = createZkCloudSolrClient();
-      } else{
-        solrClient = createHttpCSPBasedCloudSolrClient();
-      }
-      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(collectionName, 2, 2);
       SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
       solrClient.add(collectionName, doc);
       solrClient.commit(collectionName);
@@ -319,15 +277,18 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         assertEquals(1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
       }
 
-
-      assertLogCount(nonAdminRequestLogs, expectedNonAdminRequestCount);
-      assertLogCount(adminRequestLogs, expectedAdminRequestCount);
-
-      assertLogCount(collectionClusterStateLogs, expectedCollectionClusterStateCallCount);
-      assertLogCount(entireClusterStateLogs, expectedEntireClusterStateCallCount);
-    } finally{
+      assertLogCount(adminRequestLogs, 12);
+      assertLogCount(collectionClusterStateLogs, 10);
+      assertLogCount(entireClusterStateLogs, 1);
+    } finally {
       solrClient.close();
     }
+  }
+
+  private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    return new CloudHttp2SolrClient.Builder(solrUrls).build();
   }
 
 

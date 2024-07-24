@@ -325,11 +325,6 @@ public class HttpSolrCall {
         addCollectionParamIfNeeded(getCollectionsList());
 
         action = PROCESS;
-
-        //this request would be processed by Solr
-        if(invalidStates ==null){
-          log.debug("Received request: path={}, action={}", path, action);
-        }
         return; // we are done with a valid handler
       }
     }
