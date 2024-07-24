@@ -915,7 +915,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         req(
             "v1", "[1,2,3]",
             "v2", " [1,2,3] ",
-            "v3", " [1, 2, 3] ")) {
+            "v3", " [1, 2, 3.0] ")) {
       assertFuncEquals(
           req,
           "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
@@ -960,6 +960,28 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "vectorSimilarity( $f, $v1)",
           "vectorSimilarity(vector,$v2)",
           "vectorSimilarity(vector, $v2)");
+    }
+
+    try (SolrQueryRequest req =
+        req(
+            "f", "vector_byte",
+            "v1", "[1,2,3,4]",
+            "v2", " [1, 2, 3, 4]")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(BYTE,COSINE,vector_byte,[1,2,3,4])",
+          "vectorSimilarity(BYTE,COSINE,vector_byte,$v1)",
+          "vectorSimilarity(BYTE,COSINE,vector_byte, $v1)",
+          "vectorSimilarity(BYTE,COSINE,vector_byte,$v2)",
+          "vectorSimilarity(BYTE,COSINE,vector_byte, $v2)",
+          "vectorSimilarity(vector_byte,[1,2,3,4])",
+          "vectorSimilarity( vector_byte,[1,2,3,4])",
+          "vectorSimilarity( $f,[1,2,3,4])",
+          "vectorSimilarity(vector_byte,$v1)",
+          "vectorSimilarity(vector_byte, $v1)",
+          "vectorSimilarity( $f, $v1)",
+          "vectorSimilarity(vector_byte,$v2)",
+          "vectorSimilarity(vector_byte, $v2)");
     }
 
     // contrived, but helps us test the param resolution
