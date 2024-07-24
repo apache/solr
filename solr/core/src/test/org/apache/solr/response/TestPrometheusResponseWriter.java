@@ -84,7 +84,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
               Float.parseFloat(actualValue);
             } catch (NumberFormatException e) {
               assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
-              throw new AssertionError("Value not a valid Prometheus Value: " + actualValue);
             }
           });
     }
