@@ -82,7 +82,7 @@ setup() {
 
 @test "auth help flag prints help" {
   run solr auth --help
-  assert_output --partial 'Usage: solr auth'
+  assert_output --partial 'bin/solr auth enable'
   refute_output --partial 'ERROR'
 }
 

@@ -63,6 +63,16 @@ public class DeleteTool extends ToolBase {
   }
 
   @Override
+  public String getHeader() {
+    return "\nDeletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
+        + " mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
+        + " delete the configuration directory from Zookeeper so long as it is not being used by another collection.\n"
+        + " You can override this behavior by passing -deleteConfig false when running this command.\n"
+        + "\n"
+        + "List of options:";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
         Option.builder("c")
