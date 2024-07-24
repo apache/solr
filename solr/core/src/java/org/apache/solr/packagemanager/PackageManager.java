@@ -73,7 +73,7 @@ import org.slf4j.LoggerFactory;
 /** Handles most of the management of packages that are already installed in Solr. */
 public class PackageManager implements Closeable {
 
-  final String solrBaseUrl;
+  final String solrUrl;
   final SolrClient solrClient;
   final SolrZkClient zkClient;
 
@@ -81,8 +81,8 @@ public class PackageManager implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public PackageManager(SolrClient solrClient, String solrBaseUrl, String zkHost) {
-    this.solrBaseUrl = solrBaseUrl;
+  public PackageManager(SolrClient solrClient, String solrUrl, String zkHost) {
+    this.solrUrl = solrUrl;
     this.solrClient = solrClient;
     this.zkClient =
         new SolrZkClient.Builder()

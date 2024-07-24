@@ -32,13 +32,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.PackageUtils;
@@ -78,7 +74,13 @@ public class PackageTool extends ToolBase {
               + "don't print stack traces, hence special treatment is needed here.")
   public void runImpl(CommandLine cli) throws Exception {
     try {
-      String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+      String solrUrl =
+              cli.hasOption("solr-url")
+                      ? cli.getOptionValue("solr-url")
+                      : cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+      solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
+      log.debug("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
+
       String zkHost = SolrCLI.getZkHost(cli);
       if (zkHost == null) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");
@@ -88,7 +90,7 @@ public class PackageTool extends ToolBase {
 
       String cmd = cli.getArgs()[0];
 
-      try (SolrClient solrClient = SolrCLI.getSolrClient(cli, true)) {
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
         packageManager = new PackageManager(solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);
@@ -361,33 +363,5 @@ public class PackageTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED);
-  }
-
-  private String getZkHost(CommandLine cli) throws Exception {
-    String zkHost =
-        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
-    if (zkHost != null) return zkHost;
-
-    try (SolrClient solrClient = getSolrClient(cli)) {
-      // hit Solr to get system info
-      NamedList<Object> systemInfo =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-
-      // convert raw JSON into user-friendly output
-      StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
-      if (cloud != null) {
-        String zookeeper = (String) cloud.get("ZooKeeper");
-        if (zookeeper.endsWith("(embedded)")) {
-          zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
-        }
-        zkHost = zookeeper;
-      }
-    }
-
-    return zkHost;
   }
 }

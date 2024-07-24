@@ -27,12 +27,12 @@ setup() {
 
 @test "auth rejects blockUnknown option with invalid boolean" {
   run ! solr auth enable -type basicAuth -credentials any:any -blockUnknown ture
-  assert_output --partial "Argument [block-unknown] must be either true or false, but was [ture]"
+  assert_output --partial "Argument [blockUnknown] must be either true or false, but was [ture]"
 }
 
 @test "auth rejects updateIncludeFileOnly option with invalid boolean" {
   run ! solr auth enable -type basicAuth -credentials any:any -updateIncludeFileOnly ture
-  assert_output --partial "Argument [update-include-file-only] must be either true or false, but was [ture]"
+  assert_output --partial "Argument [updateIncludeFileOnly] must be either true or false, but was [ture]"
 }
 
 @test "auth enable/disable lifecycle" {

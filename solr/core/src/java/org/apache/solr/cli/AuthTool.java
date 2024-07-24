@@ -750,6 +750,8 @@ public class AuthTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     ensureArgumentIsValidBooleanIfPresent(cli, "block-unknown");
+    ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
+    ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");
     ensureArgumentIsValidBooleanIfPresent(cli, "update-include-file-only");
 
     String type = cli.getOptionValue("type", "basicAuth");
