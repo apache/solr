@@ -42,20 +42,6 @@ public class ZkMvTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .argName("SRC")
-            .longOpt("source")
-            .hasArg()
-            .required(true)
-            .desc("Source Znode to move from.")
-            .build(),
-        Option.builder()
-            .argName("DST")
-            .longOpt("destination")
-            .hasArg()
-            .required(true)
-            .desc("Destination Znode to move to.")
-            .build(),
         SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
@@ -68,6 +54,11 @@ public class ZkMvTool extends ToolBase {
   @Override
   public String getName() {
     return "mv";
+  }
+
+  @Override
+  public String getUsage() {
+    return "bin/solr mv [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] source destination";
   }
 
   @Override

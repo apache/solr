@@ -42,13 +42,6 @@ public class ZkRmTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("path")
-            .argName("PATH")
-            .hasArg()
-            .required(true)
-            .desc("Path to remove.")
-            .build(),
         SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
@@ -64,11 +57,16 @@ public class ZkRmTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr rm [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
-    String target = cli.getOptionValue("path");
+    String target = cli.getArgs()[0];
     boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
 
     String znode = target;

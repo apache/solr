@@ -37,6 +37,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -134,7 +135,7 @@ public class SolrCLI implements CLIO {
                   + '.')
           .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("url")
+      Option.builder("s")
           .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
@@ -184,6 +185,10 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
+    System.out.println("main called with args");
+    for (String arg : args) {
+      System.out.println(arg);
+    }
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
     final boolean isHelpCommand =
@@ -197,6 +202,13 @@ public class SolrCLI implements CLIO {
     if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
       // select the version tool to be run
       args[0] = "version";
+    }
+
+    if (Objects.equals(args[0], "zk")) {
+      // chop the leading zk so we invoke the correct zk tool
+      String[] trimmedArgs = new String[args.length - 1];
+      System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
+      args = trimmedArgs;
     }
 
     SSLConfigurationsFactory.current().init();
@@ -295,6 +307,7 @@ public class SolrCLI implements CLIO {
     else if ("run_example".equals(toolType)) return new RunExampleTool();
     else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool();
     else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool();
+    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp();
     else if ("rm".equals(toolType)) return new ZkRmTool();
     else if ("mv".equals(toolType)) return new ZkMvTool();
     else if ("cp".equals(toolType)) return new ZkCpTool();

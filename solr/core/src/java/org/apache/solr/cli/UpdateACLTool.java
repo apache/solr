@@ -49,23 +49,14 @@ public class UpdateACLTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return List.of(
-        Option.builder()
-            .longOpt("path")
-            .argName("PATH")
-            .hasArg()
-            .required(true)
-            .desc("The path to update.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+    return List.of(SolrCLI.OPTION_ZKHOST, SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
-    String path = cli.getOptionValue("path");
     String zkHost = SolrCLI.getZkHost(cli);
+    String path = cli.getArgs()[0];
 
     if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(

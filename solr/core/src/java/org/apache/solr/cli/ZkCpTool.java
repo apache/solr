@@ -54,20 +54,6 @@ public class ZkCpTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder()
-            .longOpt("source")
-            .hasArg()
-            .argName("SRC")
-            .required(true)
-            .desc("Source file or directory, may be local or a Znode.")
-            .build(),
-        Option.builder()
-            .longOpt("destination")
-            .hasArg()
-            .argName("DST")
-            .required(true)
-            .desc("Destination of copy, may be local or a Znode.")
-            .build(),
-        Option.builder()
             .longOpt("solr-home")
             .argName("DIR")
             .hasArg()
@@ -88,13 +74,18 @@ public class ZkCpTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr cp [-r <recurse>] [-s <HOST>] [--solr-home <DIR>] [-u <credentials>] [-z <HOST>] source destination";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-    String src = cli.getOptionValue("source");
-    String dst = cli.getOptionValue("destination");
+    String src = cli.getArgs()[0];
+    String dst = cli.getArgs()[1];
     Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
