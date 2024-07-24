@@ -81,6 +81,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
+@LogLevel("org.apache.solr.servlet.HttpSolrCall=INFO")
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -92,6 +93,22 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static CloudSolrClient httpBasedCloudSolrClient = null;
   private static CloudSolrClient zkBasedCloudSolrClient = null;
+
+  private static LogListener entireClusterStateLogs;
+  private static LogListener collectionClusterStateLogs;
+  private static LogListener commandLogs;
+
+  static {
+    Pattern patternWithCollection =
+        Pattern.compile(
+            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS[^}]*collection=[^&}]+[^}]*\\}");
+    Pattern patternWithoutCollection =
+        Pattern.compile(
+            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS(?![^}]*collection=)[^}]*\\}");
+    entireClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(patternWithoutCollection);
+    collectionClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(patternWithCollection);
+    commandLogs = LogListener.info(HttpSolrCall.class);
+  }
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -263,19 +280,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     httpBasedCloudSolrClient.add(COLLECTION, doc);
     httpBasedCloudSolrClient.commit(COLLECTION);
 
-    Pattern patternWithCollection =
-        Pattern.compile(
-            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS[^}]*collection=[^&}]+[^}]*\\}");
-
-    Pattern patternWithoutCollection =
-        Pattern.compile(
-            "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS(?![^}]*collection=)[^}]*\\}");
-
-    LogListener entireClusterStateLogs =
-        LogListener.info(HttpSolrCall.class).regex(patternWithoutCollection);
-    LogListener collectionClusterStateLogs =
-        LogListener.info(HttpSolrCall.class).regex(patternWithCollection);
-
     for (int i = 0; i < 3; i++) {
       assertEquals(
           1,
@@ -283,16 +287,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               .query(COLLECTION, params("q", "*:*"))
               .getResults()
               .getNumFound());
-      assertTrue(entireClusterStateLogs.getQueue().size() == 0);
-      entireClusterStateLogs.pollMessage();
-      int collectionClusterStateCalls = collectionClusterStateLogs.getQueue().size();
-      log.info("collectionClusterStateCalls = {}", collectionClusterStateCalls);
-      // we should be left with 2 calls to resolveAliases() per query request
-      assertTrue(collectionClusterStateCalls == 2);
-      for (int j = 0; j < collectionClusterStateCalls; j++) {
-        collectionClusterStateLogs.pollMessage();
-      }
     }
+
+    // still left with a call to fetch entire cluster state - to be addressed in a separate PR
+    assertTrue(entireClusterStateLogs.getQueue().size() == 1);
+
+    // Originates from CSP.resolveAliases() - 2 calls per request: 1 add, 1 commit, and 3 queries.
+    // This issue is not being addressed in this PR.
+    assertTrue(collectionClusterStateLogs.getQueue().size() == 10);
   }
 
   @Test

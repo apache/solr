@@ -1188,11 +1188,6 @@ public abstract class CloudSolrClient extends SolrClient {
       if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
     }
 
-    ClusterState.CollectionRef ref = getCollectionRef(collection);
-    if (ref == null) {
-      // no such collection exists
-      return null;
-    }
     Object[] locks = this.locks;
     int lockId =
         Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.length);
@@ -1204,9 +1199,15 @@ public abstract class CloudSolrClient extends SolrClient {
       if (col != null) {
         if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
       }
+      // Moving the lookup inside the lock makes the lazy/non-lazy check irrelevant
+      ClusterState.CollectionRef ref = getCollectionRef(collection);
+      if (ref == null) {
+        // no such collection exists
+        return null;
+      }
       // We are going to fetch a new version
       // we MUST try to get a new version
-      DocCollection fetchedCol = ref.get(); // this is a call to ZK
+      DocCollection fetchedCol = ref.get(); // this is a call to ZK if CSP instance is a Zk CSP
       if (fetchedCol == null) return null; // this collection no more exists
       if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
         cacheEntry.setRetriedAt(); // we retried and found that it is the same version
