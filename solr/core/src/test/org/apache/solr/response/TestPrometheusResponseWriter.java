@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -40,24 +39,23 @@ import org.junit.Test;
 
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-  public static JettySolrRunner jetty;
   public static final List<String> VALID_PROMETHEUS_VALUES = Arrays.asList("NaN", "+Inf", "-Inf");
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
-    jetty = solrClientTestRule.getJetty();
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
-    jetty.getCoreContainer().waitForLoadingCoresToFinish(30000);
+    var cc = solrClientTestRule.getCoreContainer();
+    cc.waitForLoadingCoresToFinish(30000);
 
-    SolrMetricManager manager = jetty.getCoreContainer().getMetricManager();
+    SolrMetricManager manager = cc.getMetricManager();
     Counter c = manager.counter(null, "solr.core.collection1", "QUERY./dummy/metrics.requests");
     c.inc(10);
     c = manager.counter(null, "solr.node", "ADMIN./dummy/metrics.requests");
     c.inc(20);
     Meter m = manager.meter(null, "solr.jetty", "dummyMetrics.2xx-responses");
     m.mark(30);
-    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "gc.dummyMetrics.count");
+    registerGauge(manager, "solr.jvm", "gc.dummyMetrics.count");
   }
 
   @Test
@@ -68,7 +66,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     QueryRequest req = new QueryRequest(params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
 
-    try (SolrClient adminClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       String output = (String) res.get("response");
@@ -103,7 +101,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     QueryRequest req = new QueryRequest(params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
 
-    try (SolrClient adminClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       String output = (String) res.get("response");
