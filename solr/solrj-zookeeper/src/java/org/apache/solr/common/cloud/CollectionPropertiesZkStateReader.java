@@ -2,6 +2,7 @@ package org.apache.solr.common.cloud;
 
 import static java.util.Collections.emptyMap;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader.CollectionWatch;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -25,12 +25,8 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Fetches and manages collection properties from a ZooKeeper ensemble using {@link ZkStateReader}
- * for ZooKeeper client access. Ensures thread safety by synchronizing on the update lock provided
- * by {@link ZkStateReader}
- */
-public class CollectionPropertiesZkStateReader implements SolrCloseable {
+/** Fetches and manages collection properties from a ZooKeeper ensemble */
+public class CollectionPropertiesZkStateReader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private volatile boolean closed = false;
 
@@ -141,11 +137,6 @@ public class CollectionPropertiesZkStateReader implements SolrCloseable {
     notifications.shutdownNow();
     ExecutorUtil.shutdownAndAwaitTermination(notifications);
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
-  }
-
-  @Override
-  public boolean isClosed() {
-    return closed;
   }
 
   private static class VersionedCollectionProps {

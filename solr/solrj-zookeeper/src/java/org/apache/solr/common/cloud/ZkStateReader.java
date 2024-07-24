@@ -386,7 +386,6 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet();
   private final SecurityNodeWatcher securityNodeWatcher;
-  private final Object updateLock = new Object();
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -869,7 +868,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public Object getUpdateLock() {
-    return updateLock;
+    return this;
   }
 
   public SolrZkClient getZKClient() {
