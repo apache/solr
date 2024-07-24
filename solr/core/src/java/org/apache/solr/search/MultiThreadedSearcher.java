@@ -116,7 +116,7 @@ public class MultiThreadedSearcher {
 
     ScoreMode scoreMode = SolrMultiCollectorManager.scoreMode(firstCollectors);
 
-    return new SearchResult(scoreMode, ret);
+    return new SearchResult(scoreMode, ret, needTopDocs, needMaxScore, needDocSet);
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
@@ -253,10 +253,21 @@ public class MultiThreadedSearcher {
   static class SearchResult {
     final ScoreMode scoreMode;
     private final Object[] result;
+    private final boolean needTopDocs;
+    private final boolean needMaxScore;
+    private final boolean needDocSet;
 
-    public SearchResult(ScoreMode scoreMode, Object[] result) {
+    public SearchResult(
+        ScoreMode scoreMode,
+        Object[] result,
+        boolean needTopDocs,
+        boolean needMaxScore,
+        boolean needDocSet) {
       this.scoreMode = scoreMode;
       this.result = result;
+      this.needTopDocs = needTopDocs;
+      this.needMaxScore = needMaxScore;
+      this.needDocSet = needDocSet;
     }
 
     public TopDocsResult getTopDocsResult() {
@@ -265,6 +276,7 @@ public class MultiThreadedSearcher {
           return (TopDocsResult) res;
         }
       }
+      assert needTopDocs == false;
       return null;
     }
 
@@ -275,6 +287,7 @@ public class MultiThreadedSearcher {
             return ((MaxScoreResult) res).maxScore;
           }
         }
+        assert needMaxScore == false;
         return Float.NaN;
       } else {
         return 0.0f;
@@ -287,6 +300,7 @@ public class MultiThreadedSearcher {
           return (FixedBitSet) res;
         }
       }
+      assert needDocSet == false;
       return null;
     }
   }
