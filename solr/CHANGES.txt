@@ -173,6 +173,8 @@ Optimizations
 
 * SOLR-17349: SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null (Michael Gibney)
 
+* SOLR-17340: Add cache on top of system metrics BeanInfos to make calls to /admin/info/system faster (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
@@ -204,6 +206,8 @@ Bug Fixes
 
 * SOLR-17367: Restore the use of -params option to PostTool. (Bostoi via Eric Pugh)
 
+* SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -229,6 +233,8 @@ Other Changes
 
 * SOLR-17347: EnvUtils: Removed "env" methods, as they were problematic.  Code should almost never
   refer to env vars.  (David Smiley)
+
+* SOLR-15831: Refactor bin/solr and bin/solr.cmd commands integration with AuthTool, DeleteTool, and PackageTool to delegate arg parsing to Java code.  Removed limitation of PackageTool only being executed on an active Solr node.  (Eric Pugh)
 
 ==================  9.6.1 ==================
 Bug Fixes
