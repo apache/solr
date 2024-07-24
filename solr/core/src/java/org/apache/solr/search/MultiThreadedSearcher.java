@@ -119,8 +119,10 @@ public class MultiThreadedSearcher {
     return new SearchResult(scoreMode, ret);
   }
 
-  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
+  static boolean allowMT(
+      DelegatingCollector postFilter, boolean queryLimitsEnabled, QueryCommand cmd, Query query) {
     if (postFilter != null
+        || queryLimitsEnabled
         || cmd.getSegmentTerminateEarly()
         || cmd.getTimeAllowed() > 0
         || !cmd.getMultiThreaded()) {

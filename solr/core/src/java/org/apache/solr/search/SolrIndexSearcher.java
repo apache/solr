@@ -1920,7 +1920,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedSearcher.allowMT(
+          pf.postFilter, QueryLimits.getCurrentLimits().isLimitsEnabled(), cmd, query)) {
         if (log.isDebugEnabled()) {
           log.debug("skipping collector manager");
         }
@@ -2045,7 +2046,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedSearcher.allowMT(
+          pf.postFilter, QueryLimits.getCurrentLimits().isLimitsEnabled(), cmd, query)) {
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
