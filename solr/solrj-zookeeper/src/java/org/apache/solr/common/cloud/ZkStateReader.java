@@ -154,7 +154,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONTAINER_PLUGINS = "plugin";
 
   public static final String PLACEMENT_PLUGIN = "placement-plugin";
-  private CollectionPropertiesZkStateReader collectionPropertiesZkStateReader;
+  private final CollectionPropertiesZkStateReader collectionPropertiesZkStateReader;
 
   /** A view of the current state of all collections. */
   protected volatile ClusterState clusterState;
@@ -386,6 +386,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<CountDownLatch> waitLatches = ConcurrentHashMap.newKeySet();
   private final SecurityNodeWatcher securityNodeWatcher;
+  private final Object updateLock = new Object();
 
   public ZkStateReader(SolrZkClient zkClient) {
     this(zkClient, null);
@@ -395,7 +396,7 @@ public class ZkStateReader implements SolrCloseable {
     this.zkClient = zkClient;
     this.closeClient = false;
     this.securityNodeWatcher = new SecurityNodeWatcher(this, securityNodeListener);
-    collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this.zkClient);
+    collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -433,7 +434,7 @@ public class ZkStateReader implements SolrCloseable {
     this.zkClient = builder.build();
     this.closeClient = true;
     this.securityNodeWatcher = null;
-    collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this.zkClient);
+    collectionPropertiesZkStateReader = new CollectionPropertiesZkStateReader(this);
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -868,7 +869,11 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public Object getUpdateLock() {
-    return this;
+    return updateLock;
+  }
+
+  public SolrZkClient getZKClient() {
+    return zkClient;
   }
 
   @Override
@@ -885,7 +890,7 @@ public class ZkStateReader implements SolrCloseable {
 
     ExecutorUtil.shutdownAndAwaitTermination(notifications);
     collectionPropertiesZkStateReader.close();
-    if (closeClient && zkClient != null) {
+    if (closeClient) {
       zkClient.close();
     }
     assert ObjectReleaseTracker.release(this);
@@ -1165,22 +1170,12 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  /**
-   * Retrieves the properties for a specific collection.
-   *
-   * <p>This method is delegated to {@link
-   * CollectionPropertiesZkStateReader#getCollectionProperties(String,long)}.
-   */
+  /** Get properties for a specific collection */
   public Map<String, String> getCollectionProperties(final String collection) {
     return collectionPropertiesZkStateReader.getCollectionProperties(collection, 0);
   }
 
-  /**
-   * Get and cache collection properties for a given collection.
-   *
-   * <p>This method is delegated to {@link
-   * CollectionPropertiesZkStateReader#getCollectionProperties(String,long)}.
-   */
+  /** Get and cache collection properties for a given collection */
   public Map<String, String> getCollectionProperties(final String collection, long cacheForMillis) {
     return collectionPropertiesZkStateReader.getCollectionProperties(collection, cacheForMillis);
   }

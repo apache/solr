@@ -16,7 +16,6 @@ import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader.CollectionWatch;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -26,11 +25,17 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Fetches and manages collection properties from a ZooKeeper ensemble using {@link ZkStateReader}
+ * for ZooKeeper client access. Ensures thread safety by synchronizing on the update lock provided
+ * by {@link ZkStateReader}
+ */
 public class CollectionPropertiesZkStateReader implements SolrCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private volatile boolean closed = false;
 
   private final SolrZkClient zkClient;
+  private final ZkStateReader zkStateReader;
 
   /** Collection properties being actively watched */
   private final ConcurrentHashMap<String, VersionedCollectionProps> watchedCollectionProps =
@@ -63,9 +68,9 @@ public class CollectionPropertiesZkStateReader implements SolrCloseable {
   // only kept to identify if the cleaner has already been started.
   private Future<?> collectionPropsCacheCleaner;
 
-  public CollectionPropertiesZkStateReader(SolrZkClient zkClient) {
-    this.zkClient = zkClient;
-    assert ObjectReleaseTracker.track(this);
+  public CollectionPropertiesZkStateReader(ZkStateReader zkStateReader) {
+    this.zkClient = zkStateReader.getZkClient();
+    this.zkStateReader = zkStateReader;
   }
 
   /**
@@ -136,8 +141,6 @@ public class CollectionPropertiesZkStateReader implements SolrCloseable {
     notifications.shutdownNow();
     ExecutorUtil.shutdownAndAwaitTermination(notifications);
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
-
-    assert ObjectReleaseTracker.release(this);
   }
 
   @Override
@@ -291,7 +294,7 @@ public class CollectionPropertiesZkStateReader implements SolrCloseable {
     final String znodePath = getCollectionPropsPath(collection);
     // lazy init cache cleaner once we know someone is using collection properties.
     if (collectionPropsCacheCleaner == null) {
-      synchronized (this) { // Double-checked locking
+      synchronized (zkStateReader.getUpdateLock()) { // Double-checked locking
         if (collectionPropsCacheCleaner == null) {
           collectionPropsCacheCleaner = notifications.submit(new CacheCleaner());
         }
