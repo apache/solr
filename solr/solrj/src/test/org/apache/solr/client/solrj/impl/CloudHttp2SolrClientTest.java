@@ -261,14 +261,24 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
 
-    performTest(false, "HTTPCSPTEST", 1, 10, 15, 15);
+    performTest(false, "HTTPCSPTEST",
+            1,
+            10,
+            //1 create collection, 2 /admin/core , 1 LISTALIASES, 1 CLUSTERSTATUS, 10 CLUSTERSTATUS with coll param
+            15,
+            15);
 
   }
   @Test
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testZkCspPerf() throws Exception {
 
-    performTest(true, "ZKCSPTEST", 0,0, 3, 15);
+    performTest(true, "ZKCSPTEST",
+            0,
+            0,
+            //1 create collection, 2 /admin/core
+            3,
+            15);
 
   }
 
@@ -284,7 +294,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   private void performTest(boolean isZkCSP, String collectionName,
-                           int expectedEntireClusterStateCount, int expectedCollectionClusterStateCallCount,
+                           int expectedEntireClusterStateCallCount, int expectedCollectionClusterStateCallCount,
                            int expectedAdminRequestCount, int expectedNonAdminRequestCount) throws Exception {
 
     CloudSolrClient solrClient = null;
@@ -314,7 +324,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertLogCount(adminRequestLogs, expectedAdminRequestCount);
 
       assertLogCount(collectionClusterStateLogs, expectedCollectionClusterStateCallCount);
-      assertLogCount(entireClusterStateLogs, expectedEntireClusterStateCount);
+      assertLogCount(entireClusterStateLogs, expectedEntireClusterStateCallCount);
     } finally{
       solrClient.close();
     }
