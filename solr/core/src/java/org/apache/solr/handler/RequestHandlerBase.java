@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
@@ -188,6 +189,7 @@ public abstract class RequestHandlerBase
     public final Counter requests;
     public final Timer requestTimes;
     public final Counter totalTime;
+    public final Histogram concurrency;
 
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
@@ -197,6 +199,7 @@ public abstract class RequestHandlerBase
       requests = solrMetricsContext.counter("requests", metricPath);
       requestTimes = solrMetricsContext.timer("requestTimes", metricPath);
       totalTime = solrMetricsContext.counter("totalTime", metricPath);
+      concurrency = solrMetricsContext.maxHistogram("concurrency", metricPath);
     }
   }
 
@@ -228,6 +231,7 @@ public abstract class RequestHandlerBase
     metrics.requests.inc();
 
     Timer.Context timer = metrics.requestTimes.time();
+    metrics.concurrency.update(1);
     try {
       TestInjection.injectLeaderTragedy(req.getCore());
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
@@ -246,20 +250,24 @@ public abstract class RequestHandlerBase
       processErrorMetricsOnException(normalized, metrics);
       rsp.setException(normalized);
     } finally {
-      long elapsed = timer.stop();
-      metrics.totalTime.inc(elapsed);
+      try {
+        metrics.concurrency.update(-1);
+      } finally {
+        long elapsed = timer.stop();
+        metrics.totalTime.inc(elapsed);
 
-      if (publishCpuTime && threadCpuTimer != null) {
-        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
-        if (cpuTime.isPresent()) {
-          // add CPU_TIME if not already added by SearchHandler
-          NamedList<Object> header = rsp.getResponseHeader();
-          if (header != null) {
-            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
-              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+        if (publishCpuTime && threadCpuTimer != null) {
+          Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
+          if (cpuTime.isPresent()) {
+            // add CPU_TIME if not already added by SearchHandler
+            NamedList<Object> header = rsp.getResponseHeader();
+            if (header != null) {
+              if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+                header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+              }
             }
+            rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
           }
-          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
         }
       }
     }
