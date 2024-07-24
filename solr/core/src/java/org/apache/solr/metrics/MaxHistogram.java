@@ -110,23 +110,23 @@ public class MaxHistogram extends Histogram {
   }
 
   private MaxHistogram(
-      int intervalSeconds,
+      int intervalMillis,
       int maxBackdateSeconds,
       Reservoir reservoir,
       Clock relayClock,
       Clock clock) {
     super(reservoir);
-    this.intervalNanos = TimeUnit.MILLISECONDS.toNanos(intervalSeconds);
+    this.intervalNanos = TimeUnit.MILLISECONDS.toNanos(intervalMillis);
     if (maxBackdateSeconds == -1) {
       this.maxBackdateNanos = Long.MAX_VALUE; // effectively no limit
-    } else if (maxBackdateSeconds >= intervalSeconds) {
+    } else if (TimeUnit.SECONDS.toMillis(maxBackdateSeconds) >= intervalMillis) {
       // align `maxBackdateNanos` to a multiple of `intervalNanos`
       long requestedMaxBackdate = TimeUnit.SECONDS.toNanos(maxBackdateSeconds);
       this.maxBackdateNanos = requestedMaxBackdate - (requestedMaxBackdate % intervalNanos);
     } else {
       throw new IllegalArgumentException(
-          "maxBackdate must be -1 (unlimited) or >= "
-              + intervalSeconds
+          "maxBackdateSeconds must be -1 (unlimited) or >= "
+              + TimeUnit.MILLISECONDS.toSeconds(intervalMillis)
               + "; found "
               + maxBackdateSeconds);
     }
