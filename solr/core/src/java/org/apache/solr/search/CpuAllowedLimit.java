@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import static org.apache.solr.util.ThreadCpuTimer.readNSAndReset;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import net.jcip.annotations.NotThreadSafe;
@@ -27,6 +28,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Enforces a CPU-time based timeout on a given SolrQueryRequest, as specified by the {@code
@@ -41,6 +44,7 @@ import org.apache.solr.util.ThreadCpuTimer;
  */
 @NotThreadSafe
 public class CpuAllowedLimit implements QueryLimit {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final long requestedTimeoutNs;
   private volatile long timedOutAt = 0L;
@@ -92,11 +96,26 @@ public class CpuAllowedLimit implements QueryLimit {
     // if unsupported, use zero, and thus never exit, expect jvm and/or cpu branch
     // prediction to short circuit things if unsupported.
     Long delta = readNSAndReset(TIMING_CONTEXT).orElse(0L);
-    if (accumulatedTime.addAndGet(delta) > requestedTimeoutNs) {
-      timedOutAt = accumulatedTime.get();
-      return true;
+    try {
+      if (accumulatedTime.addAndGet(delta) > requestedTimeoutNs) {
+        timedOutAt = accumulatedTime.get();
+        return true;
+      }
+      return false;
+    } finally {
+      // uncomment for debugging. Our suspicious log checker will never be happy here... (nor should
+      // it be)
+
+      //      java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+      //      DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+      //
+      //      if (log.isInfoEnabled()) {
+      //        log.info("++++++++++++ SHOULD_EXIT {} accumulated:{} vs {} ++++ ON:{}",
+      // formatter.format(delta),
+      // formatter.format(accumulatedTime.get()),formatter.format(requestedTimeoutNs)
+      // ,Thread.currentThread().getName());
+      //      }
     }
-    return false;
   }
 
   @Override

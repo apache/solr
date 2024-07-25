@@ -1921,9 +1921,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        if (log.isDebugEnabled()) {
-          log.debug("skipping collector manager");
-        }
+        log.debug("SINGLE THREADED search,skipping collector manager");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
         Collector collector = topCollector;
@@ -1942,9 +1940,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        if (log.isDebugEnabled()) {
-          log.debug("using CollectorManager");
-        }
+        log.debug("MULTI-THREADED search, using CollectorManager");
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
                 .searchCollectorManagers(len, cmd, query, true, needScores, false);

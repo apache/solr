@@ -78,6 +78,8 @@ public class ThreadCpuTimer {
    *     unavailable.
    */
   public static Optional<Long> readNSAndReset(String context) {
+    // simulate heavy query and/or heavy CPU load in tests
+    TestInjection.injectCpuUseInSearcherCpuLimitCheck();
     if (THREAD_MX_BEAN == null) {
       return Optional.empty();
     } else {

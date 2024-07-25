@@ -20,12 +20,16 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.index.NoMergePolicyFactory;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,7 +65,12 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setup() throws Exception {
+  public static void setupClass() throws Exception {
+    // Using NoMergePolicy and 100 commits we should get 100 segments (across all shards).
+    // At this point of writing MAX_SEGMENTS_PER_SLICE in lucene is 5, so we should be
+    // ensured that any multithreaded testing will create 20 executable tasks for the
+    // executor that was provided to index-searcher.
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
     Path configset = createConfigSet();
     configureCluster(1).addConfig("conf", configset).configure();
@@ -73,8 +82,14 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
         cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(3, 6));
     for (int j = 0; j < 100; j++) {
       solrClient.add(COLLECTION, sdoc("id", "id-" + j, "val_i", j % 5));
+      solrClient.commit(COLLECTION); // need to commit every doc to create many segments.
     }
-    solrClient.commit(COLLECTION);
+  }
+
+  @AfterClass
+  public static void tearDownClass() {
+    TestInjection.cpuTimerDelayInjectedNS = null;
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test
@@ -131,7 +146,9 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
     Number qtime = (Number) rsp.getHeader().get("QTime");
     assertTrue("QTime expected " + qtime + " >> " + sleepMs, qtime.longValue() > sleepMs);
     assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
-
+    TestInjection.measureCpu();
+    // 25 ms per 5 segments ~175ms each shard
+    TestInjection.cpuTimerDelayInjectedNS = new AtomicInteger(25_000_000);
     // timeAllowed set, should return partial results
     log.info("--- timeAllowed, partial results ---");
     rsp =
@@ -161,15 +178,12 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "id:*",
                 "sort",
                 "id desc",
-                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
-                "1",
                 "stages",
                 "prepare,process",
                 "cpuAllowed",
-                "1000"));
+                "10000"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNull("should have full results", rsp.getHeader().get("partialResults"));
-
     // cpuAllowed set, should return partial results
     log.info("--- cpuAllowed 1, partial results ---");
     rsp =
@@ -180,19 +194,17 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "id:*",
                 "sort",
                 "id desc",
-                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
-                "10",
                 "stages",
                 "prepare,process",
                 "cpuAllowed",
-                "50",
+                "100",
                 "multiThreaded",
                 "false"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
     // cpuAllowed set, should return partial results
-    log.info("--- cpuAllowed 2, partial results ---");
+    log.info("--- cpuAllowed 2, partial results, multi-threaded ---");
     rsp =
         solrClient.query(
             COLLECTION,
@@ -201,14 +213,12 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "id:*",
                 "sort",
                 "id desc",
-                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
-                "10",
                 "stages",
                 "prepare,process",
                 "cpuAllowed",
-                "50",
+                "100",
                 "multiThreaded",
-                "false"));
+                "true"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
   }
