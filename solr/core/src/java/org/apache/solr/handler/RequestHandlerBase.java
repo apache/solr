@@ -250,24 +250,21 @@ public abstract class RequestHandlerBase
       processErrorMetricsOnException(normalized, metrics);
       rsp.setException(normalized);
     } finally {
-      try {
-        metrics.concurrency.update(-1);
-      } finally {
-        long elapsed = timer.stop();
-        metrics.totalTime.inc(elapsed);
+      metrics.concurrency.update(-1);
+      long elapsed = timer.stop();
+      metrics.totalTime.inc(elapsed);
 
-        if (publishCpuTime && threadCpuTimer != null) {
-          Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
-          if (cpuTime.isPresent()) {
-            // add CPU_TIME if not already added by SearchHandler
-            NamedList<Object> header = rsp.getResponseHeader();
-            if (header != null) {
-              if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
-                header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
-              }
+      if (publishCpuTime && threadCpuTimer != null) {
+        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
+        if (cpuTime.isPresent()) {
+          // add CPU_TIME if not already added by SearchHandler
+          NamedList<Object> header = rsp.getResponseHeader();
+          if (header != null) {
+            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
             }
-            rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
           }
+          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
         }
       }
     }
