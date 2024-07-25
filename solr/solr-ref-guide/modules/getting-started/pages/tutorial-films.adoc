@@ -75,7 +75,7 @@ The data you're going to index is related to movies, so start by creating a coll
 
 [,console]
 ----
-$ bin/solr create -c films -sh 2 -rf 2
+$ bin/solr create -c films --shards 2 -rf 2
 ----
 
 Whoa, wait.

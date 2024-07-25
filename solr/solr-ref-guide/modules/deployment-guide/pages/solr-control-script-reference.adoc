@@ -706,7 +706,7 @@ This defaults to the same name as the core or collection.
 Number of shards to split a collection into.
 Only applies when Solr is running in SolrCloud mode.
 +
-*Example*: `bin/solr create -sh 2`
+*Example*: `bin/solr create --shards 2`
 
 `-rf <replicas>` or `--replication-factor <replicas>`::
 +
