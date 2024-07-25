@@ -20,6 +20,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.SettableGauge;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,9 +37,12 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final List<String> VALID_PROMETHEUS_VALUES = Arrays.asList("NaN", "+Inf", "-Inf");
 
   @BeforeClass
@@ -81,6 +85,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
             try {
               Float.parseFloat(actualValue);
             } catch (NumberFormatException e) {
+              log.warn("Prometheus value not a parsable float");
               assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
             }
           });
