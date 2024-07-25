@@ -443,114 +443,8 @@ function print_usage() {
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
-  elif [ "$CMD" == "zk" ]; then
-    print_short_zk_usage ""
-    echo "         Can be run on remote (non-Solr) hosts, as long as valid ZK_HOST information is provided"
-    echo "         Be sure to check the Solr logs in case of errors."
-    echo ""
-    echo "             -z zkHost          Optional Zookeeper connection string for all commands. If specified it"
-    echo "                                  overrides the 'ZK_HOST=...'' defined in solr.in.sh."
-    echo ""
-    echo "             -s solrUrl         Optional Solr URL to look up the correct zkHost connection string via."
-    echo ""
-    echo "             -v/--verbose       Enable more verbose output for this script."
-    echo ""
-    echo "         upconfig uploads a configset from the local machine to Zookeeper."
-    echo ""
-    echo "         downconfig downloads a configset from Zookeeper to the local machine."
-    echo ""
-    echo "             -n <configName>    Name of the configset in Zookeeper that will be the destination of"
-    echo "                                  'upconfig' and the source for 'downconfig'."
-    echo ""
-    echo "             -d <confdir>       The local directory the configuration will be uploaded from for"
-    echo "                                  'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of"
-    echo "                                  ...solr/server/solr/configsets' then the configs will be copied from/to"
-    echo "                                  that directory. Otherwise it is interpreted as a simple local path."
-    echo ""
-    echo "         cp copies files or folders to/from Zookeeper or Zookeeper -> Zookeeper"
-    echo ""
-    echo "             -r       Recursively copy <src> to <dst>. Command will fail if <src> has children and "
-    echo "                        -r is not specified. Optional"
-    echo ""
-    echo "             <src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node"
-    echo "                             NOTE: <src> and <dest> may both be Zookeeper resources prefixed by 'zk:'"
-    echo "             When <src> is a zk resource, <dest> may be '.'"
-    echo "             If <dest> ends with '/', then <dest> will be a local folder or parent znode and the last"
-    echo "             element of the <src> path will be appended unless <src> also ends in a slash. "
-    echo "             <dest> may be zk:, which may be useful when using the cp -r form to backup/restore "
-    echo "             the entire zk state."
-    echo "             You must enclose local paths that end in a wildcard in quotes or just"
-    echo "             end the local path in a slash. That is,"
-    echo "             'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to"
-    echo "             'bin/solr zk cp -r \"/some/dir/*\" zk:/ -z localhost:2181'"
-    echo "             but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error"
-    echo ""
-    echo "             here's an example of backup/restore for a ZK configuration:"
-    echo "             to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'"
-    echo "             to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'"
-    echo ""
-    echo "             The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and"
-    echo "             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute."
-    echo ""
-    echo "             Zookeeper nodes CAN have data, so moving a single file to a parent znode"
-    echo "             will overlay the data on the parent Znode so specifying the trailing slash"
-    echo "             can be important."
-    echo ""
-    echo "             Wildcards are supported when copying from local, trailing only and must be quoted."
-    echo ""
-    echo "         rm deletes files or folders on Zookeeper"
-    echo ""
-    echo "             -r       Recursively delete if <path> is a directory. Command will fail if <path>"
-    echo "                        has children and -r is not specified. Optional"
-    echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
-    echo ""
-    echo "         mv moves (renames) znodes on Zookeeper"
-    echo ""
-    echo "             <src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional."
-    echo "             If <dest> ends with '/', then <dest> will be a parent znode"
-    echo "             and the last element of the <src> path will be appended."
-    echo "             Zookeeper nodes CAN have data, so moving a single file to a parent znode"
-    echo "             will overlay the data on the parent Znode so specifying the trailing slash"
-    echo "             is important."
-    echo ""
-    echo "         ls lists the znodes on Zookeeper"
-    echo ""
-    echo "             -r       Recursively descends the path listing all znodes. Optional"
-    echo "             <path>:  The Zookeeper path to use as the root."
-    echo ""
-    echo "             Only the node names are listed, not data"
-    echo ""
-    echo "         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary"
-    echo "             depth but primarily intended to create a 'chroot'."
-    echo ""
-    echo "             <path>:  The Zookeeper path to create. Leading slash is assumed if not present."
-    echo "                        Intermediate nodes are created as needed if not present."
-    echo ""
   fi
 } # end print_usage
-
-function print_short_zk_usage() {
-
-  if [ "$1" != "" ]; then
-    echo -e "\nERROR: $1\n"
-  fi
-
-  echo "  Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk cp [-r] <src> <dest> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk rm [-r] <path> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk mv <src> <dest> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk ls [-r] <path> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk mkroot <path> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk linkconfig --conf-name <confname> -c <collection> [-z zkHost] [-s solrUrl]"
-  echo "         solr zk updateacls <path> [-z zkHost] [-s solrUrl]"
-  echo ""
-
-  if [ "$1" == "" ]; then
-    echo "Type bin/solr zk --help for full usage help"
-  else
-    exit 1
-  fi
-}
 
 # used to show the script is still alive when waiting on work to complete
 function spinner() {
@@ -817,14 +711,9 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   exit $?
 fi
 
-# Prevent any zk subcommands from going through with out invoking zk command
-if [[ "$SCRIPT_CMD" == "upconfig" || $SCRIPT_CMD == "downconfig" || $SCRIPT_CMD == "cp" || $SCRIPT_CMD == "rm" || $SCRIPT_CMD == "mv" || $SCRIPT_CMD == "ls" || $SCRIPT_CMD == "mkroot" || $SCRIPT_CMD == "linkconfig" || $SCRIPT_CMD == "updateacls" ]]; then
-  run_tool zk-tool-help $SCRIPT_CMD --print-short-zk-usage 
-  exit $?
-fi
-
 # Zookeeper file maintenance (upconfig, downconfig, files up/down etc.)
-if [[ "$SCRIPT_CMD" == "zk" ]]; then
+# run everything through run_tool unless it matches, and we can truncate this line!
+if [[ "$SCRIPT_CMD" == "zk" || "$SCRIPT_CMD" == "upconfig" || $SCRIPT_CMD == "downconfig" || $SCRIPT_CMD == "cp" || $SCRIPT_CMD == "rm" || $SCRIPT_CMD == "mv" || $SCRIPT_CMD == "ls" || $SCRIPT_CMD == "mkroot" || $SCRIPT_CMD == "linkconfig" || $SCRIPT_CMD == "updateacls" ]]; then
   run_tool $SCRIPT_CMD "$@"
   exit $?
 fi

@@ -58,7 +58,7 @@ public class ZkRmTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr rm [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+    return "bin/solr zk rm [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
   }
 
   @Override

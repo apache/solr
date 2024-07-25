@@ -57,7 +57,7 @@ public class ZkLsTool extends ToolBase {
   @Override
   public String getUsage() {
     // very brittle.  Maybe add a getArgsUsage to append the "path"?
-    return "bin/solr ls [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+    return "bin/solr zk ls [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
   }
 
   @Override

@@ -40,13 +40,23 @@ public class ZkToolHelp extends ToolBase {
         Option.builder()
             .longOpt("print-short-zk-usage")
             .desc("Invokes the short summary help for zk commands.")
+            .required(false)
             .build(),
-        SolrCLI.OPTION_VERBOSE);
+        Option.builder()
+            .longOpt("print-long-zk-usage")
+            .required(false)
+            .desc("Invokes the long summary help for zk commands.")
+            .build());
   }
 
   @Override
   public String getName() {
     return "zk-tool-help";
+  }
+
+  @Override
+  public String getUsage() {
+    return new ZkToolHelp().getUsage();
   }
 
   @Override
@@ -59,6 +69,20 @@ public class ZkToolHelp extends ToolBase {
           "You must invoke this subcommand using the zk command.   bin/solr zk "
               + scriptCommand
               + ".");
+    }
+    if (cli.hasOption("print-long-zk-usage")) {
+      print(new ZkLsTool().getUsage());
+      print(new ZkCpTool().getUsage());
+      print(new ZkMvTool().getUsage());
+
+      print(new ConfigSetUploadTool().getUsage());
+      print(new ConfigSetDownloadTool().getUsage());
+      print(new ZkMkrootTool().getUsage());
+      print(new LinkConfigTool().getUsage());
+      print(new UpdateACLTool().getUsage());
+      print("");
+      print(
+          "Pass -help or -h after any COMMAND to see command-specific usage information such as: ./solr zk ls --help");
     }
   }
 }

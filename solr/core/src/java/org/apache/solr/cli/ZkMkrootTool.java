@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -62,7 +64,17 @@ public class ZkMkrootTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr mkroot [--fail-on-exists <arg>] [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+    return "bin/solr zk mkroot [--fail-on-exists <arg>] [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+  }
+
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(
+        sb,
+        "mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary");
+    format(sb, "depth but primarily intended to create a 'chroot'.\n\nList of options:");
+    return sb.toString();
   }
 
   @Override

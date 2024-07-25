@@ -185,7 +185,6 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
     final boolean isHelpCommand =
@@ -200,14 +199,31 @@ public class SolrCLI implements CLIO {
       // select the version tool to be run
       args[0] = "version";
     }
-
-    if (Objects.equals(args[0], "zk")) {
-      // chop the leading zk so we invoke the correct zk tool
-      String[] trimmedArgs = new String[args.length - 1];
-      System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
-      args = trimmedArgs;
+    if (Arrays.asList(
+            "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
+        .contains(args[0])) {
+      // remap our arguments to invoke the zk short tool help
+      args = new String[] {"zk-tool-help", "--print-short-zk-usage", args[0]};
     }
-
+    if (Objects.equals(args[0], "zk")) {
+      if (args.length == 1) {
+        // remap our arguments to invoke the ZK tool help.
+        args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+      } else if (args.length == 2) {
+        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+          // remap our arguments to invoke the ZK tool help.
+          args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+        } else {
+          // remap our arguments to invoke the zk short tool help
+          args = new String[] {"zk-tool-help", "--print-short-zk-usage", args[1]};
+        }
+      } else {
+        // chop the leading zk argument so we invoke the correct zk sub tool
+        String[] trimmedArgs = new String[args.length - 1];
+        System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
+        args = trimmedArgs;
+      }
+    }
     SSLConfigurationsFactory.current().init();
 
     Tool tool = null;
@@ -349,7 +365,6 @@ public class SolrCLI implements CLIO {
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
-    String toolName = tool.getName();
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
@@ -394,9 +409,8 @@ public class SolrCLI implements CLIO {
   }
 
   /** Prints tool help for a given tool */
-  private static void printToolHelp(Tool tool) {
-    HelpFormatter formatter = HelpFormatter.builder().get();
-    formatter.setWidth(120);
+  public static void printToolHelp(Tool tool) {
+    HelpFormatter formatter = getFormatter();
     Options optionsNoDeprecated = new Options();
     tool.getOptions().stream()
         .filter(option -> !option.isDeprecated())
@@ -404,7 +418,17 @@ public class SolrCLI implements CLIO {
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
-        usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
+        usageString,
+        "\n" + tool.getHeader(),
+        optionsNoDeprecated,
+        tool.getFooter(),
+        autoGenerateUsage);
+  }
+
+  public static HelpFormatter getFormatter() {
+    HelpFormatter formatter = HelpFormatter.builder().get();
+    formatter.setWidth(120);
+    return formatter;
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */

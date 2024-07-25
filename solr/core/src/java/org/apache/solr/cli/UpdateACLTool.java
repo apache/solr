@@ -48,6 +48,11 @@ public class UpdateACLTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk updateacls [-z <HOST>";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(SolrCLI.OPTION_ZKHOST, SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }

@@ -36,6 +36,18 @@ teardown() {
   save_home_on_failure
 }
 
+@test "short help" {
+ run solr zk ls -h
+ assert_output --partial "usage: bin/solr zk"
+}
+
+@test "long help" {
+ run solr zk -h
+ assert_output --partial "bin/solr zk ls"
+ assert_output --partial "bin/solr zk updateacls"
+ assert_output --partial "Pass -help or -h after any COMMAND"
+}
+
 @test "running subcommands with zk is prevented" {
  run solr ls / -z localhost:${ZK_PORT}
  assert_output --partial "You must invoke this subcommand using the zk command"

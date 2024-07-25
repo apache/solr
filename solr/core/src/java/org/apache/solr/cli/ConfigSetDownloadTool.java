@@ -93,6 +93,11 @@ public class ConfigSetDownloadTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk upconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
@@ -107,7 +112,7 @@ public class ConfigSetDownloadTool extends ToolBase {
           cli.hasOption("conf-dir")
               ? cli.getOptionValue("conf-dir")
               : cli.getOptionValue("confdir");
-      ;
+
       Path configSetPath = Paths.get(confDir);
       // we try to be nice about having the "conf" in the directory, and we create it if it's not
       // there.

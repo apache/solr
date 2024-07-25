@@ -95,6 +95,11 @@ public class ConfigSetUploadTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk downconfig [--conf-name <NAME>] [-d <DIR>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
@@ -75,7 +77,50 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr cp [-r <recurse>] [-s <HOST>] [--solr-home <DIR>] [-u <credentials>] [-z <HOST>] source destination";
+    return "bin/solr zk cp [-r <recurse>] [-s <HOST>] [--solr-home <DIR>] [-u <credentials>] [-z <HOST>] source destination";
+  }
+
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(sb, "cp copies files or folders to/from Zookeeper or Zookeeper -> Zookeeper");
+    format(sb, "");
+    format(sb, "<src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node");
+    format(
+        sb,
+        "                NOTE: <src> and <dest> may both be Zookeeper resources prefixed by 'zk:'");
+    format(sb, "When <src> is a zk resource, <dest> may be '.'");
+    format(
+        sb,
+        "If <dest> ends with '/', then <dest> will be a local folder or parent znode and the last");
+    format(sb, "element of the <src> path will be appended unless <src> also ends in a slash. ");
+    format(
+        sb, "<dest> may be zk:, which may be useful when using the cp -r form to backup/restore ");
+    format(sb, "the entire zk state.");
+    format(sb, "You must enclose local paths that end in a wildcard in quotes or just");
+    format(sb, "end the local path in a slash. That is,");
+    format(sb, "'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to");
+    format(sb, "'bin/solr zk cp -r \"/some/dir/*\" zk:/ -z localhost:2181'");
+    format(sb, "but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error");
+    format(sb, "");
+    format(sb, "to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'");
+    format(sb, "to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'");
+    format(sb, "");
+    format(
+        sb,
+        "The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and");
+    format(
+        sb,
+        "'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute.");
+    format(sb, "");
+    format(sb, "Zookeeper nodes CAN have data, so moving a single file to a parent znode");
+    format(sb, "will overlay the data on the parent Znode so specifying the trailing slash");
+    format(sb, "can be important.");
+    format(sb, "");
+    format(
+        sb, "Wildcards are supported when copying from local, trailing only and must be quoted.");
+    format(sb, "\nList of options:");
+    return sb.toString();
   }
 
   @Override
