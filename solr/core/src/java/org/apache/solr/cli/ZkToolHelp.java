@@ -71,6 +71,7 @@ public class ZkToolHelp extends ToolBase {
               + ".");
     }
     if (cli.hasOption("print-long-zk-usage")) {
+      print("usage:");
       print(new ZkLsTool().getUsage());
       print(new ZkCpTool().getUsage());
       print(new ZkMvTool().getUsage());
