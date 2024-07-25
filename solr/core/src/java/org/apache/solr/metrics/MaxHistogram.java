@@ -62,6 +62,13 @@ public class MaxHistogram extends Histogram {
 
   private final RelayClock relayClock;
 
+  /**
+   * A {@link Clock} implementation that is used to pass explicit `tick` values. This is updated
+   * from values derived from some other "real" backing {@link Clock}, and may be used to defer
+   * histogram updates while still having them register as the desired time
+   * (backdating/backfilling). ("relay" in the sense that {@link #getTick()} simply returns the
+   * value previously explicitly set by ctor or via {@link #setTick(long)})
+   */
   private static class RelayClock extends Clock {
 
     private long nextTick;
@@ -113,7 +120,7 @@ public class MaxHistogram extends Histogram {
       int intervalMillis,
       int maxBackdateSeconds,
       Reservoir reservoir,
-      Clock relayClock,
+      RelayClock relayClock,
       Clock clock) {
     super(reservoir);
     this.intervalNanos = TimeUnit.MILLISECONDS.toNanos(intervalMillis);
@@ -130,7 +137,7 @@ public class MaxHistogram extends Histogram {
               + "; found "
               + maxBackdateSeconds);
     }
-    this.relayClock = (RelayClock) relayClock;
+    this.relayClock = relayClock;
     this.clock = clock;
     this.lastUpdate = new AtomicLong(clock.getTick());
   }
