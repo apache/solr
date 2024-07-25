@@ -73,7 +73,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           // 1.7: docValues defaults to true
           assertEquals(
               f + " field's type has wrong docValues for ver=" + ver,
-              (v < 1.7F || f.contains("text") ? false : true),
+              ((v < 1.7F || f.contains("text")) ? false : true),
               field.hasDocValues());
 
           // uninvertable defaults to true (for now)
