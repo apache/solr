@@ -46,7 +46,7 @@ if ! grep -q "${solr_ip}:8983" <<<"$data"; then
 fi
 
 echo "Creating distributed collection"
-data=$(docker exec --user=solr "$container_name" solr create -c test -rf 1 -s 2)
+data=$(docker exec --user=solr "$container_name" solr create -c test -rf 1 -sh 2)
 
 if ! grep -q "Created collection 'test'" <<<"$data"; then
   echo "Test $TEST_NAME $tag failed; could not create distributed collection"

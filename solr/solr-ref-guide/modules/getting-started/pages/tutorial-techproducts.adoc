@@ -488,7 +488,7 @@ And then create a new collection:
 
 [,console]
 ----
-$ bin/solr create -c <yourCollection> -s 2 -rf 2
+$ bin/solr create -c <yourCollection> -sh 2 -rf 2
 ----
 
 To stop both of the Solr nodes we started, issue the command:

@@ -76,7 +76,7 @@ public class CreateTool extends ToolBase {
             .required(true)
             .desc("Name of collection or core to create.")
             .build(),
-        Option.builder("s")
+        Option.builder("sh")
             .longOpt("shards")
             .hasArg()
             .argName("#")
