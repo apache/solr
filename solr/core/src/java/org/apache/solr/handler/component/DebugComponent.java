@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.FQ;
 import static org.apache.solr.common.params.CommonParams.JSON;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -43,8 +44,6 @@ import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
-
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Adds debugging information to a request.
@@ -184,7 +183,7 @@ public class DebugComponent extends SearchComponent {
   }
 
   @VisibleForTesting
-  static String getDistributedStageName(int stage) {
+  protected String getDistributedStageName(int stage) {
     String stageName = stages.get(stage);
 
     if (stageName == null) {
