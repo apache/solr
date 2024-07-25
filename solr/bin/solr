@@ -641,42 +641,6 @@ if [ "$SCRIPT_CMD" == "status" ]; then
   exit $?
 fi
 
-# assert tool
-if [ "$SCRIPT_CMD" == "assert" ]; then
-  run_tool assert "$@"
-  exit $?
-fi
-
-# healthcheck tool
-if [ "$SCRIPT_CMD" == "healthcheck" ]; then
-  run_tool healthcheck "$@"
-  exit $?
-fi
-
-# config tool
-if [ "$SCRIPT_CMD" == "config" ]; then
-  run_tool config "$@"
-  exit $?
-fi
-
-# create a core or collection
-if [[ "$SCRIPT_CMD" == "create" ]]; then
-  run_tool $SCRIPT_CMD $@
-  exit $?
-fi
-
-# delete a core or collection
-if [[ "$SCRIPT_CMD" == "delete" ]]; then
-  run_tool $SCRIPT_CMD $@
-  exit $?
-fi
-
-# manage packages
-if [[ "$SCRIPT_CMD" == "package" ]]; then
-  run_tool $SCRIPT_CMD $@
-  exit $?
-fi
-
 # configure authentication
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
   : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
@@ -711,29 +675,19 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   exit $?
 fi
 
-# Zookeeper file maintenance (upconfig, downconfig, files up/down etc.)
-# run everything through run_tool unless it matches, and we can truncate this line!
-if [[ "$SCRIPT_CMD" == "zk" || "$SCRIPT_CMD" == "upconfig" || $SCRIPT_CMD == "downconfig" || $SCRIPT_CMD == "cp" || $SCRIPT_CMD == "rm" || $SCRIPT_CMD == "mv" || $SCRIPT_CMD == "ls" || $SCRIPT_CMD == "mkroot" || $SCRIPT_CMD == "linkconfig" || $SCRIPT_CMD == "updateacls" ]]; then
-  run_tool $SCRIPT_CMD "$@"
-  exit $?
-fi
-
-if [[ "$SCRIPT_CMD" == "api" ]]; then
-  run_tool api "$@"
-  exit $?
-fi
-
-# verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
-  # handoff this command to the SolrCLI and let it handle the option parsing and validation
+# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.  
+# Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
+if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
+  # hand off the command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
   ret=$?
   if [ $ret -ne 0 ]; then
-    print_usage ""
     exit $ret
   fi
   exit 0
 fi
+
+# Everything below here is to support start, stop and restart.
 
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
 
