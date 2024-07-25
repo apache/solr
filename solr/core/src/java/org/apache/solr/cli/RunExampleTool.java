@@ -320,10 +320,7 @@ public class RunExampleTool extends ToolBase {
             "--solr-url", solrUrl
           };
       CreateTool createTool = new CreateTool(stdout);
-      int createCode =
-          createTool.runTool(
-              SolrCLI.processCommandLineArgs(
-                  createTool.getName(), createTool.getOptions(), createArgs));
+      int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
       if (createCode != 0)
         throw new Exception(
             "Failed to create " + collectionName + " using command: " + Arrays.asList(createArgs));
@@ -353,8 +350,7 @@ public class RunExampleTool extends ToolBase {
               exampledocsDir.getAbsolutePath() + "/*.xml"
             };
         PostTool postTool = new PostTool();
-        CommandLine postToolCli =
-            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
       } else {
@@ -435,8 +431,7 @@ public class RunExampleTool extends ToolBase {
               filmsJsonFile.getAbsolutePath()
             };
         PostTool postTool = new PostTool();
-        CommandLine postToolCli =
-            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
       } catch (Exception ex) {
@@ -875,10 +870,7 @@ public class RunExampleTool extends ToolBase {
         };
 
     CreateTool createTool = new CreateTool(stdout);
-    int createCode =
-        createTool.runTool(
-            SolrCLI.processCommandLineArgs(
-                createTool.getName(), createTool.getOptions(), createArgs));
+    int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
 
     if (createCode != 0)
       throw new Exception(

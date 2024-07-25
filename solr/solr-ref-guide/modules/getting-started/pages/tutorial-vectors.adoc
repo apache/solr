@@ -1,5 +1,6 @@
 = Exercise 5: Using Vectors
 :experimental:
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -74,29 +75,10 @@ $ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicat
 
 We have the vectors embedded in our `films.json` file, so let's index that data, taking advantage of our new schema field we just defined.
 
-[.dynamic-tabs]
---
-[example.tab-pane#unixindexjson]
-====
-[.tab-label]*Linux/Mac*
-
 [,console]
 ----
 $ bin/solr post -c films example/films/films.json
-
 ----
-====
-
-[example.tab-pane#winindexjson]
-====
-[.tab-label]*Windows*
-
-[,console]
-----
-$ bin/solr post -c films example\films\films.json
-----
-====
---
 
 === Let's do some Vector searches
 Before making the queries, we define an example target vector, simulating a person that 

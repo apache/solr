@@ -167,16 +167,9 @@ You'll need a command shell to run some of the following examples, rooted in the
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
 
-.Linux/Mac
 [,console]
 ----
 $ bin/solr post -c techproducts example/exampledocs/*
-----
-
-.Windows
-[,console]
-----
-$ bin/solr post -c techproducts example\exampledocs\*
 ----
 
 You should see output similar to the following:

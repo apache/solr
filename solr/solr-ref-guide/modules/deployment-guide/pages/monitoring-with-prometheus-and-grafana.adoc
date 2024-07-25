@@ -1,4 +1,5 @@
 = Monitoring with Prometheus and Grafana
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -52,12 +53,11 @@ The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\ht
 
 See the commands below depending on your operating system and Solr operating mode:
 
-[.dynamic-tabs]
---
-[example.tab-pane#solr-exporter-linux]
+[tabs#solr-exporter]
+======
+Linux::
++
 ====
-[.tab-label]*Linux*
-
 .User-managed / Single-node
 [source,bash]
 ----
@@ -73,10 +73,9 @@ $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-con
 ----
 ====
 
-[example.tab-pane#solr-exporter-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
-
 .User-managed / Single-node
 [source,text]
 ----
@@ -91,7 +90,7 @@ $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-con
 > .\bin\solr-exporter -p 9854 -z localhost:2181/solr -f .\conf\solr-exporter-config.xml -n 16
 ----
 ====
---
+======
 
 === Command Line Parameters
 
