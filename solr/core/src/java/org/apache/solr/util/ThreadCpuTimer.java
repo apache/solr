@@ -95,6 +95,21 @@ public class ThreadCpuTimer {
     }
   }
 
+  /**
+   * Discard any accumulated time for a given context since the last invocation.
+   *
+   * @param context the context to reset
+   */
+  public static void reset(String context) {
+    if (THREAD_MX_BEAN != null) {
+      threadLocalTimer
+          .get()
+          .computeIfAbsent(
+              context, (ctx) -> new AtomicLong(THREAD_MX_BEAN.getCurrentThreadCpuTime()))
+          .set(THREAD_MX_BEAN.getCurrentThreadCpuTime());
+    }
+  }
+
   public static Optional<Long> readMSandReset(String context) {
     return readNSAndReset(context)
         .map((cpuTimeNs) -> TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS));
