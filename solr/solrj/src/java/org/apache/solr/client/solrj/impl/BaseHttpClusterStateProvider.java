@@ -122,15 +122,9 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private ClusterState fetchClusterState(
       SolrClient client, String collection, Map<String, Object> clusterProperties)
       throws SolrServerException, IOException, NotACollectionException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    if (collection != null) {
-      params.set("collection", collection);
-    }
-    params.set("action", "CLUSTERSTATUS");
-    params.set("prs", "true");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
+    SimpleOrderedMap<?> cluster =
+        submitClusterStateRequest(client, collection, false, false, false);
+
     Map<String, Object> collectionsMap;
     if (collection != null) {
       collectionsMap =
@@ -171,6 +165,33 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       }
     }
     return cs;
+  }
+
+  private SimpleOrderedMap<?> submitClusterStateRequest(
+      SolrClient client,
+      String collection,
+      boolean fetchLiveNodes,
+      boolean fetchClusterProp,
+      boolean fetchNodeRoles)
+      throws SolrServerException, IOException {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", "CLUSTERSTATUS");
+
+    if (collection != null) {
+      params.set("collection", collection);
+    } else if (fetchLiveNodes) {
+      params.set("liveNodes", "true");
+    } else if (fetchClusterProp) {
+      params.set("clusterProperties", "true");
+    } else if (fetchNodeRoles) {
+      params.set("roles", "true");
+    }
+    params.set("includeAll", "false");
+    params.set("prs", "true");
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
+    return cluster;
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -228,12 +249,9 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private static Set<String> fetchLiveNodes(SolrClient client) throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", "CLUSTERSTATUS");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    NamedList cluster = (SimpleOrderedMap) client.request(request).get("cluster");
+  private Set<String> fetchLiveNodes(SolrClient client) throws Exception {
+
+    SimpleOrderedMap<?> cluster = submitClusterStateRequest(client, null, true, false, false);
     return (Set<String>) new HashSet((List<String>) (cluster.get("live_nodes")));
   }
 
@@ -335,21 +353,17 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + " solrUrl(s) or zkHost(s).");
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Map<String, Object> getClusterProperties() {
+    // Map<String, Object> clusterPropertiesMap = new HashMap<>();
     for (String nodeName : liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
-        Map<String, Object> clusterProperties = new HashMap<>();
-        fetchClusterState(client, null, clusterProperties);
-        return clusterProperties;
+        SimpleOrderedMap<?> cluster = submitClusterStateRequest(client, null, false, true, false);
+        return (Map<String, Object>) cluster.get("properties");
       } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
-      } catch (NotACollectionException e) {
-        // not possible! (we passed in null for collection so it can't be an alias)
-        throw new RuntimeException(
-            "null should never cause NotACollectionException in "
-                + "fetchClusterState() Please report this as a bug!");
       }
     }
     throw new RuntimeException(

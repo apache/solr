@@ -86,6 +86,9 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CORE_NAME_PROP = "core";
 
   public static final String COLLECTION_PROP = "collection";
+  public static final String INCLUDE_ALL = "includeAll";
+  public static final String LIVENODES_PROP = "liveNodes";
+  public static final String CLUSTER_PROP = "clusterProperties";
   public static final String SHARD_ID_PROP = "shard";
   public static final String REPLICA_PROP = "replica";
   public static final String SHARD_RANGE_PROP = "shard_range";

@@ -28,11 +28,14 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.LIVENODES_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ROLES_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
@@ -976,7 +979,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CLUSTERSTATUS,
         (req, rsp, h) -> {
           Map<String, Object> all =
-              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_, "prs");
+              copy(
+                  req.getParams(),
+                  null,
+                  COLLECTION_PROP,
+                  LIVENODES_PROP,
+                  CLUSTER_PROP,
+                  ROLES_PROP,
+                  SHARD_ID_PROP,
+                  _ROUTE_,
+                  "prs");
           new ClusterStatus(
                   h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
               .getClusterStatus(rsp.getValues());
