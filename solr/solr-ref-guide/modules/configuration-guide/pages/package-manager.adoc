@@ -170,7 +170,7 @@ Assuming the old version is `1.0.0` of the package `mypackage`, and the new vers
 
 [source,bash]
 ----
-$ bin/solr package deploy mypackage:2.0.0 --update -collections mycollection
+$ bin/solr package deploy mypackage:2.0.0 --update --collections mycollection
 ----
 or
 [source,bash]
@@ -186,7 +186,7 @@ If a package supports undeploying the plugins it contains (check package author'
 
 [source,bash]
 ----
-$ bin/solr package undeploy <package-name> -collections <collection1>[,<collection2>,...]
+$ bin/solr package undeploy <package-name> --collections <collection1>[,<collection2>,...]
 ----
 
 === Uninstall a Package

@@ -52,7 +52,7 @@ teardown() {
   assert_output --partial "Package instance doesn't exist: PACKAGE_NAME:null"
 
   # Undeploy package
-  run solr package undeploy PACKAGE_NAME -collections foo-1.2
+  run solr package undeploy PACKAGE_NAME --collections foo-1.2
   refute_output --partial "Invalid collection"
   assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
 }
