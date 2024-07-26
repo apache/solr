@@ -151,6 +151,11 @@ public class SortableTextField extends TextField {
   }
 
   @Override
+  protected boolean doesTypeSupportDocValues() {
+    return true;
+  }
+
+  @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     if (!field.hasDocValues()) {
       // type defaults to docValues=true, so error msg from perspective that

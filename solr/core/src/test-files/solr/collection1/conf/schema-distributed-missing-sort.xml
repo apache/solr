@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="test-distributed-missing-sort" version="1.6">
+<schema name="test-distributed-missing-sort" version="1.7">
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
 
@@ -70,13 +70,13 @@
   <dynamicField name="*_dt1" type="date" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_tdt1" type="tdate" indexed="true" stored="true" multiValued="false"/>
 
-  <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_b" type="boolean" indexed="true" stored="true" docValues="false"/>
 
-  <dynamicField name="*_s1_ml" type="string_ml" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_s1_mf" type="string_mf" indexed="true" stored="true" multiValued="false"/>
+  <dynamicField name="*_s1_ml" type="string_ml" indexed="true" stored="true" multiValued="false" docValues="false"/>
+  <dynamicField name="*_s1_mf" type="string_mf" indexed="true" stored="true" multiValued="false" docValues="false"/>
 
-  <dynamicField name="*_mfacet" type="string_ml" indexed="true" stored="false" multiValued="true"/>
-  <dynamicField name="*_sS" type="string_ml" indexed="false" stored="true"/>
+  <dynamicField name="*_mfacet" type="string_ml" indexed="true" stored="false" multiValued="true" docValues="false"/>
+  <dynamicField name="*_sS" type="string_ml" indexed="false" stored="true" docValues="false"/>
   
   <!-- int varient of id, adding this here simplifies some indexing and test assertions -->
   <field name="id_i" type="int" indexed="true" stored="true" multiValued="false" />

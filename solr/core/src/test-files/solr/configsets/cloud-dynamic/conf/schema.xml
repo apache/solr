@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="cloud-dynamic" version="1.6">
+<schema name="cloud-dynamic" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -30,6 +30,7 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
@@ -156,7 +157,7 @@
   </fieldType>
 
   <fieldType name="uuid" class="solr.UUIDField"/>
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
 
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
@@ -187,14 +188,14 @@
 
 
   <!-- test different combinations of indexed and stored -->
-  <field name="bind" type="boolean" indexed="true" stored="false"/>
-  <field name="bsto" type="boolean" indexed="false" stored="true"/>
-  <field name="bindsto" type="boolean" indexed="true" stored="true"/>
-  <field name="isto" type="int" indexed="false" stored="true"/>
-  <field name="iind" type="int" indexed="true" stored="false"/>
-  <field name="ssto" type="string" indexed="false" stored="true"/>
-  <field name="sind" type="string" indexed="true" stored="false"/>
-  <field name="sindsto" type="string" indexed="true" stored="true"/>
+  <field name="bind" type="boolean" indexed="true" stored="false" docValues="false"/>
+  <field name="bsto" type="boolean" indexed="false" stored="true" docValues="false"/>
+  <field name="bindsto" type="boolean" indexed="true" stored="true" docValues="false"/>
+  <field name="isto" type="int" indexed="false" stored="true" docValues="false"/>
+  <field name="iind" type="int" indexed="true" stored="false" docValues="false"/>
+  <field name="ssto" type="string" indexed="false" stored="true" docValues="false"/>
+  <field name="sind" type="string" indexed="true" stored="false" docValues="false"/>
+  <field name="sindsto" type="string" indexed="true" stored="true" docValues="false"/>
 
   <!-- test combinations of term vector settings -->
   <field name="test_basictv" type="text" termVectors="true"/>
@@ -215,7 +216,7 @@
 
   <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
 
-  <field name="store" type="location" indexed="true" stored="true" docValues="true"/>
+  <field name="store" type="location" indexed="true" stored="true"/>
 
   <!-- to test uniq fields -->
   <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -227,7 +228,7 @@
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <field name="payload" type="sortable_binary" indexed="false"
-         stored="true" multiValued="false" docValues="true"/>
+         stored="true" multiValued="false"/>
 
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true"/>

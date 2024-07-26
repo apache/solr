@@ -39,6 +39,11 @@ public abstract class PrimitiveFieldType extends FieldType {
   }
 
   @Override
+  protected boolean doesTypeSupportDocValues() {
+    return true;
+  }
+
+  @Override
   public MultiValueSelector getDefaultMultiValueSelectorForSort(
       SchemaField field, boolean reverse) {
     return reverse ? MultiValueSelector.MAX : MultiValueSelector.MIN;
