@@ -22,6 +22,7 @@ import org.apache.solr.response.SolrQueryResponse;
 
 public class CompoundSearchHandler extends SearchHandler {
 
+  @Override
   protected ResponseBuilder newResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     if (req.getParams().getBool("rrf", false)) {
