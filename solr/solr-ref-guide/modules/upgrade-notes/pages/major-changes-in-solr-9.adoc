@@ -72,7 +72,7 @@ Due to changes in Lucene 9, that isn't possible any more.
 The default schemaVersion is now 1.7.
 With the new schema version, all fields and fieldTypes that support docValues (StrField, *PointField, BoolField, etc.)
 will have docValues enabled by default.
-Also, fields will be unable to be uninverted by default. (`uninvertable=false`)
+Also, fields will be unable to be uninverted by default. (`uninvertible=false`)
 
 In order to upgrade from schemaVersion 1.6 to 1.7, a re-index of all data will generally be required.
 **This re-index cannot be in-place**.
