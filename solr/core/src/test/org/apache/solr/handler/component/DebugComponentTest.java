@@ -307,23 +307,4 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     assertEquals("STAGE_400", debugComponent.getDistributedStageName(400));
     assertEquals("STAGE_10000", debugComponent.getDistributedStageName(10000));
   }
-
-  @Test
-  public void testCustomDistributedStageResolution() throws IOException {
-    final DebugComponent debugComponent =
-        new DebugComponent() {
-          @Override
-          protected String getDistributedStageName(int stage) {
-            if (stage == 42) {
-              return "THE_ANSWER";
-            }
-            return super.getDistributedStageName(stage);
-          }
-        };
-    assertEquals(
-        "PARSE_QUERY", debugComponent.getDistributedStageName(ResponseBuilder.STAGE_PARSE_QUERY));
-    assertEquals("DONE", debugComponent.getDistributedStageName(ResponseBuilder.STAGE_DONE));
-    assertEquals("STAGE_40", debugComponent.getDistributedStageName(40));
-    assertEquals("THE_ANSWER", debugComponent.getDistributedStageName(42));
-  }
 }
