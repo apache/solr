@@ -53,15 +53,18 @@ public class CompoundQueryComponent extends QueryComponent {
     }
   }
 
+  @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
     // TODO
     return ResponseBuilder.STAGE_DONE;
   }
 
+  @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     // TODO
   }
 
+  @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb instanceof CompoundResponseBuilder) {
       CompoundResponseBuilder crb = (CompoundResponseBuilder) rb;
