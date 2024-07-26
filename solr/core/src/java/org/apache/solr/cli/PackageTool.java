@@ -75,9 +75,9 @@ public class PackageTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     try {
       String solrUrl =
-              cli.hasOption("solr-url")
-                      ? cli.getOptionValue("solr-url")
-                      : cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+          cli.hasOption("solr-url")
+              ? cli.getOptionValue("solr-url")
+              : cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.debug("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
 
