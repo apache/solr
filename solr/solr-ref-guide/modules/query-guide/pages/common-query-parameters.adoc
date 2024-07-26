@@ -400,6 +400,39 @@ If early termination is used, a `segmentTerminatedEarly` header will be included
 
 Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when early segment termination happens values such as `numFound`, xref:faceting.adoc[Facet] counts, and result xref:stats-component.adoc[Stats] may not be accurate for the entire result set.
 
+== multiThreaded Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
+
+If set to `false`, then the multi-threaded search implementation will not be used for the query.
+If unset or set to `true`, then use the multi-threaded search implementation if it is supported for the query.
+
+If set to `false` or `true` then the response may contain a diagnostic `multiThreadedUsed` element; however the element will be absent if cached results were returned.
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "multiThreadedUsed": true,
+    "status": 0,
+    "QTime": 3,
+    "params": {
+      "q": "hello",
+      "multiThreaded": "true"
+    }
+  },
+  "response": {
+    "numFound": 0,
+    "start": 0,
+    "numFoundExact": true,
+    "docs": []
+  }
+}
+----
+
 == omitHeader Parameter
 
 [%autowidth,frame=none]

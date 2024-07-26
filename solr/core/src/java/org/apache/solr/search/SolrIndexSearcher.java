@@ -1920,7 +1920,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      final boolean useMultiThreaded = MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query);
+      if (cmd.getMultiThreaded() != null) {
+        // report multi-threading (non-)use only if multi-threading was explicitly (not) requested
+        qr.setMultiThreadedUsed(useMultiThreaded);
+      }
+      if (!useMultiThreaded) {
         if (log.isDebugEnabled()) {
           log.debug("skipping collector manager");
         }
@@ -2045,7 +2050,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      final boolean useMultiThreaded = MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query);
+      if (cmd.getMultiThreaded() != null) {
+        // report multi-threading (non-)use only if multi-threading was explicitly (not) requested
+        qr.setMultiThreadedUsed(useMultiThreaded);
+      }
+      if (!useMultiThreaded) {
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);

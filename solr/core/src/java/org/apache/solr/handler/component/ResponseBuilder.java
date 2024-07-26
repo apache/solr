@@ -458,6 +458,11 @@ public class ResponseBuilder {
               SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
               segmentTerminatedEarly);
     }
+    final Boolean multiThreadedUsed = result.getMultiThreadedUsed();
+    if (multiThreadedUsed != null) {
+      rsp.getResponseHeader()
+          .add(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY, multiThreadedUsed);
+    }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
       this.setNextCursorMark(result.getNextCursorMark());

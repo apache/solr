@@ -371,7 +371,7 @@ public class QueryComponent extends SearchComponent {
       return;
     }
 
-    final boolean multiThreaded = params.getBool("multiThreaded", true);
+    final Boolean multiThreaded = params.getBool(CommonParams.MULTI_THREADED);
 
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
@@ -910,6 +910,7 @@ public class QueryComponent extends SearchComponent {
     Float maxScore = null;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
+    Boolean multiThreadedUsed = null;
     int failedShardCount = 0;
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
@@ -944,6 +945,11 @@ public class QueryComponent extends SearchComponent {
               responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
           if (rhste != null) {
             nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
+          }
+          final Object rhmtu =
+              responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY);
+          if (rhmtu != null) {
+            nl.add(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY, rhmtu);
           }
           docs =
               (SolrDocumentList)
@@ -1001,6 +1007,16 @@ public class QueryComponent extends SearchComponent {
           segmentTerminatedEarly = Boolean.TRUE;
         } else if (Boolean.FALSE.equals(ste)) {
           segmentTerminatedEarly = Boolean.FALSE;
+        }
+      }
+
+      if (!Boolean.TRUE.equals(multiThreadedUsed)) {
+        final Object mtu =
+            responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY);
+        if (Boolean.TRUE.equals(mtu)) {
+          multiThreadedUsed = Boolean.TRUE;
+        } else if (Boolean.FALSE.equals(mtu)) {
+          multiThreadedUsed = Boolean.FALSE;
         }
       }
 
@@ -1141,6 +1157,23 @@ public class QueryComponent extends SearchComponent {
             .add(
                 SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY,
                 segmentTerminatedEarly);
+      }
+    }
+    if (multiThreadedUsed != null) {
+      final Object existingMultiThreadedUsed =
+          rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY);
+      if (existingMultiThreadedUsed == null) {
+        rb.rsp
+            .getResponseHeader()
+            .add(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY, multiThreadedUsed);
+      } else if (!Boolean.TRUE.equals(existingMultiThreadedUsed)
+          && Boolean.TRUE.equals(multiThreadedUsed)) {
+        rb.rsp
+            .getResponseHeader()
+            .remove(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY);
+        rb.rsp
+            .getResponseHeader()
+            .add(SolrQueryResponse.RESPONSE_HEADER_MULTI_THREADED_USED_KEY, multiThreadedUsed);
       }
     }
   }

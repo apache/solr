@@ -21,6 +21,7 @@ public class QueryResult {
 
   private boolean partialResults;
   private Boolean segmentTerminatedEarly;
+  private Boolean multiThreadedUsed;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
 
@@ -62,6 +63,14 @@ public class QueryResult {
 
   public void setSegmentTerminatedEarly(Boolean segmentTerminatedEarly) {
     this.segmentTerminatedEarly = segmentTerminatedEarly;
+  }
+
+  public Boolean getMultiThreadedUsed() {
+    return multiThreadedUsed;
+  }
+
+  public void setMultiThreadedUsed(boolean multiThreadedUsed) {
+    this.multiThreadedUsed = multiThreadedUsed;
   }
 
   public void setDocListAndSet(DocListAndSet listSet) {
