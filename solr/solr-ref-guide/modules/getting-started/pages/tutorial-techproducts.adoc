@@ -24,7 +24,7 @@ Then you will index some sample data that ships with Solr and do some basic sear
 To launch Solr, run: `bin/solr start -e cloud` on Unix or MacOS; `bin\solr.cmd start -e cloud` on Windows.
 
 This will start an interactive session that will start two Solr "servers" on your machine.
-This command has an option to run without prompting you for input (`-noprompt`), but we want to modify two of the defaults so we won't use that option now.
+This command has an option to run without prompting you for input (`--no-prompt`), but we want to modify two of the defaults so we won't use that option now.
 
 [,console]
 ----
@@ -71,14 +71,14 @@ Cloning /solr-{solr-full-version}/example/cloud/node1 into
    /solr-{solr-full-version}/example/cloud/node2
 
 Starting up Solr on port 8983 using command:
-"bin/solr" start -cloud -p 8983 -s "example/cloud/node1/solr"
+"bin/solr" start --cloud -p 8983 -s "example/cloud/node1/solr"
 
 Waiting up to 180 seconds to see Solr running on port 8983 [\]
 Started Solr server on port 8983 (pid=34942). Happy searching!
 
 
 Starting up Solr on port 7574 using command:
-"bin/solr" start -cloud -p 7574 -s "example/cloud/node2/solr" -z localhost:9983
+"bin/solr" start --cloud -p 7574 -s "example/cloud/node2/solr" -z localhost:9983
 
 Waiting up to 180 seconds to see Solr running on port 7574 [\]
 Started Solr server on port 7574 (pid=35036). Happy searching!
@@ -167,16 +167,9 @@ You'll need a command shell to run some of the following examples, rooted in the
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
 
-.Linux/Mac
 [,console]
 ----
 $ bin/solr post -c techproducts example/exampledocs/*
-----
-
-.Windows
-[,console]
-----
-$ bin/solr post -c techproducts example\exampledocs\*
 ----
 
 You should see output similar to the following:
@@ -502,7 +495,7 @@ To stop both of the Solr nodes we started, issue the command:
 
 [,console]
 ----
-$ bin/solr stop -all
+$ bin/solr stop --all
 ----
 
 For more information on start/stop and collection options with `bin/solr`, see xref:deployment-guide:solr-control-script-reference.adoc[].
