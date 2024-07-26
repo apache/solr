@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.2">
+<schema name="test" version="1.7">
 
   <fieldType name="binary" class="solr.BinaryField"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
@@ -33,7 +33,7 @@
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="data" type="binary" stored="true"/>
-  <field name="data_dv" type="binary" stored="false" docValues="true" />
+  <field name="data_dv" type="binary" stored="false" />
 
 
   <uniqueKey>id</uniqueKey>

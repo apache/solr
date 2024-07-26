@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="dedup" version="1.6">
+<schema name="dedup" version="1.7">
   
   <fieldType name="string" class="solr.StrField"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -25,7 +25,7 @@
   <field name="_root_" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="id" type="string" indexed="true" stored="true"/>
 
-  <dynamicField name="*_s" type="string" indexed="true" stored="true" docValues="true"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>
 </schema>
