@@ -768,7 +768,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
 
     assertTrue(
-        "Should have failed to remove node with children unless --recurse is set to true", res != 0);
+        "Should have failed to remove node with children unless --recurse is set to true",
+        res != 0);
 
     // Are we sure all the znodes are still there?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/rm1");
