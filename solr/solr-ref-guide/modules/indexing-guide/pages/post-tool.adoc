@@ -135,7 +135,7 @@ Send XML arguments to delete a document from `gettingstarted`.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update -mode args --type application/xml '<delete><id>42</id></delete>'
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update --mode args --type application/xml '<delete><id>42</id></delete>'
 ----
 
 === Indexing CSV and JSON
@@ -144,7 +144,7 @@ Index all CSV and JSON files into `gettingstarted` from current directory:
 
 [,console]
 ----
-$ bin/solr post -c gettingstarted -filetypes json,csv .
+$ bin/solr post -c gettingstarted --filetypes json,csv .
 ----
 
 Index a tab-separated file into `gettingstarted`:
@@ -177,7 +177,7 @@ Automatically detect content types in a folder, but limit it to PPT and HTML fil
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update -filetypes ppt,html afolder/
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update --filetypes ppt,html afolder/
 ----
 
 === Indexing to a Password Protected Solr (Basic Auth)
@@ -197,7 +197,7 @@ See xref:indexing-with-tika.adoc#trying-out-solr-cell[Trying Out Solr Cell] to l
 
 [,console]
 ----
-$ bin/solr post -mode web -c gettingstarted -recursive 1 -delay 1 https://solr.apache.org/ 
+$ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://solr.apache.org/
 ----
 
 === Standard Input as Source for Indexing
@@ -207,7 +207,7 @@ Notice the `-out` providing raw responses from Solr.
 
 [,console]
 ----
-$ echo '{commit: {}}' | bin/solr post -mode stdin -url http://localhost:8983/my_collection/update -out
+$ echo '{commit: {}}' | bin/solr post --mode stdin -url http://localhost:8983/my_collection/update --out
 ----
 
 === Raw Data as Source for Indexing
