@@ -10633,7 +10633,7 @@ Upgrading from Solr 5.x
   Because values may now be retrieved from column-stored fields (docValues="true"), in conjunction with the
   fact that docValues do not currently preserve order, means that users should set useDocValuesAsStored="false"
   to prevent future optizations from using the column-stored values over the row-stored values when
-  fields have both stored="true" and.
+  fields have both stored="true" and docValues="true".
 
 * Formatted date-times from Solr have some differences. If the year is more than 4 digits, there is a leading '+'.
   When there is a non-zero number of milliseconds, it is padded with zeros to 3 digits. Negative year (BC) dates are
@@ -10869,7 +10869,7 @@ Optimizations
 * SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
 
 * SOLR-8082: Can't query against negative float or double values when indexed="false"
-  multiValued="false".  (hossman, Ishan Chattopadhyaya, yonik, Steve Rowe)
+  docValues="true" multiValued="false".  (hossman, Ishan Chattopadhyaya, yonik, Steve Rowe)
 
 Other Changes
 ----------------------
@@ -14570,7 +14570,7 @@ Bug Fixes
 * SOLR-5814: CoreContainer reports incorrect & misleading path for solrconfig.xml
   when there are loading problems (Pradeep via hossman)
 
-* SOLR-6024: Fix StatsComponent when using multiValued="true"
+* SOLR-6024: Fix StatsComponent when using docValues="true" multiValued="true"
   (Vitaliy Zhovtyuk & Tomas Fernandez-Lobbe via hossman)
 
 * SOLR-6493: Fix fq exclusion via "ex" local param in multivalued stats.field (hossman)
