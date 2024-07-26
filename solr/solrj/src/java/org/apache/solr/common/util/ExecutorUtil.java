@@ -357,7 +357,7 @@ public class ExecutorUtil {
       this.beforeExecuteTask = NOOP;
     }
 
-    public <E> MDCAwareThreadPoolExecutor(
+    public MDCAwareThreadPoolExecutor(
         int i,
         int maxValue,
         long l,

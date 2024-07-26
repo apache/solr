@@ -163,6 +163,28 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 String.valueOf(sleepMs),
                 "stages",
                 "prepare,process",
+                "multiThreaded",
+                "false",
+                "timeAllowed",
+                "500"));
+    // System.err.println("rsp=" + rsp.jsonStr());
+    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+
+    log.info("--- timeAllowed, partial results, multithreading ---");
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                ExpensiveSearchComponent.SLEEP_MS_PARAM,
+                String.valueOf(sleepMs),
+                "stages",
+                "prepare,process",
+                "multiThreaded",
+                "true",
                 "timeAllowed",
                 "500"));
     // System.err.println("rsp=" + rsp.jsonStr());
