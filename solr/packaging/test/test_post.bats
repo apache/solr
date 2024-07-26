@@ -169,7 +169,7 @@ teardown() {
   run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update --mode args --out "{'delete': {'query': '*:*'}}"
   assert_output --partial '"status":0'
 
-  # confirm we don't get back output without -out
+  # confirm we don't get back output without --out
   run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update --mode args "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
 

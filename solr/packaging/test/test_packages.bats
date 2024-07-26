@@ -72,7 +72,7 @@ teardown() {
 #  run solr package install solr-splainer
 #  assert_output --partial "solr-splainer installed."
 
-#  run solr package deploy solr-splainer -y -cluster
+#  run solr package deploy solr-splainer -y --cluster
 #  assert_output --partial "Deployment successful"
   
 #  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html

@@ -109,7 +109,7 @@ or
 
 [source,bash]
 ----
-$ bin/solr package deploy <package-name>:[version] -cluster
+$ bin/solr package deploy <package-name>:[version] --cluster
 ----
 
 If the package accepts parameters for its setup commands, they can be specified (as per package documentation):
@@ -175,7 +175,7 @@ $ bin/solr package deploy mypackage:2.0.0 --update --collections mycollection
 or
 [source,bash]
 ----
-$ bin/solr package deploy mypackage:2.0.0 --update -cluster
+$ bin/solr package deploy mypackage:2.0.0 --update --cluster
 ----
 
 You can run the `list-deployed` command to verify that this collection is using the newly added version.
@@ -202,7 +202,7 @@ or
 
 [source,bash]
 ----
-$ bin/solr package deploy <package-name>:<package-version> -cluster
+$ bin/solr package deploy <package-name>:<package-version> --cluster
 ----
 
 Both package name and version are required.

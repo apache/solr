@@ -260,7 +260,7 @@ public class PackageTool extends ToolBase {
     format(sb, "");
     formatGreen(
         sb,
-        "bin/solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
+        "bin/solr package deploy <package-name>[:<version>] [-y] [--update] --collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
     format(
         sb,
         "Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
@@ -278,7 +278,7 @@ public class PackageTool extends ToolBase {
     format(sb, "Print a list of collections on which a given package has been deployed.");
     format(sb, "");
     formatGreen(
-        sb, "bin/solr package undeploy <package-name> -collections <comma-separated-collections>");
+        sb, "bin/solr package undeploy <package-name> --collections <comma-separated-collections>");
     format(sb, "Undeploy a package from specified collection(s)");
     format(sb, "");
     formatGreen(sb, "bin/solr package uninstall <package-name>:<version>");

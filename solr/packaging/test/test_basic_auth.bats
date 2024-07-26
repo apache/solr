@@ -69,7 +69,7 @@ run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
-  run solr post -u name:password -t application/xml -url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -u name:password -t application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
