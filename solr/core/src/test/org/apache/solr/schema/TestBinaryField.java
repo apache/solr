@@ -82,73 +82,78 @@ public class TestBinaryField extends SolrJettyTestBase {
       doc = new SolrInputDocument();
       doc.addField("id", 1);
       doc.addField("data", ByteBuffer.wrap(buf, 2, 5));
+      doc.addField("data_dv", ByteBuffer.wrap(buf, 2, 5));
       client.add(doc);
 
       doc = new SolrInputDocument();
       doc.addField("id", 2);
       doc.addField("data", ByteBuffer.wrap(buf, 4, 3));
+      doc.addField("data_dv", ByteBuffer.wrap(buf, 4, 3));
       client.add(doc);
 
       doc = new SolrInputDocument();
       doc.addField("id", 3);
       doc.addField("data", buf);
+      doc.addField("data_dv", buf);
       client.add(doc);
 
       client.commit();
 
-      QueryResponse resp = client.query(new SolrQuery("*:*"));
+      QueryResponse resp = client.query(new SolrQuery("*:*").setFields("id", "data", "data_dv"));
       SolrDocumentList res = resp.getResults();
       List<Bean> beans = resp.getBeans(Bean.class);
       assertEquals(3, res.size());
       assertEquals(3, beans.size());
       for (SolrDocument d : res) {
-
         Integer id = Integer.parseInt(d.getFieldValue("id").toString());
-        byte[] data = (byte[]) d.getFieldValue("data");
-        if (id == 1) {
-          assertEquals(5, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 2), b);
-          }
+        for (String field : new String[] {"data", "data_dv"}) {
+          byte[] data = (byte[]) d.getFieldValue(field);
+          if (id == 1) {
+            assertEquals(5, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 2), b);
+            }
 
-        } else if (id == 2) {
-          assertEquals(3, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 4), b);
-          }
+          } else if (id == 2) {
+            assertEquals(3, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 4), b);
+            }
 
-        } else if (id == 3) {
-          assertEquals(10, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) i, b);
+          } else if (id == 3) {
+            assertEquals(10, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) i, b);
+            }
           }
         }
       }
       for (Bean d : beans) {
         Integer id = Integer.parseInt(d.id);
-        byte[] data = d.data;
-        if (id == 1) {
-          assertEquals(5, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 2), b);
-          }
+        for (byte[] data : new byte[][] {d.data, d.data_dv}) {
+          if (id == 1) {
+            assertEquals(5, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 2), b);
+            }
 
-        } else if (id == 2) {
-          assertEquals(3, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) (i + 4), b);
-          }
+          } else if (id == 2) {
+            assertEquals(3, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) (i + 4), b);
+            }
 
-        } else if (id == 3) {
-          assertEquals(10, data.length);
-          for (int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            assertEquals((byte) i, b);
+          } else if (id == 3) {
+            assertEquals(10, data.length);
+            for (int i = 0; i < data.length; i++) {
+              byte b = data[i];
+              assertEquals((byte) i, b);
+            }
           }
         }
       }
@@ -158,5 +163,6 @@ public class TestBinaryField extends SolrJettyTestBase {
   public static class Bean {
     @Field String id;
     @Field byte[] data;
+    @Field byte[] data_dv;
   }
 }

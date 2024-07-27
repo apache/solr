@@ -182,7 +182,7 @@ The default value is equal to the number of processors.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: 4
+|Optional |Default: number of available processors
 |===
 +
 Specifies the number of threads that will be assigned for search queries.

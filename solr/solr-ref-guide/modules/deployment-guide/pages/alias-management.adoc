@@ -1,4 +1,5 @@
 = Alias Management
+:tabs-sync-option:
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -310,13 +311,11 @@ The initial collection for routed aliases should also be visible in various part
 === Examples using CREATEALIAS
 Create an alias named "testalias" and link it to the collections named "foo" and "bar".
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1createAlias]
+[tabs#createAlias-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
@@ -337,9 +336,9 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 ----
 ====
 
-[example.tab-pane#v2createAlias]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 *Input*
 
 [source,bash]
@@ -351,6 +350,7 @@ curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/jso
   }
 '
 ----
+
 *Output*
 
 [source,json]
@@ -363,17 +363,15 @@ curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/jso
 }
 ----
 ====
---
+======
 
 A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1createTRA]
+[tabs#createTRA-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
@@ -409,12 +407,10 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 ----
 ====
 
-[example.tab-pane#v2createTRA]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 *Input*
-
 
 [source,bash]
 ----
@@ -460,19 +456,16 @@ curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/jso
 }
 ----
 ====
-
---
+======
 
 Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
 individual dimensions
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1createDRA]
+[tabs#createDRA-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
@@ -504,10 +497,9 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 ----
 ====
 
-[example.tab-pane#v2createDRA]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 *Input*
 
 [source,bash]
@@ -536,6 +528,7 @@ curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/jso
   }
 '
 ----
+
 *Output*
 
 [source,json]
@@ -548,45 +541,45 @@ curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/jso
 }
 ----
 ====
-
---
+======
 
 [[listaliases]]
 == LISTALIASES: List of all aliases in the cluster
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listaliases]
+[tabs#listaliases-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X GET 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
 ----
 ====
 
-[example.tab-pane#v2listaliases]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/aliases
 ----
 ====
---
+======
 
 === LISTALIASES Getting details for a single alias
-[example.tab-pane#v2listsinglealias]
-====
-[.tab-label]*V2 API only*
 
+[tabs#listsignlealias-request]
+======
+V2 API only::
++
+====
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/aliases/testalias2
 ----
 ====
+======
 
 === LISTALIASES Response
 
@@ -659,22 +652,20 @@ curl -X GET http://localhost:8983/api/aliases/testalias2
 The `ALIASPROP` action modifies the properties (metadata) on an alias.
 If a key is set with a value that is empty it will be removed.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1aliasprop]
+[tabs#aliasprop-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST 'http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar'
 ----
 ====
 
-[example.tab-pane#v2aliasprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H 'Content-Type: application/json' -d '
@@ -685,10 +676,9 @@ curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H '
 
 ====
 
-[example.tab-pane#v2aliasplevelprop]
+V2 API Update via property level api::
++
 ====
-[.tab-label]*V2 API* Update via property level api
-
 [source,bash]
 ----
 curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json' -d '
@@ -698,20 +688,15 @@ curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo 
 ----
 
 ====
-
-[example.tab-pane#v2deleteplevelprop]
+V2 API Delete via property level api::
++
 ====
-[.tab-label]*V2 API* Delete via property level api
-
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json'
 ----
-
 ====
-
---
-
+======
 
 WARNING: This command allows you to revise any property.
 No alias specific validation is performed.
@@ -767,12 +752,11 @@ Retrieves the metadata properties associated with a specified alias.
 Solr's v2 API supports either listing out these properties in bulk or accessing them individually by name, as necessary.
 
 
-[.dynamic-tabs]
---
-[example.tab-pane#v2listallprops]
+[tabs#listallprops-request]
+======
+V2 API Get all properties on an alias::
++
 ====
-[.tab-label]*V2 API* Get all properties on an alias
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties
@@ -794,10 +778,9 @@ curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties
 ----
 ====
 
-[example.tab-pane#v2listsingleprop]
+V2 API Get single property value on an alias::
++
 ====
-[.tab-label]*V2 API* Get single property value on an alias
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties/foo
@@ -816,34 +799,32 @@ curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties/foo
 }
 ----
 ====
---
+======
 
 
 [[deletealias]]
 == DELETEALIAS: Delete a Collection Alias
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletealias]
+[tabs#deletealias-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
 ----
 ====
 
-[example.tab-pane#v2deletealias]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X DELETE http://localhost:8983/api/aliases/testalias
 ----
 ====
---
+======
 
 
 === DELETEALIAS Parameters

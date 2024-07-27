@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="bad-schema-enums" version="1.6">
+<schema name="bad-schema-enums" version="1.7">
   <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
 

@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="schema-docValues" version="1.6">
+<schema name="schema-docValues" version="1.7">
 
   <!-- field type definitions... note that the "name" attribute is
        just a label to be used by field definitions.  The "class"

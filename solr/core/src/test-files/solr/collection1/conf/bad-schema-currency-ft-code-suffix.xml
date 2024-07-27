@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currency-ft-code-suffix" version="1.4">
+<schema name="bad-schema-currency-ft-code-suffix" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   
   <!-- BEGIN BAD STUFF: codeStrSuffix not allowed -->

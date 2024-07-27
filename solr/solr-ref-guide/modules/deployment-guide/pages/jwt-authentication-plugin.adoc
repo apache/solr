@@ -1,4 +1,5 @@
 = JWT Authentication Plugin
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -215,12 +216,11 @@ Each of the configuration keys in the table above can be used as parameter keys 
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#jwt-v1set-property]
+[tabs#jwt-set-property]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/admin/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
@@ -234,10 +234,9 @@ curl http://localhost:8983/solr/admin/authentication -H 'Content-type:applicatio
 ----
 ====
 
-[example.tab-pane#jwt-v2set-property]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:application/json' -H 'Authorization: Bearer xxx.yyy.zzz' -d '{
@@ -250,7 +249,7 @@ curl http://localhost:8983/api/cluster/security/authentication -H 'Content-type:
 '
 ----
 ====
---
+======
 
 Insert a valid JWT access token in compact serialization format (`xxx.yyy.zzz` above) to authenticate with Solr once the plugin is active, or leave `blockUnknown=false` until configuration is complete and then switch it to `true` to start enforcing.
 

@@ -25,6 +25,6 @@ public class TestSchemaVersionResource extends SolrRestletTestBase {
     assertQ(
         "/schema/version?indent=on&wt=xml",
         "count(/response/float[@name='version']) = 1",
-        "/response/float[@name='version'][.='1.6']");
+        "/response/float[@name='version'][.='1.7']");
   }
 }

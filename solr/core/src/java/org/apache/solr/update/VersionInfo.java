@@ -66,17 +66,17 @@ public class VersionInfo {
     if (!sf.indexed() && !sf.hasDocValues()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          errPrefix + " (" + VERSION_FIELD + " not searchable");
+          errPrefix + " (" + VERSION_FIELD + " not searchable)");
     }
     if (!sf.stored() && !sf.hasDocValues()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          errPrefix + " (" + VERSION_FIELD + " not retrievable");
+          errPrefix + " (" + VERSION_FIELD + " not retrievable)");
     }
     if (sf.multiValued()) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          errPrefix + " (" + VERSION_FIELD + " is multiValued");
+          errPrefix + " (" + VERSION_FIELD + " is multiValued)");
     }
 
     return sf;

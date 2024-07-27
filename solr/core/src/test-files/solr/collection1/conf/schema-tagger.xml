@@ -20,10 +20,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<schema name="minimal" version="1.6">
+<schema name="minimal" version="1.7">
 
   <fields>
-    <field name="id" type="string" docValues="true" required="true"/>
+    <field name="id" type="string" required="true"/>
     <field name="name" type="string"/>
     <!-- freq, positions, and norms are not needed by the tagger. However if you
     intend to have this field be used for general search, you should not exclude

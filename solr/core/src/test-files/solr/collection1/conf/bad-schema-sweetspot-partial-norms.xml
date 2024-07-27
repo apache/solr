@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-sweetspot-partial-norms" version="1.0">
+<schema name="bad-schema-sweetspot-partial-norms" version="1.7">
 
   <fieldType name="string" class="solr.StrField"/>
 

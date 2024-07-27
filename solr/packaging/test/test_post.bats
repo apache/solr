@@ -42,11 +42,11 @@ teardown() {
   assert_output --partial 'Must specify either --solr-update-url or -c parameter'
 
   run solr post -h
-  assert_output --partial 'usage: post'
+  assert_output --partial 'usage: bin/solr post'
   refute_output --partial 'ERROR'
 
   run solr post --help
-  assert_output --partial 'usage: post'
+  assert_output --partial 'usage: bin/solr post'
   refute_output --partial 'ERROR'
 
 }

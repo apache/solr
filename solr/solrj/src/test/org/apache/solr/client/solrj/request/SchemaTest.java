@@ -145,7 +145,7 @@ public class SchemaTest extends RestTestBase {
     SchemaRepresentation schemaRepresentation = schemaResponse.getSchemaRepresentation();
     assertNotNull(schemaRepresentation);
     assertEquals("test", schemaRepresentation.getName());
-    assertEquals(1.6, schemaRepresentation.getVersion(), 0.001f);
+    assertEquals(1.7, schemaRepresentation.getVersion(), 0.001f);
     assertEquals("id", schemaRepresentation.getUniqueKey());
     assertFalse(schemaRepresentation.getFields().isEmpty());
     assertFalse(schemaRepresentation.getDynamicFields().isEmpty());
@@ -168,7 +168,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.SchemaVersionResponse schemaVersionResponse =
         schemaVersionRequest.process(getSolrClient());
     assertValidSchemaResponse(schemaVersionResponse);
-    assertEquals(1.6, schemaVersionResponse.getSchemaVersion(), 0.001);
+    assertEquals(1.7, schemaVersionResponse.getSchemaVersion(), 0.001);
   }
 
   @Test

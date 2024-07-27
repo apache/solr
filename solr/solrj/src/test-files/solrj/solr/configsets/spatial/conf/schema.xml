@@ -19,11 +19,11 @@
 <!-- A trivial schema containing a s spatial type for SolrJ testing.
      Feel free to add other spatial types to this as required
 -->
-<schema name="spatial" version="1.1">
+<schema name="spatial" version="1.7">
 
-  <fieldType name="long" docValues="true" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="srpt_quad" class="solr.SpatialRecursivePrefixTreeFieldType" prefixTree="quad" distanceUnits="degrees" />
-  <fieldtype name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+  <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="_version_" type="long" indexed="true" stored="true"/>

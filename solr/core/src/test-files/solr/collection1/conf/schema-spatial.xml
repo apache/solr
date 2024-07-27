@@ -16,7 +16,7 @@
   limitations under the License.
   -->
 
-<schema name="test" version="1.4">
+<schema name="test" version="1.7">
 
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
   <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
@@ -25,9 +25,9 @@
   <!-- tdouble class can't be randomized, because BBoxField requires TrieDoubleField.  See SOLR-11111. -->
   <fieldType name="tdouble" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8"/>
   
-  <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}" precisionStep="8" docValues="true"/>
+  <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}" precisionStep="8"/>
 
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
   
   <fieldType name="boolean" class="solr.BoolField"/>
 
@@ -82,15 +82,15 @@
   <field name="bbox" type="bbox"/>
   <field name="pbbox" type="pbbox"/>
   <field name="bbox_ndv" type="bbox_ndv"/>
-  <field name="llp" type="llp" indexed="true" docValues="true" />
+  <field name="llp" type="llp" indexed="true" />
   <field name="llp_idx" type="llp" indexed="true" docValues="false" />
-  <field name="llp_dv" type="llp" indexed="false" docValues="true" />
-  <field name="llp_1_dv_st" type="llp" indexed="false" docValues="true" stored="true" multiValued="false"/>
-  <field name="llp_N_dv_st" type="llp" indexed="false" docValues="true" stored="true" multiValued="true"/>
-  <field name="llp_1_dv" type="llp" indexed="false" docValues="true" stored="false" multiValued="false" useDocValuesAsStored="false"/>
-  <field name="llp_N_dv" type="llp" indexed="false" docValues="true" stored="false" multiValued="true" useDocValuesAsStored="false"/>
-  <field name="llp_1_dv_dvasst" type="llp" indexed="false" docValues="true" stored="false" multiValued="false"  useDocValuesAsStored="true"/>
-  <field name="llp_N_dv_dvasst" type="llp" indexed="false" docValues="true" stored="false" multiValued="true"  useDocValuesAsStored="true"/>
+  <field name="llp_dv" type="llp" indexed="false" />
+  <field name="llp_1_dv_st" type="llp" indexed="false" stored="true" multiValued="false"/>
+  <field name="llp_N_dv_st" type="llp" indexed="false" stored="true" multiValued="true"/>
+  <field name="llp_1_dv" type="llp" indexed="false" stored="false" multiValued="false" useDocValuesAsStored="false"/>
+  <field name="llp_N_dv" type="llp" indexed="false" stored="false" multiValued="true" useDocValuesAsStored="false"/>
+  <field name="llp_1_dv_dvasst" type="llp" indexed="false" stored="false" multiValued="false"  useDocValuesAsStored="true"/>
+  <field name="llp_N_dv_dvasst" type="llp" indexed="false" stored="false" multiValued="true"  useDocValuesAsStored="true"/>
 
   <dynamicField name="bboxD_*" type="bbox" indexed="true"/>
   <dynamicField name="str_*" type="string" indexed="true" stored="true"/>
@@ -101,7 +101,7 @@
              geo="true" prefixTree="geohash" distanceUnits="kilometers"
   />
   <field name="srpt_geohash_km" type="srpt_geohash_km"/>
-  <field name="llp_km" type="llp_km" docValues="true"/>
+  <field name="llp_km" type="llp_km"/>
   <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
   <field name="point" type="point2D" indexed="true" stored="true" multiValued="false"/>
 

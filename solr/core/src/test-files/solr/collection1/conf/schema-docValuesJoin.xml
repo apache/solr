@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="doc-values-for-Join" version="1.6">
+<schema name="doc-values-for-Join" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -28,6 +28,7 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -65,7 +66,7 @@
   </fieldType>
 
   <field name="id" type="string" indexed="true" stored="true" docValues="false" multiValued="false" required="true"/>
-  <field name="id_dv" type="string" indexed="false" stored="false" docValues="true" multiValued="false"
+  <field name="id_dv" type="string" indexed="false" stored="false" multiValued="false"
          required="true"/>
   <dynamicField name="*_i" type="int" indexed="true" stored="false" docValues="false"/>
   <dynamicField name="*_i_dv" type="int" indexed="true" stored="true" docValues="true"/>

@@ -1,4 +1,5 @@
 = CoreAdmin API
+:tabs-sync-option:
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -43,12 +44,11 @@ We are passing in the explicit relative path for the `configSetBaseDir` to enabl
 
 The `STATUS` action returns the status of all running Solr cores, or status for only the named core.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1coreadmin-status]
+[tabs#coreadmin-status-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/cores?action=STATUS&core=techproducts
@@ -56,10 +56,9 @@ http://localhost:8983/solr/admin/cores?action=STATUS&core=techproducts
 ----
 ====
 
-[example.tab-pane#v2coreadmin-status]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/cores/
@@ -80,7 +79,7 @@ curl -X GET http://localhost:8983/api/cores?indexInfo=false
 ----
 
 ====
---
+======
 
 === STATUS Parameters
 
@@ -113,12 +112,11 @@ If a Solr core with the given name already exists, it will continue to handle re
 When the new core is ready, it will take new requests and the old core will be unloaded.
 
 `admin/cores?action=CREATE&name=_core-name_&instanceDir=_path/to/dir_&config=solrconfig.xml&dataDir=data`
-[.dynamic-tabs]
---
-[example.tab-pane#v1coreadmin-create]
+[tabs#coreadmin-create-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 Assuming you are using an existing configSet to create your new core:
 [source,bash]
 ----
@@ -133,10 +131,9 @@ http://localhost:8983/solr/admin/cores?action=CREATE&name=_core-name_&instanceDi
 ----
 ====
 
-[example.tab-pane#v2coreadmin-create]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json' -d '
@@ -149,7 +146,7 @@ curl -X POST http://localhost:8983/api/cores -H 'Content-Type: application/json'
 '
 ----
 ====
---
+======
 
 Note that this command is the only one of the Core Admin API commands that *does not* support the `core` parameter.
 Instead, the `name` parameter is required, as shown below.
@@ -299,12 +296,11 @@ The RELOAD action loads a new core from the configuration of an existing, regist
 While the new core is initializing, the existing one will continue to handle requests.
 When the new Solr core is ready, it takes over and the old core is unloaded.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1coreadmin-reload]
+[tabs#coreadmin-reload-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
@@ -312,16 +308,16 @@ http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
 ----
 ====
 
-[example.tab-pane#v2coreadmin-reload]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores/techproducts/reload
 ----
 ====
---
+======
 
 This is useful when you've made changes to a Solr core's configuration on disk, such as adding new field definitions.
 Calling the RELOAD action lets you apply the new configuration without having to restart Solr.
@@ -349,20 +345,19 @@ This parameter is required in v1, and part of the url in the v2 API.
 
 The `RENAME` action changes the name of a Solr core.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1coreadmin-rename]
+[tabs#coreadmin-rename-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/admin/cores?action=RENAME&core=currentCoreName&other=newCoreName"
 ----
 ====
-
-[example.tab-pane#v2coreadmin-rename]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-Type: application/json' -d '
@@ -372,7 +367,7 @@ curl -X POST http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-
 '
 ----
 ====
---
+======
 
 === RENAME Parameters
 
@@ -414,22 +409,19 @@ This can be used to swap new content into production.
 The prior core remains available and can be swapped back, if necessary.
 Each core will be known by the name of the other, after the swap.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1coreadmin-swap]
+[tabs#coreadmin-swap-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 `admin/cores?action=SWAP&core=_core-name_&other=_other-core-name_`
 ----
 ====
-
-[example.tab-pane#v2coreadmin-swap]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
@@ -439,7 +431,7 @@ curl -X POST http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: 
 '
 ----
 ====
---
+======
 
 [IMPORTANT]
 ====
@@ -484,23 +476,20 @@ The `UNLOAD` action removes a core from Solr.
 Active requests will continue to be processed, but no new requests will be sent to the named core.
 If a core is registered under more than one name, only the given name is removed.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1coreadmin-unload]
+[tabs#coreadmin-unload-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/cores?actionUNLOAD&core=techproducts
 
 ----
 ====
-
-[example.tab-pane#v2coreadmin-unload]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores/techproducts/unload -H 'Content-Type: application/json' -d '
@@ -508,7 +497,7 @@ curl -X POST http://localhost:8983/api/cores/techproducts/unload -H 'Content-Typ
 '
 ----
 ====
---
+======
 
 The `UNLOAD` action requires a parameter (`core`) identifying the core to be removed.
 If the persistent attribute of `<solr>` is set to `true`, the `<core>` element with this `name` attribute will be removed from `solr.xml`.
@@ -573,18 +562,21 @@ The `MERGEINDEXES` action merges one or more indexes to another index.
 The indexes must have completed commits, and should be locked against writes until the merge is complete or the resulting merged index may become corrupted.
 The target core index must already exist and have a compatible schema with the one or more indexes that will be merged to it.
 Another commit on the target core should also be performed after the merge is complete.
---
-[example.tab-pane#v1coreadmin-mergeindexes-dir]
+
+[tabs#coreadmin-mergeindexes-dir-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core=targetCoreName&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
 ----
 ====
-[example.tab-pane#v2coreadmin-mergeindexes-dir]
+
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
@@ -594,25 +586,28 @@ curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Co
 '
 ----
 ====
---
+======
 
 In this example, we use the `indexDir` parameter (`indexDirs` in the v2 API) to define the index locations of the source cores.
 The `core` parameter defines the target index.
 A benefit of this approach is that we can merge any Lucene-based index that may not be associated with a Solr core.
 
 Alternatively, we can instead use a `srcCore` parameter (`srcCores` in the v2 API), as in the example below:
---
-[example.tab-pane#v1coreadmin-mergeindexes-core]
+
+[tabs#coreadmin-mergeindexes-core-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core=targetCoreName&srcCore=core1&srcCore=core2"
 ----
 ====
-[example.tab-pane#v2coreadmin-mergeindexes-core]
+
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
@@ -622,7 +617,8 @@ curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Co
 '
 ----
 ====
---
+======
+
 This approach allows us to define cores that may not have an index path that is on the same physical server as the target core.
 However, we can only use Solr cores as the source indexes.
 Another benefit of this approach is that we don't have as high a risk for corruption if writes occur in parallel with the source index.
@@ -788,27 +784,28 @@ If the `split.key` parameter is specified then only documents having the same ro
 == REQUESTSTATUS
 
 Request the status of an already submitted asynchronous CoreAdmin API call.
---
-[example.tab-pane#v1coreadmin-requeststatus]
-====
-[.tab-label]*V1 API*
 
+[tabs#coreadmin-requeststatus-request]
+======
+V1 API::
++
+====
 [source,bash]
 ----
 http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=id
 
 ----
 ====
-[example.tab-pane#v2coreadmin-requeststatus]
-====
-[.tab-label]*V2 API*
 
+V2 API::
++
+====
 [source,bash]
 ----
 curl -X GET http://localhost:8983/api/node/commands/id
 ----
 ====
---
+======
 
 === Core REQUESTSTATUS Parameters
 

@@ -28,17 +28,8 @@ teardown() {
   solr stop --all >/dev/null 2>&1
 }
 
-@test "package detects no running solr" {
-  # not sure this is actually a good thing..  we may not want this..
-  run solr package
-  assert_output --partial "No Solr nodes are running."
-}
-
 @test "lifecycle of package" {
   run solr start -c -Denable.packages=true
-
-  run solr package
-  refute_output --partial "No Solr nodes are running."
 
   run solr package --help
   assert_output --partial "Add a repository to Solr"

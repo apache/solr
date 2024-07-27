@@ -15,8 +15,8 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  -->
-<schema name="inplace-updates" version="1.6">
-  
+<schema name="inplace-updates" version="1.7">
+
   <uniqueKey>id</uniqueKey>
   <field name="id" type="string" indexed="true" stored="true" docValues="true"/>
   <field name="_root_" type="string" indexed="true" stored="true" docValues="true"/>
@@ -41,12 +41,12 @@
   <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
   <dynamicField name="*_i" type="int"    indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_l" type="long"   indexed="true" stored="true" docValues="true"/>
-  
+
   <!-- Copy fields -->
-  
+
   <!-- The id field  has a non in-place updatable copy target, but in-place updates should still work. -->
   <copyField source="id" dest="id_field_copy_that_does_not_support_in_place_update_s"/>
-  
+
   <!-- copyfield1: src and dest are both updatable -->
   <field name="copyfield1_src__both_updatable" type="int" indexed="false" stored="false" docValues="true" />
   <copyField source="copyfield1_src__both_updatable" dest="copyfield1_dest__both_updatable_i_dvo"/>
@@ -54,12 +54,12 @@
   <!-- copyfield2: src is updatable but dest is not -->
   <field name="copyfield2_src__only_src_updatable" type="int" indexed="false" stored="false" docValues="true" />
   <copyField source="copyfield2_src__only_src_updatable" dest="copyfield2_dest__only_src_updatable_i"/>
-    
+
 
   <!-- cruft needed by the solrconfig used in our tests for startup, but not used in the tests -->
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="true" stored="true"/>
-  
+
 
   <fieldType name="string" class="solr.StrField" multiValued="false" indexed="false" stored="false" docValues="false" />
   <fieldType name="long" class="${solr.tests.LongFieldType}" multiValued="false" indexed="false" stored="false" docValues="false"/>

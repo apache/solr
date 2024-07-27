@@ -40,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -64,29 +66,36 @@ public class MetricUtils {
   public static final String VALUE = "value";
   public static final String VALUES = "values";
 
-  static final String MS = "_ms";
+  private static final String MS = "_ms";
 
-  static final String MIN = "min";
-  static final String MIN_MS = MIN + MS;
-  static final String MAX = "max";
-  static final String MAX_MS = MAX + MS;
-  static final String MEAN = "mean";
-  static final String MEAN_MS = MEAN + MS;
-  static final String MEDIAN = "median";
-  static final String MEDIAN_MS = MEDIAN + MS;
-  static final String STDDEV = "stddev";
-  static final String STDDEV_MS = STDDEV + MS;
-  static final String SUM = "sum";
-  static final String P75 = "p75";
-  static final String P75_MS = P75 + MS;
-  static final String P95 = "p95";
-  static final String P95_MS = P95 + MS;
-  static final String P99 = "p99";
-  static final String P99_MS = P99 + MS;
-  static final String P999 = "p999";
-  static final String P999_MS = P999 + MS;
+  private static final String MIN = "min";
+  private static final String MIN_MS = MIN + MS;
+  private static final String MAX = "max";
+  private static final String MAX_MS = MAX + MS;
+  private static final String MEAN = "mean";
+  private static final String MEAN_MS = MEAN + MS;
+  private static final String MEDIAN = "median";
+  private static final String MEDIAN_MS = MEDIAN + MS;
+  private static final String STDDEV = "stddev";
+  private static final String STDDEV_MS = STDDEV + MS;
+  private static final String SUM = "sum";
+  private static final String P75 = "p75";
+  private static final String P75_MS = P75 + MS;
+  private static final String P95 = "p95";
+  private static final String P95_MS = P95 + MS;
+  private static final String P99 = "p99";
+  private static final String P99_MS = P99 + MS;
+  private static final String P999 = "p999";
+  private static final String P999_MS = P999 + MS;
 
   public static final Predicate<CharSequence> ALL_PROPERTIES = (name) -> true;
+
+  /**
+   * Local cache for BeanInfo instances that are created to scan for system metrics. List of
+   * properties is not supposed to change for the JVM lifespan, so we can keep already create
+   * BeanInfo instance for future calls.
+   */
+  private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
 
   /**
    * Adds metrics from a Timer to a NamedList, using well-known back-compat names.
@@ -764,12 +773,21 @@ public class MetricUtils {
   public static <T extends PlatformManagedObject> void addMXBeanMetrics(
       T obj, Class<? extends T> intf, String prefix, BiConsumer<String, Metric> consumer) {
     if (intf.isInstance(obj)) {
-      BeanInfo beanInfo;
-      try {
-        beanInfo =
-            Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
-      } catch (IntrospectionException e) {
-        log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+      BeanInfo beanInfo =
+          beanInfos.computeIfAbsent(
+              intf,
+              clazz -> {
+                try {
+                  return Introspector.getBeanInfo(
+                      clazz, clazz.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+
+                } catch (IntrospectionException e) {
+                  log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+                  return null;
+                }
+              });
+
+      if (beanInfo == null) {
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
@@ -827,7 +845,7 @@ public class MetricUtils {
       try {
         final Class<? extends PlatformManagedObject> intf =
             Class.forName(clazz).asSubclass(PlatformManagedObject.class);
-        MetricUtils.addMXBeanMetrics(obj, intf, null, consumer);
+        MetricUtils.addMXBeanMetrics(obj, intf, prefix, consumer);
       } catch (ClassNotFoundException e) {
         // ignore
       }

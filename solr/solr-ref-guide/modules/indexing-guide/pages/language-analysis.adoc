@@ -1,4 +1,5 @@
 = Language Analysis
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -34,11 +35,11 @@ Any words in the protected word list will not be modified by any stemmer in Solr
 
 A sample Solr `protwords.txt` with comments can be found in the `sample_techproducts_configs` xref:configuration-guide:config-sets.adoc[configset] directory:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-keywordmarker]
+[tabs#filter-keywordmarker]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldtype name="myfieldtype" class="solr.TextField">
@@ -50,9 +51,10 @@ A sample Solr `protwords.txt` with comments can be found in the `sample_techprod
 </fieldtype>
 ----
 ====
-[example.tab-pane#byclass-filter-keywordmarker]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldtype name="myfieldtype" class="solr.TextField">
@@ -64,7 +66,7 @@ A sample Solr `protwords.txt` with comments can be found in the `sample_techprod
 </fieldtype>
 ----
 ====
---
+======
 
 == KeywordRepeatFilterFactory
 
@@ -79,11 +81,11 @@ It is recommended to also include `RemoveDuplicatesTokenFilterFactory` to avoid 
 
 A sample fieldType configuration could look like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-keywordrepeat]
+[tabs#filter-keyowrdrepeat]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldtype name="english_stem_preserve_original" class="solr.TextField">
@@ -96,9 +98,10 @@ A sample fieldType configuration could look like this:
 </fieldtype>
 ----
 ====
-[example.tab-pane#byclass-filter-keywordrepeat]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldtype name="english_stem_preserve_original" class="solr.TextField">
@@ -111,7 +114,7 @@ A sample fieldType configuration could look like this:
 </fieldtype>
 ----
 ====
---
+======
 
 IMPORTANT: When adding the same token twice, it will also score twice (double), so you may have to re-tune your ranking rules.
 
@@ -123,11 +126,11 @@ Overrides stemming algorithms by applying a custom mapping, then protecting thes
 A customized mapping of words to stems, in a tab-separated file, can be specified to the `dictionary` attribute in the schema.
 Words in this mapping will be stemmed to the stems from the file, and will not be further changed by any stemmer.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-stemmeroverride]
+[tabs#filter-stemmeroverrider]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldtype name="myfieldtype" class="solr.TextField">
@@ -139,9 +142,10 @@ Words in this mapping will be stemmed to the stems from the file, and will not b
 </fieldtype>
 ----
 ====
-[example.tab-pane#byclass-filter-stemmeroverride]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldtype name="myfieldtype" class="solr.TextField">
@@ -153,7 +157,7 @@ Words in this mapping will be stemmed to the stems from the file, and will not b
 </fieldtype>
 ----
 ====
---
+======
 
 A sample `stemdict.txt` file is shown below:
 
@@ -228,11 +232,11 @@ If `true`, only the longest matching subwords will generate new tokens.
 
 Assume that `germanwords.txt` contains at least the following words: `dumm kopf donau dampf schiff`
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-dictionarycompoundword]
+[tabs#filter-dictionary-compoundword]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -241,9 +245,10 @@ Assume that `germanwords.txt` contains at least the following words: `dumm kopf 
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-dictionarycompoundword]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -252,7 +257,7 @@ Assume that `germanwords.txt` contains at least the following words: `dumm kopf 
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Donaudampfschiff dummkopf"
 
@@ -408,7 +413,7 @@ If you specify "de" as the language and "CH" as the country, you will get German
            strength="primary" />
 ...
 <!-- Define a field to store the German collated manufacturer names. -->
-<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false" docValues="true"/>
+<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false"/>
 ...
 <!-- Copy the text to this field. We could create French, English, Spanish versions too,
      and sort differently for different users! -->
@@ -599,7 +604,7 @@ See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more info
            country="DE"
            strength="primary" /> <!-- ignore Umlauts and letter case when sorting -->
 ...
-<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false" docValues="true" />
+<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false" />
 ...
 <copyField source="manu" dest="manuGERMAN"/>
 ----
@@ -620,11 +625,11 @@ On the other hand, it can reduce precision because language-specific character d
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-lang-asciifolding]
+[tabs#filter-lang-asciifolding]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -633,9 +638,10 @@ On the other hand, it can reduce precision because language-specific character d
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-lang-asciifolding]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -644,7 +650,7 @@ On the other hand, it can reduce precision because language-specific character d
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Björn Ångström"
 
@@ -665,11 +671,11 @@ On the other hand, it can reduce precision because language-specific character d
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-decimaldigit]
+[tabs#filter-decimaldigit]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -678,9 +684,10 @@ On the other hand, it can reduce precision because language-specific character d
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-decimaldigit]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -689,7 +696,7 @@ On the other hand, it can reduce precision because language-specific character d
 </analyzer>
 ----
 ====
---
+======
 
 == OpenNLP Integration
 
@@ -736,11 +743,11 @@ See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-tokenizer-opennlp]
+[tabs#tokenizer-opennlp]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -750,9 +757,10 @@ See xref:configuration-guide:resource-loading.adoc[] for more information.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-tokenizer-opennlp]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -762,7 +770,7 @@ See xref:configuration-guide:resource-loading.adoc[] for more information.
 </analyzer>
 ----
 ====
---
+======
 
 === OpenNLP Part-Of-Speech Filter
 
@@ -806,11 +814,11 @@ $
 
 Index the POS for each token as a payload:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-opennlppos]
+[tabs#filter-opennlppos]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -823,9 +831,10 @@ Index the POS for each token as a payload:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-opennlppos]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -838,7 +847,7 @@ Index the POS for each token as a payload:
 </analyzer>
 ----
 ====
---
+======
 
 Index the POS for each token as a synonym, after prefixing the POS with "@" (see the xref:filters.adoc#type-as-synonym-filter[TypeAsSynonymFilter description]):
 
@@ -895,11 +904,11 @@ See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 Index the phrase chunk label for each token as a payload:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-opennlpchunker]
+[tabs#filter-opennlpchunker]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -912,9 +921,10 @@ Index the phrase chunk label for each token as a payload:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-opennlpchunker]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -927,7 +937,7 @@ Index the phrase chunk label for each token as a payload:
 </analyzer>
 ----
 ====
---
+======
 
 Index the phrase chunk label for each token as a synonym, after prefixing it with "#" (see the xref:filters.adoc#type-as-synonym-filter[TypeAsSynonymFilter description]):
 
@@ -981,11 +991,11 @@ See xref:configuration-guide:resource-loading.adoc[] for more information.
 
 Perform dictionary-based lemmatization, and fall back to model-based lemmatization for out-of-vocabulary tokens (see the <<OpenNLP Part-Of-Speech Filter>> section above for information about using `TypeTokenFilter` to avoid indexing punctuation):
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-opennlplemmatizer]
+[tabs#filter-opennlplemmatizer]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1000,9 +1010,10 @@ Perform dictionary-based lemmatization, and fall back to model-based lemmatizati
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-opennlplemmatizer]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1017,7 +1028,7 @@ Perform dictionary-based lemmatization, and fall back to model-based lemmatizati
 </analyzer>
 ----
 ====
---
+======
 
 Perform dictionary-based lemmatization only:
 
@@ -1111,11 +1122,11 @@ This algorithm defines both character normalization and stemming, so these are s
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-arabic]
+[tabs#lang-arabic]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1125,9 +1136,9 @@ This algorithm defines both character normalization and stemming, so these are s
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-arabic]
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1137,7 +1148,7 @@ This algorithm defines both character normalization and stemming, so these are s
 </analyzer>
 ----
 ====
---
+======
 
 === Bengali
 
@@ -1150,11 +1161,11 @@ They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationF
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-bengali]
+[tabs#lang-bengali]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1164,9 +1175,10 @@ They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationF
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-bengali]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1176,7 +1188,7 @@ They use the Lucene classes `org.apache.lucene.analysis.bn.BengaliNormalizationF
 </analyzer>
 ----
 ====
---
+======
 
 *Normalisation* - `মানুষ` -> `মানুস`
 
@@ -1195,11 +1207,11 @@ Although that stemmer can be configured to use a list of protected words (which 
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-brazilian]
+[tabs#lang-brazilian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1208,9 +1220,10 @@ Although that stemmer can be configured to use a list of protected words (which 
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-brazilian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1219,7 +1232,7 @@ Although that stemmer can be configured to use a list of protected words (which 
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "praia praias"
 
@@ -1237,11 +1250,11 @@ Solr includes a light stemmer for Bulgarian, following http://members.unine.ch/j
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-bulgarian]
+[tabs#lang-bulgarian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1251,9 +1264,10 @@ Solr includes a light stemmer for Bulgarian, following http://members.unine.ch/j
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-bulgarian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1263,7 +1277,7 @@ Solr includes a light stemmer for Bulgarian, following http://members.unine.ch/j
 </analyzer>
 ----
 ====
---
+======
 
 === Catalan
 
@@ -1285,11 +1299,11 @@ The stemmer language, `Catalan` in this case.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-catalan]
+[tabs#lang-catalan]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1301,9 +1315,10 @@ The stemmer language, `Catalan` in this case.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-catalan]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1315,7 +1330,7 @@ The stemmer language, `Catalan` in this case.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "llengües llengua"
 
@@ -1338,11 +1353,11 @@ When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese charact
 
 *Examples:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-trd-chinese]
+[tabs#lang-trd-chinese]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1352,9 +1367,10 @@ When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese charact
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-trad-chinese]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1364,7 +1380,7 @@ When combined with <<CJK Bigram Filter>>, overlapping bigrams of Chinese charact
 </analyzer>
 ----
 ====
---
+======
 
 [source,xml]
 ----
@@ -1453,11 +1469,11 @@ Also useful for Chinese analysis:
 
 *Examples:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-chinese]
+[tabs#lang-chinese]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1470,9 +1486,10 @@ Also useful for Chinese analysis:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-chinese]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1485,7 +1502,7 @@ Also useful for Chinese analysis:
 </analyzer>
 ----
 ====
---
+======
 
 [source,xml]
 ----
@@ -1527,33 +1544,34 @@ Solr includes a light stemmer for Czech, following https://dl.acm.org/citation.c
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-czech]
+[tabs#lang-czech]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
   <tokenizer name="standard"/>
   <filter name="lowercase"/>
   <filter name="czechStem"/>
-<analyzer>
+</analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-czech]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
   <filter class="solr.LowerCaseFilterFactory"/>
   <filter class="solr.CzechStemFilterFactory"/>
-<analyzer>
+</analyzer>
 ----
 ====
---
+======
 
 *In:* "prezidenští, prezidenta, prezidentského"
 
@@ -1582,11 +1600,11 @@ The stemmer language, `Danish` in this case.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-danish]
+[tabs#lang-danish]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1596,9 +1614,10 @@ The stemmer language, `Danish` in this case.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-danish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1608,7 +1627,7 @@ The stemmer language, `Danish` in this case.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "undersøg undersøgelse"
 
@@ -1635,11 +1654,11 @@ The stemmer language, `Dutch` in this case.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-dutch]
+[tabs#lang-dutch]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1649,9 +1668,10 @@ The stemmer language, `Dutch` in this case.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-dutch]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1661,7 +1681,7 @@ The stemmer language, `Dutch` in this case.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "kanaal kanalen"
 
@@ -1688,11 +1708,11 @@ The stemmer language, `Estonian` in this case.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-estonian]
+[tabs#lang-estonian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1702,9 +1722,10 @@ The stemmer language, `Estonian` in this case.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-estonian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1714,7 +1735,7 @@ The stemmer language, `Estonian` in this case.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Taevani tõustes"
 
@@ -1732,11 +1753,12 @@ Solr includes support for stemming Finnish, and Lucene includes an example stopw
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-finnish]
+[tabs#lang-finnish]
+======
+
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1745,9 +1767,10 @@ Solr includes support for stemming Finnish, and Lucene includes an example stopw
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-finnish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1756,7 +1779,7 @@ Solr includes support for stemming Finnish, and Lucene includes an example stopw
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "kala kalat"
 
@@ -1800,11 +1823,11 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-french]
+[tabs#lang-french]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1815,9 +1838,10 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-french]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1828,7 +1852,7 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "L'histoire d'art"
 
@@ -1886,11 +1910,11 @@ Solr includes a stemmer for Galician following http://bvg.udc.es/recursos_lingua
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-galician]
+[tabs#lang-galician]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1900,9 +1924,10 @@ Solr includes a stemmer for Galician following http://bvg.udc.es/recursos_lingua
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-galician]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1912,7 +1937,7 @@ Solr includes a stemmer for Galician following http://bvg.udc.es/recursos_lingua
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "felizmente Luzes"
 
@@ -1931,11 +1956,11 @@ Lucene includes an example stopword list.
 
 *Examples:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-german]
+[tabs#lang-german]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1944,9 +1969,10 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-german]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1955,7 +1981,7 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
---
+======
 
 [source,xml]
 ----
@@ -1995,11 +2021,11 @@ If you need to index text in these encodings, please use Java's character set co
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-greek]
+[tabs#lang-greek]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2008,9 +2034,10 @@ If you need to index text in these encodings, please use Java's character set co
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-greek]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2019,7 +2046,7 @@ If you need to index text in these encodings, please use Java's character set co
 </analyzer>
 ----
 ====
---
+======
 
 === Hindi
 
@@ -2031,11 +2058,11 @@ Solr includes support for stemming Hindi following http://computing.open.ac.uk/S
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-hindi]
+[tabs#lang-hindi]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2046,9 +2073,10 @@ Solr includes support for stemming Hindi following http://computing.open.ac.uk/S
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-hindi]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2059,7 +2087,7 @@ Solr includes support for stemming Hindi following http://computing.open.ac.uk/S
 </analyzer>
 ----
 ====
---
+======
 
 === Indonesian
 
@@ -2071,11 +2099,11 @@ Solr includes support for stemming Indonesian (Bahasa Indonesia) following http:
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-indonesian]
+[tabs#lang-indonesian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2085,9 +2113,10 @@ Solr includes support for stemming Indonesian (Bahasa Indonesia) following http:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-indonesian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2097,7 +2126,7 @@ Solr includes support for stemming Indonesian (Bahasa Indonesia) following http:
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "sebagai sebagainya"
 
@@ -2116,11 +2145,11 @@ Lucene includes an example stopword list.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-italian]
+[tabs#lang-italian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2132,9 +2161,10 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-italian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2146,7 +2176,7 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "propaga propagare propagamento"
 
@@ -2175,11 +2205,11 @@ The stemmer language, `Irish` in this case.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-irish]
+[tabs#lang-irish]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2191,9 +2221,10 @@ The stemmer language, `Irish` in this case.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-irish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2205,7 +2236,7 @@ The stemmer language, `Irish` in this case.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "siopadóireacht síceapatacha b'fhearr m'athair"
 
@@ -2376,11 +2407,11 @@ Folds fullwidth ASCII variants into the equivalent Basic Latin forms, and folds 
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-japanese]
+[tabs#lang-japanese]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="text_ja" positionIncrementGap="100" autoGeneratePhraseQueries="false">
@@ -2398,9 +2429,10 @@ Example:
 </fieldType>
 ----
 ====
-[example.tab-pane#byclass-lang-japanese]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text_ja" positionIncrementGap="100" autoGeneratePhraseQueries="false">
@@ -2418,7 +2450,7 @@ Example:
 </fieldType>
 ----
 ====
---
+======
 
 === Korean
 
@@ -2431,11 +2463,11 @@ Nori also has a user dictionary feature that allows overriding the statistical m
 
 *Example*:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-korean]
+[tabs#lang-korean]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
@@ -2449,9 +2481,9 @@ Nori also has a user dictionary feature that allows overriding the statistical m
 ----
 ====
 
-[example.tab-pane#byclass-lang-korean]
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text_ko" class="solr.TextField" positionIncrementGap="100">
@@ -2464,7 +2496,7 @@ Nori also has a user dictionary feature that allows overriding the statistical m
 </fieldType>
 ----
 ====
---
+======
 
 
 ==== Korean Tokenizer
@@ -2562,11 +2594,11 @@ Solr includes support for stemming Latvian, and Lucene includes an example stopw
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-latvian]
+[tabs#lang-latvian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="text_lvstem" class="solr.TextField" positionIncrementGap="100">
@@ -2578,9 +2610,10 @@ Solr includes support for stemming Latvian, and Lucene includes an example stopw
 </fieldType>
 ----
 ====
-[example.tab-pane#byclass-lang-latvian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text_lvstem" class="solr.TextField" positionIncrementGap="100">
@@ -2592,7 +2625,7 @@ Solr includes support for stemming Latvian, and Lucene includes an example stopw
 </fieldType>
 ----
 ====
---
+======
 
 *In:* "tirgiem tirgus"
 
@@ -2651,11 +2684,11 @@ Valid values are:
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-norweigian]
+[tabs#lang-norweigian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="text_no" class="solr.TextField" positionIncrementGap="100">
@@ -2668,9 +2701,10 @@ Valid values are:
 </fieldType>
 ----
 ====
-[example.tab-pane#byclass-lang-norweigian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text_no" class="solr.TextField" positionIncrementGap="100">
@@ -2683,7 +2717,7 @@ Valid values are:
 </fieldType>
 ----
 ====
---
+======
 
 *In:* "Forelskelsen"
 
@@ -2744,11 +2778,11 @@ This is a variant of `ScandinavianNormalizationFilter`, with folding rules custo
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-norwegian]
+[tabs#lang-norwegian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2758,9 +2792,10 @@ This is a variant of `ScandinavianNormalizationFilter`, with folding rules custo
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-norwegian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2770,7 +2805,7 @@ This is a variant of `ScandinavianNormalizationFilter`, with folding rules custo
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "blåbærsyltetøj blåbärsyltetöj blaabaarsyltetoej blabarsyltetoj"
 
@@ -2790,11 +2825,11 @@ Solr includes support for normalizing Persian, and Lucene includes an example st
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-persian]
+[tabs#lang-persian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2804,9 +2839,10 @@ Solr includes support for normalizing Persian, and Lucene includes an example st
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-persian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2816,7 +2852,7 @@ Solr includes support for normalizing Persian, and Lucene includes an example st
 </analyzer>
 ----
 ====
---
+======
 
 === Polish
 
@@ -2830,11 +2866,11 @@ To use this tokenizer, you must enable the xref:#analysis-extras-module[analysis
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-polish]
+[tabs#lang-polish]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2844,9 +2880,10 @@ To use this tokenizer, you must enable the xref:#analysis-extras-module[analysis
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-polish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2856,7 +2893,7 @@ To use this tokenizer, you must enable the xref:#analysis-extras-module[analysis
 </analyzer>
 ----
 ====
---
+======
 
 [source,xml]
 ----
@@ -2893,11 +2930,11 @@ Lucene includes an example stopword list.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-portuguese]
+[tabs#lang-portuguese]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2907,9 +2944,10 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-portuguese]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2919,7 +2957,7 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
---
+======
 
 [source,xml]
 ----
@@ -2964,11 +3002,11 @@ The stemmer language, `Romanian` in this case.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-romanian]
+[tabs#lang-romanian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2978,9 +3016,10 @@ The stemmer language, `Romanian` in this case.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-romanian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2990,7 +3029,7 @@ The stemmer language, `Romanian` in this case.
 </analyzer>
 ----
 ====
---
+======
 
 === Russian
 
@@ -3005,11 +3044,11 @@ Lucene includes an example stopword list.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-russian]
+[tabs#lang-russian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3019,9 +3058,10 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-russian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3031,7 +3071,7 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
---
+======
 
 === Scandinavian
 
@@ -3061,11 +3101,11 @@ This filter does *not* perform the common Swedish folds of å and ä to a nor ö
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-scandinavian]
+[tabs#lang-scandinavian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3075,9 +3115,10 @@ This filter does *not* perform the common Swedish folds of å and ä to a nor ö
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-scandinavian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3087,7 +3128,7 @@ This filter does *not* perform the common Swedish folds of å and ä to a nor ö
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "blåbærsyltetøj blåbärsyltetöj blaabaarsyltetoej blabarsyltetoj"
 
@@ -3151,11 +3192,11 @@ Valid values are:
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-serbian]
+[tabs#lang-serbian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3165,9 +3206,10 @@ Valid values are:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-serbian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3177,7 +3219,7 @@ Valid values are:
 </analyzer>
 ----
 ====
---
+======
 
 === Spanish
 
@@ -3190,11 +3232,11 @@ Lucene includes an example stopword list.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-spanish]
+[tabs#lang-spanish]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3204,9 +3246,10 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-spanish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3216,7 +3259,7 @@ Lucene includes an example stopword list.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "torear toreara torearlo"
 
@@ -3249,11 +3292,11 @@ Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 
 *Example (SwedishLightStemFilterFactory):*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-swedish]
+[tabs#lang-swedish]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3263,9 +3306,10 @@ Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-swedish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3275,7 +3319,7 @@ Also relevant are the <<Scandinavian,Scandinavian normalization filters>>.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "kloke klokhet klokheten"
 
@@ -3294,11 +3338,11 @@ Unlike European languages, Thai does not use whitespace to delimit words.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-thai]
+[tabs#lang-thai]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3307,9 +3351,10 @@ Unlike European languages, Thai does not use whitespace to delimit words.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-thai]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3318,7 +3363,7 @@ Unlike European languages, Thai does not use whitespace to delimit words.
 </analyzer>
 ----
 ====
---
+======
 
 === Turkish
 
@@ -3330,11 +3375,11 @@ Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFa
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-turkish]
+[tabs#lang-turkish]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3345,9 +3390,10 @@ Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFa
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-turkish]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3358,7 +3404,7 @@ Solr includes support for stemming Turkish with the `solr.SnowballPorterFilterFa
 </analyzer>
 ----
 ====
---
+======
 
 *Another example, illustrating diacritics-insensitive search:*
 
@@ -3398,11 +3444,11 @@ The `lucene-analyzers-morfologik` jar contains a Ukrainian dictionary at `org/ap
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-lang-ukranian]
+[tabs#lang-ukranian]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3413,9 +3459,10 @@ The `lucene-analyzers-morfologik` jar contains a Ukrainian dictionary at `org/ap
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-lang-ukranian]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3426,7 +3473,7 @@ The `lucene-analyzers-morfologik` jar contains a Ukrainian dictionary at `org/ap
 </analyzer>
 ----
 ====
---
+======
 
 The Morfologik `dictionary` parameter value is a constant specifying which dictionary to choose.
 The dictionary resource must be named `path/to/_language_.dict` and have an associated `.info` metadata file.

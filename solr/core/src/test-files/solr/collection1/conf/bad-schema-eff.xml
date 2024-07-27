@@ -17,7 +17,7 @@
   limitations under the License.
   -->
 
-<schema name="example" version="1.6">
+<schema name="example" version="1.7">
 
 
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
@@ -34,7 +34,7 @@
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   
   <fieldType name="pint" class="solr.IntPointField"/>
-  <field name="keyfield" type="pint" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <field name="keyfield" type="pint" indexed="true" stored="true" multiValued="false"/>
   
   <!-- Our external file field type -->
   <!-- Begin bad stuff: keyfield is points-based -->

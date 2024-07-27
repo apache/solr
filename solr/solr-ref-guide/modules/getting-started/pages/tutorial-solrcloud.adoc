@@ -1,4 +1,5 @@
 = Getting Started with SolrCloud
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -109,26 +110,26 @@ The `_default` configuration is useful when you're still designing a schema for 
 However, after creating your collection, the schemaless functionality can be disabled in order to lock down the schema (so that documents indexed after doing so will not alter the schema) or to configure the schema by yourself.
 This can be done as follows (assuming your collection name is `mycollection`):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1autocreatefalse]
+[tabs#autocreatefalse]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [,console]
 ----
 $ curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 ----
 ====
 
-[example.tab-pane#v2autocreatefalse]
+V2 API SolrCloud::
++
 ====
-[.tab-label]*V2 API SolrCloud*
 [,console]
 ----
 $ curl http://host:8983/api/collections/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 ----
 ====
---
+======
 
 At this point, you should have a new collection created in your local SolrCloud cluster.
 To verify this, you can run the status command:

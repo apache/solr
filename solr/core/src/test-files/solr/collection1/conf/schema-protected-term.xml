@@ -16,16 +16,16 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="schema-protected-term" version="1.6">
+<schema name="schema-protected-term" version="1.7">
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <field name="_version_" type="long" indexed="false" stored="false"/>
 
   <fieldType name="prefix4_lower_with_exceptions" class="solr.TextField">
     <analyzer type="index">

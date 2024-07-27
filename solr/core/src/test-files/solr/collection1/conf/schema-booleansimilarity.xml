@@ -18,7 +18,7 @@
 
 <!-- Test schema file for BooleanSimilarityFactory -->
 
-<schema name="booleansimilarity" version="1.0">
+<schema name="booleansimilarity" version="1.7">
   <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="text" class="solr.TextField">

@@ -1,4 +1,5 @@
 = Configuring Logging
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -76,22 +77,20 @@ There is also a way of sending REST commands to the `admin/info/logging` endpoin
 
 Example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1createcollection]
+[tabs#createcollection]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/admin/info/logging?set=root:WARN"
 ----
 ====
 
-[example.tab-pane#v2createcollection]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: application/json' -d '
@@ -101,7 +100,7 @@ curl -X PUT http://localhost:8983/api/node/logging/levels -H 'Content-Type: appl
 '
 ----
 ====
---
+======
 
 === Choosing Log Level at Startup
 

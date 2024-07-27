@@ -1,4 +1,5 @@
 = Indexing Nested Documents
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -60,11 +61,11 @@ There is no "child document" field type.
 // DO NOT MODIFY THESE EXAMPLE DOCS WITHOUT REVIEWING ALL PAGES THAT INCLUDE/REFER BACK TO THESE EXAMPLES
 // INCLUDING THE SEMI-EQUIVALENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
 //
-[.dynamic-tabs]
---
-[example.tab-pane#json]
+[tabs#sample-indexing-deeply-nested-documents]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 // tag::sample-indexing-deeply-nested-documents[]
 [source,json]
 ----
@@ -126,9 +127,9 @@ The xref:indexing-with-update-handlers#json-update-convenience-paths[`/update/js
 =====
 ====
 
-[example.tab-pane#xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -208,15 +209,15 @@ The xref:indexing-with-update-handlers#json-update-convenience-paths[`/update/js
 ----
 ====
 
-[example.tab-pane#solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$IndexingNestedDocuments.java[tag=nest-path]
 ----
 ====
---
+======
 
 
 == Schema Configuration
@@ -307,11 +308,11 @@ If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any
 
 Although not recommended, it is also possible to index child documents "anonymously":
 
-[.dynamic-tabs]
---
-[example.tab-pane#anon_json]
+[tabs#anon]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,json]
 ----
 [{ "id": "P11!prod",
@@ -353,9 +354,9 @@ Although not recommended, it is also possible to index child documents "anonymou
 ----
 ====
 
-[example.tab-pane#anon_xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -402,17 +403,15 @@ Although not recommended, it is also possible to index child documents "anonymou
 ----
 ====
 
-[example.tab-pane#anon_solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$IndexingNestedDocuments.java[tag=anon-kids]
 ----
 ====
-
---
-
+======
 
 This simplified approach was common in older versions of Solr, and can still be used with "Root-Only" schemas that do not contain any other nested related fields apart from `\_root_`.
 Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.
@@ -422,11 +421,11 @@ This approach should *NOT* be used when schemas include a `\_nest_path_` field, 
 The results of indexing anonymous nested children with a "Root-Only" schema are similar to what happens if you attempt to index "pseudo field" nested documents using a "Root-Only" schema.
 Notably: since there is no nested path information for the xref:query-guide:searching-nested-documents.adoc#child-doc-transformer[`[child]`] transformer to use to reconstruct the structure of a nest of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
 
-[.dynamic-tabs]
---
-[example.tab-pane#anon_json_out]
+[tabs#anon-out]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,bash]
 ----
 $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=id:P11!prod&fl=*,[child%20parentFilter=%22type_s:PRODUCT%22]'
@@ -475,10 +474,9 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
   }}
 ----
 ====
-
-[example.tab-pane#anon_xml_out]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,bash]
 ----
 $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=true&q=id:P11!prod&fl=*,[child%20parentFilter=%22type_s:PRODUCT%22]&wt=xml'
@@ -529,6 +527,4 @@ $ curl --globoff 'http://localhost:8983/solr/gettingstarted/select?omitHeader=tr
 </response>
 ----
 ====
-
-
---
+======

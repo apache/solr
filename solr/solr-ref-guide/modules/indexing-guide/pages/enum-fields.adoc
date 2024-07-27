@@ -31,8 +31,8 @@ The EnumFieldType type definition is quite simple, as in this example defining f
 
 [source,xml]
 ----
-<fieldType name="priorityLevel" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="priority"/>
-<fieldType name="riskLevel"     class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="risk" />
+<fieldType name="priorityLevel" class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="priority"/>
+<fieldType name="riskLevel"     class="solr.EnumFieldType" enumsConfig="enumsConfig.xml" enumName="risk" />
 ----
 
 Besides the `name` and the `class`, which are common to all field types, this type also takes two additional parameters:

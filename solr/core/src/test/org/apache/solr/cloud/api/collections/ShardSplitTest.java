@@ -253,7 +253,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   collectionName,
                   (long) 30,
                   TimeUnit.SECONDS,
-                  SolrCloudTestCase.activeClusterShape(2, 4));
+                  SolrCloudTestCase.activeClusterShape(2, 3));
 
           if (state == RequestStatusState.COMPLETED) {
             CountDownLatch newReplicaLatch = new CountDownLatch(1);
@@ -440,7 +440,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     ZkStateReader.from(cloudClient)
         .waitForState(
-            collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
+            collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 8));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(collectionName);
     ClusterState clusterState = cloudClient.getClusterState();

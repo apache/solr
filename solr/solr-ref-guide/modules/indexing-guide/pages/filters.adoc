@@ -1,4 +1,5 @@
 = Filters
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -38,11 +39,11 @@ Filters are configured with a `<filter>` element in the schema file as a child o
 
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filterexample]
+[tabs#filter-example]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="text" class="solr.TextField">
@@ -54,9 +55,10 @@ For example:
 </fieldType>
 ----
 ====
-[example.tab-pane#byclass-filterexample]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text" class="solr.TextField">
@@ -68,7 +70,7 @@ For example:
 </fieldType>
 ----
 ====
---
+======
 
 This example starts with Solr's standard tokenizer, which breaks the field's text into tokens.
 All the tokens are then set to lowercase, which will facilitate case-insensitive matching at query time.
@@ -97,11 +99,11 @@ These stemmers are described in xref:language-analysis.adoc[].
 Arguments may be passed to tokenizer factories to modify their behavior by setting attributes on the `<filter>` element.
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter2]
+[tabs#filter2]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <fieldType name="semicolonDelimited" class="solr.TextField">
@@ -112,9 +114,10 @@ For example:
 </fieldType>
 ----
 ====
-[example.tab-pane#byclass-filter-2]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="semicolonDelimited" class="solr.TextField">
@@ -125,7 +128,7 @@ For example:
 </fieldType>
 ----
 ====
---
+======
 
 The following sections describe the filter factories that are included in this release of Solr.
 
@@ -166,11 +169,11 @@ If `true`, the original token is preserved: "thé" -> "the", "thé"
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-asciifolding]
+[tabs#filter-asciifolding]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -179,9 +182,10 @@ If `true`, the original token is preserved: "thé" -> "the", "thé"
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-asciifolding]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -190,7 +194,7 @@ If `true`, the original token is preserved: "thé" -> "the", "thé"
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "á" (Unicode character 00E1)
 
@@ -254,11 +258,11 @@ The value `auto` will allow the filter to identify the language, or a comma-sepa
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-beidermorse]
+[tabs#filter-beidermorse]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -267,9 +271,10 @@ The value `auto` will allow the filter to identify the language, or a comma-sepa
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-beidermorse]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -278,7 +283,7 @@ The value `auto` will allow the filter to identify the language, or a comma-sepa
 </analyzer>
 ----
 ====
---
+======
 
 == Classic Filter
 
@@ -290,11 +295,11 @@ This filter takes the output of the xref:tokenizers.adoc#classic-tokenizer[Class
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-classic]
+[tabs#filter-classic]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -303,9 +308,10 @@ This filter takes the output of the xref:tokenizers.adoc#classic-tokenizer[Class
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-classic]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -314,7 +320,7 @@ This filter takes the output of the xref:tokenizers.adoc#classic-tokenizer[Class
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "I.B.M. cat's can't"
 
@@ -363,11 +369,11 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-commongrams]
+[tabs#filter-commongrams]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -380,9 +386,10 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-commongrams]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -395,7 +402,7 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "the cat in the hat"
 
@@ -437,11 +444,11 @@ Setting this to `false` will enable phonetic matching, but the exact spelling of
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-daitchmokotoffsondex]
+[tabs#filter-daitchmokotoffsondex]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -450,9 +457,10 @@ Setting this to `false` will enable phonetic matching, but the exact spelling of
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-daitchmokotoffsondex]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -461,7 +469,7 @@ Setting this to `false` will enable phonetic matching, but the exact spelling of
 </analyzer>
 ----
 ====
---
+======
 
 == Double Metaphone Filter
 
@@ -496,11 +504,11 @@ The maximum length of the code to be generated.
 
 Default behavior for inject (`true`): keep the original token and add phonetic token(s) at the same position.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-doublemetaphone]
+[tabs#filter-doublemetaphone]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -509,9 +517,10 @@ Default behavior for inject (`true`): keep the original token and add phonetic t
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-doublemetaphone]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -520,7 +529,7 @@ Default behavior for inject (`true`): keep the original token and add phonetic t
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "four score and Kuczewski"
 
@@ -570,11 +579,11 @@ The character used to separate the token and the boost.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-delimitedBoost]
+[tabs#filter-delimitedBoost]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -583,9 +592,10 @@ The character used to separate the token and the boost.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-delimitedBoost]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -594,7 +604,7 @@ The character used to separate the token and the boost.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "leopard|0.5 panthera uncia|0.9"
 
@@ -661,11 +671,11 @@ If `true` keep the original term even if it is shorter than `minGramSize` or lon
 
 Default behavior.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-edgengram]
+[tabs#filter-edgengram]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -674,9 +684,10 @@ Default behavior.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-edgengram]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -685,7 +696,7 @@ Default behavior.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "four score and twenty"
 
@@ -757,11 +768,11 @@ This filter stems plural English words to their singular form.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-englishminimalstem]
+[tabs#filter-englishminimalstem]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -770,9 +781,10 @@ This filter stems plural English words to their singular form.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-englishminimalstem]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -781,7 +793,7 @@ This filter stems plural English words to their singular form.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "dogs cats"
 
@@ -800,11 +812,11 @@ Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not remo
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-englishpossessive]
+[tabs#filter-englishphossessive]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -813,9 +825,10 @@ Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not remo
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-englishpossessive]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -824,7 +837,7 @@ Note that plural possessives, e.g., the *s'* in "divers' snorkels", are not remo
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Man's dog bites dogs' man"
 
@@ -862,11 +875,11 @@ If exceeded, no output token is emitted.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-fingerprint]
+[tabs#filter-fingerprint]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -875,9 +888,10 @@ If exceeded, no output token is emitted.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-fingerprint]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -886,7 +900,7 @@ If exceeded, no output token is emitted.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "the quick brown fox jumped over the lazy dog"
 
@@ -966,11 +980,11 @@ If `true`, an error while reading an affix rule causes a ParseException, otherwi
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-hunspellstem]
+[tabs#filter-hunspellstem]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -983,9 +997,10 @@ If `true`, an error while reading an affix rule causes a ParseException, otherwi
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-hunspellstem]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -998,7 +1013,7 @@ If `true`, an error while reading an affix rule causes a ParseException, otherwi
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "jump jumping jumped"
 
@@ -1020,11 +1035,11 @@ This filter is generally only useful at index time.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-hyphenatedwords]
+[tabs#filter-hyphenatedwords]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1033,9 +1048,9 @@ This filter is generally only useful at index time.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-hyphenatedwords]
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1044,7 +1059,7 @@ This filter is generally only useful at index time.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "A hyphen- ated word"
 
@@ -1075,11 +1090,11 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 
 *Example without a filter:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-icufolding]
+[tabs#filter-icufolding]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1088,9 +1103,10 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-icufolding]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1099,7 +1115,7 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 </analyzer>
 ----
 ====
---
+======
 
 *Example with a filter to exclude Swedish/Finnish characters:*
 
@@ -1160,11 +1176,11 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 
 *Example with NFKC_Casefold:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-icunormalizer2]
+[tabs#filter-icunormalizer2]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1173,9 +1189,10 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-icunormalizer2]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1184,7 +1201,7 @@ See the http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html[Uni
 </analyzer>
 ----
 ====
---
+======
 
 *Example with a filter to exclude Swedish/Finnish characters:*
 
@@ -1232,11 +1249,11 @@ The direction of the ICU transform. Valid options are `forward` and `reverse`.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-icutransform]
+[tabs#filter-icutransform]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1245,9 +1262,10 @@ The direction of the ICU transform. Valid options are `forward` and `reverse`.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-icutransform]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1256,7 +1274,7 @@ The direction of the ICU transform. Valid options are `forward` and `reverse`.
 </analyzer>
 ----
 ====
---
+======
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
@@ -1309,11 +1327,11 @@ Where `keepwords.txt` contains:
 
 `happy funny silly`
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-keepword]
+[tabs#filter-keepword]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1322,9 +1340,10 @@ Where `keepwords.txt` contains:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-keepword]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1333,7 +1352,7 @@ Where `keepwords.txt` contains:
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Happy, sad or funny"
 
@@ -1392,11 +1411,11 @@ This stemmer is only appropriate for English language text.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-kstem]
+[tabs#filter-kstem]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1405,9 +1424,10 @@ This stemmer is only appropriate for English language text.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-kstem]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1416,7 +1436,7 @@ This stemmer is only appropriate for English language text.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "jump jumping jumped"
 
@@ -1455,11 +1475,11 @@ Tokens longer than this are discarded.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-length]
+[tabs#filter-length]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1468,9 +1488,10 @@ Tokens longer than this are discarded.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-length]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1479,7 +1500,7 @@ Tokens longer than this are discarded.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "turn right at Albuquerque"
 
@@ -1521,11 +1542,11 @@ See description above.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-limittokencount]
+[tabs#filter-limittokencount]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1535,9 +1556,10 @@ See description above.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-limittokencount]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1547,7 +1569,7 @@ See description above.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "1 2 3 4 5 6 7 8 9 10 11 12"
 
@@ -1590,11 +1612,11 @@ See description above.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-limittokenoffset]
+[tabs#filter-limittokenoffset]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1604,9 +1626,10 @@ See description above.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-limittokenoffset]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1616,7 +1639,7 @@ See description above.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "0 2 4 6 8 A C E"
 
@@ -1658,11 +1681,11 @@ See description above.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-limittokenposition]
+[tabs#filter-limittokenposition]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1672,9 +1695,10 @@ See description above.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-limittokenposition]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1684,7 +1708,7 @@ See description above.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "1 2 3 4 5"
 
@@ -1703,11 +1727,11 @@ All other characters are left unchanged.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-lowercase]
+[tabs#filter-lowercase]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1716,9 +1740,10 @@ All other characters are left unchanged.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-lowercase]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1727,7 +1752,7 @@ All other characters are left unchanged.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Down With CamelCase"
 
@@ -1754,11 +1779,11 @@ The name that should be used for this set of stop words in the managed REST API.
 //TODO: make this show an actual API call.
 With this configuration the set of words is named "english" and can be managed via `/solr/collection_name/schema/analysis/stopwords/english`
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-managedstop]
+[tabs#filter-managedstop]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1767,9 +1792,10 @@ With this configuration the set of words is named "english" and can be managed v
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-managedstop]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1778,7 +1804,7 @@ With this configuration the set of words is named "english" and can be managed v
 </analyzer>
 ----
 ====
---
+======
 
 See <<Stop Filter>> for example input/output.
 
@@ -1820,11 +1846,11 @@ The name that should be used for this mapping on synonyms in the managed REST AP
 //TODO: make this show an actual API call
 With this configuration the set of mappings is named "english" and can be managed via `/solr/collection_name/schema/analysis/synonyms/english`
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-managedsynonymgraph]
+[tabs#filter-managed-synonymgrpah]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1838,9 +1864,10 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-managedsynonymgraph]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1854,7 +1881,7 @@ With this configuration the set of mappings is named "english" and can be manage
 </analyzer>
 ----
 ====
---
+======
 
 See <<Synonym Graph Filter>> below for example input/output.
 
@@ -1915,11 +1942,11 @@ With the default settings for `withRotation`, the number of hashes generated is 
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-minhash]
+[tabs#filter-minhash]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1930,9 +1957,10 @@ With the default settings for `withRotation`, the number of hashes generated is 
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-minhash]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1943,7 +1971,7 @@ With the default settings for `withRotation`, the number of hashes generated is 
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "woof woof woof woof woof"
 
@@ -1990,11 +2018,11 @@ If `true` keep the original term even if it is shorter than `minGramSize` or lon
 
 Default behavior.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-ngram]
+[tabs#filter-ngram]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2003,9 +2031,10 @@ Default behavior.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-ngram]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2014,7 +2043,7 @@ Default behavior.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "four score"
 
@@ -2106,11 +2135,11 @@ Tokens with a matching type name will have their payload set to the above floati
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-numericpayload]
+[tabs#filter-numericpayload]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2119,9 +2148,10 @@ Tokens with a matching type name will have their payload set to the above floati
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-numericpayload]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2130,7 +2160,7 @@ Tokens with a matching type name will have their payload set to the above floati
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "bing bang boom"
 
@@ -2180,11 +2210,11 @@ Indicates whether all occurrences of the pattern (`all`) in the token should be 
 
 Simple string replace:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-patternreplace]
+[tabs#filter-patternreplace]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2193,9 +2223,10 @@ Simple string replace:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-patternreplace]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2204,7 +2235,7 @@ Simple string replace:
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "cat concatenate catycat"
 
@@ -2300,11 +2331,11 @@ The maximum length of the code to be generated by the Metaphone or Double Metaph
 
 Default behavior for DoubleMetaphone encoding.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-phonetic]
+[tabs#filter-phonetic]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2313,9 +2344,10 @@ Default behavior for DoubleMetaphone encoding.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-phonetic]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2324,7 +2356,7 @@ Default behavior for DoubleMetaphone encoding.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "four score and twenty"
 
@@ -2384,11 +2416,11 @@ However, it has been benchmarked as http://markmail.org/thread/d2c443z63z37rwf6[
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-porterstem]
+[tabs#filter-porterstem]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2397,9 +2429,10 @@ However, it has been benchmarked as http://markmail.org/thread/d2c443z63z37rwf6[
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-porterstem]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2408,7 +2441,7 @@ However, it has been benchmarked as http://markmail.org/thread/d2c443z63z37rwf6[
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "jump jumping jumped"
 
@@ -2457,11 +2490,11 @@ If `true`, the protected list should contain lowercase words.
 
 All terms except those in `protectedTerms.txt` are truncated at 4 characters and lowercased:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-protectedterm]
+[tabs]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2473,9 +2506,10 @@ All terms except those in `protectedTerms.txt` are truncated at 4 characters and
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-protectedterm]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2487,7 +2521,7 @@ All terms except those in `protectedTerms.txt` are truncated at 4 characters and
 </analyzer>
 ----
 ====
---
+======
 
 *Example:*
 
@@ -2535,11 +2569,11 @@ Consider the following entry from a `synonyms.txt` file:
 
 When used in the following configuration:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-removeduplicates]
+[tabs#filter-removeduplicates]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="query">
@@ -2550,9 +2584,10 @@ When used in the following configuration:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-removeduplicates]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="query">
@@ -2563,7 +2598,7 @@ When used in the following configuration:
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Watch TV"
 
@@ -2634,11 +2669,11 @@ For good performance this should be set to a value larger than `1`.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-reversedwildcard]
+[tabs#filter-reversedwildcard]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2648,9 +2683,10 @@ For good performance this should be set to a value larger than `1`.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-reversedwildcard]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -2660,7 +2696,7 @@ For good performance this should be set to a value larger than `1`.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "*foo *bar"
 
@@ -2737,11 +2773,11 @@ The character used to fill in for removed stop words in order to preserve positi
 
 Default behavior.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-shingle]
+[tabs#filter-shingle]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2750,9 +2786,10 @@ Default behavior.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-shingle]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2761,7 +2798,7 @@ Default behavior.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "To be, or what?"
 
@@ -2830,11 +2867,11 @@ This may be an absolute path, or a simple file name in the Solr `conf` directory
 
 Default behavior:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-snowball]
+[tabs#filter-snowball]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2843,9 +2880,10 @@ Default behavior:
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-snowball]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2854,7 +2892,7 @@ Default behavior:
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "flip flipped flipping"
 
@@ -2942,11 +2980,11 @@ If `true`, the stop list should contain lowercase words.
 Case-sensitive matching, capitalized words not stopped.
 Token positions skip stopped words.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-stop]
+[tabs#filter-stop]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -2955,9 +2993,10 @@ Token positions skip stopped words.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-stop]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -2966,7 +3005,7 @@ Token positions skip stopped words.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "To be or what?"
 
@@ -3040,11 +3079,11 @@ If `true`, matching is case-insensitive.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-suggeststop]
+[tabs#filter-suggeststop]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="query">
@@ -3055,9 +3094,10 @@ If `true`, matching is case-insensitive.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-suggeststop]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="query">
@@ -3068,7 +3108,7 @@ If `true`, matching is case-insensitive.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "The The"
 
@@ -3193,11 +3233,11 @@ small => tiny,teeny,weeny
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-stop-synonymgraph]
+[tabs#filter-stop-synonymgraph]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3211,9 +3251,9 @@ small => tiny,teeny,weeny
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-stop-synonymgraph]
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3227,7 +3267,7 @@ small => tiny,teeny,weeny
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "teh small couch"
 
@@ -3286,11 +3326,11 @@ This filter adds the numeric character offsets of the token as a payload value f
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-stop-tokenoffsetpayload]
+[tabs#filter-stop-tokenoffsetpayload]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3299,9 +3339,10 @@ This filter adds the numeric character offsets of the token as a payload value f
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-stop-tokenoffsetpayload]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3310,7 +3351,7 @@ This filter adds the numeric character offsets of the token as a payload value f
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "bing bang boom"
 
@@ -3331,11 +3372,11 @@ Most tokenizers break tokens at whitespace, so this filter is most often used fo
 
 The PatternTokenizerFactory configuration used here splits the input on simple commas, it does not remove whitespace.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-trim]
+[tabs#filter-trim]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3344,9 +3385,10 @@ The PatternTokenizerFactory configuration used here splits the input on simple c
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-trim]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3355,7 +3397,7 @@ The PatternTokenizerFactory configuration used here splits the input on simple c
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "one, two , three ,four "
 
@@ -3373,11 +3415,11 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-typeaspayload]
+[tabs#filter-typeaspayload]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3386,9 +3428,10 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-typeaspayload]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3397,7 +3440,7 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "Pay Bob's I.O.U."
 
@@ -3445,11 +3488,11 @@ The default value is an integer `-1`, i.e., the mask `0xFFFFFFFF` - this mask pr
 
 With the example below, each token's type will be emitted verbatim at the same position:
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-typeassynonym]
+[tabs#filter-typeassynonym]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3458,9 +3501,10 @@ With the example below, each token's type will be emitted verbatim at the same p
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-typeassynonym]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3469,15 +3513,15 @@ With the example below, each token's type will be emitted verbatim at the same p
 </analyzer>
 ----
 ====
---
+======
 
 With the example below, for a token "example.com" with type `<URL>`, the token emitted at the same position will be "\_type_<URL>":
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-typeassynonym-args]
+[tabs#filter-typeassynonym-args]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3486,9 +3530,10 @@ With the example below, for a token "example.com" with type `<URL>`, the token e
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-typeassynonym-args]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3497,7 +3542,7 @@ With the example below, for a token "example.com" with type `<URL>`, the token e
 </analyzer>
 ----
 ====
---
+======
 
 == Type Token Filter
 
@@ -3530,11 +3575,11 @@ If `false`, or undefined, the file defined in `types` is used as a denylist.
 
 *Example:*
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-typetoken]
+[tabs#filter-typetoken]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -3542,9 +3587,10 @@ If `false`, or undefined, the file defined in `types` is used as a denylist.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-typetoken]
+
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -3552,7 +3598,7 @@ If `false`, or undefined, the file defined in `types` is used as a denylist.
 </analyzer>
 ----
 ====
---
+======
 
 == Word Delimiter Filter
 
@@ -3726,11 +3772,11 @@ $ => DIGIT
 Default behavior.
 The whitespace tokenizer is used here to preserve non-alphanumeric characters.
 
-[.dynamic-tabs]
---
-[example.tab-pane#byname-filter-worddelimitergraph]
+[tabs#filter-worddelimitergraph]
+======
+With name::
++
 ====
-[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3744,9 +3790,9 @@ The whitespace tokenizer is used here to preserve non-alphanumeric characters.
 </analyzer>
 ----
 ====
-[example.tab-pane#byclass-filter-worddelimitergraph]
+With class name (legacy)::
++
 ====
-[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -3760,7 +3806,7 @@ The whitespace tokenizer is used here to preserve non-alphanumeric characters.
 </analyzer>
 ----
 ====
---
+======
 
 *In:* "hot-spot RoboBlaster/9000 100XL"
 

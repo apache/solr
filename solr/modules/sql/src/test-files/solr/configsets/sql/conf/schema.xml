@@ -16,20 +16,20 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="sql" version="1.6">
+<schema name="sql" version="1.7">
 
-  <field name="pdoublexmv" type="pdouble" multiValued="true" stored="true" docValues="true"/>s
+  <field name="pdoublexmv" type="pdouble" multiValued="true" stored="true"/>
   <field name="pdoublesx" type="pdoubles" stored="true"/>
   <field name="stringsx" type="strings" stored="true" indexed="true"/>
-  <field name="stringxmv" type="string" stored="true" multiValued="true" docValues="true"/>
+  <field name="stringxmv" type="string" stored="true" multiValued="true"/>
 
-  <field name="booleans" type="boolean" stored="true" indexed="true" docValues="true" multiValued="true"/>
-  <field name="longs" type="plongx" stored="true" indexed="true" docValues="true" multiValued="true"/>
+  <field name="booleans" type="boolean" stored="true" indexed="true" multiValued="true"/>
+  <field name="longs" type="plongx" stored="true" indexed="true" multiValued="true"/>
 
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" multiValued="true"/>
 
 
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
@@ -43,28 +43,29 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" positionIncrementGap="0"/>
 
-  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="true" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" precisionStep="8" positionIncrementGap="0"/>
 
   <!-- Used to test proper type handling for custom field types based on built-in type classes -->
-  <fieldType name="stringx" class="solr.StrField" docValues="true"/>
-  <fieldType name="tintx" class="solr.TrieIntField" docValues="true"/>
-  <fieldType name="pintx" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="tfloatx" class="solr.TrieFloatField" docValues="true"/>
-  <fieldType name="pfloatx" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="tlongx" class="solr.TrieLongField" docValues="true"/>
-  <fieldType name="plongx" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="tdoublex" class="solr.TrieDoubleField" docValues="true"/>
-  <fieldType name="pdoublex" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pdatex" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="stringx" class="solr.StrField"/>
+  <fieldType name="tintx" class="solr.TrieIntField"/>
+  <fieldType name="pintx" class="solr.IntPointField"/>
+  <fieldType name="tfloatx" class="solr.TrieFloatField"/>
+  <fieldType name="pfloatx" class="solr.FloatPointField"/>
+  <fieldType name="tlongx" class="solr.TrieLongField"/>
+  <fieldType name="plongx" class="solr.LongPointField"/>
+  <fieldType name="tdoublex" class="solr.TrieDoubleField"/>
+  <fieldType name="pdoublex" class="solr.DoublePointField"/>
+  <fieldType name="pdatex" class="solr.DatePointField"/>
   <field name="stringx" type="stringx" indexed="true" stored="true"/>
   <field name="tintx" type="tintx" indexed="true" stored="true"/>
   <field name="pintx" type="pintx" indexed="true" stored="true"/>
@@ -80,7 +81,7 @@
   <field name="pdatexs" type="pdatex" indexed="true" stored="true" multiValued="true"/>
 
   <field name="notstored" type="string" indexed="true" docValues="false" stored="false"/>
-  <field name="dvonly" type="string" docValues="true" stored="false"/>
+  <field name="dvonly" type="string" stored="false"/>
   <field name="textmv" type="text" multiValued="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
@@ -133,7 +134,7 @@
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" docValues="true" indexed="true"/>
+  <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" indexed="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
@@ -199,14 +200,14 @@
   </fieldType>
 
   <fieldType name="uuid" class="solr.UUIDField"/>
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
 
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
 
   <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
 
-  <field name="id" type="string" indexed="true" stored="true" multiValued="false" docValues="true" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <field name="uuid" type="uuid" stored="true"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>
@@ -261,7 +262,7 @@
   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
 
   <field name="payload" type="sortable_binary" indexed="false"
-         stored="true" multiValued="false" docValues="true"/>
+         stored="true" multiValued="false"/>
 
   <!-- for versioning -->
   <field name="_version_" type="long" indexed="true" stored="true"/>
@@ -270,7 +271,7 @@
 
   <field name="_route_" type="string" indexed="true" stored="true" multiValued="false"/>
 
-  <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
+  <field name="multi_int_with_docvals" type="tint" multiValued="true" indexed="false"/>
 
   <dynamicField name="*_coordinate" type="tdouble" indexed="true" stored="false"/>
 
@@ -287,7 +288,7 @@
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
-  <dynamicField name="*_s" type="string" indexed="true" stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="false"/>
   <dynamicField name="*_l" type="long" indexed="true" stored="true"/>
   <dynamicField name="*_ll" type="long" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>

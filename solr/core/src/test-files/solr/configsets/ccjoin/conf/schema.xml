@@ -15,10 +15,10 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="xcjf" version="1.1">
-  <fieldType name="string" class="solr.StrField" docValues="true"/>
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+<schema name="xcjf" version="1.7">
+  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
 
   <field name="id" type="string" required="true"/>
   <field name="_version_" type="plong" indexed="true" stored="true"/>

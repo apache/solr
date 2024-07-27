@@ -172,6 +172,11 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     }
   }
 
+  @Override
+  protected boolean doesTypeSupportDocValues() {
+    return true;
+  }
+
   /**
    * Calculates the range and creates a RangeQuery (bounding box) wrapped in a BooleanQuery (unless
    * the dimension is 1, one range for every dimension, AND'd together by a Boolean

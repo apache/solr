@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-uniquekey-uses-points" version="1.4">
+<schema name="bad-schema-uniquekey-uses-points" version="1.7">
   <fieldType name="bad" class="solr.IntPointField"/>
 
   <!-- BEGIN BAD STUFF -->

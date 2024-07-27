@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="phrase-identification" version="1.6">
+<schema name="phrase-identification" version="1.7">
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="_version_" type="long" indexed="true" stored="true"/>
 

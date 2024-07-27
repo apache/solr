@@ -1,4 +1,5 @@
 = Major Changes in Solr 7
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -102,26 +103,26 @@ If you do not need to sort or facet on a field, you should remove the automatica
 Automatic field creation can be disabled with the `update.autoCreateFields` property.
 To do this, you can use the Config API with a command such as:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1setprop]
+[tabs#setprop]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
 [source,bash]
 ----
 curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 ----
 ====
 
-[example.tab-pane#v2setprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 [source,bash]
 ----
 curl http://host:8983/api/collections/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
 ----
 ====
---
+======
 
 === Changes to Default Behaviors
 * JSON is now the default response format.

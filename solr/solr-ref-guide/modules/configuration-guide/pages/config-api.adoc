@@ -1,4 +1,5 @@
 = Config API
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -39,28 +40,26 @@ See xref:request-parameters-api.adoc[] for more information about this endpoint.
 
 All configuration items can be retrieved by sending a GET request to the `/config` endpoint:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1getconfig]
+[tabs#getconfig]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/techproducts/config
 ----
 ====
 
-[example.tab-pane#v2getconfig]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 The response will be the Solr configuration resulting from merging settings in `configoverlay.json` with those in `solrconfig.xml`.
 
@@ -69,28 +68,25 @@ It's possible to restrict the returned configuration to a top-level section, suc
 To do this, append the name of the section to the `config` endpoint.
 For example, to retrieve configuration for all request handlers:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1gethandler]
+[tabs#gethandler]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/techproducts/config/requestHandler
 ----
 ====
-
-[example.tab-pane#v2gethandler]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://localhost:8983/api/collections/techproducts/config/requestHandler
 ----
 ====
---
+======
 
 The output will be details of each request handler defined in `solrconfig.xml`, xref:implicit-requesthandlers.adoc[defined implicitly] by Solr, and defined with this Config API stored in `configoverlay.json`.
 To see the configuration for implicit request handlers, add `expandParams=true` to the request.
@@ -102,28 +98,25 @@ To further restrict the request to a single component within a top-level section
 
 For example, to return configuration for the `/select` request handler:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1getcomponent]
+[tabs#getcomponent]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/techproducts/config/requestHandler?componentName=/select
 ----
 ====
-
-[example.tab-pane#v2getcomponent]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://localhost:8983/api/collections/techproducts/config/requestHandler?componentName=/select
 ----
 ====
---
+======
 
 The output of this command will look similar to:
 
@@ -242,53 +235,48 @@ Constructing a command to modify or add one of these properties follows this pat
 
 A request to increase the `updateHandler.autoCommit.maxTime` would look like:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1-setprop]
+[tabs#setprop]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/solr/techproducts/config
 ----
 ====
-
-[example.tab-pane#v2-setprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 You can use the `config/overlay` endpoint to verify the property has been added to `configoverlay.json`:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1overlay]
+[tabs#overlay]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
 ----
 ====
 
-[example.tab-pane#v2overlay]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
 ----
 ====
---
+======
 
 Output:
 
@@ -306,28 +294,26 @@ Output:
 
 To unset the property:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1unsetprop]
+[tabs#unsetprop]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}' http://localhost:8983/solr/techproducts/config
 ----
 ====
 
-[example.tab-pane#v2unsetprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{"unset-property": "updateHandler.autoCommit.maxTime"}' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 === Commands for Handlers and Components
 
@@ -405,12 +391,11 @@ curl -X POST -H 'Content-type:application/json'  -d '{
 }' http://localhost:8983/solr/techproducts/config
 ----
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1addhandler]
+[tabs#addhandler]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -424,10 +409,9 @@ curl -X POST -H 'Content-type:application/json' -d '{
 ----
 ====
 
-[example.tab-pane#v2addhandler]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -440,7 +424,7 @@ curl -X POST -H 'Content-type:application/json' -d '{
 }' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 Make a call to the new request handler to check if it is registered:
 
@@ -467,12 +451,11 @@ And you should see the following as output:
 
 To update a request handler, you should use the `update-requesthandler` command:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1updatehandler]
+[tabs#updatehandler]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -486,10 +469,9 @@ curl -X POST -H 'Content-type:application/json' -d '{
 ----
 ====
 
-[example.tab-pane#v2updatehandler]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -502,16 +484,15 @@ curl -X POST -H 'Content-type:application/json' -d '{
 }' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 As a second example, we'll create another request handler, this time adding the 'terms' component as part of the definition:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1add-handler]
+[tabs#add-handler]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -525,10 +506,9 @@ curl -X POST -H 'Content-type:application/json' -d '{
 ----
 ====
 
-[example.tab-pane#v2add-handler]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -541,16 +521,15 @@ curl -X POST -H 'Content-type:application/json' -d '{
 }' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 Finally we will go ahead and remove the request handler via the `delete-requesthandler` command:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1delete-handler]
+[tabs#delete-handler]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -559,10 +538,9 @@ curl -X POST -H 'Content-type:application/json' -d '{
 ----
 ====
 
-[example.tab-pane#v2delete-handler]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{
@@ -570,7 +548,7 @@ curl -X POST -H 'Content-type:application/json' -d '{
 }' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 === Commands for User-Defined Properties
 
@@ -593,53 +571,49 @@ See also the section <<Creating and Updating User-Defined Properties>> below for
 
 This command sets a user property.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1userprop]
+[tabs#userprop]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}' http://localhost:8983/solr/techproducts/config
 ----
 ====
 
-[example.tab-pane#v2userprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{"set-user-property": {"variable_name": "some_value"}}' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 Again, we can use the `/config/overlay` endpoint to verify the changes have been made:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1useroverlay]
+[tabs#useroverlay]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/techproducts/config/overlay?omitHeader=true
 ----
 ====
 
-[example.tab-pane#v2useroverlay]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/api/collections/techproducts/config/overlay?omitHeader=true
 ----
 ====
---
+======
 
 And we would expect to see output like this:
 
@@ -654,28 +628,26 @@ And we would expect to see output like this:
 
 To unset the variable, issue a command like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1unsetuser]
+[tabs#unsetuser]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}' http://localhost:8983/solr/techproducts/config
 ----
 ====
 
-[example.tab-pane#v2unsetuser]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{"unset-user-property": "variable_name"}' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 === updateRequestProcessorChain Elements
 
@@ -684,12 +656,11 @@ However, it is possible to create `updateProcessor` entries and use them by name
 
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1addupdateproc]
+[tabs#addupdateproc]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
@@ -700,10 +671,9 @@ curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
 ----
 ====
 
-[example.tab-pane#v2addupdateproc]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
@@ -713,7 +683,7 @@ curl -X POST -H 'Content-type:application/json' -d '{"add-updateprocessor":
 }' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 You can use this directly in your request by adding a parameter in the `updateRequestProcessorChain` for the specific update processor called `processor=firstFld`.
 
@@ -809,6 +779,7 @@ A simple highlighter looks like this in `solrconfig.xml` (example has been trunc
       <encoder name="html" class="solr.highlight.HtmlEncoder" />
 ...
     </highlighting>
+</searchComponent>
 ----
 
 The same highlighter with the Config API:
@@ -893,28 +864,26 @@ If `params.json` is modified, the params object is just updated without a core r
 If an empty command is sent to the `/config` endpoint, the watch is triggered on all cores using this configset.
 For example:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1empty]
+[tabs#empty]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{}' http://localhost:8983/solr/techproducts/config
 ----
 ====
 
-[example.tab-pane#v2empty]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' -d '{}' http://localhost:8983/api/collections/techproducts/config
 ----
 ====
---
+======
 
 Directly editing any files without 'touching' the directory *will not* make it visible to all nodes.
 

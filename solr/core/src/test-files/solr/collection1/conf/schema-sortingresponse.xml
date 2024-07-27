@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="schema-docValuesMulti" version="1.6">
+<schema name="schema-docValuesMulti" version="1.7">
 
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -28,11 +28,11 @@
   <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
   
 
   <fieldType name="boolean" class="solr.BoolField"/>
@@ -78,11 +78,11 @@
   <field name="longdv" type="long" indexed="false" stored="false" docValues="true"/>
   <field name="datedv" type="date" indexed="false" stored="false" docValues="true"/>
   <field name="stringdv" type="string" indexed="false" stored="false" docValues="true"/>
-  <field name="booleandv" type="boolean" indexed="false" stored="false" docValues="true" />
+  <field name="booleandv" type="boolean" indexed="false" stored="false" docValues="true"/>
   <field name="sortabledv" type="text_gen_sort" indexed="true" stored="true" multiValued="false" />
   <field name="sortabledv_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="false" useDocValuesAsStored="true" />
 
-  <dynamicField name="*_s_dv"   type="string"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_s_dv"   type="string"    indexed="true"  stored="true" multiValued="false" docValues="true"/>
 
    <!-- Point fields explicitly -->
    <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>

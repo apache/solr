@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="SimpleTextCodec" version="1.6">
+<schema name="SimpleTextCodec" version="1.7">
   <fieldType name="string" class="solr.StrField"/>
 
   <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
@@ -25,7 +25,7 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="string" indexed="true" stored="true" docValues="true" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
   <field name="text" type="text_general" indexed="true" stored="true"/>
 
   <uniqueKey>id</uniqueKey>

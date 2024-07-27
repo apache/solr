@@ -225,7 +225,7 @@ public class SolrPluginUtils {
       ResponseBuilder rb, DocList docs, Query query, SolrQueryRequest req, SolrQueryResponse res)
       throws IOException {
     SolrIndexSearcher searcher = req.getSearcher();
-    if (!searcher.getDocFetcher().isLazyFieldLoadingEnabled()) {
+    if (!searcher.interrogateDocFetcher(SolrDocumentFetcher::isLazyFieldLoadingEnabled)) {
       // nothing to do
       return;
     }

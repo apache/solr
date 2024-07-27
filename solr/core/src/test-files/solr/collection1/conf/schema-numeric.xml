@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" sortMissingLast="false" omitNorms="true"
