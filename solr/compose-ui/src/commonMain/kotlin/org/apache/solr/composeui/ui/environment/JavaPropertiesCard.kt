@@ -13,10 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import org.apache.solr.composeui.components.environment.data.JavaProperty
 import org.apache.solr.composeui.ui.components.SolrCard
-import org.apache.solr.composeui.ui.theme.Fonts
+import org.apache.solr.composeui.ui.theme.SolrTheme
 
 @Composable
 internal fun JavaPropertiesCard(
@@ -59,15 +60,13 @@ private fun JavaPropertyEntry(
     Text(
         modifier = Modifier.weight(1f),
         text = property.first,
-        fontFamily = Fonts.firaCode(),
-        style = MaterialTheme.typography.labelLarge,
+        style = SolrTheme.typography.codeLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Text(
         modifier = Modifier.weight(1f),
         text = property.second,
-        fontFamily = Fonts.firaCode(),
-        style = MaterialTheme.typography.bodyMedium,
+        style = SolrTheme.typography.codeLarge,
         color = MaterialTheme.colorScheme.onSurface,
     )
 }

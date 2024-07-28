@@ -21,10 +21,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontFamily
 import org.apache.solr.compose_ui.generated.resources.Res
 import org.apache.solr.compose_ui.generated.resources.firacode_variable
+import org.apache.solr.compose_ui.generated.resources.raleway_variable
 import org.jetbrains.compose.resources.Font
 
 object Fonts {
 
     @Composable
-    fun firaCode() = FontFamily(Font(Res.font.firacode_variable))
+    fun firacode() = FontFamily(Font(Res.font.firacode_variable))
+
+    @Composable
+    fun raleway() = FontFamily(Font(Res.font.raleway_variable))
 }
