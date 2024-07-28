@@ -31,6 +31,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.apache.solr.composeui.components.environment.EnvironmentComponent
 
+/**
+ * Composable for loading the environment section.
+ *
+ * This composable checks the window size and rearranges the content to achieve a better
+ * representation.
+ *
+ * @param component The component that holds the state of this composable and handles interactions.
+ * @param modifier Modifier to apply to the root composable.
+ */
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun EnvironmentContent(
@@ -50,6 +59,12 @@ fun EnvironmentContent(
     )
 }
 
+/**
+ * Composable for loading the environment section for expanded window sizes.
+ *
+ * @param model The state of the composable that holds the data to display.
+ * @param modifier Modifier to apply to the root composable.
+ */
 @Composable
 private fun EnvironmentContentExpanded(
     model: EnvironmentComponent.Model,
@@ -78,6 +93,12 @@ private fun EnvironmentContentExpanded(
     )
 }
 
+/**
+ * Composable for loading the environment section for medium window sizes.
+ *
+ * @param model The state of the composable that holds the data to display.
+ * @param modifier Modifier to apply to the root composable.
+ */
 @Composable
 private fun EnvironmentContentMedium(
     model: EnvironmentComponent.Model,

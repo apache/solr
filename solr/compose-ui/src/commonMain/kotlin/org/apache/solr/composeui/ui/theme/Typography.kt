@@ -10,6 +10,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/*
+ * This file holds typography values, including custom fonts and text styles that are used
+ * to customize the default typography provided by the Material theme.
+ *
+ * Additional typography styles are provided as ExtendedTypography. This extension is
+ * used for example to provide text styles for code blocks.
+ */
+
 /**
  * Custom typography that styles headlines and titles with a different font.
  */

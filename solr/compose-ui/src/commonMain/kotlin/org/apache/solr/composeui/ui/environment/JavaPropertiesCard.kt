@@ -13,16 +13,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import org.apache.solr.composeui.components.environment.data.JavaProperty
 import org.apache.solr.composeui.ui.components.SolrCard
 import org.apache.solr.composeui.ui.theme.SolrTheme
 
+/**
+ * Composable card that displays the provided java properties.
+ *
+ * @param properties List of java properties to display.
+ * @param modifier Modifier to apply to the root composable.
+ */
 @Composable
 internal fun JavaPropertiesCard(
-    modifier: Modifier = Modifier,
     properties: List<JavaProperty>,
+    modifier: Modifier = Modifier,
 ) = SolrCard(
     modifier = modifier,
     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -45,10 +50,18 @@ internal fun JavaPropertiesCard(
     }
 }
 
+/**
+ * Composable of a single java property that can be used in lists.
+ *
+ * @param property Java property to display.
+ * @param modifier Modifier to apply to the composable.
+ * @param isOdd Whether the list entry has an odd number. This affects the background color
+ * for a better separation of properties in long lists.
+ */
 @Composable
 private fun JavaPropertyEntry(
-    modifier: Modifier = Modifier,
     property: JavaProperty,
+    modifier: Modifier = Modifier,
     isOdd: Boolean = false,
 ) = Row(
     modifier = modifier.background(

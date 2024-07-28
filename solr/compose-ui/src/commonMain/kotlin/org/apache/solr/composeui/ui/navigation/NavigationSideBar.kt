@@ -43,9 +43,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,8 +67,11 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * The application's main navigation / sidebar. It is used for navigation between the different
  * sections.
+ *
+ * @param onNavigate Navigation handler function.
+ * @param selectedItem The currently selected navigation item.
+ * @param modifier Modifier to apply to the root composable.
  */
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,

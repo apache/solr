@@ -14,11 +14,18 @@ import org.apache.solr.composeui.components.environment.data.JvmData
 import org.apache.solr.composeui.components.environment.data.Versions
 import org.apache.solr.composeui.ui.components.SolrCard
 
+/**
+ * Composable card that displays system values related to versions.
+ *
+ * @param versions Solr versions to display.
+ * @param jvm JVM values to display.
+ * @param modifier Modifier to apply to the root composable.
+ */
 @Composable
 internal fun VersionsCard(
-    modifier: Modifier = Modifier,
     versions: Versions,
     jvm: JvmData,
+    modifier: Modifier = Modifier,
 ) = SolrCard(
     modifier = modifier,
     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -50,6 +57,9 @@ internal fun VersionsCard(
     )
 }
 
+/**
+ * Composable that displays a version entry (key-value pair) in a list.
+ */
 @Composable
 private fun VersionEntry(
     label: String,
