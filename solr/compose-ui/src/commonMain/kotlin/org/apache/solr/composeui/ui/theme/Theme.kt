@@ -22,7 +22,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import org.apache.solr.compose_ui.generated.resources.Res
+import org.apache.solr.compose_ui.generated.resources.raleway_variable
+import org.jetbrains.compose.resources.Font
 
 @Immutable
 data class ExtendedColorScheme(
@@ -422,6 +426,19 @@ val extendedDarkHighContrast = ExtendedColorScheme(
     ),
 )
 
+/**
+ * Solr theme object that holds additional fields, like extended typography and extended colors.
+ */
+object SolrTheme {
+
+    /**
+     * Additional text styles found in [ExtendedTypography].
+     */
+    val typography: ExtendedTypography
+        @Composable
+        get() = LocalExtendedTypography.current
+}
+
 @Composable
 fun SolrTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
@@ -432,10 +449,20 @@ fun SolrTheme(
         else -> lightScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        shapes = SolrShapes,
-        typography = SolrTypography(),
-        content = content,
+    // Customize the extended typography
+    val extendedTypography = ExtendedTypography(
+        codeSmall = SolrTheme.typography.codeSmall.copy(fontFamily = Fonts.firacode()),
+        codeMedium = SolrTheme.typography.codeMedium.copy(fontFamily = Fonts.firacode()),
+        codeLarge = SolrTheme.typography.codeLarge.copy(fontFamily = Fonts.firacode()),
     )
+    Font(Res.font.raleway_variable)
+
+    CompositionLocalProvider(LocalExtendedTypography provides extendedTypography) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            shapes = SolrShapes,
+            typography = SolrTypography(),
+            content = content,
+        )
+    }
 }

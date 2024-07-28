@@ -14,9 +14,8 @@ import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.apache.solr.composeui.components.environment.data.JavaProperty
 import org.apache.solr.composeui.ui.components.SolrCard
-import org.apache.solr.composeui.ui.theme.Fonts
+import org.apache.solr.composeui.ui.theme.SolrTheme
 
 @Composable
 internal fun CommandLineArgumentsCard(
@@ -44,8 +43,7 @@ internal fun CommandLineArgumentsCard(
                         )
                     ).padding(horizontal = 8.dp, vertical = 4.dp),
                 text = argument,
-                fontFamily = Fonts.firaCode(),
-                style = MaterialTheme.typography.labelLarge,
+                style = SolrTheme.typography.codeLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
