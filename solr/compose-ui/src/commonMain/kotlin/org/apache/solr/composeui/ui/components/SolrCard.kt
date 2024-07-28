@@ -13,6 +13,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * A simplified card used to wrap content in a styled [Column].
+ *
+ * @param modifier Modifier to apply to the root component. Note that some attributes
+ * are set by default.
+ * @param verticalArrangement Vertical arrangement to apply to the column.
+ * @param horizontalAlignment Horizontal alignment to apply to the column.
+ * @param content The card's content.
+ */
 @Composable
 fun SolrCard(
     modifier: Modifier = Modifier,

@@ -30,6 +30,11 @@ import org.apache.solr.compose_ui.generated.resources.Res
 import org.apache.solr.compose_ui.generated.resources.cd_solr_logo
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * Colorized Solr logo.
+ *
+ * @param modifier Modifier that is applied to the wrapper of the logo.
+ */
 @Composable
 fun SolrLogo(
     modifier: Modifier = Modifier,

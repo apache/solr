@@ -21,6 +21,14 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
+/*
+ * This file holds shape values that are used for customizing the shapes of the material theme
+ * to match the Solr theme.
+ *
+ * In general, the Solr theme follows a more edgy theme and therefore the default round corners
+ * from the Material theme are overridden.
+ */
+
 /**
  * Custom shapes that do not use rounded corners for elements.
  */

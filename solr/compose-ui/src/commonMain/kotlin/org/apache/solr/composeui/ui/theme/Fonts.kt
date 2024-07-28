@@ -24,6 +24,9 @@ import org.apache.solr.compose_ui.generated.resources.firacode_variable
 import org.apache.solr.compose_ui.generated.resources.raleway_variable
 import org.jetbrains.compose.resources.Font
 
+/**
+ * Fonts object that holds references to custom fonts that have been added.
+ */
 object Fonts {
 
     @Composable

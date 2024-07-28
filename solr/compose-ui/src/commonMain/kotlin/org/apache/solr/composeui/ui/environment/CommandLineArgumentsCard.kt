@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +16,12 @@ import androidx.compose.ui.unit.dp
 import org.apache.solr.composeui.ui.components.SolrCard
 import org.apache.solr.composeui.ui.theme.SolrTheme
 
+/**
+ * A card that displays the provided command line arguments in a list.
+ *
+ * @param modifier Modifier to apply to the root composable.
+ * @param arguments Command line arguments to display.
+ */
 @Composable
 internal fun CommandLineArgumentsCard(
     modifier: Modifier = Modifier,

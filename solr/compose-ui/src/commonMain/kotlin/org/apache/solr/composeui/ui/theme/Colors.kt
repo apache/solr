@@ -17,12 +17,23 @@
 
 package org.apache.solr.composeui.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+
+/*
+ * This file holds color values, classes and functions that are used for customizing
+ * the color scheme of the material theme to match he Solr theme.
+ *
+ * Additional colors are also provided as ExtendedColorScheme. This makes it possible
+ * to use custom color palettes aside the default color scheme that is available. This
+ * is especially useful when we want to use colors for states of nodes or highlight
+ * critical errors or warnings.
+ */
 
 val primaryLight = Color(0xFF9C1F00)
 val onPrimaryLight = Color(0xFFFFFFFF)
