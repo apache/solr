@@ -9,9 +9,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import org.apache.solr.compose_ui.generated.resources.Res
-import org.apache.solr.compose_ui.generated.resources.raleway_variable
-import org.jetbrains.compose.resources.Font
 
 /**
  * Custom typography that styles headlines and titles with a different font.
@@ -44,6 +41,14 @@ fun SolrTypography(): Typography {
         )
     )
 }
+
+// Customize the extended typography
+@Composable
+fun extendedTypography() = ExtendedTypography(
+    codeSmall = SolrTheme.typography.codeSmall.copy(fontFamily = Fonts.firacode()),
+    codeMedium = SolrTheme.typography.codeMedium.copy(fontFamily = Fonts.firacode()),
+    codeLarge = SolrTheme.typography.codeLarge.copy(fontFamily = Fonts.firacode()),
+)
 
 /**
  * Data class that holds additional text styles to extend the default [Typography] text style sets.
