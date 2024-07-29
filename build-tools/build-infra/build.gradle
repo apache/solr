@@ -17,6 +17,7 @@
 
 plugins {
   id "java-gradle-plugin"
+  alias(libs.plugins.diffplug.spotless) apply false
 }
 
 repositories {
@@ -24,6 +25,19 @@ repositories {
 }
 
 group = "org.apache"
+
+// Make sure the build environment is consistent.
+apply from: file('../../gradle/conventions.gradle')
+apply from: file('../../gradle/validation/check-environment.gradle')
+
+// Add spotless/ tidy.
+tasks.register("checkJdkInternalsExportedToGradle") {}
+apply from: file('../../gradle/validation/spotless.gradle')
+
+java {
+  sourceCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
+  targetCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
+}
 
 gradlePlugin {
   automatedPublishing = false
@@ -34,14 +48,6 @@ gradlePlugin {
       implementationClass = 'org.apache.lucene.gradle.buildinfra.BuildInfraPlugin'
     }
   }
-}
-
-// Make sure the build environment is consistent.
-apply from: file('../../gradle/validation/check-environment.gradle')
-
-java {
-  sourceCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
-  targetCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
 }
 
 dependencies {

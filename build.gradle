@@ -25,6 +25,8 @@ plugins {
   alias(libs.plugins.carrotsearch.dependencychecks)
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
+  alias(libs.plugins.benmanes.versions)
+  alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
   alias(libs.plugins.udnercouch.download) apply false
   alias(libs.plugins.ltgt.errorprone) apply false
@@ -117,6 +119,7 @@ ext {
 // if the build file is incorrectly written and evaluates something
 // eagerly).
 
+apply from: file('gradle/conventions.gradle')
 apply from: file('gradle/generation/local-settings.gradle')
 
 // Ant-compatibility layer: apply folder layout early so that
@@ -158,8 +161,16 @@ apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
 
 apply from: file('gradle/validation/solr.config-file-sanity.gradle')
-
+apply from: file('gradle/validation/dependencies.gradle')
 apply from: file('gradle/validation/spotless.gradle')
+
+// Wire up included builds to some validation tasks.
+rootProject.tasks.named("tidy").configure {
+  dependsOn gradle.includedBuilds*.task(":tidy")
+}
+rootProject.tasks.named("clean").configure {
+  dependsOn gradle.includedBuilds*.task(":clean")
+}
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/regenerate.gradle')

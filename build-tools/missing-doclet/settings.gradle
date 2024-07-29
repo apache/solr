@@ -20,7 +20,7 @@ rootProject.name = "missing-doclet"
 // Use project's version catalog for centralized dependency management
 dependencyResolutionManagement {
     versionCatalogs {
-        create("libs") {
+        libs {
             from(files("../../gradle/libs.versions.toml"))
         }
     }

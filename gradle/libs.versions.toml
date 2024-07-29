@@ -12,22 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Note: To avoid duplicate entries with slightly different names, keep the lists
-# sorted alphabetically.
-
 [versions]
-
-# @keep This is the minimum required Java version.
-minJava = "11"
-# @keep Gradle version to run the build
-gradle = "8.4"
-
 adobe-testing-s3mock = "2.17.0"
 amazon-awssdk = "2.26.19"
+# @keep Antora version used in ref-guide
 antora = "3.1.4"
-# Most recent commit as of 2022-06-24, this repo does not have tags
+# @keep Most recent commit as of 2022-06-24, this repo does not have tags
 antora-default-ui = "51ad811622394027afb4e182c2fdabc235ae04dd"
+# @keep Antora Lunr extensions version used in ref-guide
 antora-lunr-extension = "1.0.0-alpha.8"
 apache-calcite = "1.37.0"
 apache-calcite-avatica = "1.25.0"
@@ -38,11 +30,11 @@ apache-commons-exec = "1.4.0"
 apache-commons-lang3 = "3.15.0"
 apache-commons-math3 = "3.6.1"
 apache-curator = "5.7.0"
-apache-httpcomponents-httpmime = "4.5.14"
-apache-httpcomponents-httpclient = "4.5.14"
-apache-httpcomponents-httpcore = "4.4.16"
 apache-hadoop = "3.3.6"
 apache-hadoop-thirdparty = "1.2.0"
+apache-httpcomponents-httpclient = "4.5.14"
+apache-httpcomponents-httpcore = "4.4.16"
+apache-httpcomponents-httpmime = "4.5.14"
 apache-kerby = "1.0.1"
 apache-log4j = "2.21.0"
 apache-lucene = "9.11.1"
@@ -54,11 +46,15 @@ apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.2"
 aqute-bnd = "6.4.1"
 argparse4j = "0.9.0"
+# @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
+# @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
 bc-jose4j = "0.9.6"
 benmanes-caffeine = "3.1.8"
+benmanes-versions = "0.51.0"
 bouncycastle = "1.78.1"
+# @keep Browserify version used in ref-guide
 browserify = "17.0.0"
 carrot2-core = "4.5.1"
 carrotsearch-dependencychecks = "0.0.9"
@@ -69,16 +65,18 @@ commons-cli = "1.8.0"
 commons-codec = "1.17.1"
 commons-collections = "3.2.2"
 commons-io = "2.15.1"
-cybozulabs-langdetect = "1.1-20120112"
 cutterslade-analyze = "1.9.1"
+cybozulabs-langdetect = "1.1-20120112"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.33.0"
 eclipse-jetty = "10.0.22"
-eclipse-jgit = "6.7.0.202309050840-r"
 eclipse-jettytoolchain = "4.0.6"
+# @keep jgit version used by git-statuts.gradle
+eclipse-jgit = "6.7.0.202309050840-r"
 fasterxml = "2.17.2"
 fasterxml-woodstox = "6.6.2"
+# @keep Flexmark used in classpath
 flexmark = "0.64.8"
 google-api-gax = "2.33.0"
 google-auth = "1.19.0"
@@ -91,13 +89,16 @@ google-guava = "32.1.3-jre"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 google-re2j = "1.7"
+# @keep Gradle version to run the build
+gradle = "8.4"
 grpc = "1.65.1"
+# @keep Gulp version used in ref-guide
 gulp-cli = "2.3.0"
 hamcrest = "2.2"
 hk2 = "3.0.5"
 hsqldb = "2.7.2"
 ibm-icu = "74.2"
-immutables-valueannotations= "2.10.1"
+immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
@@ -109,9 +110,13 @@ jersey = "3.1.5"
 jersey-containers = "2.39.1"
 johnrengelman-shadow = "6.1.0"
 junit = "4.13.2"
+# @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
+littlerobots-versioncatalogupdate = "0.8.4"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
+# @keep This is the minimum required Java version.
+minJava = "11"
 mockito = "5.12.0"
 morethan-jmhreport = "0.9.0"
 navsecurity = "0.5.10"
@@ -119,14 +124,13 @@ netty = "4.1.111.Final"
 nimbusds-josejwt = "9.30.2"
 nodegradle-node = "7.0.1"
 openapi = "7.6.0"
+openjdk-jmh = "1.37"
 opentelemetry = "1.40.0"
 osgi-annotation = "8.1.0"
 owasp-dependencycheck = "9.0.8"
-palantir-consistentversions = "2.16.0"
 prometheus-metrics = "1.1.0"
 prometheus-simpleclient = "0.16.0"
 quicktheories = "0.26"
-openjdk-jmh = "1.37"
 semver4j = "5.3.0"
 slf4j = "2.0.13"
 spatial4j = "0.8"
@@ -136,235 +140,233 @@ squareup-okhttp3-okhttp = "4.12.0"
 stephenc-jcip = "1.0-1"
 swagger3 = "2.2.22"
 tdunning-tdigest = "3.3"
+thetaphi-forbiddenapis = "3.7"
 thisptr-jacksonjq = "0.0.13"
 threeten-bp = "1.6.8"
-thetaphi-forbiddenapis = "3.7"
 undercouch-download = "5.5.0"
-xerces  = "2.12.2"
+xerces = "2.12.2"
 xerial-snappy = "1.1.10.5"
 
 [plugins]
-
+benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes-versions" }
 carrotsearch-dependencychecks = { id = "com.carrotsearch.gradle.dependencychecks", version.ref = "carrotsearch-dependencychecks" }
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
-diffplug-spotless = { id  = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
+diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "johnrengelman-shadow" }
+littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
 ltgt-errorprone = { id = "net.ltgt.errorprone", version.ref = "ltgt-errorprone" }
 morethan-jmhreport = { id = "io.morethan.jmhreport", version.ref = "morethan-jmhreport" }
 nodegradle-node = { id = "com.github.node-gradle.node", version.ref = "nodegradle-node" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi" }
 owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp-dependencycheck" }
-palantir-consistentversions = { id = "com.palantir.consistent-versions", version.ref = "palantir-consistentversions" }
 swagger3-core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger3" }
 thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thetaphi-forbiddenapis" }
 udnercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 
 [libraries]
-
 # Libraries of which the version is provided via a Maven BOM should use { module = "..." }
 # without a version.
 # All other libraries should use { group = "...", name = "..." version.ref = "..." }
 # and provide the version in [versions].
-
-adobe-testing-s3mock-junit4 = { group = "com.adobe.testing", name = "s3mock-junit4", version.ref = "adobe-testing-s3mock" }
-adobe-testing-s3mock-testsupportcommon = { group = "com.adobe.testing", name = "s3mock-testsupport-common", version.ref = "adobe-testing-s3mock" }
-amazon-awssdk-apacheclient = { group = "software.amazon.awssdk", name = "apache-client", version.ref = "amazon-awssdk" }
-amazon-awssdk-auth = { group = "software.amazon.awssdk", name = "auth", version.ref = "amazon-awssdk" }
-amazon-awssdk-awscore = { group = "software.amazon.awssdk", name = "aws-core", version.ref = "amazon-awssdk" }
-amazon-awssdk-bom = { group = "software.amazon.awssdk", name = "bom", version.ref = "amazon-awssdk" }
-amazon-awssdk-profiles = { group = "software.amazon.awssdk", name = "profiles", version.ref = "amazon-awssdk" }
-amazon-awssdk-regions = { group = "software.amazon.awssdk", name = "regions", version.ref = "amazon-awssdk" }
-amazon-awssdk-s3 = { group = "software.amazon.awssdk", name = "s3", version.ref = "amazon-awssdk" }
-amazon-awssdk-sdkcore = { group = "software.amazon.awssdk", name = "sdk-core", version.ref = "amazon-awssdk" }
-amazon-awssdk-sts = { group = "software.amazon.awssdk", name = "sts", version.ref = "amazon-awssdk" }
-apache-calcite-avatica-core = { group = "org.apache.calcite.avatica", name = "avatica-core", version.ref = "apache-calcite-avatica" }
-apache-calcite-core = { group = "org.apache.calcite", name = "calcite-core", version.ref = "apache-calcite" }
-apache-calcite-linq4j = { group = "org.apache.calcite", name = "calcite-linq4j", version.ref = "apache-calcite" }
-apache-commons-collections4 = { group = "org.apache.commons", name = "commons-collections4", version.ref = "apache-commons-collections4" }
-apache-commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "apache-commons-compress" }
-apache-commons-configuration2 = { group = "org.apache.commons", name = "commons-configuration2", version.ref = "apache-commons-configuration2" }
-apache-commons-exec = { group = "org.apache.commons", name = "commons-exec", version.ref = "apache-commons-exec" }
-apache-commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version.ref = "apache-commons-lang3" }
-apache-commons-math3 = { group = "org.apache.commons", name = "commons-math3", version.ref = "apache-commons-math3" }
-apache-curator-client = { group = "org.apache.curator", name = "curator-client", version.ref = "apache-curator" }
-apache-curator-framework = { group = "org.apache.curator", name = "curator-framework", version.ref = "apache-curator" }
-apache-curator-recipes = { group = "org.apache.curator", name = "curator-recipes", version.ref = "apache-curator" }
-apache-kerby-core = { group = "org.apache.kerby", name = "kerb-core", version.ref = "apache-kerby" }
-apache-kerby-util = { group = "org.apache.kerby", name = "kerb-util", version.ref = "apache-kerby" }
-apache-log4j-api = { group = "org.apache.logging.log4j", name = "log4j-api", version.ref = "apache-log4j" }
-apache-log4j1-api = { group = "org.apache.logging.log4j", name = "log4j-1.2-api", version.ref = "apache-log4j" }
-apache-log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "apache-log4j" }
-apache-log4j-jul = { group = "org.apache.logging.log4j", name = "log4j-jul", version.ref = "apache-log4j" }
-apache-log4j-layout-templatejson = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "apache-log4j" }
-apache-log4j-slf4j2impl = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "apache-log4j" }
-apache-log4j-web = { group = "org.apache.logging.log4j", name = "log4j-web", version.ref = "apache-log4j" }
-apache-hadoop-annotations = { group = "org.apache.hadoop", name = "hadoop-annotations", version.ref = "apache-hadoop" }
-apache-hadoop-auth = { group = "org.apache.hadoop", name = "hadoop-auth", version.ref = "apache-hadoop" }
-apache-hadoop-client-api = { group = "org.apache.hadoop", name = "hadoop-client-api", version.ref = "apache-hadoop" }
-apache-hadoop-client-minicluster = { group = "org.apache.hadoop", name = "hadoop-client-minicluster", version.ref = "apache-hadoop" }
-apache-hadoop-client-runtime = { group = "org.apache.hadoop", name = "hadoop-client-runtime", version.ref = "apache-hadoop" }
-apache-hadoop-common = { group = "org.apache.hadoop", name = "hadoop-common", version.ref = "apache-hadoop" }
-apache-hadoop-hdfs = { group = "org.apache.hadoop", name = "hadoop-hdfs", version.ref = "apache-hadoop" }
-apache-hadoop-minikdc = { group = "org.apache.hadoop", name = "hadoop-minikdc", version.ref = "apache-hadoop" }
-apache-hadoop-thirdparty-shadedguava = { group = "org.apache.hadoop.thirdparty", name = "hadoop-shaded-guava", version.ref = "apache-hadoop-thirdparty" }
-apache-httpcomponents-httpmime = { group = "org.apache.httpcomponents", name = "httpmime", version.ref = "apache-httpcomponents-httpmime" }
-apache-httpcomponents-httpclient = { group = "org.apache.httpcomponents", name = "httpclient", version.ref = "apache-httpcomponents-httpclient" }
-apache-httpcomponents-httpcore = { group = "org.apache.httpcomponents", name = "httpcore", version.ref = "apache-httpcomponents-httpcore" }
-apache-lucene-analysis-common = { group = "org.apache.lucene", name = "lucene-analysis-common", version.ref = "apache-lucene" }
-apache-lucene-analysis-icu = { group = "org.apache.lucene", name = "lucene-analysis-icu", version.ref = "apache-lucene" }
-apache-lucene-analysis-kuromoji = { group = "org.apache.lucene", name = "lucene-analysis-kuromoji", version.ref = "apache-lucene" }
-apache-lucene-analysis-morfologik = { group = "org.apache.lucene", name = "lucene-analysis-morfologik", version.ref = "apache-lucene" }
-apache-lucene-analysis-nori = { group = "org.apache.lucene", name = "lucene-analysis-nori", version.ref = "apache-lucene" }
-apache-lucene-analysis-opennlp = { group = "org.apache.lucene", name = "lucene-analysis-opennlp", version.ref = "apache-lucene" }
-apache-lucene-analysis-phonetic = { group = "org.apache.lucene", name = "lucene-analysis-phonetic", version.ref = "apache-lucene" }
-apache-lucene-analysis-smartcn = { group = "org.apache.lucene", name = "lucene-analysis-smartcn", version.ref = "apache-lucene" }
-apache-lucene-analysis-stempel = { group = "org.apache.lucene", name = "lucene-analysis-stempel", version.ref = "apache-lucene" }
-apache-lucene-backward-codecs = { group = "org.apache.lucene", name = "lucene-backward-codecs", version.ref = "apache-lucene" }
-apache-lucene-classification = { group = "org.apache.lucene", name = "lucene-classification", version.ref = "apache-lucene" }
-apache-lucene-codecs = { group = "org.apache.lucene", name = "lucene-codecs", version.ref = "apache-lucene" }
-apache-lucene-core = { group = "org.apache.lucene", name = "lucene-core", version.ref = "apache-lucene" }
-apache-lucene-expressions = { group = "org.apache.lucene", name = "lucene-expressions", version.ref = "apache-lucene" }
-apache-lucene-grouping = { group = "org.apache.lucene", name = "lucene-grouping", version.ref = "apache-lucene" }
-apache-lucene-highlighter = { group = "org.apache.lucene", name = "lucene-highlighter", version.ref = "apache-lucene" }
-apache-lucene-join = { group = "org.apache.lucene", name = "lucene-join", version.ref = "apache-lucene" }
-apache-lucene-misc = { group = "org.apache.lucene", name = "lucene-misc", version.ref = "apache-lucene" }
-apache-lucene-queries = { group = "org.apache.lucene", name = "lucene-queries", version.ref = "apache-lucene" }
-apache-lucene-queryparser = { group = "org.apache.lucene", name = "lucene-queryparser", version.ref = "apache-lucene" }
-apache-lucene-spatialextras = { group = "org.apache.lucene", name = "lucene-spatial-extras", version.ref = "apache-lucene" }
-apache-lucene-suggest = { group = "org.apache.lucene", name = "lucene-suggest", version.ref = "apache-lucene" }
-apache-lucene-testframework = { group = "org.apache.lucene", name = "lucene-test-framework", version.ref = "apache-lucene" }
-apache-opennlp-tools = { group = "org.apache.opennlp", name = "opennlp-tools", version.ref = "apache-opennlp" }
-apache-poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "apache-poi" }
-apache-poi-poi = { group = "org.apache.poi", name = "poi", version.ref = "apache-poi" }
-apache-rat-rat = { group = "org.apache.rat", name = "apache-rat", version.ref = "apache-rat" }
-apache-tika-core = { group = "org.apache.tika", name = "tika-core", version.ref = "apache-tika" }
-apache-tika-parsers = { group = "org.apache.tika", name = "tika-parsers", version.ref = "apache-tika" }
-apache-tomcat-annotationsapi = { group = "org.apache.tomcat", name = "annotations-api", version.ref = "apache-tomcat" }
-apache-zookeeper-jute = { group = "org.apache.zookeeper", name = "zookeeper-jute", version.ref = "apache-zookeeper" }
-apache-zookeeper-zookeeper = { group = "org.apache.zookeeper", name = "zookeeper", version.ref = "apache-zookeeper" }
-aqute-bnd-annotation = { group = "biz.aQute.bnd", name = "biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
-argparse4j-argparse4j = { group = "net.sourceforge.argparse4j", name = "argparse4j", version.ref = "argparse4j" }
-bc-jose4j = { group = "org.bitbucket.b_c", name = "jose4j", version.ref = "bc-jose4j"}
-benmanes-caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "benmanes-caffeine" }
-bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastle" }
-bouncycastle-bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
-carrot2-core = { group = "org.carrot2", name = "carrot2-core", version.ref = "carrot2-core" }
-carrotsearch-hppc = { group = "com.carrotsearch", name = "hppc", version.ref = "carrotsearch-hppc" }
-carrotsearch-randomizedtesting-runner = { group = "com.carrotsearch.randomizedtesting", name = "randomizedtesting-runner", version.ref = "carrotsearch-randomizedtesting" }
-codehaus-woodstox-stax2api = { group = "org.codehaus.woodstox", name = "stax2-api", version.ref = "codehaus-woodstox" }
-commonscli-commonscli = { group = "commons-cli", name = "commons-cli", version.ref = "commons-cli" }
-commonscodec-commonscodec = { group = "commons-codec", name = "commons-codec", version.ref = "commons-codec" }
-commonscollections-commonscollections = { group = "commons-collections", name = "commons-collections", version.ref = "commons-collections" }
-commonsio-commonsio = { group = "commons-io", name = "commons-io", version.ref = "commons-io" }
-cybozulabs-langdetect = { group = "com.cybozu.labs", name = "langdetect", version.ref = "cybozulabs-langdetect" }
-dropwizard-metrics-core = { group = "io.dropwizard.metrics", name = "metrics-core", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-graphite = { group = "io.dropwizard.metrics", name = "metrics-graphite", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty10 = { group = "io.dropwizard.metrics", name = "metrics-jetty10", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jmx = { group = "io.dropwizard.metrics", name = "metrics-jmx", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jvm = { group = "io.dropwizard.metrics", name = "metrics-jvm", version.ref = "dropwizard-metrics" }
-eclipse-jdt-ecj = { group = "org.eclipse.jdt", name = "ecj", version.ref = "eclipse-ecj" }
-eclipse-jetty-alpnjavaclient = { group = "org.eclipse.jetty", name = "jetty-alpn-java-client", version.ref = "eclipse-jetty" }
-eclipse-jetty-alpnjavaserver = { group = "org.eclipse.jetty", name = "jetty-alpn-java-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-alpnserver = { group = "org.eclipse.jetty", name = "jetty-alpn-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-client = { group = "org.eclipse.jetty", name = "jetty-client", version.ref = "eclipse-jetty" }
-eclipse-jetty-deploy = { group = "org.eclipse.jetty", name = "jetty-deploy", version.ref = "eclipse-jetty" }
-eclipse-jetty-http = { group = "org.eclipse.jetty", name = "jetty-http", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-common = { group = "org.eclipse.jetty.http2", name = "http2-common", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-client = { group = "org.eclipse.jetty.http2", name = "http2-client", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-httpclienttransport = { group = "org.eclipse.jetty.http2", name = "http2-http-client-transport", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-hpack = { group = "org.eclipse.jetty.http2", name = "http2-hpack", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-io = { group = "org.eclipse.jetty", name = "jetty-io", version.ref = "eclipse-jetty" }
-eclipse-jetty-jmx = { group = "org.eclipse.jetty", name = "jetty-jmx", version.ref = "eclipse-jetty" }
-eclipse-jetty-rewrite = { group = "org.eclipse.jetty", name = "jetty-rewrite", version.ref = "eclipse-jetty" }
-eclipse-jetty-security = { group = "org.eclipse.jetty", name = "jetty-security", version.ref = "eclipse-jetty" }
-eclipse-jetty-server = { group = "org.eclipse.jetty", name = "jetty-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlet = { group = "org.eclipse.jetty", name = "jetty-servlet", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlets = { group = "org.eclipse.jetty", name = "jetty-servlets", version.ref = "eclipse-jetty" }
-eclipse-jetty-start = { group = "org.eclipse.jetty", name = "jetty-start", version.ref = "eclipse-jetty" }
-eclipse-jetty-toolchain-servletapi = { group = "org.eclipse.jetty.toolchain", name = "jetty-servlet-api", version.ref = "eclipse-jettytoolchain" }
-eclipse-jetty-util = { group = "org.eclipse.jetty", name = "jetty-util", version.ref = "eclipse-jetty" }
-eclipse-jetty-webapp = { group = "org.eclipse.jetty", name = "jetty-webapp", version.ref = "eclipse-jetty" }
-eclipse-jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "eclipse-jetty" }
-eclipse-jgit-jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "eclipse-jgit" }
-fasterxml-jackson-bom = { group = "com.fasterxml.jackson", name = "jackson-bom", version.ref = "fasterxml" }
-fasterxml-jackson-core-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "fasterxml" }
-fasterxml-jackson-core-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "fasterxml" }
-fasterxml-jackson-core-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "fasterxml" }
-fasterxml-jackson-dataformat-cbor = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-cbor", version.ref = "fasterxml" }
-fasterxml-jackson-dataformat-smile = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-smile", version.ref = "fasterxml" }
-fasterxml-woodstox-core = { group = "com.fasterxml.woodstox", name = "woodstox-core", version.ref = "fasterxml-woodstox" }
-flexmark-flexmark = { group = "com.vladsch.flexmark", name = "flexmark", version.ref = "flexmark" }
-flexmark-extensions-abbreviation = { group = "com.vladsch.flexmark", name = "flexmark-ext-abbreviation", version.ref = "flexmark" }
-flexmark-extensions-attributes = { group = "com.vladsch.flexmark", name = "flexmark-ext-attributes", version.ref = "flexmark" }
-flexmark-extensions-autolink = { group = "com.vladsch.flexmark", name = "flexmark-ext-autolink", version.ref = "flexmark" }
-google-api-gax = { group = "com.google.api", name = "gax", version.ref = "google-api-gax" }
-google-auth-oauth2http = { group = "com.google.auth", name = "google-auth-library-oauth2-http", version.ref = "google-auth" }
-google-cloud-bom = { group = "com.google.cloud", name = "google-cloud-bom", version.ref = "google-cloud-bom" }
-google-cloud-core = { group = "com.google.cloud", name = "google-cloud-core", version.ref = "google-cloud-core" }
-google-cloud-corehttp = { group = "com.google.cloud", name = "google-cloud-core-http", version.ref = "google-cloud-core" }
-google-cloud-nio = { group = "com.google.cloud", name = "google-cloud-nio", version.ref = "google-cloud-nio" }
-google-cloud-storage = { group = "com.google.cloud", name = "google-cloud-storage", version.ref = "google-cloud-storage" }
-google-errorprone-core = { group = "com.google.errorprone", name = "error_prone_core", version.ref = "google-errorprone" }
-google-guava = { group = "com.google.guava", name = "guava", version.ref = "google-guava" }
-google-re2j = { group = "com.google.re2j", name = "re2j", version.ref = "google-re2j" }
-grpc-netty = { group = "io.grpc", name = "grpc-netty", version.ref = "grpc" }
-grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf", version.ref = "grpc" }
-grpc-stub = { group = "io.grpc", name = "grpc-stub", version.ref = "grpc" }
-grpc-context = { group = "io.grpc", name = "grpc-context", version.ref = "grpc" }
-hamcrest-hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
-hk2-api = { group = "org.glassfish.hk2", name = "hk2-api", version.ref = "hk2" }
-hsqldb-hsqldb = { group = "org.hsqldb", name = "hsqldb", version.ref = "hsqldb" }
-ibm-icu-icu4j = { group = "com.ibm.icu", name = "icu4j", version.ref = "ibm-icu" }
-immutables-valueannotations = { group = "org.immutables", name = "value-annotations", version.ref = "immutables-valueannotations" }
-j256-simplemagic = { group = "com.j256.simplemagic", name = "simplemagic", version.ref = "j256-simplemagic" }
-jakarta-annotation-api = { group = "jakarta.annotation", name = "jakarta.annotation-api", version.ref = "jakarta-annotation" }
-jakarta-inject-api = { group = "jakarta.inject", name = "jakarta.inject-api", version.ref = "jakarta-inject" }
-jakarta-ws-rsapi = { group = "jakarta.ws.rs", name = "jakarta.ws.rs-api", version.ref = "jakarta-ws" }
-javacc-javacc = { group = "net.java.dev.javacc", name = "javacc", version.ref ="javacc" }
-jayway-jsonpath = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "jayway-jsonpath" }
-jctools-core = { group = "org.jctools", name = "jctools-core", version.ref = "jctools" }
-jersey-containers-jettyhttp = { group = "org.glassfish.jersey.containers", name = "jersey-container-jetty-http", version.ref = "jersey-containers" }
-jersey-core-common = { group = "org.glassfish.jersey.core", name = "jersey-common", version.ref = "jersey" }
-jersey-core-server = { group = "org.glassfish.jersey.core", name = "jersey-server", version.ref = "jersey" }
-jersey-inject-hk2 = { group = "org.glassfish.jersey.inject", name = "jersey-hk2", version.ref = "jersey" }
-jersey-media-jsonjackson = { group = "org.glassfish.jersey.media", name = "jersey-media-json-jackson", version.ref = "jersey" }
-junit-junit = { group = "junit", name = "junit", version.ref = "junit" }
-lmax-disruptor = { group = "com.lmax", name = "disruptor", version.ref = "lmax-disruptor" }
-locationtech-spatial4j = { group = "org.locationtech.spatial4j", name = "spatial4j", version.ref = "spatial4j" }
-mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
-mockito-subclass = { group = "org.mockito", name = "mockito-subclass", version.ref = "mockito" }
-navsecurity-mockoauth2server = { group = "no.nav.security", name = "mock-oauth2-server", version.ref = "navsecurity"}
-netty-codechttp = { group = "io.netty", name = "netty-codec-http", version.ref = "netty" }
-nimbusds-josejwt = { group = "com.nimbusds", name = "nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
-openjdk-jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "openjdk-jmh" }
-openjdk-jmh-generatorannprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "openjdk-jmh" }
-opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api", version.ref = "opentelemetry" }
-opentelemetry-bom = { group = "io.opentelemetry", name = "opentelemetry-bom", version.ref = "opentelemetry" }
-opentelemetry-context = { group = "io.opentelemetry", name = "opentelemetry-context", version.ref = "opentelemetry" }
-opentelemetry-exporter-otlp = { group = "io.opentelemetry", name = "opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
-opentelemetry-sdk = { group = "io.opentelemetry", name = "opentelemetry-sdk", version.ref = "opentelemetry" }
-opentelemetry-sdktrace = { group = "io.opentelemetry", name = "opentelemetry-sdk-trace", version.ref = "opentelemetry" }
-opentelemetry-sdktesting = { group = "io.opentelemetry", name = "opentelemetry-sdk-testing", version.ref = "opentelemetry" }
-opentelemetry-sdkextension-autoconfigure = { group = "io.opentelemetry", name = "opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
-osgi-annotation = { group = "org.osgi", name = "osgi.annotation", version.ref = "osgi-annotation" }
-prometheus-metrics-expositionformats = { group = "io.prometheus", name = "prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
-prometheus-metrics-model = { group = "io.prometheus", name = "prometheus-metrics-model", version.ref = "prometheus-metrics" }
-prometheus-simpleclient = { group = "io.prometheus", name = "simpleclient", version.ref = "prometheus-simpleclient" }
-prometheus-simpleclient-httpserver = { group = "io.prometheus", name = "simpleclient_httpserver", version.ref = "prometheus-simpleclient" }
-quicktheories-quicktheories = { group = "org.quicktheories", name = "quicktheories", version.ref = "quicktheories" }
-semver4j-semver4j = { group = "org.semver4j", name = "semver4j", version.ref = "semver4j" }
-slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
-slf4j-jcloverslf4j = { group = "org.slf4j", name = "jcl-over-slf4j", version.ref = "slf4j" }
-slf4j-jultoslf4j = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4j" }
-spotbugs-annotations = { group = "com.github.spotbugs", name = "spotbugs-annotations", version.ref = "spotbugs" }
-squareup-okhttp3-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "squareup-okhttp3-mockwebserver" }
-squareup-okhttp3-okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "squareup-okhttp3-okhttp" }
-stephenc-jcip-annotations = { group = "com.github.stephenc.jcip", name = "jcip-annotations", version.ref = "stephenc-jcip" }
-swagger3-annotations-jakarta = { group = "io.swagger.core.v3", name = "swagger-annotations-jakarta", version.ref = "swagger3" }
-swagger3-jaxrs2-jakarta = { group = "io.swagger.core.v3", name = "swagger-jaxrs2-jakarta", version.ref = "swagger3" }
-tdunning-tdigest = { group = "com.tdunning", name = "t-digest", version.ref = "tdunning-tdigest" }
-thisptr-jacksonjq = { group = "net.thisptr", name = "jackson-jq", version.ref = "thisptr-jacksonjq" }
-threeten-bp = { group = "org.threeten", name = "threetenbp", version.ref = "threeten-bp" }
-xerces-impl = { group = "xerces", name = "xercesImpl", version.ref = "xerces" }
-xerial-snappy-java = { group = "org.xerial.snappy", name = "snappy-java", version.ref = "xerial-snappy" }
+adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }
+adobe-testing-s3mock-testsupportcommon = { module = "com.adobe.testing:s3mock-testsupport-common", version.ref = "adobe-testing-s3mock" }
+amazon-awssdk-apacheclient = { module = "software.amazon.awssdk:apache-client", version.ref = "amazon-awssdk" }
+amazon-awssdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "amazon-awssdk" }
+amazon-awssdk-awscore = { module = "software.amazon.awssdk:aws-core", version.ref = "amazon-awssdk" }
+amazon-awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "amazon-awssdk" }
+amazon-awssdk-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "amazon-awssdk" }
+amazon-awssdk-regions = { module = "software.amazon.awssdk:regions", version.ref = "amazon-awssdk" }
+amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
+amazon-awssdk-sdkcore = { module = "software.amazon.awssdk:sdk-core", version.ref = "amazon-awssdk" }
+amazon-awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "amazon-awssdk" }
+apache-calcite-avatica-core = { module = "org.apache.calcite.avatica:avatica-core", version.ref = "apache-calcite-avatica" }
+apache-calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "apache-calcite" }
+apache-calcite-linq4j = { module = "org.apache.calcite:calcite-linq4j", version.ref = "apache-calcite" }
+apache-commons-collections4 = { module = "org.apache.commons:commons-collections4", version.ref = "apache-commons-collections4" }
+apache-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "apache-commons-compress" }
+apache-commons-configuration2 = { module = "org.apache.commons:commons-configuration2", version.ref = "apache-commons-configuration2" }
+apache-commons-exec = { module = "org.apache.commons:commons-exec", version.ref = "apache-commons-exec" }
+apache-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "apache-commons-lang3" }
+apache-commons-math3 = { module = "org.apache.commons:commons-math3", version.ref = "apache-commons-math3" }
+apache-curator-client = { module = "org.apache.curator:curator-client", version.ref = "apache-curator" }
+apache-curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "apache-curator" }
+apache-curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "apache-curator" }
+apache-hadoop-annotations = { module = "org.apache.hadoop:hadoop-annotations", version.ref = "apache-hadoop" }
+apache-hadoop-auth = { module = "org.apache.hadoop:hadoop-auth", version.ref = "apache-hadoop" }
+apache-hadoop-client-api = { module = "org.apache.hadoop:hadoop-client-api", version.ref = "apache-hadoop" }
+apache-hadoop-client-minicluster = { module = "org.apache.hadoop:hadoop-client-minicluster", version.ref = "apache-hadoop" }
+apache-hadoop-client-runtime = { module = "org.apache.hadoop:hadoop-client-runtime", version.ref = "apache-hadoop" }
+apache-hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "apache-hadoop" }
+apache-hadoop-hdfs = { module = "org.apache.hadoop:hadoop-hdfs", version.ref = "apache-hadoop" }
+apache-hadoop-minikdc = { module = "org.apache.hadoop:hadoop-minikdc", version.ref = "apache-hadoop" }
+apache-hadoop-thirdparty-shadedguava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version.ref = "apache-hadoop-thirdparty" }
+apache-httpcomponents-httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "apache-httpcomponents-httpclient" }
+apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version.ref = "apache-httpcomponents-httpcore" }
+apache-httpcomponents-httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "apache-httpcomponents-httpmime" }
+apache-kerby-core = { module = "org.apache.kerby:kerb-core", version.ref = "apache-kerby" }
+apache-kerby-util = { module = "org.apache.kerby:kerb-util", version.ref = "apache-kerby" }
+apache-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "apache-log4j" }
+apache-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "apache-log4j" }
+apache-log4j-jul = { module = "org.apache.logging.log4j:log4j-jul", version.ref = "apache-log4j" }
+apache-log4j-layout-templatejson = { module = "org.apache.logging.log4j:log4j-layout-template-json", version.ref = "apache-log4j" }
+apache-log4j-slf4j2impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "apache-log4j" }
+apache-log4j-web = { module = "org.apache.logging.log4j:log4j-web", version.ref = "apache-log4j" }
+apache-log4j1-api = { module = "org.apache.logging.log4j:log4j-1.2-api", version.ref = "apache-log4j" }
+apache-lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "apache-lucene" }
+apache-lucene-analysis-icu = { module = "org.apache.lucene:lucene-analysis-icu", version.ref = "apache-lucene" }
+apache-lucene-analysis-kuromoji = { module = "org.apache.lucene:lucene-analysis-kuromoji", version.ref = "apache-lucene" }
+apache-lucene-analysis-morfologik = { module = "org.apache.lucene:lucene-analysis-morfologik", version.ref = "apache-lucene" }
+apache-lucene-analysis-nori = { module = "org.apache.lucene:lucene-analysis-nori", version.ref = "apache-lucene" }
+apache-lucene-analysis-opennlp = { module = "org.apache.lucene:lucene-analysis-opennlp", version.ref = "apache-lucene" }
+apache-lucene-analysis-phonetic = { module = "org.apache.lucene:lucene-analysis-phonetic", version.ref = "apache-lucene" }
+apache-lucene-analysis-smartcn = { module = "org.apache.lucene:lucene-analysis-smartcn", version.ref = "apache-lucene" }
+apache-lucene-analysis-stempel = { module = "org.apache.lucene:lucene-analysis-stempel", version.ref = "apache-lucene" }
+apache-lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "apache-lucene" }
+apache-lucene-classification = { module = "org.apache.lucene:lucene-classification", version.ref = "apache-lucene" }
+apache-lucene-codecs = { module = "org.apache.lucene:lucene-codecs", version.ref = "apache-lucene" }
+apache-lucene-core = { module = "org.apache.lucene:lucene-core", version.ref = "apache-lucene" }
+apache-lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "apache-lucene" }
+apache-lucene-grouping = { module = "org.apache.lucene:lucene-grouping", version.ref = "apache-lucene" }
+apache-lucene-highlighter = { module = "org.apache.lucene:lucene-highlighter", version.ref = "apache-lucene" }
+apache-lucene-join = { module = "org.apache.lucene:lucene-join", version.ref = "apache-lucene" }
+apache-lucene-misc = { module = "org.apache.lucene:lucene-misc", version.ref = "apache-lucene" }
+apache-lucene-queries = { module = "org.apache.lucene:lucene-queries", version.ref = "apache-lucene" }
+apache-lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "apache-lucene" }
+apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extras", version.ref = "apache-lucene" }
+apache-lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "apache-lucene" }
+apache-lucene-testframework = { module = "org.apache.lucene:lucene-test-framework", version.ref = "apache-lucene" }
+apache-opennlp-tools = { module = "org.apache.opennlp:opennlp-tools", version.ref = "apache-opennlp" }
+apache-poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "apache-poi" }
+apache-poi-poi = { module = "org.apache.poi:poi", version.ref = "apache-poi" }
+apache-rat-rat = { module = "org.apache.rat:apache-rat", version.ref = "apache-rat" }
+apache-tika-core = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
+apache-tika-parsers = { module = "org.apache.tika:tika-parsers", version.ref = "apache-tika" }
+apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }
+apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", version.ref = "apache-zookeeper" }
+apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
+aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
+argparse4j-argparse4j = { module = "net.sourceforge.argparse4j:argparse4j", version.ref = "argparse4j" }
+bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
+benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
+bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
+bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+carrot2-core = { module = "org.carrot2:carrot2-core", version.ref = "carrot2-core" }
+carrotsearch-hppc = { module = "com.carrotsearch:hppc", version.ref = "carrotsearch-hppc" }
+carrotsearch-randomizedtesting-runner = { module = "com.carrotsearch.randomizedtesting:randomizedtesting-runner", version.ref = "carrotsearch-randomizedtesting" }
+codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", version.ref = "codehaus-woodstox" }
+commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
+commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+commonscollections-commonscollections = { module = "commons-collections:commons-collections", version.ref = "commons-collections" }
+commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
+cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
+dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-graphite = { module = "io.dropwizard.metrics:metrics-graphite", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty10 = { module = "io.dropwizard.metrics:metrics-jetty10", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jvm = { module = "io.dropwizard.metrics:metrics-jvm", version.ref = "dropwizard-metrics" }
+eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
+eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }
+eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "eclipse-jetty" }
+eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", version.ref = "eclipse-jetty" }
+eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
+eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
+eclipse-jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:http2-client", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:http2-common", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-hpack = { module = "org.eclipse.jetty.http2:http2-hpack", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:http2-http-client-transport", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:http2-server", version.ref = "eclipse-jetty" }
+eclipse-jetty-io = { module = "org.eclipse.jetty:jetty-io", version.ref = "eclipse-jetty" }
+eclipse-jetty-jmx = { module = "org.eclipse.jetty:jetty-jmx", version.ref = "eclipse-jetty" }
+eclipse-jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "eclipse-jetty" }
+eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "eclipse-jetty" }
+eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
+eclipse-jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "eclipse-jetty" }
+eclipse-jetty-servlets = { module = "org.eclipse.jetty:jetty-servlets", version.ref = "eclipse-jetty" }
+eclipse-jetty-start = { module = "org.eclipse.jetty:jetty-start", version.ref = "eclipse-jetty" }
+eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-servlet-api", version.ref = "eclipse-jettytoolchain" }
+eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
+eclipse-jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp", version.ref = "eclipse-jetty" }
+eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
+eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
+fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "fasterxml" }
+fasterxml-jackson-core-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "fasterxml" }
+fasterxml-jackson-core-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "fasterxml" }
+fasterxml-jackson-core-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "fasterxml" }
+fasterxml-jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "fasterxml" }
+fasterxml-jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref = "fasterxml" }
+fasterxml-woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "fasterxml-woodstox" }
+flexmark-extensions-abbreviation = { module = "com.vladsch.flexmark:flexmark-ext-abbreviation", version.ref = "flexmark" }
+flexmark-extensions-attributes = { module = "com.vladsch.flexmark:flexmark-ext-attributes", version.ref = "flexmark" }
+flexmark-extensions-autolink = { module = "com.vladsch.flexmark:flexmark-ext-autolink", version.ref = "flexmark" }
+flexmark-flexmark = { module = "com.vladsch.flexmark:flexmark", version.ref = "flexmark" }
+google-api-gax = { module = "com.google.api:gax", version.ref = "google-api-gax" }
+google-auth-oauth2http = { module = "com.google.auth:google-auth-library-oauth2-http", version.ref = "google-auth" }
+google-cloud-bom = { module = "com.google.cloud:google-cloud-bom", version.ref = "google-cloud-bom" }
+google-cloud-core = { module = "com.google.cloud:google-cloud-core", version.ref = "google-cloud-core" }
+google-cloud-corehttp = { module = "com.google.cloud:google-cloud-core-http", version.ref = "google-cloud-core" }
+google-cloud-nio = { module = "com.google.cloud:google-cloud-nio", version.ref = "google-cloud-nio" }
+google-cloud-storage = { module = "com.google.cloud:google-cloud-storage", version.ref = "google-cloud-storage" }
+google-errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "google-errorprone" }
+google-guava = { module = "com.google.guava:guava", version.ref = "google-guava" }
+google-re2j = { module = "com.google.re2j:re2j", version.ref = "google-re2j" }
+grpc-context = { module = "io.grpc:grpc-context", version.ref = "grpc" }
+grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+hamcrest-hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+hk2-api = { module = "org.glassfish.hk2:hk2-api", version.ref = "hk2" }
+hsqldb-hsqldb = { module = "org.hsqldb:hsqldb", version.ref = "hsqldb" }
+ibm-icu-icu4j = { module = "com.ibm.icu:icu4j", version.ref = "ibm-icu" }
+immutables-valueannotations = { module = "org.immutables:value-annotations", version.ref = "immutables-valueannotations" }
+j256-simplemagic = { module = "com.j256.simplemagic:simplemagic", version.ref = "j256-simplemagic" }
+jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation" }
+jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
+jakarta-ws-rsapi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakarta-ws" }
+javacc-javacc = { module = "net.java.dev.javacc:javacc", version.ref = "javacc" }
+jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jayway-jsonpath" }
+jctools-core = { module = "org.jctools:jctools-core", version.ref = "jctools" }
+jersey-containers-jettyhttp = { module = "org.glassfish.jersey.containers:jersey-container-jetty-http", version.ref = "jersey-containers" }
+jersey-core-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
+jersey-core-server = { module = "org.glassfish.jersey.core:jersey-server", version.ref = "jersey" }
+jersey-inject-hk2 = { module = "org.glassfish.jersey.inject:jersey-hk2", version.ref = "jersey" }
+jersey-media-jsonjackson = { module = "org.glassfish.jersey.media:jersey-media-json-jackson", version.ref = "jersey" }
+junit-junit = { module = "junit:junit", version.ref = "junit" }
+lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
+locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-subclass = { module = "org.mockito:mockito-subclass", version.ref = "mockito" }
+navsecurity-mockoauth2server = { module = "no.nav.security:mock-oauth2-server", version.ref = "navsecurity" }
+netty-codechttp = { module = "io.netty:netty-codec-http", version.ref = "netty" }
+nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
+openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
+openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
+opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
+opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry" }
+opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
+opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
+opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
+opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
+opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
+opentelemetry-sdktrace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
+osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
+prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
+prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
+prometheus-simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheus-simpleclient" }
+prometheus-simpleclient-httpserver = { module = "io.prometheus:simpleclient_httpserver", version.ref = "prometheus-simpleclient" }
+quicktheories-quicktheories = { module = "org.quicktheories:quicktheories", version.ref = "quicktheories" }
+semver4j-semver4j = { module = "org.semver4j:semver4j", version.ref = "semver4j" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-jcloverslf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
+slf4j-jultoslf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
+spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs" }
+squareup-okhttp3-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "squareup-okhttp3-mockwebserver" }
+squareup-okhttp3-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "squareup-okhttp3-okhttp" }
+stephenc-jcip-annotations = { module = "com.github.stephenc.jcip:jcip-annotations", version.ref = "stephenc-jcip" }
+swagger3-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger3" }
+swagger3-jaxrs2-jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger3" }
+tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-tdigest" }
+thisptr-jacksonjq = { module = "net.thisptr:jackson-jq", version.ref = "thisptr-jacksonjq" }
+threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
+xerces-impl = { module = "xerces:xercesImpl", version.ref = "xerces" }
+xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }
