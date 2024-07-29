@@ -123,7 +123,7 @@ public class MultiThreadedSearcher {
     if (postFilter != null
         || cmd.getSegmentTerminateEarly()
         || cmd.getTimeAllowed() > 0
-        || Boolean.FALSE.equals(cmd.getMultiThreaded())) {
+        || !Boolean.TRUE.equals(cmd.getMultiThreaded())) {
       return false;
     } else {
       MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();

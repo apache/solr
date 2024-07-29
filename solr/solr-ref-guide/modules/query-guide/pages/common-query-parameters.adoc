@@ -404,11 +404,11 @@ Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when ear
 
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: `false`
 |===
 
-If set to `false`, then the multi-threaded search implementation will not be used for the query.
-If unset or set to `true`, then use the multi-threaded search implementation if it is supported for the query.
+If unset or set to `false`, then the multi-threaded search implementation will not be used for the query.
+If set to `true`, then use the multi-threaded search implementation if it is supported for the query.
 
 == omitHeader Parameter
 
