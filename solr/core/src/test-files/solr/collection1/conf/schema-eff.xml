@@ -17,7 +17,7 @@
   limitations under the License.
   -->
 
-<schema name="example" version="1.6">
+<schema name="example" version="1.7">
 
 
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>

@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="example" version="1.5">
+<schema name="example" version="1.7">
   <fields>
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
     <field name="finalScore" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -34,9 +34,9 @@
     <field name="dvStringPopularities" type="string" indexed="false" docValues="true" stored="false" multiValued="true"/>
     <field name="normHits" type="float" indexed="true" stored="true" />
 
-    <field name="isTrendy" type="boolean" indexed="true" stored="true" />
-    <field name="storedDvIsTrendy" type="boolean" indexed="true" stored="true" docValues="true"/>
-    <field name="dvIsTrendy" type="boolean" indexed="true" stored="false" docValues="true"/>
+    <field name="isTrendy" type="boolean" indexed="true" stored="true" docValues="false" />
+    <field name="storedDvIsTrendy" type="boolean" indexed="true" stored="true"/>
+    <field name="dvIsTrendy" type="boolean" indexed="true" stored="false"/>
 
     <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
     <field name="dvLongField" type="long" indexed="false" docValues="true" stored="false" default="-2" multiValued="false"/>

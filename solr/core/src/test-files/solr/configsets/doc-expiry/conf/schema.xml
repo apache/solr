@@ -16,9 +16,9 @@
  limitations under the License.
 -->
 
-<!-- The Solr schema file, version 1.6  -->
+<!-- The Solr schema file, version 1.7  -->
 
-<schema name="cloud-dynamic" version="1.6">
+<schema name="cloud-dynamic" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.
        version="x.y" is Solr's version number for the schema syntax and semantics.  It should
@@ -30,6 +30,7 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
@@ -156,7 +157,7 @@
   </fieldType>
 
   <fieldType name="uuid" class="solr.UUIDField"/>
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
 
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>

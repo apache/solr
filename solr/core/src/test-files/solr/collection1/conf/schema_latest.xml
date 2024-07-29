@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="example" version="1.6">
+<schema name="example" version="1.7">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        version="x.y" is Solr's version number for the schema syntax and
        semantics.  It should not normally be changed by applications.
@@ -33,6 +33,7 @@
        1.5: omitNorms defaults to true for primitive field types
             (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
+       1.7: docValues defaults to true.
      -->
 
   <!-- Valid attributes for fields:
@@ -85,7 +86,7 @@
   <!-- points to the root document of a block of nested documents. Required for nested
      document support, may be removed otherwise
   -->
-  <field name="_root_" type="string" indexed="true" stored="false"/>
+  <field name="_root_" type="string" indexed="true" stored="false" useDocValuesAsStored="false"/>
 
   <!-- Only remove the "id" field if you have a very good reason to. While not strictly
     required, it is highly recommended. A <uniqueKey> is present in almost all Solr
@@ -154,9 +155,9 @@
   <!--
     Some fields such as popularity and manu_exact could be modified to
     leverage doc values:
-    <field name="popularity" type="int" indexed="true" stored="true" docValues="true" />
-    <field name="manu_exact" type="string" indexed="false" stored="false" docValues="true" />
-    <field name="cat" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
+    <field name="popularity" type="int" indexed="true" stored="true" />
+    <field name="manu_exact" type="string" indexed="false" stored="false" />
+    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
 
 
     Although it would make indexing slightly slower and the index bigger, it
@@ -265,7 +266,7 @@
 
   <!-- needed by dedup config -->
   <field name="signatureField" type="string" indexed="true" stored="false"/>
-  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true" docValues="false"/>
 
   <!-- Indexed, but NOT uninvertible -->
   <field name="where_s_multi_not_uninvert" type="string" indexed="true" stored="false" docValues="false" uninvertible="false" multiValued="true" />
@@ -353,11 +354,11 @@
   -->
 
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
   <!--
     Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
