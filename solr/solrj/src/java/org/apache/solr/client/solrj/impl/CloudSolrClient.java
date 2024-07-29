@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -788,8 +789,7 @@ public abstract class CloudSolrClient extends SolrClient {
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames =
-          getClusterStateProvider().resolveAliases(inputCollections);
+      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -1040,7 +1040,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
 
     } else { // Typical...
-      Set<String> collectionNames = getClusterStateProvider().resolveAliases(inputCollections);
+      Set<String> collectionNames = resolveAliases(inputCollections);
       if (collectionNames.isEmpty()) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -1137,6 +1137,26 @@ public abstract class CloudSolrClient extends SolrClient {
     LBSolrClient.Req req = new LBSolrClient.Req(request, requestEndpoints);
     LBSolrClient.Rsp rsp = getLbClient().request(req);
     return rsp.getResponse();
+  }
+
+  /**
+   * Resolves the input collections to their possible aliased collections. Doesn't validate
+   * collection existence.
+   */
+  private Set<String> resolveAliases(List<String> inputCollections) {
+    if (inputCollections.isEmpty()) {
+      return Collections.emptySet();
+    }
+    LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
+    for (String collectionName : inputCollections) {
+      if (getDocCollection(collectionName, -1) == null) {
+        // perhaps it's an alias
+        uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
+      } else {
+        uniqueNames.add(collectionName); // it's a collection
+      }
+    }
+    return uniqueNames;
   }
 
   /**

@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,28 +65,6 @@ public interface ClusterStateProvider extends SolrCloseable {
    * list of the input if it's not an alias.
    */
   List<String> resolveAlias(String alias);
-
-  /**
-   * Given a list of input aliases, returns a list of collections it points to. Doesn't validate
-   * collection existence
-   */
-  default Set<String> resolveAliases(List<String> inputCollections) {
-    if (inputCollections.isEmpty()) {
-      return Collections.emptySet();
-    }
-    LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
-    for (String collectionName : inputCollections) {
-
-      // check if collectionName is an alias
-      if (getState(collectionName) == null) {
-        // perhaps it's an alias
-        uniqueNames.addAll(resolveAlias(collectionName));
-      } else {
-        uniqueNames.add(collectionName); // it's a collection
-      }
-    }
-    return uniqueNames;
-  }
 
   /** Return alias properties, or an empty map if the alias has no properties. */
   Map<String, String> getAliasProperties(String alias);

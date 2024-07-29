@@ -284,17 +284,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       }
 
       // 1 call to fetch entire cluster state via BaseHttpCSP.fetchLiveNodes()
-      // 1 call to LISTALIASES via getAliases() from CSC.sendRequest() -> CSC.directUpdate ->
-      // BaseHttpCSP.resolveAlias -> BaseHttpCSP.getAliases()
-      // Reasoning for the remaining 10 calls provided below
-      assertLogCount(adminRequestLogs, 12);
-
-      // For add(), 2 calls: fetch CLUSTERSTATUS via resolveAliases() and
-      // getDocCollection()/getCollectionRef() (first collection lookup)
-      // 2 calls each for commit(), followed by 3 /select requests from resolveAliases(), invoked
-      // from CSC.retryRequestWithStaleState() and CSC.sendRequest()
-      assertLogCount(collectionClusterStateLogs, 10);
-
+      // 1 call to LISTALIASES via getAliases() from CSC.sendRequest() -> (CSC.directUpdate ->
+      // 1 call to fetch CLUSTERSTATUS for collection via getDocCollection() (first collection
+      // lookup)
+      assertLogCount(adminRequestLogs, 3);
+      // 1 call to fetch CLUSTERSTATUS for collection via getDocCollection() (first collection
+      // lookup)
+      assertLogCount(collectionClusterStateLogs, 1);
       // 1 call to fetch entire cluster state from HttpCSP.fetchLiveNodes()
       assertLogCount(entireClusterStateLogs, 1);
     }
