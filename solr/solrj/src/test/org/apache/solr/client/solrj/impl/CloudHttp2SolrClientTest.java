@@ -93,11 +93,14 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static CloudSolrClient httpBasedCloudSolrClient = null;
   private static CloudSolrClient zkBasedCloudSolrClient = null;
 
-
-  private static final Pattern PATTERN_WITH_COLLECTION = Pattern.compile("path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS" +
-          "[^}]*collection=[^&}]+[^}]*\\}");
-  private static final Pattern PATTERN_WITHOUT_COLLECTION = Pattern.compile("path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS" +
-          "(?![^}]*collection=)[^}]*\\}");
+  private static final Pattern PATTERN_WITH_COLLECTION =
+      Pattern.compile(
+          "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
+              + "[^}]*collection=[^&}]+[^}]*\\}");
+  private static final Pattern PATTERN_WITHOUT_COLLECTION =
+      Pattern.compile(
+          "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
+              + "(?![^}]*collection=)[^}]*\\}");
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -262,26 +265,32 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public void testHttpCspPerf() throws Exception {
 
     String collectionName = "HTTPCSPTEST";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
-    CloudSolrClient solrClient = null;
-    try (LogListener entireClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITHOUT_COLLECTION); LogListener collectionClusterStateLogs = LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION); LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
-
-      solrClient = createHttpCSPBasedCloudSolrClient();
-
+    try (LogListener entireClusterStateLogs =
+            LogListener.info(HttpSolrCall.class).regex(PATTERN_WITHOUT_COLLECTION);
+        LogListener collectionClusterStateLogs =
+            LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION);
+        LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
+        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient();
+    ) {
       SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
       solrClient.add(collectionName, doc);
       solrClient.commit(collectionName);
       for (int i = 0; i < 3; i++) {
-        assertEquals(1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+        assertEquals(
+            1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
       }
 
+      //1 call to fetch entire cluster state, 10 calls to fetch cluster status given a coll that originate from
+      // resolveAliases(), 1 call to LISTALIASES that is invoked from resolveAlias()
       assertLogCount(adminRequestLogs, 12);
+      //2 calls per request to CSP.resolveAliases(), 2 /update and 3 /select requests
       assertLogCount(collectionClusterStateLogs, 10);
+      //1 call to fetch entire cluster state that originates from HttpCSP.fetchLiveNodes()
       assertLogCount(entireClusterStateLogs, 1);
-    } finally {
-      solrClient.close();
     }
   }
 
@@ -290,7 +299,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
     return new CloudHttp2SolrClient.Builder(solrUrls).build();
   }
-
 
   private void assertLogCount(LogListener logListener, int expectedCount) {
     int logCount = logListener.getCount();
@@ -301,7 +309,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       }
     }
   }
-
 
   @Test
   public void testRouting() throws Exception {
