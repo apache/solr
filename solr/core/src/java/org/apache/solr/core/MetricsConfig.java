@@ -26,6 +26,7 @@ public class MetricsConfig {
   private final PluginInfo meterSupplier;
   private final PluginInfo timerSupplier;
   private final PluginInfo histogramSupplier;
+  private final PluginInfo maxHistogramSupplier;
   private final Object nullNumber;
   private final Object notANumber;
   private final Object nullString;
@@ -40,6 +41,7 @@ public class MetricsConfig {
       PluginInfo meterSupplier,
       PluginInfo timerSupplier,
       PluginInfo histogramSupplier,
+      PluginInfo maxHistogramSupplier,
       Object nullNumber,
       Object notANumber,
       Object nullString,
@@ -51,6 +53,7 @@ public class MetricsConfig {
     this.meterSupplier = meterSupplier;
     this.timerSupplier = timerSupplier;
     this.histogramSupplier = histogramSupplier;
+    this.maxHistogramSupplier = maxHistogramSupplier;
     this.nullNumber = nullNumber;
     this.notANumber = notANumber;
     this.nullString = nullString;
@@ -130,12 +133,21 @@ public class MetricsConfig {
     }
   }
 
+  public PluginInfo getMaxHistogramSupplier() {
+    if (enabled) {
+      return maxHistogramSupplier;
+    } else {
+      return NO_OP_PLUGIN;
+    }
+  }
+
   public static class MetricsConfigBuilder {
     private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
     private PluginInfo counterSupplier;
     private PluginInfo meterSupplier;
     private PluginInfo timerSupplier;
     private PluginInfo histogramSupplier;
+    private PluginInfo maxHistogramSupplier;
     private Object nullNumber = null;
     private Object notANumber = null;
     private Object nullString = null;
@@ -182,6 +194,11 @@ public class MetricsConfig {
       return this;
     }
 
+    public MetricsConfigBuilder setMaxHistogramSupplier(PluginInfo info) {
+      this.maxHistogramSupplier = info;
+      return this;
+    }
+
     public MetricsConfigBuilder setNullNumber(Object nullNumber) {
       this.nullNumber = nullNumber;
       return this;
@@ -210,6 +227,7 @@ public class MetricsConfig {
           meterSupplier,
           timerSupplier,
           histogramSupplier,
+          maxHistogramSupplier,
           nullNumber,
           notANumber,
           nullString,

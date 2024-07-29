@@ -24,6 +24,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Reservoir;
+import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.SlidingWindowReservoir;
 import com.codahale.metrics.Timer;
@@ -154,6 +155,7 @@ public class MetricSuppliers {
   private static final String EDR_CLAZZ = ExponentiallyDecayingReservoir.class.getName();
   private static final String UNI_CLAZZ = UniformReservoir.class.getName();
   private static final String STW_CLAZZ = SlidingTimeWindowReservoir.class.getName();
+  private static final String STWA_CLAZZ = SlidingTimeWindowArrayReservoir.class.getName();
   private static final String SW_CLAZZ = SlidingWindowReservoir.class.getName();
 
   private static final int DEFAULT_SIZE = 1028;
@@ -161,10 +163,17 @@ public class MetricSuppliers {
   private static final long DEFAULT_WINDOW = 300;
 
   private static final Reservoir getReservoir(SolrResourceLoader loader, PluginInfo info) {
+    return getReservoir(loader, info, null);
+  }
+
+  private static final Reservoir getReservoir(
+      SolrResourceLoader loader, PluginInfo info, Clock clk) {
     if (info == null) {
       return new ExponentiallyDecayingReservoir();
     }
-    Clock clk = getClock(info, CLOCK);
+    if (clk == null) {
+      clk = getClock(info, CLOCK);
+    }
     String clazz = ExponentiallyDecayingReservoir.class.getName();
     int size = -1;
     double alpha = -1;
@@ -200,6 +209,11 @@ public class MetricSuppliers {
       return new ExponentiallyDecayingReservoir(size, alpha, clk);
     } else if (clazz.equals(UNI_CLAZZ)) {
       return new UniformReservoir(size);
+    } else if (clazz.equals(STWA_CLAZZ)) {
+      if (window <= 0) {
+        window = DEFAULT_WINDOW; // 5 minutes, comparable to EDR
+      }
+      return new SlidingTimeWindowArrayReservoir(window, TimeUnit.SECONDS);
     } else if (clazz.equals(STW_CLAZZ)) {
       if (window <= 0) {
         window = DEFAULT_WINDOW; // 5 minutes, comparable to EDR
@@ -284,6 +298,63 @@ public class MetricSuppliers {
     @Override
     public Histogram newMetric() {
       return new Histogram(getReservoir());
+    }
+  }
+
+  /** interval at which {@link MaxHistogram} will record values */
+  private static final String INTERVAL_MILLIS = "intervalMillis";
+
+  /** limits value backfill of {@link MaxHistogram} */
+  private static final String MAX_BACKDATE_SECONDS = "maxBackdateSeconds";
+
+  private static final int DEFAULT_INTERVAL_MILLIS = 1000; // default to 1s
+
+  /**
+   * Default supplier of {@link Histogram} instances suitable to use as a {@link MaxHistogram}, with
+   * configurable reservoir.
+   */
+  public static final class DefaultMaxHistogramSupplier
+      implements MetricRegistry.MetricSupplier<Histogram>, PluginInfoInitialized {
+
+    private PluginInfo info;
+    private final SolrResourceLoader loader;
+
+    public DefaultMaxHistogramSupplier(SolrResourceLoader loader) {
+      this.loader = loader;
+    }
+
+    @Override
+    public void init(PluginInfo info) {
+      this.info = info;
+    }
+
+    @Override
+    public MaxHistogram newMetric() {
+      Clock clock = MetricSuppliers.getClock(info, CLOCK);
+      int maxBackdateSeconds;
+      Number tmp;
+      if (info == null || (tmp = (Number) info.initArgs.get(MAX_BACKDATE_SECONDS)) == null) {
+        if (info == null || (tmp = (Number) info.initArgs.get(RESERVOIR_WINDOW)) == null) {
+          // use default window if no explicitly configured window is available
+          maxBackdateSeconds = (int) DEFAULT_WINDOW;
+        } else {
+          // align to reservoir window if possible
+          maxBackdateSeconds = Math.toIntExact(Math.min(Integer.MAX_VALUE, tmp.longValue()));
+        }
+      } else {
+        maxBackdateSeconds = tmp.intValue();
+      }
+      int intervalMillis;
+      if (info == null || (tmp = (Number) info.initArgs.get(INTERVAL_MILLIS)) == null) {
+        intervalMillis = DEFAULT_INTERVAL_MILLIS;
+      } else {
+        intervalMillis = tmp.intValue();
+      }
+      return MaxHistogram.newInstance(
+          intervalMillis,
+          maxBackdateSeconds,
+          clock,
+          (c) -> MetricSuppliers.getReservoir(loader, info, c));
     }
   }
 
@@ -418,6 +489,42 @@ public class MetricSuppliers {
         } catch (Exception e) {
           log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
           supplier = new DefaultHistogramSupplier(loader);
+        }
+      }
+    }
+    if (supplier instanceof PluginInfoInitialized) {
+      ((PluginInfoInitialized) supplier).init(info);
+    } else {
+      SolrPluginUtils.invokeSetters(supplier, info.initArgs, true);
+    }
+    return supplier;
+  }
+
+  /**
+   * Create a {@link Histogram} supplier that supplies histograms suitable to use as a {@link
+   * MaxHistogram}.
+   *
+   * @param info plugin configuration, or null for default
+   * @return configured supplier instance, or default instance if configuration was invalid
+   */
+  @SuppressWarnings({"unchecked"})
+  public static MetricRegistry.MetricSupplier<Histogram> maxHistogramSupplier(
+      SolrResourceLoader loader, PluginInfo info) {
+    MetricRegistry.MetricSupplier<Histogram> supplier;
+    if (info == null || info.className == null || info.className.isEmpty()) {
+      supplier = new DefaultMaxHistogramSupplier(loader);
+    } else {
+      if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
+        return NoOpHistogramSupplier.INSTANCE;
+      }
+      if (loader == null) {
+        supplier = new DefaultMaxHistogramSupplier(null);
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom MaxHistogram supplier (will use default): {}", info, e);
+          supplier = new DefaultMaxHistogramSupplier(loader);
         }
       }
     }

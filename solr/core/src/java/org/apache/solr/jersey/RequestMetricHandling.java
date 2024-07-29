@@ -92,6 +92,7 @@ public class RequestMetricHandling {
       requestContext.setProperty(HANDLER_METRICS, metrics);
       requestContext.setProperty(TIMER, metrics.requestTimes.time());
       metrics.requests.inc();
+      metrics.concurrency.update(1);
     }
   }
 
@@ -110,6 +111,8 @@ public class RequestMetricHandling {
       final RequestHandlerBase.HandlerMetrics metrics =
           (RequestHandlerBase.HandlerMetrics) requestContext.getProperty(HANDLER_METRICS);
       if (metrics == null) return;
+
+      metrics.concurrency.update(-1);
 
       // Increment the timeout count if responseHeader indicates a timeout
       if (responseContext.hasEntity()

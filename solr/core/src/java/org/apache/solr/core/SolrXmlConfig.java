@@ -717,10 +717,12 @@ public class SolrXmlConfig {
       return builder.build();
     }
 
-    builder.setCounterSupplier(getPluginInfo(metrics.get("suppliers").get("counter")));
-    builder.setMeterSupplier(getPluginInfo(metrics.get("suppliers").get("meter")));
-    builder.setTimerSupplier(getPluginInfo(metrics.get("suppliers").get("timer")));
-    builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram")));
+    builder.setCounterSupplier(getPluginInfo(metrics.get("suppliers").get("counter"), false));
+    builder.setMeterSupplier(getPluginInfo(metrics.get("suppliers").get("meter"), false));
+    builder.setTimerSupplier(getPluginInfo(metrics.get("suppliers").get("timer"), false));
+    builder.setHistogramSupplier(getPluginInfo(metrics.get("suppliers").get("histogram"), false));
+    builder.setMaxHistogramSupplier(
+        getPluginInfo(metrics.get("suppliers").get("maxHistogram"), false));
 
     if (metrics.get("missingValues").exists()) {
       NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(metrics.get("missingValues"));
@@ -824,8 +826,12 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {
+    return getPluginInfo(cfg, true);
+  }
+
+  private static PluginInfo getPluginInfo(ConfigNode cfg, boolean requireClass) {
     if (cfg == null || !cfg.exists()) return null;
-    final var pluginInfo = new PluginInfo(cfg, cfg.name(), false, true);
+    final var pluginInfo = new PluginInfo(cfg, cfg.name(), false, requireClass);
     return pluginInfo.isEnabled() ? pluginInfo : null;
   }
 }

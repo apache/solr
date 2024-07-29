@@ -231,6 +231,40 @@ This is only valid for the `ExponentiallyDecayingReservoir`.
 +
 The window size, in seconds, and only valid for the `SlidingTimeWindowReservoir`.
 
+`<maxHistogram>`::
+This element defines a special variant of histogram that conceptually updates at regular intervals,
+according to the max value of a counter over the preceding interval. This is appropriate for lazily
+tracking ambient values (like "number of outstanding active requests").
+
+In addition to the `<histogram>` options, the following configuration options are available:
+
+`<int name="intervalMillis">`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1000`
+|===
++
+The unit interval at which values will be recorded into the underlying histogram.
+This granularity is somewhat arbitrary, and the default value of 1000ms (1s) should
+be sufficient for most applications.
+
+`<int name="maxBackdateSeconds">`:::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `[reservoir window]`
+|===
++
+Limits how far back value updates will be lazily backfilled upon value change or read access.
+This is an expert option, and it only makes sense to change it if configuring a custom reservoir
+window (or lower-than-default `ExponentiallyDecayingReservoir` `alpha` config param).
+
+The default value is aligned with the configured reservoir `window` (where applicable), falling back
+to `300` if `window` is not set. The special value `-1` supports unlimited backfilling, and only
+makes sense with a non-time-based reservoir such as `UniformReservoir` (and even then, most use
+cases should prefer setting an explicit limit).
+
 `<timer>`::
 This element defines an implementation of a `Timer` supplier.
 The default implementation supports the `clock` and `reservoir` parameters described above.
