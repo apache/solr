@@ -20,6 +20,9 @@ import static org.apache.solr.util.ThreadCpuTimer.readNSAndReset;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import net.jcip.annotations.NotThreadSafe;
@@ -103,18 +106,20 @@ public class CpuAllowedLimit implements QueryLimit {
       }
       return false;
     } finally {
-      // uncomment for debugging. Our suspicious log checker will never be happy here... (nor should
-      // it be)
-
-      //      java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-      //      DecimalFormat formatter = new DecimalFormat("#,###", symbols);
-      //
-      //      if (log.isInfoEnabled()) {
-      //        log.info("++++++++++++ SHOULD_EXIT {} accumulated:{} vs {} ++++ ON:{}",
-      // formatter.format(delta),
-      // formatter.format(accumulatedTime.get()),formatter.format(requestedTimeoutNs)
-      // ,Thread.currentThread().getName());
-      //      }
+      if (log.isTraceEnabled()) {
+        java.text.DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+        String threadName = Thread.currentThread().getName();
+        String deltaFmt = formatter.format(delta);
+        String accumulated = formatter.format(accumulatedTime.get());
+        String timeoutForComparison = formatter.format(requestedTimeoutNs);
+        log.trace(
+            "++++++++++++ SHOULD_EXIT - measuredDelta:{} accumulated:{} vs {} ++++ ON:{}",
+            deltaFmt,
+            accumulated,
+            timeoutForComparison,
+            threadName);
+      }
     }
   }
 

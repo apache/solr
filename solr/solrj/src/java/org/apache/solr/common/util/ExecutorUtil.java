@@ -370,7 +370,7 @@ public class ExecutorUtil {
 
     @Override
     protected void beforeExecute(Thread t, Runnable r) {
-      super.beforeExecute(t, this.beforeExecuteTask);
+      this.beforeExecuteTask.run();
     }
 
     @Override

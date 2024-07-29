@@ -1921,7 +1921,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        log.debug("SINGLE THREADED search,skipping collector manager");
+        log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
         Collector collector = topCollector;
@@ -1940,7 +1940,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        log.debug("MULTI-THREADED search, using CollectorManager");
+        log.trace("MULTI-THREADED search, using CollectorManager int getDocListNC");
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
                 .searchCollectorManagers(len, cmd, query, true, needScores, false);
@@ -2042,6 +2042,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     } else {
       final TopDocs topDocs;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+        log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
+
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -2068,7 +2070,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        log.debug("using CollectorManager");
+        log.trace("MULTI-THREADED search, using CollectorManager in getDocListAndSetNC");
 
         boolean needMaxScore = needScores;
         MultiThreadedSearcher.SearchResult searchResult =
