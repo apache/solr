@@ -240,6 +240,9 @@ Other Changes
 
 * SOLR-15831: Refactor bin/solr and bin/solr.cmd commands integration with AuthTool, DeleteTool, and PackageTool to delegate arg parsing to Java code.  Removed limitation of PackageTool only being executed on an active Solr node.  (Eric Pugh)
 
+* SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend
+  ScoreDocs (covariant generic types) broken in Solr 9.0. (Stephen Woods via Christine Poerschke)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
