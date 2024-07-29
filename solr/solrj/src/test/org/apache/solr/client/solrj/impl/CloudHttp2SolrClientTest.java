@@ -274,8 +274,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         LogListener collectionClusterStateLogs =
             LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION);
         LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
-        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient();
-    ) {
+        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
       SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
       solrClient.add(collectionName, doc);
       solrClient.commit(collectionName);
@@ -284,12 +283,19 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
       }
 
-      //1 call to fetch entire cluster state, 10 calls to fetch cluster status given a coll that originate from
-      // resolveAliases(), 1 call to LISTALIASES that is invoked from resolveAlias()
+      // 1 call to fetch entire cluster state via BaseHttpCSP.fetchLiveNodes()
+      // 1 call to LISTALIASES via getAliases() from CSC.sendRequest() -> CSC.directUpdate ->
+      // BaseHttpCSP.resolveAlias -> BaseHttpCSP.getAliases()
+      // Reasoning for the remaining 10 calls provided below
       assertLogCount(adminRequestLogs, 12);
-      //2 calls per request to CSP.resolveAliases(), 2 /update and 3 /select requests
+
+      // For add(), 2 calls: fetch CLUSTERSTATUS via resolveAliases() and
+      // getDocCollection()/getCollectionRef() (first collection lookup)
+      // 2 calls each for commit(), followed by 3 /select requests from resolveAliases(), invoked
+      // from CSC.retryRequestWithStaleState() and CSC.sendRequest()
       assertLogCount(collectionClusterStateLogs, 10);
-      //1 call to fetch entire cluster state that originates from HttpCSP.fetchLiveNodes()
+
+      // 1 call to fetch entire cluster state from HttpCSP.fetchLiveNodes()
       assertLogCount(entireClusterStateLogs, 1);
     }
   }
