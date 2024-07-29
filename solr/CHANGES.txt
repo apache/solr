@@ -156,6 +156,13 @@ Improvements
   Statuses are now removed 5 minutes after the read of a completed/failed status.  Helps collection
   async backup/restore and other operations scale to 100+ shards.  (Pierre Salagnac, David Smiley)
 
+* SOLR-10808, SOLR-12963: The Solr schema version has been increased to 1.7.
+  Starting in schema version 1.7, all fields/fieldTypes that support docValues will have them enabled by default.
+  This behavior can be reverted by setting the 'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below.
+  Also in schema version 1.7, all fields/fieldTypes will be unable to be uninverted by default.
+  This behavior can be reverted by setting the 'uninvertible' parameter for a field or a field type to true, the default for schema versions 1.6 and below.
+  (Houston Putman, hossman)
+
 * SOLR-10808 : The Solr schema version has been increased to 1.7. Since schema version 1.7, all fields/fieldTypes that
   support docValues will have them enabled by default. This behavior can be reverted by setting
   'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)

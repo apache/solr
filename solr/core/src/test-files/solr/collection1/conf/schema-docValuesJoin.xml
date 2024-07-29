@@ -28,7 +28,7 @@
        1.4: default auto-phrase (QueryParser feature) to off
        1.5: omitNorms defaults to true for primitive field types (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
-       1.7: docValues defaults to true.
+       1.7: docValues defaults to true, uninvertible defaults to false.
      -->
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -65,33 +65,33 @@
     </analyzer>
   </fieldType>
 
-  <field name="id" type="string" indexed="true" stored="true" docValues="false" multiValued="false" required="true"/>
+  <field name="id" type="string" indexed="true" stored="true" docValues="false" multiValued="false" required="true" uninvertible="true"/>
   <field name="id_dv" type="string" indexed="false" stored="false" multiValued="false"
          required="true"/>
-  <dynamicField name="*_i" type="int" indexed="true" stored="false" docValues="false"/>
+  <dynamicField name="*_i" type="int" indexed="true" stored="false" docValues="false" uninvertible="true"/>
   <dynamicField name="*_i_dv" type="int" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_is" type="int" indexed="true" stored="false" docValues="false" multiValued="true"/>
+  <dynamicField name="*_is" type="int" indexed="true" stored="false" docValues="false" multiValued="true" uninvertible="true"/>
   <dynamicField name="*_is_dv" type="int" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_s" type="string" indexed="true" stored="false" docValues="false"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="false" docValues="false" uninvertible="true"/>
   <dynamicField name="*_s_dv" type="string" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_ss" type="string" indexed="true" stored="false" docValues="false" multiValued="true"/>
+  <dynamicField name="*_ss" type="string" indexed="true" stored="false" docValues="false" multiValued="true" uninvertible="true"/>
   <dynamicField name="*_ss_dv" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_f" type="float" indexed="true" stored="false" docValues="false"/>
+  <dynamicField name="*_f" type="float" indexed="true" stored="false" docValues="false" uninvertible="true"/>
   <dynamicField name="*_f_dv" type="float" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_fs_dv" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_l" type="long" indexed="true" stored="false" docValues="false"/>
+  <dynamicField name="*_fs_dv" type="float" indexed="true" stored="true" docValues="true" multiValued="true" uninvertible="true"/>
+  <dynamicField name="*_l" type="long" indexed="true" stored="false" docValues="false" uninvertible="true"/>
   <dynamicField name="*_l_dv" type="long" indexed="true" stored="false" docValues="true"/>
-  <dynamicField name="*_ls_dv" type="long" indexed="true" stored="false" docValues="true" multiValued="true"/>
-  <dynamicField name="*_d" type="double" indexed="true" stored="false" docValues="false"/>
+  <dynamicField name="*_ls_dv" type="long" indexed="true" stored="false" docValues="true" multiValued="true" uninvertible="true"/>
+  <dynamicField name="*_d" type="double" indexed="true" stored="false" docValues="false" uninvertible="true"/>
   <dynamicField name="*_d_dv" type="double" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_ds_dv" type="double" indexed="true" stored="false" docValues="true" multiValued="true"/>
-  <dynamicField name="*_dt" type="date" indexed="true" stored="false" docValues="false"/>
+  <dynamicField name="*_dt" type="date" indexed="true" stored="false" docValues="false" uninvertible="true"/>
   <dynamicField name="*_dt_dv" type="date" indexed="true" stored="false" docValues="true"/>
   <dynamicField name="*_dts_dv" type="date" indexed="true" stored="false" docValues="true" multiValued="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
 
 
-  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" uninvertible="true"/>
 
 
   <uniqueKey>id</uniqueKey>
