@@ -362,7 +362,8 @@ public abstract class CloudSolrClient extends SolrClient {
 
     // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
     // long as they are routed aliases
-    List<String> aliasedCollections = new ArrayList<>(resolveAliases(Collections.singletonList(collection)));
+    List<String> aliasedCollections =
+        new ArrayList<>(resolveAliases(Collections.singletonList(collection)));
     if (aliasedCollections.size() == 1 || getClusterStateProvider().isRoutedAlias(collection)) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
