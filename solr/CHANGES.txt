@@ -156,6 +156,10 @@ Improvements
   Statuses are now removed 5 minutes after the read of a completed/failed status.  Helps collection
   async backup/restore and other operations scale to 100+ shards.  (Pierre Salagnac, David Smiley)
 
+* SOLR-10808 : The Solr schema version has been increased to 1.7. Since schema version 1.7, all fields/fieldTypes that
+  support docValues will have them enabled by default. This behavior can be reverted by setting
+  'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
@@ -172,6 +176,8 @@ Optimizations
   cases (Vinayak Hegde, Christine Poerschke, Kevin Risden, David Smiley, Michael Gibney)
 
 * SOLR-17349: SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null (Michael Gibney)
+
+* SOLR-17340: Add cache on top of system metrics BeanInfos to make calls to /admin/info/system faster (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
@@ -204,6 +210,10 @@ Bug Fixes
 
 * SOLR-17367: Restore the use of -params option to PostTool. (Bostoi via Eric Pugh)
 
+* SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
+
+* SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -229,6 +239,11 @@ Other Changes
 
 * SOLR-17347: EnvUtils: Removed "env" methods, as they were problematic.  Code should almost never
   refer to env vars.  (David Smiley)
+
+* SOLR-15831: Refactor bin/solr and bin/solr.cmd commands integration with AuthTool, DeleteTool, and PackageTool to delegate arg parsing to Java code.  Removed limitation of PackageTool only being executed on an active Solr node.  (Eric Pugh)
+
+* SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend
+  ScoreDocs (covariant generic types) broken in Solr 9.0. (Stephen Woods via Christine Poerschke)
 
 ==================  9.6.1 ==================
 Bug Fixes

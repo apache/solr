@@ -842,7 +842,7 @@ curl http://localhost:8983/solr/techproducts/schema?wt=schema.xml
 
 [source,xml]
 ----
-<schema name="example" version="1.5">
+<schema name="example" version="1.7">
   <uniqueKey>id</uniqueKey>
   <types>
     <fieldType name="alphaOnlySort" class="solr.TextField" sortMissingLast="true" omitNorms="true">
