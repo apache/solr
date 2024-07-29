@@ -212,6 +212,8 @@ Bug Fixes
 
 * SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
 
+* SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
+
 Dependency Upgrades
 ---------------------
 (No changes)
