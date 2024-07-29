@@ -23,10 +23,15 @@ import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.DeprecatedAttributes;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -44,72 +49,14 @@ public class SolrExporter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String[] ARG_PORT_FLAGS = {"-p", "--port"};
-  private static final String ARG_PORT_METAVAR = "PORT";
-  private static final String ARG_PORT_DEST = "port";
-  private static final int ARG_PORT_DEFAULT = 8989;
-  private static final String ARG_PORT_HELP =
-      "Specify the solr-exporter HTTP listen port; default is " + ARG_PORT_DEFAULT + ".";
-
-  private static final String[] ARG_BASE_URL_FLAGS = {"-b", "--baseurl"};
-  private static final String ARG_BASE_URL_METAVAR = "BASE_URL";
-  private static final String ARG_BASE_URL_DEST = "baseUrl";
-  private static final String ARG_BASE_URL_DEFAULT = "http://localhost:8983/solr";
-  private static final String ARG_BASE_URL_HELP =
-      "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.";
-
-  private static final String[] ARG_ZK_HOST_FLAGS = {"-z", "--zk-host"};
-  private static final String ARG_ZK_HOST_METAVAR = "ZK_HOST";
-  private static final String ARG_ZK_HOST_DEST = "zkHost";
-  private static final String ARG_ZK_HOST_DEFAULT = "";
-  private static final String ARG_ZK_HOST_HELP =
-      "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.";
-
-  private static final String[] ARG_CLUSTER_ID_FLAGS = {"-i", "--cluster-id"};
-  private static final String ARG_CLUSTER_ID_METAVAR = "CLUSTER_ID";
-  private static final String ARG_CLUSTER_ID_DEST = "clusterId";
-  private static final String ARG_CLUSTER_ID_DEFAULT = "";
-  private static final String ARG_CLUSTER_ID_HELP =
-      "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to a hash of the -b or -z argument";
-
-  private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
-  private static final String ARG_CONFIG_METAVAR = "CONFIG";
-  private static final String ARG_CONFIG_DEST = "configFile";
-  private static final String ARG_CONFIG_DEFAULT = "solr-exporter-config.xml";
-  private static final String ARG_CONFIG_HELP =
-      "Specify the configuration file; the default is " + ARG_CONFIG_DEFAULT + ".";
-
-  private static final String[] ARG_SCRAPE_INTERVAL_FLAGS = {"-s", "--scrape-interval"};
-  private static final String ARG_SCRAPE_INTERVAL_METAVAR = "SCRAPE_INTERVAL";
-  private static final String ARG_SCRAPE_INTERVAL_DEST = "scrapeInterval";
-  private static final int ARG_SCRAPE_INTERVAL_DEFAULT = 60;
-  private static final String ARG_SCRAPE_INTERVAL_HELP =
-      "Specify the delay between scraping Solr metrics; the default is "
-          + ARG_SCRAPE_INTERVAL_DEFAULT
-          + " seconds.";
-
-  private static final String[] ARG_NUM_THREADS_FLAGS = {"-n", "--num-threads"};
-  private static final String ARG_NUM_THREADS_METAVAR = "NUM_THREADS";
-  private static final String ARG_NUM_THREADS_DEST = "numThreads";
-  private static final Integer ARG_NUM_THREADS_DEFAULT = 1;
-  private static final String ARG_NUM_THREADS_HELP =
-      "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
-          + ARG_NUM_THREADS_DEFAULT
-          + ".";
-
-  private static final String[] ARG_CREDENTIALS_FLAGS = {"-u", "--credentials"};
-  private static final String ARG_CREDENTIALS_METAVAR = "CREDENTIALS";
-  private static final String ARG_CREDENTIALS_DEST = "credentials";
-  private static final String ARG_CREDENTIALS_DEFAULT = "";
-  private static final String ARG_CREDENTIALS_HELP =
-      "Specify the credentials in the format username:password. Example: --credentials solr:SolrRocks";
-
-  private static final String[] ARG_SSL_FLAGS = {"-ssl", "--ssl-enabled"};
-  private static final String ARG_SSL_METAVAR = "SSL_ENABLED";
-  private static final String ARG_SSL_DEST = "ssl_enabled";
-  private static final boolean ARG_SSL_DEFAULT = false;
-  private static final String ARG_SSL_HELP =
-      "Enable TLS connection to Solr. Expects following env variables: SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE, SOLR_SSL_TRUST_STORE_PASSWORD. Example: --ssl-enabled";
+  private static final int DEFAULT_PORT = 8989;
+  private static final String DEFAULT_BASE_URL = "http://localhost:8983/solr";
+  private static final String DEFAULT_ZK_HOST = "";
+  private static final String DEFAULT_CLUSTER_ID = "";
+  private static final String DEFAULT_CONFIG = "solr-exporter-config.xml";
+  private static final int DEFAULT_SCRAPE_INTERVAL = 60;
+  private static final Integer DEFAULT_NUM_THREADS = 1;
+  private static final String DEFAULT_CREDENTIALS = "";
 
   public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
@@ -196,116 +143,189 @@ public class SolrExporter {
   }
 
   public static void main(String[] args) {
-    ArgumentParser parser =
-        ArgumentParsers.newFor(SolrExporter.class.getSimpleName())
-            .build()
-            .description("Prometheus exporter for Apache Solr.");
+    Options options = new Options();
 
-    parser
-        .addArgument(ARG_PORT_FLAGS)
-        .metavar(ARG_PORT_METAVAR)
-        .dest(ARG_PORT_DEST)
-        .type(Integer.class)
-        .setDefault(ARG_PORT_DEFAULT)
-        .help(ARG_PORT_HELP);
+    OptionGroup mainOptions = new OptionGroup();
+    OptionGroup deprecatedOptions = new OptionGroup();
 
-    parser
-        .addArgument(ARG_BASE_URL_FLAGS)
-        .metavar(ARG_BASE_URL_METAVAR)
-        .dest(ARG_BASE_URL_DEST)
-        .type(String.class)
-        .setDefault(ARG_BASE_URL_DEFAULT)
-        .help(ARG_BASE_URL_HELP);
+    Option baseUrlOption =
+        Option.builder("b")
+            .longOpt("base-url")
+            .hasArg()
+            .argName("BASE_URL")
+            .type(String.class)
+            .desc(
+                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
+            .build();
+    mainOptions.addOption(baseUrlOption);
 
-    parser
-        .addArgument(ARG_ZK_HOST_FLAGS)
-        .metavar(ARG_ZK_HOST_METAVAR)
-        .dest(ARG_ZK_HOST_DEST)
-        .type(String.class)
-        .setDefault(ARG_ZK_HOST_DEFAULT)
-        .help(ARG_ZK_HOST_HELP);
+    Option baseUrlDepOption =
+        Option.builder()
+            .longOpt("baseUrl")
+            .hasArg()
+            .argName("BASE_URL")
+            .type(String.class)
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --base-url instead")
+                    .get())
+            .desc(
+                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
+            .build();
+    deprecatedOptions.addOption(baseUrlDepOption);
 
-    parser
-        .addArgument(ARG_CONFIG_FLAGS)
-        .metavar(ARG_CONFIG_METAVAR)
-        .dest(ARG_CONFIG_DEST)
-        .type(String.class)
-        .setDefault(ARG_CONFIG_DEFAULT)
-        .help(ARG_CONFIG_HELP);
+    Option configOption =
+        Option.builder("f")
+            .longOpt("config-file")
+            .hasArg()
+            .argName("CONFIG")
+            .type(String.class)
+            .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
+            .build();
+    mainOptions.addOption(configOption);
 
-    parser
-        .addArgument(ARG_SCRAPE_INTERVAL_FLAGS)
-        .metavar(ARG_SCRAPE_INTERVAL_METAVAR)
-        .dest(ARG_SCRAPE_INTERVAL_DEST)
-        .type(Integer.class)
-        .setDefault(ARG_SCRAPE_INTERVAL_DEFAULT)
-        .help(ARG_SCRAPE_INTERVAL_HELP);
+    Option helpOption =
+        Option.builder("h").longOpt("help").desc("Prints this help message.").build();
+    mainOptions.addOption(helpOption);
 
-    parser
-        .addArgument(ARG_NUM_THREADS_FLAGS)
-        .metavar(ARG_NUM_THREADS_METAVAR)
-        .dest(ARG_NUM_THREADS_DEST)
-        .type(Integer.class)
-        .setDefault(ARG_NUM_THREADS_DEFAULT)
-        .help(ARG_NUM_THREADS_HELP);
+    Option clusterIdOption =
+        Option.builder("i")
+            .longOpt("cluster-id")
+            .hasArg()
+            .argName("CLUSTER_ID")
+            .type(String.class)
+            .desc(
+                "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to a hash of the -b or -z argument")
+            .build();
+    mainOptions.addOption(clusterIdOption);
 
-    parser
-        .addArgument(ARG_CLUSTER_ID_FLAGS)
-        .metavar(ARG_CLUSTER_ID_METAVAR)
-        .dest(ARG_CLUSTER_ID_DEST)
-        .type(String.class)
-        .setDefault(ARG_CLUSTER_ID_DEFAULT)
-        .help(ARG_CLUSTER_ID_HELP);
+    Option numThreadsOption =
+        Option.builder("n")
+            .longOpt("num-threads")
+            .hasArg()
+            .argName("NUM_THREADS")
+            .type(Integer.class)
+            .desc(
+                "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
+                    + DEFAULT_NUM_THREADS
+                    + ".")
+            .build();
+    mainOptions.addOption(numThreadsOption);
 
-    parser
-        .addArgument(ARG_CREDENTIALS_FLAGS)
-        .metavar(ARG_CREDENTIALS_METAVAR)
-        .dest(ARG_CREDENTIALS_DEST)
-        .type(String.class)
-        .setDefault(ARG_CREDENTIALS_DEFAULT)
-        .help(ARG_CREDENTIALS_HELP);
+    Option portOption =
+        Option.builder("p")
+            .longOpt("port")
+            .hasArg()
+            .argName("PORT")
+            .type(Integer.class)
+            .desc("Specify the solr-exporter HTTP listen port; default is " + DEFAULT_PORT + ".")
+            .build();
+    mainOptions.addOption(portOption);
 
-    parser
-        .addArgument(ARG_SSL_FLAGS)
-        .metavar(ARG_SSL_METAVAR)
-        .dest(ARG_SSL_DEST)
-        .type(Boolean.class)
-        .setDefault(ARG_SSL_DEFAULT)
-        .help(ARG_SSL_HELP);
+    Option scrapeIntervalOption =
+        Option.builder("s")
+            .longOpt("scrape-interval")
+            .hasArg()
+            .argName("SCRAPE_INTERVAL")
+            .type(Integer.class)
+            .desc(
+                "Specify the delay between scraping Solr metrics; the default is "
+                    + DEFAULT_SCRAPE_INTERVAL
+                    + " seconds.")
+            .build();
+    mainOptions.addOption(scrapeIntervalOption);
+
+    Option sslOption =
+        Option.builder("ssl")
+            .longOpt("ssl-enabled")
+            .type(Boolean.class)
+            .desc(
+                "Enable TLS connection to Solr. Expects following env variables: SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE, SOLR_SSL_TRUST_STORE_PASSWORD. Example: --ssl-enabled")
+            .build();
+    mainOptions.addOption(sslOption);
+
+    Option credentialsOption =
+        Option.builder("u")
+            .longOpt("credentials")
+            .hasArg()
+            .argName("CREDENTIALS")
+            .type(String.class)
+            .desc(
+                "Specify the credentials in the format username:password. Example: --credentials solr:SolrRocks")
+            .build();
+    mainOptions.addOption(credentialsOption);
+
+    Option zkHostOption =
+        Option.builder("z")
+            .longOpt("zk-host")
+            .hasArg()
+            .argName("ZK_HOST")
+            .type(String.class)
+            .desc(
+                "Specify the ZooKeeper connection string when connecting to Solr in SolrCloud mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'localhost:2181/solr'.")
+            .build();
+    mainOptions.addOption(zkHostOption);
+
+    options.addOptionGroup(mainOptions);
+    options.addOptionGroup(deprecatedOptions);
 
     try {
-      Namespace res = parser.parseArgs(args);
+      CommandLineParser parser = new DefaultParser();
+      CommandLine commandLine = parser.parse(options, args);
+
+      if (commandLine.hasOption(helpOption)) {
+        HelpFormatter formatter = new HelpFormatter();
+        Options availableOptions = new Options();
+        availableOptions.addOptionGroup(mainOptions);
+        formatter.printHelp(
+            "bin/solr-exporter",
+            "Prometheus exporter for Apache Solr.",
+            availableOptions,
+            null,
+            true);
+        return;
+      }
 
       SolrScrapeConfiguration scrapeConfiguration = null;
 
       String defaultClusterId = "";
-      if (!res.getString(ARG_ZK_HOST_DEST).isEmpty()) {
-        defaultClusterId = makeShortHash(res.getString(ARG_ZK_HOST_DEST));
-        scrapeConfiguration = SolrScrapeConfiguration.solrCloud(res.getString(ARG_ZK_HOST_DEST));
-      } else if (!res.getString(ARG_BASE_URL_DEST).isEmpty()) {
-        defaultClusterId = makeShortHash(res.getString(ARG_BASE_URL_DEST));
-        scrapeConfiguration = SolrScrapeConfiguration.standalone(res.getString(ARG_BASE_URL_DEST));
+      if (commandLine.hasOption(zkHostOption)) {
+        String zkHost = commandLine.getOptionValue(zkHostOption, DEFAULT_ZK_HOST);
+        defaultClusterId = makeShortHash(zkHost);
+        scrapeConfiguration = SolrScrapeConfiguration.solrCloud(zkHost);
+      } else if (commandLine.hasOption(baseUrlOption) || commandLine.hasOption(baseUrlDepOption)) {
+        String baseUrl =
+            commandLine.hasOption(baseUrlOption)
+                ? commandLine.getOptionValue(baseUrlOption)
+                : commandLine.getOptionValue(baseUrlDepOption, DEFAULT_BASE_URL);
+        defaultClusterId = makeShortHash(baseUrl);
+        scrapeConfiguration = SolrScrapeConfiguration.standalone(baseUrl);
       }
 
       if (scrapeConfiguration == null) {
-        log.error("Must provide either {} or {}", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
+        log.error(
+            "Must provide either --{} or --{}",
+            baseUrlOption.getLongOpt(),
+            zkHostOption.getLongOpt());
       }
 
-      int port = res.getInt(ARG_PORT_DEST);
-      String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
+      int port = commandLine.getParsedOptionValue(portOption, DEFAULT_PORT);
+      String clusterId = commandLine.getOptionValue(clusterIdOption, DEFAULT_CLUSTER_ID);
       if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
       }
 
-      if (!res.getString(ARG_CREDENTIALS_DEST).isEmpty()) {
-        String credentials = res.getString(ARG_CREDENTIALS_DEST);
+      if (commandLine.hasOption(credentialsOption)) {
+        String credentials = commandLine.getOptionValue(credentialsOption, DEFAULT_CREDENTIALS);
         if (credentials.indexOf(':') > 0) {
           String[] credentialsArray = credentials.split(":", 2);
           scrapeConfiguration.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
         }
       }
 
-      if (Boolean.TRUE.equals(res.getBoolean(ARG_SSL_DEST))) {
+      if (commandLine.hasOption(sslOption)) {
         log.info("SSL ENABLED");
 
         scrapeConfiguration.withSslConfiguration(
@@ -318,10 +338,10 @@ public class SolrExporter {
       SolrExporter solrExporter =
           new SolrExporter(
               port,
-              res.getInt(ARG_NUM_THREADS_DEST),
-              res.getInt(ARG_SCRAPE_INTERVAL_DEST),
+              commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS),
+              commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL),
               scrapeConfiguration,
-              loadMetricsConfiguration(res.getString(ARG_CONFIG_DEST)),
+              loadMetricsConfiguration(commandLine.getOptionValue(configOption, DEFAULT_CONFIG)),
               clusterId);
 
       log.info("Starting Solr Prometheus Exporting on port {}", port);
@@ -332,8 +352,8 @@ public class SolrExporter {
           scrapeConfiguration);
     } catch (IOException e) {
       log.error("Failed to start Solr Prometheus Exporter: ", e);
-    } catch (ArgumentParserException e) {
-      parser.handleError(e);
+    } catch (ParseException e) {
+      log.error("Failed to parse command line arguments: ", e);
     }
   }
 
