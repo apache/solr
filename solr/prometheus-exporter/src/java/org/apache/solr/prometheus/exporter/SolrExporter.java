@@ -29,7 +29,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -143,10 +142,8 @@ public class SolrExporter {
   }
 
   public static void main(String[] args) {
-    Options options = new Options();
-
-    OptionGroup mainOptions = new OptionGroup();
-    OptionGroup deprecatedOptions = new OptionGroup();
+    Options mainOptions = new Options();
+    Options deprecatedOptions = new Options();
 
     Option baseUrlOption =
         Option.builder("b")
@@ -268,8 +265,9 @@ public class SolrExporter {
             .build();
     mainOptions.addOption(zkHostOption);
 
-    options.addOptionGroup(mainOptions);
-    options.addOptionGroup(deprecatedOptions);
+    Options options = new Options();
+    options.addOptions(mainOptions);
+    options.addOptions(deprecatedOptions);
 
     try {
       CommandLineParser parser = new DefaultParser();
@@ -277,14 +275,8 @@ public class SolrExporter {
 
       if (commandLine.hasOption(helpOption)) {
         HelpFormatter formatter = new HelpFormatter();
-        Options availableOptions = new Options();
-        availableOptions.addOptionGroup(mainOptions);
         formatter.printHelp(
-            "bin/solr-exporter",
-            "Prometheus exporter for Apache Solr.",
-            availableOptions,
-            null,
-            true);
+            "bin/solr-exporter", "Prometheus exporter for Apache Solr.", mainOptions, null, true);
         return;
       }
 
