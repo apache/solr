@@ -33,7 +33,7 @@
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="data" type="binary" stored="true"/>
-  <field name="data_dv" type="binary" stored="false" />
+  <field name="data_dv" type="binary" stored="false" docValues="true" />
 
 
   <uniqueKey>id</uniqueKey>
