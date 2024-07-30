@@ -198,10 +198,10 @@ The table below includes the default value for most `FieldType` implementations 
 |Property |Description |Implicit Default
 |`indexed` |If `true`, the value of the field can be used in queries to retrieve matching documents. |`true`
 |`stored` |If `true`, the actual value of the field can be retrieved by queries.  |`true`
-|`docValues` |If `true`, the value of the field will be put in a column-oriented xref:docvalues.adoc[] structure. |`false`
+|`docValues` |If `true`, the value of the field will be put in a column-oriented xref:docvalues.adoc[] structure. |`true`
 |`sortMissingFirst`, `sortMissingLast` |Control the placement of documents when a sort field is not present. |`false`
 |`multiValued` |If `true`, indicates that a single document might contain multiple values for this field type. |`false`
-|`uninvertible` |If `true`, indicates that an `indexed="true" docValues="false"` field can be "un-inverted" at query time to build up large in memory data structure to serve in place of xref:docvalues.adoc[]. *Defaults to `true` for historical reasons, but users are strongly encouraged to set this to `false` for stability and use `docValues="true"` as needed.* |`true`
+|`uninvertible` |If `true`, indicates that an `indexed="true" docValues="false"` field can be "un-inverted" at query time to build up large in memory data structure to serve in place of xref:docvalues.adoc[]. |`false`
 |`omitNorms` |If `true`, omits the norms associated with this field (this disables length normalization for the field, and saves some memory). *Defaults to true for all primitive (non-analyzed) field types, such as int, float, data, bool, and string.* Only full-text fields or fields that need an index-time boost need norms. |*
 |`omitTermFreqAndPositions` |If `true`, omits term frequency, positions, and payloads from postings for this field. This can be a performance boost for fields that don't require that information. It also reduces the storage space required for the index. Queries that rely on position that are issued on a field with this option will silently fail to find documents. *This property defaults to true for all field types that are not text fields.* |*
 |`omitPositions` |Similar to `omitTermFreqAndPositions` but preserves term frequency information. |*

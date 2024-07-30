@@ -21,6 +21,7 @@ import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -34,7 +35,7 @@ import org.apache.solr.util.TestInjection;
  * return true the next time it is checked (it may be checked in either Lucene code or Solr code)
  */
 public class QueryLimits implements QueryTimeout {
-  private final List<QueryTimeout> limits =
+  private final List<QueryLimit> limits =
       new ArrayList<>(3); // timeAllowed, cpu, and memory anticipated
 
   public static QueryLimits NONE = new QueryLimits();
@@ -147,6 +148,15 @@ public class QueryLimits implements QueryTimeout {
       sb.append("]");
     }
     return sb.toString();
+  }
+
+  public Optional<Object> currentLimitValueFor(Class<? extends QueryLimit> limitClass) {
+    for (QueryLimit limit : limits) {
+      if (limit.getClass().isAssignableFrom(limitClass)) {
+        return Optional.of(limit.currentValue());
+      }
+    }
+    return Optional.empty();
   }
 
   /** Return true if there are any limits enabled for the current request. */

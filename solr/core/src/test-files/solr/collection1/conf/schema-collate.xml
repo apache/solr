@@ -39,12 +39,12 @@
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
-  <field name="sort_ar" type="sort_ar_t" indexed="true" stored="false" multiValued="false" docValues="false"/>
-  <field name="sort_de" type="sort_de_t" indexed="true" stored="false" multiValued="false" docValues="false"/>
-  <field name="sort_tr_canon" type="sort_tr_canon_t" indexed="true" stored="false" multiValued="false" docValues="false"/>
-  <field name="sort_zh_full" type="sort_zh_full_t" indexed="true" stored="false" multiValued="false" docValues="false"/>
-  <field name="sort_da" type="sort_da_t" indexed="true" stored="false" multiValued="false" docValues="false"/>
-  <field name="sort_custom" type="sort_custom_t" indexed="true" stored="false" multiValued="false" docValues="false"/>
+  <field name="sort_ar" type="sort_ar_t" indexed="true" stored="false" multiValued="false" docValues="false" uninvertible="true"/>
+  <field name="sort_de" type="sort_de_t" indexed="true" stored="false" multiValued="false" docValues="false" uninvertible="true"/>
+  <field name="sort_tr_canon" type="sort_tr_canon_t" indexed="true" stored="false" multiValued="false" docValues="false" uninvertible="true"/>
+  <field name="sort_zh_full" type="sort_zh_full_t" indexed="true" stored="false" multiValued="false" docValues="false" uninvertible="true"/>
+  <field name="sort_da" type="sort_da_t" indexed="true" stored="false" multiValued="false" docValues="false" uninvertible="true"/>
+  <field name="sort_custom" type="sort_custom_t" indexed="true" stored="false" multiValued="false" docValues="false" uninvertible="true"/>
 
   <uniqueKey>id</uniqueKey>
 

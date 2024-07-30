@@ -46,7 +46,7 @@
   <field name="whitespace_plain_txt" type="whitespace_plain_txt" />
   <field name="whitespace_plain_str" type="str" />
   <field name="keyword_s_dv" type="str" indexed="false" stored="true" />
-  <field name="keyword_s" type="str" indexed="true" docValues="false" stored="true" />
+  <field name="keyword_s" type="str" indexed="true" docValues="false" stored="true" uninvertible="true" />
 
   <!-- . -->
   
