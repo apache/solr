@@ -17,11 +17,14 @@
 
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.rest.RestManager;
+import org.apache.solr.update.UpdateHandler;
 
 /**
  * A synthetic core that is created only in memory and not registered against Zookeeper.
@@ -34,7 +37,20 @@ import org.apache.solr.rest.RestManager;
  */
 public class SyntheticSolrCore extends SolrCore {
   public SyntheticSolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet configSet) {
-    super(coreContainer, cd, configSet);
+    this(coreContainer, cd, configSet, null, null, null, null, false);
+  }
+
+  public SyntheticSolrCore(
+      CoreContainer coreContainer,
+      CoreDescriptor coreDescriptor,
+      ConfigSet configSet,
+      String dataDir,
+      UpdateHandler updateHandler,
+      IndexDeletionPolicyWrapper delPolicy,
+      SolrCore prev,
+      boolean reload) {
+    super(
+        coreContainer, coreDescriptor, configSet, dataDir, updateHandler, delPolicy, prev, reload);
   }
 
   public static SyntheticSolrCore createAndRegisterCore(
@@ -71,5 +87,44 @@ public class SyntheticSolrCore extends SolrCore {
     // which synthetic core is not registered in ZK.
     // We do not expect RestManager ops on Coordinator Nodes
     return new RestManager();
+  }
+
+  @Override
+  public SolrCore reload(ConfigSet coreConfig) throws IOException {
+    // only one reload at a time
+    synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
+      solrCoreState.increfSolrCoreState();
+      boolean success = false;
+      SyntheticSolrCore newCore = null;
+      try {
+        CoreDescriptor newCoreDescriptor = new CoreDescriptor(getName(), getCoreDescriptor());
+        newCoreDescriptor.loadExtraProperties(); // Reload the extra properties
+
+        newCore =
+            new SyntheticSolrCore(
+                getCoreContainer(),
+                newCoreDescriptor,
+                coreConfig,
+                getDataDir(),
+                getUpdateHandler(),
+                getDeletionPolicy(),
+                this,
+                true);
+
+        newCore.getSearcher(true, false, null, true);
+        success = true;
+        return newCore;
+      } finally {
+        // close the new core on any errors that have occurred.
+        if (!success && newCore != null && newCore.getOpenCount() > 0) {
+          IOUtils.closeQuietly(newCore);
+        }
+      }
+    }
+  }
+
+  @Override
+  protected boolean isSynthetic() {
+    return true;
   }
 }

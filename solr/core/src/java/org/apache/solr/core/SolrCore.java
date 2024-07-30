@@ -225,7 +225,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final NamedList<?> configSetProperties;
   private final String dataDir;
   private final UpdateHandler updateHandler;
-  private final SolrCoreState solrCoreState;
+  protected final SolrCoreState solrCoreState;
 
   private final Date startTime = new Date();
   private final long startNanoTime = System.nanoTime();
@@ -1054,7 +1054,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this(coreContainer, cd, configSet, null, null, null, null, false);
   }
 
-  private SolrCore(
+  protected SolrCore(
       CoreContainer coreContainer,
       CoreDescriptor coreDescriptor,
       ConfigSet configSet,
@@ -3269,6 +3269,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public Codec getCodec() {
     return codec;
+  }
+
+  /**
+   * @return whether this is a synthetic core that simply forward queries to other cores
+   */
+  protected boolean isSynthetic() {
+    return false;
   }
 
   public void unloadOnClose(
