@@ -407,8 +407,8 @@ Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when ear
 |Optional |Default: `false`
 |===
 
-If unset or set to `false`, then the multi-threaded search implementation will not be used for the query.
-If set to `true`, then use the multi-threaded search implementation if it is supported for the query.
+This parameter set to `true` or `false` controls if Solr may use more than one thread to satisfy the request.
+It presently is only considered for QueryComponent to search across Lucene's segments in parallel and the xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] value can be customised in the `solr.xml` file.
 
 == omitHeader Parameter
 
