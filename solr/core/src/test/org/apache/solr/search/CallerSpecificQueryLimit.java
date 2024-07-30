@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.lucene.index.QueryTimeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * and optionally a method name, e.g. <code>MoreLikeThisComponent</code> or <code>
  * ClusteringComponent.finishStage</code>.
  */
-public class CallerSpecificQueryLimit implements QueryTimeout {
+public class CallerSpecificQueryLimit implements QueryLimit {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final StackWalker stackWalker =
@@ -101,5 +100,10 @@ public class CallerSpecificQueryLimit implements QueryTimeout {
       trippedBy = matchingExpr.get();
     }
     return matchingExpr.isPresent();
+  }
+
+  @Override
+  public Object currentValue() {
+    return "This class just for testing, not a real limit";
   }
 }

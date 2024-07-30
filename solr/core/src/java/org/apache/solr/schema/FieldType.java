@@ -190,7 +190,7 @@ public abstract class FieldType extends FieldProperties {
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
     if (schemaVersion >= 1.7f && doesTypeSupportDocValues()) properties |= DOC_VALUES;
 
-    properties |= UNINVERTIBLE;
+    if (schemaVersion < 1.7f) properties |= UNINVERTIBLE;
 
     this.args = Collections.unmodifiableMap(args);
     Map<String, String> initArgs = new HashMap<>(args);

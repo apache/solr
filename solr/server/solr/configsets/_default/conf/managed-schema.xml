@@ -55,7 +55,7 @@
        1.5: omitNorms defaults to true for primitive field types
             (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
-       1.7: docValues defaults to true.
+       1.7: docValues defaults to true, uninvertible defaults to false.
     -->
 
     <!-- Valid attributes for fields:

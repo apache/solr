@@ -16,23 +16,16 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocsCollector;
-import org.apache.solr.handler.component.MergeStrategy;
+import org.apache.lucene.index.QueryTimeout;
 
-/**
- * <b>Note: This API is experimental and may change in non backward-compatible ways in the
- * future</b>
- */
-public abstract class RankQuery extends ExtendedQueryBase {
-
-  public abstract TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
-      int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
-
-  public abstract MergeStrategy getMergeStrategy();
-
-  public abstract RankQuery wrap(Query mainQuery);
+public interface QueryLimit extends QueryTimeout {
+  /**
+   * A value representing the portion of the specified limit that has been consumed. Reading this
+   * value should never affect the outcome (other than the time it takes to do it).
+   *
+   * @return an expression of the amount of the limit used so far, numeric if possible, if
+   *     non-numeric it should have toString() suitable for logging or similar expression to the
+   *     user.
+   */
+  Object currentValue();
 }

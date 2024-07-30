@@ -120,10 +120,7 @@ public class MultiThreadedSearcher {
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
-    if (postFilter != null
-        || cmd.getSegmentTerminateEarly()
-        || cmd.getTimeAllowed() > 0
-        || !cmd.getMultiThreaded()) {
+    if (postFilter != null || cmd.getSegmentTerminateEarly() || !cmd.getMultiThreaded()) {
       return false;
     } else {
       MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();

@@ -62,7 +62,7 @@
        1.5: omitNorms defaults to true for primitive field types
             (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
-       1.7: docValues defaults to true.
+       1.7: docValues defaults to true, uninvertible defaults to false.
      -->
 
 
@@ -134,11 +134,11 @@
 
    <field name="pre" type="preanalyzed" indexed="true" stored="true"/>
    <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
-   <field name="name" type="text_general" indexed="true" stored="true"/>
+   <field name="name" type="text_general" indexed="true" stored="true" uninvertible="true"/>
    <field name="manu" type="text_gen_sort" indexed="true" stored="true" omitNorms="true" multiValued="false" useDocValuesAsStored="true"/>
    <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
-   <field name="features" type="text_general" indexed="true" stored="true" multiValued="true"/>
-   <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" />
+   <field name="features" type="text_general" indexed="true" stored="true" multiValued="true" uninvertible="true"/>
+   <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" uninvertible="true" />
 
    <field name="weight" type="pfloat" indexed="true" stored="true"/>
    <field name="price"  type="pfloat" indexed="true" stored="true"/>

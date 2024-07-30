@@ -33,7 +33,7 @@
        1.5: omitNorms defaults to true for primitive field types
             (int, float, boolean, string...)
        1.6: useDocValuesAsStored defaults to true.
-       1.7: docValues defaults to true.
+       1.7: docValues defaults to true, uninvertible defaults to false.
      -->
 
   <!-- Valid attributes for fields:
@@ -95,10 +95,10 @@
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
 
   <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
-  <field name="name" type="text_general" indexed="true" stored="true"/>
+  <field name="name" type="text_general" indexed="true" stored="true" uninvertible="true"/>
   <field name="manu" type="text_general" indexed="true" stored="true" omitNorms="true"/>
-  <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
-  <field name="features" type="text_general" indexed="true" stored="true" multiValued="true"/>
+  <field name="cat" type="string" indexed="true" stored="true" multiValued="true" uninvertible="true"/>
+  <field name="features" type="text_general" indexed="true" stored="true" multiValued="true" uninvertible="true"/>
   <field name="includes" type="text_general" indexed="true" stored="true" termVectors="true" termPositions="true"
          termOffsets="true"/>
 
@@ -237,7 +237,7 @@
   <dynamicField name="*_bdS" type="boolean" indexed="true" docValues="true" stored="true"/>
   <dynamicField name="*_bdsS" type="boolean" indexed="true" docValues="true" stored="true" multiValued="true"/>
 
-  <dynamicField name="*_t" type="text_general" indexed="true" stored="true"/>
+  <dynamicField name="*_t" type="text_general" indexed="true" stored="true" uninvertible="true"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_en" type="text_en" indexed="true" stored="true" multiValued="true"/>
 
@@ -366,11 +366,11 @@
     These fields support doc values, but they require the field to be
     single-valued and either be required or have a default value.
   -->
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
 
   <!--
    Numeric field types that index each value at various levels of precision
