@@ -70,7 +70,7 @@ public class LatLonPointSpatialField
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return true;
   }
 

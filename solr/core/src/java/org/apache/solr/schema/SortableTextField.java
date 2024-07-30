@@ -151,7 +151,7 @@ public class SortableTextField extends TextField {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return true;
   }
 
