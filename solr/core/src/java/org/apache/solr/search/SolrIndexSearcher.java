@@ -1921,11 +1921,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        if (cmd.getMultiThreaded() != null) {
-          // report multi-threading (non-)use only if multi-threading was explicitly (not) requested
-          log.info("SINGLE THREADED search, skipping collector manager");
-        } else {
-          log.debug("SINGLE THREADED search, skipping collector manager");
+        if (log.isDebugEnabled()) {
+          log.debug("skipping collector manager");
         }
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
@@ -1945,11 +1942,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        if (cmd.getMultiThreaded() != null) {
-          // report multi-threading (non-)use only if multi-threading was explicitly (not) requested
-          log.info("MULTI-THREADED search, using CollectorManager");
-        } else {
-          log.debug("MULTI-THREADED search, using CollectorManager");
+        if (log.isDebugEnabled()) {
+          log.debug("using CollectorManager");
         }
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
@@ -2052,12 +2046,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     } else {
       final TopDocs topDocs;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        if (cmd.getMultiThreaded() != null) {
-          // report multi-threading (non-)use only if multi-threading was explicitly (not) requested
-          log.info("SINGLE THREADED search, skipping collector manager");
-        } else {
-          log.debug("SINGLE THREADED search, skipping collector manager");
-        }
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -2084,12 +2072,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        if (cmd.getMultiThreaded() != null) {
-          // report multi-threading (non-)use only if multi-threading was explicitly (not) requested
-          log.info("MULTI-THREADED search, using CollectorManager");
-        } else {
-          log.debug("MULTI-THREADED search, using CollectorManager");
-        }
+        log.debug("using CollectorManager");
 
         boolean needMaxScore = needScores;
         MultiThreadedSearcher.SearchResult searchResult =

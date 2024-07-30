@@ -37,7 +37,7 @@ public class QueryCommand {
   private int len;
   private int supersetMaxDoc;
   private int flags;
-  private Boolean multiThreaded;
+  private boolean multiThreaded = false;
   private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
@@ -154,11 +154,11 @@ public class QueryCommand {
     return this;
   }
 
-  public Boolean getMultiThreaded() {
+  public boolean getMultiThreaded() {
     return multiThreaded;
   }
 
-  public QueryCommand setMultiThreaded(Boolean multiThreaded) {
+  public QueryCommand setMultiThreaded(boolean multiThreaded) {
     this.multiThreaded = multiThreaded;
     return this;
   }
