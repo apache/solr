@@ -15,9 +15,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="minimal" version="1.1">
+<schema name="minimal" version="1.7">
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-    <fieldType name="string" class="solr.StrField" docValues="true"/>
+    <fieldType name="string" class="solr.StrField"/>
     <fieldType name="int" class="org.apache.solr.schema.IntPointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
     <fieldType name="long" class="org.apache.solr.schema.LongPointField" docValues="false" omitNorms="true"

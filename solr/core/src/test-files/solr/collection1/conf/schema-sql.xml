@@ -25,7 +25,7 @@
 
   -->
 
-<schema name="test" version="1.6">
+<schema name="test" version="1.7">
 
   <!-- field type definitions... note that the "name" attribute is
        just a label to be used by field definitions.  The "class"
@@ -40,9 +40,9 @@
   -->
 
 
-  <fieldType name="int" docValues="true" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true"
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
-  <fieldType name="float" docValues="true" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true"
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true"
              positionIncrementGap="0"/>
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -53,11 +53,11 @@
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- Point Fields -->
-  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
-  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
-  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
-  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
-  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pint" class="solr.IntPointField"/>
+  <fieldType name="plong" class="solr.LongPointField"/>
+  <fieldType name="pdouble" class="solr.DoublePointField"/>
+  <fieldType name="pfloat" class="solr.FloatPointField"/>
+  <fieldType name="pdate" class="solr.DatePointField"/>
 
 
   <!-- numeric field types that manipulate the value into
@@ -122,7 +122,7 @@
 
 
   <fieldtype name="boolean" class="solr.BoolField" sortMissingLast="true"/>
-  <fieldtype name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+  <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
@@ -421,11 +421,11 @@
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
 
-  <field name="s_multi" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <field name="i_multi" type="int" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <field name="f_multi" type="float" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <field name="l_multi" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <field name="d_multi" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <field name="s_multi" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="i_multi" type="int" indexed="true" stored="true" multiValued="true"/>
+  <field name="f_multi" type="float" indexed="true" stored="true" multiValued="true"/>
+  <field name="l_multi" type="long" indexed="true" stored="true" multiValued="true"/>
+  <field name="d_multi" type="double" indexed="true" stored="true" multiValued="true"/>
 
   <field name="uuid" type="uuid" stored="true"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>
@@ -512,7 +512,7 @@
 
   <field name="tlong" type="tlong" indexed="true" stored="true"/>
 
-  <field name="_version_" type="long" indexed="true" docValues="true" stored="true"/>
+  <field name="_version_" type="long" indexed="true" stored="true"/>
 
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
        will be used if the name matches any of the patterns.
@@ -574,22 +574,22 @@
 
 
   <!-- Test point fields explicitly -->
-  <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_is_p"      type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_i_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_is_ni_p"   type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_l_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ls_p"      type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_l_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ls_ni_p"   type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_f_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_fs_p"      type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_f_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_fs_ni_p"   type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_d_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_i_p"      type="pint"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_is_p"      type="pint"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_i_ni_p"   type="pint"    indexed="false"  stored="true" multiValued="false"/>
+  <dynamicField name="*_is_ni_p"   type="pint"    indexed="false"  stored="true" multiValued="true"/>
+  <dynamicField name="*_l_p"      type="plong"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_ls_p"      type="plong"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_l_ni_p"   type="plong"    indexed="false"  stored="true" multiValued="false"/>
+  <dynamicField name="*_ls_ni_p"   type="plong"    indexed="false"  stored="true" multiValued="true"/>
+  <dynamicField name="*_f_p"      type="pfloat"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_fs_p"      type="pfloat"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_f_ni_p"   type="pfloat"    indexed="false"  stored="true" multiValued="false"/>
+  <dynamicField name="*_fs_ni_p"   type="pfloat"    indexed="false"  stored="true" multiValued="true"/>
+  <dynamicField name="*_d_p"      type="pdouble"    indexed="true"  stored="true" multiValued="false"/>
+  <dynamicField name="*_ds_p"      type="pdouble"    indexed="true"  stored="true" multiValued="true"/>
+  <dynamicField name="*_d_ni_p"   type="pdouble"    indexed="false"  stored="true" multiValued="false"/>
+  <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" multiValued="true"/>
 
   <!-- make sure custom sims work with dynamic fields -->
   <!--
