@@ -21,7 +21,7 @@
 
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
   <types>
     <fieldType name="string" class="solr.StrField" />
     <fieldType name="text" class="solr.TextField">

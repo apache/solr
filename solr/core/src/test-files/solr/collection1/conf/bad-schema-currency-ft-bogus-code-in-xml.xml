@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currency-ft-bogus-code-in-xml" version="1.4">
+<schema name="bad-schema-currency-ft-bogus-code-in-xml" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <!-- BEGIN BAD STUFF: bad-currency.xml has bogus code-->
   <fieldType name="currency"

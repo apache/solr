@@ -153,6 +153,11 @@ public class ConcurrentDelegatingStorage implements Storage {
   }
 
   @Override
+  public synchronized Blob restore(BlobId blob, BlobRestoreOption... options) {
+    return delegate.restore(blob, options);
+  }
+
+  @Override
   public synchronized Bucket update(BucketInfo bucketInfo, BucketTargetOption... options) {
     return delegate.update(bucketInfo, options);
   }

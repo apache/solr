@@ -1,4 +1,5 @@
 = Replica Management Commands
+:tabs-sync-option:
 :toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -35,13 +36,11 @@ Add one or more replicas to a shard in a collection.
 The node name can be specified if the replica is to be created in a specific node.
 Otherwise, a set of nodes can be specified and the most suitable ones among them will be chosen to create the replica(s).
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1addreplica]
+[tabs#addreplica-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
@@ -66,9 +65,9 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICA&collection=techpr
 ----
 ====
 
-[example.tab-pane#v2addreplica]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 *Input*
 
 [source,bash]
@@ -79,6 +78,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/re
   }
 '
 ----
+
 *Output*
 
 [source,json]
@@ -95,8 +95,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/re
       "core":"techproducts_shard1_replica_n11"}}}
 ----
 ====
---
-
+======
 
 === ADDREPLICA Parameters
 
@@ -304,13 +303,11 @@ In case of shared filesystems the `dataDir` will be reused.
 
 If this command is used on a collection where more than one replica from the same shard exists on the same node, and the `shard` and `sourceNode` parameters match more than one replica, the replica selected is not deterministic (currently it's random).
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1movereplica]
+[tabs#movereplica-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
@@ -332,9 +329,9 @@ http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&
 ----
 ====
 
-[example.tab-pane#v2movereplica]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 *Input*
 
 [source,bash]
@@ -348,6 +345,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
   }
 '
 ----
+
 *Output*
 
 [source,json]
@@ -361,7 +359,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type
 }
 ----
 ====
---
+======
 
 === MOVEREPLICA Parameters
 
@@ -460,22 +458,20 @@ When deleting multiple replicas, Solr chooses replicas which are active, up to d
 For each replica being deleted, if the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) the instanceDir and dataDir are deleted.
 If the core underlying the replica is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletereplica]
+[tabs#deletereplica-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=techproducts&shard=shard1&replica=core_node2
 ----
 ====
 
-[example.tab-pane#v2deletereplica]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 The v2 API has three distinct endpoints for replica-deletion, depending on how the replicas are specified.
 
 To delete a replica by name:
@@ -504,7 +500,7 @@ curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/colle
 '
 ----
 ====
---
+======
 
 === DELETEREPLICA Parameters
 
@@ -620,13 +616,11 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 Assign an arbitrary property to a particular replica and give it the value specified.
 If the property already exists, it will be overwritten with the new value.
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1addreplicaprop]
+[tabs#addreplicaprop-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
@@ -636,9 +630,9 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&collection=te
 
 ====
 
-[example.tab-pane#v2addreplicaprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 *Input*
 
 [source,bash]
@@ -650,7 +644,7 @@ curl -X PUT http://localhost:8983/api/collections/techproducts/shards/shard1/rep
 '
 ----
 ====
---
+======
 
 === ADDREPLICAPROP Parameters
 
@@ -757,25 +751,22 @@ http://localhost:8983/solr/admin/collections?action=ADDREPLICAPROP&shard=shard1&
 
 Deletes an arbitrary property from a particular replica.
 
-[.dynamic-tabs]
---
-
-[example.tab-pane#v1deletereplicaprop]
+[tabs#deletereplicaprop-request]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 *Input*
 
 [source,text]
 ----
 http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection=techproducts&shard=shard1&replica=core_node2&property=preferredLeader
 ----
-
 ====
 
-[example.tab-pane#v2deletereplicaprop]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
 *Input*
 
 [source,bash]
@@ -783,7 +774,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICAPROP&collection
 curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/replicas/core_node2/properties/preferredLeader
 ----
 ====
---
+======
 
 === DELETEREPLICAPROP Parameters
 

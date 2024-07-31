@@ -28,6 +28,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -309,6 +310,18 @@ public abstract class QParser {
 
   public void addDebugInfo(NamedList<Object> debugInfo) {
     debugInfo.add("QParser", this.getClass().getSimpleName());
+  }
+
+  public int getPrefixQueryMinPrefixLength() {
+    final var localLimit =
+        getLocalParams() != null
+            ? getLocalParams().getInt(SolrConfig.MIN_PREFIX_QUERY_TERM_LENGTH)
+            : null;
+    if (localLimit != null) {
+      return localLimit;
+    }
+
+    return getReq().getCore().getSolrConfig().prefixQueryMinPrefixLength;
   }
 
   /**

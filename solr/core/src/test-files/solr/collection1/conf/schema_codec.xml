@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="codec" version="1.2">
+<schema name="codec" version="1.7">
   <!-- NOTE: Direct (and Disk) DocValues formats were removed, so we use "Asserting" 
        as a way to vet that the configuration actually matters.
   -->
@@ -40,15 +40,15 @@
   <field name="string_direct_f" type="string_direct" indexed="true" stored="true"/>
   <field name="string_standard_f" type="string_standard" indexed="true" stored="true"/>
 
-  <field name="string_disk_f" type="string_disk" indexed="false" stored="false" docValues="true" default=""/>
+  <field name="string_disk_f" type="string_disk" indexed="false" stored="false" default=""/>
 
-  <field name="string_f" type="string" indexed="true" stored="true" docValues="true" required="true"/>
+  <field name="string_f" type="string" indexed="true" stored="true" required="true"/>
   <field name="text" type="text_general" indexed="true" stored="true"/>
 
   <dynamicField name="*_direct" type="string_direct" indexed="true" stored="true"/>
   <dynamicField name="*_standard" type="string_standard" indexed="true" stored="true"/>
 
-  <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false" docValues="true"/>
+  <dynamicField name="*_disk" type="string_disk" indexed="false" stored="false"/>
 
   <uniqueKey>string_f</uniqueKey>
 </schema>
