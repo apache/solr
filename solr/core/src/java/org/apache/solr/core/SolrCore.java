@@ -225,7 +225,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final NamedList<?> configSetProperties;
   private final String dataDir;
   private final UpdateHandler updateHandler;
-  protected final SolrCoreState solrCoreState;
+  private final SolrCoreState solrCoreState;
 
   private final Date startTime = new Date();
   private final long startNanoTime = System.nanoTime();
@@ -1059,7 +1059,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this(coreContainer, cd, configSet, null, null, null, null, false);
   }
 
-  protected SolrCore(
+  private SolrCore(
       CoreContainer coreContainer,
       CoreDescriptor coreDescriptor,
       ConfigSet configSet,
