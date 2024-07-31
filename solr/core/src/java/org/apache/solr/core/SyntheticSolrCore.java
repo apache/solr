@@ -17,12 +17,10 @@
 
 package org.apache.solr.core;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.update.UpdateHandler;
 
@@ -90,37 +88,17 @@ public class SyntheticSolrCore extends SolrCore {
   }
 
   @Override
-  public SolrCore reload(ConfigSet coreConfig) throws IOException {
-    // only one reload at a time
-    synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
-      solrCoreState.increfSolrCoreState();
-      boolean success = false;
-      SyntheticSolrCore newCore = null;
-      try {
-        CoreDescriptor newCoreDescriptor = new CoreDescriptor(getName(), getCoreDescriptor());
-        newCoreDescriptor.loadExtraProperties(); // Reload the extra properties
-
-        newCore =
-            new SyntheticSolrCore(
-                getCoreContainer(),
-                newCoreDescriptor,
-                coreConfig,
-                getDataDir(),
-                getUpdateHandler(),
-                getDeletionPolicy(),
-                this,
-                true);
-
-        newCore.getSearcher(true, false, null, true);
-        success = true;
-        return newCore;
-      } finally {
-        // close the new core on any errors that have occurred.
-        if (!success && newCore != null && newCore.getOpenCount() > 0) {
-          IOUtils.closeQuietly(newCore);
-        }
-      }
-    }
+  protected SyntheticSolrCore cloneAsReloadCore(
+      CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCurrentState) {
+    return new SyntheticSolrCore(
+        getCoreContainer(),
+        newCoreDescriptor,
+        newCoreConfig,
+        getDataDir(),
+        getUpdateHandler(),
+        getDeletionPolicy(),
+        cloneCurrentState ? this : null,
+        true);
   }
 
   @Override

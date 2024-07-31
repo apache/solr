@@ -766,29 +766,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
     // only one reload at a time
     synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
       solrCoreState.increfSolrCoreState();
-      final SolrCore currentCore;
-      if (!getNewIndexDir().equals(getIndexDir())) {
-        // the directory is changing, don't pass on state
-        currentCore = null;
-      } else {
-        currentCore = this;
-      }
+
+      // if directory is changing, then don't pass on state
+      boolean cloneCoreState = getNewIndexDir().equals(getIndexDir());
 
       boolean success = false;
       SolrCore core = null;
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); // Reload the extra properties
-        core =
-            new SolrCore(
-                coreContainer,
-                cd,
-                coreConfig,
-                getDataDir(),
-                updateHandler,
-                solrDelPolicy,
-                currentCore,
-                true);
+        core = cloneAsReloadCore(cd, coreConfig, cloneCoreState);
 
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -803,6 +790,24 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
+  }
+
+  /**
+   * Clones the current core for core reload, with the provided CoreDescriptor and ConfigSet.
+   *
+   * @return the cloned core to be used for SolrCore#load
+   */
+  protected SolrCore cloneAsReloadCore(
+      CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCoreState) {
+    return new SolrCore(
+        coreContainer,
+        newCoreDescriptor,
+        newCoreConfig,
+        getDataDir(),
+        updateHandler,
+        solrDelPolicy,
+        cloneCoreState ? this : null,
+        true);
   }
 
   private DirectoryFactory initDirectoryFactory() {
