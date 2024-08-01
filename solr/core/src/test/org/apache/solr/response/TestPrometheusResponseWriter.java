@@ -57,7 +57,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     c.inc(10);
     c = manager.counter(null, "solr.node", "ADMIN./dummy/metrics.requests");
     c.inc(20);
-    Meter m = manager.meter(null, "solr.jetty", "dummyMetrics.2xx-responses");
+    Meter m = manager.meter(null, "solr.jetty", "dummyMetrics.999xx-responses");
     m.mark(30);
     registerGauge(manager, "solr.jvm", "gc.dummyMetrics.count");
   }
@@ -97,7 +97,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
         "solr_metrics_core_requests_total{category=\"QUERY\",core=\"collection1\",handler=\"/dummy/metrics\",type=\"requests\"} 10.0";
     String expectedNode =
         "solr_metrics_node_requests_total{category=\"ADMIN\",handler=\"/dummy/metrics\",type=\"requests\"} 20.0";
-    String expectedJetty = "solr_metrics_jetty_response_total{status=\"2xx\"} 30.0";
+    String expectedJetty = "solr_metrics_jetty_response_total{status=\"999xx\"} 30.0";
     String expectedJvm = "solr_metrics_jvm_gc{item=\"dummyMetrics\"} 0.0";
 
     ModifiableSolrParams params = new ModifiableSolrParams();
