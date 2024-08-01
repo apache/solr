@@ -4,6 +4,33 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  9.8.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+* SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
+  beginning?) in which its collection state cache was not being used, resulting in many extra
+  requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
