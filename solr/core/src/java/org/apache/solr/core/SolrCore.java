@@ -775,7 +775,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); // Reload the extra properties
-        core = cloneAsReloadCore(cd, coreConfig, cloneCoreState);
+        core = cloneForReloadCore(cd, coreConfig, cloneCoreState);
 
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -795,9 +795,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Clones the current core for core reload, with the provided CoreDescriptor and ConfigSet.
    *
-   * @return the cloned core to be used for SolrCore#load
+   * @return the cloned core to be used for {@link SolrCore#reload}
    */
-  protected SolrCore cloneAsReloadCore(
+  protected SolrCore cloneForReloadCore(
       CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCoreState) {
     return new SolrCore(
         coreContainer,

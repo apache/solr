@@ -88,7 +88,7 @@ public class SyntheticSolrCore extends SolrCore {
   }
 
   @Override
-  protected SyntheticSolrCore cloneAsReloadCore(
+  protected SyntheticSolrCore cloneForReloadCore(
       CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCurrentState) {
     return new SyntheticSolrCore(
         getCoreContainer(),
