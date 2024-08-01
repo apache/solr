@@ -47,7 +47,6 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private volatile boolean closed = false;
 
   private final SolrZkClient zkClient;
-  private final ZkStateReader zkStateReader;
 
   /** Collection properties being actively watched */
   private final ConcurrentHashMap<String, VersionedCollectionProps> watchedCollectionProps =
@@ -77,12 +76,15 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private final ExecutorService notifications =
       ExecutorUtil.newMDCAwareCachedThreadPool("cachecleaner");
 
-  // only kept to identify if the cleaner has already been started.
-  private Future<?> collectionPropsCacheCleaner;
+  // identify if the cleaner has already been started.
+  private final AtomicBoolean collectionPropsCacheCleanerInitialized = new AtomicBoolean(false);
+
+  private final ConcurrentHashMap<String, Object> collectionLocks = new ConcurrentHashMap<>();
+
+
 
   public CollectionPropertiesZkStateReader(ZkStateReader zkStateReader) {
     this.zkClient = zkStateReader.getZkClient();
-    this.zkStateReader = zkStateReader;
   }
 
   /**
@@ -104,46 +106,52 @@ public class CollectionPropertiesZkStateReader implements Closeable {
    * @return a map representing the key/value properties for the collection.
    */
   public Map<String, String> getCollectionProperties(final String collection, long cacheForMillis) {
-    synchronized (watchedCollectionProps) { // synchronized on the specific collection
-      Watcher watcher = null;
-      if (cacheForMillis > 0) {
-        watcher =
-            collectionPropsWatchers.compute(
-                collection,
-                (c, w) ->
-                    w == null ? new PropsWatcher(c, cacheForMillis) : w.renew(cacheForMillis));
-      }
-      VersionedCollectionProps vprops = watchedCollectionProps.get(collection);
-      boolean haveUnexpiredProps = vprops != null && vprops.cacheUntilNs > System.nanoTime();
-      long untilNs =
-          System.nanoTime() + TimeUnit.NANOSECONDS.convert(cacheForMillis, TimeUnit.MILLISECONDS);
-      Map<String, String> properties;
+    Watcher watcher = null; // synchronized on the specific collection
+    if (cacheForMillis > 0) {
+      watcher =
+          collectionPropsWatchers.compute(
+              collection,
+              (c, w) -> w == null ? new PropsWatcher(c, cacheForMillis) : w.renew(cacheForMillis));
+    }
+    VersionedCollectionProps vprops = watchedCollectionProps.get(collection);
+    boolean haveUnexpiredProps = vprops != null && vprops.cacheUntilNs > System.nanoTime();
+    long untilNs =
+        System.nanoTime() + TimeUnit.NANOSECONDS.convert(cacheForMillis, TimeUnit.MILLISECONDS);
+    if (haveUnexpiredProps) {
+      vprops.cacheUntilNs = Math.max(vprops.cacheUntilNs, untilNs);
+      return vprops.props;
+    }
+    // Synchronize only when properties are expired or not present
+    Object collectionLock = getCollectionLock(collection);
+    synchronized (collectionLock) {
+      // Re-check inside the synchronized block to avoid race conditions
+      vprops = watchedCollectionProps.get(collection);
+      haveUnexpiredProps = vprops != null && vprops.cacheUntilNs > System.nanoTime();
       if (haveUnexpiredProps) {
-        properties = vprops.props;
         vprops.cacheUntilNs = Math.max(vprops.cacheUntilNs, untilNs);
-      } else {
-        try {
-          VersionedCollectionProps vcp = fetchCollectionProperties(collection, watcher);
-          properties = vcp.props;
-          if (cacheForMillis > 0) {
-            vcp.cacheUntilNs = untilNs;
-            watchedCollectionProps.put(collection, vcp);
-          } else {
-            // we're synchronized on watchedCollectionProps and we can only get here if we have
-            // found an expired vprops above, so it is safe to remove the cached value and let the
-            // GC free up some mem a bit sooner.
-            if (!collectionPropsObservers.containsKey(collection)) {
-              watchedCollectionProps.remove(collection);
-            }
-          }
-        } catch (Exception e) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Error reading collection properties",
-              SolrZkClient.checkInterrupted(e));
-        }
+        return vprops.props;
       }
-      return properties;
+      try {
+        VersionedCollectionProps vcp = fetchCollectionProperties(collection, watcher);
+        Map<String, String> properties = vcp.props;
+        if (cacheForMillis > 0) {
+          vcp.cacheUntilNs = untilNs;
+          watchedCollectionProps.put(collection, vcp);
+        } else {
+          // we're synchronized on watchedCollectionProps and we can only get here if we have
+          // found an expired vprops above, so it is safe to remove the cached value and let the
+          // GC free up some mem a bit sooner.
+          if (!collectionPropsObservers.containsKey(collection)) {
+            watchedCollectionProps.remove(collection);
+          }
+        }
+        return properties;
+      } catch (Exception e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error reading collection properties",
+            SolrZkClient.checkInterrupted(e));
+      }
     }
   }
 
@@ -217,7 +225,8 @@ public class CollectionPropertiesZkStateReader implements Closeable {
      */
     void refreshAndWatch(boolean notifyWatchers) {
       try {
-        synchronized (watchedCollectionProps) { // making decisions based on the result of a get...
+        Object collectionLock = getCollectionLock(coll);
+        synchronized (collectionLock) { // Lock on individual collection
           VersionedCollectionProps vcp = fetchCollectionProperties(coll, this);
           Map<String, String> properties = vcp.props;
           VersionedCollectionProps existingVcp = watchedCollectionProps.get(coll);
@@ -262,6 +271,10 @@ public class CollectionPropertiesZkStateReader implements Closeable {
     }
   }
 
+  private Object getCollectionLock(String collection) {
+    return collectionLocks.computeIfAbsent(collection, k -> new Object());
+  }
+
   public void registerCollectionPropsWatcher(
       final String collection, CollectionPropsWatcher propsWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
@@ -299,12 +312,12 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private VersionedCollectionProps fetchCollectionProperties(String collection, Watcher watcher)
       throws KeeperException, InterruptedException {
     final String znodePath = getCollectionPropsPath(collection);
+
     // lazy init cache cleaner once we know someone is using collection properties.
-    if (collectionPropsCacheCleaner == null) {
-      synchronized (zkStateReader.getUpdateLock()) { // Double-checked locking
-        if (collectionPropsCacheCleaner == null) {
-          collectionPropsCacheCleaner = notifications.submit(new CacheCleaner());
-        }
+    if (collectionPropsCacheCleanerInitialized.compareAndSet(false, true)) {
+      synchronized (this) {
+        // This synchronized block ensures that only one thread initializes the cache cleaner
+        notifications.submit(new CacheCleaner());
       }
     }
     while (true) {
@@ -402,10 +415,11 @@ public class CollectionPropertiesZkStateReader implements Closeable {
           v.stateWatchers.remove(watcher);
           if (v.canBeRemoved()) {
             // don't want this to happen in middle of other blocks that might add it back.
-            synchronized (watchedCollectionProps) {
+            Object collectionLock = getCollectionLock(collection);
+            synchronized (collectionLock) {
               watchedCollectionProps.remove(collection);
+              return null;
             }
-            return null;
           }
           return v;
         });
