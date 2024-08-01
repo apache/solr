@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -93,32 +92,19 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertEffectivelySame(set.getFixedBitSet(), live.getFixedBitSet());
+        assertSame(set, live);
 
         cmd.setQuery(QParser.getParser(qstr + " OR id:0", null, req).getQuery());
         cmd.setFilterList(QParser.getParser(qstr + " OR id:1", null, req).getQuery());
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertEffectivelySame(set.getFixedBitSet(), live.getFixedBitSet());
+        assertSame(set, live);
       }
 
     } finally {
       req.close();
     }
-  }
-
-  /** If the a XOR b == 0, then both a & b are effectively the same bitset */
-  private void assertEffectivelySame(FixedBitSet a, FixedBitSet b) {
-    FixedBitSet xor = a.clone();
-    xor.xor(b);
-    assertEquals(new FixedBitSet(xor.length()), xor);
-  }
-
-  private String bitsString(Bits bits) {
-    StringBuilder s = new StringBuilder();
-    for (int i = 0; i < bits.length(); i++) s.append(bits.get(i) ? 1 : 0);
-    return s.toString();
   }
 
   public void testCaching() throws Exception {
