@@ -42,10 +42,11 @@ public class UpdateLocks {
 
   private final ReadWriteLock blockUpdatesLock = new ReentrantReadWriteLock(true);
 
-  // SolrCloud's first approach was a fixed size array of locks.
-  // Now we have Map keyed by hash and a pool of locks to re-use, using way less memory.
+  // SolrCloud's first approach was a fixed size array of locks (lock striping) using an ID's hash.
+  //   Sized too small, there was too much lock sharing; sized too big, there was memory waste.
+  // Here we have a Map keyed by hash and a pool of locks to re-use.  Synchronization is needed 2x.
   //   Note:  ConcurrentHashMap was also explored but HPPC came out on top, probably because
-  //          we can use a hashcode directly as the key, and it's probably more GC friendly.
+  //          we can use a hashcode directly as the key, and it's GC friendly (zero-allocation).
 
   /** Maps a ID hashcode to a lock.  Synchronize to manipulate. */
   private final IntObjectHashMap<LockAndCondition> hashToLock =
@@ -63,19 +64,27 @@ public class UpdateLocks {
     this.docLockTimeoutMs = docLockTimeoutMs;
   }
 
+  /**
+   * Acquires a lock for the given doc ID, executes the function, and releases the lock.  The
+   * provided {@link Condition} can be used for wait/notify control.  The per-doc locking is needed
+   * indirectly due to SolrCloud's internal out-of-order versioned update design.
+   */
   public <R> R runWithLock(BytesRef id, IOFunction<Condition, R> function) throws IOException {
     final var startTimeNanos = System.nanoTime();
 
     lockForUpdate();
     try {
+      // note: if we didn't need a Condition, then we could have reused
+      //   OrderedExecutor.SparseStripedLock over here, which is also a mechanism invented for
+      //   per-doc locking.
 
       // hashToLock isn't concurrent, but we synchronize on it briefly twice to do cheap work
 
-      int hash = id.hashCode();
-      LockAndCondition lock;
-      int idx; // of hash
+      final int hash = id.hashCode();
+      final LockAndCondition lock;
+      // get or insert lock, increment refcount
       synchronized (hashToLock) {
-        idx = hashToLock.indexOf(hash);
+        final int idx = hashToLock.indexOf(hash);
         if (hashToLock.indexExists(idx)) {
           lock = hashToLock.indexGet(idx);
           assert lock.refCount >= 1;
@@ -83,8 +92,6 @@ public class UpdateLocks {
         } else {
           lock = borrowLock();
           hashToLock.indexInsert(idx, hash, lock);
-          idx = ~idx;
-          assert hashToLock.indexOf(hash) == idx;
         }
       }
 
@@ -92,14 +99,11 @@ public class UpdateLocks {
       try {
         return runWithLockInternal(id, function, lock, startTimeNanos);
       } finally {
+        // decrement refcount, remove lock if unreferenced
         synchronized (hashToLock) {
           assert lock.refCount > 0; // because we incremented it
           if (--lock.refCount == 0) { // typical
-            if (lock == hashToLock.indexGet(idx)) { // nearly always (no resize)
-              hashToLock.indexRemove(idx);
-            } else {
-              hashToLock.remove(hash);
-            }
+            hashToLock.remove(hash);
             returnLock(lock);
           }
         }
