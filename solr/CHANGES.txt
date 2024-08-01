@@ -111,7 +111,9 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
+  beginning?) in which its collection state cache was not being used, resulting in many extra
+  requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
 
 Bug Fixes
 ---------------------
