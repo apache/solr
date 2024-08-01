@@ -221,6 +221,8 @@ Bug Fixes
 
 * SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
 
+* SOLR-17386: Fix coordinators (SyntheticSolrCore) reload issue. (ellaeln, Patson Luk, David Smiley, Christine Poerschke)
+
 Dependency Upgrades
 ---------------------
 (No changes)
