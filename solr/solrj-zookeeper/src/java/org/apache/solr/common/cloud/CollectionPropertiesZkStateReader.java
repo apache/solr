@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,8 +79,6 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private final AtomicBoolean collectionPropsCacheCleanerInitialized = new AtomicBoolean(false);
 
   private final ConcurrentHashMap<String, Object> collectionLocks = new ConcurrentHashMap<>();
-
-
 
   public CollectionPropertiesZkStateReader(ZkStateReader zkStateReader) {
     this.zkClient = zkStateReader.getZkClient();
