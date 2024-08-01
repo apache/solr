@@ -100,6 +100,31 @@ Other Changes
 
 * SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
 
+==================  9.8.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
