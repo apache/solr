@@ -41,8 +41,8 @@ public class UpdateLocks {
 
   private final ReadWriteLock blockUpdatesLock = new ReentrantReadWriteLock(true);
 
-  private final ConcurrentHashMap<BytesRef, LockAndCondition> idToLock = new ConcurrentHashMap<>();
-
+  private final ConcurrentHashMap<BytesRef, LockAndCondition> idToLock = new ConcurrentHashMap<>(32);
+  
   public UpdateLocks(long docLockTimeoutMs) {
     this.docLockTimeoutMs = docLockTimeoutMs;
   }
@@ -53,32 +53,22 @@ public class UpdateLocks {
     lockForUpdate();
     try {
 
-      LockAndCondition lock;
-      while (true) {
-        lock = idToLock.computeIfAbsent(id, (k) -> new LockAndCondition());
-        synchronized (lock) {
-          if (lock.refCount >= 0) { // always true, notwithstanding a race
-            lock.refCount++;
-            break;
-          }
+      LockAndCondition lock = idToLock.compute(id, (k, existing) -> {
+        if (existing == null) {
+          return new LockAndCondition();
         }
-        // race condition -- existing lock was removed; try again
-        Thread.yield();
-      }
+        assert existing.refCount >= 1;
+        existing.refCount++;
+        return existing;
+      });
       // try-finally ensuring we decrement the refCount
       try {
         return runWithLockInternal(id, function, lock, startTimeNanos);
       } finally {
-        assert idToLock.get(id) == lock : "lock shouldn't have changed";
-        synchronized (lock) {
-          assert lock.refCount > 0; // because we incremented it
-          if (lock.refCount > 1) {
-            lock.refCount--;
-          } else { // == 1  (most typical)
-            lock.refCount = -1; // unused
-            idToLock.remove(id);
-          }
-        }
+        idToLock.compute(id, (k, existing) -> {
+          assert lock == existing : "lock shouldn't have changed!";
+          return --existing.refCount == 0 ? null : existing;
+        });
       }
 
     } finally {
@@ -120,12 +110,12 @@ public class UpdateLocks {
   private static class LockAndCondition {
     final Lock lock;
     final Condition condition;
-    int refCount; // use synchronized to read/write
+    int refCount; // only access during idToLock.compute (atomic)
 
     LockAndCondition() {
       lock = new ReentrantLock(true); // fair
       condition = lock.newCondition();
-      refCount = 0;
+      refCount = 1;
     }
   }
 
