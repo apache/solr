@@ -58,7 +58,7 @@ Improvements
 
 * SOLR-16824: Adopt Linux standard pattern of -- for long option commands, and make all commands "kebab" formatting.  I.e -zkHost is now -zk-host.  The old parameters
   such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
-  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, Jan Høydahl, Jason Gerlowski)
+  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski, Christos Malliaridis)
 
 * SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
 

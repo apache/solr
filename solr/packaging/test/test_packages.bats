@@ -44,7 +44,7 @@ teardown() {
   solr create_collection -c foo-1.2
 
   # Deploy package - the package doesn't need to exist before the collection validation kicks in
-  run solr package deploy PACKAGE_NAME -collections foo-1.2
+  run solr package deploy PACKAGE_NAME --collections foo-1.2
   # assert_output --partial "Deployment successful"
   refute_output --partial "Invalid collection"
   
@@ -52,7 +52,7 @@ teardown() {
   assert_output --partial "Package instance doesn't exist: PACKAGE_NAME:null"
 
   # Undeploy package
-  run solr package undeploy PACKAGE_NAME -collections foo-1.2
+  run solr package undeploy PACKAGE_NAME --collections foo-1.2
   refute_output --partial "Invalid collection"
   assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
 }
@@ -72,7 +72,7 @@ teardown() {
 #  run solr package install solr-splainer
 #  assert_output --partial "solr-splainer installed."
 
-#  run solr package deploy solr-splainer -y -cluster
+#  run solr package deploy solr-splainer -y --cluster
 #  assert_output --partial "Deployment successful"
   
 #  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html

@@ -109,7 +109,7 @@ or
 
 [source,bash]
 ----
-$ bin/solr package deploy <package-name>:[version] -cluster
+$ bin/solr package deploy <package-name>:[version] --cluster
 ----
 
 If the package accepts parameters for its setup commands, they can be specified (as per package documentation):
@@ -170,12 +170,12 @@ Assuming the old version is `1.0.0` of the package `mypackage`, and the new vers
 
 [source,bash]
 ----
-$ bin/solr package deploy mypackage:2.0.0 --update -collections mycollection
+$ bin/solr package deploy mypackage:2.0.0 --update --collections mycollection
 ----
 or
 [source,bash]
 ----
-$ bin/solr package deploy mypackage:2.0.0 --update -cluster
+$ bin/solr package deploy mypackage:2.0.0 --update --cluster
 ----
 
 You can run the `list-deployed` command to verify that this collection is using the newly added version.
@@ -186,7 +186,7 @@ If a package supports undeploying the plugins it contains (check package author'
 
 [source,bash]
 ----
-$ bin/solr package undeploy <package-name> -collections <collection1>[,<collection2>,...]
+$ bin/solr package undeploy <package-name> --collections <collection1>[,<collection2>,...]
 ----
 
 === Uninstall a Package
@@ -202,7 +202,7 @@ or
 
 [source,bash]
 ----
-$ bin/solr package deploy <package-name>:<package-version> -cluster
+$ bin/solr package deploy <package-name>:<package-version> --cluster
 ----
 
 Both package name and version are required.

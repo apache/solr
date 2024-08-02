@@ -69,7 +69,7 @@ teardown() {
 }
 
 @test "reject d option with invalid config dir" {
-  run ! solr create -c COLL_NAME -d /asdf
+  run ! solr create -c COLL_NAME -d /asdf  --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Specified configuration directory /asdf not found!"
 }
 
