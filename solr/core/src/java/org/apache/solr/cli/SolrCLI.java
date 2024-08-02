@@ -20,8 +20,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
@@ -77,6 +75,11 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 public class SolrCLI implements CLIO {
+
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
@@ -205,7 +208,7 @@ public class SolrCLI implements CLIO {
       CLIO.err(iae.getMessage());
       System.exit(1);
     }
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     System.exit(tool.runTool(cli));
   }
 
@@ -214,7 +217,7 @@ public class SolrCLI implements CLIO {
     return newTool(toolType);
   }
 
-  public static CommandLine parseCmdLine(String toolName, String[] args, List<Option> toolOptions) {
+  public static CommandLine parseCmdLine(Tool tool, String[] args) {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<>();
     List<String> dashDList = new ArrayList<>();
@@ -229,7 +232,7 @@ public class SolrCLI implements CLIO {
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
     // process command-line args to configure this application
-    CommandLine cli = processCommandLineArgs(toolName, toolOptions, toolArgs);
+    CommandLine cli = processCommandLineArgs(tool, toolArgs);
 
     List<String> argList = cli.getArgList();
     argList.addAll(dashDList);
@@ -245,9 +248,10 @@ public class SolrCLI implements CLIO {
   }
 
   public static String getDefaultSolrUrl() {
-    String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
-    String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
-    String port = EnvUtils.getEnv("SOLR_PORT", "8983");
+    // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
+    String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
+    String host = EnvUtils.getProperty("solr.tool.host", "localhost");
+    String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
@@ -318,20 +322,24 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
+  /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
-      options.addOption(toolOpt);
+      if (!toolOpt.isDeprecated()) {
+        options.addOption(toolOpt);
+      }
     }
     return options;
   }
 
   /** Parses the command-line arguments passed by the user. */
-  public static CommandLine processCommandLineArgs(
-      String toolName, List<Option> customOptions, String[] args) {
+  public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
+    List<Option> customOptions = tool.getOptions();
+    String toolName = tool.getName();
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
@@ -358,22 +366,35 @@ public class SolrCLI implements CLIO {
         }
       }
       if (!hasHelpArg) {
-        CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
+        CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage() + "\n");
+        printToolHelp(tool);
         exit(1);
       } else {
-        HelpFormatter formatter = HelpFormatter.builder().setShowDeprecated(true).get();
-        formatter.printHelp(toolName, options);
+        printToolHelp(tool);
         exit(0);
       }
     }
 
     if (cli.hasOption("help")) {
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(toolName, options);
+      printToolHelp(tool);
       exit(0);
     }
 
     return cli;
+  }
+
+  /** Prints tool help for a given tool */
+  private static void printToolHelp(Tool tool) {
+    HelpFormatter formatter = HelpFormatter.builder().get();
+    formatter.setWidth(120);
+    Options optionsNoDeprecated = new Options();
+    tool.getOptions().stream()
+        .filter(option -> !option.isDeprecated())
+        .forEach(optionsNoDeprecated::addOption);
+    String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
+    boolean autoGenerateUsage = tool.getUsage() == null;
+    formatter.printHelp(
+        usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */
@@ -737,5 +758,29 @@ public class SolrCLI implements CLIO {
   public static Path getConfigSetsDir(Path solrInstallDir) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath);
+  }
+
+  public static void print(Object message) {
+    print(null, message);
+  }
+
+  /** Console print using green color */
+  public static void printGreen(Object message) {
+    print(GREEN, message);
+  }
+
+  /** Console print using red color */
+  public static void printRed(Object message) {
+    print(RED, message);
+  }
+
+  public static void print(String color, Object message) {
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      CLIO.out(color + String.valueOf(message) + RESET);
+    } else {
+      CLIO.out(String.valueOf(message));
+    }
   }
 }

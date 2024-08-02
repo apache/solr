@@ -141,12 +141,15 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
     return response;
   }
 
-  @Override
-  @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
-  public SolrJerseyResponse deleteFile(String filePath) {
-    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-      throw new RuntimeException(PackageAPI.ERR_MSG);
+  private void doLocalDelete(String filePath) {
+    fileStore.deleteLocal(filePath);
+  }
+
+  private void doClusterDelete(String filePath) {
+    FileStore.FileType type = fileStore.getType(filePath, true);
+    if (type == FileStore.FileType.NOFILE) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + filePath);
     }
 
     try {
@@ -154,19 +157,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
           .getZkController()
           .getZkClient()
           .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
-      validateName(filePath, true);
-      if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(filePath)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
-      }
-      FileStore.FileType type = fileStore.getType(filePath, true);
-      if (type == FileStore.FileType.NOFILE) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + filePath);
-      }
       fileStore.delete(filePath);
-      return response;
-    } catch (SolrException e) {
-      throw e;
     } catch (Exception e) {
       log.error("Unknown error", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -177,6 +168,30 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
         log.error("Unexpected error  ", e);
       }
     }
+  }
+
+  private void doDelete(String filePath, Boolean localDelete) {
+    if (Boolean.TRUE.equals(localDelete)) {
+      doLocalDelete(filePath);
+    } else {
+      doClusterDelete(filePath);
+    }
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+  public SolrJerseyResponse deleteFile(String filePath, Boolean localDelete) {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
+      throw new RuntimeException(PackageAPI.ERR_MSG);
+    }
+
+    validateName(filePath, true);
+    if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(filePath)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
+    }
+    doDelete(filePath, localDelete);
+    return response;
   }
 
   private List<String> readSignatures(List<String> signatures, byte[] buf)

@@ -716,6 +716,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  /** Primary entrypoint for searching, using a {@link QueryCommand}. */
+  public QueryResult search(QueryCommand cmd) throws IOException {
+    return search(new QueryResult(), cmd);
+  }
+
+  @Deprecated
   public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
     getDocListC(qr, cmd);
     return qr;
@@ -1468,13 +1474,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query).setFilterList(filter).setSort(lsort).setOffset(offset).setLen(len);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocList();
+    return new QueryCommand()
+        .setQuery(query)
+        .setFilterList(filter)
+        .setSort(lsort)
+        .setOffset(offset)
+        .setLen(len)
+        .search(this)
+        .getDocList();
   }
 
   /**
@@ -1493,19 +1503,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocList getDocList(
       Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filterList)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
-        .setFlags(flags);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocList();
+        .setFlags(flags)
+        .search(this)
+        .getDocList();
   }
 
   public static final int NO_CHECK_QCACHE = 0x80000000;
@@ -1549,7 +1559,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the
    * cache is not populated.
    */
-  private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
+  private QueryResult getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
+    // TODO don't take QueryResult as arg; create one here
+    if (cmd.getSegmentTerminateEarly()) {
+      qr.setSegmentTerminatedEarly(Boolean.FALSE);
+    }
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key = null;
@@ -1606,7 +1620,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               out.docSet = getDocSet(newList);
             }
           }
-          return;
+          return qr;
         }
       }
 
@@ -1743,6 +1757,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (key != null && superset.size() <= queryResultMaxDocsCached && !qr.isPartialResults()) {
       queryResultCache.put(key, superset);
     }
+    return qr;
   }
 
   private Relation populateScoresIfNeeded(
@@ -1906,9 +1921,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        if (log.isDebugEnabled()) {
-          log.debug("skipping collector manager");
-        }
+        log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
         Collector collector = topCollector;
@@ -1927,9 +1940,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        if (log.isDebugEnabled()) {
-          log.debug("using CollectorManager");
-        }
+        log.trace("MULTI-THREADED search, using CollectorManager int getDocListNC");
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
                 .searchCollectorManagers(len, cmd, query, true, needScores, false);
@@ -2031,6 +2042,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     } else {
       final TopDocs topDocs;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+        log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
+
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -2057,7 +2070,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        log.debug("using CollectorManager");
+        log.trace("MULTI-THREADED search, using CollectorManager in getDocListAndSetNC");
 
         boolean needMaxScore = needScores;
         MultiThreadedSearcher.SearchResult searchResult =
@@ -2120,12 +2133,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocList getDocList(Query query, Sort lsort, int offset, int len) throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query).setSort(lsort).setOffset(offset).setLen(len);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocList();
+    return new QueryCommand()
+        .setQuery(query)
+        .setSort(lsort)
+        .setOffset(offset)
+        .setLen(len)
+        .search(this)
+        .getDocList();
   }
 
   /**
@@ -2148,18 +2164,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filter)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2183,19 +2199,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(
       Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filter)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
         .setFlags(flags)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2218,18 +2234,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(
       Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filterList)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2254,20 +2270,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(
       Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filterList)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
         .setFlags(flags)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2284,13 +2300,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(Query query, Sort lsort, int offset, int len)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query).setSort(lsort).setOffset(offset).setLen(len).setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+    return new QueryCommand()
+        .setQuery(query)
+        .setSort(lsort)
+        .setOffset(offset)
+        .setLen(len)
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   private DocList constantScoreDocList(int offset, int length, DocSet docs) {
