@@ -38,8 +38,8 @@ public class ZkToolHelp extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder()
-            .longOpt("print-short-zk-usage")
-            .desc("Invokes the short summary help for zk commands.")
+            .longOpt("print-zk-subcommand-usage")
+            .desc("Reminds user to prepend zk to invoke the command.")
             .required(false)
             .build(),
         Option.builder()
@@ -58,7 +58,7 @@ public class ZkToolHelp extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    if (cli.hasOption("print-short-zk-usage")) {
+    if (cli.hasOption("print-zk-subcommand-usage")) {
       String scriptCommand = cli.getArgs()[0];
       print(
           "You must invoke this subcommand using the zk command.   bin/solr zk "

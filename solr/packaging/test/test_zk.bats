@@ -41,6 +41,11 @@ teardown() {
  assert_output --partial "usage: bin/solr zk"
 }
 
+@test "short help is inferred" {
+ run solr zk ls
+ assert_output --partial "usage: bin/solr zk"
+}
+
 @test "long help" {
  run solr zk -h
  assert_output --partial "bin/solr zk ls"

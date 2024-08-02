@@ -202,8 +202,8 @@ public class SolrCLI implements CLIO {
     if (Arrays.asList(
             "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
         .contains(args[0])) {
-      // remap our arguments to invoke the zk short tool help
-      args = new String[] {"zk-tool-help", "--print-short-zk-usage", args[0]};
+      // remap our arguments to print the zk subcommand usage help message to the user
+      args = new String[] {"zk-tool-help", "--print-zk-subcommand-usage", args[0]};
     }
     if (Objects.equals(args[0], "zk")) {
       if (args.length == 1) {
@@ -214,14 +214,24 @@ public class SolrCLI implements CLIO {
           // remap our arguments to invoke the ZK tool help.
           args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
         } else {
-          // remap our arguments to invoke the zk short tool help
-          args = new String[] {"zk-tool-help", "--print-short-zk-usage", args[1]};
+          // remap our arguments to invoke the zk sub tool with the --help argument appended.
+
+          // first chop zk argument out
+          String[] remappedArgs = new String[args.length - 1];
+          System.arraycopy(args, 1, remappedArgs, 0, remappedArgs.length);
+          args = remappedArgs;
+
+          // then add --help to the args
+          remappedArgs = new String[args.length + 1];
+          System.arraycopy(args, 0, remappedArgs, 0, args.length);
+          remappedArgs[remappedArgs.length - 1] = "--help";
+          args = remappedArgs;
         }
       } else {
-        // chop the leading zk argument so we invoke the correct zk sub tool
-        String[] trimmedArgs = new String[args.length - 1];
-        System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
-        args = trimmedArgs;
+        // chop the leading zk argument, so we invoke the correct zk sub tool
+        String[] remappedArgs = new String[args.length - 1];
+        System.arraycopy(args, 1, remappedArgs, 0, remappedArgs.length);
+        args = remappedArgs;
       }
     }
     SSLConfigurationsFactory.current().init();
