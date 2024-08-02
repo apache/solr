@@ -70,7 +70,7 @@ public class AuthToolTest extends SolrCloudTestCase {
       dir.toAbsolutePath().toString(),
       "--solr-include-file",
       solrIncludeFile.toAbsolutePath().toString(),
-      "-credentials",
+      "--credentials",
       "solr:solr",
       "--block-unknown",
       "true"
