@@ -123,7 +123,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       SolrClient client, String collection, Map<String, Object> clusterProperties)
       throws SolrServerException, IOException, NotACollectionException {
     SimpleOrderedMap<?> cluster =
-        submitClusterStateRequest(client, collection, false, false, false);
+        submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
     Map<String, Object> collectionsMap;
     if (collection != null) {
@@ -168,30 +168,27 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   private SimpleOrderedMap<?> submitClusterStateRequest(
-      SolrClient client,
-      String collection,
-      boolean fetchLiveNodes,
-      boolean fetchClusterProp,
-      boolean fetchNodeRoles)
+      SolrClient client, String collection, ClusterStateRequestType requestType)
       throws SolrServerException, IOException {
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "CLUSTERSTATUS");
 
-    if (collection != null) {
+    if (requestType == ClusterStateRequestType.FETCH_COLLECTION && collection != null) {
       params.set("collection", collection);
-    } else if (fetchLiveNodes) {
+    } else if (requestType == ClusterStateRequestType.FETCH_LIVE_NODES) {
       params.set("liveNodes", "true");
-    } else if (fetchClusterProp) {
+    } else if (requestType == ClusterStateRequestType.FETCH_CLUSTER_PROP) {
       params.set("clusterProperties", "true");
-    } else if (fetchNodeRoles) {
+    } else if (requestType == ClusterStateRequestType.FETCH_NODE_ROLES) {
       params.set("roles", "true");
     }
+
     params.set("includeAll", "false");
     params.set("prs", "true");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
-    return cluster;
+    return (SimpleOrderedMap<?>) client.request(request).get("cluster");
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -251,7 +248,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @SuppressWarnings({"rawtypes", "unchecked"})
   private Set<String> fetchLiveNodes(SolrClient client) throws Exception {
 
-    SimpleOrderedMap<?> cluster = submitClusterStateRequest(client, null, true, false, false);
+    SimpleOrderedMap<?> cluster =
+        submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_LIVE_NODES);
     return (Set<String>) new HashSet((List<String>) (cluster.get("live_nodes")));
   }
 
@@ -360,7 +358,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     for (String nodeName : liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
-        SimpleOrderedMap<?> cluster = submitClusterStateRequest(client, null, false, true, false);
+        SimpleOrderedMap<?> cluster =
+            submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_CLUSTER_PROP);
         return (Map<String, Object>) cluster.get("properties");
       } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
@@ -412,5 +411,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       return null;
     }
     return String.join(",", this.liveNodes);
+  }
+
+  public enum ClusterStateRequestType {
+    FETCH_LIVE_NODES,
+    FETCH_CLUSTER_PROP,
+    FETCH_NODE_ROLES,
+    FETCH_COLLECTION
   }
 }
