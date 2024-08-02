@@ -277,8 +277,8 @@ population.
 Using bin/solr post:
 [,console]
 ----
-$ bin/solr post -c geonames -type text/csv \
-  -params 'optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
+$ bin/solr post -c geonames -t text/csv \
+  --params 'optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
   /tmp/cities1000.txt
 ----
 

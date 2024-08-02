@@ -100,6 +100,33 @@ Other Changes
 
 * SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
 
+==================  9.8.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+* SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
+  beginning?) in which its collection state cache was not being used, resulting in many extra
+  requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
@@ -126,6 +153,14 @@ New Features
 
 Improvements
 ---------------------
+* SOLR-10808, SOLR-12963: The Solr schema version has been increased to 1.7.
+  Starting in schema version 1.7, most fields/fieldTypes that support docValues will have them enabled by default.
+  These field types include primitive (Numeric, Date, Bool, String, Enum, UUID), sorting (SortableTextField, SortableBinaryField, CollationField, ICUCollationField) and LatLonPointSpacialField.
+  This behavior can be reverted by setting the 'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below.
+  Also in schema version 1.7, all fields/fieldTypes will be unable to be uninverted by default.
+  This behavior can be reverted by setting the 'uninvertible' parameter for a field or a field type to true, the default for schema versions 1.6 and below.
+  (Houston Putman, hossman)
+
 * SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
 
 * SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
@@ -146,7 +181,7 @@ Improvements
 
 * SOLR-16824: Adopt Linux standard pattern of -- for long option commands, and make all commands "kebab" formatting.  I.e -zkHost is now -zk-host.  The old parameters
   such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
-  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski)
+  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski, Christos Malliaridis)
 
 * SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
 
@@ -155,6 +190,10 @@ Improvements
 * SOLR-17160: Core Admin "async" request status tracking is no longer capped at 100; it's 10k.
   Statuses are now removed 5 minutes after the read of a completed/failed status.  Helps collection
   async backup/restore and other operations scale to 100+ shards.  (Pierre Salagnac, David Smiley)
+
+* SOLR-10808 : The Solr schema version has been increased to 1.7. Since schema version 1.7, all fields/fieldTypes that
+  support docValues will have them enabled by default. This behavior can be reverted by setting
+  'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)
 
 Optimizations
 ---------------------
@@ -208,6 +247,8 @@ Bug Fixes
 
 * SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
 
+* SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -235,6 +276,12 @@ Other Changes
   refer to env vars.  (David Smiley)
 
 * SOLR-15831: Refactor bin/solr and bin/solr.cmd commands integration with AuthTool, DeleteTool, and PackageTool to delegate arg parsing to Java code.  Removed limitation of PackageTool only being executed on an active Solr node.  (Eric Pugh)
+
+* SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend
+  ScoreDocs (covariant generic types) broken in Solr 9.0. (Stephen Woods via Christine Poerschke)
+
+* SOLR-16996: Update Solr Exporter for Prometheus cli to use commons-cli instead of argparse4j.  (Christos Malliaridis via Eric Pugh)
+
 
 ==================  9.6.1 ==================
 Bug Fixes

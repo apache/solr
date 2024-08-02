@@ -248,7 +248,7 @@ This can be useful in a production setting where you want to limit logging to wa
 +
 *Example*: `bin/solr start -f -q`
 
-`-V` or `-verbose`::
+`-V` or `--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -273,7 +273,7 @@ Set the `ZK_CREATE_CHROOT` environment variable to true if your ZK host has a ch
 +
 *Example*: `bin/solr start -c -z server1:2181,server2:2181`
 
-`-force`::
+`--force`::
 +
 [%autowidth,frame=none]
 |===
@@ -281,9 +281,9 @@ Set the `ZK_CREATE_CHROOT` environment variable to true if your ZK host has a ch
 |===
 +
 If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems.
-It is possible to override this warning with the `-force` parameter.
+It is possible to override this warning with the `--force` parameter.
 +
-*Example*: `sudo bin/solr start -force`
+*Example*: `sudo bin/solr start --force`
 
 To emphasize how the default settings work take a moment to understand that the following commands are equivalent:
 
@@ -400,7 +400,7 @@ The command will wait up to 180 seconds for Solr to stop gracefully and then wil
 |===
 +
 Stop Solr running on the given port.
-If you are running more than one instance, or are running in SolrCloud mode, you either need to specify the ports in separate requests or use the `-all` option.
+If you are running more than one instance, or are running in SolrCloud mode, you either need to specify the ports in separate requests or use the `--all` option.
 +
 *Example*: `bin/solr stop -p 8983`
 
@@ -426,7 +426,7 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
-`-V` or `-verbose`::
+`-V` or `--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -720,7 +720,7 @@ The default is `1` (no replication).
 +
 *Example*: `bin/solr create -rf 2`
 
-`-force`::
+`--force`::
 +
 [%autowidth,frame=none]
 |===
@@ -728,11 +728,11 @@ The default is `1` (no replication).
 |===
 +
 If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
+It is possible to override this warning with the --force parameter.
 +
 *Example*: `bin/solr create -c foo --force`
 
-`-z <zkHost>` or `-zk-host <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -935,10 +935,10 @@ The command takes the following parameters:
 The username and password in the format of `username:password` of the initial user.
 Applicable for basicAuth only.
 +
-If you prefer not to pass the username and password as an argument to the script, you can choose the `-prompt` option.
-Either `-credentials` or `-prompt` *must* be specified.
+If you prefer not to pass the username and password as an argument to the script, you can choose the `--prompt` option.
+Either `--credentials` or `--prompt` *must* be specified.
 
-`-prompt <true|false>`::
+`--prompt <true|false>`::
 +
 [%autowidth,frame=none]
 |===
@@ -947,7 +947,7 @@ Either `-credentials` or `-prompt` *must* be specified.
 +
 Prompts the user to provide the credentials. If prompt is preferred, pass `true` as a parameter to request the script prompt the user to enter a username and password.
 +
-Either `-credentials` or `-prompt` *must* be specified.
+Either `--credentials` or `--prompt` *must* be specified.
 
 `--block-unknown <true|false>`::
 +
@@ -959,7 +959,7 @@ Either `-credentials` or `-prompt` *must* be specified.
 When `true`, this blocks out access to unauthenticated users from accessing Solr.
 When `false`, unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
 
-`-solrIncludeFile <includeFilePath>`::
+`--solrIncludeFile <includeFilePath>`::
 +
 [%autowidth,frame=none]
 |===
@@ -986,7 +986,7 @@ If not specified this script looks for an include file named solr.in.sh to set e
 +
 When `true`, only update the `bin/solr.in.sh` or `bin\solr.in.cmd`, and skip actual enabling/disabling authentication (i.e. don't update `security.json`).
 
-`-z <zkHost>` or `-zk-host <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===

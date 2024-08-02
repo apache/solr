@@ -245,7 +245,7 @@ public class TestExportTool extends SolrCloudTestCase {
         "export",
         "-url",
         cluster.getJettySolrRunner(0).getBaseUrl() + "/" + COLLECTION_NAME,
-        "-credentials",
+        "--credentials",
         SecurityJson.USER_PASS,
         "-out",
         outFile.getAbsolutePath(),

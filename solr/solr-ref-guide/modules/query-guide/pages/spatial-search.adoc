@@ -27,7 +27,7 @@ Using spatial search, you can:
 
 There are four main field types available for spatial search:
 
-* `LatLonPointSpatialField`
+* `LatLonPointSpatialField` (has `docValues` enabled by default)
 * `PointType`
 * `SpatialRecursivePrefixTreeFieldType` (RPT for short), including `RptWithGeometrySpatialField`, a derivative
 * `BBoxField`
@@ -51,7 +51,7 @@ Here's how `LatLonPointSpatialField` (LLPSF) should usually be configured in the
 
 LLPSF supports toggling `indexed`, `stored`, `docValues`, and `multiValued`.
 LLPSF internally uses a 2-dimensional Lucene "Points" (BDK tree) index when "indexed" is enabled (the default).
-When "docValues" is enabled, a latitude and longitudes pair are bit-interleaved into 64 bits and put into Lucene DocValues.
+When "docValues" is enabled (the default), a latitude and longitudes pair are bit-interleaved into 64 bits and put into Lucene DocValues.
 The accuracy of the docValues data is about a centimeter.
 
 == Indexing Points
@@ -71,9 +71,7 @@ However, it's much bulkier than the raw coordinates for such simple data.
 Using the `bin/solr post` tool:
 
 [,console]
-----
-$ bin/solr post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
-----
+$ bin/solr post -t "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
 
 The key parameter to pass in with your request is:
 
@@ -705,7 +703,7 @@ To configure it in the schema, use a configuration like this:
 
 BBoxField is actually based off of 4 instances of another field type referred to by numberType.
 It also uses a boolean to flag a dateline cross.
-Assuming you want to use the relevancy feature, docValues is required.
+Assuming you want to use the relevancy feature, docValues is required (and is enabled by default).
 Some of the attributes are in common with the RPT field like geo, units, worldBounds, and spatialContextFactory because they share some of the same spatial infrastructure.
 
 To index a box, add a field value to a bbox field that's a string in the WKT/CQL ENVELOPE syntax.
