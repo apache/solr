@@ -246,6 +246,7 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
+REM -help is a special case to faciliate folks learning about how to use Solr.
 IF "%1"=="-help" goto run_solrcli
 IF "%1"=="-usage" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
@@ -322,7 +323,6 @@ IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="-usage" goto run_solrcli
 IF "%FIRST_ARG%"=="-h" goto run_solrcli
 IF "%FIRST_ARG%"=="--help" goto run_solrcli
-IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
@@ -366,7 +366,7 @@ goto done
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
+@echo   -c or --cloud Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
 @echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
 @echo                   such as 9983 if Solr is bound to 8983
 @echo.
@@ -1915,10 +1915,10 @@ IF "!ZK_OP!"=="" (
 set CONNECTION_PARAMS=""
 
 IF "!ZK_OP!"=="" (
-  set CONNECTION_PARAMS="-solrUrl !ZK_SOLR_URL!"
+  set CONNECTION_PARAMS="--solr-url !ZK_SOLR_URL!"
 )
 ELSE (
-  set CONNECTION_PARAMS="-zkHost ZK_HOST!"
+  set CONNECTION_PARAMS="--zk-host ZK_HOST!"
 )
 
 IF "!ZK_OP!"=="-upconfig" (

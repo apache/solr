@@ -140,7 +140,7 @@ teardown() {
 @test "bin/solr zk cp gets 'solrhome' from '--solr-home' command line option" {
   touch afile.txt
 
-  run solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} -verbose --solr-home ${SOLR_TIP}/server/solr
+  run solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} --verbose --solr-home ${SOLR_TIP}/server/solr
   assert_output --partial "Using SolrHome: ${SOLR_TIP}/server/solr"
   refute_output --partial 'Failed to load solr.xml from ZK or SolrHome'
 
