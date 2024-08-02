@@ -10,6 +10,7 @@ on:
       - 'solr/bin/**'
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
+      - 'solr/prometheus-exporter/**'
 
 jobs:
   test:
@@ -47,4 +48,3 @@ jobs:
       with:
         name: logs
         path: solr/packaging/build/test-output
-

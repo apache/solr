@@ -15,7 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<schema name="root" version="1.6">
+<schema name="root" version="1.7">
   <field name="id" type="string" indexed="true" stored="true"/>
 
   <!-- points to the root document of a block of nested documents -->
