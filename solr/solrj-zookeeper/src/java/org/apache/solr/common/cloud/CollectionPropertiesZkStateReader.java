@@ -119,8 +119,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       return vprops.props;
     }
     // Synchronize only when properties are expired or not present
-    Object collectionLock = getCollectionLock(collection);
-    synchronized (collectionLock) {
+    synchronized (getCollectionLock(collection)) {
       // Re-check inside the synchronized block to avoid race conditions
       vprops = watchedCollectionProps.get(collection);
       haveUnexpiredProps = vprops != null && vprops.cacheUntilNs > System.nanoTime();
@@ -222,8 +221,8 @@ public class CollectionPropertiesZkStateReader implements Closeable {
      */
     void refreshAndWatch(boolean notifyWatchers) {
       try {
-        Object collectionLock = getCollectionLock(coll);
-        synchronized (collectionLock) { // Lock on individual collection
+        synchronized (getCollectionLock(coll)) {
+          // making decisions based on the result of a get...
           VersionedCollectionProps vcp = fetchCollectionProperties(coll, this);
           Map<String, String> properties = vcp.props;
           VersionedCollectionProps existingVcp = watchedCollectionProps.get(coll);
@@ -309,7 +308,6 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private VersionedCollectionProps fetchCollectionProperties(String collection, Watcher watcher)
       throws KeeperException, InterruptedException {
     final String znodePath = getCollectionPropsPath(collection);
-
     // lazy init cache cleaner once we know someone is using collection properties.
     if (collectionPropsCacheCleanerInitialized.compareAndSet(false, true)) {
       synchronized (this) {
@@ -412,8 +410,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
           v.stateWatchers.remove(watcher);
           if (v.canBeRemoved()) {
             // don't want this to happen in middle of other blocks that might add it back.
-            Object collectionLock = getCollectionLock(collection);
-            synchronized (collectionLock) {
+            synchronized (getCollectionLock(collection)) {
               watchedCollectionProps.remove(collection);
               return null;
             }
