@@ -94,7 +94,7 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr zk upconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+    return "bin/solr zk downconfig [--conf-name <NAME>] [-d <DIR>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
   }
 
   @Override
