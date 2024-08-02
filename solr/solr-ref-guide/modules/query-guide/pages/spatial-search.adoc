@@ -27,7 +27,7 @@ Using spatial search, you can:
 
 There are four main field types available for spatial search:
 
-* `LatLonPointSpatialField`
+* `LatLonPointSpatialField` (has `docValues` enabled by default)
 * `PointType`
 * `SpatialRecursivePrefixTreeFieldType` (RPT for short), including `RptWithGeometrySpatialField`, a derivative
 * `BBoxField`

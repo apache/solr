@@ -153,11 +153,6 @@ public class BinaryField extends FieldType {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
-    return true;
-  }
-
-  @Override
   public Object toNativeType(Object val) {
     if (val instanceof byte[]) {
       return ByteBuffer.wrap((byte[]) val);
