@@ -78,7 +78,12 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
           output.lines().filter(line -> !line.startsWith("#")).collect(Collectors.toList());
       filteredResponse.forEach(
           (actualMetric) -> {
-            String actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
+            String actualValue;
+            if (actualMetric.contains("}")) {
+              actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
+            } else {
+              actualValue = actualMetric.split(" ")[1];
+            }
             assertTrue(
                 "All metrics should start with 'solr_metrics_'",
                 actualMetric.startsWith("solr_metrics_"));
