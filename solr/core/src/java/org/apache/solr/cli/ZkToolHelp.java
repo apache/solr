@@ -45,18 +45,13 @@ public class ZkToolHelp extends ToolBase {
         Option.builder()
             .longOpt("print-long-zk-usage")
             .required(false)
-            .desc("Invokes the long summary help for zk commands.")
+            .desc("Invokes the detailed help for zk commands.")
             .build());
   }
 
   @Override
   public String getName() {
     return "zk-tool-help";
-  }
-
-  @Override
-  public String getUsage() {
-    return new ZkToolHelp().getUsage();
   }
 
   @Override
@@ -83,7 +78,7 @@ public class ZkToolHelp extends ToolBase {
       print(new UpdateACLTool().getUsage());
       print("");
       print(
-          "Pass -help or -h after any COMMAND to see command-specific usage information such as: ./solr zk ls --help");
+          "Pass --help or -h after any COMMAND to see command-specific usage information such as: ./solr zk ls --help");
     }
   }
 }

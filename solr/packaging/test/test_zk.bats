@@ -45,7 +45,7 @@ teardown() {
  run solr zk -h
  assert_output --partial "bin/solr zk ls"
  assert_output --partial "bin/solr zk updateacls"
- assert_output --partial "Pass -help or -h after any COMMAND"
+ assert_output --partial "Pass --help or -h after any COMMAND"
 }
 
 @test "running subcommands with zk is prevented" {
