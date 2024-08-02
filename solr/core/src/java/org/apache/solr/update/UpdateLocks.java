@@ -48,7 +48,7 @@ public class UpdateLocks {
   //   Note:  ConcurrentHashMap was also explored but HPPC came out on top, probably because
   //          we can use a hashcode directly as the key, and it's GC friendly (zero-allocation).
 
-  /** Maps a ID hashcode to a lock.  Synchronize to manipulate. */
+  /** Maps a ID hashcode to a lock. Synchronize to manipulate. */
   private final IntObjectHashMap<LockAndCondition> hashToLock =
       new IntObjectHashMap<>(32) {
         @Override
@@ -57,7 +57,7 @@ public class UpdateLocks {
         }
       };
 
-  /** A pool of locks to avoid creating & GC'ing them too much.  Must synchronize on hashToLock. */
+  /** A pool of locks to avoid creating & GC'ing them too much. Must synchronize on hashToLock. */
   private final ArrayDeque<LockAndCondition> lockPool = new ArrayDeque<>(16);
 
   public UpdateLocks(long docLockTimeoutMs) {
@@ -65,8 +65,8 @@ public class UpdateLocks {
   }
 
   /**
-   * Acquires a lock for the given doc ID, executes the function, and releases the lock.  The
-   * provided {@link Condition} can be used for wait/notify control.  The per-doc locking is needed
+   * Acquires a lock for the given doc ID, executes the function, and releases the lock. The
+   * provided {@link Condition} can be used for wait/notify control. The per-doc locking is needed
    * indirectly due to SolrCloud's internal out-of-order versioned update design.
    */
   public <R> R runWithLock(BytesRef id, IOFunction<Condition, R> function) throws IOException {
