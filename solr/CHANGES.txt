@@ -279,6 +279,9 @@ Other Changes
 * SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend
   ScoreDocs (covariant generic types) broken in Solr 9.0. (Stephen Woods via Christine Poerschke)
 
+* SOLR-16996: Update Solr Exporter for Prometheus cli to use commons-cli instead of argparse4j.  (Christos Malliaridis via Eric Pugh)
+
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
