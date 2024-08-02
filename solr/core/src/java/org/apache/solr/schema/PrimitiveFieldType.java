@@ -39,7 +39,7 @@ public abstract class PrimitiveFieldType extends FieldType {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return true;
   }
 

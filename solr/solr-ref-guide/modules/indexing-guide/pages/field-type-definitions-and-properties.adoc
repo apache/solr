@@ -198,7 +198,7 @@ The table below includes the default value for most `FieldType` implementations 
 |Property |Description |Implicit Default
 |`indexed` |If `true`, the value of the field can be used in queries to retrieve matching documents. |`true`
 |`stored` |If `true`, the actual value of the field can be retrieved by queries.  |`true`
-|`docValues` |If `true`, the value of the field will be put in a column-oriented xref:docvalues.adoc[] structure. |`true`
+|`docValues` |If `true`, the value of the field will be put in a column-oriented xref:docvalues.adoc[] structure. |`true` for xref:indexing-guide:docvalues.adoc#enabling-docvalues[_most_ fields]
 |`sortMissingFirst`, `sortMissingLast` |Control the placement of documents when a sort field is not present. |`false`
 |`multiValued` |If `true`, indicates that a single document might contain multiple values for this field type. |`false`
 |`uninvertible` |If `true`, indicates that an `indexed="true" docValues="false"` field can be "un-inverted" at query time to build up large in memory data structure to serve in place of xref:docvalues.adoc[]. |`false`

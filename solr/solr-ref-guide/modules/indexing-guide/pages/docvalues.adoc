@@ -35,7 +35,21 @@ This approach promises to relieve some of the memory requirements of the fieldCa
 == Enabling DocValues
 
 [IMPORTANT]
-DocValues are enabled by default for all field types that support them (when using a schemaVersion >= 1.7).
+DocValues are enabled by default for most field types that support them *when using a schemaVersion >= 1.7*.
+
+* Primitive Fields
+** `Numeric` (not `DenseVectorField`)
+** `Boolean`
+** `String`
+** `Date`
+** `UUID`
+** `Enum`
+* Sorting Fields
+** `CollationField`
+** `ICUCollationField`
+** `SortableTextField`
+** `SortableBinaryField`
+* `LatLonPointSpacialField` (not `PointType`, which is different than `PointField`)
 
 When using an earlier schemaVersion (\<= 1.6), you only need to enable docValues for a field that you will use it with.
 As with all schema design, you need to define a field type and then define fields of that type with docValues enabled.
