@@ -1154,6 +1154,37 @@ outerHashJoin(
 )
 ----
 
+
+== page
+
+The `page` function wraps a streaming expression and re-orders the tuples.
+The page function emits only the top N tuples from specified offset (specified as `start` param) in the new sort order.
+The page function re-orders the underlying stream so the sort criteria *does not* have to match up with the underlying stream.
+
+=== page Parameters
+
+* `start`: Specifies an offset.
+* `rows`: Number of top tuples to return.
+* `StreamExpression`
+* `sort`: Sort criteria for selecting the top N tuples.
+
+=== page Syntax
+
+The expression below finds the top 3 results (starting from 0) of the underlying search.
+Notice that it reverses the sort order.
+The page function re-orders the results of the underlying stream.
+
+[source,text]
+----
+page(start=0,rows=3,
+     search(collection1,
+            q="*:*",
+            qt="/export",
+            fl="id,a_s,a_i,a_f",
+            sort="a_f desc, a_i desc"),
+      sort="a_f asc, a_i asc")
+----
+
 == parallel
 
 The `parallel` function wraps a streaming expression and sends it to N worker nodes to be processed in parallel.
