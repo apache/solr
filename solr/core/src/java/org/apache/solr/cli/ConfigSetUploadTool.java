@@ -50,11 +50,13 @@ public class ConfigSetUploadTool extends ToolBase {
             .longOpt("conf-name")
             .hasArg()
             .argName("NAME")
-            .required(false) // should be true but we have deprecated option as well.
+            .required(false) // should be true, but we have deprecated option as well.
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder()
             .longOpt("confname")
+            .hasArg()
+            .argName("NAME")
             .deprecated(
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)
@@ -68,11 +70,13 @@ public class ConfigSetUploadTool extends ToolBase {
             .longOpt("conf-dir")
             .hasArg()
             .argName("DIR")
-            .required(false) // should be true but we have deprecated option as well.
+            .required(false) // should be true, but we have deprecated option as well.
             .desc("Local directory with configs.")
             .build(),
         Option.builder()
             .longOpt("confdir")
+            .hasArg()
+            .argName("DIR")
             .deprecated(
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)

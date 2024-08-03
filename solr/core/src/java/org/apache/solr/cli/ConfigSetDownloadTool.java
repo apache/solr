@@ -44,15 +44,17 @@ public class ConfigSetDownloadTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
+        Option.builder("n")
             .longOpt("conf-name")
             .hasArg()
             .argName("NAME")
-            .required(false) // should be true but we have deprecated option as well.
+            .required(false) // should be true, but we have deprecated option as well.
             .desc("Configset name in ZooKeeper.")
             .build(),
-        Option.builder("n")
+        Option.builder()
             .longOpt("confname")
+            .hasArg()
+            .argName("NAME")
             .deprecated(
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)
@@ -66,11 +68,13 @@ public class ConfigSetDownloadTool extends ToolBase {
             .longOpt("conf-dir")
             .hasArg()
             .argName("DIR")
-            .required(false) // should be true but we have deprecated option as well.
+            .required(false) // should be true, but we have deprecated option as well.
             .desc("Local directory with configs.")
             .build(),
         Option.builder()
             .longOpt("confdir")
+            .hasArg()
+            .argName("NAME")
             .deprecated(
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)

@@ -135,6 +135,14 @@ teardown() {
 
 }
 
+@test "downconfig" {
+
+  run solr zk downconfig -z localhost:${ZK_PORT} -n _default -d "${BATS_TEST_TMPDIR}/downconfig"
+  assert_output --partial "Downloading"
+  refute_output --partial "ERROR"
+
+}
+
 
 @test "bin/solr zk cp gets 'solrhome' from '--solr-home' command line option" {
   touch afile.txt
