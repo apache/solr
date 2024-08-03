@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1090,6 +1091,16 @@ public class JavaBinCodec implements PushWriter {
       daos.writeByte(DATE);
       daos.writeLong(((Date) val).getTime());
       return true;
+    } else if (val instanceof Instant) {
+      writeStr(val.toString());
+    } else if (val instanceof LocalDate) {
+      writeStr(val.toString());
+    } else if (val instanceof LocalDateTime) {
+      writeStr(val.toString());
+    } else if (val instanceof ZonedDateTime) {
+      writeStr(val.toString());
+    } else if (val instanceof OffsetDateTime) {
+      writeStr(val.toString());
     } else if (val instanceof Boolean) {
       writeBoolean((Boolean) val);
       return true;
