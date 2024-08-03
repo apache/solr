@@ -2662,6 +2662,12 @@ public class ZkController implements Closeable {
     return confDirListeners;
   }
 
+  public boolean hasConfDirectoryListeners(final String confDir) {
+    synchronized (confDirectoryListeners) {
+      return confDirectoryListeners.containsKey(confDir) && !confDirectoryListeners.isEmpty();
+    }
+  }
+
   private final Map<String, Set<Runnable>> confDirectoryListeners = new HashMap<>();
 
   private class WatcherImpl implements Watcher {
