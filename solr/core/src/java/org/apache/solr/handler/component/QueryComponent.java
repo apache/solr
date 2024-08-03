@@ -89,7 +89,6 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.RankQuery;
-import org.apache.solr.search.ReRankQParserPlugin;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -372,10 +371,13 @@ public class QueryComponent extends SearchComponent {
       return;
     }
 
+    final boolean multiThreaded = params.getBool("multiThreaded", true);
+
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
 
     QueryCommand cmd = rb.createQueryCommand();
+    cmd.setMultiThreaded(multiThreaded);
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
     cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
@@ -401,14 +403,9 @@ public class QueryComponent extends SearchComponent {
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
 
-    QueryResult result = new QueryResult();
-
     cmd.setSegmentTerminateEarly(
         params.getBool(
             CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
-    if (cmd.getSegmentTerminateEarly()) {
-      result.setSegmentTerminatedEarly(Boolean.FALSE);
-    }
 
     //
     // grouping / field collapsing
@@ -419,22 +416,20 @@ public class QueryComponent extends SearchComponent {
       cmd.setSegmentTerminateEarly(false);
       try {
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
-          doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
-          return;
+          doProcessGroupedDistributedSearchFirstPhase(rb, cmd);
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
-          doProcessGroupedDistributedSearchSecondPhase(rb, cmd, result);
-          return;
+          doProcessGroupedDistributedSearchSecondPhase(rb, cmd);
+        } else {
+          doProcessGroupedSearch(rb, cmd);
         }
-
-        doProcessGroupedSearch(rb, cmd, result);
-        return;
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
+      return;
     }
 
     // normal search result
-    doProcessUngroupedSearch(rb, cmd, result);
+    doProcessUngroupedSearch(rb, cmd);
   }
 
   private int getMinExactCount(SolrParams params) {
@@ -779,7 +774,6 @@ public class QueryComponent extends SearchComponent {
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
     if (distribSinglePass
-        || singlePassExplain(rb.req.getParams())
         || (fields != null
             && fields.wantsField(keyFieldName)
             && fields.getRequestedFieldNames() != null
@@ -859,36 +853,6 @@ public class QueryComponent extends SearchComponent {
     if (additionalAdded) sreq.params.add(CommonParams.FL, additionalFL.toString());
 
     rb.addRequest(this, sreq);
-  }
-
-  private boolean singlePassExplain(SolrParams params) {
-
-    /*
-     * Currently there is only one explain that requires a single pass
-     * and that is the reRank when scaling is used.
-     */
-
-    String rankQuery = params.get(CommonParams.RQ);
-    if (rankQuery != null) {
-      if (rankQuery.contains(ReRankQParserPlugin.RERANK_MAIN_SCALE)
-          || rankQuery.contains(ReRankQParserPlugin.RERANK_SCALE)) {
-        boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
-        if (debugQuery) {
-          return true;
-        } else {
-          String[] debugParams = params.getParams(CommonParams.DEBUG);
-          if (debugParams != null) {
-            for (String debugParam : debugParams) {
-              if (debugParam.equals("true")) {
-                return true;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return false;
   }
 
   protected boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
@@ -1497,8 +1461,8 @@ public class QueryComponent extends SearchComponent {
     return true;
   }
 
-  private void doProcessGroupedDistributedSearchFirstPhase(
-      ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
+  private void doProcessGroupedDistributedSearchFirstPhase(ResponseBuilder rb, QueryCommand cmd)
+      throws IOException {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1530,13 +1494,14 @@ public class QueryComponent extends SearchComponent {
     commandHandler.execute();
     SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
 
+    var result = new QueryResult();
     rsp.add("firstPhase", commandHandler.processResult(result, serializer));
     rsp.add("totalHitCount", commandHandler.getTotalHitCount());
     rb.setResult(result);
   }
 
-  private void doProcessGroupedDistributedSearchSecondPhase(
-      ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
+  private void doProcessGroupedDistributedSearchSecondPhase(ResponseBuilder rb, QueryCommand cmd)
+      throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1619,11 +1584,12 @@ public class QueryComponent extends SearchComponent {
     CommandHandler commandHandler = secondPhaseBuilder.build();
     commandHandler.execute();
     TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
+    var result = new QueryResult();
     rsp.add("secondPhase", commandHandler.processResult(result, serializer));
     rb.setResult(result);
   }
 
-  private void doProcessGroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result)
+  private void doProcessGroupedSearch(ResponseBuilder rb, QueryCommand cmd)
       throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
@@ -1635,6 +1601,8 @@ public class QueryComponent extends SearchComponent {
     SolrParams params = req.getParams();
 
     SolrIndexSearcher searcher = req.getSearcher();
+
+    var result = new QueryResult();
 
     int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
     boolean cacheSecondPassSearch =
@@ -1710,16 +1678,16 @@ public class QueryComponent extends SearchComponent {
     }
   }
 
-  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result)
-      throws IOException {
+  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd) throws IOException {
 
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
 
+    QueryResult result;
     try {
-      searcher.search(result, cmd);
+      result = searcher.search(cmd);
     } catch (FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }

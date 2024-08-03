@@ -267,6 +267,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2
   environment ZK_PORT: solrPort + 1000
+  environment SOLR_EXPORTER_PORT: solrPort + 100
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
@@ -293,7 +294,7 @@ class BatsTask extends Exec {
 
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
-    setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+    setArgs(['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"] + (testFiles.empty ? testDir : testFiles))
 
 
     super.exec()

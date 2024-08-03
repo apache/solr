@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.NamedList;
@@ -50,6 +51,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -68,6 +70,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   public static final String KEY_PARAM = "key";
   public static final String EXPR_PARAM = "expr";
   public static final String TYPE_PARAM = "type";
+  public static final String PROMETHEUS_METRICS_WT = "prometheus";
 
   public static final String ALL = "all";
 
@@ -116,13 +119,19 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
   }
 
-  private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer)
-      throws Exception {
+  private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) {
+    NamedList<Object> response;
+
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
-    boolean compact = params.getBool(COMPACT_PARAM, true);
+
+    if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
+      response = handlePrometheusExport(params);
+      consumer.accept("metrics", response);
+      return;
+    }
     String[] keys = params.getParams(KEY_PARAM);
     if (keys != null && keys.length > 0) {
       handleKeyRequest(keys, consumer);
@@ -133,6 +142,14 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       handleExprRequest(exprs, consumer);
       return;
     }
+
+    response = handleDropwizardRegistry(params);
+
+    consumer.accept("metrics", response);
+  }
+
+  private NamedList<Object> handleDropwizardRegistry(SolrParams params) {
+    boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
@@ -144,6 +161,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (String registryName : requestedRegistries) {
       MetricRegistry registry = metricManager.registry(registryName);
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+
       MetricUtils.toMaps(
           registry,
           metricFilters,
@@ -158,7 +176,34 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
         response.add(registryName, result);
       }
     }
-    consumer.accept("metrics", response);
+    return response;
+  }
+
+  private NamedList<Object> handlePrometheusExport(SolrParams params) {
+    NamedList<Object> response = new SimpleOrderedMap<>();
+    MetricFilter mustMatchFilter = parseMustMatchFilter(params);
+    Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
+    List<MetricType> metricTypes = parseMetricTypes(params);
+    List<MetricFilter> metricFilters =
+        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+    Set<String> requestedRegistries = parseRegistries(params);
+
+    for (String registryName : requestedRegistries) {
+      MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
+      PrometheusResponseWriter.toPrometheus(
+          dropwizardRegistry,
+          registryName,
+          metricFilters,
+          mustMatchFilter,
+          propertyFilter,
+          false,
+          false,
+          true,
+          (registry) -> {
+            response.add(registryName, registry);
+          });
+    }
+    return response;
   }
 
   private static class MetricsExpr {

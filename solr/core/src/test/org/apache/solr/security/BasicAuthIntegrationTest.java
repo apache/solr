@@ -298,13 +298,13 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
       assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
-      String[] toolArgs = new String[] {"status", "-solrUrl", baseUrl};
+      String[] toolArgs = new String[] {"status", "--solr-url", baseUrl};
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
       StatusTool tool = new StatusTool(stdoutSim);
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
-        tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), toolArgs));
+        tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
         Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
         assertTrue(obj.containsKey("version"));
         assertTrue(obj.containsKey("startTime"));

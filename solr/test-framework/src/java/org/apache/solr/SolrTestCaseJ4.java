@@ -366,19 +366,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_1 = "[::1]:4";
+  public static final String DEAD_HOST_1 = "127.0.0.1:4";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_2 = "[::1]:6";
+  public static final String DEAD_HOST_2 = "127.0.0.1:6";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_3 = "[::1]:8";
+  public static final String DEAD_HOST_3 = "127.0.0.1:8";
 
   /**
    * Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if
@@ -769,10 +769,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     log.info("####initCore");
 
     ignoreException("ignore_exception");
-    factoryProp = System.getProperty("solr.directoryFactory");
-    if (factoryProp == null) {
-      System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-    }
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");

@@ -253,7 +253,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   collectionName,
                   (long) 30,
                   TimeUnit.SECONDS,
-                  SolrCloudTestCase.activeClusterShape(2, 4));
+                  SolrCloudTestCase.activeClusterShape(2, 3));
 
           if (state == RequestStatusState.COMPLETED) {
             CountDownLatch newReplicaLatch = new CountDownLatch(1);
@@ -440,7 +440,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     ZkStateReader.from(cloudClient)
         .waitForState(
-            collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
+            collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 8));
 
     ZkStateReader.from(cloudClient).forceUpdateCollection(collectionName);
     ClusterState clusterState = cloudClient.getClusterState();
@@ -1277,9 +1277,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl =
-        ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
+    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
     try (SolrClient baseServer =
         new HttpSolrClient.Builder(baseUrl)

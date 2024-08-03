@@ -116,7 +116,8 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
                 && solrQueryRequest.getCore().getCoreContainer().hideStackTrace());
     response.responseHeader.status = response.error.code;
     final String mediaType =
-        V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);
+        V2ApiUtils.getMediaTypeFromWtParam(
+            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
     return Response.status(response.error.code).type(mediaType).entity(response).build();
   }
 
