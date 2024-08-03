@@ -97,6 +97,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private int maxIdleTimeSec;
   private boolean cleanupThread;
   private boolean async;
+  private final ThreadLocal<boolean[]> detectRecursion =
+      new ThreadLocal<>() {
+        @Override
+        protected boolean[] initialValue() {
+          return new boolean[] {false};
+        }
+      };
 
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
@@ -242,6 +249,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
   }
 
+  private static final class RecursionException extends RuntimeException {}
+
+  private static final RecursionException RECURSION_EXCEPTION = new RecursionException();
+
   @Override
   public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction)
       throws IOException {
@@ -255,7 +266,16 @@ public class CaffeineCache<K, V> extends SolrCacheBase
           k -> {
             V value;
             try {
-              value = mappingFunction.apply(k);
+              boolean[] recursion = detectRecursion.get();
+              if (recursion[0]) {
+                throw RECURSION_EXCEPTION;
+              }
+              try {
+                recursion[0] = true;
+                value = mappingFunction.apply(k);
+              } finally {
+                recursion[0] = false;
+              }
             } catch (IOException e) {
               throw new UncheckedIOException(e);
             }
@@ -268,7 +288,38 @@ public class CaffeineCache<K, V> extends SolrCacheBase
           });
     } catch (UncheckedIOException e) {
       throw e.getCause();
+    } catch (RecursionException ignored) {
+      // recursive invocation detected; fallback to get-then-put
     }
+
+    /*
+    Synchronous caches must sometimes use get-then-put under the hood in place of
+    `computeIfAbsent()`-type behavior in cases where the latter approach would risk
+    recursively modifying the cache, yielding "IllegalStateException: Recursive update"
+    (see SOLR-16707).
+     */
+    V cached = cache.getIfPresent(key);
+    if (cached != null) {
+      return cached;
+    }
+    final V computed = mappingFunction.apply(key);
+    if (computed == null) {
+      return null;
+    }
+    // using get-then-put, by the time the below call completes, we will have
+    // double-incremented `lookups` as internally tracked by CaffeineCache
+    // `stats.requestCount()` (considering the initial call to `getIfPresent()`);
+    // so decrement `lookups` here to compensate.
+    lookups.decrement();
+    return cache.get(
+        key,
+        k -> {
+          // use mapping function here as opposed to simple `put()` in order to ensure
+          // singleton return values and consistent updates to `inserts` and `ramBytes`.
+          recordRamBytes(key, null, computed);
+          inserts.increment();
+          return computed;
+        });
   }
 
   @Override
