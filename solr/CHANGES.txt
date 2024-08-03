@@ -28,6 +28,8 @@ New Features
 
 * SOLR-10255: Add support for docValues to solr.BinaryField. (Alexey Serba via Mikhail Khludnev, David Smiley)
 
+* SOLR-17276: Prometheus Exporter: now scrapes metrics at a fixed rate instead of delay. (Rafał Harabień)
+
 Improvements
 ---------------------
 * SOLR-10808, SOLR-12963: The Solr schema version has been increased to 1.7.
