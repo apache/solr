@@ -66,7 +66,6 @@ public class PrepareSnapshotExportCLI implements Closeable, CLIO {
   private static final String BACKUP_REPO_NAME = "r";
   private static final String ASYNC_REQ_ID = "i";
 
-
   private final CloudSolrClient solrClient;
 
   public PrepareSnapshotExportCLI(String solrZkEnsemble) {
@@ -225,7 +224,8 @@ public class PrepareSnapshotExportCLI implements Closeable, CLIO {
 
     options.addOption(SolrCLI.OPTION_HELP);
 
-    options.addOption(Option.builder()
+    options.addOption(
+        Option.builder()
             .longOpt("snapshot-name")
             .argName("NAME")
             .hasArg()
@@ -275,26 +275,24 @@ public class PrepareSnapshotExportCLI implements Closeable, CLIO {
     try (SolrSnapshotsTool tool =
         new SolrSnapshotsTool(requiredArg(options, cmd, SolrCLI.OPTION_ZKHOST.getOpt()))) {
 
-        String snapshotName = requiredArg(options, cmd, "snapshot-name");
-        String collectionName = requiredArg(options, cmd, COLLECTION);
-        String localFsDir = requiredArg(options, cmd, TEMP_DIR);
-        String hdfsOpDir = requiredArg(options, cmd, DEST_DIR);
-        String pathPrefix = cmd.getOptionValue(HDFS_PATH_PREFIX);
+      String snapshotName = requiredArg(options, cmd, "snapshot-name");
+      String collectionName = requiredArg(options, cmd, COLLECTION);
+      String localFsDir = requiredArg(options, cmd, TEMP_DIR);
+      String hdfsOpDir = requiredArg(options, cmd, DEST_DIR);
+      String pathPrefix = cmd.getOptionValue(HDFS_PATH_PREFIX);
 
-        if (pathPrefix != null) {
-          try {
-            new URI(pathPrefix);
-          } catch (URISyntaxException e) {
-            throw new IllegalStateException(
-                "The specified File system path prefix "
-                    + pathPrefix
-                    + " is invalid. The error is "
-                    + e.getLocalizedMessage());
-
-          }
+      if (pathPrefix != null) {
+        try {
+          new URI(pathPrefix);
+        } catch (URISyntaxException e) {
+          throw new IllegalStateException(
+              "The specified File system path prefix "
+                  + pathPrefix
+                  + " is invalid. The error is "
+                  + e.getLocalizedMessage());
         }
-        tool.prepareForExport(collectionName, snapshotName, localFsDir, pathPrefix, hdfsOpDir);
-
+      }
+      tool.prepareForExport(collectionName, snapshotName, localFsDir, pathPrefix, hdfsOpDir);
     }
   }
 
