@@ -23,13 +23,13 @@ resource configuration.
 == When To Use Circuit Breakers
 Circuit breakers should be used when the user wishes to trade request throughput for a higher Solr stability.
 If circuit breakers are enabled, requests may be rejected under the condition of high node duress with HTTP error code 429 'Too Many Requests'.
-
 It is up to the client to handle this error and potentially build retry logic as this should be a transient situation.
 
-In a sharded collection, when a circuit breaker trips on one shard, the entire query will fail,
-even if the other shard requests succeed. This will multiply the failures seen by the end users.
-Setting the `shards.tolerant=true` parameter on requests can help with graceful degradation when
-circuit breaker thresholds are reached on some nodes. See the xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[`shards.tolerant` Parameter] for details.
+Individual circuit breakers may also be enabled in a "warn only" mode.
+"Warn only" breakers whose threshold has been exceeded are logged, but are not used to block or short-circuit requests.
+This may be used as a way to tune circuit breaker thresholds without impacting traffic.
+
+In a request to a sharded collection, the circuit breaker is only checked on the node handling the initial request, not for inter-node requests. It is therefore recommended to load balance client requests across Solr nodes to avoid hotspots.
 
 == Circuit Breaker Configurations
 Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers, and if there is a conflict, the per-collection circuit breaker takes precedence.
@@ -48,10 +48,16 @@ Circuit breakers can be configured globally using environment variables, e.g. in
 |System Load Average |`SOLR_CIRCUITBREAKER_QUERY_LOADAVG`, `SOLR_CIRCUITBREAKER_UPDATE_LOADAVG` |`solr.circuitbreaker.query.loadavg`, `solr.circuitbreaker.update.loadavg`
 |===
 
+Circuit breakers can be configured in "warn only" mode by adding a "warnonly"-suffixed environment variable or system property with a boolean value.
+
 For example, you can enable a global CPU circuit breaker that rejects update requests when above 95% CPU load, by setting the following environment variable: `SOLR_CIRCUITBREAKER_UPDATE_CPU=95`.
+If "warn only" mode is desired for this circuit breaker, the `SOLR_CIRCUITBREAKER_UPDATE_CPU_WARNONLY=true` environment variable or `solr.circuitbreaker.update.cpu.warnonly=true` system property could be set.
 
 === Per Collection Circuit Breakers
-Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples. By default, only search requests are affected.
+Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples.
+By default, only search requests are affected.
+The syntax and semantics of available configuration options differs slightly based on the type of circuit breaker being configured.
+However all circuit breakers support a boolean "warnOnly" setting" that can be used to set the circuit breaker into "warn only" mode (e.g. `<bool name="warnOnly">true</bool>`)
 
 [TIP]
 ====

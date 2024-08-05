@@ -140,7 +140,7 @@ public class BlobHandler extends RequestHandlerBase
 
         long version = 0;
         if (docs.totalHits.value > 0) {
-          Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+          Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
         }
@@ -214,7 +214,7 @@ public class BlobHandler extends RequestHandlerBase
 
                   @Override
                   public void write(OutputStream os) throws IOException {
-                    Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+                    Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
                     IndexableField sf = doc.getField("blob");
                     FieldType fieldType = req.getSchema().getField("blob").getType();
                     ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);

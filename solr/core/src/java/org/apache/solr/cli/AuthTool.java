@@ -33,13 +33,12 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -61,6 +60,26 @@ public class AuthTool extends ToolBase {
     return "auth";
   }
 
+  @Override
+  public String getUsage() {
+    // Jan, the return "" causes
+    // Exception in thread "main" java.lang.IllegalArgumentException: cmdLineSyntax not provided
+    // at org.apache.commons.cli.HelpFormatter.printHelp(HelpFormatter.java:584)
+    // however return " " seems okay.
+    // return " ";
+    return "\n  bin/solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
+        + "  bin/solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]\n"
+        + "  bin/solr auth enable --type kerberos --config \\\"<kerberos configs>\\\" [--update-include-file-only <true|false>] [-v]\n"
+        + "  bin/solr auth disable [--update-include-file-only <true|false>] [-v]\n";
+  }
+
+  @Override
+  public String getHeader() {
+    return "\nUpdates or enables/disables authentication.  Must be run on the machine hosting Solr.\n"
+        + "\n"
+        + "List of options:";
+  }
+
   List<String> authenticationVariables =
       Arrays.asList(
           "SOLR_AUTHENTICATION_CLIENT_BUILDER", "SOLR_AUTH_TYPE", "SOLR_AUTHENTICATION_OPTS");
@@ -68,54 +87,115 @@ public class AuthTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("type")
-            .argName("type")
+        Option.builder()
+            .longOpt("type")
             .hasArg()
             .desc(
                 "The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        Option.builder("prompt")
-            .argName("prompt")
+        Option.builder()
+            .longOpt("prompt")
             .hasArg()
             .desc(
-                "Prompts the user to provide the credentials. Use either -credentials or -prompt, not both.")
+                "Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
             .build(),
-        Option.builder("config")
-            .argName("config")
+        Option.builder()
+            .longOpt("config")
             .hasArgs()
             .desc(
                 "Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
             .build(),
-        Option.builder("blockUnknown")
-            .argName("blockUnknown")
+        Option.builder()
+            .longOpt("block-unknown")
             .desc(
                 "Blocks all access for unknown users (requires authentication for all endpoints).")
             .hasArg()
+            .argName("true|false")
             .build(),
-        Option.builder("solrIncludeFile")
-            .argName("solrIncludeFile")
+        Option.builder("blockUnknown")
+            .longOpt("blockUnknown")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --block-unknown instead")
+                    .get())
             .hasArg()
+            .argName("true|false")
+            .required(false)
+            .desc(
+                "Blocks all access for unknown users (requires authentication for all endpoints).")
+            .build(),
+        Option.builder()
+            .longOpt("solr-include-file")
+            .hasArg()
+            .argName("FILE")
             .desc(
                 "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
             .build(),
-        Option.builder("updateIncludeFileOnly")
-            .argName("updateIncludeFileOnly")
+        Option.builder("solrIncludeFile")
+            .longOpt("solrIncludeFile")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-include-file instead")
+                    .get())
+            .hasArg()
+            .argName("FILE")
+            .required(false)
+            .desc(
+                "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
+            .build(),
+        Option.builder()
+            .longOpt("update-include-file-only")
             .desc(
                 "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
                     + " authentication (i.e. don't update security.json).")
             .hasArg()
             .build(),
-        Option.builder("authConfDir")
-            .argName("authConfDir")
+        Option.builder()
+            .longOpt("updateIncludeFileOnly")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --update-include-file-only instead")
+                    .get())
             .hasArg()
+            .argName("true|false")
+            .required(false)
+            .desc(
+                "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+                    + " authentication (i.e. don't update security.json).")
+            .build(),
+        Option.builder()
+            .longOpt("auth-conf-dir")
+            .hasArg()
+            .argName("FILE")
             .required()
             .desc(
                 "This is where any authentication related configuration files, if any, would be placed.")
             .build(),
+        Option.builder("solrIncludeFile")
+            .longOpt("solrIncludeFile")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-include-file instead")
+                    .get())
+            .hasArg()
+            .argName("FILE")
+            .required(false)
+            .desc(
+                "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
+            .build(),
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
@@ -128,30 +208,15 @@ public class AuthTool extends ToolBase {
     }
   }
 
-  @Override
-  public int runTool(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
+  // @Override
+  // public int runTool(CommandLine cli) throws Exception {
 
-    ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
-    ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");
-
-    String type = cli.getOptionValue("type", "basicAuth");
-    switch (type) {
-      case "basicAuth":
-        return handleBasicAuth(cli);
-      case "kerberos":
-        return handleKerberos(cli);
-      default:
-        CLIO.out("Only type=basicAuth or kerberos supported at the moment.");
-        SolrCLI.exit(1);
-    }
-    return 1;
-  }
+  // }
 
   private int handleKerberos(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
     boolean updateIncludeFileOnly =
-        Boolean.parseBoolean(cli.getOptionValue("updateIncludeFileOnly", "false"));
+        Boolean.parseBoolean(cli.getOptionValue("update-include-file-only", "false"));
     String securityJson =
         "{"
             + "\n  \"authentication\":{"
@@ -186,12 +251,7 @@ public class AuthTool extends ToolBase {
 
           // check if security is already enabled or not
           if (!zkInaccessible) {
-            try (SolrZkClient zkClient =
-                new SolrZkClient.Builder()
-                    .withUrl(zkHost)
-                    .withTimeout(
-                        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .build()) {
+            try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
               checkSecurityJsonExists(zkClient);
             } catch (Exception ex) {
               CLIO.out(
@@ -206,12 +266,7 @@ public class AuthTool extends ToolBase {
         if (!updateIncludeFileOnly) {
           if (!zkInaccessible) {
             echoIfVerbose("Uploading following security.json: " + securityJson, cli);
-            try (SolrZkClient zkClient =
-                new SolrZkClient.Builder()
-                    .withUrl(zkHost)
-                    .withTimeout(
-                        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .build()) {
+            try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             } catch (Exception ex) {
@@ -231,7 +286,7 @@ public class AuthTool extends ToolBase {
                 StandardCharsets.UTF_8);
         config = config.replace("\n", "").replace("\r", "");
 
-        String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        String solrIncludeFilename = cli.getOptionValue("solr-include-file");
         File includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -249,7 +304,7 @@ public class AuthTool extends ToolBase {
       case "disable":
         clearSecurityJson(cli, updateIncludeFileOnly);
 
-        solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        solrIncludeFilename = cli.getOptionValue("solr-include-file");
         includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -278,18 +333,18 @@ public class AuthTool extends ToolBase {
     String cmd = cli.getArgs()[0];
     boolean prompt = Boolean.parseBoolean(cli.getOptionValue("prompt", "false"));
     boolean updateIncludeFileOnly =
-        Boolean.parseBoolean(cli.getOptionValue("updateIncludeFileOnly", "false"));
+        Boolean.parseBoolean(cli.getOptionValue("update-include-file-only", "false"));
     switch (cmd) {
       case "enable":
         if (!prompt && !cli.hasOption("credentials")) {
-          CLIO.out("Option -credentials or -prompt is required with enable.");
+          CLIO.out("Option --credentials or --prompt is required with enable.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);
         } else if (!prompt
             && (cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()) == null
                 || !cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()).contains(":"))) {
-          CLIO.out("Option -credentials is not in correct format.");
+          CLIO.out("Option --credentials is not in correct format.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);
@@ -301,32 +356,28 @@ public class AuthTool extends ToolBase {
           try {
             zkHost = SolrCLI.getZkHost(cli);
           } catch (Exception ex) {
-            if (cli.hasOption("zkHost")) {
+            if (cli.hasOption("zk-host")) {
               CLIO.out(
-                  "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
+                  "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zk-host has been passed in.");
             } else {
               CLIO.out(
-                  "Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
+                  "Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zk-host has been passed in.");
             }
             SolrCLI.exit(1);
           }
           if (zkHost == null) {
-            if (cli.hasOption("zkHost")) {
+            if (cli.hasOption("zk-host")) {
               CLIO.out(
-                  "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zkHost has been passed in.");
+                  "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zk-host has been passed in.");
             } else {
               CLIO.out(
-                  "Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zkHost has been passed in.");
+                  "Couldn't get ZooKeeper host. Please make sure Solr is running in cloud mode, or a zk-host has been passed in.");
             }
             SolrCLI.exit(1);
           }
 
           // check if security is already enabled or not
-          try (SolrZkClient zkClient =
-              new SolrZkClient.Builder()
-                  .withUrl(zkHost)
-                  .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                  .build()) {
+          try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
             checkSecurityJsonExists(zkClient);
           }
         }
@@ -349,7 +400,7 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("blockUnknown", "true"));
+        boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("block-unknown", "true"));
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
@@ -374,16 +425,12 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           echoIfVerbose("Uploading following security.json: " + securityJson, cli);
-          try (SolrZkClient zkClient =
-              new SolrZkClient.Builder()
-                  .withUrl(zkHost)
-                  .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                  .build()) {
+          try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
             zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
           }
         }
 
-        String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        String solrIncludeFilename = cli.getOptionValue("solr-include-file");
         File includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -391,7 +438,7 @@ public class AuthTool extends ToolBase {
           printAuthEnablingInstructions(username, password);
           System.exit(0);
         }
-        String authConfDir = cli.getOptionValue("authConfDir");
+        String authConfDir = cli.getOptionValue("auth-conf-dir");
         File basicAuthConfFile = new File(authConfDir + File.separator + "basicAuth.conf");
 
         if (!basicAuthConfFile.getParentFile().canWrite()) {
@@ -420,7 +467,7 @@ public class AuthTool extends ToolBase {
       case "disable":
         clearSecurityJson(cli, updateIncludeFileOnly);
 
-        solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        solrIncludeFilename = cli.getOptionValue("solr-include-file");
         includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -469,11 +516,7 @@ public class AuthTool extends ToolBase {
 
       echoIfVerbose("Uploading following security.json: {}", cli);
 
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(zkHost)
-              .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
+      try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
         zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
       }
     }
@@ -610,5 +653,22 @@ public class AuthTool extends ToolBase {
   }
 
   @Override
-  public void runImpl(CommandLine cli) throws Exception {}
+  public void runImpl(CommandLine cli) throws Exception {
+    SolrCLI.raiseLogLevelUnlessVerbose(cli);
+
+    ensureArgumentIsValidBooleanIfPresent(cli, "block-unknown");
+    ensureArgumentIsValidBooleanIfPresent(cli, "update-include-file-only");
+
+    String type = cli.getOptionValue("type", "basicAuth");
+    switch (type) {
+      case "basicAuth":
+        handleBasicAuth(cli);
+        break;
+      case "kerberos":
+        handleKerberos(cli);
+        break;
+      default:
+        throw new IllegalStateException("Only type=basicAuth or kerberos supported at the moment.");
+    }
+  }
 }

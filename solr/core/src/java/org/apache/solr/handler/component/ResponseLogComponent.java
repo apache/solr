@@ -24,6 +24,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -90,9 +91,10 @@ public class ResponseLogComponent extends SearchComponent {
     StringBuilder sb = new StringBuilder();
 
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     for (DocIterator iter = dl.iterator(); iter.hasNext(); ) {
 
-      sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields))).append(',');
+      sb.append(schema.printableUniqueKey(docFetcher.doc(iter.nextDoc(), fields))).append(',');
     }
     if (sb.length() > 0) {
       rb.rsp.addToLog("responseLog", sb.substring(0, sb.length() - 1));
@@ -105,8 +107,9 @@ public class ResponseLogComponent extends SearchComponent {
 
     StringBuilder sb = new StringBuilder();
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     for (DocIterator iter = dl.iterator(); iter.hasNext(); ) {
-      sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields)))
+      sb.append(schema.printableUniqueKey(docFetcher.doc(iter.nextDoc(), fields)))
           .append(':')
           .append(iter.score())
           .append(',');

@@ -1,4 +1,5 @@
 = JSON Query DSL
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -40,33 +41,33 @@ Each snippet represents the same basic search: the term `iPod` in a field called
 
 Using the standard query API, with a simple query string:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-basic]
+[tabs#ipod-query-basic]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/techproducts/query?q=name:iPod"
 ----
 ====
-[example.tab-pane#solrj-ipod-query-basic]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-basic]
 ----
 ====
---
+======
 
 Using the JSON Request API, with a simple query string:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-dsl-1]
+[tabs#ipod-query-dsl-1]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -75,23 +76,24 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-ipod-query-dsl-1]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-1]
 ----
 ====
---
+======
 
 Using the JSON Request API, with a local-params string:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-dsl-2]
+[tabs#ipod-query-dsl-2]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -100,23 +102,24 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-ipod-query-dsl-2]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-2]
 ----
 ====
---
+======
 
 Using the JSON Request API, with a fully expanded JSON object:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-dsl-3]
+[tabs#ipod-query-dsl-3]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -130,15 +133,16 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-ipod-query-dsl-3]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-dsl-3]
 ----
 ====
---
+======
 
 == Nested Queries
 Many of Solr's query parsers allow queries to be nested within one another.
@@ -150,34 +154,35 @@ As an example, consider the three requests below, which wrap a simple query (the
 
 Using the standard query API:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-boosted-basic]
+[tabs#ipod-query-boosted-basic]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X GET "http://localhost:8983/solr/techproducts/query?q={!boost b=log(popularity) v=\'{!lucene df=name}iPod\'}"
 ----
 ====
-[example.tab-pane#solrj-ipod-query-boosted-basic]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-basic]
 ----
 ====
---
+======
 
 Using the JSON Request API, with a mix of fully-expanded and local-params queries.
 As you can see, the special key `v` is replaced with the key `query`:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-boosted-dsl-1]
+[tabs#ipod-query-boosted-dsl-1]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -191,23 +196,24 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-ipod-query-boosted-dsl-1]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-1]
 ----
 ====
---
+======
 
 Using the JSON Request API, with all queries fully expanded as JSON:
 +
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-boosted-dsl-2]
+[tabs#ipod-query-boosted-dsl-2]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -226,15 +232,16 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 }'
 ----
 ====
-[example.tab-pane#solrj-ipod-query-boosted-dsl-2]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-boosted-dsl-2]
 ----
 ====
---
+======
 
 === Nested Boolean Query Example
 Query nesting is commonly seen when combining multiple query clauses together using pseudo-boolean logic with the xref:other-parsers.adoc#boolean-query-parser[BoolQParser].
@@ -242,11 +249,11 @@ Query nesting is commonly seen when combining multiple query clauses together us
 The example below shows how the `BoolQParser` can be used to create powerful nested queries.
 In this example, a user searches for results with `iPod` in the field `name` which are _not_ in the bottom half of the `popularity` rankings.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-bool]
+[tabs#ipod-query-pool]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -265,23 +272,24 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 
 ----
 ====
-[example.tab-pane#solrj-ipod-query-bool]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool]
 ----
 ====
---
+======
 
 If `lucene` is the default query parser, the example above can be simplified to:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-bool-condensed]
+[tabs#ipod-query-bool-condensed]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -298,15 +306,16 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 
 ----
 ====
-[example.tab-pane#solrj-ipod-query-bool-condensed]
+
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool-condensed]
 ----
 ====
---
+======
 
 Example of referencing <<Additional Queries,additional queries>>, <<Tagging in JSON Query DSL,tagging>>, and xref:other-parsers.adoc#boolean-query-parser[exclusions]:
 
@@ -337,11 +346,11 @@ The syntaxes discussed above can also be used to specify query filters (under th
 
 For example, the above query can be rewritten using a filter clause as:
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-ipod-query-bool-filter]
+[tabs#ipod-query-bool-filter]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
@@ -358,15 +367,15 @@ curl -X POST http://localhost:8983/solr/techproducts/query -d '
 
 ----
 ====
-[example.tab-pane#solrj-ipod-query-bool-filter]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-ipod-query-bool-filter]
 ----
 ====
---
+======
 
 == Additional Queries
 
@@ -411,11 +420,11 @@ For example: `{"\#title,tag2,tag3":"title:solr"}`.
 Note that unlike the rest of the JSON request API which uses lax JSON parsing rules, tags must be surrounded by double-quotes because of the leading `#` character.
 The example below creates two tagged clauses: `titleTag` and `inStockTag`.
 
-[.dynamic-tabs]
---
-[example.tab-pane#curl-tagged-query]
+[tabs#tagged-query]
+======
+curl::
++
 ====
-[.tab-label]*curl*
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/techproducts/select -d '
@@ -433,15 +442,15 @@ curl -X POST http://localhost:8983/solr/techproducts/select -d '
 
 ----
 ====
-[example.tab-pane#solrj-tagged-query]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 include::example$JsonRequestApiTest.java[tag=solrj-tagged-query]
 ----
 ====
---
+======
 
 Note that the tags created in the example above have no impact in how the search is executed.
 Tags will not affect a query unless they are referenced by some other part of the request that uses them.

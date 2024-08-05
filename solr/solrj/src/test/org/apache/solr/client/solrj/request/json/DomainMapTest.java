@@ -22,7 +22,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class DomainMapTest extends SolrTestCaseJ4 {
@@ -35,7 +34,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().withFilter(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -67,7 +66,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().withQuery(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -99,7 +98,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().withTagsToExclude(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -132,7 +131,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().setBlockParentQuery(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -149,7 +148,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().setBlockChildQuery(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -166,7 +165,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().setJoinTransformation(null, "valid-to-field");
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -177,7 +176,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
             () -> {
               new DomainMap().setJoinTransformation("valid-from-field", null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test

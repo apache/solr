@@ -28,7 +28,7 @@ import org.apache.solr.response.transform.DocTransformer;
 public abstract class ReturnFields {
   /**
    * Set of field names with their exact names from the lucene index. Class such as ResponseWriters
-   * pass this to {@link SolrIndexSearcher#doc(int, Set)}.
+   * pass this to {@link SolrDocumentFetcher#doc(int, Set)}.
    *
    * <p>NOTE: In some situations, this method may return <code>null</code> even if {@link
    * #wantsAllFields()} is <code>false</code>. For example: When glob expressions are used ({@link
