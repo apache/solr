@@ -380,8 +380,8 @@ function print_usage() {
     echo ""
     echo "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh."
     echo ""
-    echo "Pass -help or -h after any COMMAND to see command-specific usage information,"
-    echo "  such as:    ./solr start -help or ./solr stop -h"
+    echo "Pass --help or -h after any COMMAND to see command-specific usage information,"
+    echo "  such as:    ./solr start --help or ./solr stop -h"
     echo ""
   elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
@@ -858,7 +858,7 @@ if [ $# -eq 1 ]; then
 fi
 
 if [ $# -gt 0 ]; then
-  # if first arg starts with a dash (and it's not -help or -info),
+  # if first arg starts with a dash (and it's not --help or -info),
   # then assume they are starting Solr, such as: solr -f
   if [[ $1 == -* ]]; then
     SCRIPT_CMD="start"

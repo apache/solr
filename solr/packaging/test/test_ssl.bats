@@ -26,7 +26,7 @@ teardown() {
   save_home_on_failure
 
   run solr auth disable
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 

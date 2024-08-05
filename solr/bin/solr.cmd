@@ -251,7 +251,6 @@ IF "%1"=="-help" goto run_solrcli
 IF "%1"=="-usage" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
 IF "%1"=="--help" goto run_solrcli
-IF "%1"=="-help" goto run_solrcli
 IF "%1"=="/?" goto run_solrcli
 IF "%1"=="status" goto get_status
 IF "%1"=="version" goto run_solrcli
@@ -354,8 +353,8 @@ goto done
 @echo.
 @echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
 @echo.
-@echo Pass -help after any COMMAND to see command-specific usage information,
-@echo   such as:    solr start -help or solr stop -help
+@echo Pass --help after any COMMAND to see command-specific usage information,
+@echo   such as:    solr start --help or solr stop --help
 @echo.
 goto done
 
@@ -461,11 +460,11 @@ echo   Create a core or collection depending on whether Solr is running in stand
 echo   mode (collection). In other words, this action detects which mode Solr is running in, and then takes
 echo   the appropriate action (either create_core or create_collection). For detailed usage instructions, do:
 echo.
-echo     bin\solr create_core -help
+echo     bin\solr create_core --help
 echo.
 echo        or
 echo.
-echo     bin\solr create_collection -help
+echo     bin\solr create_collection --help
 echo.
 goto done
 
@@ -674,6 +673,7 @@ IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
+IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
@@ -1518,6 +1518,8 @@ IF "%1"=="-collection" goto set_healthcheck_collection
 IF "%1"=="-z" goto set_healthcheck_zk
 IF "%1"=="-zkhost" goto set_healthcheck_zk
 IF "%1"=="-zkHost" goto set_healthcheck_zk
+IF "%1"=="-h" goto usage
+IF "%1"=="--help" goto usage
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
@@ -1621,6 +1623,8 @@ IF "%1"=="-rf" goto set_create_rf
 IF "%1"=="-replicationFactor" goto set_create_rf
 IF "%1"=="-p" goto set_create_port
 IF "%1"=="-port" goto set_create_port
+IF "%1"=="-h" goto usage
+IF "%1"=="--help" goto usage
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
@@ -1727,6 +1731,8 @@ IF "%1"=="-collection" goto set_delete_name
 IF "%1"=="-p" goto set_delete_port
 IF "%1"=="-port" goto set_delete_port
 IF "%1"=="-deleteConfig" goto set_delete_config
+IF "%1"=="-h" goto usage
+IF "%1"=="--help" goto usage
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
@@ -1838,6 +1844,8 @@ IF "%1"=="-upconfig" (
 ) ELSE IF "%1"=="-h" (
   goto zk_usage
 ) ELSE IF "%1"=="-help" (
+  goto zk_usage
+) ELSE IF "%1"=="--help" (
   goto zk_usage
 ) ELSE IF "!ZK_SRC!"=="" (
   if not "%~1"=="" (
@@ -2043,6 +2051,8 @@ goto done
 
 
 :run_auth
+IF "%1"=="-h" goto usage
+IF "%1"=="--help" goto usage
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 

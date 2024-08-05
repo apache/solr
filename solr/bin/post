@@ -58,7 +58,7 @@ TOOL_JAR=("$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib"/solr-core-*.jar)
 function print_usage() {
   echo ""
   echo 'Usage: post -c <collection> [OPTIONS] <files|directories|urls|-d ["...",...]>'
-  echo "    or post -help"
+  echo "    or post --help"
   echo ""
   echo "   collection name defaults to DEFAULT_SOLR_COLLECTION if not specified"
   echo ""

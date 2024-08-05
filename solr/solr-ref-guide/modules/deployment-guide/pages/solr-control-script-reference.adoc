@@ -758,7 +758,7 @@ Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper co
 
 `bin/solr create_collection [options]`
 
-`bin/solr create_collection -help`
+`bin/solr create_collection --help`
 
 ==== Create Collection Parameters
 
@@ -864,7 +864,7 @@ The `create_core` command creates a core and is only available when running in u
 
 `bin/solr create_core [options]`
 
-`bin/solr create_core -help`
+`bin/solr create_core --help`
 
 ==== Create Core Parameters
 
