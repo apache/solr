@@ -1115,7 +1115,7 @@ Either `--credentials` or `--prompt` *must* be specified.
 When `true`, this blocks out access to unauthenticated users from accessing Solr.
 When `false`, unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
 
-`--solrIncludeFile <includeFilePath>`::
+`--solr-include-file <includeFilePath>`::
 +
 [%autowidth,frame=none]
 |===
