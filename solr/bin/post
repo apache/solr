@@ -67,7 +67,7 @@ function print_usage() {
   echo "  Solr options:"
   echo "    -url <base Solr update URL> (overrides collection, host, and port)"
   echo "    -host <host> (default: localhost)"
-  echo "    -p or -port <port> (default: 8983)"
+  echo "    -p or --port <port> (default: 8983)"
   echo "    -commit yes|no (default: yes)"
   echo "    -u or -user <user:pass> (sets BasicAuth credentials)"
   # optimize intentionally omitted, but can be used as '-optimize yes' (default: no)
@@ -138,7 +138,7 @@ while [ $# -gt 0 ]; do
         shift
         COLLECTION="$1"
       elif [[ "$1" == "-p" ]]; then
-        # -p alias for -port for convenience and compatibility with `bin/solr start`
+        # -p alias for --port for convenience and compatibility with `bin/solr start`
         shift
         PROPS+=("-Dport=$1")
       elif [[ ("$1" == "-d" || "$1" == "--data" || "$1" == "-") ]]; then
