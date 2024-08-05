@@ -219,5 +219,5 @@ Provide the raw document as a string for indexing.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/signals/update -mode args --type text/csv -out $'id,value\n1,0.47'
+$ bin/solr post -url http://localhost:8983/signals/update -mode args --type text/csv --out $'id,value\n1,0.47'
 ----
