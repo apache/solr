@@ -1526,7 +1526,7 @@ IF "%1"=="/?" goto usage
 goto run_healthcheck
 
 :set_healthcheck_verbose
-set HEALTHCHECK_VERBOSE="-verbose"
+set HEALTHCHECK_VERBOSE="--verbose"
 SHIFT
 goto parse_healthcheck_args
 
@@ -1632,7 +1632,7 @@ goto run_create
 
 
 :set_create_verbose
-set CREATE_VERBOSE="-verbose"
+set CREATE_VERBOSE="--verbose"
 SHIFT
 goto parse_create_args
 
@@ -1739,7 +1739,7 @@ IF "%1"=="/?" goto usage
 goto run_delete
 
 :set_delete_verbose
-set DELETE_VERBOSE="-verbose"
+set DELETE_VERBOSE="--verbose"
 SHIFT
 goto parse_delete_args
 

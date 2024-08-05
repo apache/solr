@@ -472,7 +472,7 @@ function print_usage() {
     echo "  -z or --zk-host <zkHost>  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
     echo "                            otherwise, default is localhost:9983"
     echo ""
-    echo "  -V/-verbose             Enable more verbose output for this script."
+    echo "  -V/--verbose             Enable more verbose output for this script."
     echo ""
   elif [ "$CMD" == "status" ]; then
     echo ""
@@ -527,7 +527,7 @@ function print_usage() {
     echo "  -force              If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
     echo "                        It is possible to override this warning with the '-force' parameter."
     echo ""
-    echo "  -V/-verbose   Enable more verbose output for this script"
+    echo "  -V/--verbose   Enable more verbose output for this script"
     echo ""
   elif [ "$CMD" == "create_collection" ]; then
     echo ""
@@ -567,7 +567,7 @@ function print_usage() {
     echo "  -force                          If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
     echo "                                    It is possible to override this warning with the '-force' parameter."
     echo ""
-    echo "  -V/-verbose                     Enable more verbose output for this script."
+    echo "  -V/--verbose                     Enable more verbose output for this script."
     echo ""
   elif [ "$CMD" == "zk" ]; then
     print_short_zk_usage ""
@@ -917,7 +917,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               exit 0
           ;;
           -V|-verbose)
-              VERBOSE="-verbose"
+              VERBOSE="--verbose"
               shift
           ;;
           --)

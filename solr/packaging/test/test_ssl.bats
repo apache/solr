@@ -113,7 +113,7 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=true
 
   # This should fail the peername check
-  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! solr api --verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --regexp '(No subject alternative DNS name matching localhost found|Server refused connection)'
 
   # Restart the server enabling the SNI hostcheck
@@ -121,7 +121,7 @@ teardown() {
   export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sniHostCheck=true"
   solr restart -c
   # This should fail the SNI Hostname check
-  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
+  run ! solr api --verbose -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
   assert_output --partial 'Invalid SNI'
 
   # Using the right hostname should not fail the SNI Hostname check
@@ -349,7 +349,7 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE=
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
-      run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+      run ! solr api --verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
       assert_output --regexp '(bad_certificate|java.nio.channels.ClosedChannelException|Server refused connection)'
     )
   )
@@ -362,7 +362,7 @@ teardown() {
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
 
-  run ! solr api -verbose -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
+  run ! solr api --verbose -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --regexp '(certificate_unknown|java.nio.channels.ClosedChannelException|Server refused connection)'
 }
 
@@ -492,7 +492,7 @@ teardown() {
   export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
   # TLS cannot work if a truststore and keystore are not provided (either Server or Client)
-  run solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+  run solr api --verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --regexp '(unable to find valid certification path to requested target|Server refused connection)'
 }
 
