@@ -698,6 +698,7 @@ IF "%1"=="-m" goto set_memory
 IF "%1"=="--memory" goto set_memory
 IF "%1"=="-p" goto set_port
 IF "%1"=="--port" goto set_port
+IF "%1"=="-port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-zkHost" goto set_zookeeper
@@ -1624,6 +1625,7 @@ IF "%1"=="-shards" goto set_create_shards
 IF "%1"=="-rf" goto set_create_rf
 IF "%1"=="-replicationFactor" goto set_create_rf
 IF "%1"=="-p" goto set_create_port
+IF "%1"=="--port" goto set_create_port
 IF "%1"=="-port" goto set_create_port
 IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
@@ -1731,6 +1733,7 @@ IF "%1"=="-c" goto set_delete_name
 IF "%1"=="-core" goto set_delete_name
 IF "%1"=="-collection" goto set_delete_name
 IF "%1"=="-p" goto set_delete_port
+IF "%1"=="--port" goto set_delete_port
 IF "%1"=="-port" goto set_delete_port
 IF "%1"=="-deleteConfig" goto set_delete_config
 IF "%1"=="-h" goto usage
