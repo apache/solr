@@ -1592,7 +1592,7 @@ goto parse_config_args
 
 :run_config
 IF NOT "!ZK_HOST!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -z !ZK_HOST!"
-IF NOT "!SOLR_URL_SCHEME!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -scheme !SOLR_URL_SCHEME!"
+IF NOT "!SOLR_URL_SCHEME!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! --scheme !SOLR_URL_SCHEME!"
 
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^

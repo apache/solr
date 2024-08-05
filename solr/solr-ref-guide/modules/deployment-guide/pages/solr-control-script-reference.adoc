@@ -1272,7 +1272,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
-`-s <scheme>` or `-scheme <scheme>`::
+`-s <scheme>` or `--scheme <scheme>`::
 +
 [%autowidth,frame=none]
 |===
