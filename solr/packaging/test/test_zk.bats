@@ -56,8 +56,6 @@ teardown() {
 
   run solr zk ls / -s http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
-  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
-  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
 
   run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
