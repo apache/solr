@@ -1518,6 +1518,7 @@ IF [%1]==[] goto run_healthcheck
 IF "%1"=="-V" goto set_healthcheck_verbose
 IF "%1"=="-c" goto set_healthcheck_collection
 IF "%1"=="-collection" goto set_healthcheck_collection
+IF "%1"=="--collection" goto set_healthcheck_collection
 IF "%1"=="-z" goto set_healthcheck_zk
 IF "%1"=="--zk-host" goto set_healthcheck_zk
 IF "%1"=="-zkhost" goto set_healthcheck_zk
@@ -1619,6 +1620,7 @@ IF "%1"=="-V" goto set_create_verbose
 IF "%1"=="-c" goto set_create_name
 IF "%1"=="-core" goto set_create_name
 IF "%1"=="-collection" goto set_create_name
+IF "%1"=="--collection" goto set_create_name
 IF "%1"=="-d" goto set_create_confdir
 IF "%1"=="--conf-dir" goto set_create_confdir
 IF "%1"=="-confdir" goto set_create_confdir
@@ -1737,6 +1739,7 @@ IF "%1"=="-V" goto set_delete_verbose
 IF "%1"=="-c" goto set_delete_name
 IF "%1"=="-core" goto set_delete_name
 IF "%1"=="-collection" goto set_delete_name
+IF "%1"=="--collection" goto set_delete_name
 IF "%1"=="-p" goto set_delete_port
 IF "%1"=="--port" goto set_delete_port
 IF "%1"=="-port" goto set_delete_port

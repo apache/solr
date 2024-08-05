@@ -896,7 +896,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "$1" in
-          -c|-collection)
+          -c|--collection|-collection)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Collection name is required when using the $1 option!"
                 exit 1
@@ -1129,7 +1129,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_RECURSE="true"
             shift
         ;;
-        -c|-collection)
+        -c|--collection|-collection)
             ZK_COLLECTION="$2"
             shift
         ;;
