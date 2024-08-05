@@ -99,6 +99,41 @@ Multiple shard names can be specified as a comma-separated list.
 +
 This can be used if you need the details of the shard where a particular document belongs to and you don't know which shard it falls under.
 
+`liveNodes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: will default to the default value of includeAll parameter specified below
+|===
++
+If set to true, returns the status of live nodes in the cluster.
+
+`clusterProperties`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: will default to the default value of includeAll parameter specified below
+|===
++
+If set to true, returns the properties of the cluster.
+
+`roles`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: will default to the default value of includeAll parameter specified below
+|===
++
+If set to true, returns the roles within the cluster.
+
+`includeAll`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+
 === CLUSTERSTATUS Response
 
 The response will include the status of the request and the status of the cluster.

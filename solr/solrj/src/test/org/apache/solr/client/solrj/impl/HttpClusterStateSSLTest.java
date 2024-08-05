@@ -87,8 +87,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
         new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
       assertTrue(csp instanceof Http2ClusterStateProvider);
-      verifyUrlSchemeInClusterState(
-          csp.getCollection(collectionId), collectionId, expectedReplicas);
+      verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 
     // http2
@@ -97,18 +96,17 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
             .build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();
       assertTrue(csp instanceof Http2ClusterStateProvider);
-      verifyUrlSchemeInClusterState(
-          csp.getCollection(collectionId), collectionId, expectedReplicas);
+      verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 
     // Zk cluster state now
     ClusterStateProvider csp = cluster.getSolrClient().getClusterStateProvider();
     assertTrue(csp instanceof ZkClientClusterStateProvider);
-    verifyUrlSchemeInClusterState(csp.getCollection(collectionId), collectionId, expectedReplicas);
+    verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
   }
 
   private void verifyUrlSchemeInClusterState(
-      final DocCollection collection, final String collectionId, final int expectedReplicas) {
+      final DocCollection collection, final int expectedReplicas) {
     assertNotNull(collection);
     List<Replica> replicas = collection.getReplicas();
     assertNotNull(replicas);

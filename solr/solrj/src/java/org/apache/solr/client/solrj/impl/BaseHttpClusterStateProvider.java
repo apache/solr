@@ -148,10 +148,16 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     } else {
       znodeVersion = -1;
     }
-    Set<String> liveNodes = new HashSet<>((List<String>) (cluster.get("live_nodes")));
-    this.liveNodes = liveNodes;
-    liveNodesTimestamp = System.nanoTime();
-    ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
+
+    ClusterState cs = new ClusterState(this.liveNodes, new HashMap<>());
+    List<String> liveNodesList = (List<String>) cluster.get("live_nodes");
+    if (liveNodesList != null) {
+      Set<String> liveNodes = new HashSet<>(liveNodesList);
+      this.liveNodes = liveNodes;
+      liveNodesTimestamp = System.nanoTime();
+      cs = new ClusterState(liveNodes, new HashMap<>());
+    }
+
     for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
       @SuppressWarnings("rawtypes")
       Map m = (Map) e.getValue();
@@ -418,7 +424,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     return String.join(",", this.liveNodes);
   }
 
-  public enum ClusterStateRequestType {
+  private enum ClusterStateRequestType {
     FETCH_LIVE_NODES,
     FETCH_CLUSTER_PROP,
     FETCH_NODE_ROLES,

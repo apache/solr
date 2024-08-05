@@ -44,7 +44,7 @@ import org.apache.zookeeper.KeeperException;
 
 public class ClusterStatus {
   private final ZkStateReader zkStateReader;
-  private SolrParams solrParams;
+  private final SolrParams solrParams;
   private final String collection; // maybe null
 
   public static final String INCLUDE_ALL = "includeAll";
@@ -101,21 +101,20 @@ public class ClusterStatus {
 
   public void getClusterStatus(NamedList<Object> results)
       throws KeeperException, InterruptedException {
-    List<String> liveNodes = null;
     NamedList<Object> clusterStatus = new SimpleOrderedMap<>();
 
-    boolean includeAll = this.solrParams.getBool(INCLUDE_ALL, true);
-    boolean withLiveNodes =
-        this.solrParams.getBool(LIVENODES_PROP, includeAll) || (collection != null);
-    boolean withClusterProperties = this.solrParams.getBool(CLUSTER_PROP, includeAll);
-    boolean withRoles = this.solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
+    boolean includeAll = solrParams.getBool(INCLUDE_ALL, true);
+    boolean withLiveNodes = solrParams.getBool(LIVENODES_PROP, includeAll);
+    boolean withClusterProperties = solrParams.getBool(CLUSTER_PROP, includeAll);
+    boolean withRoles = solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
 
-    if (withLiveNodes) {
+    List<String> liveNodes = Collections.emptyList();
+    if (withLiveNodes || collection != null) {
       liveNodes =
           zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
       // add live_nodes
-      clusterStatus.add("live_nodes", liveNodes);
+      if (withLiveNodes) clusterStatus.add("live_nodes", liveNodes);
     }
     if (withCollection) {
       fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes);
@@ -128,8 +127,8 @@ public class ClusterStatus {
       if (clusterProps == null || clusterProps.isEmpty()) {
         clusterProps = Collections.emptyMap();
       }
+      clusterStatus.add("properties", clusterProps);
     }
-    clusterStatus.add("properties", clusterProps);
 
     // add the roles map
     Map<?, ?> roles = Collections.emptyMap();
@@ -140,8 +139,9 @@ public class ClusterStatus {
                 Utils.fromJSON(
                     zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
       }
+      clusterStatus.add("roles", roles);
     }
-    clusterStatus.add("roles", roles);
+
     results.add("cluster", clusterStatus);
   }
 
@@ -165,8 +165,8 @@ public class ClusterStatus {
 
     ClusterState clusterState = zkStateReader.getClusterState();
 
-    String routeKey = this.solrParams.get(ShardParams._ROUTE_);
-    String shard = this.solrParams.get(ZkStateReader.SHARD_ID_PROP);
+    String routeKey = solrParams.get(ShardParams._ROUTE_);
+    String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
 
     Map<String, DocCollection> collectionsMap = null;
     if (collection == null) {
@@ -191,7 +191,6 @@ public class ClusterStatus {
 
     NamedList<Object> collectionProps = new SimpleOrderedMap<>();
 
-    // loop will run only once
     for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
       Map<String, Object> collectionStatus;
       String name = entry.getKey();
@@ -236,7 +235,7 @@ public class ClusterStatus {
       }
       String configName = clusterStateCollection.getConfigName();
       collectionStatus.put("configName", configName);
-      if (this.solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
+      if (solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
         PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
         collectionStatus.put("PRS", prs);
       }
