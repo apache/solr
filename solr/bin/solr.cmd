@@ -694,6 +694,7 @@ IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="--solr-data" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
+IF "%1"=="-example" goto set_example
 IF "%1"=="--host" goto set_host
 IF "%1"=="-m" goto set_memory
 IF "%1"=="--memory" goto set_memory
