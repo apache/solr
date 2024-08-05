@@ -1622,6 +1622,7 @@ IF "%1"=="-collection" goto set_create_name
 IF "%1"=="-d" goto set_create_confdir
 IF "%1"=="-confdir" goto set_create_confdir
 IF "%1"=="-n" goto set_create_confname
+IF "%1"=="--conf-name" goto set_create_confname
 IF "%1"=="-confname" goto set_create_confname
 IF "%1"=="-s" goto set_create_shards
 IF "%1"=="-shards" goto set_create_shards
