@@ -313,7 +313,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             ZkCLI.UPCONFIG,
             "-confdir",
             ExternalPaths.TECHPRODUCTS_CONFIGSET,
-            "-confname",
+            "--conf-name",
             confsetname
           };
     } else {
@@ -329,7 +329,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             ZkCLI.EXCLUDE_REGEX_DEFAULT,
             "-confdir",
             ExternalPaths.TECHPRODUCTS_CONFIGSET,
-            "-confname",
+            "--conf-name",
             confsetname
           };
     }
@@ -349,7 +349,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           "linkconfig",
           "-collection",
           "collection1",
-          "-confname",
+          "--conf-name",
           confsetname
         };
     ZkCLI.main(args);
@@ -374,7 +374,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           "downconfig",
           "-confdir",
           confDir.getAbsolutePath(),
-          "-confname",
+          "--conf-name",
           confsetname
         };
     ZkCLI.main(args);
