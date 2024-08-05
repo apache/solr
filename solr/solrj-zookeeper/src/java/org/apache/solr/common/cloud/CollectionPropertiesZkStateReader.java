@@ -72,7 +72,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
           new SolrNamedThreadFactory("collectionPropsNotifications"));
 
-  private Thread cacheCleanerThread;
+  private volatile Thread cacheCleanerThread;
 
   private final ConcurrentHashMap<String, Object> collectionLocks = new ConcurrentHashMap<>();
 
@@ -150,12 +150,14 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   @Override
   public void close() {
     this.closed = true;
-    if (cacheCleanerThread != null) {
-      cacheCleanerThread.interrupt();
-      try {
-        cacheCleanerThread.join();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+    synchronized (this) {
+      if (cacheCleanerThread != null) {
+        cacheCleanerThread.interrupt();
+        try {
+          cacheCleanerThread.join();
+        } catch (InterruptedException e) {
+          //ignore since we are closing
+        }
       }
     }
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
