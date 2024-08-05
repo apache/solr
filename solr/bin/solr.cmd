@@ -1573,6 +1573,7 @@ IF "%1"=="--zk-host" goto set_config_zk
 IF "%1"=="-zkHost" goto set_config_zk
 IF "%1"=="--zkHost" goto set_config_zk
 IF "%1"=="-s" goto set_config_url_scheme
+IF "%1"=="--scheme" goto set_config_url_scheme
 IF "%1"=="-scheme" goto set_config_url_scheme
 set "CONFIG_ARGS=!CONFIG_ARGS! %1"
 SHIFT
