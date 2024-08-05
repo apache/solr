@@ -1550,7 +1550,7 @@ echo ZK_HOST: !ZK_HOST!
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! -zkHost !ZK_HOST! %HEALTHCHECK_VERBOSE%
+  org.apache.solr.cli.SolrCLI healthcheck -collection !HEALTHCHECK_COLLECTION! --zk-host !ZK_HOST! %HEALTHCHECK_VERBOSE%
 goto done
 
 :run_solrcli

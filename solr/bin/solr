@@ -469,7 +469,7 @@ function print_usage() {
     echo ""
     echo "  -c <collection>         Collection to run healthcheck against."
     echo ""
-    echo "  -z or -zkHost <zkHost>  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
+    echo "  -z or --zk-host <zkHost>  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
     echo "                            otherwise, default is localhost:9983"
     echo ""
     echo "  -V/-verbose             Enable more verbose output for this script."
@@ -946,7 +946,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     exit 1
   fi
 
-  run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
+  run_tool healthcheck --zk-host "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
 
   exit $?
 fi

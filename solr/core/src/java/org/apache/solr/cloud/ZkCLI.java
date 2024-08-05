@@ -192,9 +192,9 @@ public class ZkCLI implements CLIO {
         formatter.printHelp(ZK_CLI_NAME, options);
         stdout.println("Examples:");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
+            "zkcli.sh --zk-host localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + UPCONFIG
                 + " -"
                 + CONFDIR
@@ -203,7 +203,7 @@ public class ZkCLI implements CLIO {
                 + CONFNAME
                 + " myconf");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + DOWNCONFIG
                 + " -"
                 + CONFDIR
@@ -212,7 +212,7 @@ public class ZkCLI implements CLIO {
                 + CONFNAME
                 + " myconf");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + LINKCONFIG
                 + " -"
                 + COLLECTION
@@ -220,27 +220,27 @@ public class ZkCLI implements CLIO {
                 + " -"
                 + CONFNAME
                 + " myconf");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + PUT_FILE
                 + " /solr.xml /User/myuser/solr/solr.xml");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + GET + " /solr.xml");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LS + " /solr/live_nodes");
+            "zkcli.sh --zk-host localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + CLEAR + " /solr");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + LIST);
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + LS + " /solr/live_nodes");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + CLUSTERPROP
                 + " -"
                 + NAME
                 + " urlScheme -"
                 + VALUE_LONG
                 + " https");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPDATEACLS + " /solr");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + UPDATEACLS + " /solr");
         return;
       }
 
