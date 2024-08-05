@@ -347,7 +347,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           zkServer.getZkAddress(),
           "-cmd",
           "linkconfig",
-          "-collection",
+          "--collection",
           "collection1",
           "--conf-name",
           confsetname
