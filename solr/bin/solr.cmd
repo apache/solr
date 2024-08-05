@@ -681,6 +681,7 @@ IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="-V" goto set_verbose
 IF "%1"=="--verbose" goto set_verbose
+IF "%1"=="-verbose" goto set_verbose
 IF "%1"=="-v" goto set_debug
 IF "%1"=="-q" goto set_warn
 IF "%1"=="-c" goto set_cloud_mode

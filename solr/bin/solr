@@ -916,7 +916,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               print_usage "$SCRIPT_CMD"
               exit 0
           ;;
-          -V|-verbose)
+          -V|--verbose|-verbose)
               VERBOSE="--verbose"
               shift
           ;;
