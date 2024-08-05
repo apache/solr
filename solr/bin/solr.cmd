@@ -711,6 +711,7 @@ IF "%1"=="-a" goto set_addl_opts
 IF "%1"=="--additional-options" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
+IF "%1"=="-noprompt" goto set_noprompt
 IF "%1"=="--noprompt" goto set_noprompt
 IF "%1"=="--no-prompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
