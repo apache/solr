@@ -687,7 +687,7 @@ This defaults to the same name as the core or collection.
 +
 *Example*: `bin/solr create -n basic`
 
-`-p <port>` or `-port <port>`::
+`-p <port>` or `--port <port>`::
 +
 [%autowidth,frame=none]
 |===
@@ -809,7 +809,7 @@ UMMMM...   I COPIED THE ABOVE LINE FROM bin/solr create_collection -h output, bu
 +
 *Example*: `bin/solr create_collection -n basic -c mycoll`
 
-`-p <port>` or `-port <port>`::
+`-p <port>` or `--port <port>`::
 +
 [%autowidth,frame=none]
 |===
@@ -894,7 +894,7 @@ Alternatively, you can pass the path to your own configuration directory instead
 +
 *Example*: `bin/solr create_collection -c mycore -d /tmp/myconfig`
 
-`-p <port>` or `-port <port>`::
+`-p <port>` or `--port <port>`::
 +
 [%autowidth,frame=none]
 |===
