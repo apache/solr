@@ -209,7 +209,7 @@ public class SolrCLI implements CLIO {
       exit(1);
     }
 
-    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
+    if (Arrays.asList("-v", "-version", "--version", "version").contains(args[0])) {
       // select the version tool to be run
       args[0] = "version";
     }

@@ -256,6 +256,7 @@ IF "%1"=="status" goto get_status
 IF "%1"=="version" goto run_solrcli
 IF "%1"=="-v" goto run_solrcli
 IF "%1"=="-version" goto run_solrcli
+IF "%1"=="--version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
