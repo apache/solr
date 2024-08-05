@@ -61,6 +61,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This class provides utility functions required for Solr snapshots functionality. */
+/**
+ * @deprecated use equivalent snapshot related classes in {@link org.apache.solr.cli), except for
+ *     the HDFS specific tool {@link org.apache.solr.hdfs.snapshots.PrepareSnapshotExportCLI}}.
+ */
+@Deprecated(since = "9.7.0")
 public class SolrSnapshotsTool implements Closeable, CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final DateFormat dateFormat =
