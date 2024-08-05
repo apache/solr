@@ -215,7 +215,7 @@ public class PackageTool extends ToolBase {
                 } else {
 
                   printRed(
-                      "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
+                      "Either specify --cluster to undeploy cluster level plugins or --collections <list-of-collections> to undeploy collection level plugins");
                 }
                 break;
               }
