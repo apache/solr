@@ -42,10 +42,10 @@ teardown() {
 
 @test "snapshot lifecycle" {  
   # the way snapshots live, if you run create twice you get an error because snapshot already exists
-  run solr snapshot-create -c films --snapshot-name snapshot1 -solrUrl http://localhost:${SOLR_PORT}
+  run solr snapshot-create -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully created snapshot with name snapshot1 for collection films"  
   
-  run solr snapshot-delete -c films --snapshot-name snapshot1 -solrUrl http://localhost:${SOLR_PORT}
+  run solr snapshot-delete -c films --snapshot-name snapshot1 -url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot1 for collection films"
   
    # make sure you can create it again!
@@ -57,17 +57,17 @@ teardown() {
 }
 
 @test "snapshot list" {  
-  solr snapshot-create -c films --snapshot-name snapshot3 -solrUrl http://localhost:${SOLR_PORT}
+  solr snapshot-create -c films --snapshot-name snapshot3 --solr-url http://localhost:${SOLR_PORT}
   
-  run solr snapshot-list -c films -solrUrl http://localhost:${SOLR_PORT}/solr
+  run solr snapshot-list -c films -url http://localhost:${SOLR_PORT}/solr
   assert_output --partial "snapshot3"
   
-  run solr snapshot-delete -c films --snapshot-name snapshot3 -solrUrl http://localhost:${SOLR_PORT}
+  run solr snapshot-delete -c films --snapshot-name snapshot3 -url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot3 for collection films"
 }
 
 @test "snapshot describe" {  
-  solr snapshot-create -c films --snapshot-name snapshot4 -solrUrl http://localhost:${SOLR_PORT}
+  solr snapshot-create -c films --snapshot-name snapshot4 -url http://localhost:${SOLR_PORT}
   
   run solr snapshot-describe -c films --snapshot-name snapshot4
   assert_output --partial "Name: snapshot4"
