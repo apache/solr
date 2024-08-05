@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings(value = "unchecked")
 public class PrometheusResponseWriter extends RawResponseWriter {
+  static String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -61,6 +62,11 @@ public class PrometheusResponseWriter extends RawResponseWriter {
       var prometheusExporter = (SolrPrometheusExporter) prometheusRegistry.getValue();
       prometheusTextFormatWriter.write(out, prometheusExporter.collect());
     }
+  }
+
+  @Override
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+    return CONTENT_TYPE_PROMETHEUS;
   }
 
   /**
