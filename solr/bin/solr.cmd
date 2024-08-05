@@ -1519,8 +1519,10 @@ IF "%1"=="-V" goto set_healthcheck_verbose
 IF "%1"=="-c" goto set_healthcheck_collection
 IF "%1"=="-collection" goto set_healthcheck_collection
 IF "%1"=="-z" goto set_healthcheck_zk
+IF "%1"=="--zk-host" goto set_healthcheck_zk
 IF "%1"=="-zkhost" goto set_healthcheck_zk
 IF "%1"=="-zkHost" goto set_healthcheck_zk
+IF "%1"=="--zkHost" goto set_healthcheck_zk
 IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="-help" goto usage
