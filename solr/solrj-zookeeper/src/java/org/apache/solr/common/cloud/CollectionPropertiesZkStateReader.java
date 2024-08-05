@@ -72,11 +72,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
           new SolrNamedThreadFactory("collectionPropsNotifications"));
 
-  private final ExecutorService notifications =
-      ExecutorUtil.newMDCAwareCachedThreadPool("cachecleaner");
-
-  // identify if the cleaner has already been started.
-  private final AtomicBoolean collectionPropsCacheCleanerInitialized = new AtomicBoolean(false);
+  private Thread cacheCleanerThread;
 
   private final ConcurrentHashMap<String, Object> collectionLocks = new ConcurrentHashMap<>();
 
@@ -154,8 +150,14 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   @Override
   public void close() {
     this.closed = true;
-    notifications.shutdownNow();
-    ExecutorUtil.shutdownAndAwaitTermination(notifications);
+    if (cacheCleanerThread != null) {
+      cacheCleanerThread.interrupt();
+      try {
+        cacheCleanerThread.join();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
   }
 
@@ -309,10 +311,12 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       throws KeeperException, InterruptedException {
     final String znodePath = getCollectionPropsPath(collection);
     // lazy init cache cleaner once we know someone is using collection properties.
-    if (collectionPropsCacheCleanerInitialized.compareAndSet(false, true)) {
+    if (cacheCleanerThread == null) {
       synchronized (this) {
-        // This synchronized block ensures that only one thread initializes the cache cleaner
-        notifications.submit(new CacheCleaner());
+        if (cacheCleanerThread == null) {
+          cacheCleanerThread = new Thread(new CacheCleaner(), "cachecleaner");
+          cacheCleanerThread.start();
+        }
       }
     }
     while (true) {
