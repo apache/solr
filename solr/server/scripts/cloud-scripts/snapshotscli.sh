@@ -165,7 +165,7 @@ case "${cmd}" in
 
     echo "Done. GoodBye!"
     ;;
-  --help)
+  --help|-h|-help)
     usage 1>&2
     ;;
   *)

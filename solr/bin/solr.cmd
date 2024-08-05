@@ -674,6 +674,7 @@ IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="--help" goto usage
+IF "%1"=="-h" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode

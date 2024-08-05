@@ -97,7 +97,7 @@ Windows::
 The list of available parameters for the Prometheus Exporter.
 All parameters can be provided via an environment variable, instead of through the command line.
 
-`h`, `--help`::
+`-h`, `--help`::
 +
 [%autowidth,frame=none]
 |===
