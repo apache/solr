@@ -246,6 +246,7 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
+REM -help is a special case to faciliate folks learning about how to use Solr.
 IF "%1"=="-help" goto run_solrcli
 IF "%1"=="-usage" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
@@ -259,6 +260,7 @@ IF "%1"=="-version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
+IF "%1"=="auth" goto run_solrcli
 IF "%1"=="api" goto run_solrcli
 IF "%1"=="post" goto run_solrcli
 
@@ -293,7 +295,6 @@ IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="-usage" goto run_solrcli
 IF "%FIRST_ARG%"=="-h" goto run_solrcli
 IF "%FIRST_ARG%"=="--help" goto run_solrcli
-IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
@@ -303,7 +304,8 @@ IF "%SCRIPT_CMD%"=="create" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF "%SCRIPT_CMD%"=="cluster" goto run_solrcli
 IF "%SCRIPT_CMD%"=="zk" goto zk_usage
-IF "%SCRIPT_CMD%"=="auth" goto auth_usage
+IF "%SCRIPT_CMD%"=="auth" goto run_solrcli
+IF "%SCRIPT_CMD%"=="package" goto run_solrcli
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
 IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
 goto done
@@ -315,7 +317,7 @@ goto done
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
+@echo   -c or --cloud Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
 @echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
 @echo                   such as 9983 if Solr is bound to 8983
 @echo.
@@ -490,40 +492,6 @@ IF "%ZK_FULL%"=="true" (
 ) ELSE (
   echo Type bin/solr zk --help for full usage help
 )
-goto done
-
-:auth_usage
-echo Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown ^<true^|false^>] [--update-include-file-only ^<true^|false^>] [-v]
-echo        solr auth enable [--type basicAuth] --prompt ^<true^|false^> [--block-unknown ^<true^|false^>] [--update-include-file-only ^<true^|false^>] [-v]
-echo        solr auth disable [--update-include-file-only ^<true^|false^>] [-v]
-echo.
-echo  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.
-echo.
-echo   --type ^<type^>                The authentication mechanism to enable. Defaults to 'basicAuth'.
-echo.
-echo   --credentials ^<user:pass^>    The username and password of the initial user
-echo                                Note: only one of --prompt or --credentials must be provided
-echo.
-echo   --prompt ^<true^|false^>        Prompts the user to provide the credentials
-echo                                Note: only one of --prompt or --credentials must be provided
-echo.
-echo   --block-unknown ^<true^|false^>  When true, this blocks out access to unauthenticated users. When not provided,
-echo                                this defaults to false (i.e. unauthenticated users can access all endpoints, except the
-echo                                operations like collection-edit, security-edit, core-admin-edit etc.^). Check the reference
-echo                                guide for Basic Authentication for more details.
-echo.
-echo   --update-include-file-only ^<true^|false^>   Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-echo                                          authentication (i.e. don't update security.json^)"
-echo.
-echo   -z zkHost                    Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.cmd.
-echo.
-echo   -d ^<dir^>                     Specify the Solr server directory"
-echo.
-echo   -s ^<dir^>                     Specify the Solr home directory. This is where any credentials or authentication"
-echo                                configuration files (e.g. basicAuth.conf^) would be placed."
-echo.
-echo   -v                             Enable more verbose output
-echo.
 goto done
 
 REM Really basic command-line arg parsing
@@ -1526,10 +1494,10 @@ IF "!ZK_OP!"=="" (
 set CONNECTION_PARAMS=""
 
 IF "!ZK_OP!"=="" (
-  set CONNECTION_PARAMS="-solrUrl !ZK_SOLR_URL!"
+  set CONNECTION_PARAMS="--solr-url !ZK_SOLR_URL!"
 )
 ELSE (
-  set CONNECTION_PARAMS="-zkHost ZK_HOST!"
+  set CONNECTION_PARAMS="--zk-host ZK_HOST!"
 )
 
 IF "!ZK_OP!"=="upconfig" (

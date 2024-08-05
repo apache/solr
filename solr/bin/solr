@@ -526,56 +526,6 @@ function print_usage() {
     echo "             <path>:  The Zookeeper path to create. Leading slash is assumed if not present."
     echo "                        Intermediate nodes are created as needed if not present."
     echo ""
-  elif [ "$CMD" == "auth" ]; then
-    echo ""
-    echo "Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]"
-    echo "       solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]"
-    echo "       solr auth enable --type kerberos --config \"<kerberos configs>\" [--update-include-file-only <true|false>] [-v]"
-    echo "       solr auth disable [--update-include-file-only <true|false>] [-v]"
-    echo ""
-    echo "  Updates or enables/disables authentication.  Must be run on the machine hosting Solr."
-    echo ""
-    echo "  --type or -t <type>                    The authentication mechanism (basicAuth or kerberos) to enable. Defaults to 'basicAuth'."
-    echo ""
-    echo "  --credentials <user:pass>              The username and password of the initial user. Applicable for basicAuth only."
-    echo "                                          Note: only one of --prompt or --credentials must be provided"
-    echo ""
-    echo "  --config \"<configs>\"                 Configuration parameters (Solr startup parameters). Required and applicable only for Kerberos"
-    echo ""
-    echo "  --solr-include-file <includeFilePath>  Specify the full path to the include file in the environment."
-    echo "                                          If not specified this script looks for an include file named solr.in.sh to set environment variables. "
-    echo "                                          Specifically,the following locations are searched in this order:"
-    echo "                                              <script location>/."
-    echo "                                              $HOME/.solr.in.sh"
-    echo "                                              /usr/share/solr"
-    echo "                                              /usr/local/share/solr"
-    echo "                                              /etc/default"
-    echo "                                              /var/solr"
-    echo "                                              /opt/solr"
-    echo ""
-    echo "  --prompt <true|false>                  Prompts the user to provide the credentials. Applicable for basicAuth only."
-    echo "                                          Note: only one of --prompt or --credentials must be provided"
-    echo ""
-    echo "  --block-unknown <true|false>           When true, this blocks out access to unauthenticated users. When not provided,"
-    echo "                                          this defaults to false (i.e. unauthenticated users can access all endpoints, except the"
-    echo "                                          operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference"
-    echo "                                          guide for Basic Authentication for more details. Applicable for basicAuth only."
-    echo ""
-    echo "  --update-include-file-only <true|false> Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-    echo "                                          authentication (i.e. don't update security.json)"
-    echo ""
-    echo "  -z or --zk-host <zkHost>               Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
-    echo ""
-    echo "  -d or --dir <dir>                      Specify the Solr server directory"
-    echo ""
-    echo "  -s or --solr-home <dir>                Specify the Solr home directory. This is where any credentials or authentication"
-    echo "                                          configuration files (e.g. basicAuth.conf) would be placed."
-    echo ""
-    echo "  -v/--verbose                           Enable more verbose output for this script."
-    echo ""
-  elif [ "$CMD" == "package" ]; then
-    echo ""
-    run_tool package "help"
   fi
 } # end print_usage
 
@@ -700,56 +650,6 @@ function get_status() {
   fi
 
 } # end get_status
-
-function run_package() {
-  runningSolrUrl=""
-
-  numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
-  if [ "$numSolrs" != "0" ]; then
-    #echo -e "\nFound $numSolrs Solr nodes: "
-    while read PIDF
-      do
-        ID=$(cat "$PIDF")
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          #echo -e "\nSolr process $ID running on port $port"
-          runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-          break
-          CODE=$?
-          echo ""
-        else
-          echo -e "\nSolr process $ID from $PIDF not found."
-          CODE=1
-        fi
-    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
-  else
-    # no pid files but check using ps just to be sure
-    numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
-    if [ "$numSolrs" != "0" ]; then
-      echo -e "\nFound $numSolrs Solr nodes: "
-      PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
-      for ID in $PROCESSES
-        do
-          port=$(jetty_port "$ID")
-          if [ "$port" != "" ]; then
-            echo ""
-            echo "Solr process $ID running on port $port"
-            runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-            break
-            CODE=$?
-            echo ""
-          fi
-      done
-    else
-      echo -e "\nNo Solr nodes are running.\n"
-      exit 1
-      CODE=3
-    fi
-  fi
-
-  run_tool package --solr-url "$runningSolrUrl" "$@"
-  #exit $?
-}
 
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
@@ -880,6 +780,46 @@ fi
 # run a streaming expression
 if [[ "$SCRIPT_CMD" == "stream" ]]; then
   run_tool $SCRIPT_CMD "$@"
+  exit $?
+fi
+
+# manage packages
+if [[ "$SCRIPT_CMD" == "package" ]]; then
+  run_tool $SCRIPT_CMD $@
+  exit $?
+fi
+
+# configure authentication
+if [[ "$SCRIPT_CMD" == "auth" ]]; then
+  : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
+  if [ ! -e "$SOLR_SERVER_DIR" ]; then
+    echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
+    exit 1
+  fi
+
+  if [ -z "${SOLR_HOME:-}" ]; then
+    SOLR_HOME="$SOLR_SERVER_DIR/solr"
+  elif [[ $SOLR_HOME != /* ]]; then
+    if [[ -d "$(pwd -P)/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd -P)/$SOLR_HOME"
+    elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
+      SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
+      SOLR_PID_DIR="$SOLR_HOME"
+    fi
+  fi
+
+  if [ -z "${AUTH_PORT:-}" ]; then
+    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
+      do
+        port=$(jetty_port "$ID")
+        if [ "$port" != "" ]; then
+          AUTH_PORT=$port
+          break
+        fi
+      done
+  fi
+
+  run_tool auth $@ --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
   exit $?
 fi
 
@@ -1065,165 +1005,6 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
     ;;
   esac
 
-  exit $?
-fi
-
-if [[ "$SCRIPT_CMD" == "package" ]]; then
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          --help|-h|-help)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              break # out-of-args, stop looping
-
-          ;;
-      esac
-    done
-  fi
-  run_package "$@"
-  exit $?
-fi
-
-if [[ "$SCRIPT_CMD" == "auth" ]]; then
-
-  VERBOSE=""
-
-  declare -a AUTH_PARAMS
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "${1:-}" in
-        enable|disable)
-            AUTH_OP=$1
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "$AUTH_OP")
-            shift
-        ;;
-        -z|--zk-host|-zkHost|--zkHost)
-            ZK_HOST="$2"
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-z" "$ZK_HOST")
-            shift 2
-        ;;
-        -t|--type|-type)
-            AUTH_TYPE="$2"
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--type" "$AUTH_TYPE")
-            shift 2
-        ;;
-        --credentials|-credentials)
-            AUTH_CREDENTIALS="$2"
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--credentials" "$AUTH_CREDENTIALS")
-            shift 2
-        ;;
-        --config|-config)
-            AUTH_CONFIG="$(echo "$2"| base64)"
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--config" "$AUTH_CONFIG")
-            shift 2
-        ;;
-        --solr-include-file|-solrIncludeFile)
-            SOLR_INCLUDE="$2"
-            shift 2
-        ;;
-        --prompt|-prompt)
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--prompt" "$2")
-            shift 2
-        ;;
-        --block-unknown|-blockUnknown)
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--block-unknown" "$2")
-            shift 2
-        ;;
-        --update-include-file-only|-updateIncludeFileOnly|--updateIncludeFileOnly)
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--update-include-file-only" "$2")
-            shift 2
-        ;;
-        -v|--verbose|-verbose)
-            VERBOSE="--verbose"
-            shift
-        ;;
-        -d|--dir|-dir)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
-              exit 1
-            fi
-
-            if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
-              SOLR_SERVER_DIR="$(pwd -P)/$2"
-            else
-              # see if the arg value is relative to the tip vs full path
-              if [[ "$2" != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
-                SOLR_SERVER_DIR="$SOLR_TIP/$2"
-              else
-                SOLR_SERVER_DIR="$2"
-              fi
-            fi
-            # resolve it to an absolute path
-            SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
-            shift 2
-        ;;
-        -s|--solr-home|-solr.home)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
-              exit 1
-            fi
-
-            SOLR_HOME="$2"
-            shift 2
-        ;;
-        --help|-h|-help)
-            print_usage "$SCRIPT_CMD"
-            exit 0
-        ;;
-        --)
-            shift
-            break
-        ;;
-        *)
-            shift
-            break
-        ;;
-      esac
-    done
-  fi
-
-  : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
-  if [ ! -e "$SOLR_SERVER_DIR" ]; then
-    echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
-    exit 1
-  fi
-
-  if [ -z "${SOLR_HOME:-}" ]; then
-    SOLR_HOME="$SOLR_SERVER_DIR/solr"
-  elif [[ $SOLR_HOME != /* ]]; then
-    if [[ -d "$(pwd -P)/$SOLR_HOME" ]]; then
-      SOLR_HOME="$(pwd -P)/$SOLR_HOME"
-    elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
-      SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
-      SOLR_PID_DIR="$SOLR_HOME"
-    fi
-  fi
-
-  if [ -z "$AUTH_OP" ]; then
-    print_usage "$SCRIPT_CMD"
-    exit 0
-  fi
-
-  AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--solr-include-file" "$SOLR_INCLUDE")
-
-  if [ -z "${AUTH_PORT:-}" ]; then
-    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
-      do
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          AUTH_PORT=$port
-          break
-        fi
-      done
-  fi
-  run_tool auth "${AUTH_PARAMS[@]}" --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1451,9 +1232,6 @@ if [ $# -gt 0 ]; then
     esac
   done
 fi
-
-# Setting number of threads for search
-if ! command -v nproc &> /dev/null; then echo "Couldn't determine number of CPUs, using default number of search threads"; else cpus=`nproc`; SCRIPT_SOLR_OPTS+="-Dsolr.searchThreads=$cpus"; fi
 
 # Default placement plugin
 if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then

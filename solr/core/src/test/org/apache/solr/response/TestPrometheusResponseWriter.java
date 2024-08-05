@@ -16,9 +16,15 @@
  */
 package org.apache.solr.response;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.SettableGauge;
-import java.nio.file.Files;
+import com.codahale.metrics.SharedMetricRegistries;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -26,65 +32,126 @@ import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Tests the {@link PrometheusResponseWriter} behavior */
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17368")
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
-
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-  public static JettySolrRunner jetty;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final List<String> VALID_PROMETHEUS_VALUES = Arrays.asList("NaN", "+Inf", "-Inf");
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    SharedMetricRegistries.clear();
+
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
-    jetty = solrClientTestRule.getJetty();
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
-    jetty.getCoreContainer().waitForLoadingCoresToFinish(30000);
-    // Manually register metrics not initializing from JettyTestRule
-    registerGauge(
-        jetty.getCoreContainer().getMetricManager(),
-        "solr.jvm",
-        "buffers.mapped - 'non-volatile memory'.Count");
-    registerGauge(
-        jetty.getCoreContainer().getMetricManager(),
-        "solr.jvm",
-        "buffers.mapped - 'non-volatile memory'.MemoryUsed");
-    registerGauge(
-        jetty.getCoreContainer().getMetricManager(),
-        "solr.jvm",
-        "buffers.mapped - 'non-volatile memory'.TotalCapacity");
-    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "os.cpuLoad");
-    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "os.freeMemorySize");
-    registerGauge(jetty.getCoreContainer().getMetricManager(), "solr.jvm", "os.totalMemorySize");
+    var cc = solrClientTestRule.getCoreContainer();
+    cc.waitForLoadingCoresToFinish(30000);
+
+    SolrMetricManager manager = cc.getMetricManager();
+    Counter c = manager.counter(null, "solr.core.collection1", "QUERY./dummy/metrics.requests");
+    c.inc(10);
+    c = manager.counter(null, "solr.node", "ADMIN./dummy/metrics.requests");
+    c.inc(20);
+    Meter m = manager.meter(null, "solr.jetty", "dummyMetrics.2xx-responses");
+    m.mark(30);
+    registerGauge(manager, "solr.jvm", "gc.dummyMetrics.count");
+  }
+
+  @AfterClass
+  public static void clearMetricsRegistries() {
+    SharedMetricRegistries.clear();
   }
 
   @Test
-  public void testPrometheusOutput() throws Exception {
+  public void testPrometheusStructureOutput() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/metrics");
     params.set("wt", "prometheus");
     QueryRequest req = new QueryRequest(params);
     req.setResponseParser(new NoOpResponseParser("prometheus"));
-    try (SolrClient adminClient = getHttpSolrClient(jetty.getBaseUrl().toString()); ) {
+
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
-      String actual = (String) res.get("response");
-      String expectedOutput =
-          Files.readString(getFile("prometheus/solr-prometheus-output.txt").toPath());
-      // Expression to strip out ending numeric values and JVM item tag as we only want to test for
-      // Prometheus metric names
-      actual =
-          actual.replaceAll(
-              "(?<=}).*|(?<=solr_metrics_jvm_gc\\{)(.*)(?=})|(?<=solr_metrics_jvm_gc_seconds\\{)(.*)(?=})",
-              "");
-      assertEquals(expectedOutput, actual);
+      String output = (String) res.get("response");
+      List<String> filteredResponse =
+          output.lines().filter(line -> !line.startsWith("#")).collect(Collectors.toList());
+      filteredResponse.forEach(
+          (actualMetric) -> {
+            String actualValue;
+            if (actualMetric.contains("}")) {
+              actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
+            } else {
+              actualValue = actualMetric.split(" ")[1];
+            }
+            assertTrue(
+                "All metrics should start with 'solr_metrics_'",
+                actualMetric.startsWith("solr_metrics_"));
+            try {
+              Float.parseFloat(actualValue);
+            } catch (NumberFormatException e) {
+              log.warn("Prometheus value not a parsable float");
+              assertTrue(VALID_PROMETHEUS_VALUES.contains(actualValue));
+            }
+          });
+    }
+  }
+
+  public void testPrometheusDummyOutput() throws Exception {
+    String expectedCore =
+        "solr_metrics_core_requests_total{category=\"QUERY\",core=\"collection1\",handler=\"/dummy/metrics\",type=\"requests\"} 10.0";
+    String expectedNode =
+        "solr_metrics_node_requests_total{category=\"ADMIN\",handler=\"/dummy/metrics\",type=\"requests\"} 20.0";
+    String expectedJetty = "solr_metrics_jetty_response_total{status=\"2xx\"} 30.0";
+    String expectedJvm = "solr_metrics_jvm_gc{item=\"dummyMetrics\"} 0.0";
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/admin/metrics");
+    params.set("wt", "prometheus");
+    QueryRequest req = new QueryRequest(params);
+    req.setResponseParser(new NoOpResponseParser("prometheus"));
+
+    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+      NamedList<Object> res = adminClient.request(req);
+      assertNotNull("null response from server", res);
+      String output = (String) res.get("response");
+      assertEquals(
+          expectedCore,
+          output
+              .lines()
+              .filter(line -> line.contains(expectedCore))
+              .collect(Collectors.toList())
+              .get(0));
+      assertEquals(
+          expectedNode,
+          output
+              .lines()
+              .filter(line -> line.contains(expectedNode))
+              .collect(Collectors.toList())
+              .get(0));
+      assertEquals(
+          expectedJetty,
+          output
+              .lines()
+              .filter(line -> line.contains(expectedJetty))
+              .collect(Collectors.toList())
+              .get(0));
+      assertEquals(
+          expectedJvm,
+          output
+              .lines()
+              .filter(line -> line.contains(expectedJvm))
+              .collect(Collectors.toList())
+              .get(0));
     }
   }
 

@@ -34,7 +34,24 @@ This approach promises to relieve some of the memory requirements of the fieldCa
 
 == Enabling DocValues
 
-To use docValues, you only need to enable it for a field that you will use it with.
+[IMPORTANT]
+DocValues are enabled by default for most field types that support them *when using a schemaVersion >= 1.7*.
+
+* Primitive Fields
+** `Numeric` (not `DenseVectorField`)
+** `Boolean`
+** `String`
+** `Date`
+** `UUID`
+** `Enum`
+* Sorting Fields
+** `CollationField`
+** `ICUCollationField`
+** `SortableTextField`
+** `SortableBinaryField`
+* `LatLonPointSpacialField` (not `PointType`, which is different than `PointField`)
+
+When using an earlier schemaVersion (\<= 1.6), you only need to enable docValues for a field that you will use it with.
 As with all schema design, you need to define a field type and then define fields of that type with docValues enabled.
 All of these actions are done in the xref:schema-elements.adoc[schema].
 
@@ -116,3 +133,13 @@ When retrieving stored fields, the insertion order is the return order.
 For docValues, it is the _sorted_ order.
 . For field types using `SORTED_SET` (see above), multiple identical entries are collapsed into a single value.
 Thus if values 4, 5, 2, 4, 1 are inserted, the values returned will be 1, 2, 4, 5.
+
+== Disabling DocValues
+
+DocValues are enabled by default for all field types that support them (when using a schemaVersion >= 1.7).
+Disabling docValues on a field or fieldType only requires adding `docValues="false"` to the definition:
+
+[source,xml]
+----
+<field name="field_a" type="string" docValues="false" />
+----

@@ -75,7 +75,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+  public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
       int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
     if (this.boostedPriority == null) {
       SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
