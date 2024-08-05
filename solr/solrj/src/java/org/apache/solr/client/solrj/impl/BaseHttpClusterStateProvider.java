@@ -85,6 +85,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   protected abstract SolrClient getSolrClient(String baseUrl);
 
   @Override
+  public DocCollection getCollection(String collection) {
+    return getState(collection).get();
+  }
+
+  @Override
   public ClusterState.CollectionRef getState(String collection) {
     for (String nodeName : liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);

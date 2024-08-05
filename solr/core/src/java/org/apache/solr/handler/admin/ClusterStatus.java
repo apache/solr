@@ -34,9 +34,9 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -44,8 +44,12 @@ import org.apache.zookeeper.KeeperException;
 
 public class ClusterStatus {
   private final ZkStateReader zkStateReader;
-  private final ZkNodeProps message;
+  private SolrParams solrParams;
   private final String collection; // maybe null
+
+  public static final String INCLUDE_ALL = "includeAll";
+  public static final String LIVENODES_PROP = "liveNodes";
+  public static final String CLUSTER_PROP = "clusterProperties";
 
   /** Shard / collection health state. */
   public enum Health {
@@ -89,10 +93,10 @@ public class ClusterStatus {
     }
   }
 
-  public ClusterStatus(ZkStateReader zkStateReader, ZkNodeProps props) {
+  public ClusterStatus(ZkStateReader zkStateReader, SolrParams params) {
     this.zkStateReader = zkStateReader;
-    this.message = props;
-    collection = props.getStr(ZkStateReader.COLLECTION_PROP);
+    this.solrParams = params;
+    collection = params.get(ZkStateReader.COLLECTION_PROP);
   }
 
   public void getClusterStatus(NamedList<Object> results)
@@ -100,11 +104,11 @@ public class ClusterStatus {
     List<String> liveNodes = null;
     NamedList<Object> clusterStatus = new SimpleOrderedMap<>();
 
-    boolean includeAll = this.message.getBool(ZkStateReader.INCLUDE_ALL, true);
+    boolean includeAll = this.solrParams.getBool(INCLUDE_ALL, true);
     boolean withLiveNodes =
-        this.message.getBool(ZkStateReader.LIVENODES_PROP, includeAll) || (collection != null);
-    boolean withClusterProperties = this.message.getBool(ZkStateReader.CLUSTER_PROP, includeAll);
-    boolean withRoles = this.message.getBool(ZkStateReader.ROLES_PROP, includeAll);
+        this.solrParams.getBool(LIVENODES_PROP, includeAll) || (collection != null);
+    boolean withClusterProperties = this.solrParams.getBool(CLUSTER_PROP, includeAll);
+    boolean withRoles = this.solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
 
     if (withLiveNodes) {
@@ -128,18 +132,16 @@ public class ClusterStatus {
     clusterStatus.add("properties", clusterProps);
 
     // add the roles map
+    Map<?, ?> roles = Collections.emptyMap();
     if (withRoles) {
-      Map<?, ?> roles = null;
       if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
         roles =
             (Map<?, ?>)
                 Utils.fromJSON(
                     zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
       }
-      if (roles != null) {
-        clusterStatus.add("roles", roles);
-      }
     }
+    clusterStatus.add("roles", roles);
     results.add("cluster", clusterStatus);
   }
 
@@ -163,8 +165,8 @@ public class ClusterStatus {
 
     ClusterState clusterState = zkStateReader.getClusterState();
 
-    String routeKey = message.getStr(ShardParams._ROUTE_);
-    String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
+    String routeKey = this.solrParams.get(ShardParams._ROUTE_);
+    String shard = this.solrParams.get(ZkStateReader.SHARD_ID_PROP);
 
     Map<String, DocCollection> collectionsMap = null;
     if (collection == null) {
@@ -234,7 +236,7 @@ public class ClusterStatus {
       }
       String configName = clusterStateCollection.getConfigName();
       collectionStatus.put("configName", configName);
-      if (message.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
+      if (this.solrParams.getBool("prs", false) && clusterStateCollection.isPerReplicaState()) {
         PerReplicaStates prs = clusterStateCollection.getPerReplicaStates();
         collectionStatus.put("PRS", prs);
       }
