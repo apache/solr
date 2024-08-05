@@ -153,7 +153,7 @@ teardown() {
 
   solr start -c
   solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
-  solr auth enable -type basicAuth -credentials name:password
+  solr auth enable -type basicAuth --credentials name:password
 
   run curl -u name:password --basic --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
   assert_output --partial '"status":0'

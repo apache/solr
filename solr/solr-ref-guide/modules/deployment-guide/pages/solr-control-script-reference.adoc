@@ -1081,7 +1081,7 @@ Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unkn
 
 The command takes the following parameters:
 
-`-credentials <user:pass>`::
+`--credentials <user:pass>`::
 +
 [%autowidth,frame=none]
 |===
