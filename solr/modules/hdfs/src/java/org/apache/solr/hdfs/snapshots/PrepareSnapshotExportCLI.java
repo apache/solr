@@ -272,6 +272,7 @@ public class PrepareSnapshotExportCLI implements Closeable, CLIO {
       System.exit(1);
     }
 
+    // Convert to using SnapshotPrepareExportTool instead of SolrSnapshotsTool.
     try (SolrSnapshotsTool tool =
         new SolrSnapshotsTool(requiredArg(options, cmd, SolrCLI.OPTION_ZKHOST.getOpt()))) {
 
