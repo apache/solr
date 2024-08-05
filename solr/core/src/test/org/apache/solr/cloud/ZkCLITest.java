@@ -311,7 +311,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             zkServer.getZkAddress(),
             "-cmd",
             ZkCLI.UPCONFIG,
-            "-confdir",
+            "--conf-dir",
             ExternalPaths.TECHPRODUCTS_CONFIGSET,
             "--conf-name",
             confsetname
@@ -327,7 +327,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             ZkCLI.UPCONFIG,
             excluderegexOption,
             ZkCLI.EXCLUDE_REGEX_DEFAULT,
-            "-confdir",
+            "--conf-dir",
             ExternalPaths.TECHPRODUCTS_CONFIGSET,
             "--conf-name",
             confsetname
@@ -372,7 +372,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           zkServer.getZkAddress(),
           "-cmd",
           "downconfig",
-          "-confdir",
+          "--conf-dir",
           confDir.getAbsolutePath(),
           "--conf-name",
           confsetname
