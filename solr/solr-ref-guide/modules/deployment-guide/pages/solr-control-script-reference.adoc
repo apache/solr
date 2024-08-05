@@ -846,7 +846,7 @@ The default is `1` (no replication).
 +
 *Example*: `bin/solr create_collection -rf 2`
 
-`-force`::
+`--force`::
 +
 [%autowidth,frame=none]
 |===
@@ -854,9 +854,9 @@ The default is `1` (no replication).
 |===
 +
 If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
+It is possible to override this warning with the --force parameter.
 +
-*Example*: `bin/solr create_collection -c foo -force`
+*Example*: `bin/solr create_collection -c foo --force`
 
 === Create a Core
 
@@ -908,7 +908,7 @@ This option is useful if you are running multiple Solr instances on the same hos
 +
 *Example*: `bin/solr create -p 8983`
 
-`-force`::
+`--force`::
 +
 [%autowidth,frame=none]
 |===
@@ -916,9 +916,9 @@ This option is useful if you are running multiple Solr instances on the same hos
 |===
 +
 If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
+It is possible to override this warning with the --force parameter.
 +
-*Example*: `bin/solr create -c foo -force`
+*Example*: `bin/solr create -c foo --force`
 
 ==== Configuration Directories and SolrCloud
 
