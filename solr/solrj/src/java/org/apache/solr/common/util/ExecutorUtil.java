@@ -243,15 +243,27 @@ public class ExecutorUtil {
         0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
   }
 
+  /**
+   * Create a new pool with cached a reused threads. Thread are created only on-demand, up to the
+   * specified {@code maxThreads}.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(
       int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
-    return new MDCAwareThreadPoolExecutor(
-        0,
-        maxThreads,
-        60L,
-        TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(queueCapacity),
-        threadFactory);
+    // Create an executor with same value of core size and max total size. With an unbounded queue,
+    // the ThreadPoolExecutor ignores the configured max value and only consider core pool size.
+    // Since we allow core threads to die when idle for too long, this ends in having a pool with
+    // lazily-initialized and cached threads.
+    MDCAwareThreadPoolExecutor executor =
+        new MDCAwareThreadPoolExecutor(
+            maxThreads,
+            maxThreads,
+            60L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(queueCapacity),
+            threadFactory);
+    // Allow core threads to die
+    executor.allowCoreThreadTimeOut(true);
+    return executor;
   }
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")

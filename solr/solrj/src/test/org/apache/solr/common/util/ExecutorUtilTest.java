@@ -28,9 +28,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
+import org.slf4j.MDC;
 
 public class ExecutorUtilTest extends SolrTestCase {
 
@@ -106,6 +109,48 @@ public class ExecutorUtilTest extends SolrTestCase {
       w.tellWorkerToFinish();
       ExecutorUtil.shutdownNowAndAwaitTermination(executorService);
     }
+  }
+
+  @Test
+  public void testCMDCAwareCachedThreadPool() {
+    // 5 threads max, unbounded queue
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            5, Integer.MAX_VALUE, new NamedThreadFactory("test"));
+
+    AtomicInteger concurrentTasks = new AtomicInteger();
+    AtomicInteger maxConcurrentTasks = new AtomicInteger();
+    int taskCount = random().nextInt(100);
+
+    for (int i = 0; i < taskCount; i++) {
+      String core = "id_" + random().nextLong();
+
+      Callable<Void> task =
+          () -> {
+            // ensure we never have too many concurrent tasks
+            int concurrent = concurrentTasks.incrementAndGet();
+            assertTrue(concurrent <= 5);
+            maxConcurrentTasks.getAndAccumulate(concurrent, Math::max);
+
+            // assert MDC context is copied from the parent thread that submitted the task
+            assertEquals(core, MDC.get("core"));
+
+            // Sleep for a couple of millis before considering the task is done
+            int delay = random().nextInt(10);
+            Thread.sleep(delay);
+            concurrentTasks.decrementAndGet();
+            return null;
+          };
+
+      MDCLoggingContext.setCoreName(core);
+      executor.submit(task);
+    }
+
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
+
+    // assert the pool was actually multithreaded. Since we submitted many tasks,
+    // all the thread should have been started
+    assertEquals(5, maxConcurrentTasks.get());
   }
 
   private static final class Worker implements Callable<Boolean> {
