@@ -2223,6 +2223,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * reference count will be incremented.
    */
   public RefCounted<SolrIndexSearcher> getRealtimeSearcher() {
+    // In practice, this is nearly always the same as the non-realtime searcher because that one
+    //   nearly always exists and it installs itself as the realtime searcher.
     synchronized (searcherLock) {
       if (realtimeSearcher != null) {
         realtimeSearcher.incref();
