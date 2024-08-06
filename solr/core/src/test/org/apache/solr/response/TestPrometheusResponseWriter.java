@@ -20,6 +20,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.SettableGauge;
+import com.codahale.metrics.SharedMetricRegistries;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -47,6 +49,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    SharedMetricRegistries.clear();
+
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     var cc = solrClientTestRule.getCoreContainer();
@@ -60,6 +64,11 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     Meter m = manager.meter(null, "solr.jetty", "dummyMetrics.2xx-responses");
     m.mark(30);
     registerGauge(manager, "solr.jvm", "gc.dummyMetrics.count");
+  }
+
+  @AfterClass
+  public static void clearMetricsRegistries() {
+    SharedMetricRegistries.clear();
   }
 
   @Test
@@ -78,7 +87,12 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
           output.lines().filter(line -> !line.startsWith("#")).collect(Collectors.toList());
       filteredResponse.forEach(
           (actualMetric) -> {
-            String actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
+            String actualValue;
+            if (actualMetric.contains("}")) {
+              actualValue = actualMetric.substring(actualMetric.lastIndexOf("} ") + 1);
+            } else {
+              actualValue = actualMetric.split(" ")[1];
+            }
             assertTrue(
                 "All metrics should start with 'solr_metrics_'",
                 actualMetric.startsWith("solr_metrics_"));

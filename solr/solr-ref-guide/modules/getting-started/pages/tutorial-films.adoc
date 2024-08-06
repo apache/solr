@@ -243,7 +243,7 @@ $ bin/solr post -c films example/films/films.xml
 ======
 [,console]
 ----
-$ bin/solr post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
+$ bin/solr post -c films example/films/films.csv --params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 ----
 ======
 

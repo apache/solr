@@ -635,14 +635,14 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // add property urlScheme=http
     String[] args =
         new String[] {
-          "cluster", "-property", "urlScheme", "-value", "http", "-z", zkServer.getZkAddress()
+          "cluster", "--property", "urlScheme", "--value", "http", "-z", zkServer.getZkAddress()
         };
     ClusterTool tool = new ClusterTool();
     assertEquals(0, runTool(args, tool));
 
     assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
 
-    args = new String[] {"cluster", "-property", "urlScheme", "-z", zkServer.getZkAddress()};
+    args = new String[] {"cluster", "--property", "urlScheme", "-z", zkServer.getZkAddress()};
     assertEquals(0, runTool(args, tool));
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
   }
