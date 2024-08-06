@@ -247,6 +247,25 @@ This is not required for near real-time search, but will reduce search latency o
 <mergedSegmentWarmer class="org.apache.lucene.index.SimpleMergedSegmentWarmer"/>
 ----
 
+=== segmentSort
+
+The segmentSort configuration allows the use of a comparator for sorting Lucene leaf readers.
+When a DirectoryReader is opened, its leaf readers are sorted according to the specified comparator.
+
+By default, no comparator is enabled. The currently supported sort options are:
+
+* TIME_ASC: Sorts the leaf readers by the segment's timestamp in ascending order.
+* TIME_DESC: Sorts the leaf readers by the segment's timestamp in descending order.
+
+
+.Example:
+
+[source,xml]
+----
+<segmentSort>TIME_DESC</segmentSort>
+----
+The above setting prioritizes matches in recently generated segments.
+
 == Compound File Segments
 
 Each Lucene segment is typically comprised of a dozen or so files.
