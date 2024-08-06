@@ -408,7 +408,7 @@ Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when ear
 |===
 
 This parameter set to `true` or `false` controls if Solr may use more than one thread to satisfy the request.
-A `true` value presently allows QueryComponent to search across Lucene's segments in parallel, and the xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] value can be customised in the `solr.xml` file. This is a new parameter and is considered experimental and subject to change or removal in subsequent releases. Please share your feedback and experiences with it on our mailing lists.
+A `true` value presently allows the IndexSearcher to search across Lucene's segments in parallel, and the xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] value can be customised in the `solr.xml` file. This parameter is ignored in the presence of `&segmentsTerminateEarly=true` (future work may enable it). This is a new parameter and is considered experimental and subject to change or removal in subsequent releases. Please share your feedback and experiences with it on our mailing lists.
 
 == omitHeader Parameter
 
