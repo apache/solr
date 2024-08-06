@@ -404,6 +404,7 @@ IF "%1"=="-v" goto set_debug
 IF "%1"=="-q" goto set_warn
 IF "%1"=="-c" goto set_cloud_mode
 IF "%1"=="-cloud" goto set_cloud_mode
+IF "%1"=="--cloud" goto set_cloud_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="-s" goto set_solr_home_dir
