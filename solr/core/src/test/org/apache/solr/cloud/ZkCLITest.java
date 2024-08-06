@@ -117,7 +117,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testCmdConstants() {
     assertEquals("upconfig", ZkCLI.UPCONFIG);
     assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
-    assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
+    assertEquals("excluderegex", ZkCLI.EXCLUDEREGEX);
+    assertEquals("exclude-regex", ZkCLI.EXCLUDE_REGEX);
     assertEquals(ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
   }
 
