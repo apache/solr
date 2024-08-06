@@ -122,10 +122,8 @@ public class ClusterStatus {
     }
 
     if (withClusterProperties) {
-      Map<String, Object> clusterProps = Collections.emptyMap();
-      // read cluster properties
-      clusterProps = zkStateReader.getClusterProperties();
-      if (clusterProps == null || clusterProps.isEmpty()) {
+      Map<String, Object> clusterProps = zkStateReader.getClusterProperties();
+      if (clusterProps == null) {
         clusterProps = Collections.emptyMap();
       }
       clusterStatus.add("properties", clusterProps);
