@@ -19,7 +19,7 @@ package org.apache.solr.metrics.prometheus.jvm;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name gc.* */
 public class SolrJvmGcMetrics extends SolrJvmMetric {
@@ -44,11 +44,11 @@ public class SolrJvmGcMetrics extends SolrJvmMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (metricName.endsWith(".count")) {
-      exporter.exportGauge(JVM_GC, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(JVM_GC, (Gauge<?>) dropwizardMetric, getLabels());
     } else if (metricName.endsWith(".time")) {
-      exporter.exportGauge(JVM_GC_SECONDS, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(JVM_GC_SECONDS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

@@ -19,7 +19,7 @@ package org.apache.solr.metrics.prometheus.jetty;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name *.dispatches */
 public class SolrJettyDispatchesMetric extends SolrJettyMetric {
@@ -40,7 +40,7 @@ public class SolrJettyDispatchesMetric extends SolrJettyMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
-    exporter.exportTimerCount(JETTY_DISPATCHES_TOTAL, (Timer) dropwizardMetric, getLabels());
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
+    formatter.exportTimerCount(JETTY_DISPATCHES_TOTAL, (Timer) dropwizardMetric, getLabels());
   }
 }

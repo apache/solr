@@ -33,11 +33,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
-import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreExporter;
-import org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyExporter;
-import org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmExporter;
-import org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
+import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter;
+import org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyFormatter;
+import org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmFormatter;
+import org.apache.solr.metrics.prometheus.node.SolrPrometheusNodeFormatter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
@@ -58,15 +58,15 @@ public class PrometheusResponseWriter extends RawResponseWriter {
         (NamedList<Object>) response.getValues().get("metrics");
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
     for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
-      var prometheusExporter = (SolrPrometheusExporter) prometheusRegistry.getValue();
-      prometheusTextFormatWriter.write(out, prometheusExporter.collect());
+      var prometheusFormatter = (SolrPrometheusFormatter) prometheusRegistry.getValue();
+      prometheusTextFormatWriter.write(out, prometheusFormatter.collect());
     }
   }
 
   /**
    * Provides a representation of the given Dropwizard metric registry as {@link
-   * SolrPrometheusCoreExporter}-s. Only those metrics are converted which match at least one of the
-   * given MetricFilter instances.
+   * SolrPrometheusCoreFormatter}-s. Only those metrics are converted which match at least one of
+   * the given MetricFilter instances.
    *
    * @param registry the {@link MetricRegistry} to be converted
    * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
@@ -77,7 +77,7 @@ public class PrometheusResponseWriter extends RawResponseWriter {
    * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
    * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
    * @param compact use compact representation for counters and gauges.
-   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreExporter}-s
+   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreFormatter}-s
    */
   public static void toPrometheus(
       MetricRegistry registry,
@@ -88,10 +88,10 @@ public class PrometheusResponseWriter extends RawResponseWriter {
       boolean skipHistograms,
       boolean skipAggregateValues,
       boolean compact,
-      Consumer<SolrPrometheusExporter> consumer) {
+      Consumer<SolrPrometheusFormatter> consumer) {
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-    var exporter = getExporterType(registryName);
-    if (exporter == null) {
+    var formatter = getFormatterType(registryName);
+    if (formatter == null) {
       return;
     }
 
@@ -107,17 +107,17 @@ public class PrometheusResponseWriter extends RawResponseWriter {
         (metricName, metric) -> {
           try {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            exporter.exportDropwizardMetric(dropwizardMetric, metricName);
+            formatter.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
             // Do not fail entirely for metrics exporting. Log and try to export next metric
             log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
           }
         });
 
-    consumer.accept(exporter);
+    consumer.accept(formatter);
   }
 
-  public static SolrPrometheusExporter getExporterType(String registryName) {
+  public static SolrPrometheusFormatter getFormatterType(String registryName) {
     String coreName;
     boolean cloudMode = false;
     String[] parsedRegistry = registryName.split("\\.");
@@ -132,13 +132,13 @@ public class PrometheusResponseWriter extends RawResponseWriter {
         } else {
           coreName = registryName;
         }
-        return new SolrPrometheusCoreExporter(coreName, cloudMode);
+        return new SolrPrometheusCoreFormatter(coreName, cloudMode);
       case "jvm":
-        return new SolrPrometheusJvmExporter();
+        return new SolrPrometheusJvmFormatter();
       case "jetty":
-        return new SolrPrometheusJettyExporter();
+        return new SolrPrometheusJettyFormatter();
       case "node":
-        return new SolrPrometheusNodeExporter();
+        return new SolrPrometheusNodeFormatter();
       default:
         return null;
     }
