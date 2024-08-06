@@ -400,6 +400,16 @@ If early termination is used, a `segmentTerminatedEarly` header will be included
 
 Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when early segment termination happens values such as `numFound`, xref:faceting.adoc[Facet] counts, and result xref:stats-component.adoc[Stats] may not be accurate for the entire result set.
 
+== multiThreaded Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
+
+This parameter set to `true` or `false` controls if Solr may use more than one thread to satisfy the request.
+A `true` value presently allows the IndexSearcher to search across Lucene's segments in parallel, and the xref:configuration-guide:configuring-solr-xml.adoc#indexSearcherExecutorThreads[indexSearcherExecutorThreads] value can be customised in the `solr.xml` file. This parameter is ignored in the presence of `&segmentsTerminateEarly=true` (future work may enable it). This is a new parameter and is considered experimental and subject to change or removal in subsequent releases. Please share your feedback and experiences with it on our mailing lists.
+
 == omitHeader Parameter
 
 [%autowidth,frame=none]
