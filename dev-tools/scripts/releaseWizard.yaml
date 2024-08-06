@@ -391,7 +391,6 @@ groups:
     title: Create a new minor branch off the stable branch
     description: |
       In our case we'll create {{ release_branch }}.
-      Also edit `.asf.yaml` to add the new branch under `protected_branches`.
     types:
     - major
     - minor
@@ -417,15 +416,34 @@ groups:
       - !Command
         cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
-      - !Command
-        cmd: "{{ editor }} .asf.yaml"
-        comment: |
-          Add the new branch {{ release_branch }} under `protected_branches` in `.asf.yaml`. An editor will open.
-        stdout: true
-      - !Command
-        cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ release_branch }}" && git push
-        logfile: commit-branch-protection.log
-        tee: true
+  - !Todo
+    id: protect_minor_branch
+    title: Protect the new minor git branch
+    description: |
+      Edit `.asf.yaml` to add the new minor branch under `protected_branches`.
+    types:
+      - major
+      - minor
+    depends: create_minor_branch
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to create a release branch
+      commands:
+        - !Command
+          cmd: git checkout main
+          tee: true
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
+        - !Command
+          cmd: "{{ editor }} .asf.yaml"
+          comment: |
+            Add the new branch {{ release_branch }} under `protected_branches` in `.asf.yaml`. An editor will open.
+          stdout: true
+        - !Command
+          cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ release_branch }}" && git push
+          logfile: commit-branch-protection.log
+          tee: true
   - !Todo
     id: update_minor_branch_prerelease_antora
     title: Update Ref Guide Metadata for new Minor Branch
