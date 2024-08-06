@@ -584,7 +584,8 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
           "pass");
 
-      String[] args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
+      String[] args =
+          new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
       ZkCLI.main(args);
     } finally {
       // Need to clear these before we open the next SolrZkClient
