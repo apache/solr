@@ -129,7 +129,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress() + chroot,
           "-cmd",
           "bootstrap",
@@ -146,7 +146,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testMakePath() throws Exception {
     // test bootstrap_conf
     String[] args =
-        new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "makepath", "/path/mynewpath"};
+        new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "makepath", "/path/mynewpath"};
     ZkCLI.main(args);
 
     assertTrue(zkClient.exists("/path/mynewpath", true));
@@ -157,7 +157,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // test put
     String data = "my data";
     String[] args =
-        new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
+        new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
     ZkCLI.main(args);
 
     zkClient.getData("/data.txt", null, null, true);
@@ -167,7 +167,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     // test re-put to existing
     data = "my data deux";
-    args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
+    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
     ZkCLI.main(args);
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
@@ -187,7 +187,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             ? zLibCompressor.compressBytes(dataBytes)
             : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
     String[] args =
-        new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
+        new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     ZkCLI.main(args);
     assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
 
@@ -198,7 +198,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         random().nextBoolean()
             ? zLibCompressor.compressBytes(dataBytes)
             : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
-    args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
+    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     ZkCLI.main(args);
     assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
   }
@@ -208,7 +208,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // test put file
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
@@ -232,7 +232,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
@@ -252,7 +252,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // test put file
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
@@ -268,7 +268,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testList() throws Exception {
     zkClient.makePath("/test", true);
-    String[] args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "list"};
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "list"};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
     final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
@@ -284,7 +284,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testLs() throws Exception {
     zkClient.makePath("/test/path", true);
-    String[] args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "ls", "/test"};
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "ls", "/test"};
 
     ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
     final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
@@ -308,13 +308,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     if (random().nextBoolean()) {
       upconfigArgs =
           new String[] {
-            "--zk-host",
+            "-zkhost",
             zkServer.getZkAddress(),
             "-cmd",
             ZkCLI.UPCONFIG,
-            "--conf-dir",
+            "-confdir",
             ExternalPaths.TECHPRODUCTS_CONFIGSET,
-            "--conf-name",
+            "-confname",
             confsetname
           };
     } else {
@@ -322,15 +322,15 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           (random().nextBoolean() ? "--" + ZkCLI.EXCLUDE_REGEX : "-" + ZkCLI.EXCLUDE_REGEX_SHORT);
       upconfigArgs =
           new String[] {
-            "--zk-host",
+            "-zkhost",
             zkServer.getZkAddress(),
             "-cmd",
             ZkCLI.UPCONFIG,
             excluderegexOption,
             ZkCLI.EXCLUDE_REGEX_DEFAULT,
-            "--conf-dir",
+            "-confdir",
             ExternalPaths.TECHPRODUCTS_CONFIGSET,
-            "--conf-name",
+            "-confname",
             confsetname
           };
     }
@@ -344,13 +344,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // test linkconfig
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "linkconfig",
-          "--collection",
+          "-collection",
           "collection1",
-          "--conf-name",
+          "-confname",
           confsetname
         };
     ZkCLI.main(args);
@@ -369,13 +369,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "downconfig",
-          "--conf-dir",
+          "-confdir",
           confDir.getAbsolutePath(),
-          "--conf-name",
+          "-confname",
           confsetname
         };
     ZkCLI.main(args);
@@ -419,7 +419,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     }
 
     // test reset zk
-    args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "clear", "/"};
+    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "clear", "/"};
     ZkCLI.main(args);
 
     assertEquals(0, zkClient.getChildren("/", null, true).size());
@@ -431,7 +431,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
     ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
     this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
-    String[] args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "get", getNode};
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
     ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
     ZkCLI.main(args);
     assertArrayEquals(
@@ -456,7 +456,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             ? zLibCompressor.compressBytes(data)
             : zLibCompressor.compressBytes(data, data.length / 10);
     this.zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
-    String[] args = new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "get", getNode};
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
     ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
     ZkCLI.main(args);
     assertArrayEquals(
@@ -479,7 +479,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "getfile",
@@ -508,7 +508,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "getfile",
@@ -527,7 +527,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     File file = createTempFile("newfile", null).toFile();
     String[] args =
         new String[] {
-          "--zk-host", zkServer.getZkAddress(), "-cmd", "getfile", getNode, file.getAbsolutePath()
+          "-zkhost", zkServer.getZkAddress(), "-cmd", "getfile", getNode, file.getAbsolutePath()
         };
     KeeperException e = expectThrows(KeeperException.class, () -> ZkCLI.main(args));
     assertEquals(e.code(), KeeperException.Code.NONODE);
@@ -551,7 +551,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // add property urlScheme=http
     String[] args =
         new String[] {
-          "--zk-host",
+          "-zkhost",
           zkServer.getZkAddress(),
           "-cmd",
           "CLUSTERPROP",
@@ -566,7 +566,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // remove it again
     args =
         new String[] {
-          "--zk-host", zkServer.getZkAddress(), "-cmd", "CLUSTERPROP", "-name", "urlScheme"
+          "-zkhost", zkServer.getZkAddress(), "-cmd", "CLUSTERPROP", "-name", "urlScheme"
         };
     ZkCLI.main(args);
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
@@ -585,8 +585,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
           "pass");
 
-      String[] args =
-          new String[] {"--zk-host", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
+      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
       ZkCLI.main(args);
     } finally {
       // Need to clear these before we open the next SolrZkClient
