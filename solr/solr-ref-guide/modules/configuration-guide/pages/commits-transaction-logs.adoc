@@ -268,17 +268,6 @@ The minimum number of update records to keep across all the transaction log file
 +
 The maximum number of transaction log files to keep.
 
-`numVersionBuckets`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `65336`
-|===
-+
-The number of buckets used to keep track of maximum version values when checking for re-ordered updates.
-Increase this value to reduce the cost of synchronizing access to version buckets during high-volume indexing.
-This requires `(8 bytes (long) * numVersionBuckets)` of heap space per Solr core.
-
 `syncLevel`::
 +
 [%autowidth,frame=none]
@@ -302,7 +291,6 @@ An example, to be included under `<updateHandler>` in `solrconfig.xml`, employin
   <str name="dir">${solr.ulog.dir:}</str>
   <int name="numRecordsToKeep">500</int>
   <int name="maxNumLogsToKeep">20</int>
-  <int name="numVersionBuckets">65536</int>
   <str name="syncLevel">FSYNC</str>
 </updateLog>
 ----
