@@ -109,7 +109,7 @@ public class ClusterStatus {
     boolean withRoles = solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
 
-    List<String> liveNodes = Collections.emptyList();
+    List<String> liveNodes = null;
     if (withLiveNodes || collection != null) {
       liveNodes =
           zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
@@ -117,11 +117,12 @@ public class ClusterStatus {
       if (withLiveNodes) clusterStatus.add("live_nodes", liveNodes);
     }
     if (withCollection) {
+      assert liveNodes != null;
       fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes);
     }
 
-    Map<String, Object> clusterProps = Collections.emptyMap();
     if (withClusterProperties) {
+      Map<String, Object> clusterProps = Collections.emptyMap();
       // read cluster properties
       clusterProps = zkStateReader.getClusterProperties();
       if (clusterProps == null || clusterProps.isEmpty()) {
@@ -131,8 +132,8 @@ public class ClusterStatus {
     }
 
     // add the roles map
-    Map<?, ?> roles = Collections.emptyMap();
     if (withRoles) {
+      Map<?, ?> roles = Collections.emptyMap();
       if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
         roles =
             (Map<?, ?>)

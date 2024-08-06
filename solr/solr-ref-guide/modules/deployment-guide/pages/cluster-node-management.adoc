@@ -130,7 +130,7 @@ If set to true, returns the roles within the cluster.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: false
+|Optional |Default: true
 |===
 +
 
