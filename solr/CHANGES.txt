@@ -134,7 +134,58 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* PR#2512: Update dependency com.carrotsearch:hppc to v0.10.0 (solrbot)
+
+* PR#2520: Update io.dropwizard.metrics:* to v4.2.26 (solrbot)
+
+* PR#2572: Update dependency org.apache.commons:commons-lang3 to v3.15.0 (solrbot)
+
+* PR#2434: Update dependency org.bouncycastle:bcpkix-jdk18on to v1.78.1 (solrbot)
+
+* PR#2140: Update org.apache.calcite to 1.37.0 (solrbot)
+
+* PR#2269: Update dependency org.apache.hadoop.thirdparty:hadoop-shaded-guava to v1.2.0 (solrbot)
+
+* PR#2053: Update dependency com.google.cloud:google-cloud-bom to v0.224.0 (solrbot)
+
+* PR#2056: Update software.amazon.awssdk:* to v2.26.19 (solrbot)
+
+* PR#2131: Update dependency org.jctools:jctools-core to v4.0.5 (solrbot)
+
+* PR#2568: Update dependency commons-codec:commons-codec to v1.17.1 (solrbot)
+
+* PR#2521: Update dependency org.apache.commons:commons-configuration2 to v2.11.0 (solrbot)
+
+* PR#2314: Update io.grpc:grpc-* to v1.65.1 (solrbot)
+
+* PR#2413: Update io.netty:* to v4.1.111.Final (solrbot)
+
+* PR#2406: Update org.slf4j:* to v2.0.13 (solrbot)
+
+* PR#2182: Update org.apache.curator:* to v5.7.0 (solrbot)
+
+* PR#2468: Update org.eclipse.jetty*:* to v10.0.22 (solrbot)
+
+* PR#2560: Update dependency com.fasterxml.jackson:jackson-bom to v2.17.2 (solrbot)
+
+* PR#2490: Update org.mockito:mockito* to v5.12.0 (solrbot)
+
+* PR#2373: Update dependency io.swagger.core.v3:swagger-annotations-jakarta to v2.2.22 (solrbot)
+
+* PR#2346: Update dependency com.fasterxml.jackson:jackson-bom to v2.17.1 (solrbot)
+
+* PR#2440: Update dependency org.semver4j:semver4j to v5.3.0 (solrbot)
+
+* PR#2481: Update dependency commons-cli:commons-cli to v1.8.0 (solrbot)
+
+* PR#2426: Update dependency commons-codec:commons-codec to v1.17.0 (solrbot)
+
+* PR#2341: Update org.apache.zookeeper:* to v3.9.2 (solrbot)
+
+* PR#2308: Update dependency org.apache.commons:commons-compress to v1.26.1 (solrbot)
+
+* PR#2408: Update dependency commons-cli:commons-cli to v1.7.0 (solrbot)
+
 * SOLR-17325: Upgrade Lucene to 9.11.1 (hossman)
 
 Other Changes
