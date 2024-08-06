@@ -609,6 +609,7 @@ public class PeerSync implements SolrMetricProducer {
           List<?> lst1 = (List<?>) o1;
           List<?> lst2 = (List<?>) o2;
 
+          // TODO: add comment here w.r.t. lstX.get(0) vs. lstX.get(1)
           long l1 = Math.abs((Long) lst1.get(1));
           long l2 = Math.abs((Long) lst2.get(1));
 
