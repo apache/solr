@@ -112,7 +112,7 @@ public class ExecutorUtilTest extends SolrTestCase {
   }
 
   @Test
-  public void testCMDCAwareCachedThreadPool() {
+  public void testCMDCAwareCachedThreadPool() throws Exception {
     // 5 threads max, unbounded queue
     ExecutorService executor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
@@ -120,7 +120,9 @@ public class ExecutorUtilTest extends SolrTestCase {
 
     AtomicInteger concurrentTasks = new AtomicInteger();
     AtomicInteger maxConcurrentTasks = new AtomicInteger();
-    int taskCount = random().nextInt(100);
+    int taskCount = 5 + random().nextInt(100);
+    CountDownLatch latch = new CountDownLatch(5);
+    List<Future<Void>> futures = new ArrayList<>();
 
     for (int i = 0; i < taskCount; i++) {
       String core = "id_" + random().nextLong();
@@ -135,18 +137,25 @@ public class ExecutorUtilTest extends SolrTestCase {
             // assert MDC context is copied from the parent thread that submitted the task
             assertEquals(core, MDC.get("core"));
 
-            // Sleep for a couple of millis before considering the task is done
-            int delay = random().nextInt(10);
-            Thread.sleep(delay);
+            // The first 4 tasks to be executed will wait on the latch, and the 5th will
+            // release all the threads.
+            latch.countDown();
+            latch.await(1, TimeUnit.SECONDS);
             concurrentTasks.decrementAndGet();
             return null;
           };
 
       MDCLoggingContext.setCoreName(core);
-      executor.submit(task);
+      futures.add(executor.submit(task));
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(executor);
+
+    for (Future<Void> future : futures) {
+      // Throws an exception (and make the test fail) if an assertion failed
+      // in the subtask
+      future.get();
+    }
 
     // assert the pool was actually multithreaded. Since we submitted many tasks,
     // all the threads should have been started

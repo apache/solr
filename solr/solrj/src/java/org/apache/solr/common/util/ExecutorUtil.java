@@ -250,7 +250,7 @@ public class ExecutorUtil {
   public static ExecutorService newMDCAwareCachedThreadPool(
       int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
     // Create an executor with same value of core size and max total size. With an unbounded queue,
-    // the ThreadPoolExecutor ignores the configured max value and only consider core pool size.
+    // the ThreadPoolExecutor ignores the configured max value and only considers core pool size.
     // Since we allow core threads to die when idle for too long, this ends in having a pool with
     // lazily-initialized and cached threads.
     MDCAwareThreadPoolExecutor executor =
