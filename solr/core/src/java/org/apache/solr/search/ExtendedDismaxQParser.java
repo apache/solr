@@ -70,7 +70,7 @@ public class ExtendedDismaxQParser extends QParser {
    * A field we can't ever find in any schema, so we can safely tell DisjunctionMaxQueryParser to
    * use it as our defaultField, and map aliases from it to any field in our schema.
    */
-  private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
+  private static final String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
@@ -78,26 +78,26 @@ public class ExtendedDismaxQParser extends QParser {
   }
 
   /** shorten the class references for utilities */
-  private static interface DMP extends DisMaxParams {
+  private interface DMP extends DisMaxParams {
     /**
      * User fields. The fields that can be used by the end user to create field-specific queries.
      */
-    public static String UF = "uf";
+    String UF = "uf";
 
     /**
      * Lowercase Operators. If set to true, 'or' and 'and' will be considered OR and AND, otherwise
      * lowercase operators will be considered terms to search for.
      */
-    public static String LOWERCASE_OPS = "lowercaseOperators";
+    String LOWERCASE_OPS = "lowercaseOperators";
 
     /**
      * Multiplicative boost. Boost functions which scores are going to be multiplied to the score of
      * the main query (instead of just added, like with bf)
      */
-    public static String MULT_BOOST = "boost";
+    String MULT_BOOST = "boost";
 
     /** If set to true, stopwords are removed from the query. */
-    public static String STOPWORDS = "stopwords";
+    String STOPWORDS = "stopwords";
   }
 
   private ExtendedDismaxConfiguration config;
@@ -725,25 +725,24 @@ public class ExtendedDismaxQParser extends QParser {
 
   public List<Clause> splitIntoClauses(String s, boolean ignoreQuote) {
     ArrayList<Clause> lst = new ArrayList<>(4);
-    Clause clause;
 
     int pos = 0;
     int end = s.length();
-    char ch = 0;
-    int start;
-    boolean disallowUserField;
-    while (pos < end) {
-      clause = new Clause();
-      disallowUserField = true;
+    // Don't use an ArrayDeque since null values are not supported
+    List<String> groupedFields = new ArrayList<>(); // field:(token1 token2)
 
-      ch = s.charAt(pos);
+    while (pos < end) {
+      Clause clause = new Clause();
+      boolean disallowUserField = true;
+
+      char ch = s.charAt(pos);
 
       while (Character.isWhitespace(ch)) {
         if (++pos >= end) break;
         ch = s.charAt(pos);
       }
 
-      start = pos;
+      int start = pos;
 
       if ((ch == '+' || ch == '-') && (pos + 1) < end) {
         clause.must = ch;
@@ -751,10 +750,17 @@ public class ExtendedDismaxQParser extends QParser {
       }
 
       clause.field = getFieldName(s, pos, end);
+
+      boolean implicitField = false;
+      if (clause.field == null && !groupedFields.isEmpty()) {
+        clause.field = groupedFields.get(groupedFields.size() - 1);
+        implicitField = true;
+      }
+
       if (clause.field != null && !config.userFields.isAllowed(clause.field)) {
         clause.field = null;
       }
-      if (clause.field != null) {
+      if (!implicitField && clause.field != null) {
         disallowUserField = false;
         int colon = s.indexOf(':', pos);
         clause.rawField = s.substring(pos, colon);
@@ -762,7 +768,13 @@ public class ExtendedDismaxQParser extends QParser {
         pos++; // skip the ':'
       }
 
-      if (pos >= end) break;
+      if (pos >= end) {
+        break;
+      } else if (s.charAt(pos) == '(') {
+        // For a sequence of terms grouped with a field "field:(term1 term2)", keep
+        // track of the field name so we can apply it to all the terms
+        groupedFields.add(implicitField ? null : clause.field);
+      }
 
       char inString = 0;
 
@@ -856,6 +868,11 @@ public class ExtendedDismaxQParser extends QParser {
           } else {
             // uh.. this shouldn't happen.
             clause = null;
+          }
+        } else if (!groupedFields.isEmpty()) {
+          char lastChar = clause.hasWhitespace ? s.charAt(pos - 1) : ch;
+          if (lastChar == ')') {
+            groupedFields.remove(groupedFields.size() - 1);
           }
         }
       }
