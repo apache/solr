@@ -98,9 +98,15 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
               + "[^}]*collection=[^&}]+[^}]*\\}");
   private static final Pattern PATTERN_WITHOUT_COLLECTION =
-      Pattern.compile(
-          "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
-              + "(?![^}]*collection=)[^}]*\\}");
+          Pattern.compile(
+                  "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
+                          + "(?=[^}]*includeAll=true)"
+                          + "(?![^}]*includeAll=false)"
+                          + "(?![^}]*collection=[^&}]+)"
+                          + "(?![^}]*liveNodes=[^&}]+)"
+                          + "(?![^}]*clusterProperties=[^&}]+)"
+                          + "(?![^}]*roles=[^&}]+)"
+                          + "[^}]*\\}");
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -291,7 +297,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       // lookup)
       assertLogCount(collectionClusterStateLogs, 1);
       // 1 call to fetch entire cluster state from HttpCSP.fetchLiveNodes()
-      assertLogCount(entireClusterStateLogs, 1);
+      assertLogCount(entireClusterStateLogs, 0);
     }
   }
 
