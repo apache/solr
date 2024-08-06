@@ -133,6 +133,8 @@ If set to true, returns the roles within the cluster.
 |Optional |Default: true
 |===
 +
+If set to `true`, returns all information pertaining to live nodes, collections, cluster properties, roles, etc.
+If set to `false`, the information returned is based on the other specified parameters.
 
 === CLUSTERSTATUS Response
 
