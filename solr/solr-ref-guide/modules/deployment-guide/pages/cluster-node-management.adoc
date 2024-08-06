@@ -103,7 +103,7 @@ This can be used if you need the details of the shard where a particular documen
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: will default to the default value of includeAll parameter specified below
+|Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
 If set to true, returns the status of live nodes in the cluster.
@@ -112,7 +112,7 @@ If set to true, returns the status of live nodes in the cluster.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: will default to the default value of includeAll parameter specified below
+|Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
 If set to true, returns the properties of the cluster.
@@ -121,7 +121,7 @@ If set to true, returns the properties of the cluster.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: will default to the default value of includeAll parameter specified below
+|Optional |Default: will default to the default value of `includeAll` parameter specified below
 |===
 +
 If set to true, returns the roles within the cluster.
