@@ -149,7 +149,7 @@ public class ExecutorUtilTest extends SolrTestCase {
     ExecutorUtil.shutdownAndAwaitTermination(executor);
 
     // assert the pool was actually multithreaded. Since we submitted many tasks,
-    // all the thread should have been started
+    // all the threads should have been started
     assertEquals(5, maxConcurrentTasks.get());
   }
 
