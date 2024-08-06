@@ -71,6 +71,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -1988,16 +1989,38 @@ public class IndexFetcher {
         req.setBasePath(leaderBaseUrl);
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
         response = solrClient.request(req, leaderCoreName);
+        final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
+
+        if (responseStatus != 200) {
+          final var errorMsg =
+              String.format(
+                  Locale.ROOT,
+                  "Unexpected status code [%d] when downloading file [%s].",
+                  responseStatus,
+                  fileName);
+          closeStreamAndThrowIOE(is, errorMsg, Optional.empty());
+        }
+
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
       } catch (Exception e) {
-        // close stream on error
-        IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", e);
+        closeStreamAndThrowIOE(is, "Could not download file '" + fileName + "'", Optional.of(e));
       }
+
+      // Unreachable b/c closeStreamAndThrowIOE will always throw
+      return null;
+    }
+
+    private void closeStreamAndThrowIOE(
+        InputStream is, String exceptionMessage, Optional<Exception> e) throws IOException {
+      IOUtils.closeQuietly(is);
+      if (e.isPresent()) {
+        throw new IOException(exceptionMessage, e.get());
+      }
+      throw new IOException(exceptionMessage);
     }
   }
 
