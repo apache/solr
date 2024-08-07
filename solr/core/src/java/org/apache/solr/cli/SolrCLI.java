@@ -310,6 +310,7 @@ public class SolrCLI implements CLIO {
     else if ("post".equals(toolType)) return new PostTool();
     else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
+    else if ("stream".equals(toolType)) return new StreamTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -549,7 +550,7 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, zk, auth, assert, config, export, api, package, post");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, zk, auth, assert, config, export, api, package, post, stream");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");
@@ -620,7 +621,7 @@ public class SolrCLI implements CLIO {
           cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
-        CLIO.getOutStream()
+        CLIO.getErrStream()
             .println(
                 "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
                     + solrUrl

@@ -143,3 +143,7 @@ The xref:math-expressions.adoc[] has in depth coverage of visualization techniqu
 === Stream Screen
 
 * xref:stream-screen.adoc[]: Submit streaming expressions and see results and parsing explanations.
+
+=== Stream Tool
+
+* xref:stream-tool.adoc[]: Submit streaming expressions and see results via `bin/solr stream`.

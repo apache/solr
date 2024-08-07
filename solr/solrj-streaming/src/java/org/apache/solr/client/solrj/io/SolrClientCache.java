@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io;
 
 import java.io.Closeable;
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,22 +37,20 @@ import org.apache.solr.client.solrj.impl.SolrClientBuilder;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
+/** The SolrClientCache caches SolrClients, so they can be reused by different TupleStreams. */
 public class SolrClientCache implements Closeable {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   // Set the floor for timeouts to 60 seconds.
-  // Timeouts cans be increased by setting the system properties defined below.
+  // Timeouts can be increased by setting the system properties defined below.
   private static final int MIN_TIMEOUT = 60000;
   private static final int minConnTimeout =
       Math.max(
           Integer.getInteger(HttpClientUtil.PROP_CONNECTION_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
   private static final int minSocketTimeout =
       Math.max(Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
+
+  private String basicAuthCredentials = null; // Only support with the http2SolrClient
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient apacheHttpClient;
@@ -75,6 +72,10 @@ public class SolrClientCache implements Closeable {
   public SolrClientCache(Http2SolrClient http2SolrClient) {
     this.apacheHttpClient = null;
     this.http2SolrClient = http2SolrClient;
+  }
+
+  public void setBasicAuthCredentials(String basicAuthCredentials) {
+    this.basicAuthCredentials = basicAuthCredentials;
   }
 
   public void setDefaultZKHost(String zkHost) {
@@ -101,11 +102,12 @@ public class SolrClientCache implements Closeable {
     String zkHostNoChroot = zkHost.split("/")[0];
     boolean canUseACLs =
         Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
+
     final CloudSolrClient client;
     if (apacheHttpClient != null) {
       client = newCloudLegacySolrClient(zkHost, apacheHttpClient, canUseACLs);
     } else {
-      client = newCloudHttp2SolrClient(zkHost, http2SolrClient, canUseACLs);
+      client = newCloudHttp2SolrClient(zkHost, http2SolrClient, canUseACLs, basicAuthCredentials);
     }
     solrClients.put(zkHost, client);
     return client;
@@ -129,12 +131,17 @@ public class SolrClientCache implements Closeable {
   }
 
   private static CloudHttp2SolrClient newCloudHttp2SolrClient(
-      String zkHost, Http2SolrClient http2SolrClient, boolean canUseACLs) {
+      String zkHost,
+      Http2SolrClient http2SolrClient,
+      boolean canUseACLs,
+      String basicAuthCredentials) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
-    builder = builder.withInternalClientBuilder(newHttp2SolrClientBuilder(null, http2SolrClient));
+    builder =
+        builder.withInternalClientBuilder(
+            newHttp2SolrClientBuilder(null, http2SolrClient, basicAuthCredentials));
     var client = builder.build();
     try {
       client.connect();
@@ -148,8 +155,8 @@ public class SolrClientCache implements Closeable {
   /**
    * Create (and cache) a SolrClient based around the provided URL
    *
-   * @param baseUrl a Solr URL. May be either a "base" URL (i.e. ending in "/solr"), or point to a
-   *     particular collection or core.
+   * @param baseUrl a Solr URL. It may either be a "base" URL (i.e. ending in "/solr"), or point to
+   *     a particular collection or core.
    * @return a SolrClient configured to use the provided URL. The cache retains a reference to the
    *     returned client, and will close it when callers invoke {@link SolrClientCache#close()}
    */
@@ -163,7 +170,7 @@ public class SolrClientCache implements Closeable {
     if (apacheHttpClient != null) {
       client = newHttpSolrClient(baseUrl, apacheHttpClient);
     } else {
-      client = newHttp2SolrClientBuilder(baseUrl, http2SolrClient).build();
+      client = newHttp2SolrClientBuilder(baseUrl, http2SolrClient, basicAuthCredentials).build();
     }
     solrClients.put(baseUrl, client);
     return client;
@@ -190,7 +197,7 @@ public class SolrClientCache implements Closeable {
   }
 
   private static Http2SolrClient.Builder newHttp2SolrClientBuilder(
-      String url, Http2SolrClient http2SolrClient) {
+      String url, Http2SolrClient http2SolrClient, String basicAuthCredentials) {
     final var builder =
         (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
             ? new Http2SolrClient.Builder(url)
@@ -199,6 +206,8 @@ public class SolrClientCache implements Closeable {
     if (http2SolrClient != null) {
       builder.withHttpClient(http2SolrClient);
     }
+    builder.withOptionalBasicAuthCredentials(basicAuthCredentials);
+
     long idleTimeout = minSocketTimeout;
     if (builder.getIdleTimeoutMillis() != null) {
       idleTimeout = Math.max(idleTimeout, builder.getIdleTimeoutMillis());
