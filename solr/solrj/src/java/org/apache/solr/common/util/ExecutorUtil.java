@@ -244,8 +244,9 @@ public class ExecutorUtil {
   }
 
   /**
-   * Create a new pool with cached a reused threads. Thread are created only on-demand, up to the
-   * specified {@code maxThreads}.
+   * Create a new pool of threads. Threads are created for new work if there is room to do so up to
+   * {@code maxThreads}. Beyond that, the queue is used up to {@code queueCapacity}. Beyond that,
+   * work is rejected with an exception. Unused threads will be closed after 60 seconds.
    */
   public static ExecutorService newMDCAwareCachedThreadPool(
       int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
