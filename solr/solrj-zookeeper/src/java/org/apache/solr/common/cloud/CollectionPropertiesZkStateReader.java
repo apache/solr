@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.SolrException;
@@ -72,7 +73,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
           new SolrNamedThreadFactory("collectionPropsNotifications"));
 
-  private volatile Thread cacheCleanerThread;
+  private volatile ScheduledThreadPoolExecutor cacheCleanerExecutor = null;
 
   private final ConcurrentHashMap<String, Object> collectionLocks = new ConcurrentHashMap<>();
 
@@ -150,16 +151,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   @Override
   public void close() {
     this.closed = true;
-    synchronized (this) {
-      if (cacheCleanerThread != null) {
-        cacheCleanerThread.interrupt();
-        try {
-          cacheCleanerThread.join();
-        } catch (InterruptedException e) {
-          //ignore since we are closing
-        }
-      }
-    }
+    ExecutorUtil.shutdownAndAwaitTermination(cacheCleanerExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(collectionPropsNotifications);
   }
 
@@ -313,11 +305,11 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       throws KeeperException, InterruptedException {
     final String znodePath = getCollectionPropsPath(collection);
     // lazy init cache cleaner once we know someone is using collection properties.
-    if (cacheCleanerThread == null) {
+    if (cacheCleanerExecutor == null) {
       synchronized (this) {
-        if (cacheCleanerThread == null) {
-          cacheCleanerThread = new Thread(new CacheCleaner(), "cachecleaner");
-          cacheCleanerThread.start();
+        if (cacheCleanerExecutor == null) {
+          cacheCleanerExecutor = new ScheduledThreadPoolExecutor(1);
+          cacheCleanerExecutor.scheduleAtFixedRate(new CacheCleaner(), 0, 1, TimeUnit.MINUTES);
         }
       }
     }
@@ -391,13 +383,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private class CacheCleaner implements Runnable {
     @Override
     public void run() {
-      while (!Thread.interrupted()) {
-        try {
-          Thread.sleep(60000);
-        } catch (InterruptedException e) {
-          // Executor shutdown will send us an interrupt
-          break;
-        }
+      if (!closed) {
         watchedCollectionProps
             .entrySet()
             .removeIf(
