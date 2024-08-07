@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings(value = "unchecked")
 public class PrometheusResponseWriter extends RawResponseWriter {
-  private final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
+  private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
