@@ -19,6 +19,9 @@ Optimizations
   beginning?) in which its collection state cache was not being used, resulting in many extra
   requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
 
+* SOLR-17102: The VersionBucket indexing lock mechanism was replaced with something just as fast yet
+  that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
+
 Bug Fixes
 ---------------------
 (No changes)
