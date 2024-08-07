@@ -115,6 +115,9 @@ Optimizations
   beginning?) in which its collection state cache was not being used, resulting in many extra
   requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
 
+* SOLR-17102: The VersionBucket indexing lock mechanism was replaced with something just as fast yet
+  that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
+
 Bug Fixes
 ---------------------
 (No changes)
@@ -130,7 +133,7 @@ Other Changes
 ==================  9.7.0 ==================
 New Features
 ---------------------
-* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
+* SOLR-13350, SOLR-17298: Opt-in multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble, Gus Heck)
 
 * SOLR-17192: Put an UpdateRequestProcessor-enforced soft-limit on the number of fields allowed in a core.  The `NumFieldLimitingUpdateRequestProcessorFactory`
   limit may be adjusted by raising the factory's `maxFields` setting, toggled in and out of "warning-only" mode using the `warnOnly` setting, or disabled entirely
