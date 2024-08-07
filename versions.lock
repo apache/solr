@@ -64,7 +64,7 @@ com.healthmarketscience.jackcess:jackcess-encrypt:4.0.1 (1 constraints: 5c0cf101
 com.ibm.icu:icu4j:74.2 (1 constraints: ae0f2484)
 com.j256.simplemagic:simplemagic:1.17 (1 constraints: dd04f830)
 com.jayway.jsonpath:json-path:2.9.0 (2 constraints: 6f12c62c)
-com.lmax:disruptor:3.4.4 (1 constraints: 0d050a36)
+com.lmax:disruptor:4.0.0 (1 constraints: 0605ff35)
 com.mchange:c3p0:0.9.5.5 (1 constraints: c80c571b)
 com.mchange:mchange-commons-java:0.2.19 (1 constraints: 84075b75)
 com.pff:java-libpst:0.9.3 (1 constraints: 630cfa01)
