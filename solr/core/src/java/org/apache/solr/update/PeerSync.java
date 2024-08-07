@@ -697,6 +697,13 @@ public class PeerSync implements SolrMetricProducer {
                 if (debug) {
                   log.debug("{} deleteByQuery {}", logPrefix, cmd);
                 }
+                if (cmd.query.contains("NOW")) {
+                  // delete-by-query with a relative 'NOW' value in the start or end time range
+                  // could potentially 'here' delete fewer or more documents than were deleted
+                  // when the delete-by-query 'originally' ran. this could then manifest as a
+                  // PeerSync failure due to index finger print mismatch.
+                  log.info("{} deleteByQuery {} contains NOW", logPrefix, cmd);
+                }
                 proc.processDelete(cmd);
                 break;
               }
