@@ -419,8 +419,10 @@ groups:
   - !Todo
     id: protect_branches
     title: Protect the new git branch(es)
-    description: |
-      Edit `.asf.yaml` to add the new branch(es) under `protected_branches`.
+    vars:
+      branch_names: "{{ release_branch }}{% if release_type == 'major' %} and {{ stable_branch }}{% endif %}"
+    description: >
+      Edit `.asf.yaml` to protect new git branch(es) {{ branch_names }}.
     types:
       - major
       - minor
@@ -437,11 +439,12 @@ groups:
           tee: true
         - !Command
           cmd: "{{ editor }} .asf.yaml"
-          comment: |
-            Add the newly created branch(es) under `protected_branches` in `.asf.yaml`. An editor will open.
+          comment: >
+            Add the newly created branch(es) {{ branch_names }}
+            under `protected_branches` in `.asf.yaml`. An editor will open.
           stdout: true
         - !Command
-          cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ release_branch }}" && git push
+          cmd: git add .asf.yaml && git commit -m "Add branch protection for {{ branch_names }}" && git push
           logfile: commit-branch-protection.log
           tee: true
   - !Todo
