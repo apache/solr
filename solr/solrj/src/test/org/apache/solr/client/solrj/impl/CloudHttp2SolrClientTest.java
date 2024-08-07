@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -92,21 +91,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static CloudSolrClient httpBasedCloudSolrClient = null;
   private static CloudSolrClient zkBasedCloudSolrClient = null;
-
-  private static final Pattern PATTERN_WITH_COLLECTION =
-      Pattern.compile(
-          "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
-              + "[^}]*collection=[^&}]+[^}]*\\}");
-  private static final Pattern PATTERN_WITHOUT_COLLECTION =
-          Pattern.compile(
-                  "path=/admin/collections.*params=\\{[^}]*action=CLUSTERSTATUS"
-                          + "(?=[^}]*includeAll=true)"
-                          + "(?![^}]*includeAll=false)"
-                          + "(?![^}]*collection=[^&}]+)"
-                          + "(?![^}]*liveNodes=[^&}]+)"
-                          + "(?![^}]*clusterProperties=[^&}]+)"
-                          + "(?![^}]*roles=[^&}]+)"
-                          + "[^}]*\\}");
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -275,29 +259,36 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
-    try (LogListener entireClusterStateLogs =
-            LogListener.info(HttpSolrCall.class).regex(PATTERN_WITHOUT_COLLECTION);
-        LogListener collectionClusterStateLogs =
-            LogListener.info(HttpSolrCall.class).regex(PATTERN_WITH_COLLECTION);
-        LogListener adminRequestLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
+    try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
         CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
+
+      assertEquals(adminLogs.getQueue().size(), 1);
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections params={prs=true&liveNodes=true&action"
+                      + "=CLUSTERSTATUS&includeAll=false"));
+
       SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
       solrClient.add(collectionName, doc);
+
+      assertEquals(1, adminLogs.getQueue().size());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections "
+                      + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
+
       solrClient.commit(collectionName);
+      assertEquals(0, adminLogs.getQueue().size());
+
       for (int i = 0; i < 3; i++) {
         assertEquals(
             1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+        assertEquals(0, adminLogs.getQueue().size());
       }
-
-      // 1 call to fetch entire cluster state via BaseHttpCSP.fetchLiveNodes()
-      // 1 call to fetch CLUSTERSTATUS for collection via getDocCollection() (first collection
-      // lookup)
-      assertLogCount(adminRequestLogs, 2);
-      // 1 call to fetch CLUSTERSTATUS for collection via getDocCollection() (first collection
-      // lookup)
-      assertLogCount(collectionClusterStateLogs, 1);
-      // 1 call to fetch entire cluster state from HttpCSP.fetchLiveNodes()
-      assertLogCount(entireClusterStateLogs, 0);
     }
   }
 
@@ -305,16 +296,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
     return new CloudHttp2SolrClient.Builder(solrUrls).build();
-  }
-
-  private void assertLogCount(LogListener logListener, int expectedCount) {
-    int logCount = logListener.getCount();
-    assertEquals(expectedCount, logCount);
-    if (logCount > 0) {
-      for (int i = 0; i < logCount; i++) {
-        logListener.pollMessage();
-      }
-    }
   }
 
   @Test

@@ -84,12 +84,10 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   /** Create a SolrClient implementation that uses the specified Solr node URL */
   protected abstract SolrClient getSolrClient(String baseUrl);
 
-  /**
-   * This change is to prevent BaseHttpCSP make a call to fetch the entire cluster state, as the
-   * default implementation calls getClusterState().getCollectionOrNull(name)
-   */
   @Override
   public DocCollection getCollection(String collection) {
+    // This change is to prevent BaseHttpCSP make a call to fetch the entire cluster state, as the
+    // default implementation calls getClusterState().getCollectionOrNull(name)
     return getState(collection).get();
   }
 

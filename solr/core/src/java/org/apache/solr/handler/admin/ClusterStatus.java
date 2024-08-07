@@ -50,6 +50,7 @@ public class ClusterStatus {
   public static final String INCLUDE_ALL = "includeAll";
   public static final String LIVENODES_PROP = "liveNodes";
   public static final String CLUSTER_PROP = "clusterProperties";
+  public static final String ALIASES_PROP = "aliases";
 
   /** Shard / collection health state. */
   public enum Health {
@@ -108,6 +109,7 @@ public class ClusterStatus {
     boolean withClusterProperties = solrParams.getBool(CLUSTER_PROP, includeAll);
     boolean withRoles = solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
+    boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll);
 
     List<String> liveNodes = null;
     if (withLiveNodes || collection != null) {
@@ -116,9 +118,19 @@ public class ClusterStatus {
       // add live_nodes
       if (withLiveNodes) clusterStatus.add("live_nodes", liveNodes);
     }
+
+    Aliases aliases = null;
+    if (withCollection || withAliases) {
+      aliases = zkStateReader.getAliases();
+    }
+
     if (withCollection) {
       assert liveNodes != null;
-      fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes);
+      fetchClusterStatusForCollOrAlias(clusterStatus, liveNodes, aliases);
+    }
+
+    if (withAliases) {
+      addAliasMap(aliases, clusterStatus);
     }
 
     if (withClusterProperties) {
@@ -145,10 +157,9 @@ public class ClusterStatus {
   }
 
   private void fetchClusterStatusForCollOrAlias(
-      NamedList<Object> clusterStatus, List<String> liveNodes) {
+      NamedList<Object> clusterStatus, List<String> liveNodes, Aliases aliases) {
 
     // read aliases
-    Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionVsAliases = new HashMap<>();
     Map<String, List<String>> aliasVsCollections = aliases.getCollectionAliasListMap();
     for (Map.Entry<String, List<String>> entry : aliasVsCollections.entrySet()) {
@@ -241,16 +252,18 @@ public class ClusterStatus {
       collectionProps.add(name, collectionStatus);
     }
 
+    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
+    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
+
+    clusterStatus.add("collections", collectionProps);
+  }
+
+  private void addAliasMap(Aliases aliases, NamedList<Object> clusterStatus) {
     // add the alias map too
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap(); // comma delim
     if (!collectionAliasMap.isEmpty()) {
       clusterStatus.add("aliases", collectionAliasMap);
     }
-
-    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
-
-    clusterStatus.add("collections", collectionProps);
   }
 
   /**
