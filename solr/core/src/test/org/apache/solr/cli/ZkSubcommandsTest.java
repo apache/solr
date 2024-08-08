@@ -436,8 +436,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     }
 
     // test reset zk
-    args =
-        new String[] {"rm", "-r", "true", "-z", zkServer.getZkAddress(), "zk:/configs/confsetone"};
+    args = new String[] {"rm", "-r", "-z", zkServer.getZkAddress(), "zk:/configs/confsetone"};
 
     ZkRmTool zkRmTool = new ZkRmTool();
     assertEquals(0, runTool(args, zkRmTool));
@@ -561,7 +560,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testInvalidZKAddress() throws Exception {
 
-    String[] args = new String[] {"ls", "/", "-r", "true", "-z", "----------:33332"};
+    String[] args = new String[] {"ls", "/", "-r", "-z", "----------:33332"};
 
     ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
     final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
