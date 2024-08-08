@@ -126,7 +126,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
-          [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
           [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
       ]

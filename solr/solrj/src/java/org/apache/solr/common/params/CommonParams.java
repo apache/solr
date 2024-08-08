@@ -167,6 +167,9 @@ public interface CommonParams {
   /** Timeout value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
 
+  /** Whether or not the search may use the multi-threaded logic */
+  String MULTI_THREADED = "multiThreaded";
+
   /**
    * Maximum query CPU usage value in milliseconds. If not set, or the value is &lt; 0, there is no
    * timeout.

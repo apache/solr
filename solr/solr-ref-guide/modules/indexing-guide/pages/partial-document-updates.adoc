@@ -272,6 +272,14 @@ If the price and popularity fields are defined in the schema as:
 
 `<field name="popularity" type="float" indexed="false" stored="false" docValues="true"/>`
 
+[TIP]
+====
+.Doc Values Enabling
+
+
+`docValues="true"` is the default for schemas with version >= `1.7`, so it can be omitted.
+====
+
 If the following document exists in our collection:
 
 [source,json]

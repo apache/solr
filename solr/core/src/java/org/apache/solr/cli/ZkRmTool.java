@@ -20,11 +20,9 @@ import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +42,19 @@ public class ZkRmTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("path")
-            .argName("path")
+        Option.builder()
+            .longOpt("path")
+            .argName("PATH")
             .hasArg()
             .required(true)
             .desc("Path to remove.")
             .build(),
         SolrCLI.OPTION_RECURSE,
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
@@ -65,12 +68,6 @@ public class ZkRmTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("zkHost")
-              + " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
-    }
     String target = cli.getOptionValue("path");
     boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
 
@@ -82,11 +79,7 @@ public class ZkRmTool extends ToolBase {
       throw new SolrServerException("You may not remove the root ZK node ('/')!");
     }
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(
             "ZooKeeper node " + znode + " has children and recurse has NOT been specified.");

@@ -39,8 +39,8 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testExecutionInOrder() {
-    OrderedExecutor orderedExecutor =
-        new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
+    OrderedExecutor<Integer> orderedExecutor =
+        new OrderedExecutor<>(10, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
     IntBox intBox = new IntBox();
     for (int i = 0; i < 100; i++) {
       orderedExecutor.execute(1, () -> intBox.value++);
@@ -53,8 +53,8 @@ public class OrderedExecutorTest extends SolrTestCase {
   public void testLockWhenQueueIsFull() {
     final ExecutorService controlExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_control");
-    final OrderedExecutor orderedExecutor =
-        new OrderedExecutor(
+    final OrderedExecutor<Integer> orderedExecutor =
+        new OrderedExecutor<>(
             10, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
 
     try {
@@ -111,8 +111,8 @@ public class OrderedExecutorTest extends SolrTestCase {
 
     final ExecutorService controlExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_control");
-    final OrderedExecutor orderedExecutor =
-        new OrderedExecutor(
+    final OrderedExecutor<Integer> orderedExecutor =
+        new OrderedExecutor<>(
             parallelism, ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_test"));
 
     try {
@@ -216,8 +216,8 @@ public class OrderedExecutorTest extends SolrTestCase {
       base.put(i, i);
       run.put(i, i);
     }
-    OrderedExecutor orderedExecutor =
-        new OrderedExecutor(10, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
+    OrderedExecutor<Integer> orderedExecutor =
+        new OrderedExecutor<>(10, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
     for (int i = 0; i < 1000; i++) {
       int key = random().nextInt(N);
       base.put(key, base.get(key) + 1);
@@ -233,8 +233,8 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testMaxSize() throws InterruptedException {
-    OrderedExecutor orderedExecutor =
-        new OrderedExecutor(1, ExecutorUtil.newMDCAwareCachedThreadPool("single"));
+    OrderedExecutor<Integer> orderedExecutor =
+        new OrderedExecutor<>(1, ExecutorUtil.newMDCAwareCachedThreadPool("single"));
 
     CountDownLatch isRunning = new CountDownLatch(1);
     CountDownLatch blockingLatch = new CountDownLatch(1);

@@ -83,3 +83,6 @@ java.util.logging.**
 
 @defaultMessage Use List.sort(Comparator) instead of Collections.sort(List, Comparator) please.
 java.util.Collections#sort(java.util.List, java.util.Comparator)
+
+@defaultMessage Use URI.toURL() to construct an instance of URL.
+java.net.URL#<init>(**)

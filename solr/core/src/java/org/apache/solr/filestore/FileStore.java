@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.filestore.FileStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
@@ -109,7 +108,9 @@ public interface FileStore {
     METADATA
   }
 
-  interface FileDetails extends MapWriter {
+  interface FileDetails {
+
+    String getSimpleName();
 
     MetaData getMetaData();
 

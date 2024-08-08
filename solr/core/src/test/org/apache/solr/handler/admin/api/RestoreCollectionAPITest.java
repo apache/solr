@@ -38,7 +38,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** Unit tests for {@link RestoreCollectionAPI} */
@@ -103,7 +102,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
             });
 
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Invalid collection: [invalid$collection@name]"));
   }
 

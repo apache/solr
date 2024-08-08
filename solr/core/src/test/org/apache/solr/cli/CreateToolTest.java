@@ -17,52 +17,24 @@
 
 package org.apache.solr.cli;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
-import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CreateToolTest extends SolrCloudTestCase {
 
-  private static final String USER = "solr";
-  private static final String PASS = "SolrRocksAgain";
   private static final String collectionName = "testCreateCollectionWithBasicAuth";
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON =
-        Utils.toJSONString(
-            Map.of(
-                "authorization",
-                Map.of(
-                    "class",
-                    RuleBasedAuthorizationPlugin.class.getName(),
-                    "user-role",
-                    singletonMap(USER, "admin"),
-                    "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
-                "authentication",
-                Map.of(
-                    "class",
-                    BasicAuthPlugin.class.getName(),
-                    "blockUnknown",
-                    true,
-                    "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)))));
-
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
-        .withSecurityJson(SECURITY_JSON)
+        .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
   }
 
@@ -75,10 +47,10 @@ public class CreateToolTest extends SolrCloudTestCase {
       collectionName,
       "-n",
       "cloud-minimal",
-      "-zkHost",
+      "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
-      USER + ":" + PASS,
+      "--credentials",
+      SecurityJson.USER_PASS,
       "-verbose"
     };
 
@@ -88,7 +60,7 @@ public class CreateToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof CreateTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 }

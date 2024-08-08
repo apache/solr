@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-omit-tf-but-not-pos" version="1.0">
+<schema name="bad-schema-omit-tf-but-not-pos" version="1.7">
   <fieldType name="string" class="solr.StrField"/>
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

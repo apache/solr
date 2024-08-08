@@ -27,7 +27,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -52,7 +51,7 @@ public class HadoopSSLCredentialProviderTest extends SolrTestCaseJ4 {
       String pw = "pw" + ++cnt;
       HadoopSSLCredentialProvider sut =
           new HadoopSSLCredentialProvider(getMockedHadoopCredentialProvider(set.getValue(), pw));
-      MatcherAssert.assertThat(sut.getCredential(set.getKey()), is(pw));
+      assertThat(sut.getCredential(set.getKey()), is(pw));
     }
   }
 

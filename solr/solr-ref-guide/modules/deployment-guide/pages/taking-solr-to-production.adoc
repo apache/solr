@@ -93,7 +93,7 @@ To see available options, simply do:
 
 [source,bash]
 ----
-sudo bash ./install_solr_service.sh -help
+sudo bash ./install_solr_service.sh --help
 ----
 
 Once the script completes, Solr will be installed as a service and running in the background on your server (on port 8983).
@@ -277,12 +277,6 @@ We can use the mkroot command for that:
 ----
 bin/solr zk mkroot /solr -z <ZK_node>:<ZK_PORT>
 ----
-
-[NOTE]
-====
-If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use the `zkcli.sh` / `zkcli.bat` `bootstrap` command, which will also create the chroot path if it does not exist.
-See xref:zookeeper-utilities.adoc[] for more info.
-====
 
 ==== Unknown core deletion
 
