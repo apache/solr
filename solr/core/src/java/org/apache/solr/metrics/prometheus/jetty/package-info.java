@@ -16,7 +16,7 @@
  */
 
 /**
- * The {@link org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyExporter} is responsible
+ * The {@link org.apache.solr.metrics.prometheus.jetty.SolrPrometheusJettyFormatter} is responsible
  * for exporting solr.jetty registry metrics to Prometheus.
  */
 package org.apache.solr.metrics.prometheus.jetty;

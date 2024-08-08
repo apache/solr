@@ -689,7 +689,7 @@ groups:
       {% if release_type == 'major' -%}
       . Change name of version `main ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
       {%- endif %}
-      . Create a new (unreleased) version `{{ get_next_version }}`
+      . Create a new (unreleased) version `{{ release_version_major }}.{{ release_version_minor + 1 }}`
     types:
     - major
     - minor
