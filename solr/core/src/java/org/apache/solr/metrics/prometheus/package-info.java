@@ -16,7 +16,7 @@
  */
 
 /**
- * The {@link org.apache.solr.metrics.prometheus.SolrPrometheusExporter} is responsible for
+ * The {@link org.apache.solr.metrics.prometheus.SolrPrometheusFormatter} is responsible for
  * collecting Prometheus metrics from exporting {@link com.codahale.metrics.Metric}'s from {@link
  * com.codahale.metrics.MetricRegistry} {@link org.apache.solr.metrics.prometheus.SolrMetric} is a
  * wrapper to export {@link com.codahale.metrics.Metric} to {@link
