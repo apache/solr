@@ -19,7 +19,7 @@ package org.apache.solr.metrics.prometheus.jvm;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name memory.* */
 public class SolrJvmMemoryMetric extends SolrJvmMetric {
@@ -46,7 +46,7 @@ public class SolrJvmMemoryMetric extends SolrJvmMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     String[] parsedMetric = metricName.split("\\.");
     String metricType = parsedMetric[1];
     switch (metricType) {
@@ -54,11 +54,11 @@ public class SolrJvmMemoryMetric extends SolrJvmMetric {
       case "non-heap":
       case "total":
         labels.put("memory", parsedMetric[1]);
-        exporter.exportGauge(JVM_MEMORY, (Gauge<?>) dropwizardMetric, getLabels());
+        formatter.exportGauge(JVM_MEMORY, (Gauge<?>) dropwizardMetric, getLabels());
         break;
       case "pools":
         labels.put("space", parsedMetric[2]);
-        exporter.exportGauge(JVM_MEMORY_POOL_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+        formatter.exportGauge(JVM_MEMORY_POOL_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
         break;
     }
   }

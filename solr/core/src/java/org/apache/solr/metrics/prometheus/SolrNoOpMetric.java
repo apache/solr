@@ -25,5 +25,5 @@ public class SolrNoOpMetric extends SolrMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {}
+  public void toPrometheus(SolrPrometheusFormatter formatter) {}
 }
