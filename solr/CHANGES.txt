@@ -162,6 +162,8 @@ Bug Fixes
 
 * SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
 
+* SOLR-17394: Detect and handle non-200 HTTP status codes for requests  made by IndexFetcher (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
