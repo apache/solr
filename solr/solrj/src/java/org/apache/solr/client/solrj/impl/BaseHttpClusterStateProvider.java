@@ -57,7 +57,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   long aliasesTimestamp = 0;
 
   // the liveNodes and aliases cache will be invalidated after 5 secs
-  private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.httpcsp.cache.timeout", 5);
+  private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
   public void init(List<String> solrUrls) throws Exception {
     for (String solrUrl : solrUrls) {
