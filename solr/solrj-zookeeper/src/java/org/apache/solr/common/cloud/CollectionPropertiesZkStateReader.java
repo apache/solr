@@ -383,14 +383,12 @@ public class CollectionPropertiesZkStateReader implements Closeable {
   private class CacheCleaner implements Runnable {
     @Override
     public void run() {
-      if (!closed) {
-        watchedCollectionProps
-            .entrySet()
-            .removeIf(
-                entry ->
-                    entry.getValue().cacheUntilNs < System.nanoTime()
-                        && !collectionPropsObservers.containsKey(entry.getKey()));
-      }
+      watchedCollectionProps
+          .entrySet()
+          .removeIf(
+              entry ->
+                  entry.getValue().cacheUntilNs < System.nanoTime()
+                      && !collectionPropsObservers.containsKey(entry.getKey()));
     }
   }
 
