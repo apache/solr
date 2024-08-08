@@ -260,6 +260,10 @@ public class SolrCLI implements CLIO {
       } else {
         toolArgList.add(arg);
       }
+      
+      if(arg.equals("-r")) {
+        toolArgList.add("true");
+      }
     }
     String[] toolArgs = toolArgList.toArray(new String[0]);
 
