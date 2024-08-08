@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +38,19 @@ import org.slf4j.LoggerFactory;
 public class OrderedExecutorTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static OrderedExecutor<Object> newOrderedExecutor(int numThreads) {
+    // initialize exactly as done in CoreContainer so we test realistically
+    return new OrderedExecutor<>(
+        numThreads,
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            numThreads, // thread count
+            numThreads, // queue size
+            new SolrNamedThreadFactory("testOrderedExecutor")));
+  }
+
   @Test
   public void testExecutionInOrder() {
-    OrderedExecutor<Integer> orderedExecutor =
-        new OrderedExecutor<>(10, ExecutorUtil.newMDCAwareCachedThreadPool("executeInOrderTest"));
+    var orderedExecutor = newOrderedExecutor(10);
     IntBox intBox = new IntBox();
     for (int i = 0; i < 100; i++) {
       orderedExecutor.execute(1, () -> intBox.value++);
@@ -53,9 +63,7 @@ public class OrderedExecutorTest extends SolrTestCase {
   public void testLockWhenQueueIsFull() {
     final ExecutorService controlExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_control");
-    final OrderedExecutor<Integer> orderedExecutor =
-        new OrderedExecutor<>(
-            10, ExecutorUtil.newMDCAwareCachedThreadPool("testLockWhenQueueIsFull_test"));
+    final var orderedExecutor = newOrderedExecutor(10);
 
     try {
       // AAA and BBB events will both depend on the use of the same lockId
@@ -111,9 +119,7 @@ public class OrderedExecutorTest extends SolrTestCase {
 
     final ExecutorService controlExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_control");
-    final OrderedExecutor<Integer> orderedExecutor =
-        new OrderedExecutor<>(
-            parallelism, ExecutorUtil.newMDCAwareCachedThreadPool("testRunInParallel_test"));
+    final var orderedExecutor = newOrderedExecutor(parallelism);
 
     try {
       // distinct lockIds should be able to be used in parallel, up to the size of the executor,
@@ -216,8 +222,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       base.put(i, i);
       run.put(i, i);
     }
-    OrderedExecutor<Integer> orderedExecutor =
-        new OrderedExecutor<>(10, ExecutorUtil.newMDCAwareCachedThreadPool("testStress"));
+    var orderedExecutor = newOrderedExecutor(10);
     for (int i = 0; i < 1000; i++) {
       int key = random().nextInt(N);
       base.put(key, base.get(key) + 1);
@@ -233,8 +238,7 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testMaxSize() throws InterruptedException {
-    OrderedExecutor<Integer> orderedExecutor =
-        new OrderedExecutor<>(1, ExecutorUtil.newMDCAwareCachedThreadPool("single"));
+    var orderedExecutor = newOrderedExecutor(1);
 
     CountDownLatch isRunning = new CountDownLatch(1);
     CountDownLatch blockingLatch = new CountDownLatch(1);
