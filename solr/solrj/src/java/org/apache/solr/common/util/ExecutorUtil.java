@@ -237,7 +237,11 @@ public class ExecutorUtil {
     return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
-  /** See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)} */
+  /**
+   * Create a new pool of threads, with no limit for the number of threads. The pool has no task
+   * queue. Each submitted task is executed immediately, either by reusing an existing thread if one
+   * is available, or by starting a new thread. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
