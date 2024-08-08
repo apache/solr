@@ -56,10 +56,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   volatile Map<String, Map<String, String>> aliasProperties;
   long aliasesTimestamp = 0;
 
-  private int cacheTimeout =
-      EnvUtils.getPropertyAsInteger("solr.httpcsp.cache.timeout", 5); // the liveNodes and
-
-  // aliases cache will be invalidated after 60 secs
+  // the liveNodes and aliases cache will be invalidated after 5 secs
+  private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.httpcsp.cache.timeout", 5);
 
   public void init(List<String> solrUrls) throws Exception {
     for (String solrUrl : solrUrls) {
