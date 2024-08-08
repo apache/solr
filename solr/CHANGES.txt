@@ -254,6 +254,8 @@ Bug Fixes
 
 * SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
 
+* SOLR-17394: Detect and handle non-200 HTTP status codes for requests  made by IndexFetcher (Jason Gerlowski)
+
 * SOLR-17391: Fixed performance regression of misconfigured threadpools from SOLR-16879 (Solr 9.4).
   Concurrent/large collection backup/restore performance was serial.  UpdateLog replay will happen
   faster too.  (Pierre Salagnac, Hakan Özler, David Smiley)
