@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -55,7 +56,10 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   volatile Map<String, Map<String, String>> aliasProperties;
   long aliasesTimestamp = 0;
 
-  private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
+  private int cacheTimeout =
+      EnvUtils.getPropertyAsInteger("solr.httpcsp.cache.timeout", 5); // the liveNodes and
+
+  // aliases cache will be invalidated after 60 secs
 
   public void init(List<String> solrUrls) throws Exception {
     for (String solrUrl : solrUrls) {
@@ -383,10 +387,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   public int getCacheTimeout() {
     return cacheTimeout;
-  }
-
-  public void setCacheTimeout(int cacheTimeout) {
-    this.cacheTimeout = cacheTimeout;
   }
 
   // This exception is not meant to escape this class it should be caught and wrapped.
