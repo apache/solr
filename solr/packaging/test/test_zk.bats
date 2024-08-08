@@ -115,6 +115,13 @@ teardown() {
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile3.txt"
+  
+  #mkdir ${BATS_TEST_TMPDIR}/recursive_download/
+  #touch ${BATS_TEST_TMPDIR}/recursive_download/myfile.txt
+  run solr zk cp zk:/ -r "${BATS_TEST_TMPDIR}/recursive_download/"
+  [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile.txt" ]
+  [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile2.txt" ]
+  [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile3.txt" ]
 
   rm myfile.txt
   rm myfile2.txt
