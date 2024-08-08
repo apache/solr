@@ -44,7 +44,6 @@ public class ZkMvTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
@@ -60,7 +59,7 @@ public class ZkMvTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr zk mv [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] source destination";
+    return "bin/solr zk mv [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] source destination";
   }
 
   @Override

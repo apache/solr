@@ -57,7 +57,7 @@ public class ZkLsTool extends ToolBase {
   @Override
   public String getUsage() {
     // very brittle.  Maybe add a getArgsUsage to append the "path"?
-    return "bin/solr zk ls [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+    return "bin/solr zk ls [-r ] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
   }
 
   @Override
@@ -69,7 +69,7 @@ public class ZkLsTool extends ToolBase {
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
-      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+      boolean recurse = cli.hasOption("recurse");
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode

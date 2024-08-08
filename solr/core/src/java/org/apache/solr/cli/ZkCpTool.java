@@ -77,7 +77,7 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr zk cp [-r <recurse>] [-s <HOST>] [--solr-home <DIR>] [-u <credentials>] [-z <HOST>] source destination";
+    return "bin/solr zk cp [-r ] [-s <HOST>] [--solr-home <DIR>] [-u <credentials>] [-z <HOST>] source destination";
   }
 
   @Override
@@ -131,7 +131,7 @@ public class ZkCpTool extends ToolBase {
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
-    Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+    boolean recurse = cli.hasOption("recurse");
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");

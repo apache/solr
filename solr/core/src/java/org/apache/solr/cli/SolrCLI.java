@@ -154,14 +154,11 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
-  // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
       Option.builder("r")
           .longOpt("recurse")
-          .argName("recurse")
-          .hasArg()
           .required(false)
-          .desc("Recurse (true|false), default is false.")
+          .desc("Apply the command recursively.")
           .build();
 
   public static final Option OPTION_CREDENTIALS =
@@ -259,10 +256,6 @@ public class SolrCLI implements CLIO {
         dashDList.add(arg);
       } else {
         toolArgList.add(arg);
-      }
-      
-      if(arg.equals("-r")) {
-        toolArgList.add("true");
       }
     }
     String[] toolArgs = toolArgList.toArray(new String[0]);

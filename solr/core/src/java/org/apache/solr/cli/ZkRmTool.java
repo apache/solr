@@ -58,7 +58,7 @@ public class ZkRmTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr zk rm [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+    return "bin/solr zk rm [-r ] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
   }
 
   @Override
@@ -67,7 +67,7 @@ public class ZkRmTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     String target = cli.getArgs()[0];
-    boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+    boolean recurse = cli.hasOption("recurse");
 
     String znode = target;
     if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {

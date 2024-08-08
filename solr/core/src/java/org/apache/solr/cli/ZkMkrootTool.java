@@ -48,7 +48,6 @@ public class ZkMkrootTool extends ToolBase {
             .required(false)
             .desc("Raise an error if the root exists.  Defaults to false.")
             .build(),
-        SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
@@ -64,7 +63,7 @@ public class ZkMkrootTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr zk mkroot [--fail-on-exists <arg>] [-r <recurse>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+    return "bin/solr zk mkroot [--fail-on-exists <arg>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
   }
 
   @Override
