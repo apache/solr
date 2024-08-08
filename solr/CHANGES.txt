@@ -23,7 +23,7 @@ Improvements
 
 Optimizations
 ---------------------
-* SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
+(No changes)
 
 Bug Fixes
 ---------------------
@@ -117,6 +117,8 @@ Optimizations
 
 * SOLR-17102: The VersionBucket indexing lock mechanism was replaced with something just as fast yet
   that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
+
+* SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
 Bug Fixes
 ---------------------
