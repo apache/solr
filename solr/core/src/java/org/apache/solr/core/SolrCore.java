@@ -3276,13 +3276,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return codec;
   }
 
-  /**
-   * @return whether this is a synthetic core that simply forward queries to other cores
-   */
-  protected boolean isSynthetic() {
-    return false;
-  }
-
   public void unloadOnClose(
       final CoreDescriptor desc,
       boolean deleteIndexDir,

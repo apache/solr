@@ -2056,10 +2056,11 @@ public class CoreContainer {
         newCore = core.reload(coreConfig);
 
         DocCollection docCollection = null;
-        if (getZkController() != null && !newCore.isSynthetic()) {
-          docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+        if (getZkController() != null) {
+          docCollection =
+              getZkController().getClusterState().getCollectionOrNull(cd.getCollectionName());
           // turn off indexing now, before the new core is registered
-          if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
+          if (docCollection != null && docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
             newCore.readOnly = true;
           }
         }

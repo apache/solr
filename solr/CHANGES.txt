@@ -174,7 +174,7 @@ Optimizations
 
 * SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
 
-* SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
+* SOLR-17269, SOLR-17386: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (ellaeln, Patson Luk, David Smiley, Christine Poerschke)
 
 * SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
 
@@ -220,8 +220,6 @@ Bug Fixes
 * SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
 
 * SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
-
-* SOLR-17386: Fix coordinators (SyntheticSolrCore) reload issue. (ellaeln, Patson Luk, David Smiley, Christine Poerschke)
 
 Dependency Upgrades
 ---------------------

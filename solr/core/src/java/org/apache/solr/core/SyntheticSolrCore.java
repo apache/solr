@@ -100,9 +100,4 @@ public class SyntheticSolrCore extends SolrCore {
         cloneCurrentState ? this : null,
         true);
   }
-
-  @Override
-  protected boolean isSynthetic() {
-    return true;
-  }
 }
