@@ -2058,9 +2058,10 @@ public class CoreContainer {
 
         DocCollection docCollection = null;
         if (getZkController() != null) {
-          docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+          docCollection =
+              getZkController().getClusterState().getCollectionOrNull(cd.getCollectionName());
           // turn off indexing now, before the new core is registered
-          if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
+          if (docCollection != null && docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
             newCore.readOnly = true;
           }
         }
