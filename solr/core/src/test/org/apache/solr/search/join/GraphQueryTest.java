@@ -19,6 +19,8 @@ package org.apache.solr.search.join;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.index.NoMergePolicyFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,7 +28,13 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema_latest.xml");
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test
@@ -84,61 +92,63 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
 
     // TODO: assert which documents actually come back
     assertJQ(
-        req(p, "q", "{!graph from=${node_id} to=${edge_id}}id:doc_1"), "/response/numFound==7");
+        reqRandMulti(p, "q", "{!graph from=${node_id} to=${edge_id}}id:doc_1"),
+        "/response/numFound==7");
 
     // reverse the order to test single/multi-valued on the opposite fields
     // start with doc1, look up node_id (1) and match to edge_id (docs 7 and 8)
     assertJQ(
-        req(p, "q", "{!graph from=${edge_id} to=${node_id} maxDepth=1}id:doc_1"),
+        reqRandMulti(p, "q", "{!graph from=${edge_id} to=${node_id} maxDepth=1}id:doc_1"),
         "/response/numFound==3");
 
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=true returnOnlyLeaf=false}id:doc_8"),
         "/response/numFound==8");
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=false returnOnlyLeaf=false}id:doc_8"),
         "/response/numFound==7");
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=true returnOnlyLeaf=false traversalFilter='text:foo11'}id:doc_8"),
         "/response/numFound==2");
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=true returnOnlyLeaf=false maxDepth=0}id:doc_8"),
         "/response/numFound==1");
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=true returnOnlyLeaf=false maxDepth=1}id:doc_8"),
         "/response/numFound==3");
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=false returnOnlyLeaf=false maxDepth=1}id:doc_8"),
         "/response/numFound==2");
     assertJQ(
-        req(
+        reqRandMulti(
             p,
             "q",
             "{!graph from=${node_id} to=${edge_id} returnRoot=false returnOnlyLeaf=true maxDepth=2}id:doc_8"),
         "/response/numFound==1");
     assertJQ(
-        req(p, "q", "{!graph from=${node_id} to=${edge_id} maxDepth=1}id:doc_1"),
+        reqRandMulti(p, "q", "{!graph from=${node_id} to=${edge_id} maxDepth=1}id:doc_1"),
         "/response/numFound==2");
     assertJQ(
-        req(p, "q", "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=1}id:doc_1"),
+        reqRandMulti(
+            p, "q", "{!graph from=${node_id} to=${edge_id} returnRoot=false maxDepth=1}id:doc_1"),
         "/response/numFound==1");
   }
 

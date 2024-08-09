@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -43,6 +44,10 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
+
+    // so that segments do not get merged and multi-thread cases can be tested too
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
+
     //    initCore("solrconfig.xml","schema12.xml");
 
     // File testHome = createTempDir().toFile();
@@ -52,6 +57,9 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
     fromCore = coreContainer.create("fromCore", Map.of("configSet", "minimal"));
 
+    // Note to readers: Multiple commits here and policy above are to ensure
+    // multiple segments are created please do not remove and do not emulate in
+    // production systyems!
     assertU(
         add(
             doc(
@@ -65,10 +73,13 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "Director",
                 "dept_s",
                 "Engineering")));
+    update(fromCore, commit());
     assertU(
         add(doc("id", "2", "id_s_dv", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
+    // allow a segment with 2 docs
     assertU(
         add(doc("id", "3", "id_s_dv", "3", "name", "nancy", "title", "MTS", "dept_s", "Sales")));
+    update(fromCore, commit());
     assertU(
         add(
             doc(
@@ -84,6 +95,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "Support",
                 "dept_s",
                 "Engineering")));
+    update(fromCore, commit());
     assertU(
         add(
             doc(
@@ -98,7 +110,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "dept_s",
                 "Engineering")));
     assertU(commit());
-
+    update(fromCore, commit());
     update(
         fromCore,
         add(
@@ -113,6 +125,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "These guys develop stuff",
                 "cat",
                 "dev")));
+    update(fromCore, commit());
     update(
         fromCore,
         add(
@@ -125,6 +138,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "Marketing",
                 "text",
                 "These guys make you look good")));
+    update(fromCore, commit());
     update(
         fromCore,
         add(
@@ -137,6 +151,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "Sales",
                 "text",
                 "These guys sell stuff")));
+    update(fromCore, commit());
     update(
         fromCore,
         add(
@@ -170,7 +185,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   void doTestJoin(String joinPrefix) throws Exception {
     assertJQ(
-        req(
+        reqRandMulti(
             "q",
             joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev",
             "fl",
@@ -180,7 +195,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}");
 
     assertJQ(
-        req(
+        reqRandMulti(
             "qt",
             "/export",
             "q",
@@ -198,7 +213,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     // find people that develop stuff - but limit via filter query to a name of "john",
     // this tests filters being pushed down to queries (SOLR-3062)
     assertJQ(
-        req(
+        reqRandMulti(
             "q",
             joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev",
             "fl",
@@ -246,6 +261,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void nukeAll() {
+    systemClearPropertySolrTestsMergePolicyFactory();
     fromCore = null;
   }
 }
