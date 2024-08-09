@@ -20,6 +20,7 @@ package org.apache.solr.packagemanager;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,9 +87,9 @@ public class DefaultPackageRepository extends PackageRepository {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
     URL url =
-        new URL(
-            new URL(repositoryURL.endsWith("/") ? repositoryURL : repositoryURL + "/"),
-            artifactName);
+        URI.create(repositoryURL.endsWith("/") ? repositoryURL : repositoryURL + "/")
+            .resolve(artifactName)
+            .toURL();
     String fileName = FilenameUtils.getName(url.getPath());
     Path destination = tmpDirectory.resolve(fileName);
 

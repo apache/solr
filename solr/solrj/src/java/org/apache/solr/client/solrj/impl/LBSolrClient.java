@@ -25,7 +25,7 @@ import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -696,11 +696,7 @@ public abstract class LBSolrClient extends SolrClient {
    */
   @Deprecated
   public String removeSolrServer(String server) {
-    try {
-      server = new URL(server).toExternalForm();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
+    server = URI.create(server).toString();
     if (server.endsWith("/")) {
       server = server.substring(0, server.length() - 1);
     }

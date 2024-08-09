@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -262,7 +263,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             + "?wt=xml&command="
             + cmd
             + params;
-    URL url = new URL(leaderUrl);
+    URL url = URI.create(leaderUrl).toURL();
     try (InputStream stream = url.openStream()) {
       assert stream != null;
     }
