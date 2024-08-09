@@ -28,8 +28,8 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -256,7 +256,7 @@ public class GraphQuery extends Query {
       BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
       Query edgeQuery =
           collectSchemaField.hasDocValues()
-              ? new DocValuesFieldExistsQuery(field)
+              ? new FieldExistsQuery(field)
               : new WildcardQuery(new Term(field, "*"));
       leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
       DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
