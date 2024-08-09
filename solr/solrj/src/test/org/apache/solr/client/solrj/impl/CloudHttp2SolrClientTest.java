@@ -273,6 +273,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
       solrClient.add(collectionName, doc);
 
+      // getCount seems to return a cumulative count, but add() results in only 1 additional admin
+      // request to fetch
+      // CLUSTERSTATUS for the collection
       assertEquals(2, adminLogs.getCount());
       assertTrue(
           adminLogs
@@ -282,11 +285,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                       + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
 
       solrClient.commit(collectionName);
+      // No additional admin requests sent
       assertEquals(2, adminLogs.getCount());
 
       for (int i = 0; i < 3; i++) {
         assertEquals(
             1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+        // No additional admin requests sent
         assertEquals(2, adminLogs.getCount());
       }
     }
