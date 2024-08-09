@@ -97,7 +97,7 @@ public class FieldComparator implements StreamComparator {
   }
 
   /*
-   * What're we doing here messing around with lambdas for the comparator logic?
+   * What are we doing here messing around with lambdas for the comparator logic?
    * We want the compare(...) function to run as fast as possible because it will be called many many
    * times over the lifetime of this object. For that reason we want to limit the number of comparisons
    * taking place in the compare(...) function. Because this class supports both ascending and
