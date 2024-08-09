@@ -109,7 +109,7 @@ public class ClusterStatus {
     boolean withClusterProperties = solrParams.getBool(CLUSTER_PROP, includeAll);
     boolean withRoles = solrParams.getBool(ZkStateReader.ROLES_PROP, includeAll);
     boolean withCollection = includeAll || (collection != null);
-    boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll) || withCollection;
+    boolean withAliases = solrParams.getBool(ALIASES_PROP, includeAll);
 
     List<String> liveNodes = null;
     if (withLiveNodes || collection != null) {
