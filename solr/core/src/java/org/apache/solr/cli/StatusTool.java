@@ -25,7 +25,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -50,13 +52,24 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  // These options are not exposed to the end user, and are
-  // used directly by the bin/solr status CLI.
+  public static final Option OPTION_MAXWAITSECS =
+      Option.builder()
+          .longOpt("max-wait-secs")
+          .argName("SECS")
+          .hasArg()
+          .required(false)
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
+
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solr")
+        // The solr-url option is not exposed to the end user, and is
+        // created by the bin/solr script and passed into this command directly,
+        // therefore we don't use the SolrCLI.OPTION_SOLRURL.
+        Option.builder()
             .argName("URL")
+            .longOpt("solr-url")
             .hasArg()
             .required(false)
             .desc(
@@ -74,8 +87,21 @@ public class StatusTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solr", SolrCLI.getDefaultSolrUrl());
+    // Override the default help behaviour to put out a customized message that only list user
+    // settable Options.
+    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0)
+        || cli.hasOption("h")
+        || cli.hasOption("help")) {
+      final Options options = new Options();
+      options.addOption(OPTION_MAXWAITSECS);
+      new HelpFormatter().printHelp("status", options);
+      return;
+    }
+
+    int maxWaitSecs =
+        Integer.parseInt(
+            SolrCLI.getOptionWithDeprecatedAndDefault(cli, "max-wait-secs", "maxWaitSecs", "0"));
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = new URI(solrUrl).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);

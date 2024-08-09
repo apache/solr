@@ -327,7 +327,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+    public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
         int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       return new ReRankCollector(
           len,

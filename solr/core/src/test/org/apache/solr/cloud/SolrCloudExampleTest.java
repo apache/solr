@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.CreateCollectionTool;
+import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
 import org.apache.solr.cli.PostTool;
@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
+ * Emulates bin/solr start -e cloud --no-prompt; bin/solr post -c gettingstarted
  * example/exampledocs/*.xml; this test is useful for catching regressions in indexing the example
  * docs in collections that use data driven functionality and managed schema features of the default
  * configset (configsets/_default).
@@ -73,27 +73,25 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // create the gettingstarted collection just like the bin/solr script would do
     String[] args =
         new String[] {
-          "-name",
+          "--name",
           testCollectionName,
-          "-shards",
+          "--shards",
           "2",
-          "-replicationFactor",
+          "--replication-factor",
           "2",
-          "-confname",
+          "--conf-name",
           testCollectionName,
-          "-confdir",
+          "--conf-dir",
           "_default",
-          "-configsetsDir",
-          defaultConfigs.getParentFile().getParentFile().getAbsolutePath(),
-          "-solrUrl",
+          "--solr-url",
           solrUrl
         };
 
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    CreateCollectionTool tool = new CreateCollectionTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
+    CreateTool tool = new CreateTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue(
@@ -119,14 +117,13 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         new String[] {
           "--solr-update-url",
           solrUrl + "/" + testCollectionName + "/update",
-          "-filetypes",
+          "--filetypes",
           "xml",
           exampleDocsDir.toAbsolutePath().toString()
         };
 
     PostTool postTool = new PostTool();
-    CommandLine postCli =
-        SolrCLI.processCommandLineArgs(postTool.getName(), postTool.getOptions(), argsForPost);
+    CommandLine postCli = SolrCLI.processCommandLineArgs(postTool, argsForPost);
     postTool.runTool(postCli);
 
     int expectedXmlDocCount = 32;
@@ -157,22 +154,22 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
     String[] args =
         new String[] {
-          "-collection", testCollectionName,
-          "-zkHost", zkHost
+          "--name", testCollectionName,
+          "--zk-host", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
   }
 
   protected void doTestDeleteAction(String testCollectionName, String solrUrl) throws Exception {
     String[] args =
         new String[] {
-          "-name", testCollectionName,
-          "-solrUrl", solrUrl
+          "--name", testCollectionName,
+          "--solr-url", solrUrl
         };
     DeleteTool tool = new DeleteTool();
-    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool, args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(

@@ -40,7 +40,7 @@ Use the `help` option to get a list of available ZooKeeper specifc commands from
 
 == Solr CLI Examples
 
-Below are some examples of using the `bin/solr` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud -noprompt`)
+Below are some examples of using the `bin/solr` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud --no-prompt`)
 
 === Upload a Configuration Directory
 
@@ -60,7 +60,7 @@ bin/solr zk upconfig -z 127.0.0.1:9983 -n my_new_config -d server/solr/configset
 
 [source,bash]
 ----
-./bin/solr zk linkconfig --confname my_new_config -c gettingstarted -z 127.0.0.1:9983
+./bin/solr zk linkconfig --conf-name my_new_config -c gettingstarted -z 127.0.0.1:9983
 ----
 
 === Create a New ZooKeeper Path

@@ -26,12 +26,12 @@ teardown() {
   save_home_on_failure
 
   delete_all_collections
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "Affinity placement plugin using sysprop" {
   run solr start -c -Dsolr.placementplugin.default=affinity
-  solr assert -c http://localhost:${SOLR_PORT} -t 3000
+  solr assert -c http://localhost:${SOLR_PORT}/solr -t 3000
   run solr create_collection -c COLL_NAME
   collection_exists COLL_NAME
   assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to affinity'
@@ -40,7 +40,7 @@ teardown() {
 @test "Random placement plugin using ENV" {
   export SOLR_PLACEMENTPLUGIN_DEFAULT=random
   run solr start -c
-  solr assert -c http://localhost:${SOLR_PORT} -t 3000
+  solr assert -c http://localhost:${SOLR_PORT}/solr -t 3000
   run solr create_collection -c COLL_NAME
   collection_exists COLL_NAME
   assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to random'

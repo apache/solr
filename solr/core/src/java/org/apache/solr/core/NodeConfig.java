@@ -679,7 +679,9 @@ public class NodeConfig {
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
-    public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS = 4;
+    public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS =
+        Runtime.getRuntime().availableProcessors();
+    ;
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";

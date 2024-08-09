@@ -25,14 +25,14 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
   
   shutdown_exporter
 }
 
 @test "should start solr prometheus exporter that scrapes solr for metrics" {
   solr start
-  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
   
   run solr create -c COLL_NAME
   assert_output --partial "Created new core 'COLL_NAME'"

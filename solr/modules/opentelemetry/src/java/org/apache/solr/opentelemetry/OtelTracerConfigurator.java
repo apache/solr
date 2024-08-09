@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class OtelTracerConfigurator extends TracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // Copy of environment. Can be overridden by tests
-  Map<String, String> currentEnv = EnvUtils.getEnvs();
+  Map<String, String> currentEnv = System.getenv();
 
   @Override
   public void init(NamedList<?> args) {

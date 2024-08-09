@@ -17,6 +17,7 @@
 package org.apache.solr.handler.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 
 import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.SolrTestCaseJ4;
@@ -56,6 +57,10 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
     params.set("wt", "javabin");
     assertEquals(BINARY_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    params.set("wt", FILE_STREAM);
+    assertEquals(
+        "application/vnd.apache.solr.raw", V2ApiUtils.getMediaTypeFromWtParam(params, null));
 
     // Defaults to, well the default, whenever an unknown/unexpected/typo'd 'wt' is provided
     params.set("wt", "josn");

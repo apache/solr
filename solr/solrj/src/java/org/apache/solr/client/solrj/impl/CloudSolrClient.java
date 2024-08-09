@@ -422,8 +422,9 @@ public abstract class CloudSolrClient extends SolrClient {
 
     // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
     // long as they are routed aliases
-    List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
-    if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
+    List<String> aliasedCollections =
+        new ArrayList<>(resolveAliases(Collections.singletonList(collection)));
+    if (aliasedCollections.size() == 1 || getClusterStateProvider().isRoutedAlias(collection)) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
       throw new SolrException(
@@ -1204,7 +1205,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
-      if (getClusterStateProvider().getState(collectionName) == null) {
+      if (getDocCollection(collectionName, -1) == null) {
         // perhaps it's an alias
         uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
@@ -1274,15 +1275,6 @@ public abstract class CloudSolrClient extends SolrClient {
       if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
     }
 
-    ClusterState.CollectionRef ref = getCollectionRef(collection);
-    if (ref == null) {
-      // no such collection exists
-      return null;
-    }
-    if (!ref.isLazilyLoaded()) {
-      // it is readily available just return it
-      return ref.get();
-    }
     Object[] locks = this.locks;
     int lockId =
         Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.length);
@@ -1293,6 +1285,11 @@ public abstract class CloudSolrClient extends SolrClient {
       col = cacheEntry == null ? null : cacheEntry.cached;
       if (col != null) {
         if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
+      }
+      ClusterState.CollectionRef ref = getCollectionRef(collection);
+      if (ref == null) {
+        // no such collection exists
+        return null;
       }
       // We are going to fetch a new version
       // we MUST try to get a new version

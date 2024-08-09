@@ -67,6 +67,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -85,9 +86,8 @@ public class PostTool extends ToolBase {
   static final String DATA_MODE_FILES = "files";
   static final String DATA_MODE_ARGS = "args";
   static final String DATA_MODE_STDIN = "stdin";
-  static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
-  static final String FORMAT_SOLR = "solr";
   static final String DATA_MODE_WEB = "web";
+  static final String FORMAT_SOLR = "solr";
 
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
@@ -102,12 +102,12 @@ public class PostTool extends ToolBase {
   OutputStream out = null;
   String type;
   String format;
-  String mode = DEFAULT_DATA_MODE;
   boolean commit;
   boolean optimize;
   boolean dryRun; // Avoids actual network traffic to Solr
 
   String[] args;
+  String params;
 
   boolean auto = true;
   private int currentDepth;
@@ -171,70 +171,90 @@ public class PostTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .argName("url")
             .longOpt("solr-update-url")
             .hasArg()
-            .required(false)
+            .argName("UPDATEURL")
             .desc("Solr Update URL, the full url to the update handler, including the /update.")
             .build(),
         Option.builder("c")
             .longOpt("name")
-            .argName("NAME")
             .hasArg()
+            .argName("NAME")
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("skipcommit")
+        Option.builder()
+            .longOpt("skip-commit")
             .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
-        Option.builder("optimize")
+        Option.builder()
+            .longOpt("skipcommit")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --skip-commit instead")
+                    .get())
+            .required(false)
+            .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
+            .build(),
+        Option.builder("o")
+            .longOpt("optimize")
             .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
-        Option.builder("mode")
+        Option.builder()
+            .longOpt("mode")
+            .hasArg()
             .argName("mode")
-            .hasArg(true)
             .required(false)
             .desc(
-                "Files crawls files, web crawls website, args processes input args, and stdin reads a command from standard in. default: files.")
+                "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
             .build(),
-        Option.builder("recursive")
+        Option.builder("r")
+            .longOpt("recursive")
+            .hasArg()
             .argName("recursive")
-            .hasArg(true)
             .required(false)
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
-        Option.builder("delay")
+        Option.builder("d")
+            .longOpt("delay")
+            .hasArg()
             .argName("delay")
-            .hasArg(true)
             .required(false)
             .desc(
                 "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
-        Option.builder("type")
+        Option.builder("t")
+            .longOpt("type")
+            .hasArg()
             .argName("content-type")
-            .hasArg(true)
             .required(false)
             .desc("Specify a specific mimetype to use, such as application/json.")
             .build(),
-        Option.builder("filetypes")
+        Option.builder("ft")
+            .longOpt("filetypes")
+            .hasArg()
             .argName("<type>[,<type>,...]")
-            .hasArg(true)
             .required(false)
             .desc("default: " + DEFAULT_FILE_TYPES)
             .build(),
-        Option.builder("params")
+        Option.builder("p")
+            .longOpt("params")
+            .hasArg()
             .argName("<key>=<value>[&<key>=<value>...]")
-            .hasArg(true)
             .required(false)
             .desc("values must be URL-encoded; these pass through to Solr update request.")
             .build(),
-        Option.builder("out")
+        Option.builder()
+            .longOpt("out")
             .required(false)
-            .desc("sends Solr response outputs to console")
+            .desc("sends Solr response outputs to console.")
             .build(),
-        Option.builder("format")
+        Option.builder("f")
+            .longOpt("format")
             .required(false)
             .desc(
                 "sends application/json content as Solr commands to /update instead of /update/json/docs.")
@@ -252,24 +272,21 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
-    if (cli.hasOption("url")) {
-      String url = cli.getOptionValue("url");
+
+    if (cli.hasOption("solr-update-url")) {
+      String url = cli.getOptionValue("solr-update-url");
       solrUpdateUrl = new URI(url);
-    } else if (cli.hasOption("c")) {
-      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
+    } else if (cli.hasOption("name")) {
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URI(url);
     } else {
       throw new IllegalArgumentException(
-          "Must specify either -url or -c parameter to post documents.");
+          "Must specify either --solr-update-url or -c parameter to post documents.");
     }
 
-    if (cli.hasOption("mode")) {
-      mode = cli.getOptionValue("mode");
-    }
+    String mode = cli.getOptionValue("mode", DATA_MODE_FILES);
 
-    if (cli.hasOption("dry-run")) {
-      dryRun = true;
-    }
+    dryRun = cli.hasOption("dry-run");
 
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
@@ -287,19 +304,21 @@ public class PostTool extends ToolBase {
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    commit = cli.hasOption("skipcommit") ? false : true;
+    commit = !(cli.hasOption("skipcommit") || cli.hasOption("skip-commit"));
     optimize = cli.hasOption("optimize");
 
     args = cli.getArgs();
 
-    execute();
+    params = cli.getOptionValue("params", "");
+
+    execute(mode);
   }
 
   /**
    * After initialization, call execute to start the post job. This method delegates to the correct
    * mode method.
    */
-  public void execute() throws SolrServerException, IOException {
+  public void execute(String mode) throws SolrServerException, IOException {
     final RTimer timer = new RTimer();
     if (PostTool.DATA_MODE_FILES.equals(mode)) {
       doFilesMode();
@@ -356,11 +375,11 @@ public class PostTool extends ToolBase {
 
   private void doWebMode() {
     reset();
-    int numPagesPosted = 0;
+    int numPagesPosted;
     try {
       if (type != null) {
         throw new IllegalArgumentException(
-            "Specifying content-type with \"-Ddata=web\" is not supported");
+            "Specifying content-type with \"--mode=web\" is not supported");
       }
 
       // Set Extracting handler as default
@@ -737,21 +756,33 @@ public class PostTool extends ToolBase {
   /** Does a simple commit operation */
   public void commit() throws IOException, SolrServerException {
     info("COMMITting Solr index changes to " + solrUpdateUrl + "...");
-    String url = solrUpdateUrl.toString();
-    url = url.substring(0, url.lastIndexOf("/update"));
-    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
-      client.commit();
+    String updateUrl = solrUpdateUrl.toString();
+    String collectionName = getCollection(updateUrl);
+    String solrBaseUrl = getSolrBaseUrl(updateUrl);
+    try (final SolrClient client = SolrCLI.getSolrClient(solrBaseUrl)) {
+      client.commit(collectionName);
     }
   }
 
   /** Does a simple optimize operation */
   public void optimize() throws IOException, SolrServerException {
     info("Performing an OPTIMIZE to " + solrUpdateUrl + "...");
-    String url = solrUpdateUrl.toString();
-    url = url.substring(0, url.lastIndexOf("/update"));
-    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
-      client.optimize();
+    String updateUrl = solrUpdateUrl.toString();
+    String collectionName = getCollection(updateUrl);
+    String solrBaseUrl = getSolrBaseUrl(updateUrl);
+    try (final SolrClient client = SolrCLI.getSolrClient(solrBaseUrl)) {
+      client.optimize(collectionName);
     }
+  }
+
+  private String getSolrBaseUrl(String solrUpdateUrl) {
+    return solrUpdateUrl.substring(0, solrUpdateUrl.lastIndexOf("/solr/") + 5);
+  }
+
+  // Given a url ending in /update
+  private String getCollection(String solrUpdateUrl) {
+    return solrUpdateUrl.substring(
+        solrUpdateUrl.lastIndexOf("/solr/") + 6, solrUpdateUrl.lastIndexOf("/update"));
   }
 
   /**
@@ -763,17 +794,23 @@ public class PostTool extends ToolBase {
    */
   public static String appendParam(String url, String param) {
     String[] pa = param.split("&");
+    StringBuilder urlBuilder = new StringBuilder(url);
     for (String p : pa) {
       if (p.trim().length() == 0) {
         continue;
       }
       String[] kv = p.split("=");
       if (kv.length == 2) {
-        url = url + (url.contains("?") ? "&" : "?") + kv[0] + "=" + kv[1];
+        urlBuilder
+            .append(urlBuilder.toString().contains("?") ? "&" : "?")
+            .append(kv[0])
+            .append("=")
+            .append(kv[1]);
       } else {
         warn("Skipping param " + p + " which is not on form key=value");
       }
     }
+    url = urlBuilder.toString();
     return url;
   }
 
@@ -884,6 +921,14 @@ public class PostTool extends ToolBase {
       InputStream data, Long length, OutputStream output, String type, URI uri) {
     if (dryRun) {
       return true;
+    }
+
+    if (params.length() > 0) {
+      try {
+        uri = new URI(appendParam(uri.toString(), params));
+      } catch (URISyntaxException e) {
+        warn("Malformed params");
+      }
     }
 
     boolean success = true;
@@ -1079,8 +1124,7 @@ public class PostTool extends ToolBase {
   public static Document makeDom(byte[] in)
       throws SAXException, IOException, ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(in);
-    Document dom = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
-    return dom;
+    return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(is);
   }
 
   /** Inner class to filter files based on glob wildcards */

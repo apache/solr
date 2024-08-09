@@ -101,8 +101,8 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testRunWithCollectionParam() throws Exception {
     final String collection = "testRunWithCollectionParam";
 
-    // Provide the port as an environment variable for the PostTool to look up.
-    EnvUtils.setEnv("SOLR_PORT", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    // Provide the port for the PostTool to look up.
+    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0)
         .processAndWait(cluster.getSolrClient(), 10);
@@ -132,10 +132,54 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
   }
 
+  @Test
+  public void testRunCsvWithCustomSeparatorParam() throws Exception {
+    final String collection = "testRunCsvWithCustomSeparatorParam";
+
+    // Provide the port for the PostTool to look up.
+    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
+
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0)
+        .processAndWait(cluster.getSolrClient(), 10);
+
+    File tsvDoc = File.createTempFile("temp", ".tsv");
+
+    FileWriter fw = new FileWriter(tsvDoc, StandardCharsets.UTF_8);
+    fw.write("1\tmytitle\n");
+    fw.close();
+
+    String[] args = {
+      "post",
+      "-c",
+      collection,
+      "--params",
+      "\"separator=%09&header=false&fieldnames=id,title_s\"",
+      "--type",
+      "text/csv",
+      tsvDoc.getAbsolutePath()
+    };
+    assertEquals(0, runTool(args));
+
+    int numFound = 0;
+    int expectedDocCount = 1;
+
+    for (int idx = 0; idx < 100; ++idx) {
+      QueryRequest req = new QueryRequest(params("q", "*:*"));
+      QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
+
+      numFound = (int) rsp.getResults().getNumFound();
+      if (numFound == expectedDocCount) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
+  }
+
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof PostTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 

@@ -4,10 +4,13 @@ on:
   pull_request:
     branches:
       - 'main'
+      - 'branch_*'
     paths:
       - '.github/workflows/bin-solr-test.yml'
       - 'solr/bin/**'
       - 'solr/packaging/**'
+      - 'solr/core/src/java/org/apache/solr/cli/**'
+      - 'solr/prometheus-exporter/**'
 
 jobs:
   test:
@@ -45,4 +48,3 @@ jobs:
       with:
         name: logs
         path: solr/packaging/build/test-output
-

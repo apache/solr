@@ -84,49 +84,49 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-installed"});
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "add-repo",
           "fullstory",
           "http://localhost:" + repositoryServer.getPort()
         });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-available"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer:1.0.0"});
+    run(tool, new String[] {"--solr-url", solrUrl, "install", "question-answer:1.0.0"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-deployed", "question-answer"});
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solr-url",
           solrUrl,
           "deploy",
           "question-answer",
           "-y",
-          "-collections",
+          "--collections",
           "abc",
           "-p",
           "RH-HANDLER-PATH=" + rhPath
         });
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-deployed", "question-answer"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "-c", "abc"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-deployed", "-c", "abc"});
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
     // functionality
@@ -139,16 +139,16 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl", solrUrl, "deploy", "question-answer:latest", "-y", "-collections", "abc"
+            "--solr-url", solrUrl, "deploy", "question-answer:latest", "-y", "--collections", "abc"
           });
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
 
-      run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
+      run(tool, new String[] {"--solr-url", solrUrl, "install", "question-answer"});
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0");
     } else {
       log.info("Testing explicit deployment to a different/newer version");
 
-      run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
+      run(tool, new String[] {"--solr-url", solrUrl, "install", "question-answer"});
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
       // even if parameters are not passed in, they should be picked up from previous deployment
@@ -156,13 +156,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
               "-p",
               "RH-HANDLER-PATH=" + rhPath
@@ -171,13 +171,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc"
             });
       }
@@ -187,9 +187,11 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     log.info("Running undeploy...");
     run(
         tool,
-        new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
+        new String[] {
+          "--solr-url", solrUrl, "undeploy", "question-answer", "--collections", "abc"
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(tool, new String[] {"--solr-url", solrUrl, "list-deployed", "question-answer"});
   }
 
   void assertPackageVersion(
@@ -215,7 +217,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 

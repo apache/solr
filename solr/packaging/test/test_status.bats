@@ -39,8 +39,3 @@ teardown() {
   assert_output --partial "No Solr nodes are running."
 
 }
-
-@test "status does not expose cli parameters to end user" {
-  run solr status -solr http://localhost:${SOLR_PORT}
-  assert_output --partial "ERROR: Unrecognized or misplaced argument: -solr!"
-}
