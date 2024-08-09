@@ -86,3 +86,9 @@ java.util.Collections#sort(java.util.List, java.util.Comparator)
 
 @defaultMessage Use URI.toURL() to construct an instance of URL.
 java.net.URL#<init>(**)
+
+@defaultMessage Deprecated, for removal: This API element is subject to removal in a future Java version.
+java.security.AccessControlContext
+java.security.AccessController
+java.lang.SecurityManager
+

@@ -43,6 +43,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -309,15 +310,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
       try (Reader scriptSrc = scriptFile.openReader(resourceLoader)) {
         try {
           try {
-            AccessController.doPrivileged(
-                new PrivilegedExceptionAction<Void>() {
-                  @Override
-                  public Void run() throws ScriptException {
-                    engine.eval(scriptSrc);
-                    return null;
-                  }
-                },
-                SCRIPT_SANDBOX);
+            performPrivilegedAction(engine, scriptSrc);
           } catch (PrivilegedActionException e) {
             throw (ScriptException) e.getException();
           }
@@ -335,6 +328,20 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
       }
     }
     return scriptEngines;
+  }
+
+  @SuppressForbidden(reason = "Deprecated for removal in future Java version")
+  private static void performPrivilegedAction(ScriptEngine engine, Reader scriptSrc)
+      throws PrivilegedActionException {
+    AccessController.doPrivileged(
+        new PrivilegedExceptionAction<Void>() {
+          @Override
+          public Void run() throws ScriptException {
+            engine.eval(scriptSrc);
+            return null;
+          }
+        },
+        SCRIPT_SANDBOX);
   }
 
   /**
@@ -428,6 +435,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
      * Result value is computed from the return value of the script function if: it exists, is
      * non-null, and can be cast to a java Boolean.
      */
+    @SuppressForbidden(reason = "Deprecated for removal in future Java version")
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
           new PrivilegedAction<Boolean>() {
@@ -513,6 +521,11 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
   }
 
   // sandbox for script code: zero permissions
-  private static final AccessControlContext SCRIPT_SANDBOX =
-      new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
+  @SuppressForbidden(reason = "Deprecated for removal in future Java version")
+  private static final AccessControlContext SCRIPT_SANDBOX = getAccessControlContext();
+
+  @SuppressForbidden(reason = "Deprecated for removal in future Java version")
+  private static AccessControlContext getAccessControlContext() {
+    return new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
+  }
 }
