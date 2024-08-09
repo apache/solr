@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
@@ -89,9 +89,9 @@ public class OverseerStatusTest extends SolrCloudTestCase {
             collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
     assertEquals("No stats for reload in OverseerCollectionProcessor", 1, reload.get("requests"));
 
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             "Split shard for non existent collection should have failed",
             () ->
                 CollectionAdminRequest.splitShard("non_existent_collection")

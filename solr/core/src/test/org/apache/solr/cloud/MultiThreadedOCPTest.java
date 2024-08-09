@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
@@ -261,7 +260,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       // Now submit another task with the same id. At this time, hopefully the previous 3002 should
       // still be in the queue.
       expectThrows(
-          BaseHttpSolrClient.RemoteSolrException.class,
+          SolrClient.RemoteSolrException.class,
           () -> {
             CollectionAdminRequest.splitShard("ocptest_shardsplit2")
                 .setShardName(SHARD1)

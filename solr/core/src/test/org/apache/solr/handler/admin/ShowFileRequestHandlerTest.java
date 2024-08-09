@@ -24,7 +24,6 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -170,7 +169,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     request.setPath("/admin/file");
     request.setResponseParser(new NoOpResponseParser());
     var ex = expectThrows(SolrException.class, () -> client.request(request));
-    assertTrue(ex instanceof BaseHttpSolrClient.RemoteSolrException);
+    assertTrue(ex instanceof SolrClient.RemoteSolrException);
   }
 
   public void testPathTraversalFilename() {

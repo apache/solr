@@ -35,7 +35,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -1710,7 +1709,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           tdate_b,
           "stats.calcdistinct",
           "true");
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       if (e.getMessage().startsWith("java.lang.NullPointerException")) {
         fail("NullPointerException with stats request on empty index");
       } else {

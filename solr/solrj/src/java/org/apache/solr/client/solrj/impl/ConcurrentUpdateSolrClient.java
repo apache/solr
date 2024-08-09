@@ -387,7 +387,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
               solrExc =
-                  new BaseHttpSolrClient.RemoteSolrException(
+                  new SolrClient.RemoteSolrException(
                       client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
                 solrExc.setMetadata(metadata);

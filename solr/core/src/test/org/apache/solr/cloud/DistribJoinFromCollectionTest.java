@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -224,10 +224,9 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
             + " to=join_s}match_s:c";
     final QueryRequest qr =
         new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-    BaseHttpSolrClient.RemoteSolrException ex =
+    SolrClient.RemoteSolrException ex =
         assertThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
-            () -> cluster.getSolrClient().request(qr));
+            SolrClient.RemoteSolrException.class, () -> cluster.getSolrClient().request(qr));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains(wrongName));
   }

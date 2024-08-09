@@ -40,10 +40,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -453,7 +453,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         future.complete(body);
-                      } catch (RemoteSolrException | SolrServerException e) {
+                      } catch (SolrClient.RemoteSolrException | SolrServerException e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);

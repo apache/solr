@@ -21,26 +21,9 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import java.util.Collections;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 public abstract class BaseHttpSolrClient extends SolrClient {
-
-  /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have
-   * been returned by the remote server or a proxy along the way.
-   */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code Arbitrary HTTP status code
-     * @param msg Exception Message
-     * @param th Throwable to wrap with this Exception
-     */
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
-    }
-  }
 
   /**
    * This should be thrown when a server has an error in executing the request and it sends a proper
