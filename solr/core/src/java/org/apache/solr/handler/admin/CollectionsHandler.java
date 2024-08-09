@@ -103,7 +103,6 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.lang.invoke.MethodHandles;
@@ -979,10 +978,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERSTATUS_OP(
         CLUSTERSTATUS,
         (req, rsp, h) -> {
-          Map<String, Object> all =
-              copy(req.getParams(), null, COLLECTION_PROP, SHARD_ID_PROP, _ROUTE_, "prs");
-          new ClusterStatus(
-                  h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(all))
+          new ClusterStatus(h.coreContainer.getZkController().getZkStateReader(), req.getParams())
               .getClusterStatus(rsp.getValues());
           return null;
         }),
