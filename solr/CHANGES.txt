@@ -121,6 +121,8 @@ Optimizations
 * SOLR-17381: Make CLUSTERSTATUS request configurable to improve performance by allowing retrieval of specific information,
   reducing unnecessary data fetching. (Aparna Suresh, David Smiley)
 
+* SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
+
 Bug Fixes
 ---------------------
 (No changes)
@@ -210,7 +212,7 @@ Optimizations
 
 * SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
 
-* SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
+* SOLR-17269, SOLR-17386: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (ellaeln, Patson Luk, David Smiley, Christine Poerschke)
 
 * SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
 
@@ -256,6 +258,12 @@ Bug Fixes
 * SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
 
 * SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-17394: Detect and handle non-200 HTTP status codes for requests  made by IndexFetcher (Jason Gerlowski)
+
+* SOLR-17391: Fixed performance regression of misconfigured threadpools from SOLR-16879 (Solr 9.4).
+  Shard splits and concurrent/large collection backup/restore performance was serial.  UpdateLog
+  replay was a little suboptimal in thread usage too.  (Pierre Salagnac, Hakan Özler, David Smiley)
 
 Dependency Upgrades
 ---------------------
