@@ -440,7 +440,7 @@ public class ZkCLI implements CLIO {
         solrHome = System.getProperty("solr.home");
       }
       if (line.hasOption(SolrCLI.OPTION_VERBOSE)) {
-        stdout.println("Using " + SOLR_HOME + "=" + solrHome);
+        stdout.println("Using " + SOLRHOME + "=" + solrHome);
         return;
       }
 
