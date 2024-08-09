@@ -54,7 +54,7 @@ teardown() {
   solr start -c
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
@@ -92,7 +92,7 @@ teardown() {
   solr start -c
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
@@ -217,7 +217,7 @@ teardown() {
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -335,7 +335,7 @@ teardown() {
     solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
     solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
-    run solr create -c test -s 2
+    run solr create -c test --shards 2
     assert_output --partial "Created collection 'test'"
 
     run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -472,7 +472,7 @@ teardown() {
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -536,11 +536,11 @@ teardown() {
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
   # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   # "test-single-shard" is one shard and one replica, this means that one of the nodes will have to forward requests to the other
-  run solr create -c test-single-shard -s 1
+  run solr create -c test-single-shard --shards 1
   assert_output --partial "Created collection 'test-single-shard'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
