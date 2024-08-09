@@ -69,14 +69,7 @@ public class ZkCLI implements CLIO {
   private static final String GET_FILE = "getfile";
   private static final String DOWNCONFIG = "downconfig";
   private static final String ZK_CLI_NAME = "ZkCLI";
-
-  /**
-   * @deprecated Replaced by LINK_CONFIG.
-   */
-  @Deprecated(since = "9.7")
   private static final String LINKCONFIG = "linkconfig";
-
-  private static final String LINK_CONFIG = "link-config";
 
   /**
    * @deprecated Replaced by CONF_DIR.
@@ -375,34 +368,34 @@ public class ZkCLI implements CLIO {
         stdout.println(
             "zkcli.sh --zk-host localhost:9983 -cmd "
                 + BOOTSTRAP
-                + " -"
+                + " --"
                 + SOLR_HOME
                 + " /opt/solr");
         stdout.println(
             "zkcli.sh --zk-host localhost:9983 -cmd "
                 + UPCONFIG
-                + " -"
+                + " --"
                 + CONF_DIR
                 + " /opt/solr/collection1/conf"
-                + " -"
+                + " --"
                 + CONF_NAME
                 + " myconf");
         stdout.println(
             "zkcli.sh --zk-host localhost:9983 -cmd "
                 + DOWNCONFIG
-                + " -"
+                + " --"
                 + CONF_DIR
                 + " /opt/solr/collection1/conf"
-                + " -"
+                + " --"
                 + CONF_NAME
                 + " myconf");
         stdout.println(
             "zkcli.sh --zk-host localhost:9983 -cmd "
                 + LINKCONFIG
-                + " -"
+                + " --"
                 + COLLECTION
                 + " collection1"
-                + " -"
+                + " --"
                 + CONF_NAME
                 + " myconf");
         stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
@@ -420,9 +413,9 @@ public class ZkCLI implements CLIO {
         stdout.println(
             "zkcli.sh --zk-host localhost:9983 -cmd "
                 + CLUSTERPROP
-                + " -"
+                + " --"
                 + NAME
-                + " urlScheme -"
+                + " urlScheme --"
                 + VALUE_LONG
                 + " https");
         stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + UPDATEACLS + " /solr");
@@ -561,7 +554,7 @@ public class ZkCLI implements CLIO {
           if ((!line.hasOption(CONF_DIR) && !line.hasOption(CONFDIR))
               || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
             stdout.println(
-                "--" + CONF_DIR + " and -" + CONF_NAME + " are required for " + DOWNCONFIG);
+                "--" + CONF_DIR + " and --" + CONF_NAME + " are required for " + DOWNCONFIG);
             System.exit(1);
           }
           String confDir =
