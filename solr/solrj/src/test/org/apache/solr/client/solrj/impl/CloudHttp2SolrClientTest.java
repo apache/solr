@@ -274,8 +274,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       solrClient.add(collectionName, doc);
 
       // getCount seems to return a cumulative count, but add() results in only 1 additional admin
-      // request to fetch
-      // CLUSTERSTATUS for the collection
+      // request to fetch CLUSTERSTATUS for the collection
       assertEquals(2, adminLogs.getCount());
       assertTrue(
           adminLogs
