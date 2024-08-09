@@ -162,7 +162,7 @@ if [ $# -gt 1 ]; then
             SOLR_START=false
             shift 1
         ;;
-        -help|-usage)
+        -help|--help|-h|-usage)
             print_usage ""
             exit 0
         ;;
