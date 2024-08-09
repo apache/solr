@@ -262,7 +262,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
         CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
 
-      assertEquals(adminLogs.getQueue().size(), 1);
+      assertEquals(adminLogs.getCount(), 1);
       assertTrue(
           adminLogs
               .pollMessage()
@@ -273,7 +273,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
       solrClient.add(collectionName, doc);
 
-      assertEquals(1, adminLogs.getQueue().size());
+      assertEquals(2, adminLogs.getCount());
       assertTrue(
           adminLogs
               .pollMessage()
@@ -282,12 +282,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                       + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
 
       solrClient.commit(collectionName);
-      assertEquals(0, adminLogs.getQueue().size());
+      assertEquals(2, adminLogs.getCount());
 
       for (int i = 0; i < 3; i++) {
         assertEquals(
             1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
-        assertEquals(0, adminLogs.getQueue().size());
+        assertEquals(2, adminLogs.getCount());
       }
     }
   }
