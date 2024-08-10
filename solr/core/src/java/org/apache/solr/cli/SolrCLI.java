@@ -202,14 +202,14 @@ public class SolrCLI implements CLIO {
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().isEmpty();
     final boolean isHelpCommand =
-        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+        !hasNoCommand && Arrays.asList("-h", "--help", "-help", "/?").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
-    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
+    if (Arrays.asList("-v", "-version", "--version", "version").contains(args[0])) {
       // select the version tool to be run
       args[0] = "version";
     }

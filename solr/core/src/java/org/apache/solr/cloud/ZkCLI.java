@@ -36,12 +36,14 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.cli.CLIO;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -67,17 +69,58 @@ public class ZkCLI implements CLIO {
   private static final String GET_FILE = "getfile";
   private static final String DOWNCONFIG = "downconfig";
   private static final String ZK_CLI_NAME = "ZkCLI";
-  private static final String HELP = "help";
   private static final String LINKCONFIG = "linkconfig";
+
+  /**
+   * @deprecated Replaced by CONF_DIR.
+   */
+  @Deprecated(since = "9.7")
   private static final String CONFDIR = "confdir";
+
+  private static final String CONF_DIR = "conf-dir";
+
+  /**
+   * @deprecated Replaced by CONF_NAME.
+   */
+  @Deprecated(since = "9.7")
   private static final String CONFNAME = "confname";
+
+  private static final String CONF_NAME = "conf-name";
+
+  /**
+   * @deprecated Replaced by ZK_HOST.
+   */
+  @Deprecated(since = "9.7")
   private static final String ZKHOST = "zkhost";
+
+  private static final String ZK_HOST = "zk-host";
+
+  /**
+   * @deprecated Replaced by RUN_ZK.
+   */
+  @Deprecated(since = "9.7")
   private static final String RUNZK = "runzk";
+
+  private static final String RUN_ZK = "run-zk";
+
+  /**
+   * @deprecated Replaced by SOLR_HOME.
+   */
+  @Deprecated(since = "9.7")
   private static final String SOLRHOME = "solrhome";
+
+  private static final String SOLR_HOME = "solr-home";
   private static final String BOOTSTRAP = "bootstrap";
   static final String UPCONFIG = "upconfig";
   static final String EXCLUDE_REGEX_SHORT = "x";
-  static final String EXCLUDE_REGEX = "excluderegex";
+
+  /**
+   * @deprecated Replaced by EXCLUDE_REGEX.
+   */
+  @Deprecated(since = "9.7")
+  static final String EXCLUDEREGEX = "excluderegex";
+
+  static final String EXCLUDE_REGEX = "exclude-regex";
   static final String EXCLUDE_REGEX_DEFAULT = ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX;
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
@@ -86,7 +129,6 @@ public class ZkCLI implements CLIO {
   private static final String CMD = "cmd";
   private static final String CLUSTERPROP = "clusterprop";
   private static final String UPDATEACLS = "updateacls";
-  private static final String VERBOSE = "verbose";
 
   @VisibleForTesting
   public static void setStdout(PrintStream stdout) {
@@ -119,7 +161,8 @@ public class ZkCLI implements CLIO {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
-    options.addOption(
+
+    Option cmdOption =
         Option.builder(CMD)
             .hasArg(true)
             .desc(
@@ -149,119 +192,259 @@ public class ZkCLI implements CLIO {
                     + UPDATEACLS
                     + ", "
                     + LS)
-            .build());
+            .build();
+    options.addOption(cmdOption);
 
-    Option zkHostOption = new Option("z", ZKHOST, true, "ZooKeeper host address");
+    Option zkHostDepOption =
+        Option.builder(ZKHOST)
+            .argName("zkHost")
+            .hasArg()
+            .desc("ZooKeeper host address")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --zk-host instead")
+                    .get())
+            .build();
+    options.addOption(zkHostDepOption);
+
+    Option zkHostOption =
+        Option.builder("z")
+            .longOpt(ZK_HOST)
+            .argName("zkHost")
+            .hasArg()
+            .desc("ZooKeeper host address")
+            .build();
     options.addOption(zkHostOption);
+
+    Option solrHomeDepOption =
+        Option.builder(SOLRHOME)
+            .hasArg()
+            .desc("for " + BOOTSTRAP + ", " + RUNZK + ": solrhome location")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-home instead")
+                    .get())
+            .build();
+    options.addOption(solrHomeDepOption);
+
     Option solrHomeOption =
-        new Option("s", SOLRHOME, true, "for " + BOOTSTRAP + ", " + RUNZK + ": solrhome location");
+        Option.builder("s")
+            .longOpt(SOLR_HOME)
+            .hasArg()
+            .desc("for " + BOOTSTRAP + ", " + RUNZK + ": solr-home location")
+            .build();
     options.addOption(solrHomeOption);
 
-    options.addOption(
-        "d", CONFDIR, true, "for " + UPCONFIG + ": a directory of configuration files");
-    options.addOption(
-        "n", CONFNAME, true, "for " + UPCONFIG + ", " + LINKCONFIG + ": name of the config set");
+    Option confDirDepOption =
+        Option.builder(CONFDIR)
+            .hasArg()
+            .argName("DIR")
+            .desc("for " + UPCONFIG + ": a directory of configuration files")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --conf-dir instead")
+                    .get())
+            .build();
+    options.addOption(confDirDepOption);
 
-    options.addOption("c", COLLECTION, true, "for " + LINKCONFIG + ": name of the collection");
+    Option confDirOption =
+        Option.builder("d")
+            .longOpt(CONF_DIR)
+            .hasArg()
+            .argName("DIR")
+            .desc("for " + UPCONFIG + ": a directory of configuration files")
+            .build();
+    options.addOption(confDirOption);
 
-    options.addOption(
-        EXCLUDE_REGEX_SHORT,
-        EXCLUDE_REGEX,
-        true,
-        "for " + UPCONFIG + ": files matching this regular expression won't be uploaded");
+    Option confNameDepOption =
+        Option.builder(CONFNAME)
+            .hasArg()
+            .argName("NAME")
+            .desc("for " + UPCONFIG + ", " + LINKCONFIG + ": name of the config set")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --conf-name instead")
+                    .get())
+            .build();
+    options.addOption(confNameDepOption);
 
-    options.addOption(
-        "r",
-        RUNZK,
-        true,
-        "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)");
+    Option confNameOption =
+        Option.builder("n")
+            .longOpt(CONF_NAME)
+            .hasArg()
+            .argName("NAME")
+            .desc("for " + UPCONFIG + ", " + LINKCONFIG + ": name of the config set")
+            .build();
+    options.addOption(confNameOption);
 
-    options.addOption("h", HELP, false, "bring up this help page");
-    options.addOption(NAME, true, "name of the cluster property to set");
-    options.addOption(VALUE_LONG, true, "value of the cluster to set");
-    options.addOption("v", VERBOSE, false, "enable verbose mode");
+    Option collectionOption =
+        Option.builder("c")
+            .longOpt(COLLECTION)
+            .hasArg()
+            .argName("NAME")
+            .desc("for " + LINKCONFIG + ": name of the collection")
+            .build();
+    options.addOption(collectionOption);
+
+    Option excludeRegexDepOption =
+        Option.builder(EXCLUDEREGEX)
+            .hasArg()
+            .argName("<true/false>")
+            .desc("for " + UPCONFIG + ": files matching this regular expression won't be uploaded")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --exclude-regex instead")
+                    .get())
+            .build();
+    options.addOption(excludeRegexDepOption);
+
+    Option excludeRegexOption =
+        Option.builder(EXCLUDE_REGEX_SHORT)
+            .longOpt(EXCLUDE_REGEX)
+            .hasArg()
+            .argName("<true/false>")
+            .desc("for " + UPCONFIG + ": files matching this regular expression won't be uploaded")
+            .build();
+    options.addOption(excludeRegexOption);
+
+    Option runZkDepOption =
+        Option.builder(RUNZK)
+            .hasArg()
+            .argName("<true/false>")
+            .desc(
+                "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --run-zk instead")
+                    .get())
+            .build();
+    options.addOption(runZkDepOption);
+
+    Option runZkOption =
+        Option.builder("r")
+            .longOpt(RUN_ZK)
+            .hasArg()
+            .argName("<true/false>")
+            .desc(
+                "run zk internally by passing the solr run port - only for clusters on one machine (tests, dev)")
+            .build();
+    options.addOption(runZkOption);
+
+    Option clusterNameOption =
+        Option.builder(NAME).hasArg().desc("name of the cluster property to set").build();
+    options.addOption(clusterNameOption);
+
+    Option clusterValueOption =
+        Option.builder(VALUE_LONG).hasArg().desc("value of the cluster to set").build();
+    options.addOption(clusterValueOption);
+
+    options.addOption(SolrCLI.OPTION_HELP);
+    options.addOption(SolrCLI.OPTION_VERBOSE);
 
     try {
       // parse the command line arguments
       CommandLine line = parser.parse(options, args);
 
-      if ((line.hasOption(HELP) || !line.hasOption(ZKHOST) || !line.hasOption(CMD))
-          && !line.hasOption(VERBOSE)) {
+      if ((line.hasOption(SolrCLI.OPTION_HELP)
+              || (!line.hasOption(ZK_HOST) && !line.hasOption(ZKHOST))
+              || !line.hasOption(CMD))
+          && !line.hasOption(SolrCLI.OPTION_VERBOSE)) {
         // automatically generate the help statement
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(ZK_CLI_NAME, options);
         stdout.println("Examples:");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
+            "zkcli.sh --zk-host localhost:9983 -cmd "
+                + BOOTSTRAP
+                + " --"
+                + SOLR_HOME
+                + " /opt/solr");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + UPCONFIG
-                + " -"
-                + CONFDIR
+                + " --"
+                + CONF_DIR
                 + " /opt/solr/collection1/conf"
-                + " -"
-                + CONFNAME
+                + " --"
+                + CONF_NAME
                 + " myconf");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + DOWNCONFIG
-                + " -"
-                + CONFDIR
+                + " --"
+                + CONF_DIR
                 + " /opt/solr/collection1/conf"
-                + " -"
-                + CONFNAME
+                + " --"
+                + CONF_NAME
                 + " myconf");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + LINKCONFIG
-                + " -"
+                + " --"
                 + COLLECTION
                 + " collection1"
-                + " -"
-                + CONFNAME
+                + " --"
+                + CONF_NAME
                 + " myconf");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + PUT + " /solr.conf 'conf data'");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + PUT_FILE
                 + " /solr.xml /User/myuser/solr/solr.xml");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + GET + " /solr.xml");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LS + " /solr/live_nodes");
+            "zkcli.sh --zk-host localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + CLEAR + " /solr");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + LIST);
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + LS + " /solr/live_nodes");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd "
+            "zkcli.sh --zk-host localhost:9983 -cmd "
                 + CLUSTERPROP
-                + " -"
+                + " --"
                 + NAME
-                + " urlScheme -"
+                + " urlScheme --"
                 + VALUE_LONG
                 + " https");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPDATEACLS + " /solr");
+        stdout.println("zkcli.sh --zk-host localhost:9983 -cmd " + UPDATEACLS + " /solr");
         return;
       }
 
       // start up a tmp zk server first
-      String zkServerAddress = line.getOptionValue(ZKHOST);
-      String solrHome = line.getOptionValue(SOLRHOME);
+      String zkServerAddress =
+          line.hasOption(ZK_HOST) ? line.getOptionValue(ZK_HOST) : line.getOptionValue(ZKHOST);
+      String solrHome =
+          line.hasOption(SOLR_HOME)
+              ? line.getOptionValue(SOLR_HOME)
+              : line.getOptionValue(SOLRHOME);
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }
-      if (line.hasOption(VERBOSE)) {
+      if (line.hasOption(SolrCLI.OPTION_VERBOSE)) {
         stdout.println("Using " + SOLRHOME + "=" + solrHome);
         return;
       }
 
       String solrPort = null;
-      if (line.hasOption(RUNZK)) {
-        if (!line.hasOption(SOLRHOME)) {
-          stdout.println("-" + SOLRHOME + " is required for " + RUNZK);
+      if (line.hasOption(RUNZK) || line.hasOption(RUN_ZK)) {
+        if (!line.hasOption(SOLR_HOME) && !line.hasOption(SOLRHOME)) {
+          stdout.println("--" + SOLR_HOME + " is required for " + RUN_ZK);
           System.exit(1);
         }
-        solrPort = line.getOptionValue(RUNZK);
+        solrPort =
+            line.hasOption(RUN_ZK) ? line.getOptionValue(RUN_ZK) : line.getOptionValue(RUNZK);
       }
 
       SolrZkServer zkServer = null;
@@ -319,8 +502,8 @@ public class ZkCLI implements CLIO {
               .withStateFileCompression(minStateByteLenForCompression, compressor)
               .build()) {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
-          if (!line.hasOption(SOLRHOME)) {
-            stdout.println("-" + SOLRHOME + " is required for " + BOOTSTRAP);
+          if (!line.hasOption(SOLR_HOME) && !line.hasOption(SOLRHOME)) {
+            stdout.println("--" + SOLR_HOME + " is required for " + BOOTSTRAP);
             System.exit(1);
           }
 
@@ -338,13 +521,24 @@ public class ZkCLI implements CLIO {
           // up in the first place...
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(UPCONFIG)) {
-          if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
-            stdout.println("-" + CONFDIR + " and -" + CONFNAME + " are required for " + UPCONFIG);
+          if ((!line.hasOption(CONF_DIR) && !line.hasOption(CONFDIR))
+              || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
+            stdout.println(
+                "--" + CONF_DIR + " and --" + CONF_NAME + " are required for " + UPCONFIG);
             System.exit(1);
           }
-          String confDir = line.getOptionValue(CONFDIR);
-          String confName = line.getOptionValue(CONFNAME);
-          final String excludeExpr = line.getOptionValue(EXCLUDE_REGEX, EXCLUDE_REGEX_DEFAULT);
+          String confDir =
+              line.hasOption(CONF_DIR)
+                  ? line.getOptionValue(CONF_DIR)
+                  : line.getOptionValue(CONFDIR);
+          String confName =
+              line.hasOption(CONF_NAME)
+                  ? line.getOptionValue(CONF_NAME)
+                  : line.getOptionValue(CONFNAME);
+          final String excludeExpr =
+              line.hasOption(EXCLUDE_REGEX)
+                  ? line.getOptionValue(EXCLUDE_REGEX, EXCLUDE_REGEX_DEFAULT)
+                  : line.getOptionValue(EXCLUDEREGEX, EXCLUDE_REGEX_DEFAULT);
 
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {
             stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
@@ -357,22 +551,34 @@ public class ZkCLI implements CLIO {
               ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
               excludePattern);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
-          if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
-            stdout.println("-" + CONFDIR + " and -" + CONFNAME + " are required for " + DOWNCONFIG);
+          if ((!line.hasOption(CONF_DIR) && !line.hasOption(CONFDIR))
+              || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
+            stdout.println(
+                "--" + CONF_DIR + " and --" + CONF_NAME + " are required for " + DOWNCONFIG);
             System.exit(1);
           }
-          String confDir = line.getOptionValue(CONFDIR);
-          String confName = line.getOptionValue(CONFNAME);
+          String confDir =
+              line.hasOption(CONF_DIR)
+                  ? line.getOptionValue(CONF_DIR)
+                  : line.getOptionValue(CONFDIR);
+          String confName =
+              line.hasOption(CONF_NAME)
+                  ? line.getOptionValue(CONF_NAME)
+                  : line.getOptionValue(CONFNAME);
           ZkMaintenanceUtils.downloadFromZK(
               zkClient, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, Paths.get(confDir));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LINKCONFIG)) {
-          if (!line.hasOption(COLLECTION) || !line.hasOption(CONFNAME)) {
+          if (!line.hasOption(COLLECTION)
+              || (!line.hasOption(CONF_NAME) && !line.hasOption(CONFNAME))) {
             stdout.println(
-                "-" + COLLECTION + " and -" + CONFNAME + " are required for " + LINKCONFIG);
+                "--" + COLLECTION + " and --" + CONF_NAME + " are required for " + LINKCONFIG);
             System.exit(1);
           }
           String collection = line.getOptionValue(COLLECTION);
-          String confName = line.getOptionValue(CONFNAME);
+          String confName =
+              line.hasOption(CONF_NAME)
+                  ? line.getOptionValue(CONF_NAME)
+                  : line.getOptionValue(CONFNAME);
 
           ZkController.linkConfSet(zkClient, collection, confName);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(LIST)) {

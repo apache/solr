@@ -58,7 +58,7 @@ TOOL_JAR=("$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib"/solr-core-*.jar)
 function print_usage() {
   echo ""
   echo 'Usage: post -c <collection> [OPTIONS] <files|directories|urls|-d ["...",...]>'
-  echo "    or post -help"
+  echo "    or post --help"
   echo ""
   echo "   collection name defaults to DEFAULT_SOLR_COLLECTION if not specified"
   echo ""
@@ -67,7 +67,7 @@ function print_usage() {
   echo "  Solr options:"
   echo "    -url <base Solr update URL> (overrides collection, host, and port)"
   echo "    -host <host> (default: localhost)"
-  echo "    -p or -port <port> (default: 8983)"
+  echo "    -p or --port <port> (default: 8983)"
   echo "    -commit yes|no (default: yes)"
   echo "    -u or -user <user:pass> (sets BasicAuth credentials)"
   # optimize intentionally omitted, but can be used as '-optimize yes' (default: no)
@@ -85,7 +85,7 @@ function print_usage() {
   echo "  Other options:"
   echo "    -filetypes <type>[,<type>,...] (default: xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)"
   echo "    -params \"<key>=<value>[&<key>=<value>...]\" (values must be URL-encoded; these pass through to Solr update request)"
-  echo "    -out yes|no (default: no; yes outputs Solr response to console)"
+  echo "    --out yes|no (default: no; yes outputs Solr response to console)"
   echo "    -format solr (sends application/json content as Solr commands to /update instead of /update/json/docs)"
   echo ""
   echo ""
@@ -96,12 +96,12 @@ function print_usage() {
   echo "* CSV file: $THIS_SCRIPT -c signals LATEST-signals.csv"
   echo "* Directory of files: $THIS_SCRIPT -c myfiles ~/Documents"
   echo "* Web crawl: $THIS_SCRIPT -c gettingstarted https://solr.apache.org/ -recursive 1 -delay 1"
-  echo "* Standard input (stdin): echo '{"commit": {}}' | $THIS_SCRIPT -c my_collection -type application/json -out yes -d"
+  echo "* Standard input (stdin): echo '{"commit": {}}' | $THIS_SCRIPT -c my_collection -type application/json --out yes -d"
   echo "* Data as string: $THIS_SCRIPT -c signals -type text/csv -out yes -d $'id,value\n1,0.47'"
   echo ""
 } # end print_usage
 
-if [[ $# -eq 1 && ("$1" == "-help" || "$1" == "-h" || "$1" == "-usage") ]]; then
+if [[ $# -eq 1 && ("$1" == "-help" || "$1" == "--help" || "$1" == "-h" || "$1" == "-usage") ]]; then
   print_usage
   exit
 fi
@@ -138,7 +138,7 @@ while [ $# -gt 0 ]; do
         shift
         COLLECTION="$1"
       elif [[ "$1" == "-p" ]]; then
-        # -p alias for -port for convenience and compatibility with `bin/solr start`
+        # -p alias for --port for convenience and compatibility with `bin/solr start`
         shift
         PROPS+=("-Dport=$1")
       elif [[ ("$1" == "-d" || "$1" == "--data" || "$1" == "-") ]]; then
@@ -236,5 +236,5 @@ echo "$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.cli.Simpl
 "$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.cli.SimplePostTool "${PARAMS[@]}"
 
 # post smoker:
-# bin/post -c signals -out yes -type application/json -d '[{"id": 2, "val": 0.47}]'
-# bin/post -c signals -out yes -params "wt=json" -d '<add><doc><field name="id">1</field></doc></add>'
+# bin/post -c signals --out yes -type application/json -d '[{"id": 2, "val": 0.47}]'
+# bin/post -c signals --out yes -params "wt=json" -d '<add><doc><field name="id">1</field></doc></add>'

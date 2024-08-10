@@ -444,7 +444,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   /**
    * Tests the interactive SolrCloud example; we cannot test the non-interactive because we need
    * control over the port and can only test with one node since the test relies on setting the host
-   * and jetty.port system properties, i.e. there is no test coverage for the --noprompt option.
+   * and jetty.port system properties, i.e. there is no test coverage for the --no-prompt option.
    */
   @Test
   public void testInteractiveSolrCloudExample() throws Exception {

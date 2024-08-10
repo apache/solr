@@ -45,7 +45,7 @@ solr_url="http://localhost:${SOLR_PORT:-8983}"
 
 while (( $# > 0 )); do
   case "$1" in
-   --help)
+   --help|-h|-help)
      cat <<EOM
 Usage: $SCRIPT [options]
 

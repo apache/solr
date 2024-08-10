@@ -380,8 +380,8 @@ function print_usage() {
     echo ""
     echo "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh."
     echo ""
-    echo "Pass -help or -h after any COMMAND to see command-specific usage information,"
-    echo "  such as:    ./solr start -help or ./solr stop -h"
+    echo "Pass --help or -h after any COMMAND to see command-specific usage information,"
+    echo "  such as:    ./solr start --help or ./solr stop -h"
     echo ""
   elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
@@ -469,10 +469,10 @@ function print_usage() {
     echo ""
     echo "  -c <collection>         Collection to run healthcheck against."
     echo ""
-    echo "  -z or -zkHost <zkHost>  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
+    echo "  -z or --zk-host <zkHost>  Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
     echo "                            otherwise, default is localhost:9983"
     echo ""
-    echo "  -V/-verbose             Enable more verbose output for this script."
+    echo "  -V/--verbose             Enable more verbose output for this script."
     echo ""
   elif [ "$CMD" == "status" ]; then
     echo ""
@@ -520,14 +520,14 @@ function print_usage() {
     echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
     echo "      one of the built-in configurations, such as: bin/solr create_core -c mycore -d /tmp/myconfig"
     echo ""
-    echo "  -p or -port <port>  Port of a local Solr instance where you want to create the new core"
+    echo "  -p or --port <port> Port of a local Solr instance where you want to create the new core"
     echo "                        If not specified, the script will search the local system for a running"
     echo "                        Solr instance and will use the port of the first server it finds."
     echo ""
-    echo "  -force              If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
-    echo "                        It is possible to override this warning with the '-force' parameter."
+    echo "  --force             If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
+    echo "                        It is possible to override this warning with the '--force' parameter."
     echo ""
-    echo "  -V/-verbose   Enable more verbose output for this script"
+    echo "  -V/--verbose   Enable more verbose output for this script"
     echo ""
   elif [ "$CMD" == "create_collection" ]; then
     echo ""
@@ -560,14 +560,14 @@ function print_usage() {
     echo ""
     echo "  -replicationFactor or -rf <#>   Number of copies of each document in the collection, default is 1 (no replication)"
     echo ""
-    echo "  -p or -port <port>              Port of a local Solr instance where you want to create the new collection"
+    echo "  -p or --port <port>             Port of a local Solr instance where you want to create the new collection"
     echo "                                    If not specified, the script will search the local system for a running"
     echo "                                    Solr instance and will use the port of the first server it finds."
     echo ""
-    echo "  -force                          If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
-    echo "                                    It is possible to override this warning with the '-force' parameter."
+    echo "  --force                         If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
+    echo "                                    It is possible to override this warning with the '--force' parameter."
     echo ""
-    echo "  -V/-verbose                     Enable more verbose output for this script."
+    echo "  -V/--verbose                     Enable more verbose output for this script."
     echo ""
   elif [ "$CMD" == "zk" ]; then
     print_short_zk_usage ""
@@ -858,7 +858,7 @@ if [ $# -eq 1 ]; then
 fi
 
 if [ $# -gt 0 ]; then
-  # if first arg starts with a dash (and it's not -help or -info),
+  # if first arg starts with a dash (and it's not --help or -info),
   # then assume they are starting Solr, such as: solr -f
   if [[ $1 == -* ]]; then
     SCRIPT_CMD="start"
@@ -896,7 +896,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "$1" in
-          -c|-collection)
+          -c|--collection|-collection)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "Collection name is required when using the $1 option!"
                 exit 1
@@ -904,7 +904,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               HEALTHCHECK_COLLECTION="$2"
               shift 2
           ;;
-          -z|-zkhost|-zkHost)
+          -z|--zk-host|-zkhost|-zkHost|--zkHost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
                 exit 1
@@ -916,8 +916,8 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
               print_usage "$SCRIPT_CMD"
               exit 0
           ;;
-          -V|-verbose)
-              VERBOSE="-verbose"
+          -V|--verbose|-verbose)
+              VERBOSE="--verbose"
               shift
           ;;
           --)
@@ -946,7 +946,7 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
     exit 1
   fi
 
-  run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
+  run_tool healthcheck --zk-host "$ZK_HOST" --collection "$HEALTHCHECK_COLLECTION" $VERBOSE
 
   exit $?
 fi
@@ -957,7 +957,7 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "$1" in
-          -z|-zkhost|-zkHost)
+          -z|--zk-host|-zkhost|-zkHost|--zkHost)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
                 exit 1
@@ -965,7 +965,7 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
               ZK_HOST="$2"
               shift 2
           ;;
-          -s|-scheme)
+          -s|--scheme|-scheme)
               if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
                 print_usage "$SCRIPT_CMD" "URL scheme is required when using the $1 option!"
                 exit 1
@@ -988,7 +988,7 @@ if [[ "$SCRIPT_CMD" == "config" ]]; then
     CONFIG_PARAMS+=("-z" "$ZK_HOST")
   fi
   if [[ -n "$SOLR_URL_SCHEME" ]]; then
-    CONFIG_PARAMS+=("-scheme" "$SOLR_URL_SCHEME")
+    CONFIG_PARAMS+=("--scheme" "$SOLR_URL_SCHEME")
   fi
   run_tool config "${CONFIG_PARAMS[@]}"
   exit $?
@@ -1129,7 +1129,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_RECURSE="true"
             shift
         ;;
-        -c|-collection)
+        -c|--collection|-collection)
             ZK_COLLECTION="$2"
             shift
         ;;

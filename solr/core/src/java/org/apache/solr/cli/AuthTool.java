@@ -115,7 +115,7 @@ public class AuthTool extends ToolBase {
             .argName("prompt")
             .hasArg()
             .desc(
-                "Prompts the user to provide the credentials. Use either -credentials or -prompt, not both.")
+                "Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
             .deprecated(
                 new DeprecatedAttributes.Builder()
                     .setForRemoval(true)

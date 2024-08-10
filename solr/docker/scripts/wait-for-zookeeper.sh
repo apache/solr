@@ -89,7 +89,7 @@ max_attempts=120
 wait_seconds=2
 while (( $# > 0 )); do
   case "$1" in
-   --help)
+   --help|-h|-help)
      cat <<EOM
 Usage: $SCRIPT [options] zookeeper-service-name
 
