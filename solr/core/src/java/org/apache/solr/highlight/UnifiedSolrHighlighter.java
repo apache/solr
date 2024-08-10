@@ -395,12 +395,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
             "language is required if country or variant is specified");
       } else if (country == null && variant != null) {
         throw new IllegalArgumentException("To specify variant, country is required");
-      } else if (country != null && variant != null) {
-        return new Locale(language, country, variant);
-      } else if (country != null) {
-        return new Locale(language, country);
       } else {
-        return new Locale(language);
+        return new Locale.Builder()
+            .setLanguage(language)
+            .setRegion(country)
+            .setVariant(variant)
+            .build();
       }
     }
 
