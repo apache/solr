@@ -118,6 +118,9 @@ Optimizations
 * SOLR-17102: The VersionBucket indexing lock mechanism was replaced with something just as fast yet
   that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
 
+* SOLR-17381: Make CLUSTERSTATUS request configurable to improve performance by allowing retrieval of specific information,
+  reducing unnecessary data fetching. (Aparna Suresh, David Smiley)
+
 * SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
 Bug Fixes
