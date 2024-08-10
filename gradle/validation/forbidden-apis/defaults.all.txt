@@ -86,3 +86,6 @@ java.util.Collections#sort(java.util.List, java.util.Comparator)
 
 @defaultMessage Use URI.toURL() to construct an instance of URL.
 java.net.URL#<init>(**)
+
+@defaultMessage Use Locale.Builder instead.
+java.util.Locale#<init>(**)

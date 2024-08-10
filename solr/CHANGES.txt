@@ -133,7 +133,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API
 
 ==================  9.7.0 ==================
 New Features
