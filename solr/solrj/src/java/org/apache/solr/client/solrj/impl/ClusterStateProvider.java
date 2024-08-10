@@ -91,7 +91,11 @@ public interface ClusterStateProvider extends SolrCloseable {
         .anyMatch(e -> e.getKey().startsWith(CollectionAdminParams.ROUTER_PREFIX));
   }
 
-  /** Obtain the current cluster state. */
+  /**
+   * Obtain the current cluster state. WARNING: This method is quite expensive as it involves
+   * fetching remote information. Use with caution and be aware of the potential performance
+   * implications.
+   */
   ClusterState getClusterState();
 
   default DocCollection getCollection(String name) throws IOException {

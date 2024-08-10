@@ -25,9 +25,9 @@ import java.util.Map;
 /**
  * Base class is a wrapper to categorize and export {@link com.codahale.metrics.Metric} to {@link
  * io.prometheus.metrics.model.snapshots.DataPointSnapshot} and register to a {@link
- * SolrPrometheusExporter}. {@link com.codahale.metrics.MetricRegistry} does not support tags unlike
- * prometheus. Metrics registered to the registry need to be parsed out from the metric name to be
- * exported to {@link io.prometheus.metrics.model.snapshots.DataPointSnapshot}
+ * SolrPrometheusFormatter}. {@link com.codahale.metrics.MetricRegistry} does not support tags
+ * unlike prometheus. Metrics registered to the registry need to be parsed out from the metric name
+ * to be exported to {@link io.prometheus.metrics.model.snapshots.DataPointSnapshot}
  */
 public abstract class SolrMetric {
   public Metric dropwizardMetric;
@@ -49,7 +49,7 @@ public abstract class SolrMetric {
   /*
    * Export metric to Prometheus with labels
    */
-  public abstract void toPrometheus(SolrPrometheusExporter exporter);
+  public abstract void toPrometheus(SolrPrometheusFormatter formatter);
 
   public Labels getLabels() {
     return Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values()));
