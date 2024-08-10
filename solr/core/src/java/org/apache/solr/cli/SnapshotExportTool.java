@@ -66,7 +66,7 @@ public class SnapshotExportTool extends ToolBase {
             .hasArg()
             .required(true)
             .desc(
-                "Path of a temporary directory on local filesystem during snapshot-export command.")
+                "Path of a temporary directory on local filesystem during snapshot export command.")
             .build(),
         Option.builder()
             .longOpt("backup-repo-name")
