@@ -61,7 +61,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This class provides utility functions required for Solr snapshots functionality. */
-
 public class SolrSnapshotsTool implements Closeable, CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final DateFormat dateFormat =
@@ -114,7 +113,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
   }
 
   /**
-   * @deprecated use equivalent snapshot related tool in {@link org.apache.solr.cli.SnapshotCreateTool}
+   * @deprecated use equivalent snapshot related tool in {@link
+   *     org.apache.solr.cli.SnapshotCreateTool}
    */
   @Deprecated(since = "9.8.0")
   public void createSnapshot(String collectionName, String snapshotName) {
@@ -150,7 +150,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
   }
 
   /**
-   * @deprecated use equivalent snapshot related tool in {@link org.apache.solr.cli.SnapshotDeleteTool}
+   * @deprecated use equivalent snapshot related tool in {@link
+   *     org.apache.solr.cli.SnapshotDeleteTool}
    */
   @Deprecated(since = "9.8.0")
   public void deleteSnapshot(String collectionName, String snapshotName) {
@@ -190,7 +191,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
   }
 
   /**
-   * @deprecated use equivalent snapshot related tool in {@link org.apache.solr.cli.SnapshotListTool}
+   * @deprecated use equivalent snapshot related tool in {@link
+   *     org.apache.solr.cli.SnapshotListTool}
    */
   @Deprecated(since = "9.8.0")
   public void listSnapshots(String collectionName) {
@@ -218,7 +220,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
   }
 
   /**
-   * @deprecated use equivalent snapshot related tool in {@link org.apache.solr.cli.SnapshotDescribeTool}
+   * @deprecated use equivalent snapshot related tool in {@link
+   *     org.apache.solr.cli.SnapshotDescribeTool}
    */
   @Deprecated(since = "9.8.0")
   public void describeSnapshot(String collectionName, String snapshotName) {
@@ -350,6 +353,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   /**
    * HDFS specific step required before exporting a snapshot
+   *
    * @param pathPrefix optional
    */
   public void prepareForExport(
@@ -394,7 +398,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
   }
 
   /**
-   * @deprecated use equivalent snapshot related tool in {@link org.apache.solr.cli.SnapshotExportTool}
+   * @deprecated use equivalent snapshot related tool in {@link
+   *     org.apache.solr.cli.SnapshotExportTool}
    */
   @Deprecated(since = "9.8.0")
   public void exportSnapshot(
