@@ -60,6 +60,18 @@ parse_options() {
   done
 }
 
+run_solr_snapshot_tool() {
+  JVM="java"
+  scriptDir=$(dirname "$0")
+  if [ -n "$LOG4J_PROPS" ]; then
+    log4j_config="file:${LOG4J_PROPS}"
+  else
+    log4j_config="file:${scriptDir}/../../../server/resources/log4j2-console.xml"
+  fi
+  PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
+  -classpath "${solrLibPath}" org.apache.solr.hdfs.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
+}
+
 prepare_snapshot_export() {
   #Make sure to cleanup the temporary files.
   scratch=$(mktemp -d -t solrsnaps.XXXXXXXXXX)
