@@ -314,7 +314,6 @@ public class SolrCLI implements CLIO {
     else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool();
     else if ("snapshot-list".equals(toolType)) return new SnapshotListTool();
     else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool();
-    else if ("snapshot-prepare-export".equals(toolType)) return new SnapshotPrepareExportTool();
     else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool();
 
     // If you add a built-in tool to this class, add it here to avoid
