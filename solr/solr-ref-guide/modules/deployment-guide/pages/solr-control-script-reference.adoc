@@ -1838,7 +1838,7 @@ Results are streamed to the terminal.
 
 == Managing Solr Packages
 
-The `package` command allows you to interact with Solr's xref:configuration-guide:package-manager.adoc#package-manager[Package Manager].
+The `package` command allows you to interact with Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
 
 
 == Snapshots and Backups
@@ -1851,7 +1851,7 @@ The snapshots capablity of the CLI allows you to:
 * Export snapshots as part of a backup strategy
 * Delete existing snapshots
 
-Learn more about on the xref:backup-restore.adoc#backup-restore[Backup and Restore] and xref:collection-management.adoc#collection-management[Collection Management] pages.
+Learn more about on the xref:backup-restore.adoc[Backup and Restore] and xref:collection-management.adoc[Collection Management] pages.
 
 === Create Snapshotted View
 
