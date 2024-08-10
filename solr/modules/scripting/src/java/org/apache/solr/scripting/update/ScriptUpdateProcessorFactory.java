@@ -330,6 +330,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
     return scriptEngines;
   }
 
+  @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Deprecated for removal in future Java version")
   private static void performPrivilegedAction(ScriptEngine engine, Reader scriptSrc)
       throws PrivilegedActionException {
@@ -435,6 +436,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
      * Result value is computed from the return value of the script function if: it exists, is
      * non-null, and can be cast to a java Boolean.
      */
+    @SuppressWarnings("removal")
     @SuppressForbidden(reason = "Deprecated for removal in future Java version")
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
@@ -521,9 +523,11 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
   }
 
   // sandbox for script code: zero permissions
+  @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Deprecated for removal in future Java version")
   private static final AccessControlContext SCRIPT_SANDBOX = getAccessControlContext();
 
+  @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Deprecated for removal in future Java version")
   private static AccessControlContext getAccessControlContext() {
     return new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
