@@ -23,7 +23,7 @@ ext {
   scriptDepVersions = [
       "apache-rat": "0.15",
       "commons-codec": "1.16.0",
-      "ecj": "3.33.0",
+      "ecj": "3.36.0",
       "javacc": "7.0.12",
       "jgit": "6.7.0.202309050840-r",
       "flexmark": "0.64.8",
