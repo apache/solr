@@ -100,7 +100,7 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @Override
   public String getUsage() {
-    return "bin/solr zk downconfig [--conf-name <NAME>] [-d <DIR>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+    return "bin/solr zk upconfig [--conf-name <NAME>] [-d <DIR>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
   }
 
   @Override
