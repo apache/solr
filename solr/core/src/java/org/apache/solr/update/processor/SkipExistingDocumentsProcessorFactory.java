@@ -283,8 +283,7 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
           // not a child document
           if (!doesDocumentExist(indexedDocId)) {
             if (log.isDebugEnabled()) {
-              log.debug(
-                  "Skipping update to non-existent document ID {}", cmd.getPrintableId());
+              log.debug("Skipping update to non-existent document ID {}", cmd.getPrintableId());
             }
             return;
           }
