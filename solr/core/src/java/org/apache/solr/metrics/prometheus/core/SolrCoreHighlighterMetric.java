@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name HIGHLIGHTER.* */
 public class SolrCoreHighlighterMetric extends SolrCoreMetric {
@@ -44,7 +44,7 @@ public class SolrCoreHighlighterMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
-    exporter.exportCounter(CORE_HIGHLIGHER_METRICS, (Counter) dropwizardMetric, getLabels());
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
+    formatter.exportCounter(CORE_HIGHLIGHER_METRICS, (Counter) dropwizardMetric, getLabels());
   }
 }
