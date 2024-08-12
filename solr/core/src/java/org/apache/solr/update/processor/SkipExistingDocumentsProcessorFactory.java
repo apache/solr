@@ -255,7 +255,7 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       if (log.isDebugEnabled()) {
         log.debug(
             "Document ID {} ... exists already? {} ... isAtomicUpdate? {} ... isLeader? {}",
-            indexedDocId.utf8ToString(),
+            cmd.getPrintableId(),
             doesDocumentExist(indexedDocId),
             isUpdate,
             isLeader(cmd));
@@ -263,13 +263,14 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
 
       if (skipInsertIfExists && !isUpdate && isLeader(cmd) && doesDocumentExist(indexedDocId)) {
         if (log.isDebugEnabled()) {
-          log.debug("Skipping insert for pre-existing document ID {}", indexedDocId.utf8ToString());
+          log.debug("Skipping insert for pre-existing document ID {}", cmd.getPrintableId());
         }
         return;
       }
 
       if (skipUpdateIfMissing && isUpdate && isLeader(cmd)) {
         if (!cmd.getSelfOrNestedDocIdStr().equals(cmd.getIndexedIdStr())) {
+          // must be a child document
           if (!doesChildDocumentExist(cmd)) {
             if (log.isDebugEnabled()) {
               log.debug(
@@ -278,17 +279,20 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
             }
             return;
           }
-        } else if (!doesDocumentExist(indexedDocId)) {
-          if (log.isDebugEnabled()) {
-            log.debug(
-                "Skipping update to non-existent document ID {}", indexedDocId.utf8ToString());
+        } else {
+          // not a child document
+          if (!doesDocumentExist(indexedDocId)) {
+            if (log.isDebugEnabled()) {
+              log.debug(
+                  "Skipping update to non-existent document ID {}", cmd.getPrintableId());
+            }
+            return;
           }
-          return;
         }
       }
 
       if (log.isDebugEnabled()) {
-        log.debug("Passing on document ID {}", indexedDocId.utf8ToString());
+        log.debug("Passing on document ID {}", cmd.getPrintableId());
       }
 
       super.processAdd(cmd);
