@@ -1139,7 +1139,7 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 == ZooKeeper Operations
 
 The `bin/solr` script allows certain operations affecting ZooKeeper.
-These operations are for SolrCloud mode only.
+These operations are for SolrCloud mode only.  For more information see xref:zookeeper-utilities.adoc[ZooKeeper Utilities].
 
 The operations are available as sub-commands, which each have their own set of options.
 
