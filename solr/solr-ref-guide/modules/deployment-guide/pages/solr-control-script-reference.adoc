@@ -1753,7 +1753,7 @@ bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1 --for
 
 === Importing Documents into a Collection
 
-Once you have exported documents in a file, you can use the <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,/update request handler>> to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc#json-formatted-index-updates[/update request handler] to import them to a new Solr collection.
 Notice the different endpoints used depending on the format.  
 
 *Example: import `json` files*
