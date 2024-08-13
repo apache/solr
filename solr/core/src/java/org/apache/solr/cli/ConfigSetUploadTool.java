@@ -60,7 +60,7 @@ public class ConfigSetUploadTool extends ToolBase {
             .deprecated(
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)
-                    .setSince("9.7")
+                    .setSince("9.8")
                     .setDescription("Use --conf-name instead")
                     .get())
             .required(false)
@@ -80,7 +80,7 @@ public class ConfigSetUploadTool extends ToolBase {
             .deprecated(
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)
-                    .setSince("9.7")
+                    .setSince("9.8")
                     .setDescription("Use --conf-dir instead")
                     .get())
             .required(false)
