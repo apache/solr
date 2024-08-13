@@ -121,7 +121,7 @@ public class PackageManager implements Closeable {
                 + packageName
                 + " is currently deployed on collection: "
                 + collection
-                + ". Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
+                + ". Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before attempting to uninstall the package.");
         System.exit(1);
       }
     }
@@ -138,7 +138,7 @@ public class PackageManager implements Closeable {
                 + packageName
                 + "is currently deployed as a cluster-level plugin ("
                 + clusterPackageInstance.getCustomData()
-                + "). Undeploy the package with undeploy <package-name> -collections <collection1>[,<collection2>,...] before uninstalling the package.");
+                + "). Undeploy the package with undeploy <package-name> --collections <collection1>[,<collection2>,...] before uninstalling the package.");
         System.exit(1);
       }
     }

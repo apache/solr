@@ -151,7 +151,7 @@ public class SortableTextField extends TextField {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return true;
   }
 
@@ -227,7 +227,7 @@ public class SortableTextField extends TextField {
     return new SortedSetFieldSource(field.getName(), selectorType);
   }
 
-  /** {@inheritDoc} this field type is not uninvertable, this method always returns null */
+  /** {@inheritDoc} this field type is not uninvertible, this method always returns null */
   @Override
   public Type getUninversionType(SchemaField sf) {
     return null;

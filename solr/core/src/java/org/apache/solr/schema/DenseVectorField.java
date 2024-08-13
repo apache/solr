@@ -179,7 +179,7 @@ public class DenseVectorField extends FloatPointField {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return false;
   }
 

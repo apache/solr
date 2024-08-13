@@ -100,10 +100,45 @@ Other Changes
 
 * SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
 
+==================  9.8.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
+
+Optimizations
+---------------------
+* SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
+  beginning?) in which its collection state cache was not being used, resulting in many extra
+  requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
+
+* SOLR-17102: The VersionBucket indexing lock mechanism was replaced with something just as fast yet
+  that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
+
+* SOLR-17381: Make CLUSTERSTATUS request configurable to improve performance by allowing retrieval of specific information,
+  reducing unnecessary data fetching. (Aparna Suresh, David Smiley)
+
+* SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
-* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
+* SOLR-13350, SOLR-17298: Opt-in multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble, Gus Heck)
 
 * SOLR-17192: Put an UpdateRequestProcessor-enforced soft-limit on the number of fields allowed in a core.  The `NumFieldLimitingUpdateRequestProcessorFactory`
   limit may be adjusted by raising the factory's `maxFields` setting, toggled in and out of "warning-only" mode using the `warnOnly` setting, or disabled entirely
@@ -124,8 +159,18 @@ New Features
 
 * SOLR-10255: Add support for docValues to solr.BinaryField. (Alexey Serba via Mikhail Khludnev, David Smiley)
 
+* SOLR-17276: Prometheus Exporter: now scrapes metrics at a fixed rate instead of delay. (Rafał Harabień)
+
 Improvements
 ---------------------
+* SOLR-10808, SOLR-12963: The Solr schema version has been increased to 1.7.
+  Starting in schema version 1.7, most fields/fieldTypes that support docValues will have them enabled by default.
+  These field types include primitive (Numeric, Date, Bool, String, Enum, UUID), sorting (SortableTextField, SortableBinaryField, CollationField, ICUCollationField) and LatLonPointSpacialField.
+  This behavior can be reverted by setting the 'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below.
+  Also in schema version 1.7, all fields/fieldTypes will be unable to be uninverted by default.
+  This behavior can be reverted by setting the 'uninvertible' parameter for a field or a field type to true, the default for schema versions 1.6 and below.
+  (Houston Putman, hossman)
+
 * SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
 
 * SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
@@ -146,7 +191,7 @@ Improvements
 
 * SOLR-16824: Adopt Linux standard pattern of -- for long option commands, and make all commands "kebab" formatting.  I.e -zkHost is now -zk-host.  The old parameters
   such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
-  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski)
+  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski, Christos Malliaridis)
 
 * SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
 
@@ -167,7 +212,7 @@ Optimizations
 
 * SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
 
-* SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
+* SOLR-17269, SOLR-17386: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (ellaeln, Patson Luk, David Smiley, Christine Poerschke)
 
 * SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
 
@@ -212,6 +257,14 @@ Bug Fixes
 
 * SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
 
+* SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-17394: Detect and handle non-200 HTTP status codes for requests  made by IndexFetcher (Jason Gerlowski)
+
+* SOLR-17391: Fixed performance regression of misconfigured threadpools from SOLR-16879 (Solr 9.4).
+  Shard splits and concurrent/large collection backup/restore performance was serial.  UpdateLog
+  replay was a little suboptimal in thread usage too.  (Pierre Salagnac, Hakan Özler, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -239,6 +292,12 @@ Other Changes
   refer to env vars.  (David Smiley)
 
 * SOLR-15831: Refactor bin/solr and bin/solr.cmd commands integration with AuthTool, DeleteTool, and PackageTool to delegate arg parsing to Java code.  Removed limitation of PackageTool only being executed on an active Solr node.  (Eric Pugh)
+
+* SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend
+  ScoreDocs (covariant generic types) broken in Solr 9.0. (Stephen Woods via Christine Poerschke)
+
+* SOLR-16996: Update Solr Exporter for Prometheus cli to use commons-cli instead of argparse4j.  (Christos Malliaridis via Eric Pugh)
+
 
 ==================  9.6.1 ==================
 Bug Fixes

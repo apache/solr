@@ -14,24 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.search;
 
-import java.util.regex.Pattern;
+import org.apache.lucene.index.QueryTimeout;
 
-public interface PrometheusCoreExporterInfo {
-  /** Category of prefix Solr Core dropwizard handler metric names */
-  enum CoreCategory {
-    ADMIN,
-    QUERY,
-    UPDATE,
-    REPLICATION,
-    TLOG,
-    CACHE,
-    SEARCHER,
-    HIGHLIGHTER,
-    INDEX,
-    CORE
-  }
-
-  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
+public interface QueryLimit extends QueryTimeout {
+  /**
+   * A value representing the portion of the specified limit that has been consumed. Reading this
+   * value should never affect the outcome (other than the time it takes to do it).
+   *
+   * @return an expression of the amount of the limit used so far, numeric if possible, if
+   *     non-numeric it should have toString() suitable for logging or similar expression to the
+   *     user.
+   */
+  Object currentValue();
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.metrics.prometheus.jvm;
 
-public interface PrometheusJvmExporterInfo {
+public interface PrometheusJvmFormatterInfo {
   /** Category of prefix Solr JVM dropwizard handler metric names */
   enum JvmCategory {
     buffers,

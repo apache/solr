@@ -70,6 +70,9 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.servlet.HttpSolrCall;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -114,6 +117,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
+
     if (httpBasedCloudSolrClient != null) {
       try {
         httpBasedCloudSolrClient.close();
@@ -244,6 +248,58 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         params("q", "*:*", "collection", "testalias," + COLLECTION2);
     assertEquals(
         2, client.query(null, paramsWithMixedCollectionAndAlias).getResults().getNumFound());
+  }
+
+  @Test
+  @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
+  public void testHttpCspPerf() throws Exception {
+
+    String collectionName = "HTTPCSPTEST";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
+
+    try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
+        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
+
+      assertEquals(1, adminLogs.getCount());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections params={prs=true&liveNodes=true&action"
+                      + "=CLUSTERSTATUS&includeAll=false"));
+
+      SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+      solrClient.add(collectionName, doc);
+
+      // getCount seems to return a cumulative count, but add() results in only 1 additional admin
+      // request to fetch CLUSTERSTATUS for the collection
+      assertEquals(2, adminLogs.getCount());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections "
+                      + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
+
+      solrClient.commit(collectionName);
+      // No additional admin requests sent
+      assertEquals(2, adminLogs.getCount());
+
+      for (int i = 0; i < 3; i++) {
+        assertEquals(
+            1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
+        // No additional admin requests sent
+        assertEquals(2, adminLogs.getCount());
+      }
+    }
+  }
+
+  private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
+    final List<String> solrUrls = new ArrayList<>();
+    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
+    return new CloudHttp2SolrClient.Builder(solrUrls).build();
   }
 
   @Test

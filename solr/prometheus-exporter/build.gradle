@@ -43,7 +43,7 @@ dependencies {
     exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
   })
   implementation libs.fasterxml.jackson.core.databind
-  implementation libs.argparse4j.argparse4j
+  implementation libs.commonscli.commonscli
   implementation(libs.benmanes.caffeine) { transitive = false }
   implementation libs.slf4j.api
   implementation libs.commonscodec.commonscodec

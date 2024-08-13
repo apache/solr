@@ -14,14 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.node;
+package org.apache.solr.metrics.prometheus.core;
 
-public interface PrometheusNodeExporterInfo {
-  /** Category of prefix Solr Node dropwizard handler metric names */
-  enum NodeCategory {
+import java.util.regex.Pattern;
+
+public interface PrometheusCoreFormatterInfo {
+  /** Category of prefix Solr Core dropwizard handler metric names */
+  enum CoreCategory {
     ADMIN,
+    QUERY,
     UPDATE,
-    CONTAINER,
-    CACHE
+    REPLICATION,
+    TLOG,
+    CACHE,
+    SEARCHER,
+    HIGHLIGHTER,
+    INDEX,
+    CORE
   }
+
+  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
 }
