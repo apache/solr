@@ -135,7 +135,7 @@ public class SolrCLI implements CLIO {
                   + '.')
           .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("s")
+      Option.builder("url")
           .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
