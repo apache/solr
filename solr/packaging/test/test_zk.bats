@@ -116,8 +116,6 @@ teardown() {
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile3.txt"
   
-  #mkdir ${BATS_TEST_TMPDIR}/recursive_download/
-  #touch ${BATS_TEST_TMPDIR}/recursive_download/myfile.txt
   run solr zk cp zk:/ -r "${BATS_TEST_TMPDIR}/recursive_download/"
   [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile.txt" ]
   [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile2.txt" ]
@@ -139,15 +137,12 @@ teardown() {
   sleep 1
   run curl "http://localhost:${SOLR_PORT}/api/cluster/configs?omitHeader=true"
   assert_output --partial '"configSets":["_default","techproducts2"]'
-
 }
 
 @test "downconfig" {
-
   run solr zk downconfig -z localhost:${ZK_PORT} -n _default -d "${BATS_TEST_TMPDIR}/downconfig"
   assert_output --partial "Downloading"
   refute_output --partial "ERROR"
-
 }
 
 
