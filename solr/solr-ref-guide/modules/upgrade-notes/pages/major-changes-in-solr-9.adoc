@@ -67,11 +67,16 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.8
+=== Configuration
+In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
+
 == Solr 9.7
 === SchemaVersion upgraded to 1.7
 The default schemaVersion is now 1.7.
-With the new schema version, all fields and fieldTypes that support docValues (StrField, *PointField, BoolField, etc.)
-will have docValues enabled by default.
+With the new schema version, most fields and fieldTypes that support docValues will have docValues enabled by default.
+See the xref:indexing-guide:docvalues.adoc#enabling-docvalues[Enabling Doc Values Section] for a complete list.
+
 Also, fields will be unable to be uninverted by default. (`uninvertible=false`)
 
 In order to upgrade from schemaVersion 1.6 to 1.7, a re-index of all data will generally be required.
@@ -81,7 +86,7 @@ https://issues.apache.org/jira/browse/LUCENE-9334[Lucene does not allow adding d
 However, if any of the following is true, a re-index is not required:
 
 * All applicable fields already have docValues enabled in the original schema
-* The schema is updated to explicitly default `docValues="false"` for all fields and fieldTypes that did not have an explicit `docValues` default provided.
+* The schema is updated to xref:indexing-guide:docvalues.adoc#disabling-docvalues[explicitly disable docValues] for all fields and fieldTypes that did not have an explicit `docValues` default provided.
 
 The `uninvertible=false` default has no impact on the index, so is unrelated to re-indexing concerns.
 

@@ -27,7 +27,7 @@ Using spatial search, you can:
 
 There are four main field types available for spatial search:
 
-* `LatLonPointSpatialField`
+* `LatLonPointSpatialField` (has `docValues` enabled by default)
 * `PointType`
 * `SpatialRecursivePrefixTreeFieldType` (RPT for short), including `RptWithGeometrySpatialField`, a derivative
 * `BBoxField`
@@ -71,9 +71,7 @@ However, it's much bulkier than the raw coordinates for such simple data.
 Using the `bin/solr post` tool:
 
 [,console]
-----
-$ bin/solr post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
-----
+$ bin/solr post -t "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
 
 The key parameter to pass in with your request is:
 

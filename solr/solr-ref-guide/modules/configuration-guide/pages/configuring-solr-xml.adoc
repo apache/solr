@@ -178,6 +178,7 @@ Specifies the number of threads that will be assigned to replay updates in paral
 This pool is shared for all cores of the node.
 The default value is equal to the number of processors.
 
+[#indexSearcherExecutorThreads]
 `indexSearcherExecutorThreads`::
 +
 [%autowidth,frame=none]

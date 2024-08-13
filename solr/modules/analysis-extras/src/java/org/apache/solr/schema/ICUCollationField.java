@@ -316,7 +316,7 @@ public class ICUCollationField extends FieldType {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return true;
   }
 

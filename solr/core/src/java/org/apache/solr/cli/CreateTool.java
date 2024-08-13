@@ -411,7 +411,7 @@ public class CreateTool extends ToolBase {
       final String configCommand =
           String.format(
               Locale.ROOT,
-              "bin/solr config -c %s -solrUrl %s -action set-user-property -property update.autoCreateFields -value false",
+              "bin/solr config -c %s -s %s --action set-user-property --property update.autoCreateFields --value false",
               collectionName,
               solrUrl);
       echo(

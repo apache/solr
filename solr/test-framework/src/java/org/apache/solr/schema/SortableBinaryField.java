@@ -37,7 +37,7 @@ public class SortableBinaryField extends BinaryField {
   }
 
   @Override
-  protected boolean doesTypeSupportDocValues() {
+  protected boolean enableDocValuesByDefault() {
     return true;
   }
 
