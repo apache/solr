@@ -107,7 +107,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
 
 Optimizations
 ---------------------
