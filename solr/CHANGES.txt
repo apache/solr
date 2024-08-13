@@ -125,7 +125,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17405: Fix race condition where Zookeeper session could be re-established by multiple threads concurrently in
+ case of frequent session expirations. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
