@@ -310,7 +310,12 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
       try (Reader scriptSrc = scriptFile.openReader(resourceLoader)) {
         try {
           try {
-            performPrivilegedAction(engine, scriptSrc);
+            doPrivilegedExceptionAction(
+                (PrivilegedExceptionAction<Void>)
+                    () -> {
+                      engine.eval(scriptSrc);
+                      return null;
+                    });
           } catch (PrivilegedActionException e) {
             throw (ScriptException) e.getException();
           }
@@ -332,17 +337,9 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
 
   @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Deprecated for removal in future Java version")
-  private static void performPrivilegedAction(ScriptEngine engine, Reader scriptSrc)
+  private static <T> void doPrivilegedExceptionAction(PrivilegedExceptionAction<T> action)
       throws PrivilegedActionException {
-    AccessController.doPrivileged(
-        new PrivilegedExceptionAction<Void>() {
-          @Override
-          public Void run() throws ScriptException {
-            engine.eval(scriptSrc);
-            return null;
-          }
-        },
-        SCRIPT_SANDBOX);
+    AccessController.doPrivileged(action, SCRIPT_SANDBOX);
   }
 
   /**
@@ -440,13 +437,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
     @SuppressForbidden(reason = "Deprecated for removal in future Java version")
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
-          new PrivilegedAction<Boolean>() {
-            @Override
-            public Boolean run() {
-              return invokeFunctionUnsafe(name, cmd);
-            }
-          },
-          SCRIPT_SANDBOX);
+          (PrivilegedAction<Boolean>) () -> invokeFunctionUnsafe(name, cmd), SCRIPT_SANDBOX);
     }
 
     private boolean invokeFunctionUnsafe(String name, Object... cmd) {
