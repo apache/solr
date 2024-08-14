@@ -37,6 +37,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -156,11 +157,8 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_RECURSE =
       Option.builder("r")
           .longOpt("recurse")
-          .argName("recurse")
-          .hasArg()
           .required(false)
-          .desc("Recurse (true|false), default is false.")
-          // .type(Boolean.class)
+          .desc("Apply the command recursively.")
           .build();
 
   public static final Option OPTION_CREDENTIALS =
@@ -213,7 +211,38 @@ public class SolrCLI implements CLIO {
       // select the version tool to be run
       args[0] = "version";
     }
+    if (Arrays.asList(
+            "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
+        .contains(args[0])) {
+      // remap our arguments to invoke the zk short tool help
+      args = new String[] {"zk-tool-help", "--print-zk-subcommand-usage", args[0]};
+    }
+    if (Objects.equals(args[0], "zk")) {
+      if (args.length == 1) {
+        // remap our arguments to invoke the ZK tool help.
+        args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+      } else if (args.length == 2) {
+        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+          // remap our arguments to invoke the ZK tool help.
+          args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+        } else {
+          // remap our arguments to invoke the zk sub command with help
+          String[] trimmedArgs = new String[args.length - 1];
+          System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
+          args = trimmedArgs;
 
+          String[] remappedArgs = new String[args.length + 1];
+          System.arraycopy(args, 0, remappedArgs, 0, args.length);
+          remappedArgs[remappedArgs.length - 1] = "--help";
+          args = remappedArgs;
+        }
+      } else {
+        // chop the leading zk argument so we invoke the correct zk sub tool
+        String[] trimmedArgs = new String[args.length - 1];
+        System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
+        args = trimmedArgs;
+      }
+    }
     SSLConfigurationsFactory.current().init();
 
     Tool tool = null;
@@ -310,6 +339,7 @@ public class SolrCLI implements CLIO {
     else if ("run_example".equals(toolType)) return new RunExampleTool();
     else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool();
     else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool();
+    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp();
     else if ("rm".equals(toolType)) return new ZkRmTool();
     else if ("mv".equals(toolType)) return new ZkMvTool();
     else if ("cp".equals(toolType)) return new ZkCpTool();
@@ -444,7 +474,17 @@ public class SolrCLI implements CLIO {
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
-        usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
+        usageString,
+        "\n" + tool.getHeader(),
+        optionsNoDeprecated,
+        tool.getFooter(),
+        autoGenerateUsage);
+  }
+
+  public static HelpFormatter getFormatter() {
+    HelpFormatter formatter = HelpFormatter.builder().get();
+    formatter.setWidth(120);
+    return formatter;
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */

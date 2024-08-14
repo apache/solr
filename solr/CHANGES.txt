@@ -77,6 +77,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
 
+* SOLR-17359: Move Zk Arg parsing into Java Code from bin/solr scripts.   (Eric Pugh, Rahul Goswami)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------

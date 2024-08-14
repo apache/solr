@@ -258,7 +258,6 @@ public class PackageTool extends ToolBase {
   @Override
   public String getHeader() {
     StringBuilder sb = new StringBuilder();
-    format(sb, "\n");
     format(sb, "Package Manager\n---------------");
     formatGreen(sb, "bin/solr package add-repo <repository-name> <repository-url>");
     format(sb, "Add a repository to Solr.");
@@ -305,7 +304,6 @@ public class PackageTool extends ToolBase {
     format(
         sb,
         "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
-    format(sb, "\n");
     format(sb, "\n");
     format(sb, "List of options:");
     return sb.toString();

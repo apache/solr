@@ -36,7 +36,7 @@ ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell
 
 == Using Solr's ZooKeeper CLI
 
-Use the `help` option to get a list of available ZooKeeper specifc commands from the script itself, as in `bin/solr zk -h`.
+Use the `help` option to get a list of available ZooKeeper specific commands from the script itself, as in `bin/solr zk -h`.
 
 == Solr CLI Examples
 

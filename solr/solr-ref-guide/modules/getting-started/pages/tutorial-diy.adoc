@@ -37,7 +37,7 @@ In this example, the collection will be named "localDocs"; replace that name wit
 
 [,console]
 ----
-$ bin/solr create -c localDocs -s 2 -rf 2
+$ bin/solr create -c localDocs --shards 2 -rf 2
 ----
 
 Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides.
