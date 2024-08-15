@@ -1299,17 +1299,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Generates a SolrQueryRequest using the LocalRequestFactory. Note that tests that want to test
-   * multi-threading should ensure that multiple commits are used and that the merge policy will
-   * leave a suitable number of segments.
-   *
-   * @see #lrf
-   */
-  public static SolrQueryRequest reqRandMulti(String... q) {
-    return lrf.makeRequest(true, q);
-  }
-
-  /**
    * Generates a SolrQueryRequest using the LocalRequestFactory
    *
    * @see #lrf
@@ -1332,16 +1321,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     for (int i = 0; i < moreParams.length; i += 2) {
       mp.add(moreParams[i], moreParams[i + 1]);
     }
-    return new LocalSolrQueryRequest(h.getCore(), mp);
-  }
-
-  /** Generates a SolrQueryRequest randomly assigning multi or single threaded processing. */
-  public static SolrQueryRequest reqRandMulti(SolrParams params, String... moreParams) {
-    ModifiableSolrParams mp = new ModifiableSolrParams(params);
-    for (int i = 0; i < moreParams.length; i += 2) {
-      mp.add(moreParams[i], moreParams[i + 1]);
-    }
-    mp.add("multiThreaded", String.valueOf(random().nextBoolean()));
     return new LocalSolrQueryRequest(h.getCore(), mp);
   }
 

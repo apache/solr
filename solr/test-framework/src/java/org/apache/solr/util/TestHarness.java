@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.util.TestInjection.random;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -455,22 +453,6 @@ public class TestHarness extends BaseTestHarness {
      */
     @SuppressWarnings({"unchecked"})
     public LocalSolrQueryRequest makeRequest(String... q) {
-      return makeRequest(false, q);
-    }
-
-    /**
-     * Creates a LocalSolrQueryRequest based on variable args. Note that tests that want to test
-     * multi-threading should ensure that multiple commits are used and that the merge policy will
-     * leave a suitable number of segments.
-     *
-     * @param testMultiThreadedRandom if true 50% of requests will include the multiThreaded=true
-     *     parameter.
-     * @param q the parameters for the request.
-     * @see #makeRequest(String...)
-     * @return a LocalSolrQueryRequest based on the supplied parameters
-     */
-    @SuppressWarnings("unchecked")
-    public LocalSolrQueryRequest makeRequest(boolean testMultiThreadedRandom, String... q) {
       if (q.length == 1) {
         return new LocalSolrQueryRequest(
             TestHarness.this.getCore(), q[0], qtype, start, limit, args);
@@ -479,19 +461,14 @@ public class TestHarness extends BaseTestHarness {
         throw new RuntimeException(
             "The length of the string array (query arguments) needs to be even");
       }
-      @SuppressWarnings("rawtypes")
-      NamedListEntry[] entries = new NamedListEntry[(q.length / 2) + 1];
+      @SuppressWarnings({"rawtypes"})
+      Map.Entry<String, String>[] entries = new NamedListEntry[q.length / 2];
       for (int i = 0; i < q.length; i += 2) {
         entries[i / 2] = new NamedListEntry<>(q[i], q[i + 1]);
       }
-      entries[entries.length - 1] =
-          new NamedListEntry<>(
-              "multiThreaded", String.valueOf(testMultiThreadedRandom && random().nextBoolean()));
       @SuppressWarnings({"rawtypes"})
       NamedList nl = new NamedList(entries);
-      if (nl.get("wt") == null) {
-        nl.add("wt", "xml");
-      }
+      if (nl.get("wt") == null) nl.add("wt", "xml");
       return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);
     }
   }

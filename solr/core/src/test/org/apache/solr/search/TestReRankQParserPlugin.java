@@ -170,10 +170,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
               ? operation + operation
               : operation.substring(0, operation.length() - 1);
       params.set("rq", rerankQueryByOp.apply(badOp));
-      assertQEx(
-          "Wrong reRankOperation:" + badOp,
-          reqRandMulti(params),
-          SolrException.ErrorCode.BAD_REQUEST);
+      assertQEx("Wrong reRankOperation:" + badOp, req(params), SolrException.ErrorCode.BAD_REQUEST);
     }
 
     params = new ModifiableSolrParams();
@@ -196,7 +193,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -226,7 +223,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("sort", "score desc");
     params.add("df", "text");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -257,7 +254,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -289,7 +286,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("qt", "/elevate");
     params.add("elevateIds", "1");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -320,7 +317,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -352,7 +349,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "1,4");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='1']", // Elevated
         "//result/doc[2]/str[@name='id'][.='4']", // Elevated
@@ -384,7 +381,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']", // Elevated
         "//result/doc[2]/str[@name='id'][.='1']", // Elevated
@@ -415,7 +412,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='4']", // Elevated
         "//result/doc[2]/str[@name='id'][.='1']", // Elevated
@@ -448,7 +445,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "4,1");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='2']" // Was not in reRankDocs
@@ -476,7 +473,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("qt", "/elevate");
     params.add("elevateIds", "4,1");
 
-    assertQ(reqRandMulti(params), "*[count(//doc)=0]");
+    assertQ(req(params), "*[count(//doc)=0]");
 
     // Pass in reRankDocs lower than the length being collected.
     params = new ModifiableSolrParams();
@@ -499,7 +496,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -528,7 +525,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -557,7 +554,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "10");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='5']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -587,7 +584,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "5");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=5]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -628,7 +625,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=5]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -662,7 +659,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=5]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -697,7 +694,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[2]/str[@name='id'][.='5']",
@@ -726,7 +723,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "5");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='1']");
@@ -751,7 +748,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "1");
 
-    assertQ(reqRandMulti(params), "*[count(//doc)=1]", "//result/doc[1]/str[@name='id'][.='1']");
+    assertQ(req(params), "*[count(//doc)=1]", "//result/doc[1]/str[@name='id'][.='1']");
 
     // Test with zero results
     params = new ModifiableSolrParams();
@@ -772,7 +769,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "4");
     params.add("rows", "5");
 
-    assertQ(reqRandMulti(params), "*[count(//doc)=0]");
+    assertQ(req(params), "*[count(//doc)=0]");
   }
 
   @Test
@@ -866,7 +863,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='2']");
@@ -896,7 +893,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("elevateIds", "1,4");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=3]",
         "//result/doc[1]/str[@name='id'][.='1']", // Elevated
         "//result/doc[2]/str[@name='id'][.='4']", // Elevated
@@ -943,7 +940,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             "A syntax error should be thrown when "
                 + ReRankQParserPlugin.RERANK_QUERY
                 + " parameter is not specified",
-            () -> h.query(reqRandMulti(params)));
+            () -> h.query(req(params)));
     assertEquals(se.code(), SolrException.ErrorCode.BAD_REQUEST.code);
     unIgnoreException("reRankQuery parameter is mandatory");
   }
@@ -988,7 +985,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         params.add(QueryParsing.DEFTYPE, defType);
       }
       assertQ(
-          reqRandMulti(params),
+          req(params),
           "*[count(//doc)=2]",
           "//result/doc[1]/str[@name='id'][.='" + preferredDocId + "']",
           "//result/doc[2]/str[@name='id'][.='" + lessPreferredDocId + "']");
@@ -1022,7 +1019,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("fl", "id,score");
     params.add("sort", "score desc, id_p_i asc");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=10]",
         "//result[@numFound='" + numDocs + "']",
         "//result[@numFoundExact='true']",
@@ -1048,7 +1045,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=20}");
     params.add("rrq", "id:10");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=10]",
         "//result[@numFound='" + numDocs + "']",
         "//result[@numFoundExact='true']",
@@ -1065,7 +1062,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     params.add(CommonParams.MIN_EXACT_COUNT, "2");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=10]",
         "//result[@numFound<='" + numDocs + "']",
         "//result[@numFoundExact='false']",
@@ -1238,7 +1235,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("debugQuery", "true");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='37.70526']",
@@ -1279,7 +1276,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("debugQuery", "true");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=4]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='37.70526']",
@@ -1317,7 +1314,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("debugQuery", "true");
 
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='6']",
         "//result/doc[1]/float[@name='score'][.='20.0']",
@@ -1357,7 +1354,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
     params.add("df", "text");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='37.70526']",
@@ -1398,7 +1395,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows", "6");
     params.add("df", "text");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[1]/float[@name='score'][.='30.0']",
@@ -1432,14 +1429,14 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("debugQuery", "true");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[1]/float[@name='score'][.='30.0']",
         "//result/doc[2]/str[@name='id'][.='5']",
         "//result/doc[2]/float[@name='score'][.='29.0']");
 
-    String explainResponse = JQ(reqRandMulti(params));
+    String explainResponse = JQ(req(params));
     assertTrue(explainResponse.contains("30.0 = combined scaled first and second pass score"));
 
     assertTrue(explainResponse.contains("10.0 = first pass score scaled between: 10-19"));
@@ -1472,7 +1469,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("debugQuery", "true");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='5018.705']",
@@ -1487,7 +1484,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[6]/str[@name='id'][.='1']",
         "//result/doc[6]/float[@name='score'][.='10.0']");
 
-    explainResponse = JQ(reqRandMulti(params));
+    explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
             "5018.705 = combined scaled first and unscaled second pass score"));
@@ -1527,7 +1524,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("debug", "true");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='5018.4053']",
@@ -1580,7 +1577,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("df", "text");
     params.add("debugQuery", "true");
     assertQ(
-        reqRandMulti(params),
+        req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='10019.105']",
@@ -1595,7 +1592,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[6]/str[@name='id'][.='1']",
         "//result/doc[6]/float[@name='score'][.='10.0']");
 
-    explainResponse = JQ(reqRandMulti(params));
+    explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
             "10019.105 = combined scaled first and unscaled second pass score"));
