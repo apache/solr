@@ -35,7 +35,6 @@ import java.util.Set;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.LetStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -210,7 +209,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
             TupleStream stream = constructStream(streamFactory, streamExpression);
 
             // not sure if I need this?  Except maybe, we assume let?
-            Map params = validateLetAndGetParams(stream, expr);
+            // Map params = validateLetAndGetParams(stream, expr);
 
           } catch (IOException ioe) {
             throw new SolrException(
@@ -389,16 +388,17 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     return streamFactory.constructStream(streamExpression);
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static Map validateLetAndGetParams(TupleStream stream, String expr) throws IOException {
-    if (stream instanceof LetStream) {
-      LetStream mainStream = (LetStream) stream;
-      return mainStream.getLetParams();
-    } else {
-      throw new IOException("No enclosing let function found in expression:" + expr);
+  /*
+    @SuppressWarnings({"rawtypes"})
+    public static Map validateLetAndGetParams(TupleStream stream, String expr) throws IOException {
+      if (stream instanceof LetStream) {
+        LetStream mainStream = (LetStream) stream;
+        return mainStream.getLetParams();
+      } else {
+        throw new IOException("No enclosing let function found in expression:" + expr);
+      }
     }
-  }
-
+  */
   @Override
   public String getDescription() {
     return "A component that tracks original user query and the resulting documents returned.";
