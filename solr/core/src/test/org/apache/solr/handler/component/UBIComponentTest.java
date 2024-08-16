@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,45 +47,20 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testToLogIds() {
-    SolrQueryRequest req = null;
-    try {
-      String handler = "/withubi";
-      req = req("qt", "/withubi", "q", "aa", "rows", "2", "ubi", "true");
 
-      assertQ(
-          "Make sure we generate a query id",
-          req,
-          "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
-      // Need to test the writing out to the logs..
-      // SolrQueryResponse qr = h.queryAndResponse(handler, req);
-      // NamedList<Object> entries = qr.getToLog();
-      // String docIds = (String) entries.get("ubi");
-      // assertNotNull(docIds);
-      // assertTrue(docIds.matches("\\w+,\\w+"));
-    } finally {
-      req.close();
-    }
+    assertQ(
+        "Make sure we generate a query id",
+        req("qt", "/withubi", "q", "aa", "rows", "2", "ubi", "true"),
+        "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
   @Test
   public void testZeroResults() {
-    // SolrQueryRequest req = null;
-    // try {
-    // String handler = "/withubi";
-    // req = req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true");
-
     assertQ(
-        "Make sure we generate a query id",
-        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true"),
+        "Make sure we generate a query id even when no results are returned",
+        req("qt", "/withubi", "q", "abcdefgxyz", "rows", "0", "ubi", "true"),
+        "//*[@numFound='0']",
         "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
-
-    // SolrQueryResponse qr = h.queryAndResponse(handler, req);
-    // NamedList<Object> entries = qr.getToLog();
-    // String docIds = (String) entries.get("ubi");
-    // assertNull(docIds);
-    // } finally {
-    // req.close();
-    // }
   }
 
   @Test
@@ -100,16 +74,13 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   @Test
   public void testGenerateQueryId() {
     assertQ(
-        "Make sure we reuse a passed in query id",
+        "Make sure we generate a query id if one is not passed in",
         req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true"),
         "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
   @Test
   public void testJSONQuerySyntax() throws Exception {
-    // need to fix this.  It just checks the number of docs,
-    // but doesn't do anything about the ubi clauses...
-    // doesn't appear to trigger the ubi...
     assertJQ(
         req(
             "qt",
@@ -176,29 +147,16 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDisabling() {
-    // SolrQueryRequest req = null;
-    // try {
-    // String handler = "/withubi";
-
     assertQ(
         "Make sure we don't generate a query_id",
         req("qt", "/withubi", "q", "aa", "ubi", "false"),
         "count(//lst[@name='ubi'])=0");
-
-    // SolrQueryResponse qr = h.queryAndResponse(handler, req);
-    // NamedList<Object> entries = qr.getToLog();
-    // String ubi = (String) entries.get("ubi");
-    // assertNull(ubi);
-    // } finally {
-    // req.close();
-    // }
   }
 
   private static String readLastLineOfFile(File file) throws IOException {
     try (ReversedLinesFileReader reader =
         ReversedLinesFileReader.builder().setFile(file).setCharset(StandardCharsets.UTF_8).get()) {
-      String line = reader.readLine();
-      return line;
+      return reader.readLine();
     }
   }
 }
