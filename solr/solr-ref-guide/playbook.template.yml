@@ -38,6 +38,9 @@ ui:
   bundle:
     url: 'https://nightlies.apache.org/solr/solr-reference-guide-ui-bundle/ui-bundle.zip'
     snapshot: true
+  supplemental_files:
+    - path: js/vendor/tabs.js
+      contents: ~+/node_modules/@asciidoctor/tabs/dist/js/tabs.js
 output:
   clean: true
   dir: '${site_dir}'
@@ -46,6 +49,7 @@ asciidoc:
     stem:
   extensions:
     - '@djencks/asciidoctor-mathjax'
+    - '@asciidoctor/tabs'
 
 runtime:
   fetch: true

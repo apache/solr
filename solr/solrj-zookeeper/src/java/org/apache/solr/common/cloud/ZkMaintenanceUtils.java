@@ -137,7 +137,7 @@ public class ZkMaintenanceUtils {
       throw new SolrServerException("One or both of source or destination must specify ZK nodes.");
     }
 
-    // Make sure -recurse is specified if the source has children.
+    // Make sure --recurse is specified if the source has children.
     if (recurse == false) {
       if (srcIsZk) {
         if (zkClient.getChildren(src, null, true).size() != 0) {

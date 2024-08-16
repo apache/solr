@@ -65,6 +65,9 @@ Deprecation Removals
 
 * SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
 
+* SOLR-17284: Remove deprecated BlobRepository in favour of FileStore. (Eric Pugh)
+
+* SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
 
 Dependency Upgrades
 ---------------------
@@ -95,27 +98,34 @@ Other Changes
 
 * SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
 
-==================  9.7.0 ==================
+* SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
+
+==================  9.8.0 ==================
 New Features
 ---------------------
-* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
+(No changes)
 
 Improvements
 ---------------------
-* SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
-
-* SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
+* SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
 
 Optimizations
 ---------------------
-* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
-  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
+* SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
+  beginning?) in which its collection state cache was not being used, resulting in many extra
+  requests to Solr for cluster information. (Aparna Suresh, shalin, David Smiley)
+
+* SOLR-17102: The VersionBucket indexing lock mechanism was replaced with something just as fast yet
+  that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
+
+* SOLR-17381: Make CLUSTERSTATUS request configurable to improve performance by allowing retrieval of specific information,
+  reducing unnecessary data fetching. (Aparna Suresh, David Smiley)
+
+* SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
 Bug Fixes
 ---------------------
-* SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
-
-* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+(No changes)
 
 Dependency Upgrades
 ---------------------
@@ -123,7 +133,191 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
+* SOLR-17359: Move Zk Arg parsing into Java Code from bin/solr scripts.   (Eric Pugh, Rahul Goswami)
+
+==================  9.7.0 ==================
+New Features
+---------------------
+* SOLR-13350, SOLR-17298: Opt-in multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble, Gus Heck)
+
+* SOLR-17192: Put an UpdateRequestProcessor-enforced soft-limit on the number of fields allowed in a core.  The `NumFieldLimitingUpdateRequestProcessorFactory`
+  limit may be adjusted by raising the factory's `maxFields` setting, toggled in and out of "warning-only" mode using the `warnOnly` setting, or disabled entirely
+  by removing it solrconfig.xml.  The limit is set at 1000 fields in the "_default" configset, but left in warning-only mode. (David Smiley, Eric Pugh,
+  Jason Gerlowski)
+
+* SOLR-17277: Circuit breakers may now be configured in a "soft" or "warnOnly" mode in order to more easily test out new thresholds.  Soft breakers will log out a
+  message on each relevant request when tripped, but will not otherwise impact or short circuit the requests.  (Jason Gerlowski)
+
+* SOLR-17335: New "vectorSimilarity" QParser for matching documents mased on a minimum vector similarity threshold. (hossman)
+
+* SOLR-10654: Introduce output of Prometheus metrics directly from Solr. (Matthew Biscocho via David Smiley)
+
+* SOLR-17195: Configsets now include a `minPrefixQueryTermLength` setting, which instructs Solr to reject prefix queries whose prefixes are "too short".  This can
+  be used as one line of defense against "runaway wildcard queries" consuming too many resources.  The setting is disabled ('-1') in the default configset but can be
+  overridden with a property ('solr.query.minPrefixLength').  Users may also override their collection-wide setting for individual queries by providing a
+  `minPrefixQueryTermLength` local-param.  (Jason Gerlowski, David Smiley)
+
+* SOLR-10255: Add support for docValues to solr.BinaryField. (Alexey Serba via Mikhail Khludnev, David Smiley)
+
+* SOLR-17276: Prometheus Exporter: now scrapes metrics at a fixed rate instead of delay. (Rafał Harabień)
+
+Improvements
+---------------------
+* SOLR-10808, SOLR-12963: The Solr schema version has been increased to 1.7.
+  Starting in schema version 1.7, most fields/fieldTypes that support docValues will have them enabled by default.
+  These field types include primitive (Numeric, Date, Bool, String, Enum, UUID), sorting (SortableTextField, SortableBinaryField, CollationField, ICUCollationField) and LatLonPointSpacialField.
+  This behavior can be reverted by setting the 'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below.
+  Also in schema version 1.7, all fields/fieldTypes will be unable to be uninverted by default.
+  This behavior can be reverted by setting the 'uninvertible' parameter for a field or a field type to true, the default for schema versions 1.6 and below.
+  (Houston Putman, hossman)
+
+* SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
+
+* SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
+
+* SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
+
+* SOLR-17274: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set' as a field name
+  if child docs are not enabled. (Calvin Smith, David Smiley)
+
+* SOLR-17300: Http2SolrClient.Builder.withHttpClient now copies HttpListenerFactory (e.g. for auth, metrics, traces, etc.)
+  (Sanjay Dutt, David Smiley)
+
+* SOLR-17109: Give security manager explicit read access to sharedLib (Tomás Fernández Löbbe via Eric Pugh)
+
+* SOLR-17331: OrderedNodePlacementPlugin will give an even more optimal replica placements during ReplicaMigration commands (Houston Putman, Yohann Callea)
+
+* SOLR-15591: Make using debugger in Solr easier by avoiding NPE in ExternalPaths.determineSourceHome.  (@charlygrappa via Eric Pugh)
+
+* SOLR-16824: Adopt Linux standard pattern of -- for long option commands, and make all commands "kebab" formatting.  I.e -zkHost is now -zk-host.  The old parameters
+  such as -zkHost continue to be supported in the 9.x line of Solr.  -u is now used to specify user credentials everywhere, this only impacts the bin/solr assert
+  commands "same user" check which has -u as the short form of --same-user. (Eric Pugh, janhoy, Jason Gerlowski, Christos Malliaridis)
+
+* SOLR-17346: Synchronise stopwords from snowball with those in Lucene (Alastair Porter via Houston Putman)
+
+* SOLR-16198: Introduce tabbed sections again in the Ref Guide.  (Christos Malliaridis via Eric Pugh)
+
+* SOLR-17160: Core Admin "async" request status tracking is no longer capped at 100; it's 10k.
+  Statuses are now removed 5 minutes after the read of a completed/failed status.  Helps collection
+  async backup/restore and other operations scale to 100+ shards.  (Pierre Salagnac, David Smiley)
+
+* SOLR-10808 : The Solr schema version has been increased to 1.7. Since schema version 1.7, all fields/fieldTypes that
+  support docValues will have them enabled by default. This behavior can be reverted by setting
+  'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)
+
+Optimizations
+---------------------
+* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
+  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
+
+* SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
+
+* SOLR-17269, SOLR-17386: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (ellaeln, Patson Luk, David Smiley, Christine Poerschke)
+
+* SOLR-17330: When not set, loadOnStartup defaults to true, which is the default choice for a core. (Pierre Salagnac via Eric Pugh)
+
+* SOLR-16677: Update Solr to use new Lucene 9.5 storedFields() API. This removes the use of ThreadLocal for
+  stored field state, reducing heap usage especially for high-core-count, high-field-count, high-thread-count
+  cases (Vinayak Hegde, Christine Poerschke, Kevin Risden, David Smiley, Michael Gibney)
+
+* SOLR-17349: SolrDocumentFetcher should always skip lazy field loading overhead if documentCache==null (Michael Gibney)
+
+* SOLR-17340: Add cache on top of system metrics BeanInfos to make calls to /admin/info/system faster (Pierre Salagnac)
+
+Bug Fixes
+---------------------
+* SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
+
+* PR-2475: Fixed node listing bug in Admin UI when different hostnames start with the same front part. (@hgdharold via Eric Pugh)
+
+* SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
+
+* SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
+* SOLR-17317: v2 APIs no longer return the incorrect content-type when 'wt=json' specified (Jason Gerlowski)
+
+* SOLR-17315: Fixed "next step" example urls generated by bin/solr create commands to use the newly created  collection/core name. (Eric Pugh)
+
+* SOLR-17326: Generated v2 'SolrRequest' implementations now all serialize to the correct response type (Christos Malliaridis via Jason Gerlowski)
+
+* SOLR-16962: Restore ability to configure tlog directory. Changes largely focus on UpdateLog and
+  HdfsUpdateLog. There is no anticipated change in existing behavior, other than that the `dir` parameter
+  to the `<updateLog>` element in `solrconfig.xml`, which has long been silently ignored, will now be
+  respected (Michael Gibney, David Smiley)
+
+* SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
+
+* SOLR-17333: Rate-limiting feature: fix live-update of config (Michael Gibney)
+
+* SOLR-17367: Restore the use of -params option to PostTool. (Bostoi via Eric Pugh)
+
+* SOLR-17369: Fix "flags" usage in FunctionQParser that caused some issues in vectorSimilarity() with BYTE vector constants (hossman)
+
+* SOLR-17337: Display all custom distributed stages in debug output. (Torsten Bøgh Köster, Christine Poerschke)
+
+* SOLR-17394: Detect and handle non-200 HTTP status codes for requests  made by IndexFetcher (Jason Gerlowski)
+
+* SOLR-17391: Fixed performance regression of misconfigured threadpools from SOLR-16879 (Solr 9.4).
+  Shard splits and concurrent/large collection backup/restore performance was serial.  UpdateLog
+  replay was a little suboptimal in thread usage too.  (Pierre Salagnac, Hakan Özler, David Smiley)
+
+Dependency Upgrades
+---------------------
+(No changes)
+* SOLR-17325: Upgrade Lucene to 9.11.1 (hossman)
+
+Other Changes
+---------------------
 * SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
+  (Sanjay Dutt, David Smiley)
+
+* GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+
+* SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
+
+* SOLR-17321: Remove Deprecated URL and replace it with URI in Preparation for Java 21 (Sanjay Dutt, David Smiley, Uwe Schindler)
+
+* PR#2524: QueryResult refactoring so that it's only returned from SolrIndexSearcher instead of
+  being provided to it.  Deprecated APIs in 9x; should be removed later. (David Smiley)
+
+* SOLR-17347: EnvUtils: Removed "env" methods, as they were problematic.  Code should almost never
+  refer to env vars.  (David Smiley)
+
+* SOLR-15831: Refactor bin/solr and bin/solr.cmd commands integration with AuthTool, DeleteTool, and PackageTool to delegate arg parsing to Java code.  Removed limitation of PackageTool only being executed on an active Solr node.  (Eric Pugh)
+
+* SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend
+  ScoreDocs (covariant generic types) broken in Solr 9.0. (Stephen Woods via Christine Poerschke)
+
+* SOLR-16996: Update Solr Exporter for Prometheus cli to use commons-cli instead of argparse4j.  (Christos Malliaridis via Eric Pugh)
+
+
+==================  9.6.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
+* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
+  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
+
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
+* SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
+
+* SOLR-17307: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory (Houston Putman, hossman)
+
+Dependency Upgrades
+---------------------
+* PR#2308: Update dependency org.apache.commons:commons-compress to v1.26.1 (solrbot)
 
 ==================  9.6.0 ==================
 New Features
@@ -177,7 +371,6 @@ Optimizations
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
 
 * GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
-
 
 Bug Fixes
 ---------------------

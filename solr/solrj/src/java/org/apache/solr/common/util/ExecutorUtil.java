@@ -201,6 +201,18 @@ public class ExecutorUtil {
         nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
   }
 
+  public static ExecutorService newMDCAwareFixedThreadPool(
+      int nThreads, int queueCapacity, ThreadFactory threadFactory, Runnable beforeExecute) {
+    return new MDCAwareThreadPoolExecutor(
+        nThreads,
+        nThreads,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(queueCapacity),
+        threadFactory,
+        beforeExecute);
+  }
+
   /**
    * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}. Note the
    * thread is always active, even if no tasks are submitted to the executor.
@@ -225,29 +237,48 @@ public class ExecutorUtil {
     return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
-  /** See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)} */
+  /**
+   * Create a new pool of threads, with no limit for the number of threads. The pool has no task
+   * queue. Each submitted task is executed immediately, either by reusing an existing thread if one
+   * is available, or by starting a new thread. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
   }
 
+  /**
+   * Create a new pool of threads. Threads are created for new work if there is room to do so up to
+   * {@code maxThreads}. Beyond that, the queue is used up to {@code queueCapacity}. Beyond that,
+   * work is rejected with an exception. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(
       int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
-    return new MDCAwareThreadPoolExecutor(
-        0,
-        maxThreads,
-        60L,
-        TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(queueCapacity),
-        threadFactory);
+    // Create an executor with same value of core size and max total size. With an unbounded queue,
+    // the ThreadPoolExecutor ignores the configured max value and only considers core pool size.
+    // Since we allow core threads to die when idle for too long, this ends in having a pool with
+    // lazily-initialized and cached threads.
+    MDCAwareThreadPoolExecutor executor =
+        new MDCAwareThreadPoolExecutor(
+            maxThreads,
+            maxThreads,
+            60L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(queueCapacity),
+            threadFactory);
+    // Allow core threads to die
+    executor.allowCoreThreadTimeOut(true);
+    return executor;
   }
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
   public static class MDCAwareThreadPoolExecutor extends ThreadPoolExecutor {
 
     private static final int MAX_THREAD_NAME_LEN = 512;
+    public static final Runnable NOOP = () -> {};
 
     private final boolean enableSubmitterStackTrace;
+    private final Runnable beforeExecuteTask;
 
     public MDCAwareThreadPoolExecutor(
         int corePoolSize,
@@ -259,6 +290,7 @@ public class ExecutorUtil {
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
       this.enableSubmitterStackTrace = true;
+      this.beforeExecuteTask = NOOP;
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -269,6 +301,7 @@ public class ExecutorUtil {
         BlockingQueue<Runnable> workQueue) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
       this.enableSubmitterStackTrace = true;
+      this.beforeExecuteTask = NOOP;
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -278,7 +311,8 @@ public class ExecutorUtil {
         TimeUnit unit,
         BlockingQueue<Runnable> workQueue,
         ThreadFactory threadFactory) {
-      this(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, true);
+      this(
+          corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, true, NOOP);
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -288,9 +322,30 @@ public class ExecutorUtil {
         TimeUnit unit,
         BlockingQueue<Runnable> workQueue,
         ThreadFactory threadFactory,
-        boolean enableSubmitterStackTrace) {
+        Runnable beforeExecuteTask) {
+      this(
+          corePoolSize,
+          maximumPoolSize,
+          keepAliveTime,
+          unit,
+          workQueue,
+          threadFactory,
+          true,
+          beforeExecuteTask);
+    }
+
+    public MDCAwareThreadPoolExecutor(
+        int corePoolSize,
+        int maximumPoolSize,
+        long keepAliveTime,
+        TimeUnit unit,
+        BlockingQueue<Runnable> workQueue,
+        ThreadFactory threadFactory,
+        boolean enableSubmitterStackTrace,
+        Runnable beforeExecuteTask) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
       this.enableSubmitterStackTrace = enableSubmitterStackTrace;
+      this.beforeExecuteTask = beforeExecuteTask;
     }
 
     public MDCAwareThreadPoolExecutor(
@@ -302,6 +357,37 @@ public class ExecutorUtil {
         RejectedExecutionHandler handler) {
       super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
       this.enableSubmitterStackTrace = true;
+      this.beforeExecuteTask = NOOP;
+    }
+
+    public MDCAwareThreadPoolExecutor(
+        int corePoolSize,
+        int maximumPoolSize,
+        int keepAliveTime,
+        TimeUnit timeUnit,
+        BlockingQueue<Runnable> blockingQueue,
+        SolrNamedThreadFactory httpShardExecutor,
+        boolean enableSubmitterStackTrace) {
+      super(
+          corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, blockingQueue, httpShardExecutor);
+      this.enableSubmitterStackTrace = enableSubmitterStackTrace;
+      this.beforeExecuteTask = NOOP;
+    }
+
+    public MDCAwareThreadPoolExecutor(
+        int i,
+        int maxValue,
+        long l,
+        TimeUnit timeUnit,
+        BlockingQueue<Runnable> es,
+        SolrNamedThreadFactory testExecutor,
+        boolean b) {
+      this(i, maxValue, l, timeUnit, es, testExecutor, b, NOOP);
+    }
+
+    @Override
+    protected void beforeExecute(Thread t, Runnable r) {
+      this.beforeExecuteTask.run();
     }
 
     @Override

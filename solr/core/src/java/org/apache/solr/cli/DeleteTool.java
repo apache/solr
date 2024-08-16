@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -59,9 +60,18 @@ public class DeleteTool extends ToolBase {
   }
 
   @Override
+  public String getHeader() {
+    return "\nDeletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
+        + " mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
+        + " delete the configuration directory from Zookeeper so long as it is not being used by another collection.\n"
+        + " You can override this behavior by passing -deleteConfig false when running this command.\n"
+        + "\n"
+        + "List of options:";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_SOLRURL,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -69,27 +79,56 @@ public class DeleteTool extends ToolBase {
             .required(true)
             .desc("Name of the core / collection to delete.")
             .build(),
-        Option.builder("deleteConfig")
-            .argName("true|false")
+        Option.builder("d")
+            .longOpt("delete-config")
             .hasArg()
+            .argName("true|false")
             .required(false)
             .desc(
                 "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
             .build(),
-        Option.builder("forceDeleteConfig")
+        Option.builder()
+            .longOpt("deleteConfig")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --delete-config instead")
+                    .get())
+            .hasArg()
+            .argName("true|false")
+            .required(false)
+            .desc(
+                "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+            .build(),
+        Option.builder("f")
+            .longOpt("force-delete-config")
             .required(false)
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
             .build(),
+        Option.builder()
+            .longOpt("forceDeleteConfig")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --force-delete-config instead")
+                    .get())
+            .required(false)
+            .desc(
+                "Skip safety checks when deleting the configuration directory used by a collection.")
+            .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
     try (var solrClient = SolrCLI.getSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
@@ -132,9 +171,15 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
+    boolean deleteConfig = true;
+    if (cli.hasOption("delete-config")) {
+      deleteConfig = "true".equals(cli.getOptionValue("delete-config"));
+    } else if (cli.hasOption("deleteConfig")) {
+      deleteConfig = "true".equals(cli.getOptionValue("deleteConfig"));
+    }
+
     if (deleteConfig && configName != null) {
-      if (cli.hasOption("forceDeleteConfig")) {
+      if (cli.hasOption("force-delete-config") || cli.hasOption("forceDeleteConfig")) {
         log.warn(
             "Skipping safety checks, configuration directory {} will be deleted with impunity.",
             configName);
@@ -165,7 +210,7 @@ public class DeleteTool extends ToolBase {
               "Configuration directory {} is also being used by {}{}",
               configName,
               inUse.get(),
-              "; configuration will not be deleted from ZooKeeper. You can pass the -forceDeleteConfig flag to force delete.");
+              "; configuration will not be deleted from ZooKeeper. You can pass the --force-delete-config flag to force delete.");
         }
       }
     }

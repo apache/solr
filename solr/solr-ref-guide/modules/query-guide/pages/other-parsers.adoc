@@ -229,21 +229,25 @@ A mix of ordered and unordered complex phrase queries:
 Performance is sensitive to the number of unique terms that are associated with a pattern.
 For instance, searching for "a*" will form a large OR clause (technically a SpanOr with many terms) for all of the terms in your index for the indicated field that start with the single letter 'a'.
 It may be prudent to restrict wildcards to at least two or preferably three letters as a prefix.
-Allowing very short prefixes may result in to many low-quality documents being returned.
+Allowing very short prefixes may result in too many low-quality documents being returned.
 
 Notice that it also supports leading wildcards "*a" as well with consequent performance implications.
 Applying xref:indexing-guide:filters.adoc#reversed-wildcard-filter[ReversedWildcardFilterFactory] in index-time analysis is usually a good idea.
 
-==== MaxBooleanClauses with Complex Phrase Parser
+==== Query Settings and Complex Phrase Parser
 
-You may need to increase MaxBooleanClauses in `solrconfig.xml` as a result of the term expansion above:
+Due to the query-expansion described above, this parser may produce queries that run afoul of several `solrconfig.xml` settings.
+
+Particularly relevant are `maxBooleanClauses` and `minPrefixLength`, two safeguards that Solr provides in order to curb overly resource-intensive queries.
 
 [source,xml]
 ----
 <maxBooleanClauses>4096</maxBooleanClauses>
+<minPrefixLength>1</minPrefixLength>
 ----
 
-This property is described in more detail in the section xref:configuration-guide:caches-warming.adoc#query-sizing-and-warming[Query Sizing and Warming].
+Both properties are described in more detail in the section xref:configuration-guide:caches-warming.adoc#query-sizing-and-warming[Query Sizing and Warming].
+Administrators should consider the performance tradeoffs carefully when making changes to support "Complex Phrase" queries.
 
 ==== Stopwords with Complex Phrase Parser
 

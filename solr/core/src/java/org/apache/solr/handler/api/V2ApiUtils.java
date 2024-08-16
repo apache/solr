@@ -19,6 +19,7 @@ package org.apache.solr.handler.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.common.params.CommonParams.WT;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,9 +27,11 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.MapWriter.EntryWriter;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** Utilities helpful for common V2 API declaration tasks. */
@@ -87,17 +90,20 @@ public class V2ApiUtils {
     squashObjectIntoNamedList(destination, toSquash, true);
   }
 
-  public static String getMediaTypeFromWtParam(
-      SolrQueryRequest solrQueryRequest, String defaultMediaType) {
-    final String wtParam = solrQueryRequest.getParams().get(WT);
-    if (wtParam == null) return "application/json";
+  public static String getMediaTypeFromWtParam(SolrParams params, String defaultMediaType) {
+    final String wtParam = params.get(WT);
+    if (StrUtils.isBlank(wtParam)) return defaultMediaType;
 
     // The only currently-supported response-formats for JAX-RS v2 endpoints.
     switch (wtParam) {
+      case "json":
+        return "application/json";
       case "xml":
         return "application/xml";
       case "javabin":
         return BINARY_CONTENT_TYPE_V2;
+      case FILE_STREAM:
+        return RawResponseWriter.CONTENT_TYPE;
       default:
         return defaultMediaType;
     }

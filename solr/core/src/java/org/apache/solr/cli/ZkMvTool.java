@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -42,20 +44,11 @@ public class ZkMvTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("src")
-            .argName("src")
-            .hasArg()
-            .required(true)
-            .desc("Source Znode to move from.")
-            .build(),
-        Option.builder("dst")
-            .argName("dst")
-            .hasArg()
-            .required(true)
-            .desc("Destination Znode to move to.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
@@ -65,14 +58,34 @@ public class ZkMvTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk mv [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] source destination";
+  }
+
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(sb, "mv moves (renames) znodes on Zookeeper.");
+    format(sb, "");
+    format(sb, "<src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional.");
+    format(sb, "If <dest> ends with '/', then <dest> will be a parent znode");
+    format(sb, "and the last element of the <src> path will be appended.");
+    format(sb, "Zookeeper nodes CAN have data, so moving a single file to a parent znode");
+    format(sb, "will overlay the data on the parent Znode so specifying the trailing slash");
+    format(sb, "is important.");
+    format(sb, "\nList of options:");
+    return sb.toString();
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String src = cli.getOptionValue("src");
-      String dst = cli.getOptionValue("dst");
+      String src = cli.getArgs()[0];
+      String dst = cli.getArgs()[1];
 
       if (src.toLowerCase(Locale.ROOT).startsWith("file:")
           || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {

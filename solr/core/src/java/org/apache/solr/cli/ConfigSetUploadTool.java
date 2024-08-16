@@ -19,8 +19,10 @@ package org.apache.solr.cli;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -45,28 +47,50 @@ public class ConfigSetUploadTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("n")
-            .longOpt("confname")
-            .argName("NAME")
+            .longOpt("conf-name")
             .hasArg()
-            .required(true)
+            .argName("NAME")
+            .required(false) // should be true, but we have deprecated option as well.
+            .desc("Configset name in ZooKeeper.")
+            .build(),
+        Option.builder()
+            .longOpt("confname")
+            .hasArg()
+            .argName("NAME")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --conf-name instead")
+                    .get())
+            .required(false)
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder("d")
-            .longOpt("confdir")
-            .argName("DIR")
+            .longOpt("conf-dir")
             .hasArg()
-            .required(true)
+            .argName("DIR")
+            .required(false) // should be true, but we have deprecated option as well.
             .desc("Local directory with configs.")
             .build(),
-        Option.builder("configsetsDir")
-            .argName("configsetsDir")
+        Option.builder()
+            .longOpt("confdir")
             .hasArg()
+            .argName("DIR")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --conf-dir instead")
+                    .get())
             .required(false)
-            .desc("Parent directory of example configsets.")
+            .desc("Local directory with configs.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -75,22 +99,35 @@ public class ConfigSetUploadTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk upconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
-    String confName = cli.getOptionValue("confname");
+    final String solrInstallDir = System.getProperty("solr.install.dir");
+    Path solrInstallDirPath = Paths.get(solrInstallDir);
+
+    String confName =
+        cli.hasOption("conf-name")
+            ? cli.getOptionValue("conf-name")
+            : cli.getOptionValue("confname");
+    String confDir =
+        cli.hasOption("conf-dir") ? cli.getOptionValue("conf-dir") : cli.getOptionValue("confdir");
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      Path confPath =
-          ConfigSetService.getConfigsetPath(
-              cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+
+      final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
+      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echo(
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
-              + cli.getOptionValue("confname")
+              + cli.getOptionValue("conf-name")
               + " to ZooKeeper at "
               + zkHost);
       FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);

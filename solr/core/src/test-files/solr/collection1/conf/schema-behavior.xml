@@ -26,7 +26,7 @@
   <fieldType name="text" class="solr.TextField"/>
   <fieldType name="bool" class="solr.BoolField"/>
   <fieldType name="str" class="solr.StrField"/>
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}"/>
 
   <!-- explicit props on type -->
   <fieldType name="multi_f" class="solr.StrField" multiValued="false"/>
@@ -52,6 +52,9 @@
 
   <fieldType name="str_uninvert_f" class="solr.StrField" uninvertible="false"/>
   <fieldType name="str_uninvert_t" class="solr.StrField" uninvertible="true"/>
+
+  <fieldType name="str_dv_f" class="solr.StrField" docValues="false"/>
+  <fieldType name="str_dv_t" class="solr.StrField" docValues="true"/>
   
   <!-- all behavior is default -->
 
@@ -106,6 +109,11 @@
   <dynamicField name="*_dyn_ft_uninvert_t" type="str_uninvert_t"/>
   <dynamicField name="*_dyn_ft_uninvert_f" type="str_uninvert_f"/>
 
+  <field name="ft_dv_t" type="str_dv_t"/>
+  <field name="ft_dv_f" type="str_dv_f"/>
+  <dynamicField name="*_dyn_ft_dv_t" type="str_dv_t"/>
+  <dynamicField name="*_dyn_ft_dv_f" type="str_dv_f"/>
+
   <!-- explicit props on field -->
   <field name="multi_f" type="str" multiValued="false"/>
   <field name="multi_t" type="str" multiValued="true"/>
@@ -136,10 +144,15 @@
   <field name="intdvas_f" type="int" useDocValuesAsStored="false"/>
   <dynamicField name="*_dyn_intdvas_t" type="int" useDocValuesAsStored="true"/>
   <dynamicField name="*_dyn_intdvas_f" type="int" useDocValuesAsStored="false"/>
-  
+
   <field name="uninvert_t" type="str" uninvertible="true"/>
   <field name="uninvert_f" type="str" uninvertible="false"/>
   <dynamicField name="*_dyn_uninvert_t" type="str" uninvertible="true"/>
   <dynamicField name="*_dyn_uninvert_f" type="str" uninvertible="false"/>
+
+  <field name="dv_t" type="str" docValues="true"/>
+  <field name="dv_f" type="str" docValues="false"/>
+  <dynamicField name="*_dyn_dv_t" type="str" docValues="true"/>
+  <dynamicField name="*_dyn_dv_f" type="str" docValues="false"/>
 
 </schema>
