@@ -107,7 +107,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
 
 Optimizations
 ---------------------
@@ -133,7 +133,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17359: Move Zk Arg parsing into Java Code from bin/solr scripts.   (Eric Pugh, Rahul Goswami)
 
 ==================  9.7.0 ==================
 New Features

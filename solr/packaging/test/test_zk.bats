@@ -36,6 +36,23 @@ teardown() {
   save_home_on_failure
 }
 
+@test "short help" {
+ run solr zk ls -h
+ assert_output --partial "usage: bin/solr zk"
+}
+
+@test "short help is inferred" {
+ run solr zk ls
+ assert_output --partial "usage: bin/solr zk"
+}
+
+@test "long help" {
+ run solr zk -h
+ assert_output --partial "bin/solr zk ls"
+ assert_output --partial "bin/solr zk updateacls"
+ assert_output --partial "Pass --help or -h after any COMMAND"
+}
+
 @test "running subcommands with zk is prevented" {
  run solr ls / -z localhost:${ZK_PORT}
  assert_output --partial "You must invoke this subcommand using the zk command"
@@ -54,7 +71,7 @@ teardown() {
   # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
   #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
 
-  run solr zk ls / -s http://localhost:${SOLR_PORT}
+  run solr zk ls / -url http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
   # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
   #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
@@ -99,6 +116,11 @@ teardown() {
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile3.txt"
 
+  run solr zk cp zk:/ -r "${BATS_TEST_TMPDIR}/recursive_download/"
+  [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile.txt" ]
+  [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile2.txt" ]
+  [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile3.txt" ]
+
   rm myfile.txt
   rm myfile2.txt
   rm myfile3.txt
@@ -121,20 +143,26 @@ teardown() {
   # should be unit test but had problems with Java SecurityManager and symbolic links
   local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
   test -d $source_configset_dir
-  
+
   ln -s ${source_configset_dir}/conf/stopwords.txt ${source_configset_dir}/conf/symlinked_stopwords.txt
   ln -s ${source_configset_dir}/conf/lang ${source_configset_dir}/conf/language
-  
+
   # Use the -L option to confirm we have a symlink
   [ -L ${source_configset_dir}/conf/symlinked_stopwords.txt ]
   [ -L ${source_configset_dir}/conf/language ]
-  
+
   run solr zk upconfig -d ${source_configset_dir} -n techproducts_with_symlinks -z localhost:${ZK_PORT}
   assert_output --partial "Uploading"
   assert_output --partial "ERROR: Not uploading symbolic link"
 
   rm ${source_configset_dir}/conf/symlinked_stopwords.txt
   rm -d ${source_configset_dir}/conf/language
+}
+
+@test "downconfig" {
+  run solr zk downconfig -z localhost:${ZK_PORT} -n _default -d "${BATS_TEST_TMPDIR}/downconfig"
+  assert_output --partial "Downloading"
+  refute_output --partial "ERROR"
 }
 
 
