@@ -15,29 +15,10 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<<<<<<<< HEAD:solr/core/src/test-files/solr/configsets/ubi-enabled/conf/schema.xml
+
 <schema name="ubi_enabled" version="1.1">
   <field name="id" type="string" indexed="true" stored="true"/>
   <fieldType name="string" class="solr.StrField"/>
   <dynamicField name="*" type="string" indexed="true" stored="true"/>
   <uniqueKey>id</uniqueKey>
 </schema>
-========
-
-<config>
-
-  <dataDir>${solr.data.dir:}</dataDir>
-
-  <directoryFactory name="DirectoryFactory"
-                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
-
-  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
-
-  <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog class="${solr.ulog:solr.UpdateLog}"/>
-  </updateHandler>
-
-  <requestHandler name="/select" class="solr.SearchHandler"/>
-
-</config>
->>>>>>>> upstream/main:solr/core/src/test-files/solr/configsets/conf-using-mypkg-version-1/conf/solrconfig.xml
