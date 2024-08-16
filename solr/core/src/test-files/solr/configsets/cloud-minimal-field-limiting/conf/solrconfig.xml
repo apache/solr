@@ -34,29 +34,20 @@
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
     <updateLog class="${solr.ulog:solr.UpdateLog}"></updateLog>
-  </updateHandler>
-<<<<<<<< HEAD:solr/core/src/test-files/solr/configsets/ubi-enabled/conf/solrconfig.xml
-  
+  </updateHandler>  
   <searchComponent name="ubi" class="org.apache.solr.handler.component.UBIComponent" >
     <str name="streamQueriesExpressionFile">ubi-query-pipeline.expr</str>
   </searchComponent>
   
-========
-
->>>>>>>> upstream/main:solr/core/src/test-files/solr/configsets/cloud-minimal-field-limiting/conf/solrconfig.xml
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
       <str name="indent">true</str>
       <str name="df">text</str>
     </lst>
-<<<<<<<< HEAD:solr/core/src/test-files/solr/configsets/ubi-enabled/conf/solrconfig.xml
     <arr name="last-components">
       <str>ubi</str>
     </arr>
-
-========
->>>>>>>> upstream/main:solr/core/src/test-files/solr/configsets/cloud-minimal-field-limiting/conf/solrconfig.xml
   </requestHandler>
 
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="true">
