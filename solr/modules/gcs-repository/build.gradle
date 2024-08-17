@@ -29,6 +29,7 @@ dependencies {
     implementation platform(libs.google.cloud.bom)
     implementation libs.google.api.gax
     implementation libs.google.auth.oauth2http
+    implementation libs.google.auth.credentials
     implementation libs.google.cloud.core
     implementation libs.google.cloud.corehttp
     implementation libs.google.cloud.storage

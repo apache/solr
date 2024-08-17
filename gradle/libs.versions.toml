@@ -193,6 +193,7 @@ amazon-awssdk-apacheclient = { module = "software.amazon.awssdk:apache-client", 
 amazon-awssdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "amazon-awssdk" }
 amazon-awssdk-awscore = { module = "software.amazon.awssdk:aws-core", version.ref = "amazon-awssdk" }
 amazon-awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "amazon-awssdk" }
+amazon-awssdk-httpclientspi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "amazon-awssdk" }
 amazon-awssdk-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "amazon-awssdk" }
 amazon-awssdk-regions = { module = "software.amazon.awssdk:regions", version.ref = "amazon-awssdk" }
 amazon-awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "amazon-awssdk" }
@@ -328,6 +329,7 @@ google-api-gax = { module = "com.google.api:gax", version.ref = "google-api-gax"
 # @keep transitive dependency for version alignment
 google-api-grpc-proto = { module = "com.google.api.grpc:proto-google-common-protos", version.ref = "google-api-grpc-proto" }
 google-auth-oauth2http = { module = "com.google.auth:google-auth-library-oauth2-http", version.ref = "google-auth" }
+google-auth-credentials = { module = "com.google.auth:google-auth-library-credentials", version.ref = "google-auth" }
 # @keep transitive dependency for version alignment
 google-autovalue-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "google-autovalue" }
 google-cloud-bom = { module = "com.google.cloud:google-cloud-bom", version.ref = "google-cloud-bom" }

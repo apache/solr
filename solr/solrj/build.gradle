@@ -92,6 +92,7 @@ dependencies {
   })
   testImplementation libs.apache.commons.lang3
   testImplementation libs.dropwizard.metrics.core
+  testImplementation libs.fasterxml.jackson.core.core
 }
 
 /**

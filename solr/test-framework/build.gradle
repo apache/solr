@@ -24,6 +24,7 @@ dependencies {
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
+  testCompileOnly libs.spotbugs.annotations
   permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
@@ -79,8 +80,6 @@ dependencies {
   // See https://issues.apache.org/jira/browse/LOG4J2-3609
   compileOnly libs.aqute.bnd.annotation
   compileOnly libs.osgi.annotation
-
-  // See https://issues.apache.org/jira/browse/LOG4J2-3609
   testCompileOnly libs.aqute.bnd.annotation
   testCompileOnly libs.osgi.annotation
 }

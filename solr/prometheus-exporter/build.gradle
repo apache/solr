@@ -60,6 +60,8 @@ dependencies {
 
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore
+
+  permitTestUsedUndeclared project(':solr:solrj-zookeeper')
 }
 
 ext {

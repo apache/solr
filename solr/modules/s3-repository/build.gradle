@@ -37,6 +37,7 @@ dependencies {
   runtimeOnly(libs.amazon.awssdk.sts) {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
+  implementation libs.amazon.awssdk.httpclientspi
 
   implementation libs.google.guava
   implementation libs.slf4j.api

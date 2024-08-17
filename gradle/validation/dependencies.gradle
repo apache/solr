@@ -50,6 +50,12 @@ allprojects {
     }
 
     dependencies {
+        modules {
+            module("org.hamcrest:hamcrest-core") {
+                replacedBy("org.hamcrest:hamcrest", "hamcrest-core was renamed to hamcrest")
+            }
+        }
+
         constraints { handler ->
             consolidatedConfigurations.configureEach { Configuration conf ->
                 // Add BOMs as they resolve many dependency conflicts

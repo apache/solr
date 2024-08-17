@@ -38,6 +38,8 @@ dependencies {
 
   implementation libs.commonscli.commonscli
 
+  implementation libs.dropwizard.metrics.core
+
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:solrj-zookeeper')
   testImplementation libs.apache.lucene.testframework
