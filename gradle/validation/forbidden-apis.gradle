@@ -51,9 +51,11 @@ allprojects { prj ->
       }
       
       // commons-io is special: forbiddenapis has a versioned bundledSignature.
-      bundledSignatures += resolvedMods
-        .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
-        .collect { id -> "${id.name}-unsafe-${id.version}" as String }
+      // TODO Add commons-io signature resolution once supported
+      //  Tracking PR https://github.com/policeman-tools/forbidden-apis/pull/249
+      // bundledSignatures += resolvedMods
+      //   .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
+      //   .collect { id -> "${id.name}-unsafe-${id.version}" as String }
     }
 
     // Configure defaults for all sourceSets (main and test)
