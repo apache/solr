@@ -29,6 +29,8 @@ apache-commons-configuration2 = "2.11.0"
 apache-commons-exec = "1.4.0"
 apache-commons-lang3 = "3.16.0"
 apache-commons-math3 = "3.6.1"
+# @keep for version alignment
+apache-commons-text = "1.12.0"
 apache-curator = "5.7.0"
 apache-hadoop = "3.3.6"
 apache-hadoop-thirdparty = "1.2.0"
@@ -36,7 +38,7 @@ apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kerby = "1.1.1"
-apache-log4j = "2.21.0"
+apache-log4j = "2.23.1"
 apache-lucene = "9.11.1"
 apache-opennlp = "1.9.4"
 apache-poi = "5.3.0"
@@ -59,6 +61,8 @@ carrot2-core = "4.6.0"
 carrotsearch-dependencychecks = "0.0.9"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.1"
+# @keep for version alignment
+checkerframework = "3.46.0"
 codehaus-woodstox = "4.2.2"
 commons-cli = "1.9.0"
 commons-codec = "1.17.1"
@@ -78,15 +82,25 @@ fasterxml-woodstox = "6.7.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 google-api-gax = "2.51.0"
+# @keep for version alignment
+google-api-grpc-proto = "2.42.0"
 google-auth = "1.24.1"
+# @keep for version alignment
+google-autovalue = "1.10.4"
 google-cloud-bom = "0.225.0"
 google-cloud-core = "2.41.0"
 google-cloud-nio = "0.127.21"
 google-cloud-storage = "2.41.0"
 google-errorprone = "2.30.0"
+# @keep for version alignment
+google-failureaccess = "1.0.2"
 google-guava = "33.2.1-jre"
+# @keep for version alignment
+google-gson = "2.11.0"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
+# @keep for version alignment
+google-protobuf = "3.25.3"
 google-re2j = "1.7"
 # @keep Gradle version to run the build
 gradle = "8.4"
@@ -103,10 +117,15 @@ jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 jakarta-ws = "3.1.0"
 javacc = "7.0.13"
+# @keep for version alignment
+jaxb = "2.3.8"
 jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
 jersey = "3.1.8"
+# TODO Sync with jersey versions
 jersey-containers = "2.39.1"
+# @keep for version alignment
+joda-time = "2.12.7"
 johnrengelman-shadow = "6.1.0"
 junit = "4.13.2"
 # @keep Link checker version used in ref-guide
@@ -125,8 +144,14 @@ nodegradle-node = "7.0.2"
 openapi = "7.7.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.41.0"
+# @keep for version alignment
+opentelemetry-alpha = "1.41.0-alpha"
 osgi-annotation = "8.1.0"
 owasp-dependencycheck = "9.2.0"
+# @keep for version alignment
+ow2-asm = "9.3" # latest 9.7
+# @keep for version alignment
+perfmark = "0.27.0"
 prometheus-metrics = "1.3.1"
 prometheus-simpleclient = "0.16.0"
 quicktheories = "0.26"
@@ -162,10 +187,6 @@ thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thet
 udnercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 
 [libraries]
-# Libraries of which the version is provided via a Maven BOM should use { module = "..." }
-# without a version.
-# All other libraries should use { group = "...", name = "..." version.ref = "..." }
-# and provide the version in [versions].
 adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }
 adobe-testing-s3mock-testsupportcommon = { module = "com.adobe.testing:s3mock-testsupport-common", version.ref = "adobe-testing-s3mock" }
 amazon-awssdk-apacheclient = { module = "software.amazon.awssdk:apache-client", version.ref = "amazon-awssdk" }
@@ -186,6 +207,8 @@ apache-commons-configuration2 = { module = "org.apache.commons:commons-configura
 apache-commons-exec = { module = "org.apache.commons:commons-exec", version.ref = "apache-commons-exec" }
 apache-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "apache-commons-lang3" }
 apache-commons-math3 = { module = "org.apache.commons:commons-math3", version.ref = "apache-commons-math3" }
+# @keep transitive dependency for version alignment
+apache-commons-text = { module = "org.apache.commons:commons-text", version.ref = "apache-commons-text" }
 apache-curator-client = { module = "org.apache.curator:curator-client", version.ref = "apache-curator" }
 apache-curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "apache-curator" }
 apache-curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "apache-curator" }
@@ -203,6 +226,8 @@ apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore"
 apache-httpcomponents-httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "apache-httpcomponents-httpmime" }
 apache-kerby-core = { module = "org.apache.kerby:kerb-core", version.ref = "apache-kerby" }
 apache-kerby-util = { module = "org.apache.kerby:kerb-util", version.ref = "apache-kerby" }
+# @keep transitive dependency for version alignment
+apache-kerby-crypto = { module = "org.apache.kerby:kerb-util", version.ref = "apache-kerby" }
 apache-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "apache-log4j" }
 apache-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "apache-log4j" }
 apache-log4j-jul = { module = "org.apache.logging.log4j:log4j-jul", version.ref = "apache-log4j" }
@@ -250,6 +275,8 @@ bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref 
 carrot2-core = { module = "org.carrot2:carrot2-core", version.ref = "carrot2-core" }
 carrotsearch-hppc = { module = "com.carrotsearch:hppc", version.ref = "carrotsearch-hppc" }
 carrotsearch-randomizedtesting-runner = { module = "com.carrotsearch.randomizedtesting:randomizedtesting-runner", version.ref = "carrotsearch-randomizedtesting" }
+# @keep transitive dependency for version alignment
+checkerframework-qual = { module = "org.checkerframework:checker-qual", version.ref = "checkerframework" }
 codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", version.ref = "codehaus-woodstox" }
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
@@ -298,19 +325,39 @@ flexmark-extensions-attributes = { module = "com.vladsch.flexmark:flexmark-ext-a
 flexmark-extensions-autolink = { module = "com.vladsch.flexmark:flexmark-ext-autolink", version.ref = "flexmark" }
 flexmark-flexmark = { module = "com.vladsch.flexmark:flexmark", version.ref = "flexmark" }
 google-api-gax = { module = "com.google.api:gax", version.ref = "google-api-gax" }
+# @keep transitive dependency for version alignment
+google-api-grpc-proto = { module = "com.google.api.grpc:proto-google-common-protos", version.ref = "google-api-grpc-proto" }
 google-auth-oauth2http = { module = "com.google.auth:google-auth-library-oauth2-http", version.ref = "google-auth" }
+# @keep transitive dependency for version alignment
+google-autovalue-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "google-autovalue" }
 google-cloud-bom = { module = "com.google.cloud:google-cloud-bom", version.ref = "google-cloud-bom" }
 google-cloud-core = { module = "com.google.cloud:google-cloud-core", version.ref = "google-cloud-core" }
 google-cloud-corehttp = { module = "com.google.cloud:google-cloud-core-http", version.ref = "google-cloud-core" }
 google-cloud-nio = { module = "com.google.cloud:google-cloud-nio", version.ref = "google-cloud-nio" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage", version.ref = "google-cloud-storage" }
+# @keep transitive dependency for version alignment
+google-errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "google-errorprone" }
 google-errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "google-errorprone" }
 google-guava = { module = "com.google.guava:guava", version.ref = "google-guava" }
+# @keep transitive dependency for version alignment
+google-gson = { module = "com.google.code.gson:gson", version.ref = "google-gson" }
+# @keep transitive dependency for version alignment
+google-guava-failureaccess = { module = "com.google.guava:failureaccess", version.ref = "google-failureaccess" }
+# @keep transitive dependency for version alignment
+google-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "google-protobuf" }
 google-re2j = { module = "com.google.re2j:re2j", version.ref = "google-re2j" }
+# @keep transitive dependency for version alignment
+grpc-api = { module = "io.grpc:grpc-api", version.ref = "grpc" }
 grpc-context = { module = "io.grpc:grpc-context", version.ref = "grpc" }
+# @keep transitive dependency for version alignment
+grpc-core = { module = "io.grpc:grpc-core", version.ref = "grpc" }
 grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+# @keep transitive dependency for version alignment
+grpc-protobuf-lite = { module = "io.grpc:grpc-protobuf-lite", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+# @keep transitive dependency for version alignment
+grpc-util = { module = "io.grpc:grpc-util", version.ref = "grpc" }
 hamcrest-hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 hk2-api = { module = "org.glassfish.hk2:hk2-api", version.ref = "hk2" }
 hsqldb-hsqldb = { module = "org.hsqldb:hsqldb", version.ref = "hsqldb" }
@@ -321,6 +368,10 @@ jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api",
 jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
 jakarta-ws-rsapi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakarta-ws" }
 javacc-javacc = { module = "net.java.dev.javacc:javacc", version.ref = "javacc" }
+# @keep transitive dependency for version alignment
+jaxb-txw2 = { module = "org.glassfish.jaxb:txw2", version.ref = "jaxb"}
+# @keep transitive dependency for version alignment
+jaxb-runtime = { module = "org.glassfish.jaxb:jaxb-runtime", version.ref = "jaxb"}
 jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jayway-jsonpath" }
 jctools-core = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 jersey-containers-jettyhttp = { module = "org.glassfish.jersey.containers:jersey-container-jetty-http", version.ref = "jersey-containers" }
@@ -328,25 +379,49 @@ jersey-core-common = { module = "org.glassfish.jersey.core:jersey-common", versi
 jersey-core-server = { module = "org.glassfish.jersey.core:jersey-server", version.ref = "jersey" }
 jersey-inject-hk2 = { module = "org.glassfish.jersey.inject:jersey-hk2", version.ref = "jersey" }
 jersey-media-jsonjackson = { module = "org.glassfish.jersey.media:jersey-media-json-jackson", version.ref = "jersey" }
+# @keep transitive dependency for version alignment
+jodatime-jodatime = { module = "joda-time:joda-time", version.ref = "joda-time" }
 junit-junit = { module = "junit:junit", version.ref = "junit" }
 lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
 locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-subclass = { module = "org.mockito:mockito-subclass", version.ref = "mockito" }
 navsecurity-mockoauth2server = { module = "no.nav.security:mock-oauth2-server", version.ref = "navsecurity" }
+# @keep transitive dependency for version alignment
+netty-buffer = { module = "io.netty:netty-buffer", version.ref = "netty" }
 netty-codechttp = { module = "io.netty:netty-codec-http", version.ref = "netty" }
+# @keep transitive dependency for version alignment
+netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
+# @keep transitive dependency for version alignment
+netty-transport = { module = "io.netty:netty-transport", version.ref = "netty" }
+# @keep transitive dependency for version alignment
+netty-transport-native-unix-common = { module = "io.netty:netty-transport-native-unix-common", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }
 opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api", version.ref = "opentelemetry" }
+# @keep transitive dependency for version alignment
+opentelemetry-apiincubator = { module = "io.opentelemetry:opentelemetry-api-incubator", version.ref = "opentelemetry-alpha" }
 opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry" }
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
+# @keep transitive dependency for version alignment
+opentelemetry-sdkcommon = { module = "io.opentelemetry:opentelemetry-sdk-common", version.ref = "opentelemetry" }
 opentelemetry-sdkextension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
+# @keep transitive dependency for version alignment
+opentelemetry-sdkextension-autoconfigure-spi = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi", version.ref = "opentelemetry" }
+# @keep transitive dependency for version alignment
+opentelemetry-sdklogs = { module = "io.opentelemetry:opentelemetry-sdk-logs", version.ref = "opentelemetry" }
+# @keep transitive dependency for version alignment
+opentelemetry-sdkmetrics = { module = "io.opentelemetry:opentelemetry-sdk-metrics", version.ref = "opentelemetry" }
 opentelemetry-sdktesting = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdktrace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
 osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
+# @keep transitive dependency for version alignment
+ow2-asm = { module = "org.ow2.asm:asm", version.ref = "ow2-asm" }
+# @keep transitive dependency for version alignment
+perfmark-api = { module = "io.perfmark:perfmark-api", version.ref = "perfmark" }
 prometheus-metrics-expositionformats = { module = "io.prometheus:prometheus-metrics-exposition-formats", version.ref = "prometheus-metrics" }
 prometheus-metrics-model = { module = "io.prometheus:prometheus-metrics-model", version.ref = "prometheus-metrics" }
 prometheus-simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheus-simpleclient" }

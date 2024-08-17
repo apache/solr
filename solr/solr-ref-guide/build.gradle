@@ -119,7 +119,7 @@ task buildLocalAntoraYaml {
             ["dep_version_tika", libs.versions.apache.tika],
             ["dep_version_zookeeper", libs.versions.apache.zookeeper],
             ["dep_version_lucene", libs.versions.apache.lucene],
-            ["dep_version_opentelemetry", libs.versions.opentelemetry],
+            ["dep_version_opentelemetry", libs.versions.opentelemetry.asProvider()],
         ].collectEntries { propKey, dependencyVersion ->
             [propKey, "${-> dependencyVersion == libs.versions.apache.lucene ? luceneBaseVersionProvider.get() : dependencyVersion.get()}"] })
 

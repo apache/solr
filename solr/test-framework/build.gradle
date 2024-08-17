@@ -75,4 +75,12 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
+
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609
+  compileOnly libs.aqute.bnd.annotation
+  compileOnly libs.osgi.annotation
+
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609
+  testCompileOnly libs.aqute.bnd.annotation
+  testCompileOnly libs.osgi.annotation
 }

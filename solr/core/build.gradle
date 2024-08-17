@@ -163,7 +163,7 @@ dependencies {
   implementation libs.codehaus.woodstox.stax2api
   implementation libs.fasterxml.woodstox.core
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
-  compileOnly libs.aqute.bnd.annotation
+  implementation libs.aqute.bnd.annotation
   compileOnly libs.osgi.annotation
 
   compileOnly libs.stephenc.jcip.annotations
