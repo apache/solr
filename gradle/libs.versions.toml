@@ -126,7 +126,6 @@ jersey = "3.1.8"
 jersey-containers = "2.39.1"
 # @keep for version alignment
 joda-time = "2.12.7"
-johnrengelman-shadow = "6.1.0"
 junit = "4.13.2"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -175,7 +174,6 @@ benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benma
 carrotsearch-dependencychecks = { id = "com.carrotsearch.gradle.dependencychecks", version.ref = "carrotsearch-dependencychecks" }
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
-johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "johnrengelman-shadow" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
 ltgt-errorprone = { id = "net.ltgt.errorprone", version.ref = "ltgt-errorprone" }
 morethan-jmhreport = { id = "io.morethan.jmhreport", version.ref = "morethan-jmhreport" }
@@ -313,6 +311,7 @@ eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jet
 eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
 eclipse-jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
+# @keep Used in classpath
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
 fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "fasterxml" }
 fasterxml-jackson-core-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "fasterxml" }
@@ -321,9 +320,13 @@ fasterxml-jackson-core-databind = { module = "com.fasterxml.jackson.core:jackson
 fasterxml-jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "fasterxml" }
 fasterxml-jackson-dataformat-smile = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-smile", version.ref = "fasterxml" }
 fasterxml-woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "fasterxml-woodstox" }
+# @keep Used in classpath
 flexmark-extensions-abbreviation = { module = "com.vladsch.flexmark:flexmark-ext-abbreviation", version.ref = "flexmark" }
+# @keep Used in classpath
 flexmark-extensions-attributes = { module = "com.vladsch.flexmark:flexmark-ext-attributes", version.ref = "flexmark" }
+# @keep Used in classpath
 flexmark-extensions-autolink = { module = "com.vladsch.flexmark:flexmark-ext-autolink", version.ref = "flexmark" }
+# @keep Used in classpath
 flexmark-flexmark = { module = "com.vladsch.flexmark:flexmark", version.ref = "flexmark" }
 google-api-gax = { module = "com.google.api:gax", version.ref = "google-api-gax" }
 # @keep transitive dependency for version alignment
