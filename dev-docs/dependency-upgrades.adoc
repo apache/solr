@@ -16,22 +16,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has lots of 3rd party dependencies, defined mainly in `versions.props`.
+Solr has lots of 3rd party dependencies, defined in `gradle/libs.versions.toml`.
 Keeping them up-to-date is crucial for a number of reasons:
 
 * minimizing the risk of critical CVE vulnerabilities by staying on a recent and supported version
 * avoiding "dependency hell", that can arise from falling too far behind
 
-Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dependencies.txt] file for an in-depth explanation of how gradle is deployed in Solr, using
-https://github.com/palantir/gradle-consistent-versions[Gradle consistent-versions] plugin.
+Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dependencies.txt] file for an in-depth
+explanation of how dependencies are managed.
 
 == Manual dependency upgrades
 In order to upgrade a dependency, you need to run through a number of steps:
 
 1. Identify the available versions from e.g. https://search.maven.org[Maven Central]
-2. Update the version in `versions.props` file
-3. Run `./gradlew --write-locks` to re-generate `versions.lock`. Note that this may cause a cascading effect where
+2. Update the version in `gradle/libs.versions.toml` file
+3. Run `./gradlew writeLocks` to re-generate `versions.lock`. Note that this may cause a cascading effect where
    the locked version of other dependencies also change.
+3. Update the license and notice files of the changed dependencies if necessary. See `help/dependencies.txt` for
+   details.
 4. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
 5. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
    You'll need to decide whether to keep or exclude them. See `help/dependencies.txt` for details.
@@ -39,7 +41,7 @@ In order to upgrade a dependency, you need to run through a number of steps:
 == Renovate bot Pull Requests
 A member of the Solr community operates a Github bot running https://github.com/renovatebot/renovate[Renovate], which
 files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and do include
-changes resulting from `gradle --write-locks` and `updateLicenses`.
+changes resulting from `./gradlew writeLocks` and `updateLicenses`.
 
 Community members and committers can then review, and if manual changes are needed, help bring the PR to completion.
 For many dependencies, a changelog is included in the PR text, which may help guide the upgrade decision.

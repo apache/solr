@@ -7,7 +7,7 @@ and each configuration can have dependencies attached to it.
 There are some standard conventions so, for example, the Java plugin
 adds standard configurations such as "api", "implementation",
 "testImplementation" and others. These configurations can also inherit
-from each other; more about this typic can be found here:
+from each other; more about this topic can be found here:
 
 https://docs.gradle.org/current/userguide/dependency_management_for_java_projects.html#dependency_management_for_java_projects
 https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation
@@ -29,60 +29,106 @@ testImplementation - makes a dependency only available for test  classes.
 Adding a library dependency
 ---------------------------
 
-Let's say we wish to add a dependency on library "foo.bar:baz" in
+Let's say we wish to add a new dependency on library "foo.bar:baz" in
 version 1.2 to :solr:core. Let's assume this library is only
-used internally by the project. The :solr:core project is configured
-by solr/core/build.gradle and we would add (or modify) the dependency
-block as follows:
+used internally by the project. For new dependencies, we would add
+the dependency and its version to gradle/libs.versions.toml first:
+
+[versions]
+...
+foo-bar-baz = "1.2"
+...
+
+[libraries]
+...
+foo-bar-baz = { module = "foo.bar:baz", version.ref = "foo-bar-baz" }
+
+Note that the used names separated by dashes are later referenced with dots
+instead of dashes, but more on that later.
+
+The chosen name for the module should more or less reflect the module's
+group name and module id in a way that it groups related dependencies under
+the same "prefix" (see below). There is no specific convention here and
+group prefixes for domain names like "com" and "io" are avoided, as they
+do not add any value and increase the size of the reference / alias name.
+
+The :solr:core project is configured by solr/core/build.gradle, and we would
+add (or modify) the dependency block as follows:
 
 dependencies {
-  implementation "foo.bar:baz"
+  implementation libs.foo.bar.baz
 }
+
+In the project we use the default name "libs" that is used to reference
+the version catalog gradle/libs.versions.toml.
 
 The "implementation" here is a named configuration; we don't need to declare
 it because it is declared for us by the java-library plugin.
 
-In "normal" gradle the version of the dependency would be present
-directly inside the declaration but we use a plugin
-(palantir-consistent-versions) to manage all dependency versions
-from the top-level (so that conflicts can be resolved globally).
+In case the IDE does not auto-completes the reference, you may have
+to sync your project so that the newly added library is found.
 
-If this is the first time "foo.bar:baz" is added to the project, we'd have
-to add its version to "versions.props" file at the top level of the
-checkout:
+As mentioned before, we can use the dashes to group related libraries
+together. So let's assume we have another dependency on "foo.bar:biz",
+which is part of the same project as "foo.bar:baz" and therefore share
+the same version.
 
-foo.bar:baz=1.2
+In this case we would want to use the same version for both libraries
+and add them as follows to the version catalog gradle/libs.versions.toml:
 
-and then regenerate the "versions.lock" file using the following
-command:
+[versions]
+...
+foo-bar = "1.2" # Use a shared name for both libraries
+...
 
-gradlew --write-locks
+[libraries]
+...
+foo-bar-biz = { module = "foo.bar:biz", version.ref = "foo-bar" }
+foo-bar-baz = { module = "foo.bar:baz", version.ref = "foo-bar" }
 
-IMPORTANT: The versions.lock file will contain the actual version
-of the dependency picked based on other project dependencies and
-their transitive dependencies. This selected version may be
-different from what each of these actually requires (the highest
-version number will be typically selected). To see which dependencies
-require which version of the library use:
+This way, both libraries use the same version reference and updates
+would affect both.
 
-gradlew why --hash=...
+Adding new libraries requires additional actions. The first you want
+to do is to run versionCatalogFormat to sort the version catalog.
 
-where the hash code comes from versions.lock file. For example, at
-the time of writing, jackson-databind has the following entry:
+This command does also remove unused libraries. You can use "# @keep"
+with a reason why the library should not be removed. This is sometimes
+necessary if the usage of a library is not identified by the plugin,
+like when using it with "classpath [dependency]".
 
-com.fasterxml.jackson.core:jackson-databind:2.10.0 (3 constraints: 931a7796)
+The next you want to regenerate the "versions.lock" file using the
+following command:
 
-and "gradlew why --hash=931a7796" prints:
+gradlew writeLocks
 
-com.fasterxml.jackson.core:jackson-databind:2.10.0
-        projects -> 2.10.0
-        net.thisptr:jackson-jq -> 2.7.0
-        org.carrot2:carrot2-mini -> 2.9.9.3
+Since we are responsible to provide and maintain the versions of
+libraries, the lock file will reflect the versions of the version
+catalog.
 
-Once the dependency is added it always makes sense to see the
-tree of all module dependencies and maybe exclude transitive
-dependencies of foo.bar:baz that we won't need.
+The locking will fail if multiple versions of the same dependency are found.
+This may be the case if libraries have a used library as transitive
+dependency with a different version. If that is the case, you have to add
+a constraint to the modules in gradle/dependencies.gradle with a reason
+why the constraint is applied. The below example adds a constraint for
+"foo.bar:baz" with the given version from the version catalog, enforcing
+the version to all transitive dependencies as well:
 
+dependencies {
+    ...
+    constraints { handler ->
+        consolidatedConfigurations.configureEach { Configuration conf ->
+            ...
+            handler.add(conf.name, libs.foo.bar.baz, {
+                because 'version alignment for consistency across project'
+            })
+        }
+    }
+}
+
+The hashes from the versions.lock file can be used to look up
+which modules use a specific library. Simply look up the hash in the
+versions.lock and you will find a group of modules that use it.
 
 Update Lucene prerelease
 ------------------------
@@ -100,12 +146,12 @@ If you want to upgrade Lucene to a newer build proceed like the following:
   queued)
 - remember the build number of Jenkins (left side, first build in list,
   prefixed by '#')
-- Edit ./versions.props and change Lucene's version to '9.0.0-prereleaseX',
+- Edit gradle/libs.versions.toml and change Lucene's version to '9.0.0-prereleaseX',
   with 'X' is the jenkins build number
 - Edit ./gradle/globals.gradle and change jenkins build number, too
   (this directs the repository to the one created by latest build):
     def lucenePrereleaseBuild = 'X'
-- Run: gradlew --write-locks (as described before)
+- Run: gradlew writeLocks (as described before)
 
 
 Lucene local dependency substitution
@@ -173,7 +219,7 @@ crucial for the functioning of "foo.bar:baz". We can exclude it
 by adding an exclusion block to the original declaration:
 
 dependencies {
-  implementation("foo.bar:baz", {
+  implementation(libs.foo.bar.biz, {
     exclude group: "foo.bar", module: "irrelevant"
   })
 }
@@ -194,3 +240,21 @@ gradlew licenses
 To update JAR checksums (sha1) for licenses use:
 
 gradlew updateLicenses
+
+License and notice files may be picked from the libraries' repositories.
+When looking up the libraries in Maven Central (https://search.maven.org)
+almost all projects have a direct reference to the source code (right side),
+usually a GitHub repository, where you can find the License and Notice file
+in the root directory.
+
+Remember to check out the correct tag / release before copying any license
+or notice file. Some multi-module projects that publish multiple artifacts
+may have subdirectories for each artifact. These directories sometimes
+hold a different license for that specific artifact, so make sure to copy
+the right license file.
+
+Other places where you may find a license and notice file are in the pom.xml
+file as a URL under a <license> tag if there is no reference to a repository
+in Maven Central, or in the artifact downloaded by maven when the library
+is added as a dependency (in IntelliJ IDEA the libraries can be found
+in the project view under External Libraries at the bottom).
