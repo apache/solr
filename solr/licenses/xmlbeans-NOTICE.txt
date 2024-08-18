@@ -3,11 +3,13 @@
    ==  Version 2.0, in this case for the Apache XmlBeans distribution.    ==
    =========================================================================
 
-   This product includes software developed by
+   This product includes software developed at
    The Apache Software Foundation (http://www.apache.org/).
 
    Portions of this software were originally based on the following:
      - software copyright (c) 2000-2003, BEA Systems, <http://www.bea.com/>.
+   Note: The ASF Secretary has on hand a Software Grant Agreement (SGA) from
+   BEA Systems, Inc. dated 9 Sep 2003 for XMLBeans signed by their EVP/CFO.
 
    Aside from contributions to the Apache XMLBeans project, this
    software also includes:
@@ -22,8 +24,12 @@
     - resolver.jar from Apache Xml Commons project,
       Copyright (c) 2001-2003 Apache Software Foundation
 
-    - Piccolo XML Parser for Java from http://piccolo.sourceforge.net/,
-      Copyright 2002 Yuval Oren under the terms of the Apache Software License 2.0
+ExceptionUtils is derived from `scala.util.control.NonFatal` in scala-library
+which was released under the Apache 2.0 license.
 
-    - JSR-173 Streaming API for XML from http://sourceforge.net/projects/xmlpullparser/,
-      Copyright 2005 BEA under the terms of the Apache Software License 2.0
+Copyright (c) 2002-2023 EPFL
+Copyright (c) 2011-2023 Lightbend, Inc.
+
+Scala includes software developed at
+LAMP/EPFL (https://lamp.epfl.ch/) and
+Lightbend, Inc. (https://www.lightbend.com/).

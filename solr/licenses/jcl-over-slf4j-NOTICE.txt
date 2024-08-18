@@ -1,8 +1,4 @@
-=========================================================================
-==  SLF4J Notice -- http://www.slf4j.org/license.html                  ==
-=========================================================================
-
-Copyright (c) 2004-2008 QOS.ch
+Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland)
 All rights reserved.
 
 Permission is hereby granted, free  of charge, to any person obtaining
