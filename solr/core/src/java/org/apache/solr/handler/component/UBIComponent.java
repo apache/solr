@@ -16,15 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -35,14 +29,12 @@ import java.util.Set;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
@@ -54,8 +46,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,17 +55,20 @@ import org.slf4j.LoggerFactory;
  * judgements, powering recommendation systems among others. Learn more about the UBI standard at <a
  * href="https://github.com/o19s/ubi">https://github.com/o19s/ubi</a>.
  *
- * <p>Query data is gathered by this component. Data tracked is the collection name, the end user
- * query, as json blob, and the resulting document id's.
+ * <p>The response from Solr is augmented by this component, and optionally the query details can be
+ * tracked and logged to various systems including log files or other backend systems.
  *
- * <p>Data is written out data to "ubi_queries.jsonl", a JSON with Lines formatted file, or you can
- * provide a streaming expression that is parsed and loaded by the component to stream query data to
- * a target of your choice.
+ * <p>Data tracked is the collection name, the end user query, as a JSON blob, and the resulting
+ * document id's.
+ *
+ * <p>You provide a streaming expression that is parsed and loaded by the component to stream query
+ * data to a target of your choice.
  *
  * <p>Event data is tracked by letting the user write events directly to the event repository of
- * your choice, it could be a Solr collection, it could be a file or S3 bucket.
+ * your choice, it could be a Solr collection, it could be a file or S3 bucket, and that is NOT
+ * handled by this component.
  *
- * <p>Add it to a requestHandler in solrconfig.xml like this:
+ * <p>Add the component to a requestHandler in solrconfig.xml like this:
  *
  * <pre class="prettyprint">
  * &lt;searchComponent name="ubi" class="solr.UBIComponent"/&gt;
@@ -130,18 +123,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   public static final String QUERY_ID = "query_id";
   public static final String QUERY_ATTRIBUTES = "query_attributes";
   public static final String USER_QUERY = "user_query";
-  public static final String UBI_QUERY_JSONL_LOG = "ubi_queries.jsonl";
 
   protected PluginInfo info = PluginInfo.EMPTY_INFO;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final CharArr charArr = new CharArr(1024 * 2);
-  JSONWriter jsonWriter = new JSONWriter(charArr, -1);
-  private Writer writer;
-  OutputStream fos;
 
   private StreamFactory streamFactory;
   private StreamExpression streamExpression;
+  private TupleStream stream;
 
   protected SolrParams initArgs;
   private SolrClientCache solrClientCache;
@@ -152,37 +141,21 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   }
 
   @Override
-  @SuppressWarnings({"rawtypes"})
   public void inform(SolrCore core) {
-    List<PluginInfo> children = info.getChildren("ubi");
-    String defaultZkhost = null;
     CoreContainer coreContainer = core.getCoreContainer();
     this.solrClientCache = coreContainer.getSolrClientCache();
-    if (coreContainer.isZooKeeperAware()) {
-      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
-    }
-
-    // we should provide a way to specify your own file.
-    if (children.isEmpty()) {
-      String ubiQueryJSONLLog = EnvUtils.getProperty("solr.log.dir") + "/" + UBI_QUERY_JSONL_LOG;
-      try {
-        fos = new BufferedOutputStream(new FileOutputStream(ubiQueryJSONLLog));
-      } catch (FileNotFoundException exception) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Error creating file  " + ubiQueryJSONLLog,
-            exception);
-      }
-      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-    }
 
     // do I need this check?
     if (initArgs != null) {
       log.info("Initializing UBIComponent");
       if (coreContainer.isZooKeeperAware()) {
+        String defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
         String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
 
-        if (streamQueriesExpressionFile != null) {
+        if (streamQueriesExpressionFile == null) {
+          log.info(
+              "You must provide a streamQueriesExpressionFile to enable recording UBI information.");
+        } else {
 
           LineNumberReader bufferedReader;
 
@@ -202,11 +175,10 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
             streamFactory = new StreamFactory();
 
             streamFactory.withDefaultZkHost(defaultZkhost);
-            // streamFactory.withCollectionZkHost("ubi", zkHost);
 
             Lang.register(streamFactory);
 
-            TupleStream stream = constructStream(streamFactory, streamExpression);
+            stream = constructStream(streamFactory, streamExpression);
 
             // not sure if I need this?  Except maybe, we assume let?
             // Map params = validateLetAndGetParams(stream, expr);
@@ -219,7 +191,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           }
         }
       } else {
-        log.info("Streaming UBI query data collection is only available in SolrCloud mode.");
+        log.info("UBI query data collection is only available in SolrCloud mode.");
       }
     }
   }
@@ -275,7 +247,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       IndexSchema schema,
       SolrIndexSearcher searcher)
       throws IOException {
-    charArr.reset();
     StringBuilder sb = new StringBuilder();
 
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
@@ -295,27 +266,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     ubiQueryLogInfo.add(QUERY_ATTRIBUTES, ubiQuery.getQueryAttributes());
     ubiQueryLogInfo.add("doc_ids", docIds);
 
-    if (writer != null) {
-      jsonWriter.write(ubiQueryLogInfo);
-      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
-      writer.append('\n');
-      writer.flush();
-    }
-
-    if (streamFactory != null) {
-      // streamFactory.withFunctionName("stdin", StandardInStream.class);
-      StreamContext streamContext = new StreamContext();
-      streamContext.setSolrClientCache(solrClientCache);
-      TupleStream stream;
-      // PushBackStream pushBackStream = null;
-      // stream = constructStream(streamFactory, streamExpression);
-      stream = streamFactory.constructStream(streamExpression);
-      stream.setStreamContext(streamContext);
-
-      // Map params = validateLetAndGetParams(stream, expr);
-
-      // pushBackStream = new PushBackStream(stream);
-
+    // pushBackStream = new PushBackStream(stream);
+    if (stream != null) {
       List<Tuple> tuples = getTuples(stream);
     }
   }
@@ -342,6 +294,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     return t;
   }
 
+  // this should be a shared utility method
   public static String readExpression(LineNumberReader bufferedReader, String[] args)
       throws IOException {
 

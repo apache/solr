@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.io.Lang;
@@ -68,7 +70,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
 
     final int numShards = usually() ? 2 : 1;
     final int numReplicas = usually() ? 2 : 1;
@@ -174,11 +175,11 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals("1", tuple.getString("totalIndexed"));
 
     // Check the UBI collection
-    final JsonQueryRequest requestUBI = new JsonQueryRequest().setQuery("id:4.0").setLimit(1);
+    final JsonQueryRequest requestFromUBICollection = new JsonQueryRequest().setQuery("id:4.0").setLimit(1);
 
     // Randomly grab a client, it shouldn't matter which is used to check UBI event.
     SolrClient client = getRandClient();
-    final QueryResponse responseUBI = requestUBI.process(client, UBI_COLLECTION);
+    final QueryResponse responseUBI = requestFromUBICollection.process(client, UBI_COLLECTION);
     try {
       assertEquals(0, responseUBI.getStatus());
       assertEquals(1, responseUBI.getResults().getNumFound());
@@ -205,7 +206,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
   private static String getClause(UBIQuery ubiQuery) {
     String clause = "commit(ubi,update(ubi,tuple(id=4.0," + ubiQuery.toTuple() + ")))";
-    clause = URLEncoder.encode(clause, StandardCharsets.UTF_8);
+    //String clause = "commit(ubi,update(ubi,tuple(id=4.0)))";
+    //clause = URLEncoder.encode(clause, StandardCharsets.UTF_8);
     return clause;
   }
 
@@ -316,5 +318,12 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
    */
   private static SolrClient getRandClient() {
     return CLIENTS.get(random().nextInt(CLIENTS.size()));
+  }
+
+  private static String readLastLineOfFile(File file) throws IOException {
+    try (ReversedLinesFileReader reader =
+        ReversedLinesFileReader.builder().setFile(file).setCharset(StandardCharsets.UTF_8).get()) {
+      return reader.readLine();
+    }
   }
 }
