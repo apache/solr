@@ -39,7 +39,7 @@
   </searchComponent>
 
   <!-- Log retrievedDocs -->
-  <requestHandler name="/withubi" class="org.apache.solr.handler.component.SearchHandler">
+  <requestHandler name="/with_ubi" class="org.apache.solr.handler.component.SearchHandler">
     <lst name="defaults">
       <str name="defType">dismax</str>
     </lst>
@@ -54,7 +54,7 @@
     </lst>
   </requestHandler>
 
-  <initParams path="/withubi,/noubi">
+  <initParams path="/with_ubi,/no_ubi">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

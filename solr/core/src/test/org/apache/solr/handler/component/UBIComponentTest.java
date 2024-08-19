@@ -32,27 +32,27 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testToLogIds() {
+  public void testGeneratingAQueryId() {
     assertQ(
         "Make sure we generate a query id",
-        req("qt", "/withubi", "q", "aa", "rows", "2", "ubi", "true"),
+        req("qt", "/with_ubi", "q", "aa", "rows", "2", "ubi", "true"),
         "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
   @Test
-  public void testZeroResults() {
+  public void testZeroResultsGeneratesQueryId() {
     assertQ(
         "Make sure we generate a query id even when no results are returned",
-        req("qt", "/withubi", "q", "abcdefgxyz", "rows", "0", "ubi", "true"),
+        req("qt", "/with_ubi", "q", "abcdefgxyz", "rows", "0", "ubi", "true"),
         "//*[@numFound='0']",
         "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
   @Test
-  public void testPassedInQueryId() {
+  public void testPassedInQueryIdIsUsed() {
     assertQ(
         "Make sure we reuse a passed in query id",
-        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true", "query_id", "123abc"),
+        req("qt", "/with_ubi", "q", "aa", "rows", "0", "ubi", "true", "query_id", "123abc"),
         "//lst[@name='ubi']/str[@name='query_id'][.='123abc']");
   }
 
@@ -60,7 +60,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   public void testGenerateQueryId() {
     assertQ(
         "Make sure we generate a query id if one is not passed in",
-        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true"),
+        req("qt", "/with_ubi", "q", "aa", "rows", "0", "ubi", "true"),
         "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
@@ -69,7 +69,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt",
-            "/withubi",
+            "/with_ubi",
             "json",
             "{\n"
                 + "    'query': 'aa',\n"
@@ -78,7 +78,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
                 + "    'limit': 2,\n"
                 + "    'params': {\n"
                 + "    'df': 'subject',\n"
-                + "    'qt': '/withubi',\n"
+                + "    'qt': '/with_ubi',\n"
                 + "    'ubi': 'true'\n"
                 + "   }\n"
                 + "}"),
@@ -88,7 +88,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
     assertJQ(
         req(
             "qt",
-            "/withubi",
+            "/with_ubi",
             "json",
             "{\n"
                 + "    'query': 'aa',\n"
@@ -114,7 +114,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   public void testTrackingOfUserQuery() {
     assertQ(
         "Make sure we generate a query id",
-        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true", "user_query", "fresh air"),
+        req("qt", "/with_ubi", "q", "aa", "rows", "0", "ubi", "true", "user_query", "fresh air"),
         "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
@@ -122,7 +122,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   public void testDisabling() {
     assertQ(
         "Make sure we don't generate a query_id",
-        req("qt", "/withubi", "q", "aa", "ubi", "false"),
+        req("qt", "/with_ubi", "q", "aa", "ubi", "false"),
         "count(//lst[@name='ubi'])=0");
   }
 }

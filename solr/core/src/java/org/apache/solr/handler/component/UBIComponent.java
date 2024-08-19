@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
@@ -128,12 +129,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private StreamFactory streamFactory;
-  private StreamExpression streamExpression;
   private TupleStream stream;
 
   protected SolrParams initArgs;
-  private SolrClientCache solrClientCache;
 
   @Override
   public void init(NamedList<?> args) {
@@ -143,13 +141,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   @Override
   public void inform(SolrCore core) {
     CoreContainer coreContainer = core.getCoreContainer();
-    this.solrClientCache = coreContainer.getSolrClientCache();
+    SolrClientCache solrClientCache = coreContainer.getSolrClientCache();
 
     // do I need this check?
     if (initArgs != null) {
       log.info("Initializing UBIComponent");
       if (coreContainer.isZooKeeperAware()) {
-        String defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
+        String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();
         String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
 
         if (streamQueriesExpressionFile == null) {
@@ -171,14 +169,19 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
             bufferedReader.close();
 
-            streamExpression = StreamExpressionParser.parse(expr);
-            streamFactory = new StreamFactory();
+            StreamContext streamContext = new StreamContext();
 
-            streamFactory.withDefaultZkHost(defaultZkhost);
+            streamContext.setSolrClientCache(solrClientCache);
+
+            StreamExpression streamExpression = StreamExpressionParser.parse(expr);
+            StreamFactory streamFactory = new StreamFactory();
+
+            streamFactory.withDefaultZkHost(defaultZkHost);
 
             Lang.register(streamFactory);
 
             stream = constructStream(streamFactory, streamExpression);
+            stream.setStreamContext(streamContext);
 
             // not sure if I need this?  Except maybe, we assume let?
             // Map params = validateLetAndGetParams(stream, expr);
@@ -251,10 +254,11 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     for (DocIterator iter = dl.iterator(); iter.hasNext(); ) {
-
-      sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields))).append(',');
+      sb.append(schema.printableUniqueKey(searcher.getDocFetcher().doc(iter.nextDoc(), fields)))
+          .append(',');
     }
     String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
+
     SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
     SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
     ubiResponseInfo.add(QUERY_ID, ubiQuery.getQueryId());
@@ -268,6 +272,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     // pushBackStream = new PushBackStream(stream);
     if (stream != null) {
+      // getTuples invokes the streaming expression.
       List<Tuple> tuples = getTuples(stream);
     }
   }

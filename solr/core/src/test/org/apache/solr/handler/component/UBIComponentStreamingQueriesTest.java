@@ -19,8 +19,6 @@ package org.apache.solr.handler.component;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -131,7 +129,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals("commit failed", 0, cluster.getSolrClient().commit(UBI_COLLECTION).getStatus());
   }
 
-  public void testWritingStreamingExpression() {
+  public void testCreatingStreamingExpression() {
     UBIQuery ubiQuery = new UBIQuery("5678");
     ubiQuery.setUserQuery("Apple Memory");
 
@@ -139,10 +137,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals(
         "Check the decoded version for ease of comparison",
         "commit(ubi,update(ubi,tuple(id=4.0,query_id=5678,user_query=Apple Memory)))",
-        URLDecoder.decode(clause, StandardCharsets.UTF_8));
-    assertEquals(
-        "Verify the encoded version",
-        "commit%28ubi%2Cupdate%28ubi%2Ctuple%28id%3D4.0%2Cquery_id%3D5678%2Cuser_query%3DApple+Memory%29%29%29",
         clause);
   }
 
@@ -175,7 +169,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals("1", tuple.getString("totalIndexed"));
 
     // Check the UBI collection
-    final JsonQueryRequest requestFromUBICollection = new JsonQueryRequest().setQuery("id:4.0").setLimit(1);
+    final JsonQueryRequest requestFromUBICollection =
+        new JsonQueryRequest().setQuery("id:4.0").setLimit(1);
 
     // Randomly grab a client, it shouldn't matter which is used to check UBI event.
     SolrClient client = getRandClient();
@@ -205,16 +200,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   }
 
   private static String getClause(UBIQuery ubiQuery) {
-    String clause = "commit(ubi,update(ubi,tuple(id=4.0," + ubiQuery.toTuple() + ")))";
-    //String clause = "commit(ubi,update(ubi,tuple(id=4.0)))";
-    //clause = URLEncoder.encode(clause, StandardCharsets.UTF_8);
-    return clause;
-  }
-
-  private static String getClause() {
-
-    String clause = "commit(ubi,update(ubi,tuple(id=add(1,3), name_s=bob)))";
-    return clause;
+    return "commit(ubi,update(ubi,tuple(id=4.0," + ubiQuery.toTuple() + ")))";
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -254,7 +240,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     // Check the UBI collection
     final JsonQueryRequest requestUBI = new JsonQueryRequest().setQuery("id:49").setLimit(1);
 
-    // Randomly grab a client, it shouldn't matter which is used to check UBI event.
+    // Randomly grab a client, it shouldn't matter which is used, to check UBI event was actually
+    // tracked.
     client = getRandClient();
     final QueryResponse responseUBI = requestUBI.process(client, UBI_COLLECTION);
     try {
