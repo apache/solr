@@ -18,7 +18,7 @@ package org.apache.solr.common.params;
 
 /**
  * SolrParams wrapper which acts similar to DefaultSolrParams except that it "appends" the values of
- * multi-value params from both sub instances, so that all of the values are returned.
+ * multi-value params from both sub instances, so that all the values are returned.
  */
 public class AppendedSolrParams extends DefaultSolrParams {
 

@@ -26,7 +26,7 @@ public class ByteUtils {
   public static final int MAX_UTF8_BYTES_PER_CHAR = 3;
 
   /**
-   * Converts utf8 to utf16 and returns the number of 16 bit Java chars written. Full characters are
+   * Converts utf8 to utf16 and returns the number of 16-bit Java chars written. Full characters are
    * read, even if this reads past the length passed (and can result in an ArrayOutOfBoundsException
    * if invalid UTF8 is passed). Explicit checks for valid UTF8 are not performed. The char[] out
    * should probably have enough room to hold the worst case of each byte becoming a Java char.
@@ -147,7 +147,7 @@ public class ByteUtils {
       final int code = (int) s.charAt(i);
 
       if (upto > scratch.length - 4) {
-        // a code point may take upto 4 bytes and we don't have enough space, so reset
+        // a code point may take up to 4 bytes, and we don't have enough space, so reset
         totalBytes += upto;
         if (fos == null) throw new IOException("buffer over flow");
         fos.write(scratch, 0, upto);
