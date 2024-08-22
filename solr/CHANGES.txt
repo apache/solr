@@ -123,6 +123,9 @@ Optimizations
 
 * SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
+* SOLR-17408: COLSTATUS command was fetching details remotely from replicas when this information
+  wasn't asked for. (Mathieu Marie)
+
 Bug Fixes
 ---------------------
 (No changes)
