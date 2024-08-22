@@ -116,7 +116,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     systemSetPropertySolrDisableUrlAllowList("true");
-    //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
     // useFactory(null); // force an FS factory.
     leader = new SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
@@ -1798,6 +1798,138 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       }
       fail("timed out waiting for collection1 startAt time to exceed: " + min);
       return min; // compilation neccessity
+    }
+  }
+
+  @Test
+  public void doTestIndexFollowerAfterRestartWhenReplicationIsDisabled() throws Exception {
+    // failed before changes to IndexFetcher
+    testReplicationRestartFollower("disablereplication");
+  }
+
+  @Test
+  public void doTestIndexFollowerAfterRestartWhenReplicationIsEnabled() throws Exception {
+    testReplicationRestartFollower("enablereplication");
+  }
+
+  private void testReplicationRestartFollower(String replicationCmd) throws Exception {
+    useFactory(null);
+    try {
+      clearIndexWithReplication();
+      // change solrconfig having 'replicateAfter startup' option on leader
+      leader.copyConfigFile(CONF_DIR + "solrconfig-leader2.xml", "solrconfig.xml");
+
+      leaderJetty.stop();
+      final TimeOut waitForLeaderToShutdown =
+              new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForLeaderToShutdown.waitFor(
+              "Gave up after waiting an obscene amount of time for leader to shut down",
+              () -> leaderJetty.isStopped());
+
+      leaderJetty.start();
+      final TimeOut waitForLeaderToStart = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForLeaderToStart.waitFor(
+              "Gave up after waiting an obscene amount of time for leader to start",
+              () -> leaderJetty.isRunning());
+
+      // close and re-create leader client because its connection pool has stale connections
+      leaderClient.close();
+      leaderClient =
+              createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+
+      NamedList<Object> leaderQueryRsp = rQuery(0, "*:*", leaderClient);
+      SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
+      assertEquals(0, numFound(leaderQueryRsp));
+
+      // get docs from follower and check if number is equal to leader
+      NamedList<Object> followerQueryRsp = rQuery(0, "*:*", followerClient);
+      SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
+      assertEquals(0, numFound(followerQueryRsp));
+
+
+      // compare results
+      String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
+      assertNull(cmp);
+
+      nDocs--;
+      for (int i = 0; i < nDocs; i++)
+        index(leaderClient, "id", i, "name", "name = " + i);
+
+      leaderClient.commit();
+
+      leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+      leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
+      assertEquals(nDocs, numFound(leaderQueryRsp));
+
+      // get docs from follower and check if number is equal to leader
+      followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+      followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
+      assertEquals(nDocs, numFound(followerQueryRsp));
+
+      // compare results
+      cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
+      assertNull(cmp);
+
+      String timesReplicatedString = getFollowerDetails("timesIndexReplicated");
+      String timesFailed;
+      Integer previousTimesFailed = null;
+      if (timesReplicatedString == null) {
+        timesFailed = "0";
+      } else {
+        int timesReplicated = Integer.parseInt(timesReplicatedString);
+        timesFailed = getFollowerDetails("timesFailed");
+        if (null == timesFailed) {
+          timesFailed = "0";
+        }
+
+        previousTimesFailed = Integer.parseInt(timesFailed);
+        // Sometimes replication will fail because leader's core is still loading; make sure there
+        // was one success
+        assertEquals(1, timesReplicated - previousTimesFailed);
+      }
+
+      followerJetty.stop();
+
+      invokeReplicationCommand(
+              buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, replicationCmd);
+
+      final TimeOut waitForFollowerToShutdown =
+              new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForFollowerToShutdown.waitFor(
+              "Gave up after waiting an obscene amount of time for leader to shut down",
+              () -> followerJetty.isStopped());
+
+
+      log.info("FOLLOWER START ********************************************");
+      followerJetty.start();
+
+      final TimeOut waitForFollowerToStart = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForFollowerToStart.waitFor(
+              "Gave up after waiting an obscene amount of time for leader to start",
+              () -> followerJetty.isRunning());
+
+      // poll interval on follower is 1 second, so we just sleep for a few seconds
+      Thread.sleep(3000);
+      followerClient.close();
+      followerClient =
+              createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+      NamedList<Object> details = getDetails(followerClient);
+
+      leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
+      leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
+      assertEquals(nDocs, numFound(leaderQueryRsp));
+
+      // get docs from follower and check if number is equal to leader
+      followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
+      followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
+      assertEquals(nDocs, numFound(followerQueryRsp));
+
+      // compare results again
+      cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
+      assertNull(cmp);
+
+    } finally {
+      resetFactory();
     }
   }
 

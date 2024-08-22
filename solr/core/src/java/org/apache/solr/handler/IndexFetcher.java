@@ -557,6 +557,12 @@ public class IndexFetcher {
             IndexDeletionPolicyWrapper.getCommitTimestamp(commit)); // nowarn
       }
 
+      // Leader's version is 0 and generation is 0 -  not open for replication
+      if (latestVersion == 0L && latestGeneration == 0L) {
+        log.info("Leader's version is 0 and generation is 0 -  not open for replication");
+        return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
+      }
+
       if (latestVersion == 0L) {
         if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) != 0L) {
           // since we won't get the files for an empty index,
