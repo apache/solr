@@ -17,8 +17,8 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 
@@ -81,7 +81,12 @@ public class QueryCommand {
    * @throws IllegalArgumentException if filter is not null.
    */
   public QueryCommand setFilterList(List<Query> filterList) {
-    this.filterList = filterList;
+    if (filterList.size() > 1) {
+      // Deduplicate the filter list
+      this.filterList = List.copyOf(Set.copyOf(filterList));
+    } else {
+      this.filterList = filterList;
+    }
     return this;
   }
 
@@ -93,8 +98,7 @@ public class QueryCommand {
   public QueryCommand setFilterList(Query f) {
     filterList = null;
     if (f != null) {
-      filterList = new ArrayList<>(2);
-      filterList.add(f);
+      filterList = List.of(f);
     }
     return this;
   }
