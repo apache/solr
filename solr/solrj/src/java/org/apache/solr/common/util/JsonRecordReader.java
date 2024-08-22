@@ -319,17 +319,17 @@ public class JsonRecordReader {
         throws IOException {
 
       final boolean isRecordStarted = recordStarted || isRecord;
-      Set<String> valuesAddedinThisFrame = null;
+      Set<String> valuesAddedInThisFrame = null;
       if (isRecord || !recordStarted) {
         // This Node is a match for an PATH from a forEach attribute,
         // prepare for the cleanup that will occur when the record
         // is emitted after its END_ELEMENT is matched
-        valuesAddedinThisFrame = new HashSet<>();
-        stack.push(valuesAddedinThisFrame);
+        valuesAddedInThisFrame = new HashSet<>();
+        stack.push(valuesAddedInThisFrame);
       } else if (recordStarted) {
         // This node is a child of some parent which matched against forEach
         // attribute. Continue to add values to an existing record.
-        valuesAddedinThisFrame = stack.peek();
+        valuesAddedInThisFrame = stack.peek();
       }
 
       class Wrapper extends MethodFrameWrapper {
@@ -410,7 +410,7 @@ public class JsonRecordReader {
               Object val = parseSingleFieldValue(event, parser, runnable);
               if (val != null) {
                 putValue(values, nameInRecord, val);
-                valuesAddedinThisFrame.add(nameInRecord);
+                valuesAddedInThisFrame.add(nameInRecord);
               }
 
             } else {
@@ -440,7 +440,7 @@ public class JsonRecordReader {
         }
       } finally {
         if ((isRecord() || !isRecordStarted)) {
-          for (String fld : valuesAddedinThisFrame) {
+          for (String fld : valuesAddedInThisFrame) {
             values.remove(fld);
           }
         }
