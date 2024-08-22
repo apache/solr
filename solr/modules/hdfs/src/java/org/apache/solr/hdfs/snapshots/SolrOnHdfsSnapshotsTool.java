@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  * <p>For general purpose snapshot tooling see the related classes in the {@link
  * org.apache.solr.cli} package.
  */
-public class SolrSnapshotsTool implements Closeable, CLIO {
+public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String PREPARE_FOR_EXPORT = "prepare-snapshot-export";
@@ -86,7 +86,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   private final CloudSolrClient solrClient;
 
-  public SolrSnapshotsTool(String solrZkEnsemble) {
+  public SolrOnHdfsSnapshotsTool(String solrZkEnsemble) {
     solrClient =
         new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty())
             .build();
@@ -296,8 +296,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
 
     if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
-      try (SolrSnapshotsTool tool =
-          new SolrSnapshotsTool(requiredArg(options, cmd, SOLR_ZK_ENSEMBLE))) {
+      try (SolrOnHdfsSnapshotsTool tool =
+          new SolrOnHdfsSnapshotsTool(requiredArg(options, cmd, SOLR_ZK_ENSEMBLE))) {
         if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
           String snapshotName = cmd.getOptionValue(PREPARE_FOR_EXPORT);
           String collectionName = requiredArg(options, cmd, COLLECTION);
@@ -372,11 +372,11 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         "prepare-snapshot-export.sh --prepare-snapshot-export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath -i req_0 \n");
 
     HelpFormatter formatter = new HelpFormatter();
-    formatter.setOptionComparator(new OptionComarator<>());
-    formatter.printHelp("SolrSnapshotsTool", null, options, helpFooter.toString(), false);
+    formatter.setOptionComparator(new OptionComparator<>());
+    formatter.printHelp("SolrOnHdfsSnapshotsTool", null, options, helpFooter.toString(), false);
   }
 
-  private static class OptionComarator<T extends Option> implements Comparator<T> {
+  private static class OptionComparator<T extends Option> implements Comparator<T> {
 
     @Override
     public int compare(T o1, T o2) {
