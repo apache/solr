@@ -18,7 +18,7 @@
 Solr server
 ------------
 
-This directory contains an instance of the Jetty Servlet container setup to 
+This directory contains an instance of the Jetty Servlet container setup to
 run Solr.
 
 To run Solr:
@@ -88,19 +88,19 @@ Notes About Solr Examples
 ### SolrHome
 
 By default, start.jar starts Solr in Jetty using the default Solr Home
-directory of "./solr/" (relative to the working directory of the servlet 
+directory of "./solr/" (relative to the working directory of the servlet
 container).
 
 ### References to Jar Files Outside This Directory
 
 Various example SolrHome dirs contained in this directory may use "<lib>"
-statements in the solrconfig.xml file to reference plugin jars outside of 
+statements in the solrconfig.xml file to reference plugin jars outside of
 this directory for loading modules via relative paths.  
 
-If you make a copy of this example server and wish to use the 
+If you make a copy of this example server and wish to use the
 ExtractingRequestHandler (SolrCell), the clustering component,
 or any other modules, you will need to
-copy the required jars or update the paths to those jars in your 
+copy the required jars or update the paths to those jars in your
 solrconfig.xml.
 
 ### Logging
@@ -109,6 +109,5 @@ By default, Jetty & Solr will log to the console and logs/solr.log. This can
 be convenient when first getting started, but eventually you will want to
 log just to a file. To configure logging, edit the log4j2.xml file in
 "resources".
- 
-It is also possible to setup log4j or other popular logging frameworks.
 
+It is also possible to setup log4j or other popular logging frameworks.

@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 set -e
 
-echo "This command is deprecated in favour of bin/solr equivalents and will be removed in Solr 10."
-
-run_solr_snapshot_tool() {
-  JVM="java"
-  scriptDir=$(dirname "$0")
-  if [ -n "$LOG4J_PROPS" ]; then
-    log4j_config="file:${LOG4J_PROPS}"
-  else
-    log4j_config="file:${scriptDir}/../../resources/log4j2-console.xml"
-  fi
-  PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
-  -classpath "${solrLibPath}" org.apache.solr.hdfs.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
-}
-
 usage() {
- run_solr_snapshot_tool --help
+ echo "This script is to support the specific use case of using Hadoop specific libraries for managing Solr snapshot."
+ echo "--prepare-snapshot-export <arg>   This command will prepare"
+ echo "                                copylistings for the specified"
+ echo "                                snapshot. This command should only"
+ echo "                                be used only if Solr is deployed"
+ echo "                                with Hadoop and collection index"
+ echo "                                files are stored on a shared"
+ echo "                                file-system e.g. HDFS"
+ echo "--export <arg>                    This command will create a backup"
+ echo "                                for the specified snapshot."
 }
 
 distcp_warning() {
@@ -25,9 +34,13 @@ distcp_warning() {
         Do you want to use hadoop distcp tool for exporting Solr collection snapshot ?"
 }
 
+use_bin_solr_warning() {
+  echo "Please use the bin/solr script to execute this command."
+}
+
 parse_options() {
   OPTIND=3
-  while getopts ":c:d:s:z:p:r:i:" o ; do
+  while getopts ":c:d:s:" o ; do
     case "${o}" in
       d)
         destPath=${OPTARG}
@@ -38,18 +51,6 @@ parse_options() {
       c)
         collectionName=${OPTARG}
         ;;
-      z)
-        solrZkEnsemble=${OPTARG}
-        ;;
-      p)
-        pathPrefix=${OPTARG}
-        ;;
-      r)
-        backupRepoName=${OPTARG}
-        ;;
-      i)
-        aysncReqId=${OPTARG}
-        ;;
       *)
         echo "Unknown option ${OPTARG}"
         usage 1>&2
@@ -57,6 +58,18 @@ parse_options() {
         ;;
     esac
   done
+}
+
+run_solr_snapshot_tool() {
+  JVM="java"
+  scriptDir=$(dirname "$0")
+  if [ -n "$LOG4J_PROPS" ]; then
+    log4j_config="file:${LOG4J_PROPS}"
+  else
+    log4j_config="file:${scriptDir}/../../../server/resources/log4j2-console.xml"
+  fi
+  PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
+  -classpath "${solrLibPath}" org.apache.solr.hdfs.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
 }
 
 prepare_snapshot_export() {
@@ -97,8 +110,6 @@ copy_snapshot_files() {
 }
 
 collectionName=""
-solrZkEnsemble=""
-pathPrefix=""
 destPath=""
 sourcePath=""
 cmd="$1"
@@ -106,20 +117,19 @@ snapshotName="$2"
 copyListingDirPath=""
 distCpCmd="${SOLR_DISTCP_CMD:-hadoop distcp}"
 scriptDir=$(dirname "$0")
-solrLibPath="${SOLR_LIB_PATH:-${scriptDir}/../../solr-webapp/webapp/WEB-INF/lib/*:${scriptDir}/../../lib/ext/*:${scriptDir}/../../../modules/hdfs/lib/*}"
-
+solrLibPath="${SOLR_LIB_PATH:-${scriptDir}/../../../server/solr-webapp/webapp/WEB-INF/lib/*:${scriptDir}/../../../server/lib/ext/*:${scriptDir}/../lib/*}"
 case "${cmd}" in
   --create)
-    run_solr_snapshot_tool "$@"
+    use_bin_solr_warning
     ;;
   --delete)
-    run_solr_snapshot_tool "$@"
+    use_bin_solr_warning
     ;;
   --list)
-    run_solr_snapshot_tool "$@"
+    use_bin_solr_warning
     ;;
   --describe)
-    run_solr_snapshot_tool "$@"
+    use_bin_solr_warning
     ;;
   --prepare-snapshot-export)
     : "${SOLR_USE_DISTCP:? $(distcp_warning)}"
@@ -134,7 +144,8 @@ case "${cmd}" in
     ;;
   --export)
     if [ -z "${SOLR_USE_DISTCP}" ]; then
-      run_solr_snapshot_tool "$@"
+      echo "Not using the distcp command"
+      use_bin_solr_warning
       echo "Done. GoodBye!"
       exit 0
     fi
@@ -167,7 +178,7 @@ case "${cmd}" in
 
     echo "Done. GoodBye!"
     ;;
-  --help|-h|-help)
+  --help|-h)
     usage 1>&2
     ;;
   *)

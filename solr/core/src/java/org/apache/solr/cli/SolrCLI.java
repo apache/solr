@@ -325,6 +325,11 @@ public class SolrCLI implements CLIO {
     else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
     else if ("post".equals(toolType)) return new PostTool();
+    else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool();
+    else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool();
+    else if ("snapshot-list".equals(toolType)) return new SnapshotListTool();
+    else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool();
+    else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -568,7 +573,11 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, zk, auth, assert, config, export, api, package, post");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, auth, assert, config, export, api, package, post, ");
+    print(
+        "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
+    print(
+        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");
