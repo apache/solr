@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -103,9 +103,9 @@ public class ClientUtils {
   }
 
   private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+    URI oldURI = URI.create(basePath);
+    String newPath = oldURI.getPath().replaceFirst("/solr", "/api");
+    return oldURI.resolve(newPath).toString();
   }
 
   // ------------------------------------------------------------------------

@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
 import java.util.Locale;
 import java.util.Random;
 import org.apache.http.Header;
@@ -90,9 +90,8 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   public void testAdminUI() throws Exception {
     // Currently not an extensive test, but it does fire up the JSP pages and make
     // sure they compile ok
-
     String adminPath = "http://127.0.0.1:" + port + context + "/";
-    try (InputStream is = new URL(adminPath).openStream()) {
+    try (InputStream is = URI.create(adminPath).toURL().openStream()) {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }
 

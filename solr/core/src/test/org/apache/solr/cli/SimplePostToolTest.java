@@ -92,7 +92,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
 
     assertEquals(
         "http://user:password@localhost:5150/solr/update?param1=foo&param2=bar",
-        t_test.solrUrl.toExternalForm());
+        t_test.solrUrl.toString());
   }
 
   @Test
@@ -109,19 +109,22 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   public void testComputeFullUrl() throws MalformedURLException {
     assertEquals(
         "http://[ff01::114]/index.html",
-        t_web.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
+        t_web.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        t_web.computeFullUrl(new URL("http://[ff01::114]/foo/bar/"), "/index.html"));
+        t_web.computeFullUrl(URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
-        t_web.computeFullUrl(new URL("http://[ff01::114]/foo.htm?baz#hello"), "fil.html"));
+        t_web.computeFullUrl(
+            URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(t_web.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
-    assertNull(t_web.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
-    assertNull(t_web.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
+    assertNull(t_web.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(
+        t_web.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+    assertNull(
+        t_web.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -153,10 +156,10 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAppendUrlPath() throws MalformedURLException {
+  public void testAppendUrlPath() throws URISyntaxException {
     assertEquals(
-        new URL("http://[ff01::114]/a?foo=bar"),
-        SimplePostTool.appendUrlPath(new URL("http://[ff01::114]?foo=bar"), "/a"));
+        URI.create("http://[ff01::114]/a?foo=bar"),
+        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
   }
 
   @Test
@@ -198,8 +201,10 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRobotsExclusion() throws MalformedURLException {
-    assertFalse(t_web.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
-    assertTrue(t_web.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
+    assertFalse(t_web.pageFetcher.isDisallowedByRobots(URI.create("http://[ff01::114]/").toURL()));
+    assertTrue(
+        t_web.pageFetcher.isDisallowedByRobots(
+            URI.create("http://[ff01::114]/disallowed").toURL()));
     assertEquals(
         "There should be two entries parsed from robots.txt",
         2,
@@ -277,7 +282,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
+    public Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URI postUri) {
       Set<URI> s = linkMap.get(SimplePostTool.normalizeUrlEnding(u.toString()));
       if (s == null) s = new HashSet<>();
       return s;
