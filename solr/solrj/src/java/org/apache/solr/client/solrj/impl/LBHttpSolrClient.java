@@ -38,7 +38,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * but this class may be used for updates because the server will forward them to the appropriate
  * leader.
  *
- * <p>It offers automatic failover when a server goes down and it detects when the server comes back
+ * <p>It offers automatic failover when a server goes down, and it detects when the server comes back
  * up.
  *
  * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
@@ -85,7 +85,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * LBHttpSolrClient.Builder#setAliveCheckInterval(int)}. The default is set to one minute.
  *
  * <p><b>When to use this?</b><br>
- * This can be used as a software load balancer when you do not wish to setup an external load
+ * This can be used as a software load balancer when you do not wish to set up an external load
  * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
  * httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>

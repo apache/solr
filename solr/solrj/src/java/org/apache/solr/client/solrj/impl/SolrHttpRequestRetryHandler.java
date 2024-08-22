@@ -167,7 +167,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
 
   protected boolean handleAsIdempotent(final HttpClientContext context) {
     String method = context.getRequest().getRequestLine().getMethod();
-    // do not retry admin requests, even if they are GET as they are not idempotent
+    // do not retry admin requests, even if they are GET requests as they are not idempotent
     if (context.getRequest().getRequestLine().getUri().startsWith("/admin/")) {
       log.debug("Do not retry, this is an admin request");
       return false;

@@ -432,7 +432,7 @@ public abstract class LBSolrClient extends SolrClient {
    *
    * <p>If no live servers are found a SolrServerException is thrown.
    *
-   * @param req contains both the request as well as the list of servers to query
+   * @param req contains both the request and the list of servers to query
    * @return the result of the request
    * @throws IOException If there is a low-level I/O error.
    */
@@ -590,7 +590,7 @@ public abstract class LBSolrClient extends SolrClient {
       QueryResponse resp = queryRequest.process(getClient(zombieEndpoint), effectiveCollection);
       if (resp.getStatus() == 0) {
         // server has come back up.
-        // make sure to remove from zombies before adding to alive to avoid a race condition
+        // make sure to remove from zombies before adding to the alive list to avoid a race condition
         // where another thread could mark it down, move it back to zombie, and then we delete
         // from zombie and lose it forever.
         EndpointWrapper wrapper = zombieServers.remove(zombieServer.getEndpoint().toString());
@@ -722,7 +722,7 @@ public abstract class LBSolrClient extends SolrClient {
         final String effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
         NamedList<Object> rsp = getClient(endpoint).request(request, effectiveCollection);
-        // remove from zombie list *before* adding to alive to avoid a race that could lose a server
+        // remove from zombie list *before* adding to the alive list to avoid a race that could lose a server
         zombieServers.remove(endpoint.getUrl());
         addToAlive(wrapper);
         return rsp;
@@ -764,7 +764,7 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   /**
-   * Pick a server from list to execute request. By default servers are picked in round-robin
+   * Pick a server from list to execute request. By default, servers are picked in round-robin
    * manner, custom classes can override this method for more advance logic
    *
    * @param aliveServerList list of currently alive servers
