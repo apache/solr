@@ -366,14 +366,13 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
   }
 
   private static void printHelp(Options options) {
-    StringBuilder helpFooter = new StringBuilder();
-    helpFooter.append("Examples: \n");
-    helpFooter.append(
-        "prepare-snapshot-export.sh --prepare-snapshot-export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath -i req_0 \n");
+    String helpFooter =
+        "Examples: \n"
+            + "prepare-snapshot-export.sh --prepare-snapshot-export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath -i req_0 \n";
 
     HelpFormatter formatter = new HelpFormatter();
     formatter.setOptionComparator(new OptionComparator<>());
-    formatter.printHelp("SolrOnHdfsSnapshotsTool", null, options, helpFooter.toString(), false);
+    formatter.printHelp("SolrOnHdfsSnapshotsTool", null, options, helpFooter, false);
   }
 
   private static class OptionComparator<T extends Option> implements Comparator<T> {
