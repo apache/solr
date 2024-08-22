@@ -24,8 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +31,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
@@ -60,40 +57,30 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** This class provides utility functions required for Solr snapshots functionality. */
+/**
+ * This class provides utility functions required for Solr on HDFS specific snapshots'
+ * functionality.
+ *
+ * <p>For general purpose snapshot tooling see the related classes in the {@link
+ * org.apache.solr.cli} package.
+ */
 public class SolrSnapshotsTool implements Closeable, CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final DateFormat dateFormat =
-      new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.getDefault());
 
-  private static final String CREATE = "create";
-  private static final String DELETE = "delete";
-  private static final String LIST = "list";
-  private static final String DESCRIBE = "describe";
   private static final String PREPARE_FOR_EXPORT = "prepare-snapshot-export";
-  private static final String EXPORT_SNAPSHOT = "export";
   private static final String HELP = "help";
   private static final String COLLECTION = "c";
   private static final String TEMP_DIR = "t";
   private static final String DEST_DIR = "d";
   private static final String SOLR_ZK_ENSEMBLE = "z";
   private static final String HDFS_PATH_PREFIX = "p";
-  private static final String BACKUP_REPO_NAME = "r";
-  private static final String ASYNC_REQ_ID = "i";
   private static final List<String> OPTION_HELP_ORDER =
       Arrays.asList(
-          CREATE,
-          DELETE,
-          LIST,
-          DESCRIBE,
           PREPARE_FOR_EXPORT,
-          EXPORT_SNAPSHOT,
           HELP,
           SOLR_ZK_ENSEMBLE,
           COLLECTION,
           DEST_DIR,
-          BACKUP_REPO_NAME,
-          ASYNC_REQ_ID,
           TEMP_DIR,
           HDFS_PATH_PREFIX);
 
@@ -112,147 +99,10 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  /**
-   * @deprecated use equivalent snapshot related tool in {@link
-   *     org.apache.solr.cli.SnapshotCreateTool}
-   */
-  @Deprecated(since = "9.8.0")
-  public void createSnapshot(String collectionName, String snapshotName) {
-    CollectionAdminRequest.CreateSnapshot createSnap =
-        new CollectionAdminRequest.CreateSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
-    try {
-      resp = createSnap.process(solrClient);
-      if (resp.getStatus() != 0) {
-        throw new IllegalStateException(
-            "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
-      }
-      CLIO.out(
-          "Successfully created snapshot with name "
-              + snapshotName
-              + " for collection "
-              + collectionName);
-
-    } catch (Exception e) {
-      log.error(
-          "Failed to create a snapshot with name {} for collection {}",
-          snapshotName,
-          collectionName,
-          e);
-      CLIO.out(
-          "Failed to create a snapshot with name "
-              + snapshotName
-              + " for collection "
-              + collectionName
-              + " due to following error : "
-              + e.getLocalizedMessage());
-    }
-  }
-
-  /**
-   * @deprecated use equivalent snapshot related tool in {@link
-   *     org.apache.solr.cli.SnapshotDeleteTool}
-   */
-  @Deprecated(since = "9.8.0")
-  public void deleteSnapshot(String collectionName, String snapshotName) {
-    CollectionAdminRequest.DeleteSnapshot deleteSnap =
-        new CollectionAdminRequest.DeleteSnapshot(collectionName, snapshotName);
-    CollectionAdminResponse resp;
-    try {
-      resp = deleteSnap.process(solrClient);
-      checkResponse(resp, "DELETESNAPSHOT");
-      CLIO.out(
-          "Successfully deleted snapshot with name "
-              + snapshotName
-              + " for collection "
-              + collectionName);
-
-    } catch (Exception e) {
-      log.error(
-          "Failed to delete a snapshot with name {} for collection {}",
-          snapshotName,
-          collectionName,
-          e);
-      CLIO.out(
-          "Failed to delete a snapshot with name "
-              + snapshotName
-              + " for collection "
-              + collectionName
-              + " due to following error : "
-              + e.getLocalizedMessage());
-    }
-  }
-
   private static void checkResponse(CollectionAdminResponse resp, String requestType) {
     if (resp.getStatus() != 0) {
       throw new IllegalStateException(
           "The " + requestType + " request failed. The status code is " + resp.getStatus());
-    }
-  }
-
-  /**
-   * @deprecated use equivalent snapshot related tool in {@link
-   *     org.apache.solr.cli.SnapshotListTool}
-   */
-  @Deprecated(since = "9.8.0")
-  public void listSnapshots(String collectionName) {
-    CollectionAdminRequest.ListSnapshots listSnaps =
-        new CollectionAdminRequest.ListSnapshots(collectionName);
-    CollectionAdminResponse resp;
-    try {
-      resp = listSnaps.process(solrClient);
-      checkResponse(resp, "LISTSNAPSHOTS");
-
-      NamedList<?> apiResult =
-          (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
-      for (int i = 0; i < apiResult.size(); i++) {
-        CLIO.out(apiResult.getName(i));
-      }
-
-    } catch (Exception e) {
-      log.error("Failed to list snapshots for collection {}", collectionName, e);
-      CLIO.out(
-          "Failed to list snapshots for collection "
-              + collectionName
-              + " due to following error : "
-              + e.getLocalizedMessage());
-    }
-  }
-
-  /**
-   * @deprecated use equivalent snapshot related tool in {@link
-   *     org.apache.solr.cli.SnapshotDescribeTool}
-   */
-  @Deprecated(since = "9.8.0")
-  public void describeSnapshot(String collectionName, String snapshotName) {
-    try {
-      Collection<CollectionSnapshotMetaData> snaps = listCollectionSnapshots(collectionName);
-      for (CollectionSnapshotMetaData m : snaps) {
-        if (snapshotName.equals(m.getName())) {
-          CLIO.out("Name: " + m.getName());
-          CLIO.out("Status: " + m.getStatus());
-          CLIO.out("Time of creation: " + dateFormat.format(m.getCreationDate()));
-          CLIO.out("Total number of cores with snapshot: " + m.getReplicaSnapshots().size());
-          CLIO.out("-----------------------------------");
-          for (CoreSnapshotMetaData n : m.getReplicaSnapshots()) {
-            StringBuilder builder = new StringBuilder();
-            builder.append("Core [name=");
-            builder.append(n.getCoreName());
-            builder.append(", leader=");
-            builder.append(n.isLeader());
-            builder.append(", generation=");
-            builder.append(n.getGenerationNumber());
-            builder.append(", indexDirPath=");
-            builder.append(n.getIndexDirPath());
-            builder.append("]\n");
-            CLIO.out(builder.toString());
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.error("Failed to fetch snapshot details", e);
-      CLIO.out(
-          "Failed to fetch snapshot details due to following error : " + e.getLocalizedMessage());
     }
   }
 
@@ -397,57 +247,10 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  /**
-   * @deprecated use equivalent snapshot related tool in {@link
-   *     org.apache.solr.cli.SnapshotExportTool}
-   */
-  @Deprecated(since = "9.8.0")
-  public void exportSnapshot(
-      String collectionName,
-      String snapshotName,
-      String destPath,
-      Optional<String> backupRepo,
-      Optional<String> asyncReqId) {
-    try {
-      CollectionAdminRequest.Backup backup =
-          new CollectionAdminRequest.Backup(collectionName, snapshotName);
-      backup.setCommitName(snapshotName);
-      backup.setIndexBackupStrategy(CollectionAdminParams.COPY_FILES_STRATEGY);
-      backup.setLocation(destPath);
-      if (backupRepo.isPresent()) {
-        backup.setRepositoryName(backupRepo.get());
-      }
-      // if asyncId is null, processAsync will block and throw an Exception with any error
-      backup.processAsync(asyncReqId.orElse(null), solrClient);
-    } catch (Exception e) {
-      log.error("Failed to backup collection meta-data for collection {}", collectionName, e);
-      CLIO.out(
-          "Failed to backup collection meta-data for collection "
-              + collectionName
-              + " due to following error : "
-              + e.getLocalizedMessage());
-      System.exit(1);
-    }
-  }
-
   public static void main(String[] args) throws IOException {
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
 
-    options.addOption(
-        null, CREATE, true, "This command will create a snapshot with the specified name");
-    options.addOption(
-        null, DELETE, true, "This command will delete a snapshot with the specified name");
-    options.addOption(
-        null,
-        LIST,
-        false,
-        "This command will list all the named snapshots for the specified collection.");
-    options.addOption(
-        null,
-        DESCRIBE,
-        true,
-        "This command will print details for a named snapshot for the specified collection.");
     options.addOption(
         null,
         PREPARE_FOR_EXPORT,
@@ -455,11 +258,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         "This command will prepare copylistings for the specified snapshot."
             + " This command should only be used only if Solr is deployed with Hadoop and collection index files are stored on a shared"
             + " file-system e.g. HDFS");
-    options.addOption(
-        null,
-        EXPORT_SNAPSHOT,
-        true,
-        "This command will create a backup for the specified snapshot.");
+
     options.addOption(
         null,
         HELP,
@@ -486,16 +285,6 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         true,
         "This parameter specifies the HDFS URI prefix to be used"
             + " during snapshot export preparation. This is applicable only if the Solr collection index files are stored on HDFS.");
-    options.addOption(
-        BACKUP_REPO_NAME,
-        true,
-        "This parameter specifies the name of the backup repository to be used"
-            + " during snapshot export preparation");
-    options.addOption(
-        ASYNC_REQ_ID,
-        true,
-        "This parameter specifies the async request identifier to be used"
-            + " during snapshot export preparation");
 
     CommandLine cmd = null;
     try {
@@ -506,34 +295,10 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
       System.exit(1);
     }
 
-    if (cmd.hasOption(CREATE)
-        || cmd.hasOption(DELETE)
-        || cmd.hasOption(LIST)
-        || cmd.hasOption(DESCRIBE)
-        || cmd.hasOption(PREPARE_FOR_EXPORT)
-        || cmd.hasOption(EXPORT_SNAPSHOT)) {
+    if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
       try (SolrSnapshotsTool tool =
           new SolrSnapshotsTool(requiredArg(options, cmd, SOLR_ZK_ENSEMBLE))) {
-        if (cmd.hasOption(CREATE)) {
-          String snapshotName = cmd.getOptionValue(CREATE);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          tool.createSnapshot(collectionName, snapshotName);
-
-        } else if (cmd.hasOption(DELETE)) {
-          String snapshotName = cmd.getOptionValue(DELETE);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          tool.deleteSnapshot(collectionName, snapshotName);
-
-        } else if (cmd.hasOption(LIST)) {
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          tool.listSnapshots(collectionName);
-
-        } else if (cmd.hasOption(DESCRIBE)) {
-          String snapshotName = cmd.getOptionValue(DESCRIBE);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          tool.describeSnapshot(collectionName, snapshotName);
-
-        } else if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
+        if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
           String snapshotName = cmd.getOptionValue(PREPARE_FOR_EXPORT);
           String collectionName = requiredArg(options, cmd, COLLECTION);
           String localFsDir = requiredArg(options, cmd, TEMP_DIR);
@@ -553,15 +318,6 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
             }
           }
           tool.prepareForExport(collectionName, snapshotName, localFsDir, pathPrefix, hdfsOpDir);
-
-        } else if (cmd.hasOption(EXPORT_SNAPSHOT)) {
-          String snapshotName = cmd.getOptionValue(EXPORT_SNAPSHOT);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          String destDir = requiredArg(options, cmd, DEST_DIR);
-          Optional<String> backupRepo = Optional.ofNullable(cmd.getOptionValue(BACKUP_REPO_NAME));
-          Optional<String> asyncReqId = Optional.ofNullable(cmd.getOptionValue(ASYNC_REQ_ID));
-
-          tool.exportSnapshot(collectionName, snapshotName, destDir, backupRepo, asyncReqId);
         }
       }
     } else if (cmd.hasOption(HELP)) {
@@ -612,12 +368,8 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
   private static void printHelp(Options options) {
     StringBuilder helpFooter = new StringBuilder();
     helpFooter.append("Examples: \n");
-    helpFooter.append("snapshotscli.sh --create snapshot-1 -c books -z localhost:2181 \n");
-    helpFooter.append("snapshotscli.sh --list -c books -z localhost:2181 \n");
-    helpFooter.append("snapshotscli.sh --describe snapshot-1 -c books -z localhost:2181 \n");
     helpFooter.append(
-        "snapshotscli.sh --export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath -i req_0 \n");
-    helpFooter.append("snapshotscli.sh --delete snapshot-1 -c books -z localhost:2181 \n");
+        "prepare-snapshot-export.sh --prepare-snapshot-export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath -i req_0 \n");
 
     HelpFormatter formatter = new HelpFormatter();
     formatter.setOptionComparator(new OptionComarator<>());

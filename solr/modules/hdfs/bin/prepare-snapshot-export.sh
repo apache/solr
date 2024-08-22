@@ -25,8 +25,6 @@ usage() {
  echo "                                with Hadoop and collection index"
  echo "                                files are stored on a shared"
  echo "                                file-system e.g. HDFS"
- echo "--export <arg>                    This command will create a backup"
- echo "                                for the specified snapshot."
 }
 
 distcp_warning() {
