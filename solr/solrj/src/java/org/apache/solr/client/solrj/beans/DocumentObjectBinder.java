@@ -150,7 +150,7 @@ public class DocumentObjectBinder {
     boolean childFieldFound = false;
     for (AccessibleObject member : members) {
       if (member.isAnnotationPresent(Field.class)) {
-        AccessController.doPrivileged(
+        doPrivilegedAction(
             (PrivilegedAction<Void>)
                 () -> {
                   member.setAccessible(true);
@@ -167,6 +167,12 @@ public class DocumentObjectBinder {
       }
     }
     return fields;
+  }
+
+  @SuppressWarnings("removal")
+  @SuppressForbidden(reason = "Deprecated for removal in future Java version")
+  private static <T> void doPrivilegedAction(PrivilegedAction<T> action) {
+    AccessController.doPrivileged(action);
   }
 
   private class DocField {
