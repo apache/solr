@@ -151,7 +151,7 @@ public final class ReplicaCount {
     return countByType.containsKey(type);
   }
 
-  /** Returns the replica types for which a number of replicas was explicitely defined. */
+  /** Returns the replica types for which a number of replicas was explicitly defined. */
   public Set<Replica.Type> keySet() {
     return countByType.keySet();
   }
