@@ -79,7 +79,7 @@ public class ConcatOperationTest extends SolrTestCase {
     assertNotNull(tuple.get("fieldABConcat"));
     assertEquals("bar-baz", tuple.get("fieldABConcat"));
 
-    // do the same in opposite order
+    // do the same in reverse order
     operation = new ConcatOperation(new String[] {"fieldB", "fieldA"}, "fieldABConcat", "-");
     tuple = new Tuple(values);
     operation.operate(tuple);
