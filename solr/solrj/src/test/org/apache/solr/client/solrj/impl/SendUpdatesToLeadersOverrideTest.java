@@ -54,7 +54,8 @@ import org.slf4j.LoggerFactory;
  * after the <code>distrib</code> processor) to inspect which replicas receive various {@link
  * UpdateRequest}s from variously configured {@link CloudSolrClient}s. In some requests, <code>
  * shards.preference=replica.type:PULL</code> is specified to confirm that typical routing
- * preferences are respected (when the effective value of <code>isSendToLeaders</code> is <code>false
+ * preferences are respected (when the effective value of <code>isSendToLeaders</code> is <code>
+ * false
  * </code>)
  */
 public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {

@@ -129,8 +129,8 @@ public class ModifiableSolrParams extends SolrParams {
   }
 
   /**
-   * Add all the params provided in the parameter to <em>this</em> params. Any current value(s)
-   * for the same key will be overridden.
+   * Add all the params provided in the parameter to <em>this</em> params. Any current value(s) for
+   * the same key will be overridden.
    */
   public void add(SolrParams params) {
     for (Map.Entry<String, String[]> pair : params) {

@@ -96,8 +96,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
   }
 
   /**
-   * Parses the given named list and builds a token from it. Expects a named list of the form:
-   * <br>
+   * Parses the given named list and builds a token from it. Expects a named list of the form: <br>
    *
    * <pre><code>
    *  &lt;arr name="Tokenizer"&gt;
@@ -223,8 +222,8 @@ public class AnalysisResponseBase extends SolrResponseBase {
     }
 
     /**
-     * Returns the type of the token. Typically, this will be {@code word} or {@code <ALPHANUM>}, but
-     * it really depends on the tokenizer and filters that are used.
+     * Returns the type of the token. Typically, this will be {@code word} or {@code <ALPHANUM>},
+     * but it really depends on the tokenizer and filters that are used.
      *
      * @return The type of the token.
      */

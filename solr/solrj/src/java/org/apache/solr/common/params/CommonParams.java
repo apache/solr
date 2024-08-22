@@ -131,7 +131,8 @@ public interface CommonParams {
   String TRACK = "track";
 
   /**
-   * boolean indicating whether score explanations should be structured (true), or plain text (false)
+   * boolean indicating whether score explanations should be structured (true), or plain text
+   * (false)
    */
   String EXPLAIN_STRUCT = "debug.explain.structured";
 
@@ -279,8 +280,8 @@ public interface CommonParams {
 
   /**
    * Used as a local param on filter queries in conjunction with cache=false. Filters are checked in
-   * order, from the smallest cost to largest. If cost&gt;=100 and the query implements PostFilter, then
-   * that interface will be used to do post query filtering.
+   * order, from the smallest cost to largest. If cost&gt;=100 and the query implements PostFilter,
+   * then that interface will be used to do post query filtering.
    */
   String COST = "cost";
 

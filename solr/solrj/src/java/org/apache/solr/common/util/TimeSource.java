@@ -172,7 +172,8 @@ public abstract class TimeSource {
    * Obtain an instance of time source.
    *
    * @param type supported types: <code>currentTime</code>, <code>nanoTime</code> and accelerated
-   *     time with a double factor in the form of <code>simTime:FACTOR</code>, e.g. <code>simTime:2.5
+   *     time with a double factor in the form of <code>simTime:FACTOR</code>, e.g. <code>
+   *     simTime:2.5
    *     </code>
    * @return one of the supported types
    */

@@ -65,8 +65,8 @@ public class ExecutorUtil {
   }
 
   /**
-   * Any class which wants to carry forward the thread local values to the threads run by thread pools
-   * must implement this interface and the implementation should be registered here
+   * Any class which wants to carry forward the thread local values to the threads run by thread
+   * pools must implement this interface and the implementation should be registered here
    */
   public interface InheritableThreadLocalProvider {
     /**

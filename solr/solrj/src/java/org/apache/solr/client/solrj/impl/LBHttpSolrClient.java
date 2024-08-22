@@ -38,8 +38,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * but this class may be used for updates because the server will forward them to the appropriate
  * leader.
  *
- * <p>It offers automatic failover when a server goes down, and it detects when the server comes back
- * up.
+ * <p>It offers automatic failover when a server goes down, and it detects when the server comes
+ * back up.
  *
  * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
  * expected to point to the Solr "root" path (i.e. "/solr").

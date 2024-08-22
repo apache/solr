@@ -240,9 +240,7 @@ public abstract class SolrParams
     }
   }
 
-  /**
-   * Returns int value of the param or default value for int - zero (<code>0</code>) if not set.
-   */
+  /** Returns int value of the param or default value for int - zero (<code>0</code>) if not set. */
   public int getPrimitiveInt(String param) {
     return getInt(param, 0);
   }
