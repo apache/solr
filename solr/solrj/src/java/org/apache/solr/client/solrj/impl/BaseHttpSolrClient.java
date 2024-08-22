@@ -43,7 +43,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
   }
 
   /**
-   * This should be thrown when a server has an error in executing the request and it sends a proper
+   * This should be thrown when a server has an error in executing the request, and it sends a proper
    * payload back to the client
    */
   public static class RemoteExecutionException extends RemoteSolrException {
