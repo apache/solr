@@ -368,7 +368,7 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
   private static void printHelp(Options options) {
     String helpFooter =
         "Examples: \n"
-            + "prepare-snapshot-export.sh --prepare-snapshot-export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath -i req_0 \n";
+            + "prepare-snapshot-export.sh --prepare-snapshot-export snapshot-1 -c books -z localhost:2181 -b repo -l backupPath \n";
 
     HelpFormatter formatter = new HelpFormatter();
     formatter.setOptionComparator(new OptionComparator<>());
