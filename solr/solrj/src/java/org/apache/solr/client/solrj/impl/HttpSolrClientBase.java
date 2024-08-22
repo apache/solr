@@ -283,7 +283,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           is.close();
         } catch (IOException e) {
-          // quitely
+          // quietly
         }
       }
     }
