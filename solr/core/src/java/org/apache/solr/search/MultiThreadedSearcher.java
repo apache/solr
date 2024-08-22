@@ -24,22 +24,16 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.automaton.ByteRunAutomaton;
-import org.apache.solr.search.join.GraphQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,63 +113,11 @@ public class MultiThreadedSearcher {
     return new SearchResult(scoreMode, ret);
   }
 
-  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
-    if (postFilter != null || cmd.getSegmentTerminateEarly() || !cmd.getMultiThreaded()) {
-      return false;
-    } else {
-      MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
-      query.visit(allowMT);
-      return allowMT.allowed();
-    }
-  }
-
-  /**
-   * A {@link QueryVisitor} that recurses through the query tree, determining if all queries support
-   * multi-threaded collecting.
-   */
-  private static class MTCollectorQueryCheck extends QueryVisitor {
-
-    private QueryVisitor subVisitor = this;
-
-    private boolean allowMt(Query query) {
-      if (query instanceof RankQuery || query instanceof GraphQuery || query instanceof JoinQuery) {
-        return false;
-      }
-      return true;
-    }
-
-    @Override
-    public void consumeTerms(Query query, Term... terms) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      }
-    }
-
-    @Override
-    public void consumeTermsMatching(
-        Query query, String field, Supplier<ByteRunAutomaton> automaton) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      } else {
-        super.consumeTermsMatching(query, field, automaton);
-      }
-    }
-
-    @Override
-    public void visitLeaf(Query query) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      }
-    }
-
-    @Override
-    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      return subVisitor;
-    }
-
-    public boolean allowed() {
-      return subVisitor != EMPTY_VISITOR;
-    }
+  static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd) {
+    // TODO: it's unclear if segmentTerminateEarly is truly incompatible but
+    //  since it has to appropriately denote partial results this needs to be
+    //  investigated/tested before we can remove this check (perhaps for 9.8).
+    return postFilter == null && !cmd.getSegmentTerminateEarly() && cmd.getMultiThreaded();
   }
 
   static class MaxScoreResult {

@@ -81,7 +81,7 @@ public class TemporalEvaluatorsTest extends SolrTestCase {
   }
 
   @Test
-  public void testInvalidExpression() throws Exception {
+  public void testInvalidExpression() {
 
     StreamEvaluator evaluator;
 
@@ -175,7 +175,7 @@ public class TemporalEvaluatorsTest extends SolrTestCase {
     testFunction("quarter(a)", "1995-12-31T23:59:59Z", 4L);
     testFunction("week(a)", "1995-12-31T23:59:59Z", 52L);
     testFunction("second(a)", "1995-12-31T23:59:58Z", 58L);
-    testFunction("epoch(a)", "1995-12-31T23:59:59Z", 820454399000l);
+    testFunction("epoch(a)", "1995-12-31T23:59:59Z", 820454399000L);
 
     testFunction("year(a)", "2017-03-17T10:30:45Z", 2017L);
     testFunction("year('a')", "2017-03-17T10:30:45Z", 2017L);
@@ -189,10 +189,10 @@ public class TemporalEvaluatorsTest extends SolrTestCase {
     testFunction("quarter(a)", "2017-03-17T10:30:45Z", 1L);
     testFunction("week(a)", "2017-03-17T10:30:45Z", 11L);
     testFunction("second(a)", "2017-03-17T10:30:45Z", 45L);
-    testFunction("epoch(a)", "2017-03-17T10:30:45Z", 1489746645000l);
+    testFunction("epoch(a)", "2017-03-17T10:30:45Z", 1489746645000L);
 
-    testFunction("epoch(a)", new Date(1489746645500l).toInstant().toString(), 1489746645500l);
-    testFunction("epoch(a)", new Date(820454399990l).toInstant().toString(), 820454399990l);
+    testFunction("epoch(a)", new Date(1489746645500L).toInstant().toString(), 1489746645500L);
+    testFunction("epoch(a)", new Date(820454399990L).toInstant().toString(), 820454399990L);
   }
 
   @Test
@@ -238,7 +238,7 @@ public class TemporalEvaluatorsTest extends SolrTestCase {
   @Test
   public void testFunctionsOnLong() throws Exception {
 
-    Long longDate = 1512518340000l;
+    Long longDate = 1512518340000L;
 
     testFunction("year(a)", longDate, 2017);
     testFunction("month(a)", longDate, 12);
