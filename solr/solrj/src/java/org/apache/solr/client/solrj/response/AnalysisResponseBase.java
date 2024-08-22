@@ -96,7 +96,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
   }
 
   /**
-   * Parses the given named list and builds a token infoform it. Expects a named list of the form:
+   * Parses the given named list and builds a token from it. Expects a named list of the form:
    * <br>
    *
    * <pre><code>
@@ -142,7 +142,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
     }
 
     /**
-     * The name of the class (analyzer, tokenzier, or filter) that produced the token stream for
+     * The name of the class (analyzer, tokenizer, or filter) that produced the token stream for
      * this phase.
      *
      * @return The name of the class that produced the token stream for this phase.
@@ -213,7 +213,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
 
     /**
      * Returns the raw text of the token. If the token is index in a special format (e.g. date or
-     * paddded numbers) it will be returned as the raw text. Returns {@code null} if the token is
+     * padded numbers) it will be returned as the raw text. Returns {@code null} if the token is
      * indexed as is.
      *
      * @return Returns the raw text of the token.
@@ -223,7 +223,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
     }
 
     /**
-     * Returns the type of the token. Typically this will be {@code word} or {@code <ALPHANUM>}, but
+     * Returns the type of the token. Typically, this will be {@code word} or {@code <ALPHANUM>}, but
      * it really depends on the tokenizer and filters that are used.
      *
      * @return The type of the token.
