@@ -75,7 +75,7 @@ public class OpenNLPLangDetectUpdateProcessor extends LanguageIdentifierUpdatePr
   private static Map<String, String> make_ISO639_map() {
     Map<String, String> map = new HashMap<>();
     for (String lang : Locale.getISOLanguages()) {
-      Locale locale = new Locale(lang);
+      Locale locale = new Locale.Builder().setLanguage(lang).build();
       map.put(locale.getISO3Language(), locale.getLanguage());
     }
     return map;
