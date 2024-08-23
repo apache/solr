@@ -26,12 +26,14 @@ dependencies {
   implementation platform('io.opentelemetry:opentelemetry-bom')
 
   implementation 'io.opentracing:opentracing-api'
+  implementation 'io.opentelemetry:opentelemetry-api'
   implementation 'org.slf4j:slf4j-api'
 
   implementation 'io.opentelemetry:opentelemetry-sdk'
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
+  implementation 'io.opentelemetry:opentelemetry-sdk-common:'
   runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
