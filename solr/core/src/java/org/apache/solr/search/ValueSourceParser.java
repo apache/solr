@@ -187,7 +187,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            return new LongConstValueSource(Thread.currentThread().getId());
+            return new LongConstValueSource(Thread.currentThread().threadId());
           }
         });
     addParser(
