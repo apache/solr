@@ -131,7 +131,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+ * SOLR-17421: Fixed a rare case where overseer was stuck after a failure when changing overseer to honor the
+   node role for preferred overseer. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
