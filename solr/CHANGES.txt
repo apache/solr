@@ -273,6 +273,8 @@ Bug Fixes
   Shard splits and concurrent/large collection backup/restore performance was serial.  UpdateLog
   replay was a little suboptimal in thread usage too.  (Pierre Salagnac, Hakan Özler, David Smiley)
 
+* SOLR-17417: Remove unnecessary code in PKIAuthPlugin and HttpSolrCall  (Houston Putman, janhoy, Liu Huajin)
+
 Dependency Upgrades
 ---------------------
 (No changes)
