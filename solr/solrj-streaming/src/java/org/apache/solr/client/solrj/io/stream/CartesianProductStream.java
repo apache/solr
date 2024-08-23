@@ -278,8 +278,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
   private boolean iterate(
       List<NamedEvaluator> evaluators, int[] indexes, Map<String, Object> evaluatedValues) {
     // this assumes evaluators and indexes are the same length, which is ok because we created it,
-    // so
-    // we know it is
+    // so we know it is
     // go right to left and increment, returning true if we're not at the end
     for (int offset = indexes.length - 1; offset >= 0; --offset) {
       Object evaluatedValue = evaluatedValues.get(evaluators.get(offset).getName());
