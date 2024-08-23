@@ -54,10 +54,6 @@ server/resources
 
   Contains configuration files, such as the Log4j configuration (log4j2.xml) for configuring Solr loggers.
 
-server/scripts/cloud-scripts
-
-  Command-line utility for working with snapshots using snapshotscli.sh
-
 server/solr
 
   Default solr.solr.home directory where Solr will create core directories; must contain solr.xml

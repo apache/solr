@@ -637,7 +637,7 @@ public class QueryResponse extends SolrResponseBase {
   }
 
   /**
-   * @return a list of FacetFields where the count is less then then #getResults() {@link
+   * @return a list of FacetFields where the count is less than the #getResults() {@link
    *     SolrDocumentList#getNumFound()}
    *     <p>If you want all results exactly as returned by solr, use: {@link #getFacetFields()}
    */

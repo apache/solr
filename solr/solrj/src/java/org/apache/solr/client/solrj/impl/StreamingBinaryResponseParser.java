@@ -34,7 +34,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * A BinaryResponseParser that sends callback events rather then build a large response
+ * A BinaryResponseParser that sends callback events rather than build a large response
  *
  * @since solr 4.0
  */

@@ -113,7 +113,7 @@ public abstract class ConfigSetAdminRequest<
    * Uploads files to create a new configset, or modify an existing config set.
    *
    * <p>When creating a new configset, the file to be uploaded must be a ZIP file containing the
-   * entire configset being uploaded. When modifing an existing configset, the file to be uploaded
+   * entire configset being uploaded. When modifying an existing configset, the file to be uploaded
    * should either be a ZIP file containing the entire configset being uploaded, or an individual
    * file to upload if {@link #setFilePath} is being used.
    */
@@ -153,7 +153,7 @@ public abstract class ConfigSetAdminRequest<
     }
 
     /**
-     * A convinience method for specifying an existing File to use as the upload data.
+     * A convenience method for specifying an existing File to use as the upload data.
      *
      * <p>This should either be a ZIP file containing the entire configset being uploaded, or an
      * individual file to upload into an existing configset if {@link #setFilePath} is being used.

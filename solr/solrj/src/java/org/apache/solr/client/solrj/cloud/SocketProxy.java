@@ -97,7 +97,7 @@ public class SocketProxy {
 
   @Override
   public String toString() {
-    return "SocketyProxy: port=" + listenPort + "; target=" + target;
+    return "SocketProxy: port=" + listenPort + "; target=" + target;
   }
 
   public void setReceiveBufferSize(int receiveBufferSize) {

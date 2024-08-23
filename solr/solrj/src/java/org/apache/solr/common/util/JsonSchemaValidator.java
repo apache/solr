@@ -30,8 +30,8 @@ import java.util.function.Function;
 
 /**
  * A very basic and lightweight json schema parsing and data validation tool. This custom tool is
- * created because a) we need to support non json inputs b) to avoiding double parsing (this accepts
- * an already parsed json as a map) It validates most aspects of json schema but it is NOT A FULLY
+ * created because 1) we need to support non json inputs 2) to avoiding double parsing (this accepts
+ * an already parsed json as a map). It validates most aspects of json schema, but it is NOT A FULLY
  * COMPLIANT JSON schema parser or validator. This validator borrow some design's idea from
  * https://github.com/networknt/json-schema-validator
  */
@@ -60,7 +60,7 @@ public class JsonSchemaValidator {
     }
   }
 
-  // This is a heterogeneous type, there's probably imrpovements to be had by using some concrete
+  // This is a heterogeneous type, there's probably improvements to be had by using some concrete
   // types instead
   static final Map<String, Function<Pair<Map<?, ?>, ?>, Validator<?>>> VALIDATORS = new HashMap<>();
 

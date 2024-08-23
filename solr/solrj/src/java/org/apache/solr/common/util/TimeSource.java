@@ -172,7 +172,8 @@ public abstract class TimeSource {
    * Obtain an instance of time source.
    *
    * @param type supported types: <code>currentTime</code>, <code>nanoTime</code> and accelerated
-   *     time with a double factor in the form of <code>simTime:FACTOR</code>, eg. <code>simTime:2.5
+   *     time with a double factor in the form of <code>simTime:FACTOR</code>, e.g. <code>
+   *     simTime:2.5
    *     </code>
    * @return one of the supported types
    */
@@ -228,7 +229,7 @@ public abstract class TimeSource {
   public abstract long[] getTimeAndEpochNs();
 
   /**
-   * Sleep according to this source's notion of time. Eg. accelerated time source such as {@link
+   * Sleep according to this source's notion of time. E.g. accelerated time source such as {@link
    * SimTimeSource} will sleep proportionally shorter, according to its multiplier.
    *
    * @param ms number of milliseconds to sleep
@@ -238,8 +239,8 @@ public abstract class TimeSource {
 
   /**
    * This method allows using TimeSource with APIs that require providing just plain time intervals,
-   * eg. {@link Object#wait(long)}. Values returned by this method are adjusted according to the
-   * time source's notion of time - eg. accelerated time source provided by {@link SimTimeSource}
+   * e.g. {@link Object#wait(long)}. Values returned by this method are adjusted according to the
+   * time source's notion of time - e.g. accelerated time source provided by {@link SimTimeSource}
    * will return intervals that are proportionally shortened by the multiplier.
    *
    * <p>NOTE: converting small values may significantly affect precision of the returned values due

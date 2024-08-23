@@ -67,7 +67,7 @@ public class XMLResponseParser extends ResponseParser {
       factory.setProperty("reuse-instance", Boolean.FALSE);
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
-      // isimplementation specific.
+      // is implementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input factory: {}", factory);
     }
     factory.setXMLReporter(xmllog);
@@ -492,7 +492,7 @@ public class XMLResponseParser extends ResponseParser {
             continue; // may be more child docs, or other fields
           }
 
-          // other then nested documents, all other possible nested elements require a name...
+          // other than nested documents, all other possible nested elements require a name...
 
           name = null;
           int cnt = parser.getAttributeCount();

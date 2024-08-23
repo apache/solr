@@ -19,7 +19,7 @@ package org.apache.solr.common;
 import java.io.Serializable;
 
 /**
- * Represents a Enum field value, which includes integer value (indicating the sort order) and
+ * Represents an Enum field value, which includes integer value (indicating the sort order) and
  * string (displayed) value. Note: this class has a natural ordering that is inconsistent with
  * equals
  */

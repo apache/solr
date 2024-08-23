@@ -56,7 +56,7 @@ public class SpellCheckResponse {
     @SuppressWarnings("unchecked")
     NamedList<Object> coll = (NamedList<Object>) spellInfo.get("collations");
     if (coll != null) {
-      // The 'collationInternalRank' values are ignored so we only care 'collation's.
+      // The 'collationInternalRank' values are ignored, so we only care about collation's.
       List<Object> collationInfo = coll.getAll("collation");
       collations = new ArrayList<>(collationInfo.size());
       for (Object o : collationInfo) {

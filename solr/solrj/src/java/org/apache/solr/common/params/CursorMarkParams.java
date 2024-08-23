@@ -37,7 +37,7 @@ public interface CursorMarkParams {
 
   /**
    * Special value for {@link #CURSOR_MARK_PARAM} indicating that cursor functionality should be
-   * used, and a new cursor value should be computed afte the last result, but that currently the
+   * used, and a new cursor value should be computed after the last result, but that currently the
    * "first page" of results is being requested
    */
   public static final String CURSOR_MARK_START = "*";

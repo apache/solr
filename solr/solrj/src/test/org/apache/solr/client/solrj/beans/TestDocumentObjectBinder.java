@@ -198,7 +198,7 @@ public class TestDocumentObjectBinder extends SolrTestCase {
       inStock = b;
     }
 
-    // required if you want to fill SolrDocuments with the same annotaion...
+    // required if you want to fill SolrDocuments with the same annotation.
     public boolean isInStock() {
       return inStock;
     }

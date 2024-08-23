@@ -111,7 +111,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
   @Test
-  public void testIteratable() throws IOException {
+  public void testIterable() throws IOException {
     final List<String> values = new ArrayList<>();
     values.add("iterItem1");
     values.add("iterItem2");
@@ -122,7 +122,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1);
     doc.addField("desc", "one");
-    // imagine someone adding a custom Bean that implements Iterable
+    // imagine someone adds a custom Bean that implements Iterable
     // but is not a Collection
     doc.addField("iter", (Iterable<String>) values::iterator);
     doc.addField("desc", "1");
@@ -284,7 +284,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       Object expectedVal = expectedField.getValue();
       Object actualVal = actualField.getValue();
       if (expectedVal instanceof Set && actualVal instanceof Collection) {
-        // unmarshaled documents never contain Sets, they are just a
+        // unmarshalled documents never contain Sets, they are just a
         // List in an arbitrary order based on what the iterator of
         // the original Set returned, so we need a comparison that is
         // order agnostic.

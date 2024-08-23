@@ -46,7 +46,7 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilderFactory {
   /**
    * A system property used to specify a properties file containing default parameters used for
-   * creating a HTTP client. This is specifically useful for configuring the HTTP basic auth
+   * creating an HTTP client. This is specifically useful for configuring the HTTP basic auth
    * credentials (i.e. username/password). The name of the property must match the relevant Solr
    * config property name.
    */
@@ -64,7 +64,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   private static CredentialsResolver CREDENTIAL_RESOLVER = new CredentialsResolver();
 
   /**
-   * This method enables configuring system wide defaults (apart from using a config file based
+   * This method enables configuring system-wide defaults (apart from using a config file based
    * approach).
    */
   public static void setDefaultSolrParams(SolrParams params) {

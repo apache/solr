@@ -873,7 +873,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       setReqParamsOf(req4, "serverOnly", "requestOnly", "both", "neither");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req4));
       // NOTE: single stream requests send all the params
-      // as part of the query string.  So add "neither" to the request
+      // as part of the query string.  So add "neither" to the request,
       // so it passes the verification step.
       req4.setQueryParams(Set.of("requestOnly", "both", "neither"));
       verifyServletState(client, req4);

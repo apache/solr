@@ -121,7 +121,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     CloudSolrClient client = cluster.getSolrClient();
 
-    // note: one node in our cluster is unsed by collection
+    // note: one node in our cluster is unused by collection
     CollectionAdminRequest.createCollection("testcollection", "config", CLUSTER_SIZE, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
 
@@ -249,7 +249,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Test
   @Ignore
-  public void testCanWaitForNonexistantCollection() throws Exception {
+  public void testCanWaitForNonexistentCollection() throws Exception {
 
     Future<Boolean> future =
         waitInBackground(

@@ -27,7 +27,7 @@ public class JSONParser {
   /** Event indicating a JSON string value, including member names of objects */
   public static final int STRING = 1;
 
-  /** Event indicating a JSON number value which fits into a signed 64 bit integer */
+  /** Event indicating a JSON number value which fits into a signed 64-bit integer */
   public static final int LONG = 2;
 
   /**
@@ -39,7 +39,7 @@ public class JSONParser {
 
   /**
    * Event indicating a JSON number value that was not produced by toString of any Java primitive
-   * numerics such as Double or Long. It is either an integer outside the range of a 64 bit signed
+   * numerics such as Double or Long. It is either an integer outside the range of a 64-bit signed
    * integer, or a floating point value with a string representation of more than 23 chars.
    */
   public static final int BIGNUMBER = 4;
@@ -75,8 +75,8 @@ public class JSONParser {
 
   /**
    * ALLOW_EXTRA_COMMAS causes any number of extra commas in arrays and objects to be ignored Note
-   * that a trailing comma in [] would be [,] (hence calling the feature "trailing" commas is either
-   * limiting or misleading. Since trailing commas is fundamentally incompatible with any future
+   * that a trailing comma in [] would be [,], hence calling the feature "trailing" commas is either
+   * limiting or misleading. Since trailing commas are fundamentally incompatible with any future
    * "fill-in-missing-values-with-null", it was decided to extend this feature to handle any number
    * of extra commas.
    */
@@ -276,7 +276,7 @@ public class JSONParser {
     for (; ; ) {
       int ch = getChar();
       // getCharNWS is normally called in the context of expecting certain JSON special characters
-      // such as ":}"]," all of these characters are below 64 (including comment chars '/' and '#',
+      // such as ":}"]," all of these characters are below 64, including comment chars '/' and '#',
       // so we can make this the fast path even w/o checking the range first.  We'll only get some
       // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
@@ -321,7 +321,7 @@ public class JSONParser {
   protected int getCharNWS(int ch) throws IOException {
     for (; ; ) {
       // getCharNWS is normally called in the context of expecting certain JSON special characters
-      // such as ":}"]," all of these characters are below 64 (including comment chars '/' and '#',
+      // such as ":}"]," all of these characters are below 64, including comment chars '/' and '#',
       // so we can make this the fast path even w/o checking the range first.  We'll only get some
       // false-positives while using bare strings (chars "IJMc")
       if (((WS_MASK >> ch) & 0x01) == 0) {
@@ -480,7 +480,7 @@ public class JSONParser {
     // the positive plane.
     long v = (long) '0' - firstChar;
     // can't overflow a long in 18 decimal digits (i.e. 17 additional after the first).
-    // we also need 22 additional to handle double so we'll handle in 2 separate loops.
+    // we also need 22 additional to handle double, so we'll handle in 2 separate loops.
     int i;
     for (i = 0; i < 17; i++) {
       int ch = getChar();
@@ -1197,7 +1197,7 @@ public class JSONParser {
 
   /**
    * Reads a number from the input stream and parses it as a long, only if the value will in fact
-   * fit into a signed 64 bit integer.
+   * fit into a signed 64-bit integer.
    */
   public long getLong() throws IOException {
     goTo(LONG);

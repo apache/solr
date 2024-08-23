@@ -272,7 +272,7 @@ public class SolrParamTest extends SolrTestCase {
     assertEquals(400, getReturnCode(() -> params.getBool("f.bad.bool")));
     assertEquals(400, getReturnCode(() -> params.getFloat("f.bad.float")));
 
-    // Ask for params that arent there
+    // Ask for params that aren't there
     assertNull(params.get("asagdsaga"));
     assertNull(params.getBool("asagdsaga"));
     assertNull(params.getInt("asagdsaga"));

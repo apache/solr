@@ -27,7 +27,7 @@ import org.junit.Test;
  *
  * @since solr 1.4
  */
-public class AnlysisResponseBaseTest extends SolrTestCase {
+public class AnalysisResponseBaseTest extends SolrTestCase {
 
   /**
    * Tests the {@link AnalysisResponseBase#buildTokenInfo(org.apache.solr.common.util.NamedList)}
@@ -68,7 +68,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
   }
 
   /**
-   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)} )}
+   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)}
    * method.
    */
   @Test
@@ -100,7 +100,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
   }
 
   /**
-   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)} )}
+   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)}
    * method for the special case of CharacterFilter.
    */
   @Test

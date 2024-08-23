@@ -168,7 +168,7 @@ public class FieldStatsInfo implements Serializable {
   }
 
   public Long getCountDistinct() {
-    // :TODO: as client convinience, should we return cardinality if this is null?
+    // :TODO: as client convenience, should we return cardinality if this is null?
     return countDistinct;
   }
 
@@ -204,9 +204,9 @@ public class FieldStatsInfo implements Serializable {
     return percentiles;
   }
 
-  /** The cardinality of of the set of values if requested, otherwise null. */
+  /** The cardinality of the set of values if requested, otherwise null. */
   public Long getCardinality() {
-    // :TODO: as client convinience, should we return countDistinct if this is null?
+    // :TODO: as client convenience, should we return countDistinct if this is null?
     return cardinality;
   }
 }

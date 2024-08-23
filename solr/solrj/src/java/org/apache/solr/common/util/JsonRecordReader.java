@@ -65,7 +65,7 @@ public class JsonRecordReader {
   private JsonRecordReader() {}
 
   /**
-   * a '|' separated list of path expressions which define sub sections of the JSON stream that are
+   * a '|' separated list of path expressions which define subsections of the JSON stream that are
    * to be emitted as separate records. It is possible to have multiple levels of split one for
    * parent and one for child each child record (or a list of records) will be emitted as a part of
    * the parent record with null as the key
@@ -164,7 +164,7 @@ public class JsonRecordReader {
     private boolean useFqn = false;
 
     public Node(String name, Node p) {
-      // Create a basic Node, suitable for the mid portions of any path.
+      // Create a basic Node, suitable for the mid-portions of any path.
       // Node.pathName and Node.name are set to same value.
       this.name = name;
       parent = p;
@@ -210,7 +210,7 @@ public class JsonRecordReader {
 
     /**
      * Build a Node tree structure representing all paths of interest to us. This must be done
-     * before parsing of the JSON stream starts. Each node holds one portion of an path. Taking each
+     * before parsing of the JSON stream starts. Each node holds one portion of a path. Taking each
      * path segment in turn this method walks the Node tree and finds where the new segment should
      * be inserted. It creates a Node representing a field's name, PATH and some flags and inserts
      * the Node into the Node tree.
@@ -306,7 +306,7 @@ public class JsonRecordReader {
      * them against the new tag. If matched then "jump" to that node, otherwise ignore the tag.
      *
      * <p>Note, the list of // expressions found while walking back up the tree is cached in the
-     * HashMap descendants. Then if the new tag is to be skipped, any inner child tags are compared
+     * HashMap descendants. Then, if the new tag is to be skipped, any inner child tags are compared
      * against the cache and jumped to if matched.
      */
     private void handleObjectStart(
@@ -319,17 +319,17 @@ public class JsonRecordReader {
         throws IOException {
 
       final boolean isRecordStarted = recordStarted || isRecord;
-      Set<String> valuesAddedinThisFrame = null;
+      Set<String> valuesAddedInThisFrame = null;
       if (isRecord || !recordStarted) {
         // This Node is a match for an PATH from a forEach attribute,
-        // prepare for the clean up that will occur when the record
+        // prepare for the cleanup that will occur when the record
         // is emitted after its END_ELEMENT is matched
-        valuesAddedinThisFrame = new HashSet<>();
-        stack.push(valuesAddedinThisFrame);
+        valuesAddedInThisFrame = new HashSet<>();
+        stack.push(valuesAddedInThisFrame);
       } else if (recordStarted) {
         // This node is a child of some parent which matched against forEach
         // attribute. Continue to add values to an existing record.
-        valuesAddedinThisFrame = stack.peek();
+        valuesAddedInThisFrame = stack.peek();
       }
 
       class Wrapper extends MethodFrameWrapper {
@@ -410,7 +410,7 @@ public class JsonRecordReader {
               Object val = parseSingleFieldValue(event, parser, runnable);
               if (val != null) {
                 putValue(values, nameInRecord, val);
-                valuesAddedinThisFrame.add(nameInRecord);
+                valuesAddedInThisFrame.add(nameInRecord);
               }
 
             } else {
@@ -440,7 +440,7 @@ public class JsonRecordReader {
         }
       } finally {
         if ((isRecord() || !isRecordStarted)) {
-          for (String fld : valuesAddedinThisFrame) {
+          for (String fld : valuesAddedInThisFrame) {
             values.remove(fld);
           }
         }
@@ -509,7 +509,7 @@ public class JsonRecordReader {
   } // end of class Node
 
   /**
-   * The path is split into segments using the '/' as a separator. However this method deals with
+   * The path is split into segments using the '/' as a separator. However, this method deals with
    * special cases where there is a slash '/' character inside the attribute value e.g.
    * x/@html='text/html'. We split by '/' but then reassemble things were the '/' appears within a
    * quoted sub-string.

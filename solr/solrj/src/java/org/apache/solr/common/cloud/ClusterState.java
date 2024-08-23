@@ -438,7 +438,7 @@ public class ClusterState implements MapWriter {
     }
 
     /**
-     * Return the DocCollection, always refetching if lazy. Equivalent to get(false)
+     * Return the DocCollection, always re-fetching if lazy. Equivalent to get(false)
      *
      * @return The collection state modeled in zookeeper
      */

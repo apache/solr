@@ -20,7 +20,7 @@ package org.apache.solr.common.cloud;
 import java.util.Set;
 
 /**
- * Interface to determine if a set of liveNodes and a collection's state matches some expecatations.
+ * Interface to determine if a set of liveNodes and a collection's state matches some expectations.
  *
  * @see "ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)"
  * @see "ZkStateReader#waitForState(String, long, TimeUnit, Predicate)"

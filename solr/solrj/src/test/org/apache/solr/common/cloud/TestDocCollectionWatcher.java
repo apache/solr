@@ -180,7 +180,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCanWaitForNonexistantCollection() throws Exception {
+  public void testCanWaitForNonexistentCollection() throws Exception {
 
     Future<Boolean> future =
         waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, Objects::nonNull);

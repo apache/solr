@@ -52,8 +52,8 @@ public interface ConfigNode {
   }
 
   /**
-   * Child by name or return an empty node if null if there are multiple values , it returns the
-   * first elem This never returns a null
+   * Child by name or return an empty node if null. If there are multiple values, it returns the
+   * first element. This never returns a null.
    */
   default ConfigNode get(String name) {
     ConfigNode child = child(null, name);
