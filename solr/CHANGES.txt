@@ -43,6 +43,8 @@ Other Changes
 ---------------------
 * SOLR-17321: Remove Deprecated URL and replace it with URI in Preparation for Java 21 (Sanjay Dutt, David Smiley, Uwe Schindler)
 
+* SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
