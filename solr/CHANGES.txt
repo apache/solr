@@ -69,6 +69,8 @@ Deprecation Removals
 
 * SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
 
+* SOLR-17400: Remove deprecated script snapshotcli.sh.  bin/solr snapshot-* commands have replaced this. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
