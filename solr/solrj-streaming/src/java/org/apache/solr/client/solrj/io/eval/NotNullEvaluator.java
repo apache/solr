@@ -45,7 +45,7 @@ public class NotNullEvaluator extends RecursiveBooleanEvaluator implements ManyV
     }
 
     if (values[0] instanceof String) {
-      // Check to see if  this tuple had a null value for that string.
+      // Check to see if this tuple had a null value for that string.
       String nullField = getStreamContext().getTupleContext().get("null");
       if (nullField != null && nullField.equals(values[0])) {
         return false;
