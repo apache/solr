@@ -785,7 +785,8 @@ public abstract class LBSolrClient extends SolrClient {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);
         NamedList<Object> rsp = getClient(wrapper.baseUrl).request(request, collection);
-        // remove from zombie list *before* adding the alive list to avoid a race that could lose a server
+        // remove from zombie list *before* adding the alive list to avoid a race that could lose a
+        // server
         zombieServers.remove(wrapper.getBaseUrl());
         addToAlive(wrapper);
         return rsp;
