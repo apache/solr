@@ -123,7 +123,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
+  // TODO: Remove this for 10.0, there is a typo in the method name
+  @Deprecated(since = "9.8", forRemoval = true)
   protected ModifiableSolrParams initalizeSolrParams(
+      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
+    return initializeSolrParams(solrRequest, parserToUse);
+  }
+
+  protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
@@ -285,7 +292,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           is.close();
         } catch (IOException e) {
-          // quitely
+          // quietly
         }
       }
     }

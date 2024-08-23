@@ -62,7 +62,8 @@ public class URLUtil {
     final var indexOfLastSlash = coreUrl.lastIndexOf("/");
     if (indexOfLastSlash == -1) {
       log.warn(
-          "Solr core URL [{}] did not contain expected path segments when parsing, ignoring...");
+          "Solr core URL [{}] did not contain expected path segments when parsing, ignoring...",
+          coreUrl);
       return coreUrl;
     }
     return coreUrl.substring(0, coreUrl.lastIndexOf("/"));

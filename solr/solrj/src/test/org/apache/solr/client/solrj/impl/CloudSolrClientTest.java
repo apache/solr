@@ -440,7 +440,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For this case every shard should have all its cores on the same node.
-    // Hence the below configuration for our collection
+    // Hence, the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
         .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
@@ -1063,7 +1063,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For these tests we need to have multiple replica types.
-    // Hence the below configuration for our collection
+    // Hence, the below configuration for our collection
     int pullReplicas = Math.max(1, liveNodes - 2);
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, 1, 1, pullReplicas)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
@@ -1123,7 +1123,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         String coreUrl = replica.getCoreUrl();
         // It seems replica reports its core URL with a trailing slash while shard
-        // info returned from the query doesn't. Oh well.
+        // info returned from the query doesn't.
         if (coreUrl.endsWith("/")) {
           coreUrl = coreUrl.substring(0, coreUrl.length() - 1);
         }

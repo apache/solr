@@ -108,7 +108,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
       for (int j = 0; j < 2; j++) {
-        // j: first time Endpoint One will retrun error code 500.
+        // first time Endpoint One will return error code 500.
         // second time Endpoint One will be healthy
 
         String basePathToSucceed;
@@ -234,7 +234,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       }
 
       // It is the user's responsibility to shuffle the endpoints when using
-      // async.  LB Http Solr Client always will try the passed-in endpoints
+      // async.  LB Http Solr Client will always try the passed-in endpoints
       // in order.  In this case, endpoint 1 gets all the requests!
       assertEquals(limit, numEndpointOne);
       assertEquals(0, numEndpointTwo);
