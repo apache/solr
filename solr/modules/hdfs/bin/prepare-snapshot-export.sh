@@ -25,8 +25,6 @@ usage() {
  echo "                                with Hadoop and collection index"
  echo "                                files are stored on a shared"
  echo "                                file-system e.g. HDFS"
- echo "--export <arg>                    This command will create a backup"
- echo "                                for the specified snapshot."
 }
 
 distcp_warning() {
@@ -69,7 +67,7 @@ run_solr_snapshot_tool() {
     log4j_config="file:${scriptDir}/../../../server/resources/log4j2-console.xml"
   fi
   PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
-  -classpath "${solrLibPath}" org.apache.solr.hdfs.snapshots.SolrSnapshotsTool "$@" 2> /dev/null
+  -classpath "${solrLibPath}" org.apache.solr.hdfs.snapshots.SolrOnHdfsSnapshotsTool "$@" 2> /dev/null
 }
 
 prepare_snapshot_export() {
