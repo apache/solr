@@ -32,7 +32,7 @@ dependencies {
 
   // Guava implements Preconditions, caches, and VisibleForTesting annotations
   implementation 'com.google.guava:guava'
-
+  implementation 'io.dropwizard.metrics:metrics-core'
   // Caffeine cache to implement HDFS block caching  
   implementation 'com.github.ben-manes.caffeine:caffeine'
 
@@ -93,4 +93,11 @@ tasks.named('processTestResources').configure {
 tasks.withType(Test).configureEach {
   jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
            "--add-opens=java.base/java.util=ALL-UNNAMED"])
+}
+
+assemblePackaging {
+  // Add bin folder to default packaging.
+  from(projectDir, {
+    include "bin/**"
+  })
 }

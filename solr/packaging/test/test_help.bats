@@ -92,7 +92,8 @@ setup() {
 
 @test "zk help flag prints help" {
   run solr zk --help
-  assert_output --partial 'Usage: solr zk'
+  assert_output --partial 'usage:'
+  assert_output --partial 'bin/solr zk ls'
   refute_output --partial 'ERROR'
 }
 

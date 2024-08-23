@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * <p>This class can touch internal HttpClient details and is subject to change.
  *
  * @lucene.experimental
- * @deprecated Used to configure the Apache HTTP client. Please use The Http2 client
+ * @deprecated Used to configure the Apache HTTP client. Please use the Http2 client
  */
 @Deprecated(since = "9.0")
 public class HttpClientUtil {
@@ -111,7 +111,7 @@ public class HttpClientUtil {
   public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
 
   // * NOTE* The following params configure the default request config and this
-  // is overridden by SolrJ clients. Use the setters on the SolrJ clients to
+  // is overridden by SolrJ clients. Use the setters on the SolrJ clients
   // to configure these settings if that is the intent.
 
   // Follow redirects
@@ -552,7 +552,7 @@ public class HttpClientUtil {
 
   /**
    * Create a HttpClientContext object and {@link HttpClientContext#setUserToken(Object)} to an
-   * internal singleton. It allows to reuse underneath {@link HttpClient} in connection pools if
+   * internal singleton. It allows reusing underlying {@link HttpClient} in connection pools if
    * client authentication is enabled.
    */
   public static HttpClientContext createNewHttpClientRequestContext() {

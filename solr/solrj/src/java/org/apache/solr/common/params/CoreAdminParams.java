@@ -179,7 +179,7 @@ public abstract class CoreAdminParams {
     REJOINLEADERELECTION,
     // internal API used by force shard leader election
     FORCEPREPAREFORLEADERSHIP,
-    // Internal APIs to backup and restore a core
+    // Internal APIs to back up and restore a core
     BACKUPCORE,
     RESTORECORE,
     INSTALLCOREDATA,

@@ -2575,7 +2575,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   @Test
-  public void testChildDoctransformer() throws IOException, SolrServerException {
+  public void testChildDocTransformer() throws IOException, SolrServerException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();

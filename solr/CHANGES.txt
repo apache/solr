@@ -69,6 +69,8 @@ Deprecation Removals
 
 * SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
 
+* SOLR-17400: Remove deprecated script snapshotcli.sh.  bin/solr snapshot-* commands have replaced this. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -107,7 +109,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
+* SOLR-17180: Deprecate snapshotscli.sh in favour of bin/solr snapshot sub commands.  Now able to manage Snapshots from the CLI.  HDFS module specific snapshot script now ships as part of that module in the modules/hdfs/bin directory. (Eric Pugh)  
 
 Optimizations
 ---------------------
@@ -123,6 +126,9 @@ Optimizations
 
 * SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
+* SOLR-17408: COLSTATUS command was fetching details remotely from replicas when this information
+  wasn't asked for. (Mathieu Marie)
+
 Bug Fixes
 ---------------------
 (No changes)
@@ -133,7 +139,9 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-* SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API
+* SOLR-17359: Move Zk Arg parsing into Java Code from bin/solr scripts.   (Eric Pugh, Rahul Goswami)
+
+* SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
 
 ==================  9.7.0 ==================
 New Features

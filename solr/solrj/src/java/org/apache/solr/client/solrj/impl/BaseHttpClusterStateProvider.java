@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -55,7 +56,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   volatile Map<String, Map<String, String>> aliasProperties;
   long aliasesTimestamp = 0;
 
-  private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
+  // the liveNodes and aliases cache will be invalidated after 5 secs
+  private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
 
   public void init(List<String> solrUrls) throws Exception {
     for (String solrUrl : solrUrls) {
@@ -110,7 +112,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // Cluster state for the given collection was not found, could be an alias.
-        // Lets fetch/update our aliases:
+        // Let's fetch/update our aliases:
         getAliases(true);
         return null;
       }
@@ -348,7 +350,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
-        // not possible! (we passed in null for collection so it can't be an alias)
+        // not possible! (we passed in null for collection, so it can't be an alias)
         throw new RuntimeException(
             "null should never cause NotACollectionException in "
                 + "fetchClusterState() Please report this as a bug!");
@@ -409,10 +411,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   public int getCacheTimeout() {
     return cacheTimeout;
-  }
-
-  public void setCacheTimeout(int cacheTimeout) {
-    this.cacheTimeout = cacheTimeout;
   }
 
   // This exception is not meant to escape this class it should be caught and wrapped.
