@@ -26,6 +26,7 @@ dependencies {
   implementation project(':solr:solrj-zookeeper')
 
   implementation 'org.slf4j:slf4j-api'
+  implementation 'com.google.guava:guava'
 
   // SQL Parser via Calcite
   implementation ('org.apache.calcite:calcite-core', {

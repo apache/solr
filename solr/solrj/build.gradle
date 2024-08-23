@@ -97,6 +97,7 @@ dependencies {
   })
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'io.dropwizard.metrics:metrics-core'
+  testImplementation 'com.fasterxml.jackson.core:jackson-core'
 }
 
 /**

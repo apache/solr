@@ -30,6 +30,7 @@ dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-databind'
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-zookeeper')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.slf4j:slf4j-api'
