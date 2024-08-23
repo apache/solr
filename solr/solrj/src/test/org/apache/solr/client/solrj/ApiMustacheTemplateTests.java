@@ -57,7 +57,7 @@ public class ApiMustacheTemplateTests {
     Assert.assertNotSame(data.getClass(), response.getClass());
     Assert.assertFalse(data instanceof JacksonParsingResponse<?>);
 
-    // Currently all response types extend SolrJerseyResponse. Adjust if this change in the future.
+    // Currently, all response types extend SolrJerseyResponse. Adjust if this change in the future.
     Assert.assertTrue(data instanceof SolrJerseyResponse);
   }
 

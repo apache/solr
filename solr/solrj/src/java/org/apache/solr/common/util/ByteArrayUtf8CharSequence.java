@@ -73,7 +73,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   }
 
   /**
-   * this is for internal use to get a cached string value. returns null if There is no cached
+   * this is for internal use, to get a cached string value. returns null if there is no cached
    * String value
    */
   public String getStringOrNull() {
