@@ -141,6 +141,8 @@ Other Changes
 ---------------------
 * SOLR-17359: Move Zk Arg parsing into Java Code from bin/solr scripts.   (Eric Pugh, Rahul Goswami)
 
+* SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
