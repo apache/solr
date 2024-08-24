@@ -321,7 +321,7 @@ public class SearchHandler extends RequestHandlerBase
     if (isZkAware) {
       String shardsTolerant = req.getParams().get(ShardParams.SHARDS_TOLERANT);
       boolean requireZkConnected =
-          shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
+          shardsTolerant != null && shardsTolerant.equals(HttpShardHandler.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
       boolean zkConnected =
           zkController != null
@@ -488,7 +488,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.setPartialResults();
+        rb.rsp.setPartialResults(rb.req);
       }
     } else {
       // a distributed request
@@ -553,7 +553,7 @@ public class SearchHandler extends RequestHandlerBase
           // now wait for replies, but if anyone puts more requests on
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
-          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
+          boolean tolerant = HttpShardHandler.getShardsTolerantAsBool(rb.req);
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp =
                 tolerant
@@ -581,7 +581,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.setPartialResults();
+                  rsp.setPartialResults(rb.req);
                 }
               }
             }

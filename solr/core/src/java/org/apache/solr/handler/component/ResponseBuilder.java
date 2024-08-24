@@ -444,8 +444,10 @@ public class ResponseBuilder {
   /** Sets results from a SolrIndexSearcher.QueryResult. */
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
+    if (result.isPartialResultOmitted() || result.isPartialResults()) {
+      rsp.setPartialResults(req);
+    }
     if (result.isPartialResults()) {
-      rsp.setPartialResults();
       if (getResults() != null && getResults().docList == null) {
         getResults().docList =
             new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);

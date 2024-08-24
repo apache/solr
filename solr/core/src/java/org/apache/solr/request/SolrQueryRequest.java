@@ -50,7 +50,11 @@ public interface SolrQueryRequest extends AutoCloseable {
    * performance in applications where partial results are not typically useful. This setting can be
    * overridden (in either direction) on a per-request basis with &amp;allowPartialResults=false
    */
-  boolean ALLOW_PARTIAL_RESULTS_DEFAULT = Boolean.getBoolean(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
+  boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
+      System.getProperty(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT) == null
+          ? true
+          : Boolean.getBoolean(
+              SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT); // silly getBoolean doesn't take a default.
 
   /**
    * Tests if the partials for the request should be discarded. Examines {@link

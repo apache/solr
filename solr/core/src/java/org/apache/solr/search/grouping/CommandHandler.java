@@ -16,6 +16,9 @@
  */
 package org.apache.solr.search.grouping;
 
+import static org.apache.solr.request.SolrRequestInfo.shouldDiscardPartials;
+import static org.apache.solr.response.SolrQueryResponse.partialResultsStatus;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -224,7 +227,7 @@ public class CommandHandler {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
-    queryResult.setPartialResults(partialResults);
+    queryResult.setPartialResults(partialResultsStatus(shouldDiscardPartials()));
     return transformer.transform(commands);
   }
 

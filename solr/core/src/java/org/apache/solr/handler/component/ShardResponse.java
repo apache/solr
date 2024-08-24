@@ -23,7 +23,7 @@ public final class ShardResponse {
   private String shard;
   private String nodeName;
   private volatile String shardAddress; // the specific shard that this response was received from
-  private int rspCode;
+  private volatile int rspCode;
   private volatile Throwable exception;
   private SolrResponse rsp;
 

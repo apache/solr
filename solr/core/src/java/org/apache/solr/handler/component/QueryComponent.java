@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -1338,10 +1339,8 @@ public class QueryComponent extends SearchComponent {
                   (NamedList<?>)
                       SolrResponseUtil.getSubsectionFromShardResponse(
                           rb, srsp, "responseHeader", false));
-          if (Boolean.TRUE.equals(
-              responseHeader.getBooleanArg(
-                  SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp.setPartialResults();
+          if (!haveCompleteResults(responseHeader)) { // partial or omitted partials
+            rb.rsp.setPartialResults(rb.req);
             rb.rsp.addPartialResponseDetail(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }
