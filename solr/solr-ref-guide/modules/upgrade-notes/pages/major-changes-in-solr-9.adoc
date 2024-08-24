@@ -72,17 +72,11 @@ Due to changes in Lucene 9, that isn't possible any more.
 In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
 
 === Partial Results
-* When solr is used for reporting, legal discovery or other use cases that cannot accept partial results, yet it still needs to be protected from long-running queries, users may now opt out of receiving partial results.
+When solr is used for reporting, legal discovery or other use cases that cannot accept partial results, yet it still needs to be protected from long-running queries, users may now opt out of receiving partial results.
 This feature should eliminate some wasted processing and bandwidth, as well as simplifying client side logic, and reducing the chance of inappropriate responses to the user.
 This can be enabled either via a request parameter (`allowPartialResults`), environment variable or system property.
-When this property is set, the partialResults attribute in the request header will now have three possible states: `"true"`, `"omitted"` or absent, with the new `"omitted"` value indicating the difference between a timed out request with results intentionally omitted and results that are merely empty.
+The partialResults attribute in the request header will now have three possible states: `"true"`, `"omitted"` or absent, with the new `"omitted"` value indicating the difference between a timed out request with results omitted due to query limits and results that are merely empty because the query didn't match any docs.
 Before enabling this feature, users should validate that their client code can handle the new value.
-Default fresh installs or installations that use the default solr.xml that comes with each new version will retain the existing behavior (allowing partial results).
-Users employing customized solr.xml files will need to add the following line at the top level of the file (immediately below the `<solr>` element) to ensure that the default behavior remains the same.
-[source,xml]
-----
-  <bool name="allowPartialResultsDefault">${solr.allow.partial.results.default:true}</bool>
-----
 
 == Solr 9.7
 === SchemaVersion upgraded to 1.7
