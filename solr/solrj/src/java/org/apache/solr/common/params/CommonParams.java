@@ -226,7 +226,7 @@ public interface CommonParams {
           METRICS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
-  String ALLOW_PARTIAL_RESULTS = "allowPartialResults";
+  String ALLOW_PARTIAL_RESULTS = "partialResults";
 
   /** valid values for: <code>echoParams</code> */
   enum EchoParamStyle {
