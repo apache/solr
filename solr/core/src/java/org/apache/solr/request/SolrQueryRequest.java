@@ -40,30 +40,28 @@ import org.apache.solr.util.RTimerTree;
  */
 public interface SolrQueryRequest extends AutoCloseable {
 
-  /** This is the solr.xml parameter for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
+  /** This is the system property for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
   String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
 
+  // silly getBoolean doesn't take a default.
   /**
    * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
-   * true, and solr will fail requests where any shard fails due query exedution limits (time, cpu
-   * etc). Setting this will prevent solr from collecting partial results by default, adding
-   * performance in applications where partial results are not typically useful. This setting can be
-   * overridden (in either direction) on a per-request basis with &amp;allowPartialResults=false
+   * true, and solr will omit results when any shard fails due query execution limits (time, cpu
+   * etc.). By default, this is set to true. Setting it to false will reduce processing, cpu and
+   * network associated with collecting and transmitting partial results. This setting can be
+   * overridden (in either direction) on a per-request basis with
+   * {@code &amp;allowPartialResults=[true|false]}. When results have been omitted the response
+   * header should contain a partialResults element with the value "omitted"
    */
   boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
-      System.getProperty(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT) == null
-          ? true
-          : Boolean.getBoolean(
-              SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT); // silly getBoolean doesn't take a default.
+      System.getProperty(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT) == null || Boolean.getBoolean(
+          SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
 
   /**
    * Tests if the partials for the request should be discarded. Examines {@link
-   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} from solr.xml (which may be influenced by
-   * system property or ENV var and also examines {@link CommonParams#ALLOW_PARTIAL_RESULTS} request
-   * param. The Request Parameter takes precedence if both are set.
-   *
-   * <p>Note: A default solr.xml from the distribution actively sets the default to true in absence
-   * of a system prop or env var to the contrary.
+   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} system property and also examines
+   * {@link CommonParams#ALLOW_PARTIAL_RESULTS} request param. The Request Parameter
+   * takes precedence if both are set.
    *
    * @return true if partials should be discarded.
    * @param params the request parameters
