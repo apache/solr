@@ -65,12 +65,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * @param params the request parameters
    */
   static boolean shouldDiscardPartials(SolrParams params) {
-    Boolean userParamAllowPartial = params.getBool(CommonParams.ALLOW_PARTIAL_RESULTS);
-    if (userParamAllowPartial != null) {
-      return !userParamAllowPartial;
-    } else {
-      return ALLOW_PARTIAL_RESULTS_DEFAULT;
-    }
+    return !params.getBool(CommonParams.ALLOW_PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
   }
 
   /** returns the current request parameters */
