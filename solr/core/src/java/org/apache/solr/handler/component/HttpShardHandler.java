@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.ALLOW_PARTIAL_RESULTS;
+import static org.apache.solr.request.SolrQueryRequest.shouldDiscardPartials;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -49,6 +53,14 @@ import org.apache.solr.security.AllowListUrlChecker;
 
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
+  /**
+   * Throw an error from search requests when the {@value ShardParams#SHARDS_TOLERANT} param has
+   * this value and ZooKeeper is not connected.
+   *
+   * @see #getShardsTolerantAsBool(SolrQueryRequest)
+   */
+  public static final String REQUIRE_ZK_CONNECTED = "requireZkConnected";
+
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
    * #prepDistributed(ResponseBuilder)} will only include {@link
@@ -78,6 +90,37 @@ public class HttpShardHandler extends ShardHandler {
     // This is primarily to keep track of what order we should use to query the replicas of a shard
     // so that we use the same replica for all phases of a distributed request.
     shardToURLs = new HashMap<>();
+  }
+
+  /**
+   * Parse the {@value ShardParams#SHARDS_TOLERANT} param from <code>params</code> as a boolean;
+   * accepts {@value #REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false</code>.
+   *
+   * <p>By default, returns <code>false</code> when {@value ShardParams#SHARDS_TOLERANT} is not set
+   * in <code>
+   * params</code>.
+   */
+  public static boolean getShardsTolerantAsBool(SolrQueryRequest req) {
+    String shardsTolerantValue = req.getParams().get(ShardParams.SHARDS_TOLERANT);
+    if (null == shardsTolerantValue || shardsTolerantValue.trim().equals(REQUIRE_ZK_CONNECTED)) {
+      return false;
+    } else {
+      boolean tolerant = StrUtils.parseBool(shardsTolerantValue.trim());
+      if (tolerant && shouldDiscardPartials(req.getParams())) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Use of "
+                + ShardParams.SHARDS_TOLERANT
+                + " requires that "
+                + ALLOW_PARTIAL_RESULTS
+                + " is true. If "
+                + ALLOW_PARTIAL_RESULTS
+                + " is defaulted to false explicitly passing "
+                + ALLOW_PARTIAL_RESULTS
+                + "=true in the request will allow shards.tolerant to work");
+      }
+      return tolerant; // throw an exception if non-boolean
+    }
   }
 
   private static class SimpleSolrResponse extends SolrResponse {

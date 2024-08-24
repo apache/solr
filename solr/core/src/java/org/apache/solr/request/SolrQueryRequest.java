@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -38,6 +39,39 @@ import org.apache.solr.util.RTimerTree;
  * <p><code>SolrQueryRequest</code> is not thread safe.
  */
 public interface SolrQueryRequest extends AutoCloseable {
+
+  /** This is the solr.xml parameter for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
+  String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
+
+  /**
+   * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
+   * true, and solr will fail requests where any shard fails due query exedution limits (time, cpu
+   * etc). Setting this will prevent solr from collecting partial results by default, adding
+   * performance in applications where partial results are not typically useful. This setting can be
+   * overridden (in either direction) on a per-request basis with &amp;allowPartialResults=false
+   */
+  boolean ALLOW_PARTIAL_RESULTS_DEFAULT = Boolean.getBoolean(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
+
+  /**
+   * Tests if the partials for the request should be discarded. Examines {@link
+   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} from solr.xml (which may be influenced by
+   * system property or ENV var and also examines {@link CommonParams#ALLOW_PARTIAL_RESULTS} request
+   * param. The Request Parameter takes precedence if both are set.
+   *
+   * <p>Note: A default solr.xml from the distribution actively sets the default to true in absence
+   * of a system prop or env var to the contrary.
+   *
+   * @return true if partials should be discarded.
+   * @param params the request parameters
+   */
+  static boolean shouldDiscardPartials(SolrParams params) {
+    Boolean userParamAllowPartial = params.getBool(CommonParams.ALLOW_PARTIAL_RESULTS);
+    if (userParamAllowPartial != null) {
+      return !userParamAllowPartial;
+    } else {
+      return ALLOW_PARTIAL_RESULTS_DEFAULT;
+    }
+  }
 
   /** returns the current request parameters */
   SolrParams getParams();
