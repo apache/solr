@@ -61,7 +61,7 @@ public class ShardParamsTest extends SolrTestCase {
   }
 
   public void testRequireZkConnected() {
-    assertEquals(HttpShardHandler.REQUIRE_ZK_CONNECTED, "requireZkConnected");
+    assertEquals(ShardParams.REQUIRE_ZK_CONNECTED, "requireZkConnected");
   }
 
   public void testShardsPurpose() {
@@ -96,7 +96,7 @@ public class ShardParamsTest extends SolrTestCase {
     }
 
     // shards.tolerant=requireZkConnected should return false
-    params.set(ShardParams.SHARDS_TOLERANT, HttpShardHandler.REQUIRE_ZK_CONNECTED);
+    params.set(ShardParams.SHARDS_TOLERANT, ShardParams.REQUIRE_ZK_CONNECTED);
     assertFalse(HttpShardHandler.getShardsTolerantAsBool(paramsSupplier));
 
     // values that aren't "requireZkConnected" or boolean should throw an exception

@@ -100,4 +100,12 @@ public interface ShardParams {
 
   /** Force a single-pass distributed query? (true/false) */
   String DISTRIB_SINGLE_PASS = "distrib.singlePass";
+
+  /**
+   * Throw an error from search requests when the {@value ShardParams#SHARDS_TOLERANT} param has
+   * this value and ZooKeeper is not connected.
+   *
+   * <p>See also HttpShardHandler's getShardsTolerantAsBool(SolrQueryRequest)
+   */
+  String REQUIRE_ZK_CONNECTED = "requireZkConnected";
 }

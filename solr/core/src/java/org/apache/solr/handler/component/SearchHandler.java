@@ -321,7 +321,7 @@ public class SearchHandler extends RequestHandlerBase
     if (isZkAware) {
       String shardsTolerant = req.getParams().get(ShardParams.SHARDS_TOLERANT);
       boolean requireZkConnected =
-          shardsTolerant != null && shardsTolerant.equals(HttpShardHandler.REQUIRE_ZK_CONNECTED);
+          shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
       boolean zkConnected =
           zkController != null

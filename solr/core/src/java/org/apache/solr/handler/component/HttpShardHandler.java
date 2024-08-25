@@ -57,14 +57,6 @@ public class HttpShardHandler extends ShardHandler {
   private final Object RESPONSE_CANCELABLE_LOCK = new Object();
 
   /**
-   * Throw an error from search requests when the {@value ShardParams#SHARDS_TOLERANT} param has
-   * this value and ZooKeeper is not connected.
-   *
-   * @see #getShardsTolerantAsBool(SolrQueryRequest)
-   */
-  public static final String REQUIRE_ZK_CONNECTED = "requireZkConnected";
-
-  /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
    * #prepDistributed(ResponseBuilder)} will only include {@link
    * org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible destination of the
@@ -104,7 +96,7 @@ public class HttpShardHandler extends ShardHandler {
 
   /**
    * Parse the {@value ShardParams#SHARDS_TOLERANT} param from <code>params</code> as a boolean;
-   * accepts {@value #REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false</code>.
+   * accepts {@value ShardParams#REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false</code>.
    *
    * <p>By default, returns <code>false</code> when {@value ShardParams#SHARDS_TOLERANT} is not set
    * in <code>
@@ -112,7 +104,7 @@ public class HttpShardHandler extends ShardHandler {
    */
   public static boolean getShardsTolerantAsBool(SolrQueryRequest req) {
     String shardsTolerantValue = req.getParams().get(ShardParams.SHARDS_TOLERANT);
-    if (null == shardsTolerantValue || shardsTolerantValue.trim().equals(REQUIRE_ZK_CONNECTED)) {
+    if (null == shardsTolerantValue || shardsTolerantValue.trim().equals(ShardParams.REQUIRE_ZK_CONNECTED)) {
       return false;
     } else {
       boolean tolerant = StrUtils.parseBool(shardsTolerantValue.trim());
