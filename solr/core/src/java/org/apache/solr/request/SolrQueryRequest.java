@@ -49,19 +49,19 @@ public interface SolrQueryRequest extends AutoCloseable {
    * true, and solr will omit results when any shard fails due query execution limits (time, cpu
    * etc.). By default, this is set to true. Setting it to false will reduce processing, cpu and
    * network associated with collecting and transmitting partial results. This setting can be
-   * overridden (in either direction) on a per-request basis with
-   * {@code &amp;allowPartialResults=[true|false]}. When results have been omitted the response
-   * header should contain a partialResults element with the value "omitted"
+   * overridden (in either direction) on a per-request basis with {@code
+   * &amp;allowPartialResults=[true|false]}. When results have been omitted the response header
+   * should contain a partialResults element with the value "omitted"
    */
   boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
-      System.getProperty(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT) == null || Boolean.getBoolean(
-          SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
+      System.getProperty(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT) == null
+          || Boolean.getBoolean(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
 
   /**
    * Tests if the partials for the request should be discarded. Examines {@link
-   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} system property and also examines
-   * {@link CommonParams#PARTIAL_RESULTS} request param. The Request Parameter
-   * takes precedence if both are set.
+   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} system property and also examines {@link
+   * CommonParams#PARTIAL_RESULTS} request param. The Request Parameter takes precedence if both are
+   * set.
    *
    * @return true if partials should be discarded.
    * @param params the request parameters

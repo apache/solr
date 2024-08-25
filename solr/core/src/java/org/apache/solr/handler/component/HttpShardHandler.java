@@ -96,7 +96,8 @@ public class HttpShardHandler extends ShardHandler {
 
   /**
    * Parse the {@value ShardParams#SHARDS_TOLERANT} param from <code>params</code> as a boolean;
-   * accepts {@value ShardParams#REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false</code>.
+   * accepts {@value ShardParams#REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false
+   * </code>.
    *
    * <p>By default, returns <code>false</code> when {@value ShardParams#SHARDS_TOLERANT} is not set
    * in <code>
@@ -104,7 +105,8 @@ public class HttpShardHandler extends ShardHandler {
    */
   public static boolean getShardsTolerantAsBool(SolrQueryRequest req) {
     String shardsTolerantValue = req.getParams().get(ShardParams.SHARDS_TOLERANT);
-    if (null == shardsTolerantValue || shardsTolerantValue.trim().equals(ShardParams.REQUIRE_ZK_CONNECTED)) {
+    if (null == shardsTolerantValue
+        || shardsTolerantValue.trim().equals(ShardParams.REQUIRE_ZK_CONNECTED)) {
       return false;
     } else {
       boolean tolerant = StrUtils.parseBool(shardsTolerantValue.trim());
