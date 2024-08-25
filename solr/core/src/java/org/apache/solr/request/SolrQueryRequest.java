@@ -60,14 +60,14 @@ public interface SolrQueryRequest extends AutoCloseable {
   /**
    * Tests if the partials for the request should be discarded. Examines {@link
    * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} system property and also examines
-   * {@link CommonParams#ALLOW_PARTIAL_RESULTS} request param. The Request Parameter
+   * {@link CommonParams#PARTIAL_RESULTS} request param. The Request Parameter
    * takes precedence if both are set.
    *
    * @return true if partials should be discarded.
    * @param params the request parameters
    */
   static boolean shouldDiscardPartials(SolrParams params) {
-    return !params.getBool(CommonParams.ALLOW_PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
+    return !params.getBool(CommonParams.PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
   }
 
   /** returns the current request parameters */

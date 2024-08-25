@@ -159,6 +159,12 @@ public interface CommonParams {
 
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
+  /**
+   * If true then allow returning partial results. If false and full results can't be produced
+   * return no results / error.
+   */
+  String PARTIAL_RESULTS = "partialResults";
+
   /** Timeout value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
 
@@ -226,7 +232,6 @@ public interface CommonParams {
           METRICS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
-  String ALLOW_PARTIAL_RESULTS = "partialResults";
 
   /** valid values for: <code>echoParams</code> */
   enum EchoParamStyle {

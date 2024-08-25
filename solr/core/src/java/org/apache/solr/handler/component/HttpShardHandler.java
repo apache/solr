@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.ALLOW_PARTIAL_RESULTS;
+import static org.apache.solr.common.params.CommonParams.PARTIAL_RESULTS;
 import static org.apache.solr.request.SolrQueryRequest.shouldDiscardPartials;
 
 import java.util.HashMap;
@@ -122,11 +122,11 @@ public class HttpShardHandler extends ShardHandler {
             "Use of "
                 + ShardParams.SHARDS_TOLERANT
                 + " requires that "
-                + ALLOW_PARTIAL_RESULTS
+                + PARTIAL_RESULTS
                 + " is true. If "
-                + ALLOW_PARTIAL_RESULTS
+                + PARTIAL_RESULTS
                 + " is defaulted to false explicitly passing "
-                + ALLOW_PARTIAL_RESULTS
+                + PARTIAL_RESULTS
                 + "=true in the request will allow shards.tolerant to work");
       }
       return tolerant; // throw an exception if non-boolean

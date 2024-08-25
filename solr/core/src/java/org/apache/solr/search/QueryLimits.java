@@ -103,7 +103,7 @@ public class QueryLimits implements QueryTimeout {
 
   /**
    * If limit is reached then depending on the request param {@link
-   * CommonParams#ALLOW_PARTIAL_RESULTS} either mark it as partial result in the response and signal
+   * CommonParams#PARTIAL_RESULTS} either mark it as partial result in the response and signal
    * the caller to return, or throw an exception.
    *
    * @param label optional label to indicate the caller.
