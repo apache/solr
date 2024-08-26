@@ -561,6 +561,20 @@ public class SearchHandler extends RequestHandlerBase
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
 
+            boolean anyResponsesPartial =
+                srsp.getShardRequest().responses.stream()
+                    .anyMatch(
+                        response -> {
+                          NamedList<Object> resp = response.getSolrResponse().getResponse();
+                          if (resp == null) {
+                            return false;
+                          }
+                          Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          return recursive != null;
+                        });
+            if (anyResponsesPartial) {
+              rsp.setPartialResults(rb.req);
+            }
             // Was there an exception?
             if (srsp.getException() != null) {
               // If things are not tolerant, abort everything and rethrow

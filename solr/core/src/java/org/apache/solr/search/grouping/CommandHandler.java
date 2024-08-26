@@ -125,7 +125,6 @@ public class CommandHandler {
   private final boolean needDocSet;
   private final boolean truncateGroups;
   private final boolean includeHitCount;
-  private boolean partialResults = false;
   private int totalHitCount;
 
   private DocSet docSet;
@@ -227,7 +226,9 @@ public class CommandHandler {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
-    queryResult.setPartialResults(partialResultsStatus(shouldDiscardPartials()));
+    if (queryResult.isPartialResults()) {
+      queryResult.setPartialResults(partialResultsStatus(shouldDiscardPartials()));
+    }
     return transformer.transform(commands);
   }
 
@@ -259,7 +260,6 @@ public class CommandHandler {
       searcher.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException
         | ExitableDirectoryReader.ExitingReaderException x) {
-      partialResults = true;
       log.warn("Query: {}; ", query, x);
     }
 
