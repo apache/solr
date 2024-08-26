@@ -113,10 +113,6 @@ Lucene is upgraded to 9.10.0 and a variety of library dependencies have been upg
 === Other
 * Inactive shards will now be cleaned up periodically
 
-* Queries may now be limited by cpu usage as well as wall clock time using the cpuAllowed parameter.
-  This will improve the liklihood that the cpu hogging query is the one that gets killed, and that cpu starved innocent bystanders are unaffected.
-
-
 == Solr 9.5
 === Dependency Upgrades
 <<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
