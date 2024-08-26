@@ -50,7 +50,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * etc.). By default, this is set to true. Setting it to false will reduce processing, cpu and
    * network associated with collecting and transmitting partial results. This setting can be
    * overridden (in either direction) on a per-request basis with {@code
-   * &amp;allowPartialResults=[true|false]}. When results have been omitted the response header
+   * &allowPartialResults=[true|false]}. When results have been omitted the response header
    * should contain a partialResults element with the value "omitted"
    */
   boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
