@@ -139,7 +139,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void uploadConfig(String configName, Path source) throws IOException {
+  protected void uploadConfig(String configName, Path source) throws IOException {
     Path dest = getConfigDir(configName);
     copyRecursively(source, dest);
   }
@@ -169,7 +169,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
     // store metadata in .metadata.json file
-    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
+    Path configDir = getConfigDir(configName);
+    if (!Files.exists(configDir)) {
+      Files.createDirectory(configDir);
+    }
+    Path metadataPath = configDir.resolve(METADATA_FILE);
     Files.write(metadataPath, Utils.toJSON(data));
   }
 
