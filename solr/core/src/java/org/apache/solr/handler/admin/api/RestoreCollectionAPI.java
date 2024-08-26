@@ -34,6 +34,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.TRUSTED;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -57,6 +58,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.configsets.ConfigSetAPIBase;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -155,7 +157,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(
+  public ZkNodeProps createRemoteMessage(
       String backupName, RestoreCollectionRequestBody requestBody) {
     final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
 
@@ -181,6 +183,10 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     if (requestBody.backupId != null) remoteMessage.put(BACKUP_ID, requestBody.backupId);
     if (requestBody.repository != null)
       remoteMessage.put(BACKUP_REPOSITORY, requestBody.repository);
+    remoteMessage.put(
+        TRUSTED,
+        ConfigSetAPIBase.isTrusted(
+            solrQueryRequest.getUserPrincipal(), coreContainer.getAuthenticationPlugin()));
     return new ZkNodeProps(remoteMessage);
   }
 

@@ -117,6 +117,8 @@ Improvements
   support docValues will have them enabled by default. This behavior can be reverted by setting
   'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)
 
+* SOLR-17418: Streamline ConfigSet modification logic.  (Houston Putman, Liu Huajin)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather

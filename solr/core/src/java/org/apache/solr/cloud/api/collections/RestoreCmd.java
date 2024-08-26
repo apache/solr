@@ -158,6 +158,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     final URI location;
     final URI backupPath;
     final List<String> nodeList;
+    final boolean requestIsTrusted;
 
     final CoreContainer container;
     final BackupRepository repository;
@@ -173,6 +174,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       this.asyncId = message.getStr(ASYNC);
       this.repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
       this.backupId = message.getInt(CoreAdminParams.BACKUP_ID, -1);
+      this.requestIsTrusted = message.getBool(CoreAdminParams.TRUSTED, false);
 
       this.container = ccc.getCoreContainer();
       this.repository = this.container.newBackupRepository(repo);
@@ -251,7 +253,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           rc.backupProperties.getConfigName(),
           rc.restoreConfigName,
           rc.backupManager,
-          rc.container.getConfigSetService());
+          rc.container.getConfigSetService(),
+          rc.requestIsTrusted);
 
       log.info(
           "Starting restore into collection={} with backup_name={} at location={}",
@@ -318,7 +321,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         String configName,
         String restoreConfigName,
         BackupManager backupMgr,
-        ConfigSetService configSetService)
+        ConfigSetService configSetService,
+        boolean requestIsTrusted)
         throws IOException {
       if (configSetService.checkConfigExists(restoreConfigName)) {
         log.info(
@@ -330,7 +334,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
             "Config with name {} does not already exist in ZooKeeper. Will restore from Backup.",
             restoreConfigName);
 
-        backupMgr.uploadConfigDir(configName, restoreConfigName, configSetService);
+        backupMgr.uploadConfigDir(
+            configName, restoreConfigName, configSetService, requestIsTrusted);
       }
     }
 

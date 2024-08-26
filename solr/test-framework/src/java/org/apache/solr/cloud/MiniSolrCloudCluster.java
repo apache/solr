@@ -70,7 +70,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -638,11 +637,7 @@ public class MiniSolrCloudCluster {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      ZkMaintenanceUtils.uploadToZK(
-          zkClient,
-          configDir,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + configName,
-          ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir, true);
     }
   }
 
