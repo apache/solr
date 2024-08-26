@@ -1754,14 +1754,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           zout.putNextEntry(new ZipEntry("test." + fileType));
 
           try (InputStream in = new FileInputStream(fileOrDirectory)) {
-            byte[] buffer = new byte[1024];
-            while (true) {
-              int readCount = in.read(buffer);
-              if (readCount < 0) {
-                break;
-              }
-              zout.write(buffer, 0, readCount);
-            }
+            in.transferTo(zout);
           }
 
           zout.closeEntry();
@@ -1783,8 +1776,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     Deque<File> queue = new ArrayDeque<>();
     queue.push(directory);
     OutputStream out = new FileOutputStream(zipfile);
-    ZipOutputStream zout = new ZipOutputStream(out);
-    try {
+    try (ZipOutputStream zout = new ZipOutputStream(out)) {
       while (!queue.isEmpty()) {
         directory = queue.pop();
         for (File kid : directory.listFiles()) {
@@ -1796,26 +1788,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           } else {
             zout.putNextEntry(new ZipEntry(name));
 
-            InputStream in = new FileInputStream(kid);
-            try {
-              byte[] buffer = new byte[1024];
-              while (true) {
-                int readCount = in.read(buffer);
-                if (readCount < 0) {
-                  break;
-                }
-                zout.write(buffer, 0, readCount);
-              }
-            } finally {
-              in.close();
+            try (InputStream in = new FileInputStream(kid)) {
+              in.transferTo(zout);
             }
 
             zout.closeEntry();
           }
         }
       }
-    } finally {
-      zout.close();
     }
   }
 

@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.loader.CSVLoaderBase.SEPARATOR;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -65,14 +64,11 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   private static final int MAX_STREAM_SIZE = (5 * 1024 * 1024);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static byte[] streamAsBytes(final InputStream in) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    byte[] buf = new byte[1024];
-    int r;
+  /** Reads input completely into a byte array. Closes the stream. */
+  static byte[] streamAsBytes(final InputStream in) throws IOException {
     try (in) {
-      while ((r = in.read(buf)) != -1) baos.write(buf, 0, r);
+      return in.readAllBytes();
     }
-    return baos.toByteArray();
   }
 
   @Override

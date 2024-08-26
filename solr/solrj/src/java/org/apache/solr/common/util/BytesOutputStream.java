@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
+@Deprecated
 public class BytesOutputStream extends OutputStream {
   private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
