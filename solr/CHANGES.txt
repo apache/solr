@@ -115,9 +115,6 @@ Improvements
 
 * SOLR-17180: Deprecate snapshotscli.sh in favour of bin/solr snapshot sub commands.  Now able to manage Snapshots from the CLI.  HDFS module specific snapshot script now ships as part of that module in the modules/hdfs/bin directory. (Eric Pugh)
 
-* SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
-* SOLR-17180: Deprecate snapshotscli.sh in favour of bin/solr snapshot sub commands.  Now able to manage Snapshots from the CLI.  HDFS module specific snapshot script now ships as part of that module in the modules/hdfs/bin directory. (Eric Pugh)
-
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
