@@ -91,6 +91,7 @@ allprojects {
       ext {
         testOutputsDir = file("${reports.junitXml.outputLocation.get()}/outputs")
       }
+
       // LUCENE-9660: Make it possible to always rerun tests, even if they're incrementally up-to-date.
       if (resolvedTestOption("tests.neverUpToDate").toBoolean()) {
         outputs.upToDateWhen { false }
