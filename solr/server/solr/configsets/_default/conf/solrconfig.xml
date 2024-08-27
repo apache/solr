@@ -656,6 +656,10 @@
 
   <!-- Primary search handler, expected by most clients, examples and UI frameworks -->
   <requestHandler name="/select" class="solr.SearchHandler">
+    <shardHandlerFactory name="shardHandlerFactory" class="${shardHandlerFactory:ParallelHttpShardHandlerFactory}">
+      <int name="socketTimeout">${socketTimeout:600000}</int>
+      <int name="connTimeout">${connTimeout:60000}</int>
+    </shardHandlerFactory>
     <lst name="defaults">
       <str name="echoParams">explicit</str>
       <int name="rows">10</int>

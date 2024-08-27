@@ -79,7 +79,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // requests at some point (or should we simply return failure?)
   //
   // This executor is initialized in the init method
-  private ExecutorService commExecutor;
+  protected ExecutorService commExecutor;
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
