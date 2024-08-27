@@ -233,7 +233,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
-    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    /** Whether to use the default ZK ACLs when building a ZK Client. */
     public Builder canUseZkACLs(boolean canUseZkACLs) {
       this.canUseZkACLs = canUseZkACLs;
       return this;
@@ -346,7 +346,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * This is the time to wait to refetch the state after getting the same state version from ZK
+     * This is the time to wait to re-fetch the state after getting the same state version from ZK
      *
      * @deprecated Please use {@link #withRetryExpiryTime(long, TimeUnit)}
      */
@@ -357,7 +357,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * This is the time to wait to refetch the state after getting the same state version from ZK
+     * This is the time to wait to re-fetch the state after getting the same state version from ZK
      */
     public Builder withRetryExpiryTime(long expiryTime, TimeUnit unit) {
       this.retryExpiryTimeNano = TimeUnit.NANOSECONDS.convert(expiryTime, unit);
@@ -413,7 +413,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     /**
      * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this
      * builder (instead of the empty default one). Providing this builder allows users to configure
-     * the internal clients (authentication, timeouts, etc).
+     * the internal clients (authentication, timeouts, etc.).
      *
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this

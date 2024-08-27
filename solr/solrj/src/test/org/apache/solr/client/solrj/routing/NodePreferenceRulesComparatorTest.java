@@ -123,7 +123,7 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
                 "NRT"),
             "collection1",
             "shard1"));
-    // Prefer non-leader only, therefore node1 has lowest priority
+    // Prefer non-leader only, therefore node1 has the lowest priority
     List<PreferenceRule> rules =
         PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER + ":false");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);

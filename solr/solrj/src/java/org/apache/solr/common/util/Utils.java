@@ -695,8 +695,8 @@ public class Utils {
   }
 
   /**
-   * Applies one json over other. The 'input' is applied over the sink The values in input isapplied
-   * over the values in 'sink' . If a value is 'null' that value is removed from sink
+   * Applies one json over another. The 'input' is applied over the sink The values in input is
+   * applied over the values in 'sink' . If a value is 'null' that value is removed from sink
    *
    * @param sink the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values

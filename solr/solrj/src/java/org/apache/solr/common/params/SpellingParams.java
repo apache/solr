@@ -51,9 +51,9 @@ public interface SpellingParams {
   /**
    * The maximum number of hits the request can return in order to both generate spelling
    * suggestions and set the "correctlySpelled" element to "false". This can be specified either as
-   * a whole number number of documents, or it can be expressed as a fractional percentage of
-   * documents returned by a chosen filter query. By default, the chosen filter is the most
-   * restrictive fq clause. This can be overridden with {@link
+   * a whole number of documents, or it can be expressed as a fractional percentage of documents
+   * returned by a chosen filter query. By default, the chosen filter is the most restrictive fq
+   * clause. This can be overridden with {@link
    * SpellingParams#SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ} .
    *
    * <p>If left unspecified, the default behavior will prevail. That is, "correctlySpelled" will be

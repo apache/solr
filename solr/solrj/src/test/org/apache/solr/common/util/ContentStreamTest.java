@@ -147,7 +147,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testURLStreamCSVGZIPExtention() throws IOException {
+  public void testURLStreamCSVGZIPExtension() throws IOException {
     File file = new File(createTempDir().toFile(), "README.CSV.gz");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());
@@ -173,7 +173,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testURLStreamJSONGZIPExtention() throws IOException {
+  public void testURLStreamJSONGZIPExtension() throws IOException {
     File file = new File(createTempDir().toFile(), "README.json.gzip");
 
     try (SolrResourceLoader srl = new SolrResourceLoader(Paths.get("").toAbsolutePath());

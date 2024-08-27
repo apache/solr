@@ -179,7 +179,7 @@ public class TermsFacetMap extends JsonFacetMap<TermsFacetMap> {
   /**
    * Indicates that Solr should include the total number of buckets for this facet.
    *
-   * <p>Note that this is different than the number of buckets returned. Defaults to false if not
+   * <p>Note that this is different from the number of buckets returned. Defaults to false if not
    * specified
    *
    * @param numBuckets true if the "numBuckets" field should be computed; false otherwise
@@ -192,7 +192,7 @@ public class TermsFacetMap extends JsonFacetMap<TermsFacetMap> {
   /**
    * Creates a bucket representing the union of all other buckets.
    *
-   * <p>For multi-valued fields this is different than a bucket for the entire domain, since
+   * <p>For multi-valued fields this is different from a bucket for the entire domain, since
    * documents can belong to multiple buckets. Defaults to false if not specified.
    *
    * @param shouldInclude true if the union bucket "allBuckets" should be computed; false otherwise
