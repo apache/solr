@@ -1834,3 +1834,69 @@ Here is an example of sending a SQL query to the techproducts `/sql` end point (
 $ bin/solr api --solr-url http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.
+
+
+== Managing Solr Packages
+
+The `package` command allows you to interact with Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
+
+
+== Snapshots and Backups
+
+The snapshots capablity of the CLI allows you to:
+
+* Create snapshotted view of your index
+* List all the available snapshots
+* Provide details about individual Snapshots
+* Export snapshots as part of a backup strategy
+* Delete existing snapshots
+
+Learn more about on the xref:backup-restore.adoc[Backup and Restore] and xref:collection-management.adoc[Collection Management] pages.
+
+=== Create Snapshotted View
+
+To create a snapshot you just give it the collection and the name you want:
+
+[,console]
+----
+$  bin/solr snapshot-create -c <collection-name> --snapshot-name <snapshot-name>
+----
+
+=== List all available snapshots
+
+To list all the snapshots that have been taken for a collection:
+
+[,console]
+----
+$ bin/solr snapshot-list -c <collection-name>
+----
+
+=== Detailed information about a Snapshot
+
+Use the describe command to gain detailed information about a specific snapshot:
+
+[,console]
+----
+$ bin/solr snapshot-describe -c <collection-name> --snapshot-name <snapshot-name>
+----
+
+=== Converting a Snapshot to a Backup
+
+Use the export command to take :
+
+[,console]
+----
+$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [-i <ID>] --snapshot-name <NAME>
+----
+
+The `-i` parameter specifies that this is an asynchronous process.
+
+
+=== Delete a Snapshot
+
+Use the delete command to delete a snapshot :
+
+[,console]
+----
+$ bin/solr snapshot-delete -c <NAME> --snapshot-name <NAME>
+----

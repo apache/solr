@@ -138,7 +138,7 @@ public class NamedList<T>
 
   /**
    * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even indexed elements
-   * (0,2,4. ..etc) are Strings and odd elements (1,3,5,) are of the type "T".
+   * (0,2,4, etc.) are Strings and odd elements (1,3,5,) are of the type "T".
    *
    * <p>NOTE: This a temporary placeholder method until the guts of the class are actually replaced
    * by List&lt;String, ?&gt;.
@@ -343,7 +343,7 @@ public class NamedList<T>
        * assign it to value.
        *
        * On the next loop, we check whether the retrieved value is a NamedList.
-       * If it is, then we drop down to that NamedList, grab the value of the
+       * If it is, then we drop to that NamedList, grab the value of the
        * next key, and start the loop over. If it is not a NamedList, then we
        * assign the value to null and break out of the loop.
        *
@@ -690,7 +690,7 @@ public class NamedList<T>
   /**
    * Used for getting a boolean argument from a NamedList object. If the name is not present,
    * returns null. If there is more than one value with that name, or if the value found is not a
-   * Boolean or a String, throws an exception. If there is only one value present and it is a
+   * Boolean or a String, throws an exception. If there is only one value present, and it is a
    * Boolean or a String, the value is removed and returned as a Boolean. If an exception is thrown,
    * the NamedList is not modified. See {@link #removeAll(String)} and {@link
    * #removeConfigArgs(String)} for additional ways of gathering configuration information from a
@@ -712,7 +712,7 @@ public class NamedList<T>
   /**
    * Used for getting a boolean argument from a NamedList object. If the name is not present,
    * returns null. If there is more than one value with that name, or if the value found is not a
-   * Boolean or a String, throws an exception. If there is only one value present and it is a
+   * Boolean or a String, throws an exception. If there is only one value present, and it is a
    * Boolean or a String, the value is returned as a Boolean. The NamedList is not modified. See
    * {@link #remove(String)}, {@link #removeAll(String)} and {@link #removeConfigArgs(String)} for
    * additional ways of gathering configuration information from a NamedList.
