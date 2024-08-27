@@ -143,6 +143,8 @@ Other Changes
 
 * SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
 
+* SOLR-17422: Remove V2 /api/cluster
+
 ==================  9.7.0 ==================
 New Features
 ---------------------

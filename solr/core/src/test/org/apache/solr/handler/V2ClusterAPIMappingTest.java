@@ -32,7 +32,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -84,13 +83,6 @@ public class V2ClusterAPIMappingTest extends SolrTestCaseJ4 {
     final SolrParams v1Params = captureConvertedV1Params("/cluster/overseer", "GET", null);
 
     assertEquals(CollectionParams.CollectionAction.OVERSEERSTATUS.lowerName, v1Params.get(ACTION));
-  }
-
-  @Test
-  public void testClusterStatusAllParams() throws Exception {
-    final SolrParams v1Params = captureConvertedV1Params("/cluster", "GET", null);
-
-    assertEquals(CollectionAction.CLUSTERSTATUS.lowerName, v1Params.get(ACTION));
   }
 
   @Test
