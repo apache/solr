@@ -215,6 +215,7 @@ public class SolrZkClient implements Closeable {
       } catch (InterruptedException e1) {
         Thread.currentThread().interrupt();
       }
+      zkCallbackExecutor.shutdown();
       zkConnManagerCallbackExecutor.shutdown();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -1074,7 +1075,19 @@ public class SolrZkClient implements Closeable {
     public void process(final WatchedEvent event) {
       log.debug("Submitting job to respond to event {}", event);
       try {
-        if (watcher instanceof ConnectionManager) {
+        // We want all the code that re-creates the Zookeeper session and then invoke
+        // ZkController.onReconnect() to never be executed by two threads concurrently.
+        // Pool 'zkConnManagerCallbackExecutor' is single threaded. We make sure such events
+        // are processed only by this pool. Consequently, in case of a session expiration, we
+        // don't try to re-create a new session until the previous call to onReconnect()
+        // returned.
+        //
+        // All other events goes to pool 'zkCallbackExecutor', which is unbounded and may
+        // spawn as many threads as there are events to process.
+        // This includes event on ConnectionManager others than session expiration. Consequently,
+        // there is no deadlock when the thread currently reestablishing the session waits for
+        // the 'SyncConnected' event.
+        if (watcher instanceof ConnectionManager && event.getState() == Event.KeeperState.Expired) {
           zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
         } else {
           zkCallbackExecutor.submit(
