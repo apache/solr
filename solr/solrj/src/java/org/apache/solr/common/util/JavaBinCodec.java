@@ -1250,7 +1250,7 @@ public class JavaBinCodec implements PushWriter {
      * Examine and attempt to serialize the given object, using a {@link JavaBinCodec} to write it
      * to a stream.
      *
-     * @param o the object that the caller wants serialized.
+     * @param o the object that the caller wants to be serialized.
      * @param codec used to actually serialize {@code o}.
      * @return the object {@code o} itself if it could not be serialized, or {@code null} if the
      *     whole object was successfully serialized.

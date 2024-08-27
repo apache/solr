@@ -39,7 +39,7 @@ public interface Tool {
    * Optional header to display before the options in help output. Defaults to 'List of options:'
    */
   default String getHeader() {
-    return "\nList of options:";
+    return "List of options:";
   }
 
   /**

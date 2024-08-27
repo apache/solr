@@ -245,7 +245,7 @@ public abstract class ContentStreamBase implements ContentStream {
       return new ByteArrayInputStream(str.getBytes(DEFAULT_CHARSET));
     }
 
-    /** If an charset is defined (by the contentType) use that, otherwise use a StringReader */
+    /** If a charset is defined (by the contentType) use that, otherwise use a StringReader */
     @Override
     public Reader getReader() throws IOException {
       String charset = getCharsetFromContentType(contentType);

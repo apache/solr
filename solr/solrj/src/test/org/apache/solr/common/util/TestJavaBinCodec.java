@@ -197,36 +197,36 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
               }
             }; ) {
       @SuppressWarnings({"unchecked"})
-      List<Object> unmarshaledObj = (List<Object>) javabin.unmarshal(is);
+      List<Object> unmarshalledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
-      compareObjects(unmarshaledObj, matchObj);
+      compareObjects(unmarshalledObj, matchObj);
     } catch (IOException e) {
       throw e;
     }
   }
 
-  private void compareObjects(List<?> unmarshaledObj, List<?> matchObj) {
-    assertEquals(unmarshaledObj.size(), matchObj.size());
-    for (int i = 0; i < unmarshaledObj.size(); i++) {
+  private void compareObjects(List<?> unmarshalledObj, List<?> matchObj) {
+    assertEquals(unmarshalledObj.size(), matchObj.size());
+    for (int i = 0; i < unmarshalledObj.size(); i++) {
 
-      if (unmarshaledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
-        byte[] b1 = (byte[]) unmarshaledObj.get(i);
+      if (unmarshalledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
+        byte[] b1 = (byte[]) unmarshalledObj.get(i);
         byte[] b2 = (byte[]) matchObj.get(i);
         assertArrayEquals(b1, b2);
-      } else if (unmarshaledObj.get(i) instanceof SolrDocument
+      } else if (unmarshalledObj.get(i) instanceof SolrDocument
           && matchObj.get(i) instanceof SolrDocument) {
-        assertTrue(compareSolrDocument(unmarshaledObj.get(i), matchObj.get(i)));
-      } else if (unmarshaledObj.get(i) instanceof SolrDocumentList
+        assertTrue(compareSolrDocument(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof SolrDocumentList
           && matchObj.get(i) instanceof SolrDocumentList) {
-        assertTrue(compareSolrDocumentList(unmarshaledObj.get(i), matchObj.get(i)));
-      } else if (unmarshaledObj.get(i) instanceof SolrInputDocument
+        assertTrue(compareSolrDocumentList(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof SolrInputDocument
           && matchObj.get(i) instanceof SolrInputDocument) {
-        assertTrue(compareSolrInputDocument(unmarshaledObj.get(i), matchObj.get(i)));
-      } else if (unmarshaledObj.get(i) instanceof SolrInputField
+        assertTrue(compareSolrInputDocument(unmarshalledObj.get(i), matchObj.get(i)));
+      } else if (unmarshalledObj.get(i) instanceof SolrInputField
           && matchObj.get(i) instanceof SolrInputField) {
-        assertTrue(assertSolrInputFieldEquals(unmarshaledObj.get(i), matchObj.get(i)));
+        assertTrue(assertSolrInputFieldEquals(unmarshalledObj.get(i), matchObj.get(i)));
       } else {
-        assertEquals(unmarshaledObj.get(i), matchObj.get(i));
+        assertEquals(unmarshalledObj.get(i), matchObj.get(i));
       }
     }
   }
@@ -336,7 +336,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     // but keeping this in code to make a point, that even the same exact bin file, there could be
     // sub-objects in the key or value of the maps, with types that do not implement equals and in
     // these cases equals would fail as these sub-objects would be equated on their
-    // memory-references which is highly probbale to be unique and hence the top-level map's equals
+    // memory-references which is highly probable to be unique and hence the top-level map's equals
     // will also fail assertNotEquals("2 different references even though from same source are
     // un-equal",entryFromBinFileA,entryFromBinFileA_clone);
 
