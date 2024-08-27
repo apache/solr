@@ -224,7 +224,6 @@ public class MergeStream extends TupleStream implements Expressible {
 
     // If all EOF then min will be null, else min is the current minimum
     if (null == minimum) {
-      // return EOF, doesn't matter which because we're done
       return streams[0].read();
     }
 
