@@ -133,7 +133,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)
 
 Dependency Upgrades
 ---------------------
