@@ -695,7 +695,7 @@ fi
 : "${SOLR_RECOMMENDED_OPEN_FILES:=65000}"
 
 if [[ "${SOLR_ULIMIT_CHECKS:-}" != "false" ]]; then
-  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] || [ "$SCRIPT_CMD" == "status" ]; then
+  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
