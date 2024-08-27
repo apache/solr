@@ -680,11 +680,7 @@ fi
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
-  ret=$?
-  if [ $ret -ne 0 ]; then
-    exit $ret
-  fi
-  exit 0
+  exit $?
 fi
 
 # Everything below here is to support start, stop and restart.
