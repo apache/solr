@@ -109,7 +109,11 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-17158: Users for whom partial results are uninteresting may set partialResultsAllowed=false. This allows Solr to reduce time spent processing partial results and omit them from the response. (Gus Heck, Andrzej Bialeki, hossman)
+* SOLR-17158: Users using query limits (timeAllowed, cpuTimeAllowed) for whom partial results are uninteresting
+  may set partialResults=false. This parameter has been enhanced to reduce time spent processing partial results
+  and omit partialResults from the response. Since this is requested behavior, no exception is thrown and the
+  partialResults response header will always exist if the result was short circuited.
+  (Gus Heck, Andrzej Bialecki, hossman)
 
 * SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
 
