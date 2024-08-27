@@ -28,8 +28,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
- * Joins leftStream with rightStream based on an {@link StreamEqualitor}. Both streams must be sorted by the
- * fields being joined on. Resulting stream is sorted by the equalitor.
+ * Joins leftStream with rightStream based on an {@link StreamEqualitor}. Both streams must be
+ * sorted by the fields being joined on. Resulting stream is sorted by the equalitor.
  *
  * @since 6.0.0
  */
