@@ -1230,7 +1230,7 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
-# Enable ADMIN UI by default, and give the option for users to disable it
+# Enable Admin UI by default, and give the option for users to disable it
 if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
   SOLR_ADMIN_UI="-DdisableAdminUI=true"
   echo -e "ADMIN UI Disabled"
