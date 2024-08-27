@@ -31,6 +31,8 @@ Optimizations
 * SOLR-17408: COLSTATUS command was fetching details remotely from replicas when this information
   wasn't asked for. (Mathieu Marie)
 
+* SOLR-3913: Optimize PostTool to call just optimize when both commit and optimize requested. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 (No changes)

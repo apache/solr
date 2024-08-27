@@ -332,11 +332,11 @@ public class PostTool extends ToolBase {
       return;
     }
 
-    if (commit) {
-      commit();
-    }
     if (optimize) {
+      // optimize does a commit under the covers.
       optimize();
+    } else if (commit) {
+      commit();
     }
     displayTiming((long) timer.getTime());
   }
@@ -458,7 +458,7 @@ public class PostTool extends ToolBase {
    * @param args array of file names
    * @param startIndexInArgs offset to start
    * @param out output stream to post data to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
    */
   public int postFiles(String[] args, int startIndexInArgs, OutputStream out, String type) {
@@ -542,7 +542,7 @@ public class PostTool extends ToolBase {
    *
    * @param globFile file holding glob path
    * @param out outputStream to write results to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
    */
   int handleGlob(File globFile, OutputStream out, String type) {
