@@ -969,7 +969,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }),
     /**
      * Handle cluster status request. Can return status per specific collection/shard or per all
-     * collections.
+     * collections. note: there is no 1:1 V2 equivalent; instead separate endpoints are used.
      */
     CLUSTERSTATUS_OP(
         CLUSTERSTATUS,

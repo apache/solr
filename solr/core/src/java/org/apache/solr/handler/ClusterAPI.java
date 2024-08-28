@@ -49,8 +49,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -244,13 +242,6 @@ public class ClusterAPI {
   @EndPoint(method = GET, path = "/cluster/nodes", permission = COLL_READ_PERM)
   public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
     rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
-  }
-
-  @EndPoint(method = GET, path = "/cluster", permission = COLL_READ_PERM)
-  public void getClusterStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final Map<String, Object> v1Params =
-        Map.of(CommonParams.ACTION, CollectionAction.CLUSTERSTATUS.toLower());
-    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
   private CoreContainer getCoreContainer() {
