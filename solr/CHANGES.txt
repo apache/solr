@@ -129,9 +129,14 @@ Optimizations
 * SOLR-17408: COLSTATUS command was fetching details remotely from replicas when this information
   wasn't asked for. (Mathieu Marie)
 
+* SOLR-3913: Optimize PostTool to call just optimize when both commit and optimize requested. (Eric Pugh)
+
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)
+
+* SOLR-17421: Fixed a rare case where overseer was stuck after a failure when changing overseer to honor the
+  node role for preferred overseer. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
@@ -212,6 +217,8 @@ Improvements
 * SOLR-10808 : The Solr schema version has been increased to 1.7. Since schema version 1.7, all fields/fieldTypes that
   support docValues will have them enabled by default. This behavior can be reverted by setting
   'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)
+
+* SOLR-17418: Streamline ConfigSet modification logic.  (Houston Putman, Liu Huajin)
 
 Optimizations
 ---------------------
