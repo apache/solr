@@ -37,6 +37,9 @@ Bug Fixes
 ---------------------
 * SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)
 
+* SOLR-17421: Fixed a rare case where overseer was stuck after a failure when changing overseer to honor the
+  node role for preferred overseer. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 (No changes)
