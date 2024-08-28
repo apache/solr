@@ -104,7 +104,7 @@ To run the Solr server:
 
 [source,bash]
 ----
-docker run -it solr
+docker run -it solr start
 ----
 
 Here "solr" is the name of the image, and there is no specific command, so the image defaults to run the "solr" command with "-f" to run it in the foreground.
@@ -113,11 +113,11 @@ To run the Solr server with extra arguments:
 
 [source,bash]
 ----
-docker run -it solr -h myhostname
+docker run -it solr start --host myhostname
 ----
 
 This is the same as the previous one, but an additional argument is passed.
-The image will run the "solr" command with "-f -h myhostname".
+The image will run the "solr" command with "-f --h myhostname".
 
 To run solr as an arbitrary command:
 
@@ -135,7 +135,7 @@ For example:
 
 [source,bash]
 ----
-docker run -it solr bin/solr start -f -h myhostname
+docker run -it solr bin/solr start -f --h myhostname
 ----
 
 Finally, the Solr docker image offers several commands that do some work before then invoking the Solr server, like "solr-precreate" and "solr-demo".
@@ -162,7 +162,7 @@ whereas:
 
 [source,bash]
 ----
-docker run -it solr solr -f
+docker run -it solr solr start -f
 ----
 
 is slightly different: the "solr" there is a generic command, not treated in any special way by `docker-entrypoint.sh`.
