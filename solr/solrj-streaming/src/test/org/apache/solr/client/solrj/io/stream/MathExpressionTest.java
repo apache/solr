@@ -4972,14 +4972,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(high.get("id"), "1");
 
     assertEquals(
-        ((Number) high.get("cumulativeProbability_d")).doubleValue(), 0.9772498680518208, 0.0);
+        ((Number) high.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0);
     assertEquals(((Number) high.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
     @SuppressWarnings({"rawtypes"})
     Map low = out.get(1);
     assertEquals(low.get("id"), "2");
     assertEquals(
-        ((Number) low.get("cumulativeProbability_d")).doubleValue(), 0.022750131948179167, 0.0);
+        ((Number) low.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0);
     assertEquals(((Number) low.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -4989,14 +4989,14 @@ public class MathExpressionTest extends SolrCloudTestCase {
     Map high1 = out1.get(0);
     assertNull(high1.get("id"));
     assertEquals(
-        ((Number) high1.get("cumulativeProbability_d")).doubleValue(), 0.9772498680518208, 0.0);
+        ((Number) high1.get("cumulativeProbablity_d")).doubleValue(), 0.9772498680518208, 0.0);
     assertEquals(((Number) high1.get("highOutlierValue_d")).doubleValue(), 110.0, 0.0);
 
     @SuppressWarnings({"rawtypes"})
     Map low1 = out1.get(1);
     assertNull(low1.get("id"));
     assertEquals(
-        ((Number) low1.get("cumulativeProbability_d")).doubleValue(), 0.022750131948179167, 0.0);
+        ((Number) low1.get("cumulativeProbablity_d")).doubleValue(), 0.022750131948179167, 0.0);
     assertEquals(((Number) low1.get("lowOutlierValue_d")).doubleValue(), 90, 0.0);
   }
 
