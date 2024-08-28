@@ -117,7 +117,7 @@ docker run -it solr --host myhostname
 ----
 
 This is the same as the previous one, but an additional argument is passed.
-The image will run the "solr" command with "-f --h myhostname".
+The image will run the "solr" command with "-f --host myhostname".
 
 To run solr as an arbitrary command:
 
