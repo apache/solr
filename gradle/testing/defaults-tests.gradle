@@ -181,9 +181,9 @@ allprojects {
         // Print some diagnostics about locations used.
         logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsCwd, testsTmpDir)
       }
-      if(isCIBuild) {
+      if (isCIBuild) {
         retry {
-          maxRetries = 20
+          maxRetries = 3
           maxFailures = 20
           failOnPassedAfterRetry = false
         }
