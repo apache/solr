@@ -148,6 +148,8 @@ Other Changes
 
 * SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
 
+* SOLR-17142: Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. (Uwe Schindler)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
