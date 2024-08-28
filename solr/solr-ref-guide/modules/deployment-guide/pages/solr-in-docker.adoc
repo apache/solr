@@ -53,7 +53,7 @@ Next load some of the example data that is included in the container:
 
 [source,bash]
 ----
-docker exec -it my_solr post -c gettingstarted example/exampledocs/manufacturers.xml
+docker exec -it my_solr solr post -c gettingstarted example/exampledocs/manufacturers.xml
 ----
 
 In the UI, find the "Core selector" popup menu and select the "gettingstarted" core, then select the "Query" menu item.
