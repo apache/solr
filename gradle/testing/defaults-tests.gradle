@@ -181,14 +181,6 @@ allprojects {
         // Print some diagnostics about locations used.
         logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsCwd, testsTmpDir)
       }
-      if (isCIBuild) {
-        // For info on params: https://github.com/gradle/test-retry-gradle-plugin
-        retry {
-          maxRetries = 3
-          maxFailures = 10
-          failOnPassedAfterRetry = true
-        }
-      }
     }
   }
 }
