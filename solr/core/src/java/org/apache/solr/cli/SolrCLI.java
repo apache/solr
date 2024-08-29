@@ -69,7 +69,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -374,7 +373,6 @@ public class SolrCLI implements CLIO {
 
   // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
-  @SuppressForbidden(reason = "The CLI needs to log warnings to stderr")
   private static void deprecatedHandlerStdErr(Option o) {
     if (o.isDeprecated()) {
       final StringBuilder buf =
@@ -383,7 +381,7 @@ public class SolrCLI implements CLIO {
         buf.append(",'--").append(o.getLongOpt()).append('\'');
       }
       buf.append(": ").append(o.getDeprecated());
-      System.err.println(buf);
+      CLIO.err(buf.toString());
     }
   }
 
@@ -659,7 +657,7 @@ public class SolrCLI implements CLIO {
       if (solrUrl.contains("/solr")) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
         if (logUrlFormatWarning) {
-          CLIO.out(
+          CLIO.err(
               "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
                   + solrUrl
                   + "] to ["
