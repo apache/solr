@@ -289,7 +289,7 @@ To emphasize how the default settings work take a moment to understand that the 
 
 `bin/solr start`
 
-`bin/solr start -h localhost -p 8983 -d server -s solr -m 512m`
+`bin/solr start --host localhost -p 8983 -d server -s solr -m 512m`
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
