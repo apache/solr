@@ -694,13 +694,14 @@ public class PostTool extends ToolBase {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected static String computeFullUrl(URL baseUrl, String link) throws MalformedURLException {
+  protected static String computeFullUrl(URL baseUrl, String link)
+      throws MalformedURLException, URISyntaxException {
     if (link == null || link.length() == 0) {
       return null;
     }
     if (!link.startsWith("http")) {
       if (link.startsWith("/")) {
-        link = new URL(baseUrl, link).toString();
+        link = baseUrl.toURI().resolve(link).toString();
       } else {
         if (link.contains(":")) {
           return null; // Skip non-relative URLs
@@ -709,11 +710,13 @@ public class PostTool extends ToolBase {
         if (!path.endsWith("/")) {
           int sep = path.lastIndexOf('/');
           String file = path.substring(sep + 1);
-          if (!file.contains(".") && !file.contains("?")) {
-            link = path.substring(0, sep + 1) + link;
+          if (file.contains(".") || file.contains("?")) {
+            path = path.substring(0, sep + 1);
+          } else {
+            path = path + "/";
           }
         }
-        link = new URL(baseUrl, link).toString();
+        link = baseUrl.toURI().resolve(path + link).toString();
       }
     }
     link = normalizeUrlEnding(link);

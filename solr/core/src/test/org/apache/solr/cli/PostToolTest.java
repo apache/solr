@@ -211,7 +211,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testComputeFullUrl() throws IOException {
+  public void testComputeFullUrl() throws IOException, URISyntaxException {
     assertEquals(
         "http://[ff01::114]/index.html",
         PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
