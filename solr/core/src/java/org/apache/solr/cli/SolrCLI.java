@@ -42,7 +42,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
@@ -372,21 +371,19 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
-  private static final Consumer<Option> DEPRECATED_HANDLER_SYSTEM_ERR =
-      o -> {
-        if (!o.isDeprecated()) {
-          return;
-        }
-        // @formatter:off
-        final StringBuilder buf =
-            new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
-        // @formatter:on
-        if (o.getLongOpt() != null) {
-          buf.append(",'--").append(o.getLongOpt()).append('\'');
-        }
-        buf.append(": ").append(o.getDeprecated());
-        System.err.println(buf);
-      };
+  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  // makes stderr the default, or makes Option.toDeprecatedString() public.
+  private static final void deprecatedHandlerStdErr(Option o) {
+    if (o.isDeprecated()) {
+      final StringBuilder buf =
+          new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
+      if (o.getLongOpt() != null) {
+        buf.append(",'--").append(o.getLongOpt()).append('\'');
+      }
+      buf.append(": ").append(o.getDeprecated());
+      System.err.println(buf);
+    }
+  }
 
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
@@ -406,7 +403,7 @@ public class SolrCLI implements CLIO {
     try {
       cli =
           DefaultParser.builder()
-              .setDeprecatedHandler(DEPRECATED_HANDLER_SYSTEM_ERR)
+              .setDeprecatedHandler(SolrCLI::deprecatedHandlerStdErr)
               .build()
               .parse(options, args);
     } catch (ParseException exp) {
