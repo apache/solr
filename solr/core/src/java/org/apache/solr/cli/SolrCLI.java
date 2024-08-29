@@ -373,7 +373,7 @@ public class SolrCLI implements CLIO {
 
   // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
-  private static final void deprecatedHandlerStdErr(Option o) {
+  private static void deprecatedHandlerStdErr(Option o) {
     if (o.isDeprecated()) {
       final StringBuilder buf =
           new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
