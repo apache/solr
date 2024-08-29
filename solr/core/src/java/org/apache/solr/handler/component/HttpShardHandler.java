@@ -47,6 +47,17 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
 
+/**
+ * Solr's default {@link ShardHandler} implementation; uses Jetty's async HTTP Client APIs for
+ * sending requests.
+ *
+ * <p>Shard-requests triggered by {@link #submit(ShardRequest, String, ModifiableSolrParams)} will
+ * be sent synchronously (i.e. before 'submit' returns to the caller). Response waiting and parsing
+ * happens asynchronously via {@link HttpShardHandlerFactory#commExecutor}. See {@link
+ * HttpShardHandlerFactory} for details on configuring this executor.
+ *
+ * <p>The ideal choice for collections with modest or moderate sharding.
+ */
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
   /**
@@ -206,19 +217,11 @@ public class HttpShardHandler extends ShardHandler {
     return rsp;
   }
 
-  /**
-   * returns a ShardResponse of the last response correlated with a ShardRequest. This won't return
-   * early if it runs into an error.
-   */
   @Override
   public ShardResponse takeCompletedIncludingErrors() {
     return take(false);
   }
 
-  /**
-   * returns a ShardResponse of the last response correlated with a ShardRequest, or immediately
-   * returns a ShardResponse if there was an error detected
-   */
   @Override
   public ShardResponse takeCompletedOrError() {
     return take(true);

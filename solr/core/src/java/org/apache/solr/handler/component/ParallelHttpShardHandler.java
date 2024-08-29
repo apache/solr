@@ -28,6 +28,16 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A version of {@link HttpShardHandler} optimized for massively-sharded collections.
+ *
+ * <p>Uses a {@link HttpShardHandlerFactory#commExecutor} thread for all work related to outgoing
+ * requests, allowing {@link #submit(ShardRequest, String, ModifiableSolrParams)} to return more
+ * quickly. (See {@link HttpShardHandler} for comparison.)
+ *
+ * <p>The additional focus on parallelization makes this an ideal implementation for collections
+ * with many shards.
+ */
 @NotThreadSafe
 public class ParallelHttpShardHandler extends HttpShardHandler {
 
