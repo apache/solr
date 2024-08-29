@@ -69,6 +69,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -373,6 +374,7 @@ public class SolrCLI implements CLIO {
 
   // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
+  @SuppressForbidden(reason = "The CLI needs to log warnings to stderr")
   private static void deprecatedHandlerStdErr(Option o) {
     if (o.isDeprecated()) {
       final StringBuilder buf =
