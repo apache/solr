@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
@@ -371,6 +372,22 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
+  private static final Consumer<Option> DEPRECATED_HANDLER_SYSTEM_ERR =
+      o -> {
+        if (!o.isDeprecated()) {
+          return;
+        }
+        // @formatter:off
+        final StringBuilder buf =
+            new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
+        // @formatter:on
+        if (o.getLongOpt() != null) {
+          buf.append(",'--").append(o.getLongOpt()).append('\'');
+        }
+        buf.append(": ").append(o.getDeprecated());
+        System.err.println(buf);
+      };
+
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
@@ -387,7 +404,11 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new DefaultParser()).parse(options, args);
+      cli =
+          DefaultParser.builder()
+              .setDeprecatedHandler(DEPRECATED_HANDLER_SYSTEM_ERR)
+              .build()
+              .parse(options, args);
     } catch (ParseException exp) {
       // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
