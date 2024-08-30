@@ -685,13 +685,11 @@ public class SolrCLI implements CLIO {
           cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
-        CLIO.getOutStream()
-            .println(
-                "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
-                    + solrUrl
-                    + ".");
+        CLIO.err(
+            "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
+                + solrUrl
+                + ".");
       } else {
-
         try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
