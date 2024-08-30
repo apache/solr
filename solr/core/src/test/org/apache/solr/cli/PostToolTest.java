@@ -194,30 +194,25 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testComputeFullUrl() throws IOException {
-
-    PostTool webPostTool = new PostTool();
-
+  public void testComputeFullUrl() throws IOException, URISyntaxException {
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
-        webPostTool.computeFullUrl(
+        PostTool.computeFullUrl(
             URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
     assertNull(
-        webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
     assertNull(
-        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -248,6 +243,21 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals(
         URI.create("http://[ff01::114]/a?foo=bar"),
         PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/?foo=bar"), "/a"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "/b"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "/b"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "b"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "b"));
   }
 
   @Test

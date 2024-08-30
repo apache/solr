@@ -766,35 +766,9 @@ public class SimplePostTool {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected String computeFullUrl(URL baseUrl, String link) {
-    if (link == null || link.length() == 0) {
-      return null;
-    }
-    if (!link.startsWith("http")) {
-      if (link.startsWith("/")) {
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + link;
-      } else {
-        if (link.contains(":")) {
-          return null; // Skip non-relative URLs
-        }
-        String path = baseUrl.getPath();
-        if (!path.endsWith("/")) {
-          int sep = path.lastIndexOf('/');
-          String file = path.substring(sep + 1);
-          if (file.contains(".") || file.contains("?")) {
-            path = path.substring(0, sep);
-          }
-        }
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + path + "/" + link;
-      }
-    }
-    link = normalizeUrlEnding(link);
-    String l = link.toLowerCase(Locale.ROOT);
-    // Simple brute force skip images
-    if (l.endsWith(".jpg") || l.endsWith(".jpeg") || l.endsWith(".png") || l.endsWith(".gif")) {
-      return null; // Skip images
-    }
-    return link;
+  protected String computeFullUrl(URL baseUrl, String link)
+      throws MalformedURLException, URISyntaxException {
+    return PostTool.computeFullUrl(baseUrl, link);
   }
 
   /**
@@ -947,8 +921,7 @@ public class SimplePostTool {
    * @return the final URI version
    */
   protected static URI appendUrlPath(URI uri, String append) throws URISyntaxException {
-    var newPath = uri.getPath() + append;
-    return new URI(uri.getScheme(), uri.getAuthority(), newPath, uri.getQuery(), uri.getFragment());
+    return PostTool.appendUrlPath(uri, append);
   }
 
   /**
