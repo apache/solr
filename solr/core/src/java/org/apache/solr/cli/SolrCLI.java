@@ -368,6 +368,20 @@ public class SolrCLI implements CLIO {
     return val == null ? def : val;
   }
 
+  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  // makes stderr the default, or makes Option.toDeprecatedString() public.
+  private static void deprecatedHandlerStdErr(Option o) {
+    if (o.isDeprecated()) {
+      final StringBuilder buf =
+          new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
+      if (o.getLongOpt() != null) {
+        buf.append(",'--").append(o.getLongOpt()).append('\'');
+      }
+      buf.append(": ").append(o.getDeprecated());
+      CLIO.err(buf.toString());
+    }
+  }
+
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
@@ -384,7 +398,11 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new DefaultParser()).parse(options, args);
+      cli =
+          DefaultParser.builder()
+              .setDeprecatedHandler(SolrCLI::deprecatedHandlerStdErr)
+              .build()
+              .parse(options, args);
     } catch (ParseException exp) {
       // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
@@ -623,12 +641,14 @@ public class SolrCLI implements CLIO {
       if (urlPath.contains(hostContext)) {
         String newSolrUrl =
             uri.resolve(urlPath.substring(0, urlPath.indexOf(hostContext)) + "/").toString();
-        CLIO.out(
-            "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
-                + solrUrl
-                + "] to ["
-                + newSolrUrl
-                + "].");
+        if (logUrlFormatWarning) {
+          CLIO.err(
+              "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                  + solrUrl
+                  + "] to ["
+                  + newSolrUrl
+                  + "].");
+        }
         solrUrl = newSolrUrl;
       }
       if (solrUrl.endsWith("/")) {
@@ -650,13 +670,11 @@ public class SolrCLI implements CLIO {
           cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
-        CLIO.getOutStream()
-            .println(
-                "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
-                    + solrUrl
-                    + ".");
+        CLIO.err(
+            "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
+                + solrUrl
+                + ".");
       } else {
-
         try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
