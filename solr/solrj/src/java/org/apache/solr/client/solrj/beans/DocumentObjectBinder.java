@@ -136,6 +136,7 @@ public class DocumentObjectBinder {
     return fields;
   }
 
+  @SuppressWarnings("removal")
   @SuppressForbidden(reason = "Needs access to possibly private @Field annotated fields/methods")
   private List<DocField> collectInfo(Class<?> clazz) {
     List<DocField> fields = new ArrayList<>();
@@ -150,7 +151,7 @@ public class DocumentObjectBinder {
     boolean childFieldFound = false;
     for (AccessibleObject member : members) {
       if (member.isAnnotationPresent(Field.class)) {
-        doPrivilegedAction(
+        AccessController.doPrivileged(
             (PrivilegedAction<Void>)
                 () -> {
                   member.setAccessible(true);
@@ -167,12 +168,6 @@ public class DocumentObjectBinder {
       }
     }
     return fields;
-  }
-
-  @SuppressWarnings("removal")
-  @SuppressForbidden(reason = "Deprecated for removal in future Java version")
-  private static <T> void doPrivilegedAction(PrivilegedAction<T> action) {
-    AccessController.doPrivileged(action);
   }
 
   private class DocField {
