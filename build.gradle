@@ -132,6 +132,7 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
+apply from: file('gradle/testing/retry-test.gradle')
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')

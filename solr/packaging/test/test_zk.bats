@@ -115,7 +115,7 @@ teardown() {
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile3.txt"
-  
+
   run solr zk cp zk:/ -r "${BATS_TEST_TMPDIR}/recursive_download/"
   [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile.txt" ]
   [ -e "${BATS_TEST_TMPDIR}/recursive_download/myfile2.txt" ]
@@ -137,6 +137,26 @@ teardown() {
   sleep 1
   run curl "http://localhost:${SOLR_PORT}/api/cluster/configs?omitHeader=true"
   assert_output --partial '"configSets":["_default","techproducts2"]'
+}
+
+@test "SOLR-12429 test upconfig fails with symlink" {
+  # should be unit test but had problems with Java SecurityManager and symbolic links
+  local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
+  test -d $source_configset_dir
+
+  ln -s ${source_configset_dir}/conf/stopwords.txt ${source_configset_dir}/conf/symlinked_stopwords.txt
+  ln -s ${source_configset_dir}/conf/lang ${source_configset_dir}/conf/language
+
+  # Use the -L option to confirm we have a symlink
+  [ -L ${source_configset_dir}/conf/symlinked_stopwords.txt ]
+  [ -L ${source_configset_dir}/conf/language ]
+
+  run solr zk upconfig -d ${source_configset_dir} -n techproducts_with_symlinks -z localhost:${ZK_PORT}
+  assert_output --partial "Uploading"
+  assert_output --partial "ERROR: Not uploading symbolic link"
+
+  rm ${source_configset_dir}/conf/symlinked_stopwords.txt
+  rm -d ${source_configset_dir}/conf/language
 }
 
 @test "downconfig" {

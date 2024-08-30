@@ -568,14 +568,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
-    public void uploadConfig(String configName, Path dir) {}
+    protected void uploadConfig(String configName, Path dir) {}
 
     @Override
     public void uploadFileToConfig(
         String configName, String fileName, byte[] data, boolean overwriteOnExists) {}
 
     @Override
-    public void setConfigMetadata(String configName, Map<String, Object> data) {}
+    protected void setConfigMetadata(String configName, Map<String, Object> data) {}
 
     @Override
     public Map<String, Object> getConfigMetadata(String configName) {

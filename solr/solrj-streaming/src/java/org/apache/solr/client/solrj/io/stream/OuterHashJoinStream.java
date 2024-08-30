@@ -113,23 +113,23 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
 
       workingFullTuple = fullTuple;
       workingFullHash = fullHash;
-      workngHashSetIdx = 0;
+      workingHashSetIdx = 0;
     }
 
     // At this point we know we have at least one doc to match on due to the check at the end,
     // before returning, we know we have at least one to match with left
     List<Tuple> matches = hashedTuples.get(workingFullHash);
     Tuple returnTuple = workingFullTuple.clone();
-    returnTuple.merge(matches.get(workngHashSetIdx));
+    returnTuple.merge(matches.get(workingHashSetIdx));
 
     // Increment this so the next time we hit the next matching tuple
-    workngHashSetIdx++;
+    workingHashSetIdx++;
 
-    if (workngHashSetIdx >= matches.size()) {
+    if (workingHashSetIdx >= matches.size()) {
       // well, now we've reached all the matches, clear it all out
       workingFullTuple = null;
       workingFullHash = null;
-      workngHashSetIdx = 0;
+      workingHashSetIdx = 0;
     }
 
     return returnTuple;

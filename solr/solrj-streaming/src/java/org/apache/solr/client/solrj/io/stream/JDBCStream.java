@@ -180,7 +180,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     StreamExpressionNamedParameter fetchSizeExpression =
         factory.getNamedOperand(expression, "fetchSize");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != namedParams.size()) {
       throw new IOException(
@@ -283,7 +283,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     // than java was started with, it will likely not work. Instead, create a class that inherits
     // this class and override this getDriver() method.
     // Unfortunately it is impossible to use a custom ClassLoader with DriverManager, so we would
-    // need to remove our use of this class in order to support JDBC drivers loaded in via solr's
+    // need to remove our use of this class in order to support JDBC drivers loaded in via Solr's
     // additional library methods. This comment is relevant for JDBC drivers loaded in via custom
     // plugins and even Solr Modules.
     try {
@@ -389,7 +389,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   protected ResultSetValueSelector determineValueSelector(int columnIdx, ResultSetMetaData metadata)
       throws SQLException {
     final int columnNumber = columnIdx + 1; // cause it starts at 1
-    // Use getColumnLabel instead of getColumnName to make sure fields renamed with AS as picked up
+    // Use getColumnLabel instead of getColumnName to make sure fields renamed with AS are picked up
     // properly
     final String columnName = metadata.getColumnLabel(columnNumber);
     final int jdbcType = metadata.getColumnType(columnNumber);
@@ -425,7 +425,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     }
     // We're checking the Java class names because there are lots of SQL types across
     // lots of database drivers that can be mapped to standard Java types. Basically,
-    // this makes it easier and we don't have to worry about esoteric type names in the
+    // this makes it easier, and we don't have to worry about esoteric type names in the
     // JDBC family of types
     else if (Short.class.getName().equals(className)) {
       valueSelector =

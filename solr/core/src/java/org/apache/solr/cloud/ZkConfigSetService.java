@@ -167,7 +167,7 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  public void uploadConfig(String configName, Path dir) throws IOException {
+  protected void uploadConfig(String configName, Path dir) throws IOException {
     zkClient.uploadToZK(
         dir, CONFIGS_ZKNODE + "/" + configName, ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN);
   }
@@ -230,6 +230,8 @@ public class ZkConfigSetService extends ConfigSetService {
           (Map<String, Object>)
               Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
       return data;
+    } catch (KeeperException.NoNodeException e) {
+      return Collections.emptyMap();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
     }

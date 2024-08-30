@@ -228,7 +228,7 @@ public class OperationsTest extends SolrTestCase {
   }
 
   @Test
-  public void replaceFieldNullWithNonExistantField() throws Exception {
+  public void replaceFieldNullWithNonExistentField() throws Exception {
     Tuple tuple;
     StreamOperation operation;
 

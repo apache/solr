@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -124,8 +123,6 @@ public class ConfigSetAPIBase {
       boolean requestIsTrusted,
       String configName)
       throws IOException {
-    Map<String, Object> metadata = Collections.singletonMap("trusted", requestIsTrusted);
-
     if (overwritesExisting) {
       if (!requestIsTrusted) {
         ensureOverwritingUntrustedConfigSet(configName);
@@ -133,7 +130,7 @@ public class ConfigSetAPIBase {
       // If the request is trusted and cleanup=true, then the configSet will be set to trusted after
       // the overwriting has been done.
     } else {
-      configSetService.setConfigMetadata(configName, metadata);
+      configSetService.setConfigSetTrust(configName, requestIsTrusted);
     }
   }
 

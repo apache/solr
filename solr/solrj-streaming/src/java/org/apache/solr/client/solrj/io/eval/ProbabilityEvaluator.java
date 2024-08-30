@@ -60,7 +60,7 @@ public class ProbabilityEvaluator extends RecursiveObjectEvaluator implements Ma
         throw new IOException(
             String.format(
                 Locale.ROOT,
-                "Invalid expression %s - found type %s for the first value, expecting a IntegerDistributionm for probability at a specific value.",
+                "Invalid expression %s - found type %s for the first value, expecting a IntegerDistribution for probability at a specific value.",
                 toExpression(constructingFactory),
                 first.getClass().getSimpleName()));
       }

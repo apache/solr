@@ -41,13 +41,13 @@ import org.apache.solr.common.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
+/** The SolrClientCache caches SolrClients, so they can be reused by different TupleStreams. */
 public class SolrClientCache implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // Set the floor for timeouts to 60 seconds.
-  // Timeouts cans be increased by setting the system properties defined below.
+  // Timeouts can be increased by setting the system properties defined below.
   private static final int MIN_TIMEOUT = 60000;
   private static final int minConnTimeout =
       Math.max(
@@ -148,7 +148,7 @@ public class SolrClientCache implements Closeable {
   /**
    * Create (and cache) a SolrClient based around the provided URL
    *
-   * @param baseUrl a Solr URL. May be either a "base" URL (i.e. ending in "/solr"), or point to a
+   * @param baseUrl a Solr URL. May either be a "base" URL (i.e. ending in "/solr"), or point to a
    *     particular collection or core.
    * @return a SolrClient configured to use the provided URL. The cache retains a reference to the
    *     returned client, and will close it when callers invoke {@link SolrClientCache#close()}

@@ -1231,8 +1231,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   public void removeConfigSetTrust(String configSetName) {
     try {
-      Map<String, Object> metadata = Collections.singletonMap("trusted", false);
-      cc.getConfigSetService().setConfigMetadata(configSetName, metadata);
+      cc.getConfigSetService().setConfigSetTrust(configSetName, false);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

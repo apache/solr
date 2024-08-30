@@ -178,7 +178,7 @@ public class PredictEvaluator extends RecursiveObjectEvaluator implements ManyVa
           y = ((Number) third).doubleValue();
           return bivariateFunction.value(x, y);
         } else {
-          throw new IOException("BivariateFunction requires two numberic parameters.");
+          throw new IOException("BivariateFunction requires two numeric parameters.");
         }
       } else if (objects.length == 2) {
         if (second instanceof Matrix) {

@@ -61,8 +61,8 @@ public class Matrix implements Iterable<List<Double>>, Attributes {
     return rowLabels;
   }
 
-  public void setRowLabels(List<String> rowLables) {
-    this.rowLabels = rowLables;
+  public void setRowLabels(List<String> rowLabels) {
+    this.rowLabels = rowLabels;
   }
 
   public double[][] getData() {

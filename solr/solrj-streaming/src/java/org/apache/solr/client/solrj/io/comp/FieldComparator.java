@@ -98,13 +98,13 @@ public class FieldComparator implements StreamComparator {
 
   /*
    * What are we doing here messing around with lambdas for the comparator logic?
-   * We want the compare(...) function to run as fast as possible because it will be called many many
+   * We want the compare(...) function to run as fast as possible because it will be called many
    * times over the lifetime of this object. For that reason we want to limit the number of comparisons
    * taking place in the compare(...) function. Because this class supports both ascending and
    * descending comparisons and the logic for each is slightly different, we want to do the
    *   if(ascending){ compare like this } else { compare like this }
    * check only once - we can do that in the constructor of this class, create a lambda, and then execute
-   * that lambda in the compare function. A little bit of branch prediction savings right here.
+   * that lambda in the compare function. A bit of branch prediction savings right here.
    */
   @SuppressWarnings({"unchecked"})
   private void assignComparator() {

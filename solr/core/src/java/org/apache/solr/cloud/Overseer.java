@@ -593,8 +593,8 @@ public class Overseer implements SolrCloseable {
               if (log.isInfoEnabled()) {
                 log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
               }
-              overseerCollectionConfigSetProcessor.close();
-              close();
+              IOUtils.closeQuietly(overseerCollectionConfigSetProcessor);
+              IOUtils.closeQuietly(this);
             } else {
               log.warn("Overseer received wrong QUIT message {}", message);
             }
