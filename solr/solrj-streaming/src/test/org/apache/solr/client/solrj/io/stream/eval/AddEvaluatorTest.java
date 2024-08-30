@@ -200,7 +200,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Double);
-    assertEquals(4 * 123456789123456784D, (Double) result, 0);
+    assertEquals(4 * 1.2345678912345678E+17, (Double) result, 0);
   }
 
   @Test
@@ -251,7 +251,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Double);
-    assertEquals(6 * 123456789123456784D, (Double) result, 0);
+    assertEquals(6 * 1.2345678912345678E+17, (Double) result, 0);
 
     values.clear();
     values.put("a", 4.12345678);
@@ -311,7 +311,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
     assertTrue(result instanceof Double);
-    assertEquals(4 * 123456789123456784D, (Double) result, 0);
+    assertEquals(4 * 1.2345678912345678E+17, (Double) result, 0);
 
     values.clear();
     values.put("a", -4.12345678);
