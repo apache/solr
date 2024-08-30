@@ -187,7 +187,19 @@ public class RunExampleTool extends ToolBase {
             .required(false)
             .desc(
                 "Additional options to be passed to the JVM when starting example Solr server(s).")
+            .longOpt("additional-options")
+            .build(),
+        Option.builder("a")
             .longOpt("addlopts")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --additional-options instead")
+                    .get())
+            .required(false)
+            .desc(
+                "Additional options to be passed to the JVM when starting example Solr server(s).")
             .build(),
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED);
