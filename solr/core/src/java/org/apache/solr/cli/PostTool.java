@@ -403,7 +403,7 @@ public class PostTool extends ToolBase {
       numPagesPosted = postWebPages(args, 0, out);
       info(numPagesPosted + " web pages indexed.");
 
-    } catch (MalformedURLException e) {
+    } catch (MalformedURLException | URISyntaxException e) {
       warn("Wrong URL trying to append /extract to " + solrUpdateUrl);
     }
   }
@@ -529,7 +529,7 @@ public class PostTool extends ToolBase {
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
-      } catch (InterruptedException | MalformedURLException e) {
+      } catch (InterruptedException | MalformedURLException | URISyntaxException e) {
         throw new RuntimeException(e);
       }
     }
@@ -695,13 +695,14 @@ public class PostTool extends ToolBase {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected String computeFullUrl(URL baseUrl, String link) {
+  protected static String computeFullUrl(URL baseUrl, String link)
+      throws MalformedURLException, URISyntaxException {
     if (link == null || link.length() == 0) {
       return null;
     }
     if (!link.startsWith("http")) {
       if (link.startsWith("/")) {
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + link;
+        link = baseUrl.toURI().resolve(link).toString();
       } else {
         if (link.contains(":")) {
           return null; // Skip non-relative URLs
@@ -711,10 +712,12 @@ public class PostTool extends ToolBase {
           int sep = path.lastIndexOf('/');
           String file = path.substring(sep + 1);
           if (file.contains(".") || file.contains("?")) {
-            path = path.substring(0, sep);
+            path = path.substring(0, sep + 1);
+          } else {
+            path = path + "/";
           }
         }
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + path + "/" + link;
+        link = baseUrl.toURI().resolve(path + link).toString();
       }
     }
     link = normalizeUrlEnding(link);
@@ -814,7 +817,8 @@ public class PostTool extends ToolBase {
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type) throws MalformedURLException {
+  public void postFile(File file, OutputStream output, String type)
+      throws MalformedURLException, URISyntaxException {
     InputStream is = null;
 
     URL url = solrUpdateUrl;
@@ -892,14 +896,21 @@ public class PostTool extends ToolBase {
    * @param append the path to append
    * @return the final URL version
    */
-  protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
-    return new URL(
-        url.getProtocol()
-            + "://"
-            + url.getAuthority()
-            + url.getPath()
-            + append
-            + (url.getQuery() != null ? "?" + url.getQuery() : ""));
+  protected static URL appendUrlPath(URL url, String append)
+      throws URISyntaxException, MalformedURLException {
+    if (append == null || append.isEmpty()) {
+      return url;
+    }
+    if (append.startsWith("/")) {
+      append = append.substring(1);
+    }
+    if (url.getQuery() != null && !url.getQuery().isEmpty()) {
+      append += "?" + url.getQuery();
+    }
+    if (!url.getPath().endsWith("/")) {
+      append = url.getPath() + "/" + append;
+    }
+    return url.toURI().resolve(append).toURL();
   }
 
   /**

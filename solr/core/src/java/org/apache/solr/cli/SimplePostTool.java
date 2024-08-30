@@ -406,7 +406,7 @@ public class SimplePostTool {
       }
       numPagesPosted = postWebPages(args, 0, out);
       info(numPagesPosted + " web pages indexed.");
-    } catch (MalformedURLException e) {
+    } catch (URISyntaxException | MalformedURLException e) {
       fatal("Wrong URL trying to append /extract to " + solrUrl);
     }
   }
@@ -766,35 +766,9 @@ public class SimplePostTool {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected String computeFullUrl(URL baseUrl, String link) {
-    if (link == null || link.length() == 0) {
-      return null;
-    }
-    if (!link.startsWith("http")) {
-      if (link.startsWith("/")) {
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + link;
-      } else {
-        if (link.contains(":")) {
-          return null; // Skip non-relative URLs
-        }
-        String path = baseUrl.getPath();
-        if (!path.endsWith("/")) {
-          int sep = path.lastIndexOf('/');
-          String file = path.substring(sep + 1);
-          if (file.contains(".") || file.contains("?")) {
-            path = path.substring(0, sep);
-          }
-        }
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + path + "/" + link;
-      }
-    }
-    link = normalizeUrlEnding(link);
-    String l = link.toLowerCase(Locale.ROOT);
-    // Simple brute force skip images
-    if (l.endsWith(".jpg") || l.endsWith(".jpeg") || l.endsWith(".png") || l.endsWith(".gif")) {
-      return null; // Skip images
-    }
-    return link;
+  protected String computeFullUrl(URL baseUrl, String link)
+      throws MalformedURLException, URISyntaxException {
+    return PostTool.computeFullUrl(baseUrl, link);
   }
 
   /**
@@ -924,7 +898,7 @@ public class SimplePostTool {
               + (mockMode ? " MOCK!" : ""));
       is = new FileInputStream(file);
       postData(is, file.length(), output, type, url);
-    } catch (IOException e) {
+    } catch (IOException | URISyntaxException e) {
       warn("Can't open/read file: " + file);
     } finally {
       try {
@@ -944,14 +918,9 @@ public class SimplePostTool {
    * @param append the path to append
    * @return the final URL version
    */
-  protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
-    return new URL(
-        url.getProtocol()
-            + "://"
-            + url.getAuthority()
-            + url.getPath()
-            + append
-            + (url.getQuery() != null ? "?" + url.getQuery() : ""));
+  protected static URL appendUrlPath(URL url, String append)
+      throws MalformedURLException, URISyntaxException {
+    return PostTool.appendUrlPath(url, append);
   }
 
   /**

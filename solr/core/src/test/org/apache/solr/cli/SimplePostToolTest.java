@@ -106,7 +106,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComputeFullUrl() throws MalformedURLException {
+  public void testComputeFullUrl() throws MalformedURLException, URISyntaxException {
     assertEquals(
         "http://[ff01::114]/index.html",
         t_web.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
@@ -153,10 +153,25 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAppendUrlPath() throws MalformedURLException {
+  public void testAppendUrlPath() throws MalformedURLException, URISyntaxException {
     assertEquals(
         new URL("http://[ff01::114]/a?foo=bar"),
         SimplePostTool.appendUrlPath(new URL("http://[ff01::114]?foo=bar"), "/a"));
+    assertEquals(
+        new URL("http://[ff01::114]/a?foo=bar"),
+        SimplePostTool.appendUrlPath(new URL("http://[ff01::114]/?foo=bar"), "/a"));
+    assertEquals(
+        new URL("http://[ff01::114]/a/b?foo=bar"),
+        SimplePostTool.appendUrlPath(new URL("http://[ff01::114]/a?foo=bar"), "/b"));
+    assertEquals(
+        new URL("http://[ff01::114]/a/b?foo=bar"),
+        SimplePostTool.appendUrlPath(new URL("http://[ff01::114]/a/?foo=bar"), "/b"));
+    assertEquals(
+        new URL("http://[ff01::114]/a/b?foo=bar"),
+        SimplePostTool.appendUrlPath(new URL("http://[ff01::114]/a?foo=bar"), "b"));
+    assertEquals(
+        new URL("http://[ff01::114]/a/b?foo=bar"),
+        SimplePostTool.appendUrlPath(new URL("http://[ff01::114]/a/?foo=bar"), "b"));
   }
 
   @Test
