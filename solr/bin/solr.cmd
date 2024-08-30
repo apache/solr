@@ -867,7 +867,7 @@ IF "%firstChar%"=="-" (
 )
 
 set SOLR_HOST=%~2
-set "PASS_TO_RUN_EXAMPLE=-h %~2 !PASS_TO_RUN_EXAMPLE!"
+set "PASS_TO_RUN_EXAMPLE=--host %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
