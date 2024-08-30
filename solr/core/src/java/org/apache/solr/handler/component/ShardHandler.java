@@ -61,7 +61,8 @@ public abstract class ShardHandler {
   public abstract ShardResponse takeCompletedIncludingErrors();
 
   // TODO - Shouldn't this method be taking in a ShardRequest?  Does ShardHandler not really
-  // distinguish between different ShardRequest objects as it seems to advertise? What's going on here?
+  // distinguish between different ShardRequest objects as it seems to advertise? What's going on
+  // here?
   /**
    * returns a ShardResponse of the last response correlated with a ShardRequest, or immediately
    * returns a ShardResponse if there was an error detected

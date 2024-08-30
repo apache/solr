@@ -16,12 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
-import java.lang.invoke.MethodHandles;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+/** Creates {@link ParallelHttpShardHandler} instances */
 public class ParallelHttpShardHandlerFactory extends HttpShardHandlerFactory {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public ShardHandler getShardHandler() {
