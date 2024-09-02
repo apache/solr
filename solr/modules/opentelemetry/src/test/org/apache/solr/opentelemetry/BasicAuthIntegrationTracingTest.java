@@ -16,10 +16,12 @@
  */
 package org.apache.solr.opentelemetry;
 
-import static org.apache.solr.opentelemetry.TestDistributedTracing.getAndClearSpans;
-
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -31,23 +33,23 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.util.SecurityJson;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
 
+  @ClassRule public static OpenTelemetryRule otelRule = OpenTelemetryRule.create();
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // force early init
-    CustomTestOtelTracerConfigurator.prepareForTest();
+    TraceUtils.resetRecordingFlag(); // ensure spans are "recorded"
 
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
-        .withTraceIdGenerationDisabled()
         .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
 
@@ -60,11 +62,6 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
         .setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    CustomTestOtelTracerConfigurator.resetForTest();
   }
 
   /** See SOLR-16955 */
@@ -93,5 +90,13 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
     assertEquals(
         BasicAuthPlugin.class.getSimpleName(), span.getAttributes().get(TraceUtils.TAG_CLASS));
     assertEquals(List.copyOf(ops.keySet()), span.getAttributes().get(TraceUtils.TAG_OPS));
+  }
+
+  // code duplication here...
+  static List<SpanData> getAndClearSpans() {
+    List<SpanData> result = new ArrayList<>(otelRule.getSpans());
+    Collections.reverse(result); // nicer to see spans chronologically
+    otelRule.clearSpans();
+    return result;
   }
 }

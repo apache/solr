@@ -19,7 +19,7 @@ package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.testing.junit4.OpenTelemetryRule;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,24 +39,24 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class TestDistributedTracing extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
 
+  @ClassRule public static OpenTelemetryRule otelRule = OpenTelemetryRule.create();
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // force early init
-    CustomTestOtelTracerConfigurator.prepareForTest();
+    TraceUtils.resetRecordingFlag(); // ensure spans are "recorded"
 
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
-        .withTraceIdGenerationDisabled()
         .configure();
 
     assertNotEquals(
@@ -67,11 +67,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    CustomTestOtelTracerConfigurator.resetForTest();
   }
 
   @Before
@@ -310,11 +305,10 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(child.getTraceId(), parent.getTraceId());
   }
 
-  static List<SpanData> getAndClearSpans() {
-    InMemorySpanExporter exporter = CustomTestOtelTracerConfigurator.getInMemorySpanExporter();
-    List<SpanData> result = new ArrayList<>(exporter.getFinishedSpanItems());
+  private static List<SpanData> getAndClearSpans() {
+    List<SpanData> result = new ArrayList<>(otelRule.getSpans());
     Collections.reverse(result); // nicer to see spans chronologically
-    exporter.reset();
+    otelRule.clearSpans();
     return result;
   }
 

@@ -24,6 +24,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -39,8 +40,10 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -159,6 +162,26 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("zookeeper.forceSync", "no");
       System.setProperty("zookeeper.nio.shutdownTimeout", "100");
     }
+
+    injectRandomTraceRecordingFlag();
+  }
+
+  /**
+   * Randomizes the tracing {@link TraceUtils#ifNotNoop(io.opentelemetry.api.trace.Span,
+   * java.util.function.Consumer)} check.
+   *
+   * <p>Rationale: to have better coverage of all methods that deal with span creation without
+   * having to enable tracing.
+   *
+   * <p>Some tests which rely on tracing will want to undo this via {@link
+   * TraceUtils#resetRecordingFlag()}.
+   */
+  private static void injectRandomTraceRecordingFlag() {
+    boolean isRecording = LuceneTestCase.rarely();
+    // if the user is running a test with the Otel Agent; don't mess with recording
+    if (!TraceUtils.OTEL_AGENT_PRESENT) {
+      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    }
   }
 
   /**
@@ -185,6 +208,11 @@ public class SolrTestCase extends LuceneTestCase {
     // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
     final String PROP = "tests.force.assumption.failure.before";
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
+  }
+
+  @AfterClass
+  public static void afterSolrTestCase() {
+    GlobalOpenTelemetry.resetForTest();
   }
 
   public static void assertJSONEquals(String expected, String actual) {

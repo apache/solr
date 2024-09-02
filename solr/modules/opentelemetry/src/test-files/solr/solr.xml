@@ -34,8 +34,6 @@
     <int name="connTimeout">${connTimeout:15000}</int>
   </shardHandlerFactory>
 
-  <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.CustomTestOtelTracerConfigurator" />
-
   <solrcloud>
     <str name="host">127.0.0.1</str>
     <int name="hostPort">${hostPort:8983}</int>
