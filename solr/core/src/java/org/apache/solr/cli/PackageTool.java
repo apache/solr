@@ -125,7 +125,7 @@ public class PackageTool extends ToolBase {
                   printGreen("\t" + packages.get(packageName));
                 }
               } else {
-                // nuance that we use a arg here instead of requiring a --package parameter with a
+                // nuance that we use an arg here instead of requiring a --package parameter with a
                 // value
                 // in this code path
                 String packageName = cli.getArgs()[1];
@@ -174,7 +174,7 @@ public class PackageTool extends ToolBase {
                           ? PackageUtils.validateCollections(
                               cli.getOptionValue("collections").split(","))
                           : new String[] {};
-                  String parameters[] =
+                  String[] parameters =
                       cli.hasOption("param")
                           ? cli.getOptionValues("param")
                           : cli.getOptionValues("p");
