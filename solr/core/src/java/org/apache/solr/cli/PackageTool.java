@@ -167,7 +167,7 @@ public class PackageTool extends ToolBase {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean noprompt = cli.hasOption("no-prompt");
+                  boolean noPrompt = cli.hasOption("no-prompt");
                   boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
@@ -185,7 +185,7 @@ public class PackageTool extends ToolBase {
                       cli.hasOption("cluster"),
                       parameters,
                       isUpdate,
-                      noprompt);
+                      noPrompt);
                 } else {
                   printRed(
                       "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
