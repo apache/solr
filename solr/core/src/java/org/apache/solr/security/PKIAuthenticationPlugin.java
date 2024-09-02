@@ -44,7 +44,6 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -360,8 +359,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
       String key;
       try (Http2SolrClient solrClient = new Http2SolrClient.Builder(url).build()) {
-        NamedList<Object> resp =
-                solrClient.request(request, null);
+        NamedList<Object> resp = solrClient.request(request, null);
         key = (String) resp.get("key");
         if (key == null) {
           log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
