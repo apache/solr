@@ -76,6 +76,8 @@ Improvements
 
 * SOLR-17418: Streamline ConfigSet modification logic.  (Houston Putman, Liu Huajin)
 
+* SOLR-17434: Avoid exposing Solr's IP in the Location header.  (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
