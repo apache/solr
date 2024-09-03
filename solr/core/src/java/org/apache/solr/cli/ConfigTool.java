@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.util.NamedList;
@@ -113,7 +114,7 @@ public class ConfigTool extends ToolBase {
     String value = cli.getOptionValue("value");
 
     if (property == null) {
-      throw new IllegalArgumentException("'property' is a required option.");
+      throw new MissingArgumentException("'property' is a required option.");
     }
 
     Map<String, Object> jsonObj = new HashMap<>();
