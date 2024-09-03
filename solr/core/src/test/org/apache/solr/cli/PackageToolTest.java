@@ -157,6 +157,7 @@ public class PackageToolTest extends SolrCloudTestCase {
           SecurityJson.USER_PASS
         });
 
+    // Leaving -p in for --params to test the deprecated value continues to work.
     run(
         tool,
         new String[] {
@@ -263,7 +264,7 @@ public class PackageToolTest extends SolrCloudTestCase {
               "question-answer",
               "--collections",
               "abc",
-              "-p",
+              "--params",
               "RH-HANDLER-PATH=" + rhPath,
               "--credentials",
               SecurityJson.USER_PASS
