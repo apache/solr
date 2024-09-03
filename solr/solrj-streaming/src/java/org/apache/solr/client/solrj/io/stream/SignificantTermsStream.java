@@ -91,7 +91,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
@@ -107,7 +107,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(

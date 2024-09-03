@@ -65,6 +65,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -542,12 +543,12 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
       int statusCode = entity.getStatusLine().getStatusCode();
       if (statusCode == HttpStatus.SC_OK) {
-        byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());
+        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
         if (bytes.length > 0) {
           docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
         }
       } else if (statusCode != HttpStatus.SC_NOT_FOUND) {
-        byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());
+        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
         throw new IOException(
             "Failed to lookup stored docs for "
                 + configSet
@@ -562,10 +563,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
-    postDataToBlobStore(
-        cloudClient(),
-        configSet + "_sample",
-        DefaultSampleDocumentsLoader.streamAsBytes(toJavabin(docs)));
+    postDataToBlobStore(cloudClient(), configSet + "_sample", readAllBytes(() -> toJavabin(docs)));
+  }
+
+  /** Gets the stream, reads all the bytes, closes the stream. */
+  static byte[] readAllBytes(IOSupplier<InputStream> hasStream) throws IOException {
+    try (InputStream in = hasStream.get()) {
+      return in.readAllBytes();
+    }
   }
 
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)

@@ -241,9 +241,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
           "File '" + file + "' not found in configSet: " + configSet);
     }
 
-    byte[] data =
-        DefaultSampleDocumentsLoader.streamAsBytes(
-            extractSingleContentStream(req, true).getStream());
+    byte[] data;
+    try (InputStream in = extractSingleContentStream(req, true).getStream()) {
+      data = in.readAllBytes();
+    }
     Exception updateFileError = null;
     boolean requestIsTrusted =
         ConfigSetAPIBase.isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
