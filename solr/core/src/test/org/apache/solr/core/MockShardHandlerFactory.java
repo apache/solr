@@ -49,6 +49,11 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
       }
 
       @Override
+      public ShardResponse takeCompletedIncludingErrorsWithTimeout(long maxAllowedTime) {
+        return null;
+      }
+
+      @Override
       public ShardResponse takeCompletedOrError() {
         return null;
       }
