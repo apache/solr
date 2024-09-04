@@ -324,9 +324,20 @@ The default value of this parameter is blank, which causes no extra "explain inf
 
 This parameter controls Solr's behavior when a query execution limit is reached (e.g. `timeAllowed` or `cpuAllowed`).
 
-When this parameter is set to `true` (default) then even though reaching a limit terminates further query processing  Solr will still attempt to return partial results collected so far. These results may be incomplete in a non-deterministic way (e.g. only some matching documents, documents without fields, missing facets or pivots, no spellcheck results, etc).
+When this parameter is set to `true` (default) then Solr will return the results collected prior to detecting the limit violation.
+If `shards.tolerant=true` is also set, all non-limited responses will still be collected. If you are seeking a best-effort response use of the xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[shards.tolerant Parameter] is recommended.
 
-When this parameter is set to `false` then reaching a limit will generate an exception and any partial results collected so far will be discarded.
+If incomplete results are returned the `partialResults` response header will be set to `true`
+
+WARNING: These results may be incomplete in a non-deterministic way (e.g. only some matching documents, documents without fields, missing facets or pivots, no spellcheck results, etc).
+
+
+When this parameter is set to `false` then upon reaching a limit, Solr will stop collecting results and will not return any partial results already collected.
+In this case, the partialResults response header will be set to `omitted` and no result documents are returned.
+
+NOTE: The response will be 200 OK because the system has correctly provided the requested behavior.
+This is not an error condition.
+
 
 == timeAllowed Parameter
 

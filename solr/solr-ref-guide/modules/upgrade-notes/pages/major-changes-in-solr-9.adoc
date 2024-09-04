@@ -72,11 +72,10 @@ Due to changes in Lucene 9, that isn't possible any more.
 In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
 
 === Partial Results
-When solr is used for reporting, legal discovery or other use cases that cannot accept partial results, yet it still needs to be protected from long-running queries, users may now opt out of receiving partial results.
-This feature should eliminate some wasted processing and bandwidth, as well as simplifying client side logic, and reducing the chance of inappropriate responses to the user.
-This can be enabled either via a request parameter (`allowPartialResults`), environment variable or system property.
-The partialResults attribute in the request header will now have three possible states: `"true"`, `"omitted"` or absent, with the new `"omitted"` value indicating the difference between a timed out request with results omitted due to query limits and results that are merely empty because the query didn't match any docs.
-Before enabling this feature, users should validate that their client code can handle the new value.
+When query limits are in use and partial results are not desirable (i.e. reporting or quantitative usages of search)
+users may pass `partialResults=false`.
+This feature has been improved to eliminate some wasted processing.
+In the presence of this parameter, queries encountering limits will return zero results, and to make it clear when this has happened, the `partialResults` response header will be set to `"omitted"`
 
 == Solr 9.7
 === SchemaVersion upgraded to 1.7
