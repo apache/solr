@@ -52,8 +52,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    TraceUtils.resetRecordingFlag(); // ensure spans are "recorded"
-
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))

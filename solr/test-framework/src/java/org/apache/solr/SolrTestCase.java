@@ -173,15 +173,12 @@ public class SolrTestCase extends LuceneTestCase {
    * <p>Rationale: to have better coverage of all methods that deal with span creation without
    * having to enable tracing.
    *
-   * <p>Some tests which rely on tracing will want to undo this via {@link
-   * TraceUtils#resetRecordingFlag()}.
+   * @see TraceUtils#resetRecordingFlag().
    */
   private static void injectRandomTraceRecordingFlag() {
-    boolean isRecording = LuceneTestCase.rarely();
-    // if the user is running a test with the Otel Agent; don't mess with recording
-    if (!TraceUtils.OTEL_AGENT_PRESENT) {
-      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
-    }
+    if (LuceneTestCase.rarely()) {
+      TraceUtils.IS_RECORDING = (ignored) -> true;
+    } // else default behavior is fine -- which is to honor Span::isRecording
   }
 
   /**
