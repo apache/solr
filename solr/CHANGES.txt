@@ -138,6 +138,8 @@ Bug Fixes
 * SOLR-17421: Fixed a rare case where overseer was stuck after a failure when changing overseer to honor the
   node role for preferred overseer. (Pierre Salagnac)
 
+* SOLR-17416: Fixed ExportHandler bug that silently suppressed errors and returned partial results in some situations (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
