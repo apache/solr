@@ -67,6 +67,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
@@ -235,6 +236,8 @@ public class CoreContainer {
   protected volatile ShardHandlerFactory shardHandlerFactory;
 
   private volatile UpdateShardHandler updateShardHandler;
+
+  private volatile HttpSolrClientProvider solrClientProvider;
 
   private volatile ExecutorService coreContainerWorkExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool(
@@ -652,6 +655,7 @@ public class CoreContainer {
       pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
+      solrClientProvider.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       if (solrClientCache instanceof ServerSolrClientCache) {
         ServerSolrClientCache serverSolrClientCache = (ServerSolrClientCache) solrClientCache;
         serverSolrClientCache.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
@@ -839,8 +843,9 @@ public class CoreContainer {
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
+    solrClientProvider = new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig());
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-
+    solrClientProvider.initializeMetrics(solrMetricsContext, HttpSolrClientProvider.METRIC_SCOPE_NAME);
     solrClientCache = new ServerSolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
@@ -1228,6 +1233,11 @@ public class CoreContainer {
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
   }
 
+  private SolrClient createDefaultHttpSolrClient() {
+
+    return null;
+  }
+
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
       log.warn(
@@ -1412,6 +1422,9 @@ public class CoreContainer {
         try {
           if (updateShardHandler != null) {
             customThreadPool.submit(updateShardHandler::close);
+          }
+          if (solrClientProvider != null) {
+            customThreadPool.submit(solrClientProvider::close);
           }
         } finally {
           try {
@@ -2565,6 +2578,11 @@ public class CoreContainer {
   public Optional<DistributedCollectionConfigSetCommandRunner>
       getDistributedCollectionCommandRunner() {
     return this.distributedCollectionCommandRunner;
+  }
+
+  /** Returns default http solr client. */
+  public SolrClient getDefaultHttpClient() {
+    return solrClientProvider.getSolrClient();
   }
 
   /**

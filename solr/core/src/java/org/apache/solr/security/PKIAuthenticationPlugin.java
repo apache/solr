@@ -347,26 +347,26 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
     try {
-      String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
       solrParams.add("wt", "json");
       solrParams.add("omitHeader", "true");
 
       GenericSolrRequest request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, PublicKeyHandler.PATH, solrParams);
+      request.setBasePath(url);
 
-      log.debug("Fetching fresh public key from: {}", uri);
+      final var solrClient = cores.getDefaultHttpClient();
 
-      String key;
-      try (Http2SolrClient solrClient = new Http2SolrClient.Builder(url).build()) {
-        NamedList<Object> resp = solrClient.request(request, null);
-        key = (String) resp.get("key");
-        if (key == null) {
-          log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
-          return null;
-        } else {
-          log.info("New key obtained from node={}, key={}", nodename, key);
-        }
+      log.debug("Fetching fresh public key from: {}{}", url, PublicKeyHandler.PATH);
+      NamedList<Object> resp = solrClient.request(request);
+
+      String key = (String) resp.get("key");
+
+      if (key == null) {
+        log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
+        return null;
+      } else {
+        log.info("New key obtained from node={}, key={}", nodename, key);
       }
 
       PublicKey pubKey = CryptoKeys.deserializeX509PublicKey(key);
