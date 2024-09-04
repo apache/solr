@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 
 import java.nio.file.Path;
@@ -31,41 +32,52 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.junit.AfterClass;
+import org.apache.solr.core.MockShardHandlerFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests specifying a custom ShardHandlerFactory */
 public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
 
+  private static final String[] SHARD_HANDLER_FACTORY_IMPLEMENTATIONS =
+      new String[] {
+        HttpShardHandlerFactory.class.getName(), ParallelHttpShardHandlerFactory.class.getName()
+      };
+
   private static final String LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE =
       "solr.tests.loadBalancerRequestsMinimumAbsolute";
   private static final String LOAD_BALANCER_REQUESTS_MAX_FRACTION =
       "solr.tests.loadBalancerRequestsMaximumFraction";
+  private static final String SHARD_HANDLER_FACTORY_PROPERTY =
+      "solr.tests.defaultShardHandlerFactory";
 
   private static int expectedLoadBalancerRequestsMinimumAbsolute = 0;
   private static float expectedLoadBalancerRequestsMaximumFraction = 1.0f;
+  private static String expectedShardHandlerFactory;
 
   @BeforeClass
   public static void beforeTests() {
     expectedLoadBalancerRequestsMinimumAbsolute = random().nextInt(3); // 0 .. 2
     expectedLoadBalancerRequestsMaximumFraction = (1 + random().nextInt(10)) / 10f; // 0.1 .. 1.0
+    expectedShardHandlerFactory =
+        SHARD_HANDLER_FACTORY_IMPLEMENTATIONS[
+            random().nextInt(SHARD_HANDLER_FACTORY_IMPLEMENTATIONS.length)];
     System.setProperty(
         LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE,
         Integer.toString(expectedLoadBalancerRequestsMinimumAbsolute));
     System.setProperty(
         LOAD_BALANCER_REQUESTS_MAX_FRACTION,
         Float.toString(expectedLoadBalancerRequestsMaximumFraction));
+    System.setProperty(SHARD_HANDLER_FACTORY_PROPERTY, expectedShardHandlerFactory);
   }
 
-  @AfterClass
-  public static void afterTests() {
-    System.clearProperty(LOAD_BALANCER_REQUESTS_MIN_ABSOLUTE);
-    System.clearProperty(LOAD_BALANCER_REQUESTS_MAX_FRACTION);
-  }
-
-  public void testLoadBalancerRequestsMinMax() {
+  @Test
+  public void testLoadBalancerRequestsMinMax() throws ClassNotFoundException {
     final Path home = TEST_PATH();
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
@@ -75,8 +87,8 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
               home, home.resolve("solr-shardhandler-loadBalancerRequests.xml"));
       factory = cc.getShardHandlerFactory();
 
-      // test that factory is HttpShardHandlerFactory with expected url reserve fraction
-      assertTrue(factory instanceof HttpShardHandlerFactory);
+      assertThat(factory, instanceOf(Class.forName(expectedShardHandlerFactory)));
+      // All SHF's currently extend HttpShardFactory, so this case is safe
       @SuppressWarnings("resource")
       final HttpShardHandlerFactory httpShardHandlerFactory = ((HttpShardHandlerFactory) factory);
       assertEquals(
@@ -153,5 +165,40 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     assertThat(hostSet, hasItem("1.2.3.4:8983"));
     assertThat(hostSet, hasItem("1.2.3.4:9000"));
     assertThat(hostSet, hasItem("1.2.3.4:9001"));
+  }
+
+  @Test
+  public void testXML() {
+    Path home = TEST_PATH();
+    CoreContainer cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler.xml"));
+    ShardHandlerFactory factory = cc.getShardHandlerFactory();
+    assertTrue(factory instanceof MockShardHandlerFactory);
+    NamedList<?> args = ((MockShardHandlerFactory) factory).getArgs();
+    assertEquals("myMagicRequiredValue", args.get("myMagicRequiredParameter"));
+    factory.close();
+    cc.shutdown();
+  }
+
+  /** Test {@link ShardHandler#setShardAttributesToParams} */
+  @Test
+  public void testSetShardAttributesToParams() {
+    // NOTE: the value of this test is really questionable; we should feel free to remove it
+    ModifiableSolrParams modifiable = new ModifiableSolrParams();
+    var dummyIndent = "Dummy-Indent";
+
+    modifiable.set(ShardParams.SHARDS, "dummyValue");
+    modifiable.set(CommonParams.HEADER_ECHO_PARAMS, "dummyValue");
+    modifiable.set(CommonParams.INDENT, dummyIndent);
+
+    ShardHandler.setShardAttributesToParams(modifiable, 2);
+
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.DISTRIB));
+    assertEquals("2", modifiable.get(ShardParams.SHARDS_PURPOSE));
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.OMIT_HEADER));
+    assertEquals(Boolean.TRUE.toString(), modifiable.get(ShardParams.IS_SHARD));
+
+    assertNull(modifiable.get(CommonParams.HEADER_ECHO_PARAMS));
+    assertNull(modifiable.get(ShardParams.SHARDS));
+    assertNull(modifiable.get(CommonParams.INDENT));
   }
 }
