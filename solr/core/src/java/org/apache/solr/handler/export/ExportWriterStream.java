@@ -211,6 +211,9 @@ public class ExportWriterStream extends TupleStream implements Expressible {
       log.debug("--- ews EOF?");
       res = Tuple.EOF();
     }
+    if (exportBuffers.getError() != null) {
+      res = Tuple.EXCEPTION(exportBuffers.getError(), true);
+    }
     if (res != null) {
       // only errors or EOF assigned result so far
 

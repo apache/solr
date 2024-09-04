@@ -69,6 +69,7 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
+import org.apache.commons.io.output.NullOutputStream;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -1064,16 +1065,12 @@ public class PostTool extends ToolBase {
    * source and thrown away.
    */
   private static void pipe(InputStream source, OutputStream dest) throws IOException {
-    byte[] buf = new byte[1024];
-    int read = 0;
-    while ((read = source.read(buf)) >= 0) {
-      if (null != dest) {
-        dest.write(buf, 0, read);
-      }
+    if (dest == null) {
+      dest = NullOutputStream.INSTANCE;
     }
-    if (null != dest) {
-      dest.flush();
-    }
+    // copy source to dest
+    source.transferTo(dest);
+    dest.flush();
   }
 
   public FileFilter getFileFilterFromFileTypes(String fileTypes) {
