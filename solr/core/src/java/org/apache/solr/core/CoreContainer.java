@@ -656,10 +656,6 @@ public class CoreContainer {
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       solrClientProvider.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
-      if (solrClientCache instanceof ServerSolrClientCache) {
-        ServerSolrClientCache serverSolrClientCache = (ServerSolrClientCache) solrClientCache;
-        serverSolrClientCache.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
-      }
     }
   }
 
@@ -847,7 +843,7 @@ public class CoreContainer {
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
     solrClientProvider.initializeMetrics(
         solrMetricsContext, HttpSolrClientProvider.METRIC_SCOPE_NAME);
-    solrClientCache = new ServerSolrClientCache(updateShardHandler.getDefaultHttpClient());
+    solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {

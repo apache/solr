@@ -48,16 +48,16 @@ public class SolrClientCache implements Closeable {
 
   // Set the floor for timeouts to 60 seconds.
   // Timeouts can be increased by setting the system properties defined below.
-  protected static final int MIN_TIMEOUT = 60000;
-  protected static final int minConnTimeout =
+  private static final int MIN_TIMEOUT = 60000;
+  private static final int minConnTimeout =
       Math.max(
           Integer.getInteger(HttpClientUtil.PROP_CONNECTION_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
-  protected static final int minSocketTimeout =
+  private static final int minSocketTimeout =
       Math.max(Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient apacheHttpClient;
-  protected Http2SolrClient http2SolrClient;
+  private final Http2SolrClient http2SolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
@@ -167,10 +167,6 @@ public class SolrClientCache implements Closeable {
     }
     solrClients.put(baseUrl, client);
     return client;
-  }
-
-  public SolrClient getHttp2SolrClient() {
-    return http2SolrClient;
   }
 
   @Deprecated

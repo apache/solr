@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -35,8 +36,12 @@ import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Internal use only. Provider of the default SolrClient implementation. */
-public class HttpSolrClientProvider implements SolrInfoBean {
+/**
+ * Provider of the default SolrClient implementation.
+ *
+ * @lucene.internal
+ */
+class HttpSolrClientProvider implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
@@ -120,7 +125,7 @@ public class HttpSolrClientProvider implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
+    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.HTTP.name());
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
   }
 
@@ -132,20 +137,5 @@ public class HttpSolrClientProvider implements SolrInfoBean {
   @Override
   public void close() {
     IOUtils.closeQuietly(httpSolrClient);
-  }
-
-  @Override
-  public String getName() {
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getDescription() {
-    return "Metrics tracked by HttpSolrClientProvider related to distributed updates and recovery";
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.HTTP;
   }
 }
