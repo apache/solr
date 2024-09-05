@@ -9,9 +9,10 @@
 
 # Apache Solr™ ${project.version} Documentation
 
-Solr is the blazing fast, open source, multi-modal search platform built on Apache Lucene.  Its full-text,
-vector, analytics, and geospatial search power many of the world's largest organizations.  Other major
-features include: Kubernetes and docker integration; streaming; and highlighting, faceting, and spellchecking.
+Solr is the blazing-fast, open source, multi-modal search platform built on Apache Lucene. It powers
+full-text, vector, analytics, and geospatial search at many of the world's largest organizations. Other
+major features include: Kubernetes and docker integration, streaming, highlighting, faceting, and
+spellchecking.
 
 Solr is written in Java and runs as a standalone full-text search server. Solr has REST-like JSON APIs that make
 it easy to use from virtually any programming language. Solr's powerful configuration APIs and files allows it

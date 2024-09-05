@@ -16,8 +16,8 @@
 Welcome to the Apache Solr project!
 -----------------------------------
 
-Solr is the blazing fast, open source, multi-modal search platform built
-on Apache Lucene.  Solr's full-text, vector, and geospatial search power
+Solr is the blazing-fast, open source, multi-modal search platform built
+on Apache Lucene. It powers full-text, vector, and geospatial search at
 many of the world's largest organizations.
 
 For a complete description of the Solr project, team composition, source
