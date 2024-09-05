@@ -114,9 +114,9 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
   }
 
   /**
-   * Returns all field name analysese with their associated field names.
+   * Returns all field name analyzed with their associated field names.
    *
-   * @return all field name analysese with their associated field names.
+   * @return all field name analyzed with their associated field names.
    */
   public Iterable<Map.Entry<String, Analysis>> getAllFieldNameAnalysis() {
     return analysisByFieldName.entrySet();

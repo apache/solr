@@ -89,13 +89,12 @@ public class StreamingTest extends SolrCloudTestCase {
 
   private static String zkHost;
 
-  private static int numShards;
   private static int numWorkers;
   private static boolean useAlias;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
-    numShards = random().nextInt(2) + 1; // 1 - 3
+    int numShards = random().nextInt(2) + 1; // 1 - 3
     numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
     configureCluster(numShards)
         .addConfig(
@@ -1349,7 +1348,7 @@ public class StreamingTest extends SolrCloudTestCase {
     }
   }
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] ascOrder =
       new String[] {
         "aaa1", "aaa2", "aaa3", "eee1",
@@ -1362,7 +1361,7 @@ public class StreamingTest extends SolrCloudTestCase {
         "aaa8", "eee8", "iii8", "ooo8"
       };
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] descOrder =
       new String[] {
         "aaa8", "eee8", "iii8", "ooo8",
@@ -1375,7 +1374,7 @@ public class StreamingTest extends SolrCloudTestCase {
         "iii3", "ooo1", "ooo2", "ooo3"
       };
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] ascOrderBool =
       new String[] {
         "aaa1", "aaa2", "aaa3", "eee1",
@@ -1388,7 +1387,7 @@ public class StreamingTest extends SolrCloudTestCase {
         "iii8", "ooo4", "ooo6", "ooo8"
       };
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] descOrderBool =
       new String[] {
         "aaa4", "aaa6", "aaa8", "eee4",
@@ -1419,7 +1418,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "aaa3")
         .add(id, "ooo3")
 
-        // Docs with values in for all of the types we want to sort on.
+        // Docs with values for all the types we want to sort on.
 
         .add(docPairs(4, "iii"))
         .add(docPairs(4, "eee"))

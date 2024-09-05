@@ -298,7 +298,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   /**
    * Connect to the zookeeper ensemble. This is an optional method that may be used to force a
-   * connect before any other requests are sent.
+   * connection before any other requests are sent.
    */
   public void connect() {
     getClusterStateProvider().connect();
@@ -362,8 +362,9 @@ public abstract class CloudSolrClient extends SolrClient {
 
     // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
     // long as they are routed aliases
-    List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
-    if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
+    List<String> aliasedCollections =
+        new ArrayList<>(resolveAliases(Collections.singletonList(collection)));
+    if (aliasedCollections.size() == 1 || getClusterStateProvider().isRoutedAlias(collection)) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
       throw new SolrException(
@@ -397,7 +398,7 @@ public abstract class CloudSolrClient extends SolrClient {
     if (routes == null) {
       if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, routeField)) {
         // we have info (documents with ids and/or ids to delete) with
-        // which to find the leaders but we could not find (all of) them
+        // which to find the leaders, but we could not find (all of) them
         throw new SolrException(
             SolrException.ErrorCode.SERVICE_UNAVAILABLE,
             "directUpdatesToLeadersOnly==true but could not find leader(s)");
@@ -774,7 +775,7 @@ public abstract class CloudSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
-    // build up a _stateVer_ param to pass to the server containing all of the
+    // build up a _stateVer_ param to pass to the server containing all the
     // external collection state versions involved in this request, which allows
     // the server to notify us that our cached state for one or more of the external
     // collections is stale and needs to be refreshed ... this code has no impact on internal
@@ -893,7 +894,7 @@ public abstract class CloudSolrClient extends SolrClient {
           }
         }
         if (retryCount < MAX_STALE_RETRIES) { // if it is a communication error , we must try again
-          // may be, we have a stale version of the collection state
+          // may be, we have a stale version of the collection state,
           // and we could not get any information from the server
           // it is probably not worth trying again and again because
           // the state would not have been updated
@@ -932,7 +933,7 @@ public abstract class CloudSolrClient extends SolrClient {
         // re-issue request using updated state
         stateWasStale = true;
 
-        // just re-read state for all of them, which is a little heavy handed but hopefully a rare
+        // just re-read state for all of them, which is a little heavy-handed but hopefully a rare
         // occurrence
         for (DocCollection ext : requestedCollections) {
           collectionStateCache.remove(ext.getName());
@@ -1116,7 +1117,7 @@ public abstract class CloudSolrClient extends SolrClient {
           replica -> {
             if (seenNodes.add(replica.getNodeName())) {
               if (inputCollections.size() == 1 && collectionNames.size() == 1) {
-                // If we have a single collection name (and not a alias to multiple collection),
+                // If we have a single collection name (and not an alias to multiple collection),
                 // send the query directly to a replica of this collection.
                 requestEndpoints.add(
                     new LBSolrClient.Endpoint(replica.getBaseUrl(), replica.getCoreName()));
@@ -1150,7 +1151,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
-      if (getClusterStateProvider().getState(collectionName) == null) {
+      if (getDocCollection(collectionName, -1) == null) {
         // perhaps it's an alias
         uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
@@ -1174,7 +1175,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   /**
    * If true, this client has been configured such that "direct updates" will <em>only</em> be sent
-   * to the current leader of the corrisponding shard, and will not be retried with other replicas.
+   * to the current leader of the corresponding shard, and will not be retried with other replicas.
    * This method has no effect if {@link #isUpdatesToLeaders()} or {@link
    * IsUpdateRequest#isSendToLeaders} returns false.
    *
@@ -1183,7 +1184,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * the default router; non-direct updates are things like commits and "delete by query").
    *
    * <p>NOTE: If a single {@link UpdateRequest} contains multiple "direct updates" for different
-   * shards, this client may break the request up and merge th resposes.
+   * shards, this client may break the request up and merge the responses.
    *
    * @return true if direct updates are sent to shard leaders only
    */
@@ -1209,25 +1210,21 @@ public abstract class CloudSolrClient extends SolrClient {
       if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
     }
 
-    ClusterState.CollectionRef ref = getCollectionRef(collection);
-    if (ref == null) {
-      // no such collection exists
-      return null;
-    }
-    if (!ref.isLazilyLoaded()) {
-      // it is readily available just return it
-      return ref.get();
-    }
     Object[] locks = this.locks;
     int lockId =
         Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.length);
     final Object lock = locks[lockId];
     synchronized (lock) {
-      /*we have waited for sometime just check once again*/
+      /*we have waited for some time just check once again*/
       cacheEntry = collectionStateCache.get(collection);
       col = cacheEntry == null ? null : cacheEntry.cached;
       if (col != null) {
         if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
+      }
+      ClusterState.CollectionRef ref = getCollectionRef(collection);
+      if (ref == null) {
+        // no such collection exists
+        return null;
       }
       // We are going to fetch a new version
       // we MUST try to get a new version

@@ -52,8 +52,10 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
     super.setUp();
 
     baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zookeeper/data";
-    basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zookeeper/children";
+
+    String baseUrlV2 = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
+    basezk = baseUrlV2 + "/cluster/zookeeper/data";
+    basezkls = baseUrlV2 + "/cluster/zookeeper/children";
   }
 
   @After
@@ -70,10 +72,10 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
       assertNotNull(o);
       o = Utils.executeGET(client.getHttpClient(), basezkls + "/configs", Utils.JSONCONSUMER);
       assertEquals(
-          "0",
+          "16",
           String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
       assertEquals(
-          "0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
+          "16", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split("/stat/version", '/'))));
 
       o = Utils.executeGET(client.getHttpClient(), basezk + "/configs", Utils.JSONCONSUMER);

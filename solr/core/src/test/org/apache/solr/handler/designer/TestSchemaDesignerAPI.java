@@ -70,7 +70,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    // SchemaDesignerAPI depends on the blob store
+    // SchemaDesignerAPI depends on the blob store ".system" collection existing.
     CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
     cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
@@ -839,6 +839,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     SimpleOrderedMap<Object> idFieldMapUpdated = idFieldMap.clone();
     idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("docValues", 0), Boolean.FALSE);
     idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("useDocValuesAsStored", 0), Boolean.FALSE);
+    idFieldMapUpdated.setVal(idFieldMapUpdated.indexOf("uninvertible", 0), Boolean.TRUE);
     idFieldMapUpdated.setVal(
         idFieldMapUpdated.indexOf("omitTermFreqAndPositions", 0), Boolean.FALSE);
 
@@ -892,14 +893,23 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertEquals(
         Arrays.asList(
             Map.of(
-                "omitTermFreqAndPositions", true, "useDocValuesAsStored", true, "docValues", true),
+                "omitTermFreqAndPositions",
+                true,
+                "useDocValuesAsStored",
+                true,
+                "docValues",
+                true,
+                "uninvertible",
+                false),
             Map.of(
                 "omitTermFreqAndPositions",
                 false,
                 "useDocValuesAsStored",
                 false,
                 "docValues",
-                false)),
+                false,
+                "uninvertible",
+                true)),
         mapDiff.get("id"));
     assertNotNull(fieldsDiff.get("added"));
     Map<String, Object> fieldsAdded = (Map<String, Object>) fieldsDiff.get("added");

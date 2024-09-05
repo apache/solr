@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="test-class-name-shortening-on-serialization" version="1.6">
+<schema name="test-class-name-shortening-on-serialization" version="1.7">
   <fieldType name="fullClassNames" class="org.apache.solr.schema.TextField">
     <analyzer>
       <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" remainder="0"/>

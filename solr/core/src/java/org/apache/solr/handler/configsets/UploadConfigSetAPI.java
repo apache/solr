@@ -25,7 +25,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.solr.api.EndPoint;
@@ -110,8 +109,7 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
         && requestIsTrusted
         && overwritesExisting
         && !configSetService.isConfigSetTrusted(configSetName)) {
-      Map<String, Object> metadata = Collections.singletonMap("trusted", true);
-      configSetService.setConfigMetadata(configSetName, metadata);
+      configSetService.setConfigSetTrust(configSetName, true);
     }
   }
 

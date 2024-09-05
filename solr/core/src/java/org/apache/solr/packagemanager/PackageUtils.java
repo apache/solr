@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,7 +50,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -210,7 +211,7 @@ public class PackageUtils {
     NamedList<Object> response = solrClient.request(request);
     String manifestJson = (String) response.get("response");
     String calculatedSHA512 =
-        BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
+        Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(
           ErrorCode.UNAUTHORIZED,
@@ -256,27 +257,13 @@ public class PackageUtils {
     return str;
   }
 
-  public static String BLACK = "\u001B[30m";
-  public static String RED = "\u001B[31m";
-  public static String GREEN = "\u001B[32m";
-  public static String YELLOW = "\u001B[33m";
-  public static String BLUE = "\u001B[34m";
-  public static String PURPLE = "\u001B[35m";
-  public static String CYAN = "\u001B[36m";
-  public static String WHITE = "\u001B[37m";
-
   /** Console print using green color */
-  public static void printGreen(Object message) {
-    PackageUtils.print(PackageUtils.GREEN, message);
+  public static void formatGreen(StringBuilder sb, Object message) {
+    format(sb, SolrCLI.GREEN, message);
   }
 
-  /** Console print using red color */
-  public static void printRed(Object message) {
-    PackageUtils.print(PackageUtils.RED, message);
-  }
-
-  public static void print(Object message) {
-    print(null, message);
+  public static void format(StringBuilder sb, Object message) {
+    format(sb, null, message);
   }
 
   @SuppressForbidden(
@@ -288,6 +275,16 @@ public class PackageUtils {
       System.out.println(color + String.valueOf(message) + RESET);
     } else {
       System.out.println(message);
+    }
+  }
+
+  public static void format(StringBuilder sb, String color, Object message) {
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      sb.append(color + String.valueOf(message) + RESET + "\n");
+    } else {
+      sb.append(message + "\n");
     }
   }
 
@@ -303,7 +300,7 @@ public class PackageUtils {
   }
 
   public static void uploadKey(byte[] bytes, String path, Path home) throws IOException {
-    FileStoreAPI.MetaData meta = FileStoreAPI._createJsonMetaData(bytes, null);
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
     DistribFileStore._persistToFile(
         home, path, ByteBuffer.wrap(bytes), ByteBuffer.wrap(Utils.toJSON(meta)));
   }

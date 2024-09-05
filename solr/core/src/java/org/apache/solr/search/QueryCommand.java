@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
@@ -238,5 +239,10 @@ public class QueryCommand {
 
   public boolean isDistribStatsDisabled() {
     return distribStatsDisabled;
+  }
+
+  /** Calls {@link SolrIndexSearcher#search(QueryCommand)}. */
+  public QueryResult search(SolrIndexSearcher searcher) throws IOException {
+    return searcher.search(this);
   }
 }

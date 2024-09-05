@@ -240,9 +240,7 @@ public abstract class SolrParams
     }
   }
 
-  /**
-   * Returns int value of the the param or default value for int - zero (<code>0</code>) if not set.
-   */
+  /** Returns int value of the param or default value for int - zero (<code>0</code>) if not set. */
   public int getPrimitiveInt(String param) {
     return getInt(param, 0);
   }
@@ -510,7 +508,7 @@ public abstract class SolrParams
       if (values.length == 1) {
         result.add(name, values[0]);
       } else {
-        // currently no reason not to use the same array
+        // currently, no reason not to use the same array
         result.add(name, values);
       }
     }
@@ -543,7 +541,7 @@ public abstract class SolrParams
   }
 
   /**
-   * Returns this SolrParams as a properly URL encoded string, starting with {@code "?"}, if not
+   * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
   public String toQueryString() {
@@ -569,9 +567,9 @@ public abstract class SolrParams
   }
 
   /**
-   * Generates a local-params string of the form
-   *
-   * <pre>{! name=value name2=value2}</pre>
+   * Generates a local-params string of the form <code>{! name=value name2=value2}</code>,
+   * Protecting (without any quoting or escaping) any values that start with <code>$</code> (param
+   * references).
    */
   public String toLocalParamsString() {
     final StringBuilder sb = new StringBuilder(128);
@@ -583,7 +581,12 @@ public abstract class SolrParams
         sb.append(' '); // do so even the first time; why not.
         sb.append(name); // no escaping for name; it must follow "Java Identifier" rules.
         sb.append('=');
-        sb.append(ClientUtils.encodeLocalParamVal(val));
+        if (val.startsWith("$")) {
+          // maintain literal param ref...
+          sb.append(val);
+        } else {
+          sb.append(ClientUtils.encodeLocalParamVal(val));
+        }
       }
     }
     sb.append('}');

@@ -43,6 +43,11 @@ public class LinkConfigTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk linkconfig -c <NAME> -n <NAME> [-z <HOST>]";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
         Option.builder("c")
@@ -53,20 +58,21 @@ public class LinkConfigTool extends ToolBase {
             .desc("Name of the collection to link.")
             .build(),
         Option.builder("n")
-            .longOpt("confname")
+            .longOpt("conf-name")
             .argName("NAME")
             .hasArg()
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        SolrCLI.OPTION_ZKHOST);
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
     String collection = cli.getOptionValue("name");
-    String confName = cli.getOptionValue("confname");
+    String confName = cli.getOptionValue("conf-name");
     String zkHost = SolrCLI.getZkHost(cli);
 
     try (SolrZkClient zkClient =

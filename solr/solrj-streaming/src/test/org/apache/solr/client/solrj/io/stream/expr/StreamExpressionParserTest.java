@@ -27,7 +27,7 @@ public class StreamExpressionParserTest extends SolrTestCase {
   }
 
   @Test
-  public void testParsing() throws Exception {
+  public void testParsing() {
     StreamExpression actual, expected;
 
     actual = StreamExpressionParser.parse("aliases(a_i=alias.a_i)");

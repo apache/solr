@@ -118,6 +118,12 @@ If `id` is your uniqueKey field, then sort parameters like `id asc` and `name as
 This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
 +
 In this situation, choose & re-use a fixed value for the xref:indexing-guide:date-formatting-math.adoc#now[`NOW` request parameter] in all of your cursor requests.
+. `sort` clauses containing the `score` pseudo-field should also be used with care in multi-replica SolrCloud deployments.
++
+Scores rely on term statistics which may vary from replica to replica, causing the same document to score differently in each.
+As a result, a series of cursormark requests may inadvertently skip or repeat documents if the requests are served by different replicas
++
+SolrCloud users who wish to use `score` as a sort criteria on cursormark requests can avoid these issues, either by using `PULL` type replicas or by ensuring that all cursormark requests in a series are processed by the same replica.
 
 Cursor mark values are computed based on the sort values of each document in the result, which means multiple documents with identical sort values will produce identical Cursor mark values if one of them is the last document on a page of results.
 In that situation, the subsequent request using that `cursorMark` would not know which of the documents with the identical mark values should be skipped.
@@ -138,6 +144,9 @@ $done = false
 while (not $done) {
   $results = fetch_solr($params)
   // do something with $results
+  if (count($results[response][docs]) < $r) {
+    $done = true
+  }
   if ($params[cursorMark] == $results[nextCursorMark]) {
     $done = true
   }

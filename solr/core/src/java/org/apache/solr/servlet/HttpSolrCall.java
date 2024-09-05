@@ -141,19 +141,6 @@ public class HttpSolrCall {
 
   public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
 
-  public static final Random random;
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      random = new Random();
-    } else {
-      random = new Random(seed.hashCode());
-    }
-  }
-
   protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
   protected final HttpServletRequest req;
@@ -231,13 +218,6 @@ public class HttpSolrCall {
 
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
 
-    // unused feature ?
-    int idx = path.indexOf(':');
-    if (idx > 0) {
-      // save the portion after the ':' for a 'handler' path parameter
-      path = path.substring(0, idx);
-    }
-
     // Check for container handlers
     handler = cores.getRequestHandler(path);
     if (handler != null) {
@@ -249,7 +229,7 @@ public class HttpSolrCall {
     }
 
     // Parse a core or collection name from the path and attempt to see if it's a core name
-    idx = path.indexOf('/', 1);
+    int idx = path.indexOf('/', 1);
     if (idx > 1) {
       origCorename = path.substring(1, idx);
 
@@ -1095,7 +1075,7 @@ public class HttpSolrCall {
 
   private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas) {
     if (replicas != null) {
-      RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
+      RandomIterator<Replica> it = new RandomIterator<>(Utils.RANDOM, replicas);
       while (it.hasNext()) {
         Replica replica = it.next();
         if (liveNodes.contains(replica.getNodeName())
@@ -1200,11 +1180,11 @@ public class HttpSolrCall {
       boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    Collections.shuffle(slices, random);
+    Collections.shuffle(slices, Utils.RANDOM);
 
     for (Slice slice : slices) {
       List<Replica> randomizedReplicas = new ArrayList<>(slice.getReplicas());
-      Collections.shuffle(randomizedReplicas, random);
+      Collections.shuffle(randomizedReplicas, Utils.RANDOM);
 
       for (Replica replica : randomizedReplicas) {
         if (!activeReplicas

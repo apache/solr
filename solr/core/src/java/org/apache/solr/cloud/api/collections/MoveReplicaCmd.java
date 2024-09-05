@@ -46,7 +46,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,7 +137,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 + " does not have any replica belonging to shard: "
                 + shardId);
       }
-      Collections.shuffle(sliceReplicas, CollectionHandlingUtils.RANDOM);
+      Collections.shuffle(sliceReplicas, Utils.RANDOM);
       replica = sliceReplicas.iterator().next();
     }
 
@@ -261,7 +260,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
             SKIP_CREATE_REPLICA_IN_CLUSTER_STATE,
             skipCreateReplicaInClusterState,
             CoreAdminParams.ULOG_DIR,
-            ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
+            ulogDir,
             CoreAdminParams.DATA_DIR,
             dataDir,
             ZkStateReader.REPLICA_TYPE,

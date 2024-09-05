@@ -43,6 +43,6 @@ public interface AnalysisParams {
   /** Holds a comma-separated list of field types that the analysis should be peformed for. */
   static final String FIELD_TYPE = PREFIX + ".fieldtype";
 
-  /** Hodls a comma-separated list of field named that the analysis should be performed for. */
+  /** Holds a comma-separated list of field named that the analysis should be performed for. */
   static final String FIELD_VALUE = PREFIX + ".fieldvalue";
 }

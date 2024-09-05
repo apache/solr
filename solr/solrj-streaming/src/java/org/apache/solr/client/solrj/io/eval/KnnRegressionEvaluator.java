@@ -58,7 +58,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
 
     if (values.length < 3) {
       throw new IOException(
-          "knnRegress expects atleast three parameters: an observation matrix, an outcomes vector and k.");
+          "knnRegress expects at least three parameters: an observation matrix, an outcomes vector and k.");
     }
 
     Matrix observations = null;

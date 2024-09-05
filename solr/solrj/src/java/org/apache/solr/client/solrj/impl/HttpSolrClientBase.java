@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -41,6 +40,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -50,7 +50,7 @@ import org.apache.solr.common.util.Utils;
 
 public abstract class HttpSolrClientBase extends SolrClient {
 
-  protected static final String DEFAULT_PATH = "/select";
+  protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
@@ -110,30 +110,9 @@ public abstract class HttpSolrClientBase extends SolrClient {
     }
   }
 
-  protected String getRequestPath(SolrRequest<?> solrRequest, String collection)
+  protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
-    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
-    if (collection != null) basePath += "/" + collection;
-
-    if (isV2ApiRequest(solrRequest)) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = serverBaseUrl + "/____v2";
-      }
-    }
-    String path = requestWriter.getPath(solrRequest);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
-    }
-
-    return basePath + path;
-  }
-
-  protected String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+    return ClientUtils.buildRequestUrl(solrRequest, requestWriter, serverBaseUrl, collection);
   }
 
   protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
@@ -141,7 +120,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
+  // TODO: Remove this for 10.0, there is a typo in the method name
+  @Deprecated(since = "9.8", forRemoval = true)
   protected ModifiableSolrParams initalizeSolrParams(
+      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
+    return initializeSolrParams(solrRequest, parserToUse);
+  }
+
+  protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
@@ -303,7 +289,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           is.close();
         } catch (IOException e) {
-          // quitely
+          // quietly
         }
       }
     }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.packagemanager.PackageUtils.format;
+
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -41,20 +43,16 @@ public class ZkMkrootTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder()
-            .longOpt("path")
-            .argName("PATH")
-            .hasArg()
-            .required(true)
-            .desc("Path to create.")
-            .build(),
-        Option.builder()
             .longOpt("fail-on-exists")
             .hasArg()
             .required(false)
             .desc("Raise an error if the root exists.  Defaults to false.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
@@ -64,15 +62,30 @@ public class ZkMkrootTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk mkroot [--fail-on-exists <arg>] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+  }
+
+  @Override
+  public String getHeader() {
+    StringBuilder sb = new StringBuilder();
+    format(
+        sb,
+        "mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary");
+    format(sb, "depth but primarily intended to create a 'chroot'.\n\nList of options:");
+    return sb.toString();
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
+    String znode = cli.getArgs()[0];
     boolean failOnExists = cli.hasOption("fail-on-exists");
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
-      String znode = cli.getOptionValue("path");
       echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
       zkClient.makePath(znode, failOnExists, true);
     } catch (Exception e) {

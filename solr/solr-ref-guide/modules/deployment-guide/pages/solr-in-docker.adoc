@@ -53,7 +53,7 @@ Next load some of the example data that is included in the container:
 
 [source,bash]
 ----
-docker exec -it my_solr post -c gettingstarted example/exampledocs/manufacturers.xml
+docker exec -it my_solr solr post -c gettingstarted example/exampledocs/manufacturers.xml
 ----
 
 In the UI, find the "Core selector" popup menu and select the "gettingstarted" core, then select the "Query" menu item.
@@ -245,7 +245,7 @@ docker run --name my_solr -p 8983:8983 solr solr-precreate books
 # get data
 mkdir mydata
 wget -O mydata/books.csv https://raw.githubusercontent.com/apache/solr/main/solr/example/exampledocs/books.csv
-docker run --rm -v "$PWD/mydata:/mydata" --network=host solr post -c books /mydata/books.csv
+docker run --rm -v "$PWD/mydata:/mydata" --network=host solr solr post -c books /mydata/books.csv
 ----
 
 The same works if you use the xref:docker-compose[example docker compose cluster], or you can just start your loading container in the same network:
@@ -253,7 +253,7 @@ The same works if you use the xref:docker-compose[example docker compose cluster
 [source,bash]
 ----
 docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create -c books -p 8983
-docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post  -c books /mydata/books.csv -host solr1
+docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr solr post -c books /mydata/books.csv --host solr1
 ----
 
 Alternatively, you can make the data available on a volume at Solr start time, and then load it from `docker exec` or a custom start script.
