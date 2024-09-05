@@ -22,11 +22,12 @@ description = 'GCS Backup Repository'
 dependencies {
     api project(':solr:core')
     implementation project(':solr:solrj')
-    
+
     implementation libs.apache.lucene.core
     implementation libs.slf4j.api
 
     implementation platform(libs.google.cloud.bom)
+    implementation platform(libs.grpc.bom)
     implementation libs.google.api.gax
     implementation libs.google.auth.oauth2http
     implementation libs.google.auth.credentials

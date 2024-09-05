@@ -71,6 +71,9 @@ allprojects {
                 handler.add(conf.name, libs.opentelemetry.bom, {
                     because 'version alignment with known BOM for consistency across project'
                 })
+                handler.add(conf.name, libs.grpc.bom, {
+                    because 'version alignment with known BOM for consistency across project'
+                })
 
                 // Add known dependencies that have multiple versions as constraints
                 // to align versions

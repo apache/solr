@@ -345,6 +345,8 @@ google-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.r
 google-re2j = { module = "com.google.re2j:re2j", version.ref = "google-re2j" }
 # @keep transitive dependency for version alignment
 grpc-api = { module = "io.grpc:grpc-api", version.ref = "grpc" }
+# @keep transitive dependency for version alignment
+grpc-bom = { module = "io.grpc:grpc-bom", version.ref = "grpc" }
 grpc-context = { module = "io.grpc:grpc-context", version.ref = "grpc" }
 # @keep transitive dependency for version alignment
 grpc-core = { module = "io.grpc:grpc-core", version.ref = "grpc" }
