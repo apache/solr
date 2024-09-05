@@ -951,8 +951,8 @@ Payloads can be encoded on terms using either the `DelimitedPayloadTokenFilter` 
 
 === Payload Score Parser
 
-`PayloadScoreQParser` incorporates each matching term's numeric (integer or float) payloads into the scores.
-The main query is parsed from the field type's query analysis into a `SpanQuery` based on the value of the `operator` parameter below.
+`PayloadScoreQParser` incorporates each matching term's numeric (integer or float) payloads into the scores via a {lucene-javadocs}/queries/src/java/org/apache/lucene/queries/payloads/PayloadScoreQuery.html[PayloadScoreQuery] that is wrapping a {lucene-javadocs}/queries/src/java/org/apache/lucene/queries/spans/SpanQuery.html[SpanQuery].
+The main query is parsed from the field type's query analysis into the `SpanQuery` based on the value of the `operator` parameter below.
 
 This parser accepts the following parameters:
 
