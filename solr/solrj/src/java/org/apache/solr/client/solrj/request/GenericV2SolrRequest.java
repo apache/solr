@@ -44,6 +44,7 @@ public class GenericV2SolrRequest extends GenericSolrRequest {
     this.params = params;
   }
 
+  @Override
   public ApiVersion getApiVersion() {
     return ApiVersion.V2;
   }
