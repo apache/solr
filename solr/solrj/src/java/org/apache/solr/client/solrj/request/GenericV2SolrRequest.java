@@ -23,12 +23,13 @@ public class GenericV2SolrRequest extends GenericSolrRequest {
 
   /**
    * @param m the HTTP method to use for this request
-   * @param path the HTTP path to use for this request. If users are making a collection-aware
-   *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
-   *     section of the API path following the collection or core should be provided here.
+   * @param path the HTTP path to use for this request. Path may include the v2 API root path (i.e.
+   *     "/api"), but does not need to. If users are making a collection-aware request (i.e. {@link
+   *     #setRequiresCollection(boolean)} is called with 'true'), only the section of the API path
+   *     following the collection or core should be provided here.
    */
   public GenericV2SolrRequest(METHOD m, String path) {
-    super(m, path);
+    super(m, removeLeadingApiRoot(path));
   }
 
   /**
@@ -45,5 +46,12 @@ public class GenericV2SolrRequest extends GenericSolrRequest {
 
   public ApiVersion getApiVersion() {
     return ApiVersion.V2;
+  }
+
+  private static String removeLeadingApiRoot(String path) {
+    if (path.startsWith("/api")) {
+      return path.replaceFirst("/api", "");
+    }
+    return path;
   }
 }
