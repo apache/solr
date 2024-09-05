@@ -139,20 +139,11 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       request.setResponseParser(new InputStreamResponseParser(wt));
     }
     result = client.request(request, testCollection);
-    byte[] b = copyStream((InputStream) result.get("stream"));
+    InputStream inputStream = (InputStream) result.get("stream");
+    byte[] b = inputStream.readAllBytes();
     System.out.println(wt + "_time : " + timer.getTime());
     System.out.println(wt + "_size : " + b.length);
     return b;
-  }
-
-  private static byte[] copyStream(InputStream inputStream) throws IOException {
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    byte[] buffer = new byte[4096];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(buffer)) != -1) {
-      outputStream.write(buffer, 0, bytesRead);
-    }
-    return outputStream.toByteArray();
   }
 
   private void modifySchema(String testCollection, CloudSolrClient client)

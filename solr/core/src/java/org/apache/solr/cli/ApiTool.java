@@ -125,7 +125,7 @@ public class ApiTool extends ToolBase {
    * @return Solr base url with port and root (from above example http://localhost:8983/solr)
    */
   public static String getSolrUrlFromUri(URI uri) {
-    return uri.getScheme() + "://" + uri.getAuthority() + "/" + uri.getPath().split("/")[1];
+    return uri.resolve("/" + uri.getPath().split("/")[1]).toString();
   }
 
   public static ModifiableSolrParams getSolrParamsFromUri(URI uri) {

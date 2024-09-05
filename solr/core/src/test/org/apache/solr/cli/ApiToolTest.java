@@ -99,4 +99,20 @@ public class ApiToolTest extends SolrCloudTestCase {
         String.format(Locale.ROOT, "Could not find string %s in response: \n%s", find, json),
         json.contains(find));
   }
+
+  @Test
+  public void testSolrUrlParsing() throws Exception {
+    assertEquals(
+        "https://test-host.solr:8983/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr:8983/solr")));
+    assertEquals(
+        "https://test-host.solr:8983/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr:8983/solr/test/api")));
+    assertEquals(
+        "https://test-host.solr/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr/solr/test/api")));
+    assertEquals(
+        "http://test-host.solr/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("http://test-host.solr/solr/test/api")));
+  }
 }

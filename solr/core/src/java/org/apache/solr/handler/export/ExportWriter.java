@@ -467,6 +467,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             }
             return true;
           });
+      if (null != buffers.getError()) {
+        throw new IOException(buffers.getError().getMessage(), buffers.getError());
+      }
     }
   }
 
