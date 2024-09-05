@@ -41,8 +41,8 @@ import org.apache.solr.core.MockShardHandlerFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests specifying a custom ShardHandlerFactory */
-public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
+/** Tests exercising Solr's two "out-of-the-box" ShardHandlerFactory implementations */
+public class TestShardHandlerFactory extends SolrTestCaseJ4 {
 
   private static final String[] SHARD_HANDLER_FACTORY_IMPLEMENTATIONS =
       new String[] {
