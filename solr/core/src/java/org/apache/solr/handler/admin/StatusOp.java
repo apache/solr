@@ -18,6 +18,8 @@
 package org.apache.solr.handler.admin;
 
 import java.io.Closeable;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +41,14 @@ class StatusOp implements CoreAdminHandler.CoreAdminOp {
     String reconcile = params.get(CoreAdminParams.RECONCILE_THRESHOLD);
     boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
     NamedList<Object> status = new SimpleOrderedMap<>();
+    NamedList<Object> nodeStatus = new SimpleOrderedMap<>();
+    if (it.handler.coreContainer != null) {
+      Path solrDataHome = it.handler.coreContainer.getCoreRootDirectory();
+      File dataDir = solrDataHome.toFile();
+      nodeStatus.add("indexDiskSizeTotal", dataDir.getTotalSpace());
+      nodeStatus.add("indexDiskSizeAvailable", dataDir.getUsableSpace());
+    }
+    it.rsp.add("nodeStatus", nodeStatus);
     Map<String, Exception> failures = new HashMap<>();
     for (Map.Entry<String, CoreContainer.CoreLoadFailure> failure :
         it.handler.coreContainer.getCoreInitFailures().entrySet()) {
