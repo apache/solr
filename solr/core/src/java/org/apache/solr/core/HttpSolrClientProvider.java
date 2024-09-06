@@ -21,7 +21,6 @@ import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_M
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
@@ -52,19 +51,14 @@ class HttpSolrClientProvider implements SolrMetricProducer {
 
   private SolrMetricsContext solrMetricsContext;
 
-  private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+  private int socketTimeout;
 
-  private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+  private int connectionTimeout;
 
   public HttpSolrClientProvider(UpdateShardHandlerConfig cfg) {
     Http2SolrClient.Builder httpClientBuilder = new Http2SolrClient.Builder();
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-
-    if (cfg != null) {
-      httpClientBuilder.withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
-      socketTimeout = Math.max(cfg.getDistributedConnectionTimeout(), connectionTimeout);
-      connectionTimeout = Math.max(cfg.getDistributedSocketTimeout(), socketTimeout);
-    }
+    configureTimeouts(cfg);
 
     httpClientBuilder
         .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
@@ -72,6 +66,16 @@ class HttpSolrClientProvider implements SolrMetricProducer {
         .withListenerFactory(List.of(trackHttpSolrMetrics));
 
     httpSolrClient = httpClientBuilder.build();
+  }
+
+  private void configureTimeouts(UpdateShardHandlerConfig cfg) {
+    socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
+    connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+
+    if (cfg != null) {
+      socketTimeout = Math.max(cfg.getDistributedSocketTimeout(), socketTimeout);
+      connectionTimeout = Math.max(cfg.getDistributedConnectionTimeout(), connectionTimeout);
+    }
   }
 
   private HttpClientMetricNameStrategy getMetricNameStrategy(UpdateShardHandlerConfig cfg) {
@@ -113,8 +117,7 @@ class HttpSolrClientProvider implements SolrMetricProducer {
     return nameStrategy;
   }
 
-  // Return a default http client for all-purpose usage.
-  public SolrClient getSolrClient() {
+  public Http2SolrClient getSolrClient() {
     return httpSolrClient;
   }
 
@@ -136,6 +139,11 @@ class HttpSolrClientProvider implements SolrMetricProducer {
 
   @Override
   public void close() {
+    try {
+      SolrMetricProducer.super.close();
+    } catch (Exception e) {
+      log.error("Error closing SolrMetricProducer", e);
+    }
     IOUtils.closeQuietly(httpSolrClient);
   }
 }

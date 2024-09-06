@@ -68,6 +68,7 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
@@ -2578,7 +2579,7 @@ public class CoreContainer {
   }
 
   /** Returns default http solr client. */
-  public SolrClient getDefaultHttpClient() {
+  public Http2SolrClient getDefaultHttpClient() {
     return solrClientProvider.getSolrClient();
   }
 
