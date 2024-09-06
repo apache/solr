@@ -75,7 +75,7 @@ public class SearchStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(

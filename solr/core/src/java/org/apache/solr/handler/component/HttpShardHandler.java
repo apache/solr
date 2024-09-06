@@ -189,7 +189,7 @@ public class HttpShardHandler extends ShardHandler {
             srsp.setShardAddress(rsp.getServer());
             ssr.elapsedTime =
                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-            responses.add(srsp);
+            responses.add(transfomResponse(sreq, srsp, shard));
           } else if (throwable != null) {
             ssr.elapsedTime =
                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
@@ -197,7 +197,7 @@ public class HttpShardHandler extends ShardHandler {
             if (throwable instanceof SolrException) {
               srsp.setResponseCode(((SolrException) throwable).code());
             }
-            responses.add(srsp);
+            responses.add(transfomResponse(sreq, srsp, shard));
           }
         });
 

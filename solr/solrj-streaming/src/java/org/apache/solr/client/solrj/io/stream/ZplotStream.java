@@ -213,7 +213,7 @@ public class ZplotStream extends TupleStream implements Expressible {
         outTuples.add(tuple);
       }
 
-      // Generate the x axis if the tuples contain y and not x
+      // Generate the x-axis if the tuples contain y and not x
       if (outTuples.get(0).getFields().containsKey("y")
           && !outTuples.get(0).getFields().containsKey("x")) {
         int x = 0;
