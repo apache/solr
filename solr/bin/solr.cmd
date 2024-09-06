@@ -307,7 +307,7 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--additional-options "additional-options"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts "jvm-opts"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
@@ -350,9 +350,9 @@ goto done
 @echo       schemaless:     Schema-less example (schema is inferred from data during indexing)
 @echo       films:          Example of starting with _default configset and defining explicit fields dynamically
 @echo.
-@echo   --additional-options opts Additional parameters to pass to the JVM when starting Solr, such as to setup
+@echo   --jvm-opts opts Additional parameters to pass to the JVM when starting Solr, such as to setup
 @echo                 Java debug options. For example, to enable a Java debugger to attach to the Solr JVM
-@echo                 you could pass: --additional-options "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"
+@echo                 you could pass: --jvm-opts "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
 @echo   -j opts       Additional parameters to pass to Jetty when starting Solr.
@@ -426,7 +426,7 @@ IF "%1"=="-s" goto set_solr_url
 IF "%1"=="--solr-url" goto set_solr_url
 IF "%1"=="-solrUrl" goto set_solr_url
 IF "%1"=="-a" goto set_addl_opts
-IF "%1"=="--additional-options" goto set_addl_opts
+IF "%1"=="--jvm-opts" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="--noprompt" goto set_noprompt

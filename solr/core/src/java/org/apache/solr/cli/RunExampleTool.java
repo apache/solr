@@ -182,7 +182,7 @@ public class RunExampleTool extends ToolBase {
                 "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
             .build(),
         Option.builder()
-            .longOpt("additional-options")
+            .longOpt("jvm-opts")
             .hasArg()
             .argName("OPTS")
             .required(false)
@@ -617,8 +617,8 @@ public class RunExampleTool extends ToolBase {
     String forceArg = cli.hasOption("force") ? " --force" : "";
     String verboseArg = verbose ? "-V" : "";
 
-    String addlOpts = cli.getOptionValue('a');
-    String addlOptsArg = (addlOpts != null) ? " -a \"" + addlOpts + "\"" : "";
+    String jvmOpts = cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a')
+    String jvmOptsArg = (jvmOpts != null) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
     File cwd = new File(System.getProperty("user.dir"));
     File binDir = (new File(script)).getParentFile();
@@ -647,7 +647,7 @@ public class RunExampleTool extends ToolBase {
             forceArg,
             verboseArg,
             extraArgs,
-            addlOptsArg);
+            jvmOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
