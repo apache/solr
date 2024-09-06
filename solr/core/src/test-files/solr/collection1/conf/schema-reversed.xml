@@ -21,7 +21,7 @@
   For testing reversed wildcards.
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
   <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}"/>
   <fieldType name="string" class="solr.StrField"/>
 

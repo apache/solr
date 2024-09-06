@@ -54,9 +54,9 @@ public class CommonTestInjection {
   }
 
   /**
-   * Set test delay (sleep) in unit of millisec
+   * Set test delay (sleep) in unit of milliseconds
    *
-   * @param delay delay in millisec, null to remove such delay
+   * @param delay delay in milliseconds, null to remove such delay
    */
   public static void setDelay(Integer delay) {
     CommonTestInjection.delay = delay;

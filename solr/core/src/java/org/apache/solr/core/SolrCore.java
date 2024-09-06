@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -129,6 +130,7 @@ import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.PHPResponseWriter;
 import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
@@ -764,29 +766,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
     // only one reload at a time
     synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
       solrCoreState.increfSolrCoreState();
-      final SolrCore currentCore;
-      if (!getNewIndexDir().equals(getIndexDir())) {
-        // the directory is changing, don't pass on state
-        currentCore = null;
-      } else {
-        currentCore = this;
-      }
+
+      // if directory is changing, then don't pass on state
+      boolean cloneCoreState = getNewIndexDir().equals(getIndexDir());
 
       boolean success = false;
       SolrCore core = null;
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); // Reload the extra properties
-        core =
-            new SolrCore(
-                coreContainer,
-                cd,
-                coreConfig,
-                getDataDir(),
-                updateHandler,
-                solrDelPolicy,
-                currentCore,
-                true);
+        core = cloneForReloadCore(cd, coreConfig, cloneCoreState);
 
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -801,6 +790,24 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     }
+  }
+
+  /**
+   * Clones the current core for core reload, with the provided CoreDescriptor and ConfigSet.
+   *
+   * @return the cloned core to be used for {@link SolrCore#reload}
+   */
+  protected SolrCore cloneForReloadCore(
+      CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCoreState) {
+    return new SolrCore(
+        coreContainer,
+        newCoreDescriptor,
+        newCoreConfig,
+        getDataDir(),
+        updateHandler,
+        solrDelPolicy,
+        cloneCoreState ? this : null,
+        true);
   }
 
   private DirectoryFactory initDirectoryFactory() {
@@ -1052,7 +1059,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     this(coreContainer, cd, configSet, null, null, null, null, false);
   }
 
-  private SolrCore(
+  protected SolrCore(
       CoreContainer coreContainer,
       CoreDescriptor coreDescriptor,
       ConfigSet configSet,
@@ -2221,6 +2228,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * reference count will be incremented.
    */
   public RefCounted<SolrIndexSearcher> getRealtimeSearcher() {
+    // In practice, this is nearly always the same as the non-realtime searcher because that one
+    //   nearly always exists and it installs itself as the realtime searcher.
     synchronized (searcherLock) {
       if (realtimeSearcher != null) {
         realtimeSearcher.incref();
@@ -3018,6 +3027,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
+    m.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
     m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {

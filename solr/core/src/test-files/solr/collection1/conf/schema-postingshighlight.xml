@@ -18,7 +18,7 @@
 
 <!-- Test schema file for PostingsHighlighter -->
 
-<schema name="postingshighlight" version="1.0">
+<schema name="postingshighlight" version="1.7">
   <fieldType name="string" class="solr.StrField" omitNorms="true" positionIncrementGap="0"/>
 
   <!-- basic text field: no offsets! -->

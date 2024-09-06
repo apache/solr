@@ -160,7 +160,7 @@ public class RunExampleTool extends ToolBase {
             .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
             .longOpt("port")
             .build(),
-        Option.builder("h")
+        Option.builder()
             .argName("HOSTNAME")
             .hasArg()
             .required(false)
@@ -272,9 +272,6 @@ public class RunExampleTool extends ToolBase {
     Map<String, Object> nodeStatus =
         startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
-    // invoke the CreateTool
-    File configsetsDir = new File(serverDir, "solr/configsets");
-
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
     // If the example already exists then let the user know they should delete it, or
@@ -310,6 +307,7 @@ public class RunExampleTool extends ToolBase {
     }
 
     if (!alreadyExists) {
+      // invoke the CreateTool
       String[] createArgs =
           new String[] {
             "--name", collectionName,
@@ -320,10 +318,7 @@ public class RunExampleTool extends ToolBase {
             "--solr-url", solrUrl
           };
       CreateTool createTool = new CreateTool(stdout);
-      int createCode =
-          createTool.runTool(
-              SolrCLI.processCommandLineArgs(
-                  createTool.getName(), createTool.getOptions(), createArgs));
+      int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
       if (createCode != 0)
         throw new Exception(
             "Failed to create " + collectionName + " using command: " + Arrays.asList(createArgs));
@@ -353,8 +348,7 @@ public class RunExampleTool extends ToolBase {
               exampledocsDir.getAbsolutePath() + "/*.xml"
             };
         PostTool postTool = new PostTool();
-        CommandLine postToolCli =
-            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
       } else {
@@ -435,8 +429,7 @@ public class RunExampleTool extends ToolBase {
               filmsJsonFile.getAbsolutePath()
             };
         PostTool postTool = new PostTool();
-        CommandLine postToolCli =
-            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        CommandLine postToolCli = SolrCLI.parseCmdLine(postTool, args);
         postTool.runTool(postToolCli);
 
       } catch (Exception ex) {
@@ -614,10 +607,10 @@ public class RunExampleTool extends ToolBase {
 
     String extraArgs = readExtraArgs(cli.getArgs());
 
-    String host = cli.getOptionValue('h');
+    String host = cli.getOptionValue("host");
     String memory = cli.getOptionValue('m');
 
-    String hostArg = (host != null && !"localhost".equals(host)) ? " -h " + host : "";
+    String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "--cloud " : "";
@@ -875,10 +868,7 @@ public class RunExampleTool extends ToolBase {
         };
 
     CreateTool createTool = new CreateTool(stdout);
-    int createCode =
-        createTool.runTool(
-            SolrCLI.processCommandLineArgs(
-                createTool.getName(), createTool.getOptions(), createArgs));
+    int createCode = createTool.runTool(SolrCLI.processCommandLineArgs(createTool, createArgs));
 
     if (createCode != 0)
       throw new Exception(

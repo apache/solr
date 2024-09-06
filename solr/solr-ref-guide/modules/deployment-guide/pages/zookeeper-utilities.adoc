@@ -26,11 +26,11 @@ The ZooKeeper specific commands are provided by the xref:solr-control-script-ref
 
 == Using Solr's CLI with ZooKeeper
 
-Use the `help` option to get a list of available ZooKeeper specifc commands from the script itself, as in `bin/solr zk -h`.
+Use the `help` option to get a list of available ZooKeeper specific commands from the script itself, as in `bin/solr zk -h`.
 
 == Solr CLI Examples
 
-Below are some examples of using the `bin/solr` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud -noprompt`)
+Below are some examples of using the `bin/solr` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud --no-prompt`)
 
 === Upload a Configuration Directory
 

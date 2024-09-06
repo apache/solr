@@ -37,7 +37,7 @@ public enum RequestStatusState {
   /** The request was submitted, but has not yet started. */
   SUBMITTED("submitted"),
 
-  /** The request Id was not found. */
+  /** The request was not found. */
   NOT_FOUND("notfound");
 
   private final String key;

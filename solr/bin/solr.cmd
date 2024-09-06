@@ -246,6 +246,7 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
+REM -help is a special case to faciliate folks learning about how to use Solr.
 IF "%1"=="-help" goto run_solrcli
 IF "%1"=="-usage" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
@@ -257,8 +258,10 @@ IF "%1"=="version" goto run_solrcli
 IF "%1"=="-v" goto run_solrcli
 IF "%1"=="-version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
+IF "%1"=="zk" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
+IF "%1"=="auth" goto run_solrcli
 IF "%1"=="api" goto run_solrcli
 IF "%1"=="post" goto run_solrcli
 
@@ -270,12 +273,7 @@ IF "%1"=="healthcheck" goto run_solrcli
 IF "%1"=="create" goto run_solrcli
 IF "%1"=="delete" goto run_solrcli
 IF "%1"=="postlogs" goto run_solrcli
-IF "%1"=="zk" (
-  set SCRIPT_CMD=zk
-  SHIFT
-  set ZK_RECURSE=false
-  goto parse_zk_args
-)
+
 IF "%1"=="auth" (
   set SCRIPT_CMD=auth
   SHIFT
@@ -292,7 +290,6 @@ IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="-usage" goto run_solrcli
 IF "%FIRST_ARG%"=="-h" goto run_solrcli
 IF "%FIRST_ARG%"=="--help" goto run_solrcli
-IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
@@ -301,8 +298,9 @@ IF "%SCRIPT_CMD%"=="healthcheck" goto run_solrcli
 IF "%SCRIPT_CMD%"=="create" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF "%SCRIPT_CMD%"=="cluster" goto run_solrcli
-IF "%SCRIPT_CMD%"=="zk" goto zk_usage
-IF "%SCRIPT_CMD%"=="auth" goto auth_usage
+IF "%SCRIPT_CMD%"=="zk" goto run_solrcli
+IF "%SCRIPT_CMD%"=="auth" goto run_solrcli
+IF "%SCRIPT_CMD%"=="package" goto run_solrcli
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
 IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
 goto done
@@ -314,7 +312,7 @@ goto done
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
+@echo   -c or --cloud Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
 @echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
 @echo                   such as 9983 if Solr is bound to 8983
 @echo.
@@ -386,144 +384,6 @@ goto done
 @echo.
 goto done
 
-:zk_usage
-set ZK_FULL=true
-goto zk_short_usage
-:zk_full_usage
-echo         Can be run on remote (non-Solr^) hosts, as long as valid ZK_HOST information is provided.
-echo         Be sure to check the Solr logs in case of errors.
-echo.
-echo             -z zkHost       Optional Zookeeper connection string for all commands. If specified it
-echo                             overrides the 'ZK_HOST=...'' defined in solr.in.cmd.
-echo.
-echo             -s solrUrl      Optional Solr URL to look up the correct zkHost connection string via.
-echo.
-echo             -V              Enable more verbose output.
-echo.
-echo         upconfig uploads a configset from the local machine to Zookeeper.
-echo.
-echo         downconfig downloads a configset from Zookeeper to the local machine.
-echo.
-echo             -n configName   Name of the configset in Zookeeper that will be the destination of
-echo                             'upconfig' and the source for 'downconfig'.
-echo.
-echo             -d confdir      The local directory the configuration will be uploaded from for
-echo                             'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of
-echo                             ...solr/server/solr/configsets' then the configs will be copied from/to
-echo                             that directory. Otherwise it is interpreted as a simple local path.
-echo.
-echo         cp copies files or folders to/from Zookeeper or Zookeeper -^> Zookeeper
-echo             -r              Recursively copy ^<src^> to ^<dst^>. Command will fail if ^<src^> has children and
-echo                             -r is not specified. Optional
-echo.
-echo.             ^<src^>, ^<dest^> : [file:][/]path/to/local/file or zk:/path/to/zk/node
-echo                              NOTE: ^<src^> and ^<dest^> may both be Zookeeper resources prefixed by 'zk:'
-echo             When ^<src^> is a zk resource, ^<dest^> may be '.'
-echo             If ^<dest^> ends with '/', then ^<dest^> will be a local folder or parent znode and the last
-echo             element of the ^<src^> path will be appended unless ^<src^> also ends in a slash.
-echo             ^<dest^> may be zk:, which may be useful when using the cp -r form to backup/restore
-echo             the entire zk state.
-echo             You must enclose local paths that end in a wildcard in quotes or just
-echo             end the local path in a slash. That is,
-echo             'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181' is equivalent to
-echo             'bin/solr zk cp -r ^"/some/dir/*^" zk:/ -z localhost:2181'
-echo             but 'bin/solr zk cp -r /some/dir/* zk:/ -z localhost:2181' will throw an error.
-echo.
-echo             Here's an example of backup/restore for a ZK configuration:
-echo             to copy to local: 'bin/solr zk cp -r zk:/ /some/dir -z localhost:2181'
-echo             to restore to ZK: 'bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181'
-echo.
-echo             The 'file:' prefix is stripped, thus 'file:/wherever' specifies an absolute local path and
-echo             'file:somewhere' specifies a relative local path. All paths on Zookeeper are absolute.
-echo.
-echo             Zookeeper nodes CAN have data, so moving a single file to a parent znode
-echo             will overlay the data on the parent Znode so specifying the trailing slash
-echo             can be important.
-echo.
-echo             Wildcards are supported when copying from local, trailing only and must be quoted.
-echo.
-echo         rm deletes files or folders on Zookeeper
-echo             -r     Recursively delete if ^<path^> is a directory. Command will fail if ^<path^>
-echo                    has children and -r is not specified. Optional
-echo             ^<path^> : [zk:]/path/to/zk/node. ^<path^> may not be the root ('/')
-echo.
-echo         mv moves (renames) znodes on Zookeeper
-echo             ^<src^>, ^<dest^> : Zookeeper nodes, the 'zk:' prefix is optional.
-echo             If ^<dest^> ends with '/', then ^<dest^> will be a parent znode
-echo             and the last element of the ^<src^> path will be appended.
-echo             Zookeeper nodes CAN have data, so moving a single file to a parent znode
-echo             will overlay the data on the parent Znode so specifying the trailing slash
-echo             is important.
-echo.
-echo         ls lists the znodes on Zookeeper
-echo             -r recursively descends the path listing all znodes. Optional
-echo             ^<path^>: The Zookeeper path to use as the root.
-echo.
-echo             Only the node names are listed, not data
-echo.
-echo         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary
-echo                depth but primarily intended to create a 'chroot'.
-echo.
-echo             ^<path^>: The Zookeeper path to create. Leading slash is assumed if not present.
-echo                       Intermediate nodes are created as needed if not present.
-echo.
-
-goto done
-
-:zk_short_usage
-IF NOT "!ERROR_MSG!"=="" (
-  echo  ERROR: !ERROR_MSG!
-  echo.
-)
-echo  Usage: solr zk upconfig^|downconfig -d ^<confdir^> -n ^<configName^> [-z zkHost] [-s solrUrl]
-echo         solr zk cp [-r] ^<src^> ^<dest^> [-z zkHost] [-s solrUrl]
-echo         solr zk rm [-r] ^<path^> [-z zkHost] [-s solrUrl]
-echo         solr zk mv ^<src^> ^<dest^> [-z zkHost] [-s solrUrl]
-echo         solr zk ls [-r] ^<path^> [-z zkHost] [-s solrUrl]
-echo         solr zk mkroot ^<path^> [-z zkHost] [-s solrUrl]
-echo         solr zk linkconfig --conf-name ^<confname^> -c ^<collection^> [-z zkHost] [-s solrUrl]
-echo         solr zk updateacls ^<path^> [-z zkHost] [-s solrUrl]
-echo.
-IF "%ZK_FULL%"=="true" (
-  goto zk_full_usage
-) ELSE (
-  echo Type bin/solr zk --help for full usage help
-)
-goto done
-
-:auth_usage
-echo Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown ^<true^|false^>] [--update-include-file-only ^<true^|false^>] [-v]
-echo        solr auth enable [--type basicAuth] --prompt ^<true^|false^> [--block-unknown ^<true^|false^>] [--update-include-file-only ^<true^|false^>] [-v]
-echo        solr auth disable [--update-include-file-only ^<true^|false^>] [-v]
-echo.
-echo  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.
-echo.
-echo   --type ^<type^>                The authentication mechanism to enable. Defaults to 'basicAuth'.
-echo.
-echo   --credentials ^<user:pass^>    The username and password of the initial user
-echo                                Note: only one of --prompt or --credentials must be provided
-echo.
-echo   --prompt ^<true^|false^>        Prompts the user to provide the credentials
-echo                                Note: only one of --prompt or --credentials must be provided
-echo.
-echo   --block-unknown ^<true^|false^>  When true, this blocks out access to unauthenticated users. When not provided,
-echo                                this defaults to false (i.e. unauthenticated users can access all endpoints, except the
-echo                                operations like collection-edit, security-edit, core-admin-edit etc.^). Check the reference
-echo                                guide for Basic Authentication for more details.
-echo.
-echo   --update-include-file-only ^<true^|false^>   Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-echo                                          authentication (i.e. don't update security.json^)"
-echo.
-echo   -z zkHost                    Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.cmd.
-echo.
-echo   -d ^<dir^>                     Specify the Solr server directory"
-echo.
-echo   -s ^<dir^>                     Specify the Solr home directory. This is where any credentials or authentication"
-echo                                configuration files (e.g. basicAuth.conf^) would be placed."
-echo.
-echo   -v                             Enable more verbose output
-echo.
-goto done
 
 REM Really basic command-line arg parsing
 :parse_args
@@ -544,6 +404,7 @@ IF "%1"=="-v" goto set_debug
 IF "%1"=="-q" goto set_warn
 IF "%1"=="-c" goto set_cloud_mode
 IF "%1"=="-cloud" goto set_cloud_mode
+IF "%1"=="--cloud" goto set_cloud_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="-s" goto set_solr_home_dir
@@ -721,7 +582,7 @@ IF "%firstChar%"=="-" (
 )
 
 set SOLR_HOST=%~2
-set "PASS_TO_RUN_EXAMPLE=-h %~2 !PASS_TO_RUN_EXAMPLE!"
+set "PASS_TO_RUN_EXAMPLE=--host %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
 goto parse_args
@@ -1443,12 +1304,6 @@ IF "%1"=="-V" (
   goto set_collection_zk
 ) ELSE IF "%1"=="-z" (
   goto set_config_zk
-) ELSE IF "%1"=="/?" (
-  goto zk_usage
-) ELSE IF "%1"=="-h" (
-  goto zk_usage
-) ELSE IF "%1"=="-help" (
-  goto zk_usage
 ) ELSE IF "!ZK_SRC!"=="" (
   if not "%~1"=="" (
     goto set_zk_src
@@ -1525,10 +1380,10 @@ IF "!ZK_OP!"=="" (
 set CONNECTION_PARAMS=""
 
 IF "!ZK_OP!"=="" (
-  set CONNECTION_PARAMS="-solrUrl !ZK_SOLR_URL!"
+  set CONNECTION_PARAMS="--solr-url !ZK_SOLR_URL!"
 )
 ELSE (
-  set CONNECTION_PARAMS="-zkHost ZK_HOST!"
+  set CONNECTION_PARAMS="--zk-host ZK_HOST!"
 )
 
 IF "!ZK_OP!"=="upconfig" (

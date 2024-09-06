@@ -206,7 +206,7 @@ Inside the `ec2-101-1-2-3.us-east-2.compute.amazonaws.com` (`solr-node-1`)
 $ cd $SOLR_HOME
 
 # start Solr node on 8983 and ZooKeeper will start on 9983 (8983+1000)
-$ bin/solr start -c -p 8983 -h solr-node-1
+$ bin/solr start -c -p 8983 --host solr-node-1
 ----
 +
 On the other node, `ec2-101-4-5-6.us-east-2.compute.amazonaws.com` (`solr-node-2`)
@@ -216,7 +216,7 @@ On the other node, `ec2-101-4-5-6.us-east-2.compute.amazonaws.com` (`solr-node-2
 $ cd $SOLR_HOME
 
 # start Solr node on 8983 and connect to ZooKeeper running on first node
-$ bin/solr start -c -p 8983 -h solr-node-2 -z solr-node-1:9983
+$ bin/solr start -c -p 8983 --host solr-node-2 -z solr-node-1:9983
 ----
 
 . Inspect and Verify.
@@ -328,7 +328,7 @@ $ bin/zkServer.sh start
 $ cd $SOLR_HOME
 
 # start Solr node on 8983 and connect to ZooKeeper running on ZooKeeper node
-$ bin/solr start -c -p 8983 -h solr-node-1 -z zookeeper-node:2181
+$ bin/solr start -c -p 8983 --host solr-node-1 -z zookeeper-node:2181
 ----
 +
 . On the second Solr node (`solr-node-2`), again start Solr and tell it where to find ZooKeeper.
@@ -338,7 +338,7 @@ $ bin/solr start -c -p 8983 -h solr-node-1 -z zookeeper-node:2181
 $ cd $SOLR_HOME
 
 # start Solr node on 8983 and connect to ZooKeeper running on ZooKeeper node
-$ bin/solr start -c -p 8983 -h solr-node-2 -z zookeeper-node:2181
+$ bin/solr start -c -p 8983 --host solr-node-2 -z zookeeper-node:2181
 ----
 
 [TIP]

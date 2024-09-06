@@ -1,5 +1,6 @@
 = Exercise 2: Index Films Data
 :experimental:
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -74,7 +75,7 @@ The data you're going to index is related to movies, so start by creating a coll
 
 [,console]
 ----
-$ bin/solr create -c films -s 2 -rf 2
+$ bin/solr create -c films --shards 2 -rf 2
 ----
 
 Whoa, wait.
@@ -219,81 +220,32 @@ It comes in three formats: JSON, XML and CSV.
 Pick one of the formats and index it into the "films" collection (in each example, one command is for Unix/MacOS and the other is for Windows):
 
 .To Index JSON Format
-[.dynamic-tabs]
---
-[example.tab-pane#unixindexjson]
-====
-[.tab-label]*Linux/Mac*
-
-[,console]
+[tabs#index-json]
+======
 ----
 $ bin/solr post -c films example/films/films.json
-
 ----
-====
-
-[example.tab-pane#winindexjson]
-====
-[.tab-label]*Windows*
-
-[,console]
-----
-$ bin/solr post -c films example\films\films.json
-----
-====
---
+======
 
 
 .To Index XML Format
-[.dynamic-tabs]
---
-[example.tab-pane#unixindexxml]
-====
-[.tab-label]*Linux/Mac*
-
+[tabs#index-xml]
+======
 [,console]
 ----
 $ bin/solr post -c films example/films/films.xml
-
 ----
-====
-
-[example.tab-pane#winindexxml]
-====
-[.tab-label]*Windows*
-
-[,console]
-----
-$ bin/solr post -c films example\films\films.xml
-----
-====
---
+======
 
 
 .To Index CSV Format
-[.dynamic-tabs]
---
-[example.tab-pane#unixindexcsv]
-====
-[.tab-label]*Linux/Mac*
-
+[tabs#index-csv]
+======
 [,console]
 ----
-$ bin/solr post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
-
+$ bin/solr post -c films example/films/films.csv --params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 ----
-====
-
-[example.tab-pane#winindexcsv]
-====
-[.tab-label]*Windows*
-
-[,console]
-----
-$ bin/solr post -c films example\films\films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
-----
-====
---
+======
 
 Each command includes these main parameters:
 

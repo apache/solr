@@ -584,14 +584,14 @@
   <field name="oer_amount_CFT" type="oer_currency_CFT" indexed="true" stored="true"/>
 
   <!-- test different combinations of indexed and stored -->
-  <field name="bind" type="boolean" indexed="true" stored="false"/>
-  <field name="bsto" type="boolean" indexed="false" stored="true"/>
-  <field name="bindsto" type="boolean" indexed="true" stored="true"/>
+  <field name="bind" type="boolean" indexed="true" stored="false" docValues="false"/>
+  <field name="bsto" type="boolean" indexed="false" stored="true" docValues="false"/>
+  <field name="bindsto" type="boolean" indexed="true" stored="true" docValues="false"/>
   <field name="isto" type="int" indexed="false" stored="true"/>
   <field name="iind" type="int" indexed="true" stored="false"/>
-  <field name="ssto" type="string" indexed="false" stored="true"/>
-  <field name="sind" type="string" indexed="true" stored="false"/>
-  <field name="sindsto" type="string" indexed="true" stored="true"/>
+  <field name="ssto" type="string" indexed="false" stored="true" docValues="false"/>
+  <field name="sind" type="string" indexed="true" stored="false" docValues="false"/>
+  <field name="sindsto" type="string" indexed="true" stored="true" docValues="false"/>
 
   <!-- test combinations of term vector settings -->
   <field name="test_basictv" type="text" termVectors="true"/>

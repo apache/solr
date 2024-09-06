@@ -64,7 +64,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
       "false",
       "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
+      "--credentials",
       SecurityJson.USER_PASS,
       "-verbose"
     };
@@ -97,7 +97,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof DeleteTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 }

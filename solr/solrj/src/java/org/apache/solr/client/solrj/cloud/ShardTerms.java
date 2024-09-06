@@ -125,7 +125,7 @@ public class ShardTerms implements MapWriter {
   }
 
   /**
-   * Return a new {@link ShardTerms} in which highest terms are not zero
+   * Return a new {@link ShardTerms} in which the highest terms are not zero
    *
    * @return null if highest terms are already larger than zero
    */

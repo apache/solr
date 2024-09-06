@@ -68,48 +68,49 @@ setup() {
 
 @test "healthcheck help flag prints help" {
   run solr healthcheck --help
-  assert_output --partial 'usage: healthcheck'
+  assert_output --partial 'usage: bin/solr healthcheck'
   refute_output --partial 'ERROR'
 }
 
 @test "create help flag prints help" {
   run solr create --help
-  assert_output --partial 'usage: create'
+  assert_output --partial 'usage: bin/solr create'
   refute_output --partial 'ERROR'
 }
 
 @test "delete help flag prints help" {
   run solr delete -h
-  assert_output --partial 'usage: delete'
+  assert_output --partial 'usage: bin/solr delete'
   refute_output --partial 'ERROR'
 }
 
 @test "version help flag prints help" {
   run solr version -h
-  assert_output --partial 'usage: version'
+  assert_output --partial 'usage: bin/solr version'
   refute_output --partial 'ERROR'
 }
 
 @test "zk help flag prints help" {
   run solr zk --help
-  assert_output --partial 'Usage: solr zk'
+  assert_output --partial 'usage:'
+  assert_output --partial 'bin/solr zk ls'
   refute_output --partial 'ERROR'
 }
 
 @test "auth help flag prints help" {
   run solr auth --help
-  assert_output --partial 'Usage: solr auth'
+  assert_output --partial 'bin/solr auth enable'
   refute_output --partial 'ERROR'
 }
 
 @test "assert help flag prints help" {
   run solr assert --help
-  assert_output --partial 'usage: assert'
+  assert_output --partial 'usage: bin/solr assert'
   refute_output --partial 'ERROR'
 }
 
 @test "post help flag prints help" {
   run solr post --help
-  assert_output --partial 'usage: post'
+  assert_output --partial 'usage: bin/solr post'
   refute_output --partial 'ERROR'
 }

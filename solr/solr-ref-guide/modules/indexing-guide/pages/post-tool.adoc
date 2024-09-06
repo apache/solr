@@ -110,48 +110,48 @@ This section presents several examples.
 
 Index all JSON files into `gettingstarted`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.json
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.json
 ----
 
 === Indexing XML
 
 Add all documents with file extension `.xml` to the collection named `gettingstarted`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.xml
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.xml
 ----
 
 Add all documents starting with `article` with file extension `.xml` to the `gettingstarted` collection on Solr running on port `8984`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8984/solr/gettingstarted/update article*.xml
+$ bin/solr post -url http://localhost:8984/solr/gettingstarted/update article*.xml
 ----
 
 Send XML arguments to delete a document from `gettingstarted`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update -mode args -type application/xml '<delete><id>42</id></delete>'
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update --mode args --type application/xml '<delete><id>42</id></delete>'
 ----
 
 === Indexing CSV and JSON
 
 Index all CSV and JSON files into `gettingstarted` from current directory:
 
-[source,bash]
+[,console]
 ----
-bin/solr post -c gettingstarted -filetypes json,csv .
+$ bin/solr post -c gettingstarted --filetypes json,csv .
 ----
 
 Index a tab-separated file into `gettingstarted`:
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8984/solr/signals/update -params "separator=%09" -type text/csv data.tsv
+$ bin/solr post -url http://localhost:8984/solr/signals/update --params "separator=%09" --type text/csv data.tsv
 ----
 
 The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is.
@@ -161,32 +161,32 @@ The xref:indexing-with-update-handlers.adoc#csv-formatted-index-updates[CSV hand
 
 Index a PDF file into `gettingstarted`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update a.pdf
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update a.pdf
 ----
 
 Automatically detect content types in a folder, and recursively scan it for documents for indexing into `gettingstarted`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update afolder/
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update afolder/
 ----
 
 Automatically detect content types in a folder, but limit it to PPT and HTML files and index into `gettingstarted`.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update -filetypes ppt,html afolder/
+$ bin/solr post -url http://localhost:8983/solr/gettingstarted/update --filetypes ppt,html afolder/
 ----
 
 === Indexing to a Password Protected Solr (Basic Auth)
 
 Index a PDF as the user "solr" with password "SolrRocks":
 
-[source,bash]
+[,console]
 ----
-bin/solr post -u solr:SolrRocks -url http://localhost:8983/solr/gettingstarted/update a.pdf
+$ bin/solr post -u solr:SolrRocks -url http://localhost:8983/solr/gettingstarted/update a.pdf
 ----
 
 === Crawling a Website to Index Documents 
@@ -195,9 +195,9 @@ Crawl the Apache Solr website going one layer deep and indexing the pages into S
 
 See xref:indexing-with-tika.adoc#trying-out-solr-cell[Trying Out Solr Cell] to learn more about setting up Solr for extracting content from web pages.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -mode web -c gettingstarted -recursive 1 -delay 1 https://solr.apache.org/ 
+$ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://solr.apache.org/
 ----
 
 === Standard Input as Source for Indexing
@@ -205,16 +205,16 @@ bin/solr post -mode web -c gettingstarted -recursive 1 -delay 1 https://solr.apa
 You can use the standard input as your source for data to index.  
 Notice the `-out` providing raw responses from Solr.
 
-[source,bash]
+[,console]
 ----
-echo '{commit: {}}' | bin/solr post -mode stdin -url http://localhost:8983/my_collection/update -out
+$ echo '{commit: {}}' | bin/solr post --mode stdin -url http://localhost:8983/my_collection/update --out
 ----
 
 === Raw Data as Source for Indexing
 
 Provide the raw document as a string for indexing.
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/signals/update -mode args -type text/csv -out $'id,value\n1,0.47' 
+$ bin/solr post -url http://localhost:8983/signals/update -mode args --type text/csv -out $'id,value\n1,0.47' 
 ----

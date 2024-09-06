@@ -75,7 +75,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -256,7 +255,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   private boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   private void setBasicAuthHeader(SolrRequest<?> request, HttpRequestBase method)
@@ -736,7 +735,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically
   // true when SolrDispatchFilter uses the sendError mechanism since the expected MIME type of
-  // response is not HTML but HTTP sendError generates a HTML output, which can lead to mismatch
+  // response is not HTML but HTTP sendError generates an HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType == null) {
       return false;

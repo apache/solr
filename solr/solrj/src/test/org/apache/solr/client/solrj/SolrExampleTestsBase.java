@@ -164,7 +164,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
     rsp = client.query(new SolrQuery("id:id3"));
     assertEquals(1, rsp.getResults().getNumFound());
 
-    // now test commitWithin on a delete
+    // now test commitWithin on a delete operation
     UpdateRequest up = new UpdateRequest();
     up.setCommitWithin(1000);
     up.deleteById("id3");

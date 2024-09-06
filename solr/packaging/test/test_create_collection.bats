@@ -63,7 +63,7 @@ teardown() {
 }
 
 @test "reject d option with invalid config dir" {
-  run ! solr create -c COLL_NAME -d /asdf  -solrUrl http://localhost:${SOLR_PORT}
+  run ! solr create -c COLL_NAME -d /asdf  --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Specified configuration directory /asdf not found!"
 }
 
@@ -99,7 +99,7 @@ teardown() {
 }
 
 @test "create multisharded collections when s provided" {
-  run -0 solr create -c COLL_NAME -s 2 --solr-url http://localhost:${SOLR_PORT}
+  run -0 solr create -c COLL_NAME --shards 2 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 shard(s)"
 }

@@ -91,7 +91,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();
 
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("tool should have returned 0 for success ", 0, res);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig2");
@@ -99,7 +99,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // do we barf on a bogus path?
     args = new String[] {"--conf-name", "upconfig3", "--conf-dir", "nothinghere", "-z", zkAddr};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertTrue("tool should have returned non-zero for failure ", 0 != res);
 
     String content =
@@ -129,9 +129,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
         };
 
     ConfigSetDownloadTool downTool = new ConfigSetDownloadTool();
-    int res =
-        downTool.runTool(
-            SolrCLI.processCommandLineArgs(downTool.getName(), downTool.getOptions(), args));
+    int res = downTool.runTool(SolrCLI.processCommandLineArgs(downTool, args));
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(
         Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig1");
@@ -155,9 +153,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
           zkAddr,
         };
 
-    res =
-        downTool.runTool(
-            SolrCLI.processCommandLineArgs(downTool.getName(), downTool.getOptions(), args));
+    res = downTool.runTool(SolrCLI.processCommandLineArgs(downTool, args));
     assertEquals("Download should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(
         Paths.get(tmp.toAbsolutePath().toString(), "conf"), "/configs/downconfig2");
@@ -176,18 +172,11 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
 
     // Now copy it somewhere else on ZK.
-    String[] args =
-        new String[] {
-          "--source", "zk:/configs/cp1",
-          "--destination", "zk:/cp2",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    String[] args = new String[] {"--recurse", "--zk-host", zkAddr, "zk:/configs/cp1", "zk:/cp2"};
 
     ZkCpTool cpTool = new ZkCpTool();
 
-    int res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    int res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy from zk -> zk should have succeeded.", 0, res);
     verifyZnodesMatch("/configs/cp1", "/cp2");
 
@@ -195,18 +184,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path tmp = createTempDir("tmpNewPlace2");
     args =
         new String[] {
-          "--source",
-          "zk:/configs/cp1",
-          "--destination",
-          "file:" + tmp.toAbsolutePath(),
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
+          "--recurse", "--zk-host", zkAddr, "zk:/configs/cp1", "file:" + tmp.toAbsolutePath()
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(tmp, "/configs/cp1");
 
@@ -214,88 +195,39 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     tmp = createTempDir("tmpNewPlace3");
     args =
         new String[] {
-          "--source",
-          "zk:/configs/cp1",
-          "--destination",
-          tmp.toAbsolutePath().toString(),
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
+          "--recurse", "--zk-host", zkAddr, "zk:/configs/cp1", tmp.toAbsolutePath().toString()
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(tmp, "/configs/cp1");
 
     // try with local->zk
     args =
         new String[] {
-          "--source",
-          srcPathCheck.toAbsolutePath().toString(),
-          "--destination",
-          "zk:/cp3",
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
+          "--recurse", "--zk-host", zkAddr, srcPathCheck.toAbsolutePath().toString(), "zk:/cp3"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp3");
 
     // try with local->zk, file: specified
     args =
         new String[] {
-          "--source",
-          "file:" + srcPathCheck.toAbsolutePath(),
-          "--destination",
-          "zk:/cp4",
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
+          "--recurse", "--zk-host", zkAddr, "file:" + srcPathCheck.toAbsolutePath(), "zk:/cp4"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp4");
 
-    // try with recurse not specified
+    // try with recurse not specified, and therefore not happening
     args =
-        new String[] {
-          "--source",
-          "file:" + srcPathCheck.toAbsolutePath(),
-          "--destination",
-          "zk:/cp5Fail",
-          "--zk-host",
-          zkAddr,
-        };
+        new String[] {"--zk-host", zkAddr, "file:" + srcPathCheck.toAbsolutePath(), "zk:/cp5Fail"};
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertTrue("Copy should NOT have succeeded, recurse not specified.", 0 != res);
-
-    // try with recurse = false
-    args =
-        new String[] {
-          "--source",
-          "file:" + srcPathCheck.toAbsolutePath(),
-          "--destination",
-          "zk:/cp6Fail",
-          "--recurse",
-          "false",
-          "--zk-host",
-          zkAddr,
-        };
-
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
-    assertTrue("Copy should NOT have succeeded, recurse set to false.", 0 != res);
 
     // NOTE: really can't test copying to '.' because the test framework doesn't allow altering the
     // source tree and at least IntelliJ's CWD is in the source tree.
@@ -303,20 +235,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // copy to local ending in separator
     // src and cp3 and cp4 are valid
     String localSlash = tmp.normalize() + File.separator + "cpToLocal" + File.separator;
-    args =
-        new String[] {
-          "--source",
-          "zk:/cp3/schema.xml",
-          "--destination",
-          localSlash,
-          "--recurse",
-          "false",
-          "--zk-host",
-          zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "zk:/cp3/schema.xml", localSlash};
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should nave created intermediate directory locally.", 0, res);
     assertTrue(
         "File should have been copied to a directory successfully",
@@ -326,18 +247,13 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // src and cp3 are valid
     args =
         new String[] {
-          "--source",
-          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
-          "--destination",
-          "zk:/powerup/",
-          "--recurse",
-          "false",
           "--zk-host",
           zkAddr,
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
+          "zk:/powerup/"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy up to intermediate file should have succeeded.", 0, res);
     assertTrue(
         "Should have created an intermediate node on ZK",
@@ -347,18 +263,13 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // src and cp3 are valid
     args =
         new String[] {
-          "--source",
-          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
-          "--destination",
-          "zk:/copyUpFile.xml",
-          "--recurse",
-          "false",
           "--zk-host",
           zkAddr,
+          "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
+          "zk:/copyUpFile.xml"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy up to named file should have succeeded.", 0, res);
     assertTrue(
         "Should NOT have created an intermediate node on ZK",
@@ -369,20 +280,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     String localNamed =
         tmp.normalize() + File.separator + "localnamed" + File.separator + "renamed.txt";
-    args =
-        new String[] {
-          "--source",
-          "zk:/cp4/solrconfig.xml",
-          "--destination",
-          "file:" + localNamed,
-          "--recurse",
-          "false",
-          "--zk-host",
-          zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "zk:/cp4/solrconfig.xml", "file:" + localNamed};
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy to local named file should have succeeded.", 0, res);
     Path locPath = Paths.get(localNamed);
     assertTrue("Should have found file: " + localNamed, Files.exists(locPath));
@@ -398,16 +298,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertTrue("Should have found Apache Software Foundation in the file! ", foundApache);
 
     // Test copy from somwehere in ZK to the root of ZK.
-    args =
-        new String[] {
-          "--source", "zk:/cp4/solrconfig.xml",
-          "--destination", "zk:/",
-          "--recurse", "false",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "zk:/cp4/solrconfig.xml", "zk:/"};
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy from somewhere in ZK to ZK root should have succeeded.", 0, res);
     assertTrue(
         "Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml", true));
@@ -416,18 +309,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // source path to the dst
     args =
         new String[] {
-          "--source",
-          "file:" + srcPathCheck.toAbsolutePath(),
-          "--destination",
-          "zk:/cp7/",
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
+          "--recurse", "--zk-host", zkAddr, "file:" + srcPathCheck.toAbsolutePath(), "zk:/cp7/"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp7/" + srcPathCheck.getFileName().toString());
 
@@ -440,18 +325,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // First, just copy the data up the cp7 since it's a directory.
     args =
         new String[] {
-          "--source",
-          "file:" + file.toAbsolutePath(),
-          "--destination",
-          "zk:/cp7/conf/stopwords/",
-          "--recurse",
-          "false",
-          "--zk-host",
-          zkAddr,
+          "--zk-host", zkAddr, "file:" + file.toAbsolutePath(), "zk:/cp7/conf/stopwords/"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     String content =
@@ -459,24 +336,13 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
             zkClient.getData("/cp7/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     tmp = createTempDir("cp8");
     args =
-        new String[] {
-          "--source",
-          "zk:/cp7",
-          "--destination",
-          "file:" + tmp.toAbsolutePath(),
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
-        };
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+        new String[] {"--recurse", "--zk-host", zkAddr, "zk:/cp7", "file:" + tmp.toAbsolutePath()};
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
@@ -485,19 +351,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Finally, copy up to cp8 and verify that the data is up there.
     args =
-        new String[] {
-          "--source",
-          "file:" + tmp.toAbsolutePath(),
-          "--destination",
-          "zk:/cp9",
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
-        };
+        new String[] {"--recurse", "--zk-host", zkAddr, "file:" + tmp.toAbsolutePath(), "zk:/cp9"};
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     content =
@@ -511,35 +367,25 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     args =
         new String[] {
-          "--source",
-          "file:" + emptyFile.toAbsolutePath(),
-          "--destination",
-          "zk:/cp7/conf/stopwords/emptyfile",
-          "--recurse",
-          "false",
           "--zk-host",
           zkAddr,
+          "file:" + emptyFile.toAbsolutePath(),
+          "zk:/cp7/conf/stopwords/emptyfile"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path tmp2 = createTempDir("cp9");
     Path emptyDest = Paths.get(tmp2.toAbsolutePath().toString(), "emptyfile");
     args =
         new String[] {
-          "--source",
-          "zk:/cp7/conf/stopwords/emptyfile",
-          "--destination",
-          "file:" + emptyDest.toAbsolutePath(),
-          "--recurse",
-          "false",
           "--zk-host",
           zkAddr,
+          "zk:/cp7/conf/stopwords/emptyfile",
+          "file:" + emptyDest.toAbsolutePath()
         };
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     assertTrue("Empty files should NOT be copied down as directories", emptyDest.toFile().isFile());
@@ -548,35 +394,23 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     args =
         new String[] {
-          "--source",
-          "file:" + emptyFile.getParent().getParent().toString(),
-          "--destination",
-          "zk:/cp10",
           "--recurse",
-          "true",
           "--zk-host",
           zkAddr,
+          "file:" + emptyFile.getParent().getParent().toString(),
+          "zk:/cp10"
         };
 
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Now copy it all back and make sure empty file is still a file when recursively copying.
     tmp2 = createTempDir("cp10");
     args =
         new String[] {
-          "--source",
-          "zk:/cp10",
-          "--destination",
-          "file:" + tmp2.toAbsolutePath(),
-          "--recurse",
-          "true",
-          "--zk-host",
-          zkAddr,
+          "--recurse", "--zk-host", zkAddr, "zk:/cp10", "file:" + tmp2.toAbsolutePath()
         };
-    res =
-        cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool.getName(), cpTool.getOptions(), args));
+    res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path locEmpty = Paths.get(tmp2.toAbsolutePath().toString(), "stopwords", "emptyfile");
@@ -594,17 +428,11 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
 
     // Now move it somewhere else.
-    String[] args =
-        new String[] {
-          "--source", "zk:/configs/mv1",
-          "--destination", "zk:/mv2",
-          "--zk-host", zkAddr,
-        };
+    String[] args = new String[] {"--zk-host", zkAddr, "zk:/configs/mv1", "zk:/mv2"};
 
     ZkMvTool mvTool = new ZkMvTool();
 
-    int res =
-        mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool.getName(), mvTool.getOptions(), args));
+    int res = mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool, args));
     assertEquals("Move should have succeeded.", 0, res);
 
     // Now does the moved directory match the original on disk?
@@ -614,31 +442,16 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Files are in mv2
     // Now fail if we specify "file:". Everything should still be in /mv2
-    args =
-        new String[] {
-          "--source",
-          "file:" + File.separator + "mv2",
-          "--destination",
-          "/mv3",
-          "--zk-host",
-          zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "file:" + File.separator + "mv2", "/mv3"};
 
     // Still in mv2
-    res =
-        mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool.getName(), mvTool.getOptions(), args));
+    res = mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool, args));
     assertTrue("Move should NOT have succeeded with file: specified.", 0 != res);
 
     // Let's move it to yet another place with no zk: prefix.
-    args =
-        new String[] {
-          "--source", "/mv2",
-          "--destination", "/mv4",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "/mv2", "/mv4"};
 
-    res =
-        mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool.getName(), mvTool.getOptions(), args));
+    res = mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool, args));
     assertEquals("Move should have succeeded.", 0, res);
 
     assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3", true));
@@ -646,15 +459,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Now does the moved directory match the original on disk?
     verifyZkLocalPathsMatch(srcPathCheck, "/mv4");
 
-    args =
-        new String[] {
-          "--source", "/mv4/solrconfig.xml",
-          "--destination", "/testmvsingle/solrconfig.xml",
-          "-z", zkAddr,
-        };
+    args = new String[] {"-z", zkAddr, "/mv4/solrconfig.xml", "/testmvsingle/solrconfig.xml"};
 
-    res =
-        mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool.getName(), mvTool.getOptions(), args));
+    res = mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool, args));
     assertEquals("Move should have succeeded.", 0, res);
     assertTrue(
         "Should be able to move a single file",
@@ -663,15 +470,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     zkClient.makePath("/parentNode", true);
 
     // what happens if the destination ends with a slash?
-    args =
-        new String[] {
-          "--source", "/mv4/schema.xml",
-          "--destination", "/parentnode/",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "/mv4/schema.xml", "/parentnode/"};
 
-    res =
-        mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool.getName(), mvTool.getOptions(), args));
+    res = mvTool.runTool(SolrCLI.processCommandLineArgs(mvTool, args));
     assertEquals("Move should have succeeded.", 0, res);
     assertTrue(
         "Should be able to move a single file to a parent znode",
@@ -691,46 +492,33 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
 
     // Should only find a single level.
-    String[] args =
-        new String[] {
-          "--path", "/configs", "--zk-host", zkAddr,
-        };
+    String[] args = new String[] {"--zk-host", zkAddr, "/configs"};
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos, false, StandardCharsets.UTF_8.name());
     ZkLsTool tool = new ZkLsTool(ps);
 
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     String content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertFalse("Return should NOT contain a child node", content.contains("solrconfig.xml"));
 
-    // simple ls recurse=false
-    args =
-        new String[] {
-          "--path", "/configs",
-          "--recurse", "false",
-          "--zk-host", zkAddr,
-        };
+    // simple ls with no recursion
+    args = new String[] {"--zk-host", zkAddr, "/configs"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertFalse("Return should NOT contain a child node", content.contains("solrconfig.xml"));
 
-    // recurse=true
-    args =
-        new String[] {
-          "--path", "/configs",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    // ls with recursion
+    args = new String[] {"--recurse", "--zk-host", zkAddr, "/configs"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
@@ -738,39 +526,26 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
     // Saw a case where going from root didn't work, so test it.
-    args =
-        new String[] {
-          "--path", "/",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--recurse", "--zk-host", zkAddr, "/"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
     assertTrue("Return should contain the conf directory", content.contains("lister"));
     assertTrue("Return should contain a child node", content.contains("solrconfig.xml"));
 
-    args =
-        new String[] {
-          "--path", "/", "--zk-host", zkAddr,
-        };
+    args = new String[] {"--zk-host", zkAddr, "/"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     content = baos.toString(StandardCharsets.UTF_8);
     assertEquals("List should have succeeded", res, 0);
     assertFalse("Return should not contain /zookeeper", content.contains("/zookeeper"));
 
     // Saw a case where ending in slash didn't work, so test it.
-    args =
-        new String[] {
-          "--path", "/configs/",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--recurse", "--zk-host", zkAddr, "/configs/"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     content = baos.toString(StandardCharsets.UTF_8);
 
     assertEquals("List should have succeeded", res, 0);
@@ -788,68 +563,45 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
 
     // Should fail if recurse not set.
-    String[] args =
-        new String[] {
-          "--path", "/configs/rm1", "--zk-host", zkAddr,
-        };
+    String[] args = new String[] {"--zk-host", zkAddr, "/configs/rm1"};
 
     ZkRmTool tool = new ZkRmTool();
 
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
 
-    assertTrue(
-        "Should have failed to remove node with children unless -recurse is set to true", res != 0);
+    assertTrue("Should have failed to remove node with children unless --recurse is set", res != 0);
 
     // Are we sure all the znodes are still there?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/rm1");
 
-    args =
-        new String[] {
-          "--path", "zk:/configs/rm1",
-          "--recurse", "false",
-          "--zk-host", zkAddr,
-        };
+    // run without recurse specified
+    args = new String[] {"--zk-host", zkAddr, "zk:/configs/rm1"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
 
     assertTrue(
-        "Should have failed to remove node with children if -recurse is set to false", res != 0);
+        "Should have failed to remove node with children if --recurse is set to false", res != 0);
 
-    args =
-        new String[] {
-          "--path", "/configs/rm1",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--recurse", "--zk-host", zkAddr, "/configs/rm1"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Should have removed node /configs/rm1", res, 0);
     assertFalse(
         "Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1", true));
 
     // Check that zk prefix also works.
-    args =
-        new String[] {
-          "--path", "zk:/configs/rm2",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--recurse", "--zk-host", zkAddr, "zk:/configs/rm2"};
 
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Should have removed node /configs/rm2", res, 0);
     assertFalse(
         "Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2", true));
 
     // This should silently just refuse to do anything to the / or /zookeeper
-    args =
-        new String[] {
-          "--path", "zk:/",
-          "--recurse", "true",
-          "--zk-host", zkAddr,
-        };
+    args = new String[] {"--recurse", "--zk-host", zkAddr, "zk:/"};
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
-    res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertNotEquals("Should fail when trying to remove /.", 0, res);
   }
 

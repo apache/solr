@@ -695,8 +695,8 @@ public class Utils {
   }
 
   /**
-   * Applies one json over other. The 'input' is applied over the sink The values in input isapplied
-   * over the values in 'sink' . If a value is 'null' that value is removed from sink
+   * Applies one json over another. The 'input' is applied over the sink The values in input is
+   * applied over the values in 'sink' . If a value is 'null' that value is removed from sink
    *
    * @param sink the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values
@@ -1175,29 +1175,10 @@ public class Utils {
     }
   }
 
+  /** Reads an input stream into a byte array. Does not close the input. */
   public static ByteBuffer toByteArray(InputStream is) throws IOException {
-    return toByteArray(is, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Reads an input stream into a byte array
-   *
-   * @param is the input stream
-   * @return the byte array
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
     try (BAOS bos = new BAOS()) {
-      long sz = 0;
-      int next = is.read();
-      while (next > -1) {
-        if (++sz > maxSize) {
-          throw new BufferOverflowException();
-        }
-        bos.write(next);
-        next = is.read();
-      }
-      bos.flush();
+      is.transferTo(bos);
       return bos.getByteBuffer();
     }
   }

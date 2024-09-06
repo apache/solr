@@ -49,15 +49,15 @@ teardown() {
   assert_output --partial "Created collection 'COLL_NAME'"
   
   # Test config
-  run solr config -u name:password -c COLL_NAME --action set-property -property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}/solr
+  run solr config -u name:password -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
   
   # Test api
-  run solr api -u name:password --solr-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" -verbose
+  run solr api -u name:password --solr-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" --verbose
   assert_output --partial '"numFound":0'
   
   # Test delete
-  run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} -verbose
+  run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} --verbose
   assert_output --partial "Deleted collection 'COLL_NAME'"
   refute collection_exists "COLL_NAME"
   
@@ -69,7 +69,7 @@ run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
-  run solr post -u name:password -type application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -u name:password -t application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
   assert_output --partial '1 files indexed.'
 
   # Test postlogs

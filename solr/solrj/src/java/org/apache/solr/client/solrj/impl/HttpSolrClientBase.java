@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -121,7 +120,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
+  // TODO: Remove this for 10.0, there is a typo in the method name
+  @Deprecated(since = "9.8", forRemoval = true)
   protected ModifiableSolrParams initalizeSolrParams(
+      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
+    return initializeSolrParams(solrRequest, parserToUse);
+  }
+
+  protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
@@ -283,7 +289,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           is.close();
         } catch (IOException e) {
-          // quitely
+          // quietly
         }
       }
     }
@@ -381,7 +387,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   public String getBaseURL() {
