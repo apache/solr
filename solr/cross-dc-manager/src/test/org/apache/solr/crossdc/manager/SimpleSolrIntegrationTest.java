@@ -72,19 +72,14 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
     UpdateRequest request = spy(new UpdateRequest());
 
     // Add docs with and without version
-    request.add(
-        new SolrInputDocument() {
-          {
-            setField("id", 1);
-            setField(VERSION_FIELD, 1);
-          }
-        });
-    request.add(
-        new SolrInputDocument() {
-          {
-            setField("id", 2);
-          }
-        });
+    SolrInputDocument doc1 = new SolrInputDocument();
+    doc1.setField("id", 1);
+    doc1.setField(VERSION_FIELD, 1);
+    request.add(doc1);
+    SolrInputDocument doc2 = new SolrInputDocument();
+    doc2.setField("id", 2);
+    request.add(doc2);
+
     // Delete by id with and without version
     request.deleteById("1");
     request.deleteById("2", 10L);

@@ -100,6 +100,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
 
     kafkaCluster =
         new EmbeddedKafkaCluster(NUM_BROKERS, config) {
+          @Override
           public String bootstrapServers() {
             return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
           }

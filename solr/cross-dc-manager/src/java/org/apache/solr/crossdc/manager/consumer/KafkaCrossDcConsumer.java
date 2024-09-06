@@ -498,6 +498,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   }
 
   /** Shutdown the Kafka consumer by calling wakeup. */
+  @Override
   public final void shutdown() {
     kafkaConsumer.wakeup();
     log.info("Shutdown called on KafkaCrossDcConsumer");

@@ -17,9 +17,9 @@
 package org.apache.solr.crossdc.manager.consumer;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -41,7 +41,7 @@ public class PartitionManager {
   private final KafkaConsumer<String, MirroredSolrRequest<?>> consumer;
 
   static class PartitionWork {
-    final Queue<WorkUnit> partitionQueue = new LinkedList<>();
+    final Queue<WorkUnit> partitionQueue = new ArrayDeque<>();
   }
 
   static class WorkUnit {

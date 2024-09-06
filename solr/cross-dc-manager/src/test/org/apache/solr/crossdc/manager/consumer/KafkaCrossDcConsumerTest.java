@@ -241,12 +241,12 @@ public class KafkaCrossDcConsumerTest {
             any(PartitionManager.WorkUnit.class));
 
     // Set up the SolrMessageProcessor mock
-    SolrMessageProcessor mockMessageProcessor = mock(SolrMessageProcessor.class);
     MirroredSolrRequest<?> request = new MirroredSolrRequest<>(new UpdateRequest());
     IQueueHandler.Result<MirroredSolrRequest<?>> failedResubmitResult =
         new IQueueHandler.Result<>(IQueueHandler.ResultStatus.FAILED_RESUBMIT, null, request);
-    when(mockMessageProcessor.handleItem(any(MirroredSolrRequest.class)))
-        .thenReturn(failedResubmitResult);
+    // SolrMessageProcessor mockMessageProcessor = mock(SolrMessageProcessor.class);
+    // when(mockMessageProcessor.handleItem(any(MirroredSolrRequest.class)))
+    //     .thenReturn(failedResubmitResult);
 
     // Mock the KafkaMirroringSink
     KafkaMirroringSink mockKafkaMirroringSink = mock(KafkaMirroringSink.class);

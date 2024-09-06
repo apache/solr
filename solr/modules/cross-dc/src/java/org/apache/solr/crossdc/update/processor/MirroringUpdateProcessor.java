@@ -396,6 +396,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     log.debug("process commit cmd={}", cmd);
     if (next != null) next.processCommit(cmd);
@@ -451,7 +452,8 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
   // package private for testing
   static class ObjectSizeEstimator {
     /** Sizes of primitive classes. */
-    private static final Map<Class<?>, Integer> primitiveSizes = new IdentityHashMap<>();
+    private static final IdentityHashMap<Class<?>, Integer> primitiveSizes =
+        new IdentityHashMap<>();
 
     static {
       primitiveSizes.put(boolean.class, 1);
@@ -511,7 +513,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
         return primitiveSizes.get(clazz);
       }
       if (obj instanceof String) {
-        return ((String) obj).length() * Character.BYTES;
+        return ((String) obj).length() * (long) Character.BYTES;
       }
       return def;
     }

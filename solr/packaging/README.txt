@@ -63,6 +63,10 @@ server/
 bin/
    Scripts to startup, manage and interact with Solr instances.
 
+cross-dc-manager/
+  (Not included in the "slim" release)
+  A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
+
 example/
   Contains example documents and an alternative Solr home
   directory containing various examples.

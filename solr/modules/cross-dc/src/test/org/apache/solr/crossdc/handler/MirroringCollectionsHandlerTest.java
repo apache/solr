@@ -69,6 +69,7 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     Mockito.when(coreContainer.isZooKeeperAware()).thenReturn(true);

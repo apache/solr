@@ -35,6 +35,7 @@ import org.junit.Test;
 public class CrossDCProducerSolrStandaloneTest extends SolrTestCaseJ4 {
 
   @After
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     h.close();

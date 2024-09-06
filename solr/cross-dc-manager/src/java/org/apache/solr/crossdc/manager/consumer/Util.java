@@ -23,7 +23,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -33,7 +32,6 @@ import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.solr.crossdc.common.MirroredSolrRequestSerializer;
@@ -97,7 +95,6 @@ public class Util {
       try (Consumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
         for (String topic : topicNames) {
           Set<TopicPartition> topicPartitions = consumer.assignment();
-          Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
           if (log.isInfoEnabled()) {
             log.info("Topic Partitions: {}", topicPartitions.size());
           }
@@ -107,7 +104,6 @@ public class Util {
               long committedOffset = consumer.committed(topicPartition).offset();
               long updatesInQueue = endOffset - committedOffset;
 
-              offsets.put(topicPartition, new OffsetAndMetadata(endOffset));
               log.info("Topic: {}", topic);
               if (log.isInfoEnabled()) {
                 log.info("  Partition: {}", topicPartition.partition());

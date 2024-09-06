@@ -90,6 +90,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
     kafkaCluster =
         new EmbeddedKafkaCluster(NUM_BROKERS, config) {
+          @Override
           public String bootstrapServers() {
             return super.bootstrapServers().replaceAll("localhost", "127.0.0.1");
           }
@@ -199,6 +200,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
   }
 
   @After
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     solrCluster1.getSolrClient().deleteByQuery(COLLECTION, "*:*");

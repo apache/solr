@@ -16,8 +16,8 @@
  */
 package org.apache.solr.crossdc.update.processor;
 
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.EXPAND_DBQ;
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.ExpandDbq;
+import static org.apache.solr.crossdc.common.CrossDcConf.EXPAND_DBQ;
+import static org.apache.solr.crossdc.common.CrossDcConf.ExpandDbq;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE_DOCS;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.MAX_REQUEST_SIZE_BYTES;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.MIRROR_COMMITS;

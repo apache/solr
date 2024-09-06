@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -73,8 +72,6 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
   UpdateRequest requestMock;
   private UpdateRequestProcessor nextProcessor;
   private SolrCore core;
-  private HttpSolrClient.Builder builder = mock(HttpSolrClient.Builder.class);
-  private HttpSolrClient client = mock(HttpSolrClient.class);
   private CloudDescriptor cloudDesc;
   private ZkStateReader zkStateReader;
   private Replica replica;
@@ -86,6 +83,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
   }
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 
@@ -120,26 +118,32 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
             new ProducerMetrics(mock(SolrMetricsContext.class), mock(SolrCore.class)) {
               private final Counter counterMock = mock(Counter.class);
 
+              @Override
               public Counter getLocal() {
                 return counterMock;
               }
 
+              @Override
               public Counter getLocalError() {
                 return counterMock;
               }
 
+              @Override
               public Counter getSubmitted() {
                 return counterMock;
               }
 
+              @Override
               public Counter getDocumentTooLarge() {
                 return counterMock;
               }
 
+              @Override
               public Counter getSubmitError() {
                 return counterMock;
               }
 
+              @Override
               public Histogram getDocumentSize() {
                 return mock(Histogram.class);
               }
@@ -159,6 +163,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
             DistributedUpdateProcessor.DistribPhase.NONE,
             requestMirroringHandler,
             producerMetrics) {
+          @Override
           UpdateRequest createMirrorRequest() {
             return requestMock;
           }
@@ -352,13 +357,14 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     addUpdateCommand.solrDoc = solrInputDocument;
 
     when(req.getCore()).thenReturn(core);
-    when(req.getCore().getCoreDescriptor()).thenReturn(mock(CoreDescriptor.class));
-    when(req.getCore().getCoreDescriptor().getCloudDescriptor())
-        .thenReturn(mock(CloudDescriptor.class));
-    when(req.getCore().getCoreContainer()).thenReturn(mock(CoreContainer.class));
-    when(req.getCore().getCoreContainer().getZkController()).thenReturn(mock(ZkController.class));
-    when(req.getCore().getCoreContainer().getZkController().getClusterState())
-        .thenReturn(mock(ClusterState.class));
+    CoreDescriptor coreDescriptor = mock(CoreDescriptor.class);
+    when(core.getCoreDescriptor()).thenReturn(coreDescriptor);
+    when(coreDescriptor.getCloudDescriptor()).thenReturn(mock(CloudDescriptor.class));
+    CoreContainer coreContainer = mock(CoreContainer.class);
+    when(core.getCoreContainer()).thenReturn(coreContainer);
+    ZkController zkController = mock(ZkController.class);
+    when(coreContainer.getZkController()).thenReturn(zkController);
+    when(zkController.getClusterState()).thenReturn(mock(ClusterState.class));
 
     SolrParams mirrorParams = new ModifiableSolrParams();
     MirroringUpdateProcessor mirroringUpdateProcessorWithLimit =
@@ -416,6 +422,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
             DistributedUpdateProcessor.DistribPhase.NONE,
             requestMirroringHandler,
             producerMetrics) {
+          @Override
           UpdateRequest createMirrorRequest() {
             return updateRequest;
           }
@@ -430,7 +437,6 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
   @Test
   public void testProcessDBQResults() throws Exception {
     when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
-    when(builder.build()).thenReturn(client);
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "test");
     addUpdateCommand.solrDoc = doc;
