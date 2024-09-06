@@ -787,10 +787,16 @@ public class MetricUtils {
                 }
               });
 
+      // if BeanInfo retrieval failed, return early
       if (beanInfo == null) {
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        // skip properties without a read method
+        if (desc.getReadMethod() == null) {
+          continue;
+        }
+
         final String name = desc.getName();
         // test if it works at all
         try {
