@@ -25,9 +25,7 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,11 +38,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -55,6 +53,7 @@ import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 
 public class PackageUtils {
 
@@ -92,39 +91,18 @@ public class PackageUtils {
    */
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
-    String resource = "/api/cluster/files" + name;
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    if (sig != null) {
-      params.add("sig", sig);
-    }
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.PUT, resource, params) {
-          @Override
-          public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-            return new RequestWriter.ContentWriter() {
-              public final ByteBuffer payload = buffer;
+    try (final var stream = new ByteBufferInputStream(buffer)) {
+      final var uploadReq = new FileStoreApi.UploadFile(name, stream);
+      if (sig != null) {
+        uploadReq.setSig(List.of(sig));
+      }
 
-              @Override
-              public void write(OutputStream os) throws IOException {
-                if (payload == null) return;
-                Channels.newChannel(os).write(payload);
-              }
-
-              @Override
-              public String getContentType() {
-                return "application/octet-stream";
-              }
-            };
-          }
-        };
-    NamedList<Object> rsp = client.request(request);
-    if (!name.equals(rsp.get(CommonParams.FILE))) {
-      throw new SolrException(
-          ErrorCode.BAD_REQUEST,
-          "Mismatch in file uploaded. Uploaded: "
-              + rsp.get(CommonParams.FILE)
-              + ", Original: "
-              + name);
+      final var uploadRsp = uploadReq.process(client).getParsed();
+      if (!name.equals(uploadRsp.file)) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Mismatch in file uploaded. Uploaded: " + uploadRsp.file + ", Original: " + name);
+      }
     }
   }
 
@@ -206,7 +184,7 @@ public class PackageUtils {
       SolrClient solrClient, String manifestFilePath, String expectedSHA512)
       throws IOException, SolrServerException {
     GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/api/node/files" + manifestFilePath);
+        new GenericV2SolrRequest(SolrRequest.METHOD.GET, "/api/node/files" + manifestFilePath);
     request.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> response = solrClient.request(request);
     String manifestJson = (String) response.get("response");

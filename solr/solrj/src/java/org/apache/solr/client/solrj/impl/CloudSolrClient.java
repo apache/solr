@@ -911,7 +911,8 @@ public abstract class CloudSolrClient extends SolrClient {
       // or request is v2 api and its method is not GET
       if (inputCollections.isEmpty()
           || isAdmin
-          || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
+          || (request.getApiVersion() == SolrRequest.ApiVersion.V2
+              && request.getMethod() != SolrRequest.METHOD.GET)) {
         if (exc instanceof SolrServerException) {
           throw (SolrServerException) exc;
         } else if (exc instanceof IOException) {
@@ -1084,7 +1085,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
 
-    if (request instanceof V2Request) {
+    if (request.getApiVersion() == SolrRequest.ApiVersion.V2) {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
