@@ -726,14 +726,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       String targetCollection,
       Map<String, Object> reindexingState)
       throws Exception {
-    var solrClient = ccc.getCoreContainer().getDefaultHttpClient();
-
-    ModifiableSolrParams q = new ModifiableSolrParams();
-    q.set(CommonParams.QT, "/stream");
-    q.set("action", "list");
-    q.set(CommonParams.DISTRIB, false);
-    QueryRequest req = new QueryRequest(q);
-    req.setBasePath(daemonReplica.getBaseUrl());
 
     boolean isRunning;
     int statusCheck = 0;
@@ -741,7 +733,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       isRunning = false;
       statusCheck++;
       try {
-        NamedList<Object> rsp = solrClient.request(req, daemonReplica.getCoreName());
+        NamedList<Object> rsp = executeDaemonAction("list", daemonName, daemonReplica);
         Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
         if (rs == null || rs.isEmpty()) {
           throw new SolrException(
@@ -787,18 +779,10 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       log.debug("-- killing daemon {} at {}", daemonName, daemonReplica.getCoreUrl());
     }
 
-    var solrClient = ccc.getCoreContainer().getDefaultHttpClient();
-    ModifiableSolrParams q = new ModifiableSolrParams();
-    q.set(CommonParams.QT, "/stream");
     // we should really use 'kill' here, but then we will never
     // know when the daemon actually finishes running - 'kill' only
     // sets a flag that may be noticed much later
-    q.set("action", "stop");
-    q.set(CommonParams.ID, daemonName);
-    q.set(CommonParams.DISTRIB, false);
-    QueryRequest req = new QueryRequest(q);
-    req.setBasePath(daemonReplica.getBaseUrl());
-    NamedList<Object> rsp = solrClient.request(req, daemonReplica.getCoreName());
+    NamedList<Object> rsp = executeDaemonAction("stop", daemonName, daemonReplica);
     // /result-set/docs/[0]/DaemonOp : Deamon:id killed on coreName
     if (log.isDebugEnabled()) {
       log.debug(" -- stop daemon response: {}", Utils.toJSONString(rsp));
@@ -826,13 +810,10 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
       if (op.contains(daemonName) && op.contains("stopped")) {
         // now wait for the daemon to really stop
-        q.set("action", "list");
-        req = new QueryRequest(q);
-        req.setBasePath(daemonReplica.getBaseUrl());
         TimeOut timeOut =
             new TimeOut(60, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
         while (!timeOut.hasTimedOut()) {
-          rsp = solrClient.request(req, daemonReplica.getCoreName());
+          rsp = executeDaemonAction("list", daemonName, daemonReplica);
           rs = (Map<String, Object>) rsp.get("result-set");
           if (rs == null || rs.isEmpty()) {
             log.warn(
@@ -875,10 +856,22 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
     // now kill it - it's already stopped, this simply removes its status
-    q.set("action", "kill");
-    req = new QueryRequest(q);
+    executeDaemonAction("kill", daemonName, daemonReplica);
+  }
+
+  private NamedList<Object> executeDaemonAction(
+      String action, String daemonName, Replica daemonReplica) throws Exception {
+    var solrClient = ccc.getCoreContainer().getDefaultHttpClient();
+    var q = new ModifiableSolrParams();
+    q.set(CommonParams.QT, "/stream");
+    q.set("action", action);
+    q.set(CommonParams.ID, daemonName);
+    q.set(CommonParams.DISTRIB, false);
+
+    QueryRequest req = new QueryRequest(q);
     req.setBasePath(daemonReplica.getBaseUrl());
-    solrClient.request(req, daemonReplica.getCoreName());
+
+    return solrClient.request(req, daemonReplica.getCoreName());
   }
 
   private void cleanup(
