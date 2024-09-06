@@ -38,14 +38,14 @@ dependencies {
   implementation 'com.google.guava:guava'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.zookeeper:zookeeper'
+  implementation 'org.apache.zookeeper:zookeeper-jute'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'junit:junit'
   testImplementation 'commons-io:commons-io'
   testImplementation 'org.mockito:mockito-core'
-  testImplementation 'org.apache.zookeeper:zookeeper'
-  testImplementation 'org.apache.zookeeper:zookeeper-jute'
 
   testImplementation "org.apache.kafka:kafka-clients:3.7.1:test"
 
@@ -66,7 +66,7 @@ task zipCloudConfigSet(type: Zip) {
 }
 
 sourceSets {
-  test.resources.srcDir(files("${projectDir}/src/test-files") {
+  test.resources.setSrcDirs(files("${projectDir}/src/test-files") {
     builtBy tasks.zipCloudConfigSet
   })
 }
