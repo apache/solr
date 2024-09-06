@@ -84,11 +84,11 @@ public class ClientUtils {
       throws MalformedURLException {
     String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
+    if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
+      if (solrRequest instanceof V2Request && System.getProperty("solr.v2RealPath") != null) {
         basePath = serverRootUrl + "/____v2";
+      } else {
+        basePath = addNormalV2ApiRoot(basePath);
       }
     }
 
@@ -102,10 +102,18 @@ public class ClientUtils {
     return basePath + path;
   }
 
-  private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URI oldURI = URI.create(basePath);
-    String newPath = oldURI.getPath().replaceFirst("/solr", "/api");
-    return oldURI.resolve(newPath).toString();
+  private static String addNormalV2ApiRoot(String basePath) throws MalformedURLException {
+    final var oldURI = URI.create(basePath);
+    final var revisedPath = buildReplacementV2Path(oldURI.getPath());
+    return oldURI.resolve(revisedPath).toString();
+  }
+
+  private static String buildReplacementV2Path(String existingPath) {
+    if (existingPath.contains("/solr")) {
+      return existingPath.replaceFirst("/solr", "/api");
+    } else {
+      return existingPath + "/api";
+    }
   }
 
   // ------------------------------------------------------------------------
