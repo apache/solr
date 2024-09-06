@@ -313,110 +313,12 @@ For extremely short autoCommit intervals, consider disabling caching and autowar
 
 == Configuring the ShardHandlerFactory
 
-For finer-grained control, you can directly configure and tune aspects of the concurrency and thread-pooling used within distributed search in Solr.
-The default configuration favors throughput over latency.
+Administrators who want fine-grained control over the concurrency and thread-pooling used in performing distributed-search may define a `shardHandlerFactory` in their SearchHandler configuration.
+The default configuration, `HttpShardHandlerFactory`, favors throughput over latency.
+An alternate implementation, `ParallelShardHandlerFactory`, is also available and may be preferable for collections with many shards.
 
-This is done by defining a `shardHandlerFactory` in the configuration for your search handler.
-
-To add a `shardHandlerFactory` to the standard search handler, provide a configuration in `solrconfig.xml`, as in this example:
-
-[source,xml]
-----
-<requestHandler name="/select" class="solr.SearchHandler">
-  <!-- other params go here -->
-  <shardHandlerFactory class="HttpShardHandlerFactory">
-    <int name="socketTimeout">1000</int>
-    <int name="connTimeout">5000</int>
-  </shardHandlerFactory>
-</requestHandler>
-----
-
-`HttpShardHandlerFactory` is the only `ShardHandlerFactory` implementation included out of the box with Solr.
-
-NOTE:: The `shardHandlerFactory` is reliant on the `allowUrls` parameter configured in `solr.xml`, which controls which nodes are allowed to talk to each other.
-This means that the configuration of hosts is global instead of per-core or per-collection.
-See the section xref:configuration-guide:configuring-solr-xml.adoc#allow-urls [allowUrls] for details.
-
-The `HttpShardHandlerFactory` accepts the following parameters:
-
-`socketTimeout`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `0`
-|===
-+
-The amount of time in milliseconds that a socket is allowed to wait.
-The default is `0`, where the operating system's default will be used.
-
-`connTimeout`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `0`
-|===
-+
-The amount of time in milliseconds that is accepted for binding / connecting a socket.
-The default is `0`, where the operating system's default will be used.
-
-`maxConnectionsPerHost`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `100000`
-|===
-+
-The maximum number of concurrent connections that is made to each individual shard in a distributed search.
-
-`corePoolSize`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `0`
-|===
-+
-The retained lowest limit on the number of threads used in coordinating distributed search.
-
-`maximumPoolSize`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `Integer.MAX_VALUE`
-|===
-+
-The maximum number of threads used for coordinating distributed search.
-
-`maxThreadIdleTime`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `5`
-|===
-+
-The amount of time in seconds to wait for before threads are scaled back in response to a reduction in load.
-
-`sizeOfQueue`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `-1`
-|===
-+
-If specified, the thread pool will use a backing queue instead of a direct handoff buffer.
-High throughput systems will want to configure this to be a direct hand off (with `-1`).
-Systems that desire better latency will want to configure a reasonable size of queue to handle variations in requests.
-
-`fairnessPolicy`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Chooses the JVM specifics dealing with fair policy queuing.
-If enabled distributed searches will be handled in a first-in-first-out fashion at a cost to throughput.
-If disabled throughput will be favored over latency.
-
+With either implementation, a number of other `shardHandlerFactory` settings (thread-pool sizes, network timeouts, etc.) are available to administrators who wish to further tune distributed-search behavior.
+See the xref:configuration-guide:configuring-solr-xml.adoc#the-shardhandlerfactory-element[ShardHandler documentation here] for more details.
 
 [[distributedidf]]
 == Distributed Inverse Document Frequency (IDF)

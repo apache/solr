@@ -551,15 +551,22 @@ For example when using Log4j one might specify DEBUG, WARN, INFO, etc.
 
 === The <shardHandlerFactory> Element
 
-Custom shard handlers can be defined in `solr.xml` if you wish to create a custom shard handler.
+Solr uses "Shard Handlers" to send and track the inter-node requests made internally to process a distributed search or other request.
+A factory, configured via the `<shardHandlerFactory>` element, is used to create new Shard Handlers as needed.
+The factory defined here will be used throughout Solr, unless overridden by particular requestHandler's in solrconfig.xml.
+
+Two factory implementations are available, each creating a corresponding Shard Handler.
+The default, `HttpShardHandlerFactory`, serves as the best option for most deployments.
+However some deployments, especially those using authentication or with massively sharded collections, may benefit from the additional parallelization offered by `ParallelHttpShardHandlerFactory`.
+
+Custom shard handlers are also supported and should be referenced in `solr.xml` by their fully-qualified class name:
 
 [source,xml]
 ----
-<shardHandlerFactory name="ShardHandlerFactory" class="qualified.class.name">
+<shardHandlerFactory name="ShardHandlerFactory" class="qualified.class.name"/>
 ----
 
-Since this is a custom shard handler, sub-elements are specific to the implementation.
-The default and only shard handler provided by Solr is the `HttpShardHandlerFactory` in which case, the following sub-elements can be specified:
+Sub-elements of `<shardHandlerFactory>` may vary in the case of custom shard handlers, but both `HttpShardHandlerFactory` and `ParallelShardHandlerFactory` support the following configuration options:
 
 `socketTimeout`::
 +
