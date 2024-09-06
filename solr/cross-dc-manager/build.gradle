@@ -44,7 +44,6 @@ dependencies {
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
   runtimeOnly 'com.lmax:disruptor'
 
-  testImplementation testFixtures(project(path: ':solr:modules:cross-dc'))
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'

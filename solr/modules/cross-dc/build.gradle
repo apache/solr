@@ -18,7 +18,6 @@ import org.apache.tools.ant.taskdefs.condition.Os
  */
 
 apply plugin: 'java-library'
-apply plugin: 'java-test-fixtures'
 
 description = 'Cross-DC Replication Plugins'
 
@@ -46,10 +45,9 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'commons-io:commons-io'
   testImplementation 'org.mockito:mockito-core'
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 
   testImplementation "org.apache.kafka:kafka-clients:3.7.1:test"
-
-  testFixturesApi 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }
 
 // Make sure that the cloud-minimal.zip artifact is up-to-date with cloud-minimal/conf

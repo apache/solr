@@ -48,7 +48,7 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
 import org.apache.solr.crossdc.manager.consumer.Util;
-import org.apache.solr.crossdc.test.util.SolrKafkaTestsIgnoredThreadsFilter;
+import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;

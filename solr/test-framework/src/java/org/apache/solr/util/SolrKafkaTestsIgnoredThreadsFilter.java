@@ -14,11 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.crossdc.test.util;
+package org.apache.solr.util;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 
-/** This ignores those threads in Solr for which there is no way to clean up after a suite. */
+/**
+ * This ignores those Kafka threads in Solr for which there is no way to clean up after a suite.
+ * This is included in the test framework, so it can be used in tests for both the cross-dc module
+ * and the cross-dc-manager.
+ */
 public class SolrKafkaTestsIgnoredThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
