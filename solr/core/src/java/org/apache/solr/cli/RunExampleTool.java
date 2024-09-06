@@ -617,7 +617,8 @@ public class RunExampleTool extends ToolBase {
     String forceArg = cli.hasOption("force") ? " --force" : "";
     String verboseArg = verbose ? "-V" : "";
 
-    String jvmOpts = cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a')
+    String jvmOpts =
+        cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');
     String jvmOptsArg = (jvmOpts != null) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
     File cwd = new File(System.getProperty("user.dir"));
