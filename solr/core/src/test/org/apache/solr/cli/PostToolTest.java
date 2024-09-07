@@ -255,7 +255,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() throws URISyntaxException {
+  public void testAppendUrlPath() {
     assertEquals(
         URI.create("http://[ff01::114]/a?foo=bar"),
         PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
