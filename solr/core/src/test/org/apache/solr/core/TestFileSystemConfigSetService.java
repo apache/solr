@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -61,12 +62,13 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     fileSystemConfigSetService.uploadFileToConfig(configName, "testfile", testdata, true);
 
     // metadata is stored in .metadata.json
-    fileSystemConfigSetService.setConfigMetadata(configName, Map.of("key1", "val1"));
+    fileSystemConfigSetService.setConfigMetadataWithTrust(
+        configName, new HashMap<>(Map.of("key1", "val1")));
     Map<String, Object> metadata = fileSystemConfigSetService.getConfigMetadata(configName);
-    assertEquals(metadata.toString(), "{key1=val1}");
+    assertEquals("{key1=val1, trusted=true}", metadata.toString());
 
     List<String> allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
-    assertEquals(allConfigFiles.toString(), "[schema.xml, solrconfig.xml, testfile]");
+    assertEquals("[schema.xml, solrconfig.xml, testfile]", allConfigFiles.toString());
 
     fileSystemConfigSetService.deleteFilesFromConfig(
         configName, List.of(METADATA_FILE, "testfile"));
@@ -74,19 +76,19 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     assertTrue(metadata.isEmpty());
 
     allConfigFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
-    assertEquals(allConfigFiles.toString(), "[schema.xml, solrconfig.xml]");
+    assertEquals("[schema.xml, solrconfig.xml]", allConfigFiles.toString());
 
     fileSystemConfigSetService.copyConfig(configName, "copytestconfig");
     assertEquals(fileSystemConfigSetService.listConfigs().size(), 2);
 
     allConfigFiles = fileSystemConfigSetService.getAllConfigFiles("copytestconfig");
-    assertEquals(allConfigFiles.toString(), "[schema.xml, solrconfig.xml]");
+    assertEquals("[schema.xml, solrconfig.xml]", allConfigFiles.toString());
 
     Path downloadConfig = createTempDir("downloadConfig");
     fileSystemConfigSetService.downloadConfig(configName, downloadConfig);
 
     List<String> configs = getFileList(downloadConfig);
-    assertEquals(configs.toString(), "[schema.xml, solrconfig.xml]");
+    assertEquals("[schema.xml, solrconfig.xml]", configs.toString());
 
     Exception ex =
         assertThrows(

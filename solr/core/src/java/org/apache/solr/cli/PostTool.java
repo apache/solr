@@ -335,11 +335,11 @@ public class PostTool extends ToolBase {
       return;
     }
 
-    if (commit) {
-      commit();
-    }
     if (optimize) {
+      // optimize does a commit under the covers.
       optimize();
+    } else if (commit) {
+      commit();
     }
     displayTiming((long) timer.getTime());
   }
@@ -379,37 +379,32 @@ public class PostTool extends ToolBase {
   private void doWebMode() {
     reset();
     int numPagesPosted;
-    try {
-      if (type != null) {
-        throw new IllegalArgumentException(
-            "Specifying content-type with \"--mode=web\" is not supported");
-      }
-
-      // Set Extracting handler as default
-      solrUpdateUrl = appendUrlPath(solrUpdateUrl, "/extract");
-
-      info("Posting web pages to Solr url " + solrUpdateUrl);
-      auto = true;
-      info(
-          "Entering auto mode. Indexing pages with content-types corresponding to file endings "
-              + fileTypes);
-      if (recursive > 0) {
-        if (recursive > MAX_WEB_DEPTH) {
-          recursive = MAX_WEB_DEPTH;
-          warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
-        }
-        if (delay < DEFAULT_WEB_DELAY) {
-          warn(
-              "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
-        }
-        info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
-      }
-      numPagesPosted = postWebPages(args, 0, out);
-      info(numPagesPosted + " web pages indexed.");
-
-    } catch (URISyntaxException e) {
-      warn("Wrong URL trying to append /extract to " + solrUpdateUrl);
+    if (type != null) {
+      throw new IllegalArgumentException(
+          "Specifying content-type with \"--mode=web\" is not supported");
     }
+
+    // Set Extracting handler as default
+    solrUpdateUrl = appendUrlPath(solrUpdateUrl, "/extract");
+
+    info("Posting web pages to Solr url " + solrUpdateUrl);
+    auto = true;
+    info(
+        "Entering auto mode. Indexing pages with content-types corresponding to file endings "
+            + fileTypes);
+    if (recursive > 0) {
+      if (recursive > MAX_WEB_DEPTH) {
+        recursive = MAX_WEB_DEPTH;
+        warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
+      }
+      if (delay < DEFAULT_WEB_DELAY) {
+        warn(
+            "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
+      }
+      info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
+    }
+    numPagesPosted = postWebPages(args, 0, out);
+    info(numPagesPosted + " web pages indexed.");
   }
 
   private void doStdinMode() {
@@ -461,7 +456,7 @@ public class PostTool extends ToolBase {
    * @param args array of file names
    * @param startIndexInArgs offset to start
    * @param out output stream to post data to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
    */
   public int postFiles(String[] args, int startIndexInArgs, OutputStream out, String type) {
@@ -533,7 +528,7 @@ public class PostTool extends ToolBase {
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
-      } catch (InterruptedException | URISyntaxException e) {
+      } catch (InterruptedException | MalformedURLException | URISyntaxException e) {
         throw new RuntimeException(e);
       }
     }
@@ -545,7 +540,7 @@ public class PostTool extends ToolBase {
    *
    * @param globFile file holding glob path
    * @param out outputStream to write results to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
    */
   int handleGlob(File globFile, OutputStream out, String type) {
@@ -699,13 +694,14 @@ public class PostTool extends ToolBase {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected String computeFullUrl(URL baseUrl, String link) {
+  protected static String computeFullUrl(URL baseUrl, String link)
+      throws MalformedURLException, URISyntaxException {
     if (link == null || link.length() == 0) {
       return null;
     }
     if (!link.startsWith("http")) {
       if (link.startsWith("/")) {
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + link;
+        link = baseUrl.toURI().resolve(link).toString();
       } else {
         if (link.contains(":")) {
           return null; // Skip non-relative URLs
@@ -715,10 +711,12 @@ public class PostTool extends ToolBase {
           int sep = path.lastIndexOf('/');
           String file = path.substring(sep + 1);
           if (file.contains(".") || file.contains("?")) {
-            path = path.substring(0, sep);
+            path = path.substring(0, sep + 1);
+          } else {
+            path = path + "/";
           }
         }
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + path + "/" + link;
+        link = baseUrl.toURI().resolve(path + link).toString();
       }
     }
     link = normalizeUrlEnding(link);
@@ -806,7 +804,8 @@ public class PostTool extends ToolBase {
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type) throws URISyntaxException {
+  public void postFile(File file, OutputStream output, String type)
+      throws MalformedURLException, URISyntaxException {
     InputStream is = null;
 
     URI uri = solrUpdateUrl;
@@ -884,9 +883,20 @@ public class PostTool extends ToolBase {
    * @param append the path to append
    * @return the final URL version
    */
-  protected static URI appendUrlPath(URI uri, String append) throws URISyntaxException {
-    var newPath = uri.getPath() + append;
-    return new URI(uri.getScheme(), uri.getAuthority(), newPath, uri.getQuery(), uri.getFragment());
+  protected static URI appendUrlPath(URI uri, String append) {
+    if (append == null || append.isEmpty()) {
+      return uri;
+    }
+    if (append.startsWith("/")) {
+      append = append.substring(1);
+    }
+    if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
+      append += "?" + uri.getQuery();
+    }
+    if (!uri.getPath().endsWith("/")) {
+      append = uri.getPath() + "/" + append;
+    }
+    return uri.resolve(append);
   }
 
   /**
