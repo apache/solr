@@ -509,6 +509,20 @@ Furthermore, phrases will be highlighted as a whole instead of word by word.  Cu
 +
 If either `hl.usePhraseHighlighter` or `hl.multiTermQuery` are set to `false`, then this setting is effectively `false` no matter what you set it to.
 
+`hl.passageSort`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `startOffset`
+|===
++
+The UH uses the score to select the candidates for the number of snippets defined by `hl.snippets`,
+but the final sorting of these selected candidates is determined by this option.
+The available choices are: `startOffset`, `endOffset`, and `score`.
++
+The default value is `startOffset`, so even if a candidate has a lower score than others, it may rank higher if it appears earlier.
+If this behavior does not align with the user’s intention, consider using `score` for sorting.
+
 == Original Highlighter
 
 The Original Highlighter supports these following additional parameters to the ones listed earlier:
