@@ -142,7 +142,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
         case ENSURE_REMOVED:
           if (exists) {
             ccc.getExecutorService()
-                .submit(
+                .execute(
                     () -> {
                       try {
                         deleteTargetCollection(

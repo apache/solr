@@ -1865,7 +1865,7 @@ public class ZkStateReader implements SolrCloseable {
       return;
     }
     try {
-      notifications.submit(new Notification(collection, collectionState));
+      notifications.execute(new Notification(collection, collectionState));
     } catch (RejectedExecutionException e) {
       if (closed == false) {
         log.error("Couldn't run collection notifications for {}", collection, e);

@@ -351,7 +351,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     final ExecutorService executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             1, new SolrNamedThreadFactory("testCoreInitDeadlockMetrics"));
-    executor.submit(
+    executor.execute(
         () -> {
           while (!created.get()) {
             var metrics =

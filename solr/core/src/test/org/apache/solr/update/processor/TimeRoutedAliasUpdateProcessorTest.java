@@ -349,7 +349,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     boolean[] threadFinished = new boolean[2];
     try {
       CountDownLatch starter = new CountDownLatch(1);
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[0] = true;
             try {
@@ -361,7 +361,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             threadFinished[0] = true;
           });
 
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[1] = true;
             try {

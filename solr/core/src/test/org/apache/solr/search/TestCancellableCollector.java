@@ -118,10 +118,7 @@ public class TestCancellableCollector extends SolrTestCase {
   }
 
   private void cancelQuery(CancellableCollector cancellableCollector) {
-    executor.submit(
-        () -> {
-          cancellableCollector.cancel();
-        });
+    executor.execute(cancellableCollector::cancel);
   }
 
   public void testSearchWithoutCancellation() throws Exception {

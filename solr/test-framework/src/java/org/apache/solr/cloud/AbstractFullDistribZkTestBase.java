@@ -475,7 +475,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 Replica.Type.TLOG,
                 ((currentI % sliceCount) + 1)); // nowarn
           }
-          customThreadPool.submit(
+          customThreadPool.execute(
               () -> {
                 try {
                   JettySolrRunner j =
@@ -517,7 +517,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 ((currentI % sliceCount) + 1)); // nowarn
           }
 
-          customThreadPool.submit(
+          customThreadPool.execute(
               () -> {
                 try {
                   JettySolrRunner j =
@@ -554,7 +554,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             jettyDir,
             Replica.Type.PULL,
             ((currentI % sliceCount) + 1)); // nowarn
-        customThreadPool.submit(
+        customThreadPool.execute(
             () -> {
               try {
                 JettySolrRunner j =
@@ -592,7 +592,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             new SolrNamedThreadFactory("createReplicaRequests"));
 
     for (CollectionAdminRequest<CollectionAdminResponse> r : createReplicaRequests) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             CollectionAdminResponse response;
             try {
@@ -612,7 +612,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory("createPullReplicaRequests"));
     for (CollectionAdminRequest<CollectionAdminResponse> r : createPullReplicaRequests) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             CollectionAdminResponse response;
             try {
@@ -1981,29 +1981,18 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(commonCloudSolrClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(commonCloudSolrClient));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(
-        () ->
-            coreClients.parallelStream()
-                .forEach(
-                    c -> {
-                      IOUtils.closeQuietly(c);
-                    }));
+    customThreadPool.execute(() -> coreClients.parallelStream().forEach(IOUtils::closeQuietly));
 
-    customThreadPool.submit(
-        () ->
-            solrClientByCollection.values().parallelStream()
-                .forEach(
-                    c -> {
-                      IOUtils.closeQuietly(c);
-                    }));
+    customThreadPool.execute(
+        () -> solrClientByCollection.values().parallelStream().forEach(IOUtils::closeQuietly));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClientCloud));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(cloudClient));
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 

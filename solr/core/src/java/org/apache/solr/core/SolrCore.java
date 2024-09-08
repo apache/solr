@@ -296,7 +296,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return packageListeners;
   }
 
-  private ExecutorService coreAsyncTaskExecutor =
+  private final ExecutorService coreAsyncTaskExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   public final SolrCore.Provider coreProvider;
@@ -3593,7 +3593,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @param r the task to run
    */
   public void runAsync(Runnable r) {
-    coreAsyncTaskExecutor.submit(r);
+    coreAsyncTaskExecutor.execute(r);
   }
 
   /**

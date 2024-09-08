@@ -342,7 +342,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
 
   private void notifyPropsWatchers(String collection, Map<String, String> properties) {
     try {
-      collectionPropsNotifications.submit(new PropsNotification(collection, properties));
+      collectionPropsNotifications.execute(new PropsNotification(collection, properties));
     } catch (RejectedExecutionException e) {
       if (!closed) {
         log.error("Couldn't run collection properties notifications for {}", collection, e);

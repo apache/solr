@@ -579,7 +579,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
     for (int idx = 0; idx < jettys.size(); ++idx) {
       int finalIdx = idx;
-      executorService.submit(
+      executorService.execute(
           () -> {
             try {
               cluster.startJettySolrRunner(jettys.get(finalIdx));

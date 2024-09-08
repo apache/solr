@@ -107,10 +107,7 @@ public class Docs {
             new SolrNamedThreadFactory("SolrJMH DocMaker"));
 
     for (int i = 0; i < numDocs; i++) {
-      executorService.submit(
-          () -> {
-            docs.add(Docs.this.inputDocument());
-          });
+      executorService.execute(() -> docs.add(Docs.this.inputDocument()));
     }
 
     executorService.shutdown();
