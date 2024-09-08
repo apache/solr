@@ -20,19 +20,25 @@ import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
+import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
@@ -132,6 +138,31 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * @lucene.experimental
  */
 public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
+
+  public enum PassageSort {
+    START_OFFSET("startOffset"),
+    END_OFFSET("endOffset"),
+    SCORE("score");
+
+    private final String key;
+
+    private static final Map<String, PassageSort> PASSAGE_SORTS =
+            Stream.of(values())
+                    .collect(
+                            Collectors.toUnmodifiableMap(PassageSort::getKey, Function.identity()));
+
+    PassageSort(String method) {
+      this.key = method;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public static PassageSort parse(String sort) {
+      return PASSAGE_SORTS.get(sort);
+    }
+  }
 
   protected static final String SNIPPET_SEPARATOR = "\u0000";
 
@@ -312,6 +343,22 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
           params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, SNIPPET_SEPARATOR);
       String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
       return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
+    }
+
+    @Override
+    protected Comparator<Passage> getPassageSortComparator(String fieldName) {
+      PassageSort passageSort = PassageSort.parse(params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT, "startOffset"));
+
+      switch (passageSort) {
+        case START_OFFSET:
+          return Comparator.comparingInt(Passage::getStartOffset);
+        case END_OFFSET:
+          return Comparator.comparingInt(Passage::getEndOffset);
+        case SCORE:
+          return Comparator.comparingDouble(Passage::getScore);
+        default:
+          throw new AssertionError();
+      }
     }
 
     @Override
