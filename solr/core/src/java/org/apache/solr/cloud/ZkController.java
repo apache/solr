@@ -729,14 +729,16 @@ public class ZkController implements Closeable {
 
     try {
       synchronized (collectionToTerms) {
-        customThreadPool.execute(
-            () -> collectionToTerms.values().parallelStream().forEach(ZkCollectionTerms::close));
+        collectionToTerms
+            .values()
+            .forEach(zkCollectionTerms -> customThreadPool.execute(zkCollectionTerms::close));
       }
 
-      customThreadPool.execute(
-          () ->
-              replicateFromLeaders.values().parallelStream()
-                  .forEach(ReplicateFromLeader::stopReplication));
+      replicateFromLeaders
+          .values()
+          .forEach(
+              replicateFromLeader ->
+                  customThreadPool.execute(replicateFromLeader::stopReplication));
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     }
