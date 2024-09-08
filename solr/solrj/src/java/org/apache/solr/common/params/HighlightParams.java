@@ -87,6 +87,7 @@ public interface HighlightParams {
   public static final String SCORE_K1 = HIGHLIGHT + "." + SCORE + ".k1"; // UH
   public static final String SCORE_B = HIGHLIGHT + "." + SCORE + ".b"; // UH
   public static final String SCORE_PIVOT = HIGHLIGHT + "." + SCORE + ".pivot"; // UH
+  public static final String PASSAGE_SORT = HIGHLIGHT + ".passageSort"; // UH
 
   // misc
   public static final String MAX_CHARS = HIGHLIGHT + ".maxAnalyzedChars"; // all
