@@ -26,7 +26,6 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -143,6 +142,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -157,7 +157,6 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StartupLoggingUtils;
-import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -445,17 +444,7 @@ public class CoreContainer {
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
-    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
-    if (0 < indexSearcherExecutorThreads) {
-      this.collectorExecutor =
-          ExecutorUtil.newMDCAwareFixedThreadPool(
-              indexSearcherExecutorThreads, // thread count
-              indexSearcherExecutorThreads * 1000, // queue size
-              new SolrNamedThreadFactory("searcherCollector"),
-              () -> ThreadCpuTimer.reset(TIMING_CONTEXT));
-    } else {
-      this.collectorExecutor = null;
-    }
+    this.collectorExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
   }
 
   @SuppressWarnings({"unchecked"})

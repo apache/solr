@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
+
 import com.codahale.metrics.Gauge;
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,9 +96,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -115,6 +122,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,6 +216,40 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
     }
     return reader;
+  }
+
+  /**
+   * Create an {@link ExecutorService} to be used by the Lucene {@link IndexSearcher#getExecutor()}.
+   * Shared across the whole node because it's a machine CPU resource.
+   */
+  public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
+    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (0 >= indexSearcherExecutorThreads) {
+      return null;
+    }
+
+    return new MDCAwareThreadPoolExecutor(
+        indexSearcherExecutorThreads,
+        indexSearcherExecutorThreads,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(),
+        new SolrNamedThreadFactory("searcherCollector")) {
+
+      @Override
+      protected void beforeExecute(Thread t, Runnable r) {
+        ThreadCpuTimer.reset(TIMING_CONTEXT);
+      }
+
+      @Override
+      public void execute(Runnable command) {
+        if (!getQueue().isEmpty()) {
+          command.run();
+        } else {
+          super.execute(command);
+        }
+      }
+    };
   }
 
   /**
