@@ -41,17 +41,16 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -347,28 +346,23 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
     try {
-      ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      solrParams.add("wt", "json");
-      solrParams.add("omitHeader", "true");
-
-      GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, PublicKeyHandler.PATH, solrParams);
-      request.setBasePath(url);
-
-      final var solrClient = cores.getDefaultHttpClient();
-
-      log.debug("Fetching fresh public key from: {}{}", url, PublicKeyHandler.PATH);
-      NamedList<Object> resp = solrClient.request(request);
-
-      String key = (String) resp.get("key");
-
+      String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
+      log.debug("Fetching fresh public key from: {}", uri);
+      HttpResponse rsp =
+          cores
+              .getUpdateShardHandler()
+              .getDefaultHttpClient()
+              .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
+      entity = rsp.getEntity();
+      byte[] bytes = EntityUtils.toByteArray(entity);
+      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(bytes);
+      String key = (String) m.get("key");
       if (key == null) {
         log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
         return null;
       } else {
         log.info("New key obtained from node={}, key={}", nodename, key);
       }
-
       PublicKey pubKey = CryptoKeys.deserializeX509PublicKey(key);
       keyCache.put(nodename, pubKey);
       return pubKey;
