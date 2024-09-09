@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.nio.file.Files;
@@ -36,9 +37,20 @@ public class AssertToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void raisesExitCode100OnError() throws Exception {
+    assumeTrue("This test only works with security manager, as it raises an error accessing /tmp", System.getSecurityManager() != null);
+    final String[] args = new String[] {"assert", "--exitcode", "--exists", "/tmp"};
+
+    final int numAssertionsFailed = runAssertToolWithArgs(args);
+
+    assertEquals(
+            "Expected AssertTool to raise an error", numAssertionsFailed, 100);
+  }
+
+  @Test
   public void checksForTheExistenceOfDirectoryThatExists() throws Exception {
     Path tempDir = Files.createTempDirectory("myTempDir");
-    final String[] args = new String[] {"--exitcode", "--exists", tempDir.toString()};
+    final String[] args = new String[] {"assert", "--exitcode", "--exists", tempDir.toString()};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
@@ -48,7 +60,9 @@ public class AssertToolTest extends SolrCloudTestCase {
 
   @Test
   public void checksForTheExistenceOfDirectoryThatDoesntExist() throws Exception {
-    final String[] args = new String[] {"--exitcode", "--exists", "/foo/bar/baz"};
+    // we create a tempdir to avoid the Java Security Manager flagging that we can't access /foo/bar/baz directly.
+    Path tempDir = Files.createTempDirectory("myTempDir");
+    final String[] args = new String[] {"assert", "--exitcode", "--exists", tempDir.toString() + "/foo/bar/baz"};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
@@ -59,25 +73,30 @@ public class AssertToolTest extends SolrCloudTestCase {
   @Test
   public void checksForTheNonExistenceOfDirectoryThatExists() throws Exception {
     Path tempDir = Files.createTempDirectory("myTempDir");
-    final String[] args = new String[] {"--exitcode", "--not-exists", tempDir.toString()};
+    final String[] args = new String[] {"assert", "--exitcode", "--not-exists", tempDir.toString()};
+
+    final int numAssertionsFailed = runAssertToolWithArgs(args);
+
+    assertEquals("Expected AssertTool to fail assertion that directory doesnt exist", numAssertionsFailed, 1);
   }
 
   @Test
   public void checksForTheNonExistenceDirectoryThatDoesntExist() throws Exception {
-    final String[] args = new String[] {"--exitcode", "--not-exists", "/foo/bar/baz"};
+    Path tempDir = Files.createTempDirectory("myTempDir");
+    final String[] args = new String[] {"assert", "--exitcode", "--not-exists", tempDir.toString() + "/foo/bar/baz"};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
         numAssertionsFailed,
-        1);
+        0);
   }
 
   @Test
   public void checksForThePresenceOfSolrOnCorrectUrl() throws Exception {
     final String baseUrl = getRealSolrBaseUrl();
-    final String[] args = new String[] {"--exitcode", "--started", baseUrl};
+    final String[] args = new String[] {"assert", "--exitcode", "--started", baseUrl};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
@@ -89,7 +108,7 @@ public class AssertToolTest extends SolrCloudTestCase {
 
   @Test
   public void checksForThePresenceOfSolrOnIncorrectUrl() throws Exception {
-    final String[] args = new String[] {"--exitcode", "--started", "http://www.google.com"};
+    final String[] args = new String[] {"assert", "--exitcode", "--started", "http://www.google.com"};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
@@ -102,7 +121,7 @@ public class AssertToolTest extends SolrCloudTestCase {
   @Test
   public void checksForTheAbsenceOfSolrOnCorrectUrl() throws Exception {
     final String baseUrl = getRealSolrBaseUrl();
-    final String[] args = new String[] {"--exitcode", "--not-started", baseUrl};
+    final String[] args = new String[] {"assert", "--exitcode", "--not-started", baseUrl};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
@@ -114,7 +133,7 @@ public class AssertToolTest extends SolrCloudTestCase {
 
   @Test
   public void checksForTheAbsenceOfSolrOnIncorrectUrl() throws Exception {
-    final String[] args = new String[] {"--exitcode", "--not-started", "http://www.google.com"};
+    final String[] args = new String[] {"assert", "--exitcode", "--not-started", "http://www.google.com"};
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
@@ -125,7 +144,8 @@ public class AssertToolTest extends SolrCloudTestCase {
   }
 
   private int runAssertToolWithArgs(String[] args) throws Exception {
-    final AssertTool tool = new AssertTool();
+    Tool tool = findTool(args);
+    assertTrue(tool instanceof AssertTool);
     final CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
