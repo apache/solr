@@ -936,7 +936,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     String collectionName = "newcollection";
     String configsetName = "regular";
     String configsetSuffix = "testSinglePathNew-1-" + v2;
-    createConfigSet(null, configsetName + configsetSuffix, null, cluster.getSolrClient(), "solr");
+    uploadConfigSetWithAssertions(configsetName, configsetSuffix, "solr");
     createCollection(
         collectionName, configsetName + configsetSuffix, 1, 1, cluster.getSolrClient());
     addStringField("newField", collectionName, cluster.getSolrClient());
