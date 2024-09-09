@@ -18,7 +18,6 @@
 package org.apache.solr.util.stats;
 
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
-import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.trace.Span;
@@ -138,7 +137,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
 
   public static NameStrategy getNameStrategy(String name) {
     InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
-        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(name);
+        KNOWN_METRIC_NAME_STRATEGIES.get(name);
     if (nameStrategy == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

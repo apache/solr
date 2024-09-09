@@ -16,20 +16,28 @@
  */
 package org.apache.solr.core;
 
-import static org.junit.Assert.assertEquals;
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandlerConfig;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class TestHttpSolrClientProvider {
+public class TestHttpSolrClientProvider extends SolrTestCase {
 
   HttpSolrClientProvider httpSolrClientProvider;
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    assumeWorkingMockito();
+  }
 
   @Test
   public void test_when_updateShardHandler_cfg_is_null() {
