@@ -33,6 +33,7 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
 
   HttpSolrClientProvider httpSolrClientProvider;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
