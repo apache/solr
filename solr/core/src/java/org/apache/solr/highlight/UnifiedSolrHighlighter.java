@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
@@ -147,9 +146,8 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     private final String key;
 
     private static final Map<String, PassageSort> PASSAGE_SORTS =
-            Stream.of(values())
-                    .collect(
-                            Collectors.toUnmodifiableMap(PassageSort::getKey, Function.identity()));
+        Stream.of(values())
+            .collect(Collectors.toUnmodifiableMap(PassageSort::getKey, Function.identity()));
 
     PassageSort(String method) {
       this.key = method;
@@ -347,7 +345,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     @Override
     protected Comparator<Passage> getPassageSortComparator(String fieldName) {
-      PassageSort passageSort = PassageSort.parse(params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT, "startOffset"));
+      PassageSort passageSort =
+          PassageSort.parse(
+              params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT, "startOffset"));
 
       switch (passageSort) {
         case START_OFFSET:
