@@ -16,21 +16,15 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
-
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.stats.HttpClientMetricNameStrategy;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,107 +34,55 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.internal
  */
-class HttpSolrClientProvider implements SolrMetricProducer {
+class HttpSolrClientProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
+  static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
 
   private final Http2SolrClient httpSolrClient;
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
-  private SolrMetricsContext solrMetricsContext;
-
-  private int socketTimeout;
-
-  private int connectionTimeout;
-
-  public HttpSolrClientProvider(UpdateShardHandlerConfig cfg) {
-    Http2SolrClient.Builder httpClientBuilder = new Http2SolrClient.Builder();
+  HttpSolrClientProvider(UpdateShardHandlerConfig cfg) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-    configureTimeouts(cfg);
+    Http2SolrClient.Builder httpClientBuilder =
+        new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
 
-    httpClientBuilder
-        .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
-        .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS)
-        .withListenerFactory(List.of(trackHttpSolrMetrics));
-
+    if (cfg != null) {
+      httpClientBuilder
+          .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
+          .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS);
+    }
     httpSolrClient = httpClientBuilder.build();
-  }
-
-  private void configureTimeouts(UpdateShardHandlerConfig cfg) {
-    socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-    connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
-
-    if (cfg != null) {
-      socketTimeout = Math.max(cfg.getDistributedSocketTimeout(), socketTimeout);
-      connectionTimeout = Math.max(cfg.getDistributedConnectionTimeout(), connectionTimeout);
-    }
-  }
-
-  private HttpClientMetricNameStrategy getMetricNameStrategy(UpdateShardHandlerConfig cfg) {
-    HttpClientMetricNameStrategy metricNameStrategy =
-        KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
-    if (cfg != null) {
-      metricNameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
-      if (metricNameStrategy == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown metricNameStrategy: "
-                + cfg.getMetricNameStrategy()
-                + " found. Must be one of: "
-                + KNOWN_METRIC_NAME_STRATEGIES.keySet());
-      }
-    }
-    return metricNameStrategy;
   }
 
   private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(
       UpdateShardHandlerConfig cfg) {
-    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
-        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(
-            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
-
-    if (cfg != null) {
-      nameStrategy =
-          InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(
-              cfg.getMetricNameStrategy());
-      if (nameStrategy == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unknown metricNameStrategy: "
-                + cfg.getMetricNameStrategy()
-                + " found. Must be one of: "
-                + KNOWN_METRIC_NAME_STRATEGIES.keySet());
-      }
-    }
-    return nameStrategy;
+    String metricNameStrategy =
+        cfg != null && cfg.getMetricNameStrategy() != null
+            ? cfg.getMetricNameStrategy()
+            : UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
+    return InstrumentedHttpListenerFactory.getNameStrategy(metricNameStrategy);
   }
 
-  public Http2SolrClient getSolrClient() {
+  Http2SolrClient getSolrClient() {
     return httpSolrClient;
   }
 
-  public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
+  void setSecurityBuilder(HttpClientBuilderPlugin builder) {
     builder.setup(httpSolrClient);
   }
 
-  @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.HTTP.name());
+  void initializeMetrics(SolrMetricsContext parentContext) {
+    var solrMetricsContext = parentContext.getChildContext(this);
+    String expandedScope =
+        SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
   }
 
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
-  }
-
-  @Override
-  public void close() {
+  void close() {
     try {
-      SolrMetricProducer.super.close();
+      trackHttpSolrMetrics.close();
     } catch (Exception e) {
       log.error("Error closing SolrMetricProducer", e);
     }

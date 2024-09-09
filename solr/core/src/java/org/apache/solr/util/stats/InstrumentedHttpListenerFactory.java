@@ -18,12 +18,14 @@
 package org.apache.solr.util.stats;
 
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
+import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_METRIC_NAME_STRATEGIES;
 
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.trace.Span;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -132,5 +134,19 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  public static NameStrategy getNameStrategy(String name) {
+    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
+        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(name);
+    if (nameStrategy == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown metricNameStrategy: "
+              + name
+              + " found. Must be one of: "
+              + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+    }
+    return nameStrategy;
   }
 }

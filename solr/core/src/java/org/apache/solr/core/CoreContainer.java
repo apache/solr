@@ -842,8 +842,7 @@ public class CoreContainer {
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
     solrClientProvider = new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig());
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-    solrClientProvider.initializeMetrics(
-        solrMetricsContext, HttpSolrClientProvider.METRIC_SCOPE_NAME);
+    solrClientProvider.initializeMetrics(solrMetricsContext);
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
