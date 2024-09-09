@@ -134,7 +134,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
     final Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
     final String firstLiveNode = liveNodes.iterator().next();
-    // return cloudClient.getBaseUrlForNodeName(firstLiveNode);
+
     return ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
   }
 }
