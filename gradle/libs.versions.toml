@@ -65,7 +65,7 @@ carrotsearch-randomizedtesting = "2.8.1"
 # @keep for version alignment
 checkerframework = "3.44.0"
 codehaus-woodstox = "4.2.2"
-commons-cli = "1.8.0"
+commons-cli = "1.9.0"
 commons-codec = "1.17.1"
 commons-collections = "3.2.2"
 commons-io = "2.15.1"
