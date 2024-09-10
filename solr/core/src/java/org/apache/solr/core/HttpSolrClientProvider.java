@@ -82,11 +82,7 @@ class HttpSolrClientProvider {
   }
 
   void close() {
-    try {
-      trackHttpSolrMetrics.close();
-    } catch (Exception e) {
-      log.error("Error closing SolrMetricProducer", e);
-    }
     IOUtils.closeQuietly(httpSolrClient);
+    IOUtils.closeQuietly(trackHttpSolrMetrics);
   }
 }
