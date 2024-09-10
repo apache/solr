@@ -51,7 +51,8 @@ class HttpSolrClientProvider {
     if (cfg != null) {
       httpClientBuilder
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
-          .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS);
+          .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
+          .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
     httpSolrClient = httpClientBuilder.build();
   }
