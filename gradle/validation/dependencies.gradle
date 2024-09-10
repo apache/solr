@@ -74,6 +74,9 @@ allprojects {
                 handler.add(conf.name, libs.grpc.bom, {
                     because 'version alignment with known BOM for consistency across project'
                 })
+                handler.add(conf.name, libs.netty.bom, {
+                    because 'version alignment with known BOM for consistency across project'
+                })
 
                 // Add known dependencies that have multiple versions as constraints
                 // to align versions
@@ -232,6 +235,21 @@ allprojects {
                             "\n- ${getFullName(libs.grpc.core)} uses 0.26.0" +
                             "\n- ${getFullName(libs.grpc.netty)} uses 0.26.0" +
                             "\n- ${getFullName(libs.google.cloud.storage)} uses 0.27.0"
+                })
+                handler.add(conf.name, libs.netty.tcnative.boringssl, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- ${getFullName(libs.netty.bom)} uses 2.0.65.Final" +
+                            "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 2.0.61.Final"
+                })
+                handler.add(conf.name, libs.netty.transport.classes.epoll, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- ${getFullName(libs.netty.bom)} uses 4.1.112.Final" +
+                            "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 4.1.105.Final"
+                })
+                handler.add(conf.name, libs.netty.transport.native.epoll, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- ${getFullName(libs.netty.bom)} uses 4.1.112.Final" +
+                            "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 4.1.105.Final"
                 })
             }
         }

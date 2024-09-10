@@ -140,6 +140,8 @@ mockito = "5.12.0"
 morethan-jmhreport = "0.9.0"
 navsecurity = "0.5.10"
 netty = "4.1.112.Final"
+# @keep for version alignment
+netty-tcnative = "2.0.65.Final"
 nimbusds-josejwt = "9.30.2"
 nodegradle-node = "7.0.1"
 openapi = "7.6.0"
@@ -384,9 +386,16 @@ locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", vers
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-subclass = { module = "org.mockito:mockito-subclass", version.ref = "mockito" }
 navsecurity-mockoauth2server = { module = "no.nav.security:mock-oauth2-server", version.ref = "navsecurity" }
+netty-bom = { module = "io.netty:netty-bom", version.ref = "netty" }
 netty-codechttp = { module = "io.netty:netty-codec-http", version.ref = "netty" }
 # @keep transitive dependency for version alignment
 netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
+# @keep transitive dependency for version alignment
+netty-tcnative-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "netty-tcnative" }
+netty-tcnative-classes = { module = "io.netty:netty-tcnative-classes", version.ref = "netty-tcnative" }
+# @keep transitive dependency for version alignment
+netty-transport-classes-epoll = { module = "io.netty:netty-transport-classes-epoll", version.ref = "netty" }
+netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 nimbusds-josejwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbusds-josejwt" }
 openjdk-jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "openjdk-jmh" }
 openjdk-jmh-generatorannprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "openjdk-jmh" }

@@ -23,6 +23,7 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
+  implementation platform(libs.netty.bom)
   implementation platform(libs.opentelemetry.bom)
   implementation libs.slf4j.api
 
