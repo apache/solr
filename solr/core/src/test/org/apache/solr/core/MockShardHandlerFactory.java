@@ -29,6 +29,10 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 public class MockShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
   NamedList<?> args;
 
+  public NamedList<?> getArgs() {
+    return args;
+  }
+
   @Override
   public void init(PluginInfo info) {
     args = info.initArgs;
