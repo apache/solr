@@ -76,16 +76,13 @@ public class ReplicateFromLeader {
       }
 
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
-      String customPollInterval =
-          core.getSolrConfig().get("updateHandler").get("commitPollInterval").txt();
       String pollIntervalStr = "00:00:03";
-      String calculatedPollIntervalString = determinePollInterval(uinfo);
-
       if (System.getProperty("jetty.testMode") != null) {
         pollIntervalStr = "00:00:01";
-      } else if (customPollInterval != null) {
-        pollIntervalStr = customPollInterval;
-      } else if (calculatedPollIntervalString != null) {
+      }
+
+      String calculatedPollIntervalString = determinePollInterval(uinfo);
+      if (calculatedPollIntervalString != null) {
         pollIntervalStr = calculatedPollIntervalString;
       }
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
@@ -147,8 +144,12 @@ public class ReplicateFromLeader {
     int hardCommitMaxTime = uinfo.autoCommmitMaxTime;
     int softCommitMaxTime = uinfo.autoSoftCommmitMaxTime;
     boolean hardCommitNewSearcher = uinfo.openSearcher;
+    String customCommitPollInterval = uinfo.commitPollInterval;
     String pollIntervalStr = null;
-    if (hardCommitMaxTime != -1) {
+
+    if (customCommitPollInterval != null) {
+      pollIntervalStr = customCommitPollInterval;
+    } else if (hardCommitMaxTime != -1) {
       // configured hardCommit places a ceiling on the interval at which new segments will be
       // available to replicate
       if (softCommitMaxTime != -1
