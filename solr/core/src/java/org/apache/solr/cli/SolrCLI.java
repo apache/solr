@@ -624,7 +624,7 @@ public class SolrCLI implements CLIO {
         "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
     print("");
     printGreen(
-        "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+        "    ./solr start -c -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
