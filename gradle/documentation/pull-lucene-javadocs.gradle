@@ -45,11 +45,11 @@ configure(project(":solr:documentation")) {
     //   from all Solr javadocs?) then perhaps we can find a way to build this list programatically?
     // - If these javadocs are (only every) consumed by the ref guide only, then these deps & associated tasks
     //   should just be moved to the ref-guide build.gradle
-    javadocs group: 'org.apache.lucene', name: 'lucene-core', classifier: 'javadoc'
-    javadocs group: 'org.apache.lucene', name: 'lucene-analysis-common', classifier: 'javadoc'
-    javadocs group: 'org.apache.lucene', name: 'lucene-analysis-stempel', classifier: 'javadoc'
-    javadocs group: 'org.apache.lucene', name: 'lucene-queryparser', classifier: 'javadoc'
-    javadocs group: 'org.apache.lucene', name: 'lucene-spatial-extras', classifier: 'javadoc'
+    javadocs variantOf(libs.apache.lucene.core) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.analysis.common) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.analysis.stempel) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.queryparser) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.spatialextras) { classifier 'javadoc' }
   }
 
 

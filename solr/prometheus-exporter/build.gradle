@@ -24,43 +24,43 @@ dependencies {
   implementation project(':solr:solrj')
   runtimeOnly project(':solr:solrj-zookeeper')
   // ideally remove ZK dep
-  implementation('org.apache.zookeeper:zookeeper', {
+  implementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
 
-  implementation ('io.prometheus:simpleclient', {
+  implementation(libs.prometheus.simpleclient, {
     exclude group: "io.prometheus", module: "simpleclient_tracer_common"
     exclude group: "io.prometheus", module: "simpleclient_tracer_otel"
     exclude group: "io.prometheus", module: "simpleclient_tracer_otel_agent"
   })
-  implementation ('io.prometheus:simpleclient_httpserver', {
+  implementation(libs.prometheus.simpleclient.httpserver, {
     exclude group: "io.prometheus", module: "simpleclient_tracer_common"
     exclude group: "io.prometheus", module: "simpleclient_tracer_otel"
     exclude group: "io.prometheus", module: "simpleclient_tracer_otel_agent"
   })
-  implementation ('net.thisptr:jackson-jq', {
+  implementation(libs.thisptr.jacksonjq, {
     exclude group: "org.jruby.joni", module: "joni"
     exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
   })
-  implementation ('com.fasterxml.jackson.core:jackson-databind')
-  implementation 'commons-cli:commons-cli'
-  implementation ('com.github.ben-manes.caffeine:caffeine') { transitive = false }
-  implementation 'org.slf4j:slf4j-api'
-  implementation 'commons-codec:commons-codec'
+  implementation libs.fasterxml.jackson.core.databind
+  implementation libs.commonscli.commonscli
+  implementation(libs.benmanes.caffeine) { transitive = false }
+  implementation libs.slf4j.api
+  implementation libs.commonscodec.commonscodec
 
-  runtimeOnly 'org.apache.logging.log4j:log4j-api'
-  runtimeOnly 'org.apache.logging.log4j:log4j-core'
-  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
-  runtimeOnly 'com.lmax:disruptor'
+  runtimeOnly libs.apache.log4j.api
+  runtimeOnly libs.apache.log4j.core
+  runtimeOnly libs.apache.log4j.slf4j2impl
+  runtimeOnly libs.lmax.disruptor
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:solrj-zookeeper')
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.apache.lucene.testframework
 
-  testImplementation 'org.apache.httpcomponents:httpclient'
-  testImplementation 'org.apache.httpcomponents:httpcore'
+  testImplementation libs.apache.httpcomponents.httpclient
+  testImplementation libs.apache.httpcomponents.httpcore
 }
 
 ext {

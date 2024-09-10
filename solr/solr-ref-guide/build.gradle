@@ -59,15 +59,6 @@ dependencies {
 }
 
 ext {
-    antoraVersion = "3.1.4"
-    antoraLunrExtensionVersion = "1.0.0-alpha.8"
-    asciidoctorMathjaxVersion = "0.0.9"
-    asciidoctorTabsVersion = "1.0.0-beta.6"
-    linkCheckerVersion = "1.4.2"
-    gulpCliVersion = "2.3.0"
-    // Most recent commit as of 2022-06-24, this repo does not have tags
-    antoraDefaultUIVersion = "51ad811622394027afb4e182c2fdabc235ae04dd"
-
     siteDir = "${buildDir}/site"
     antoraConfigBuildDir = "${buildDir}/antora-config"
     playbooksDir = "${project.ext.antoraConfigBuildDir}/playbooks"
@@ -217,41 +208,41 @@ dependencies {
 
 task downloadAntoraCli(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@antora/cli@${project.ext.antoraVersion}"]
+    args = ["install", "@antora/cli@${libs.versions.antora.asProvider().get()}"]
 
-    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.property("Antora version", libs.versions.antora.asProvider().get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/cli")
 }
 
 task downloadAntoraSiteGenerator(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@antora/site-generator-default@${project.ext.antoraVersion}"]
+    args = ["install", "@antora/site-generator-default@${libs.versions.antora.asProvider().get()}"]
 
-    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.property("Antora version", libs.versions.antora.asProvider().get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/site-generator-default")
 }
 
 task downloadAntoraLunrExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@antora/lunr-extension@${project.ext.antoraLunrExtensionVersion}"]
+    args = ["install", "@antora/lunr-extension@${libs.versions.antora.lunr.extension.get()}"]
 
-    inputs.property("Antora lunr-extension version", project.ext.antoraLunrExtensionVersion)
+    inputs.property("Antora lunr-extension version", libs.versions.antora.lunr.extension.get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
 }
 
 task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@djencks/asciidoctor-mathjax@${project.ext.asciidoctorMathjaxVersion}"]
+    args = ["install", "@djencks/asciidoctor-mathjax@${libs.versions.asciidoctor.mathjax.get()}"]
 
-    inputs.property("asciidoctor-mathjax version", project.ext.asciidoctorMathjaxVersion)
+    inputs.property("asciidoctor-mathjax version", libs.versions.asciidoctor.mathjax.get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
 task downloadAsciidoctorTabsExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "-D", "@asciidoctor/tabs@${project.ext.asciidoctorTabsVersion}"]
+    args = ["install", "-D", "@asciidoctor/tabs@${libs.versions.asciidoctor.tabs.get()}"]
 
-    inputs.property("asciidoctor-tabs version", project.ext.asciidoctorTabsVersion)
+    inputs.property("asciidoctor-tabs version", libs.versions.asciidoctor.tabs.get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@asciidoctor/tabs")
 }
 
@@ -268,17 +259,17 @@ task downloadAntora {
 
 task downloadLinkValidator(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "link-checker@${project.ext.linkCheckerVersion}"]
+    args = ["install", "link-checker@${libs.versions.link.checker.get()}"]
 
-    inputs.property("link-checker version", project.ext.linkCheckerVersion)
+    inputs.property("link-checker version", libs.versions.link.checker.get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/link-checker")
 }
 
 task downloadDefaultUITemplate(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "gitlab:antora/antora-ui-default#${project.ext.antoraDefaultUIVersion}", "--include=dev"]
+    args = ["install", "gitlab:antora/antora-ui-default#${libs.versions.antora.default.ui.get()}", "--include=dev"]
 
-    inputs.property("Antora default-ui version", project.ext.antoraDefaultUIVersion)
+    inputs.property("Antora default-ui version", libs.versions.antora.default.ui.get())
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/ui-default")
 }
 
@@ -316,14 +307,14 @@ task downloadGulp(type: NpmTask) {
     group = 'Build Dependency Download'
     dependsOn tasks.startUIBuildDir
 
-    args = ["install", "gulp-cli@${project.ext.gulpCliVersion}", "--legacy-peer-deps"]
+    args = ["install", "gulp-cli@${libs.versions.gulp.cli.get()}", "--legacy-peer-deps"]
     execOverrides {
         // The it variable contains the `ExecSpec`
         workingDir = project.ext.uiBuildDir
     }
 
-    inputs.property("Antora version", project.ext.antoraVersion)
-    inputs.property("Gulp CLI version", project.ext.gulpCliVersion)
+    inputs.property("Antora version", libs.versions.antora.asProvider().get())
+    inputs.property("Gulp CLI version", libs.versions.gulp.cli.get())
     outputs.dir("${project.ext.uiBuildDir}/node_modules/")
 }
 
@@ -419,7 +410,7 @@ task buildLocalAntoraSite(type: NpxTask) {
     environment = ["SITE_SEARCH_ENABLED": "true"]
 
     inputs.files(fileTree(project.ext.siteStagingDir))
-    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.property("Antora version", libs.versions.antora.asProvider().get())
     outputs.dir(project.ext.siteDir)
 }
 
@@ -514,7 +505,7 @@ task buildOfficialSite(type: NpxTask) {
     environment = ["SITE_SEARCH_ENABLED": "true"]
 
     inputs.files(officialPlaybook)
-    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.property("Antora version", libs.versions.antora.asProvider().get())
     outputs.dir(project.ext.siteDir)
 
     doLast {
@@ -540,7 +531,7 @@ dependencies {
     testImplementation project(":solr:core")
     testImplementation project(":solr:solrj")
     testImplementation project(":solr:test-framework")
-    testImplementation 'junit:junit'
+    testImplementation libs.junit.junit
 }
 
 // Copy all the test resource files from SolrJ to the build/resources/test directory

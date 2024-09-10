@@ -23,14 +23,14 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation ('org.apache.tika:tika-core') { transitive = false }
-  implementation 'commons-io:commons-io'
-  implementation 'com.cybozu.labs:langdetect'
+  implementation(libs.apache.tika.core) { transitive = false }
+  implementation libs.commonsio.commonsio
+  implementation libs.cybozulabs.langdetect
   // NOTE: Currently not defined in versions.props since we need to stay on same version as Lucene due to opennlp
-  implementation 'org.apache.opennlp:opennlp-tools'
-  implementation 'org.slf4j:slf4j-api'
+  implementation libs.apache.opennlp.tools
+  implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
 }

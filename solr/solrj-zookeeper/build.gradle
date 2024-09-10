@@ -23,8 +23,8 @@ dependencies {
     // Spotbugs Annotations are only needed for old findbugs
     // annotation usage like in Zookeeper during compilation time.
     // It is not included in the release so exclude from checks.
-    compileOnly 'com.github.spotbugs:spotbugs-annotations'
-    permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+    compileOnly libs.spotbugs.annotations
+    permitUnusedDeclared libs.spotbugs.annotations
     // Exclude these from jar validation and license checks.
     configurations.jarValidation {
         exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -33,22 +33,22 @@ dependencies {
     implementation project(':solr:solrj')
 
     // declare dependencies we use even though already declared by solrj-core
-    implementation 'org.slf4j:slf4j-api'
-    implementation 'org.apache.httpcomponents:httpclient'
-    implementation 'org.apache.httpcomponents:httpcore'
+    implementation libs.slf4j.api
+    implementation libs.apache.httpcomponents.httpclient
+    implementation libs.apache.httpcomponents.httpcore
 
-    implementation('org.apache.zookeeper:zookeeper', {
+    implementation(libs.apache.zookeeper.zookeeper, {
         exclude group: "org.apache.yetus", module: "audience-annotations"
     })
-    implementation ('org.apache.zookeeper:zookeeper-jute') {
+    implementation(libs.apache.zookeeper.jute) {
         exclude group: 'org.apache.yetus', module: 'audience-annotations'
     }
 
     testImplementation project(':solr:test-framework')
     testImplementation project(':solr:core')
 
-    testImplementation 'junit:junit'
-    testImplementation 'commons-io:commons-io'
+    testImplementation libs.junit.junit
+    testImplementation libs.commonsio.commonsio
 
     permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
 }

@@ -127,7 +127,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+    classpath libs.commonscodec.commonscodec
   }
 }
 def checksum = { file ->
