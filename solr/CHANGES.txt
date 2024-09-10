@@ -59,6 +59,8 @@ Other Changes
 
 * SOLR-17142: Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. (Uwe Schindler)
 
+* SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
