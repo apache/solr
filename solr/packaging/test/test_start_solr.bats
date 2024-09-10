@@ -49,3 +49,10 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
 }
+
+@test "SOLR-16976 solr starts with remote JMX enabled" {
+  export ENABLE_REMOTE_JMX_OPTS=true
+
+  solr start
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}
