@@ -75,4 +75,5 @@ teardown() {
 
   solr start
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  refute_output --partial 'java.lang.ClassNotFoundException: org.apache.logging.log4j.jul.LogManager'
 }
