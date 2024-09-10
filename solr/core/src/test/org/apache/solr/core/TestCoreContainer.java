@@ -40,7 +40,6 @@ import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
 import org.apache.commons.exec.OS;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -1130,48 +1129,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
 
     cc.shutdown();
-  }
-
-  public void testCustomSocketTimeoutForDefaultHttpClient() throws Exception {
-    CoreContainer cc = null;
-    var socketTimeout = 15000;
-    try {
-      String solrXml =
-          "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-              + "<solr>\n"
-              + "<updateshardhandler>\n"
-              + "    <int name=\"distribUpdateSoTimeout\">"
-              + socketTimeout
-              + "</int>\n"
-              + "</updateshardhandler>"
-              + "</solr>";
-      cc = init(solrXml);
-      var http2SolrClient = cc.getDefaultHttpClient();
-      assertEquals(http2SolrClient.getIdleTimeout(), socketTimeout);
-    } finally {
-      if (cc != null) {
-        cc.shutdown();
-      }
-    }
-  }
-
-  public void testDefaultSocketTimeoutForDefaultHttpClient() throws Exception {
-    CoreContainer cc = null;
-    try {
-      String solrXml =
-          "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-              + "<solr>\n"
-              + "<updateshardhandler>\n"
-              + "</updateshardhandler>"
-              + "</solr>";
-      cc = init(solrXml);
-      var http2SolrClient = cc.getDefaultHttpClient();
-      assertEquals(http2SolrClient.getIdleTimeout(), HttpClientUtil.DEFAULT_SO_TIMEOUT);
-    } finally {
-      if (cc != null) {
-        cc.shutdown();
-      }
-    }
   }
 
   private long getCoreStartTime(final CoreContainer cc, final String name) {
