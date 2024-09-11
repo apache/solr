@@ -790,7 +790,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
         newLiveNodes = new TreeSet<>(nodeList);
-      } catch (KeeperException.NoNodeException e) {
+      } catch (KeeperException.NoNodeException | AlreadyClosedException e) {
         newLiveNodes = emptySortedSet();
       }
       lastFetchedLiveNodes.set(newLiveNodes);
