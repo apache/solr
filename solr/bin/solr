@@ -828,11 +828,19 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -a|--jvm-opts|-addlopts)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Jvm options are required when using the $1 option!"
+              exit 1
+            fi
             ADDITIONAL_CMD_OPTS="$2"
             PASS_TO_RUN_EXAMPLE+=("--jvm-opts" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
         -j|--jettyconfig|-jettyconfig)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
+              exit 1
+            fi
             ADDITIONAL_JETTY_CONFIG="$2"
             PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2

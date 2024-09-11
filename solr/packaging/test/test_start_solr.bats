@@ -49,3 +49,17 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
 }
+
+@test "check stop command doesn't hang" {
+  # for start/stop/restart we parse the args separate from picking the command
+  # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
+  
+  # Set a timeout duration (in seconds)
+  TIMEOUT_DURATION=2
+
+  # make sure that passing a non flag option (i.e --jvm-opts "blah") doesn't hang the stop command.
+  run timeout $TIMEOUT_DURATION solr stop --jvm-opts
+    
+  assert_output --partial "ERROR: Jvm options are required when using the --jvm-opts option!"
+  
+}
