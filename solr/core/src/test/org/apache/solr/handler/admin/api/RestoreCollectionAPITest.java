@@ -30,6 +30,7 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.TRUSTED;
 import static org.hamcrest.Matchers.containsString;
 
 import java.util.List;
@@ -38,10 +39,27 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for {@link RestoreCollectionAPI} */
 public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
+
+  private static RestoreCollectionAPI restoreCollectionAPI;
+
+  @BeforeClass
+  public static void setUpApi() {
+    restoreCollectionAPI =
+        new RestoreCollectionAPI(
+            new CoreContainer(
+                new NodeConfig.NodeConfigBuilder("testnode", createTempDir()).build()),
+            new LocalSolrQueryRequest(null, new NamedList<>()),
+            null);
+  }
 
   @Test
   public void testReportsErrorIfBackupNameMissing() {
@@ -51,8 +69,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection(null, requestBody);
+              restoreCollectionAPI.restoreCollection(null, requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -65,8 +82,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", null);
+              restoreCollectionAPI.restoreCollection("someBackupName", null);
             });
 
     assertEquals(400, thrown.code());
@@ -81,8 +97,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", requestBody);
+              restoreCollectionAPI.restoreCollection("someBackupName", requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -97,8 +112,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new RestoreCollectionAPI(null, null, null);
-              api.restoreCollection("someBackupName", requestBody);
+              restoreCollectionAPI.restoreCollection("someBackupName", requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -116,9 +130,9 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.async = "someAsyncId";
 
     final var remoteMessage =
-        RestoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
+        restoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
 
-    assertEquals(7, remoteMessage.size());
+    assertEquals(8, remoteMessage.size());
     assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("/some/location/path", remoteMessage.get(BACKUP_LOCATION));
@@ -126,6 +140,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals("someRepositoryName", remoteMessage.get(BACKUP_REPOSITORY));
     assertEquals("someAsyncId", remoteMessage.get(ASYNC));
     assertEquals("someBackupName", remoteMessage.get(NAME));
+    assertFalse((Boolean) remoteMessage.get(TRUSTED));
   }
 
   @Test
@@ -146,9 +161,9 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     createParams.properties = Map.of("foo", "bar");
 
     final var remoteMessage =
-        RestoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
+        restoreCollectionAPI.createRemoteMessage("someBackupName", requestBody).getProperties();
 
-    assertEquals(14, remoteMessage.size());
+    assertEquals(15, remoteMessage.size());
     assertEquals("restore", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("/some/location/path", remoteMessage.get(BACKUP_LOCATION));
@@ -162,6 +177,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals(Integer.valueOf(456), remoteMessage.get(TLOG_REPLICAS));
     assertEquals(Integer.valueOf(789), remoteMessage.get(PULL_REPLICAS));
     assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
+    assertFalse((Boolean) remoteMessage.get(TRUSTED));
     assertEquals("bar", remoteMessage.get("property.foo"));
   }
 

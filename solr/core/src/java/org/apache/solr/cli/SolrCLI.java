@@ -371,6 +371,20 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
+  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  // makes stderr the default, or makes Option.toDeprecatedString() public.
+  private static void deprecatedHandlerStdErr(Option o) {
+    if (o.isDeprecated()) {
+      final StringBuilder buf =
+          new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
+      if (o.getLongOpt() != null) {
+        buf.append(",'--").append(o.getLongOpt()).append('\'');
+      }
+      buf.append(": ").append(o.getDeprecated());
+      CLIO.err(buf.toString());
+    }
+  }
+
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
@@ -387,7 +401,11 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new DefaultParser()).parse(options, args);
+      cli =
+          DefaultParser.builder()
+              .setDeprecatedHandler(SolrCLI::deprecatedHandlerStdErr)
+              .build()
+              .parse(options, args);
     } catch (ParseException exp) {
       // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
@@ -606,7 +624,7 @@ public class SolrCLI implements CLIO {
         "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
     print("");
     printGreen(
-        "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+        "    ./solr start -c -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
@@ -636,10 +654,13 @@ public class SolrCLI implements CLIO {
    */
   public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
     if (solrUrl != null) {
-      if (solrUrl.contains("/solr")) { //
-        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+      URI uri = URI.create(solrUrl);
+      String urlPath = uri.getRawPath();
+      if (urlPath != null && urlPath.contains("/solr")) {
+        String newSolrUrl =
+            uri.resolve(urlPath.substring(0, urlPath.lastIndexOf("/solr") + 1)).toString();
         if (logUrlFormatWarning) {
-          CLIO.out(
+          CLIO.err(
               "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
                   + solrUrl
                   + "] to ["
@@ -667,13 +688,11 @@ public class SolrCLI implements CLIO {
           cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
-        CLIO.getOutStream()
-            .println(
-                "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
-                    + solrUrl
-                    + ".");
+        CLIO.err(
+            "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
+                + solrUrl
+                + ".");
       } else {
-
         try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();

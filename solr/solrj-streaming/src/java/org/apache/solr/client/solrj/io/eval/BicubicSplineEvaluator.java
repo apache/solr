@@ -36,7 +36,7 @@ public class BicubicSplineEvaluator extends RecursiveObjectEvaluator implements 
 
     if (objects.length != 3) {
       throw new IOException(
-          "The bicubicSpline function requires three paremeters," + objects.length + " found.");
+          "The bicubicSpline function requires three parameters," + objects.length + " found.");
     }
 
     Object first = objects[0];

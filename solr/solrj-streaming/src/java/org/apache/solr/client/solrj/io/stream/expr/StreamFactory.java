@@ -136,7 +136,7 @@ public class StreamFactory implements Serializable {
   }
 
   /**
-   * Given an expression, will return the value parameter at the given index, or null if doesn't
+   * Given an expression, will return the value parameter at the given index, or null if it doesn't
    * exist
    */
   public String getValueOperand(StreamExpression expression, int parameterIndex) {

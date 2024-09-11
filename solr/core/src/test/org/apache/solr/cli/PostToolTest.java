@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -211,30 +210,25 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testComputeFullUrl() throws IOException {
-
-    PostTool webPostTool = new PostTool();
-
+  public void testComputeFullUrl() throws IOException, URISyntaxException {
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
-        webPostTool.computeFullUrl(
+        PostTool.computeFullUrl(
             URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
     assertNull(
-        webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
     assertNull(
-        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
+        PostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -261,10 +255,25 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() throws URISyntaxException {
+  public void testAppendUrlPath() {
     assertEquals(
         URI.create("http://[ff01::114]/a?foo=bar"),
         PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/?foo=bar"), "/a"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "/b"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "/b"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "b"));
+    assertEquals(
+        URI.create("http://[ff01::114]/a/b?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "b"));
   }
 
   @Test
@@ -278,7 +287,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDoFilesMode() throws MalformedURLException {
+  public void testDoFilesMode() {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
@@ -300,7 +309,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRecursionAppliesToFilesMode() throws MalformedURLException {
+  public void testRecursionAppliesToFilesMode() {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
@@ -395,17 +404,15 @@ public class PostToolTest extends SolrCloudTestCase {
       linkMap.put("http://[ff01::114]/page2", s);
 
       // Simulate a robots.txt file with comments and a few disallows
-      StringBuilder sb = new StringBuilder();
-      sb.append(
-          "# Comments appear after the \"#\" symbol at the start of a line, or after a directive\n");
-      sb.append("User-agent: * # match all bots\n");
-      sb.append("Disallow:  # This is void\n");
-      sb.append("Disallow: /disallow # Disallow this path\n");
-      sb.append("Disallow: /nonexistentpath # Disallow this path\n");
+      String sb =
+          "# Comments appear after the \"#\" symbol at the start of a line, or after a directive\n"
+              + "User-agent: * # match all bots\n"
+              + "Disallow:  # This is void\n"
+              + "Disallow: /disallow # Disallow this path\n"
+              + "Disallow: /nonexistentpath # Disallow this path\n";
       this.robotsCache.put(
           "[ff01::114]",
-          super.parseRobotsTxt(
-              new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))));
+          super.parseRobotsTxt(new ByteArrayInputStream(sb.getBytes(StandardCharsets.UTF_8))));
     }
 
     @Override

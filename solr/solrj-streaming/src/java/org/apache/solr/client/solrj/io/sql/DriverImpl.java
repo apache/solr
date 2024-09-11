@@ -32,7 +32,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * Get a Connection with with a url and properties.
+ * Get a Connection with an url and properties.
  *
  * <p>jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
  */
