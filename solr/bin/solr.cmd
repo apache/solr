@@ -425,8 +425,8 @@ IF "%1"=="--zkHost" goto set_zookeeper
 IF "%1"=="-s" goto set_solr_url
 IF "%1"=="--solr-url" goto set_solr_url
 IF "%1"=="-solrUrl" goto set_solr_url
-IF "%1"=="-a" goto set_addl_opts
-IF "%1"=="--jvm-opts" goto set_addl_opts
+IF "%1"=="-a" goto set_jvm_opts
+IF "%1"=="--jvm-opts" goto set_jvm_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="--noprompt" goto set_noprompt
@@ -661,7 +661,7 @@ SHIFT
 SHIFT
 goto parse_args
 
-:set_addl_opts
+:set_jvm_opts
 set "arg=%~2"
 set "SOLR_ADDL_ARGS=%~2"
 SHIFT
