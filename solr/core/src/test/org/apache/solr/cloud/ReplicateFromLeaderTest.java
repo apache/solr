@@ -35,11 +35,11 @@ public class ReplicateFromLeaderTest {
     jettyTestMode = System.getProperty("jetty.testMode");
     System.clearProperty("jetty.testMode");
   }
-  
+
   @After
   public void tearDown() {
     if (jettyTestMode != null) {
-        System.setProperty("jetty.testMode", jettyTestMode);
+      System.setProperty("jetty.testMode", jettyTestMode);
     }
   }
 
