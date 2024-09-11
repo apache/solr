@@ -828,8 +828,8 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -a|--jvm-opts|-addlopts)
-            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-              print_usage "$SCRIPT_CMD" "Jvm options are required when using the $1 option!"
+            if [[ -z "$2" ]]; then
+              print_usage "$SCRIPT_CMD" "JVM options are required when using the $1 option!"
               exit 1
             fi
             ADDITIONAL_CMD_OPTS="$2"
