@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1761,7 +1762,8 @@ public class ReplicationHandler extends RequestHandlerBase
     return TimeUnit.MILLISECONDS.convert(readIntervalNs(interval), TimeUnit.NANOSECONDS);
   }
 
-  private static Long readIntervalNs(String interval) {
+  @VisibleForTesting
+  public static Long readIntervalNs(String interval) {
     if (interval == null) return null;
     int result = 0;
     Matcher m = INTERVAL_PATTERN.matcher(interval.trim());

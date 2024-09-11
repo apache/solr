@@ -18,11 +18,30 @@
 package org.apache.solr.cloud;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ReplicateFromLeaderTest {
+
+  private String jettyTestMode;
+
+  @Before
+  public void setUp() {
+    jettyTestMode = System.getProperty("jetty.testMode");
+    System.clearProperty("jetty.testMode");
+  }
+  
+  @After
+  public void tearDown() {
+    if (jettyTestMode != null) {
+        System.setProperty("jetty.testMode", jettyTestMode);
+    }
+  }
 
   @Test
   public void determinePollIntervalString() {
@@ -74,7 +93,7 @@ public class ReplicateFromLeaderTest {
     pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
     assertEquals("0:0:56", pollInterval);
 
-    updateHandlerInfo =
+    final SolrConfig.UpdateHandlerInfo illegalUpdateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
             "solr.DirectUpdateHandler2",
             -1,
@@ -85,7 +104,8 @@ public class ReplicateFromLeaderTest {
             -1,
             false,
             "garbage-unfortunately");
-    pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
-    assertEquals("garbage-unfortunately", pollInterval);
+    assertThrows(
+        SolrException.class,
+        () -> ReplicateFromLeader.determinePollInterval(illegalUpdateHandlerInfo));
   }
 }
