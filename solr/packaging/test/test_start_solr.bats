@@ -60,6 +60,6 @@ teardown() {
   # make sure that passing a non flag option (i.e --jvm-opts "blah") doesn't hang the stop command.
   run timeout $TIMEOUT_DURATION solr stop --jvm-opts
     
-  assert_output --partial "ERROR: Jvm options are required when using the --jvm-opts option!"
+  assert_output --partial "ERROR: JVM options are required when using the --jvm-opts option!"
   
 }
