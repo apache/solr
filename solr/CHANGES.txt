@@ -117,6 +117,8 @@ Improvements
   which may help reduce distributed-search latency in collections with many shards, especially
   when PKI is used between nodes. (Jason Gerlowski)
 
+* SOLR-17382: Deprecate -a and -addlopts in favour of --jvm-opts for passing options into the JVM in bin/solr.   (Eric Pugh, Christos Malliaridis)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
@@ -156,6 +158,8 @@ Other Changes
 * SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
 
 * SOLR-17142: Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. (Uwe Schindler)
+
+* SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
 
 ==================  9.7.0 ==================
 New Features
