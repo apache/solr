@@ -837,9 +837,8 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
-      this.aggregateNodeLevelMetricsEnabled = false;
-
       this.commitPollInterval = commitPollInterval;
+      this.aggregateNodeLevelMetricsEnabled = false;
     }
 
     public UpdateHandlerInfo(ConfigNode updateHandler) {
