@@ -663,17 +663,6 @@ goto parse_args
 
 :set_addl_opts
 set "arg=%~2"
-IF "%arg%"=="" (
-  set SCRIPT_ERROR=Additional options string is required!
-  goto invalid_cmd_line
-)
-
-set firstChar=%arg:~0,1%
-IF "%firstChar%"=="-" (
-  set SCRIPT_ERROR=Expected additional options string but found %2 instead!
-  goto invalid_cmd_line
-)
-
 set "SOLR_ADDL_ARGS=%~2"
 SHIFT
 SHIFT
