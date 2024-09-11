@@ -49,6 +49,8 @@ Bug Fixes
 
 * SOLR-17416: Fixed ExportHandler bug that silently suppressed errors and returned partial results in some situations (hossman)
 
+* SOLR-16254: Clarify when a bin/solr create needs to be run on the same server as Solr. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
