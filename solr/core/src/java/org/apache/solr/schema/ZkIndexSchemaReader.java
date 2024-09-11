@@ -145,6 +145,10 @@ public class ZkIndexSchemaReader implements OnReconnect {
           log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
           return;
         }
+        if (e.code() == KeeperException.Code.NONODE) {
+          log.warn("ZooKeeper watch triggered, but schema does not exist in ZK - skipping update");
+          return;
+        }
         log.error("", e);
         throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
       } catch (InterruptedException e) {
