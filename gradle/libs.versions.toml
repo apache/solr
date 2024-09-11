@@ -47,7 +47,6 @@ apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.2"
 aqute-bnd = "6.4.1"
-argparse4j = "0.9.0"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
@@ -95,9 +94,9 @@ google-cloud-storage = "2.27.0"
 google-errorprone = "2.28.0"
 # @keep for version alignment
 google-failureaccess = "1.0.2"
-google-guava = "33.1.0-jre"
 # @keep for version alignment
 google-gson = "2.11.0"
+google-guava = "33.1.0-jre"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 # @keep for version alignment
@@ -127,7 +126,6 @@ jersey = "3.1.5"
 jersey-containers = "2.39.1"
 # @keep for version alignment
 joda-time = "2.8.1"
-johnrengelman-shadow = "6.1.0"
 junit = "4.13.2"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -148,9 +146,9 @@ openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.40.0"
 osgi-annotation = "8.1.0"
-owasp-dependencycheck = "9.0.8"
 # @keep for version alignment
 ow2-asm = "9.3"
+owasp-dependencycheck = "9.0.8"
 # @keep for version alignment
 perfmark = "0.27.0"
 prometheus-metrics = "1.1.0"
@@ -336,12 +334,12 @@ google-cloud-core = { module = "com.google.cloud:google-cloud-core", version.ref
 google-cloud-corehttp = { module = "com.google.cloud:google-cloud-core-http", version.ref = "google-cloud-core" }
 google-cloud-nio = { module = "com.google.cloud:google-cloud-nio", version.ref = "google-cloud-nio" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage", version.ref = "google-cloud-storage" }
-google-errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "google-errorprone" }
 # @keep transitive dependency for version alignment
 google-errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "google-errorprone" }
-google-guava = { module = "com.google.guava:guava", version.ref = "google-guava" }
+google-errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "google-errorprone" }
 # @keep transitive dependency for version alignment
 google-gson = { module = "com.google.code.gson:gson", version.ref = "google-gson" }
+google-guava = { module = "com.google.guava:guava", version.ref = "google-guava" }
 # @keep transitive dependency for version alignment
 google-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "google-protobuf" }
 google-re2j = { module = "com.google.re2j:re2j", version.ref = "google-re2j" }
@@ -370,7 +368,7 @@ jakarta-inject-api = { module = "jakarta.inject:jakarta.inject-api", version.ref
 jakarta-ws-rsapi = { module = "jakarta.ws.rs:jakarta.ws.rs-api", version.ref = "jakarta-ws" }
 javacc-javacc = { module = "net.java.dev.javacc:javacc", version.ref = "javacc" }
 # @keep transitive dependency for version alignment
-jaxb-runtime = { module = "org.glassfish.jaxb:jaxb-runtime", version.ref = "jaxb"}
+jaxb-runtime = { module = "org.glassfish.jaxb:jaxb-runtime", version.ref = "jaxb" }
 jayway-jsonpath = { module = "com.jayway.jsonpath:json-path", version.ref = "jayway-jsonpath" }
 jctools-core = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 jersey-containers-jettyhttp = { module = "org.glassfish.jersey.containers:jersey-container-jetty-http", version.ref = "jersey-containers" }
