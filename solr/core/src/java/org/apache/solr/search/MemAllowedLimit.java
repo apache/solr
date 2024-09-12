@@ -21,13 +21,17 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MemAllowedLimit implements QueryTimeout {
+public class MemAllowedLimit implements QueryLimit {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final double MEBI = 1024.0 * 1024.0;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
@@ -58,10 +62,11 @@ public class MemAllowedLimit implements QueryTimeout {
     supported = testSupported;
   }
 
-  static final int MIN_COUNT = 100;
+  private static final ThreadLocal<AtomicLong> threadLocalMem = ThreadLocal.withInitial(() -> new AtomicLong(-1L));
 
-  private long limitAtBytes;
-  private long initialBytes;
+  private long limitBytes;
+  private AtomicLong accumulatedMem = new AtomicLong();
+  private long exitedAt = 0;
 
   public MemAllowedLimit(SolrQueryRequest req) {
     if (!supported) {
@@ -73,30 +78,12 @@ public class MemAllowedLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Check for limit with hasMemLimit(req) before creating a MemAllowedLimit!");
     }
-
-    init(reqMemLimit);
-  }
-
-  private void init(float reqMemLimit) {
-    try {
-      initialBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
-      log.info("init " + Thread.currentThread().getName() + " " + initialBytes);
-      if (reqMemLimit > 0) {
-        long limitBytes = Math.round(reqMemLimit * MEBI);
-        limitAtBytes = initialBytes + limitBytes;
-      } else {
-        limitAtBytes = -1;
-      }
-    } catch (Exception e) {
-      supported = false;
-      throw new IllegalArgumentException(
-          "Unexpected error checking thread allocation, disabling!", e);
-    }
+    limitBytes = Math.round(reqMemLimit * MEBI);
   }
 
   @VisibleForTesting
   MemAllowedLimit(float memLimit) {
-    init(memLimit);
+    limitBytes = Math.round(memLimit * MEBI);
   }
 
   @VisibleForTesting
@@ -105,16 +92,25 @@ public class MemAllowedLimit implements QueryTimeout {
   }
 
   static boolean hasMemLimit(SolrQueryRequest req) {
-    return req.getParams().getFloat(CommonParams.MEM_ALLOWED, -1.0f) > 0.0f
-        || req.getParams().getFloat(CommonParams.MEM_ALLOWED_RATIO, -1.0f) > 1.0f;
+    return req.getParams().getFloat(CommonParams.MEM_ALLOWED, -1.0f) > 0.0f;
   }
 
   @Override
   public boolean shouldExit() {
+    if (exitedAt > 0L) {
+      return true;
+    }
+
     try {
       long currentAllocatedBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
-      log.info("mem delta " + Thread.currentThread().getName() + ": " + (currentAllocatedBytes - limitAtBytes));
-      if (limitAtBytes < currentAllocatedBytes) {
+      AtomicLong threadMem = threadLocalMem.get();
+      threadMem.compareAndExchange(-1L, currentAllocatedBytes);
+      long lastAllocatedBytes = threadMem.get();
+      accumulatedMem.addAndGet(currentAllocatedBytes - lastAllocatedBytes);
+      threadMem.set(currentAllocatedBytes);
+      log.debug("mem limit thread {} remaining delta {}", Thread.currentThread().getName(), (limitBytes - accumulatedMem.get()));
+      if (limitBytes < accumulatedMem.get()) {
+        exitedAt = accumulatedMem.get();
         return true;
       }
       return false;
@@ -123,5 +119,10 @@ public class MemAllowedLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Unexpected error checking thread allocation, disabling!", e);
     }
+  }
+
+  @Override
+  public Object currentValue() {
+    return exitedAt > 0 ? exitedAt : accumulatedMem.get();
   }
 }

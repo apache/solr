@@ -26,8 +26,11 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,6 +68,11 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setup() throws Exception {
+    // Using NoMergePolicy and 100 commits we should get 100 segments (across all shards).
+    // At this point of writing MAX_SEGMENTS_PER_SLICE in lucene is 5, so we should be
+    // ensured that any multithreaded testing will create 20 executable tasks for the
+    // executor that was provided to index-searcher.
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
     System.setProperty("metricsEnabled", "true");
     Path configset = createConfigSet();
@@ -77,8 +85,14 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
         cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(3, 6));
     for (int j = 0; j < 100; j++) {
       solrClient.add(COLLECTION, sdoc("id", "id-" + j, "val_i", j % 5));
+      solrClient.commit(COLLECTION); // need to commit every doc to create many segments.
     }
-    solrClient.commit(COLLECTION);
+  }
+
+  @AfterClass
+  public static void tearDownClass() {
+    TestInjection.cpuTimerDelayInjectedNS = null;
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test
@@ -94,7 +108,7 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
       Thread.sleep(100);
       // allocate memory
       for (int i = 0; i < 20; i++) {
-        data.add(new byte[1000]);
+        data.add(new byte[5000]);
       }
       wakeups++;
     }
@@ -126,22 +140,22 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
     assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
 
     // memAllowed set with large value, should return full results
-//    rsp =
-//        solrClient.query(
-//            COLLECTION,
-//            params(
-//                "q",
-//                "id:*",
-//                "sort",
-//                "id asc",
-//                "memLoadCount",
-//                String.valueOf(dataSize),
-//                "stages",
-//                "prepare,process",
-//                "memAllowed",
-//                "1.5"));
-//    assertNull("should have full results", rsp.getHeader().get("partialResults"));
-//
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                "memLoadCount",
+                String.valueOf(dataSize),
+                "stages",
+                "prepare,process",
+                "memAllowed",
+                "1.5"));
+    assertNull("should have full results", rsp.getHeader().get("partialResults"));
+
     // memAllowed set, should return partial results
     rsp =
         solrClient.query(
@@ -156,29 +170,28 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
                 "stages",
                 "prepare,process",
                 "memAllowed",
-                "0.1"));
+                "0.2"));
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
-    // test dynamic limit
+    // multi-threaded search
+    // memAllowed set, should return partial results
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                "memLoadCount",
+                String.valueOf(dataSize),
+                "stages",
+                "prepare,process",
+                "multiThreaded",
+                "true",
+                "memAllowed",
+                "0.2"));
+    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
-    // first, let's prime the histogram using values smaller than the hard limit
-    for (int i = 0; i < 1000; i++) {
-      dataSize = 100 + random().nextInt(75);
-      rsp =
-          solrClient.query(
-              COLLECTION,
-              params(
-                  "q",
-                  "id:*",
-                  "sort",
-                  "id asc",
-                  "memLoadCount",
-                  String.valueOf(dataSize),
-                  "stages",
-                  "process",
-                  "memAllowed",
-                  "1.0"));
-      assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
-    }
   }
 }
