@@ -192,6 +192,5 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
                 "memAllowed",
                 "0.2"));
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
-
   }
 }

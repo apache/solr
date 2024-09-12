@@ -21,11 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
@@ -62,7 +58,8 @@ public class MemAllowedLimit implements QueryLimit {
     supported = testSupported;
   }
 
-  private static final ThreadLocal<AtomicLong> threadLocalMem = ThreadLocal.withInitial(() -> new AtomicLong(-1L));
+  private static final ThreadLocal<AtomicLong> threadLocalMem =
+      ThreadLocal.withInitial(() -> new AtomicLong(-1L));
 
   private long limitBytes;
   private AtomicLong accumulatedMem = new AtomicLong();
@@ -108,7 +105,12 @@ public class MemAllowedLimit implements QueryLimit {
       long lastAllocatedBytes = threadMem.get();
       accumulatedMem.addAndGet(currentAllocatedBytes - lastAllocatedBytes);
       threadMem.set(currentAllocatedBytes);
-      log.debug("mem limit thread {} remaining delta {}", Thread.currentThread().getName(), (limitBytes - accumulatedMem.get()));
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "mem limit thread {} remaining delta {}",
+            Thread.currentThread().getName(),
+            (limitBytes - accumulatedMem.get()));
+      }
       if (limitBytes < accumulatedMem.get()) {
         exitedAt = accumulatedMem.get();
         return true;

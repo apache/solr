@@ -178,8 +178,8 @@ public interface CommonParams {
   String CPU_ALLOWED = "cpuAllowed";
 
   /**
-   * Max query memory allocation value in mebibytes (float). If not set, or the value is &lt;= 0.0, there is
-   * no limit.
+   * Max query memory allocation value in mebibytes (float). If not set, or the value is &lt;= 0.0,
+   * there is no limit.
    */
   String MEM_ALLOWED = "memAllowed";
 
