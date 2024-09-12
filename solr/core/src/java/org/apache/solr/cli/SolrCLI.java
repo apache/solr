@@ -371,6 +371,19 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
+  /**
+   * Returns the value of the option with the given name, or the value of the deprecated option. If
+   * both values are null, then it returns the default value.
+   */
+  public static String getOptionWithDeprecatedAndDefault(
+      CommandLine cli, String opt, String deprecated, String def) {
+    String val = cli.getOptionValue(opt);
+    if (val == null) {
+      val = cli.getOptionValue(deprecated);
+    }
+    return val == null ? def : val;
+  }
+
   // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
   private static void deprecatedHandlerStdErr(Option o) {
