@@ -382,10 +382,19 @@ This parameter specifies the amount of CPU time, in milliseconds, allowed for a 
 In contrast to the `timeAllowed` this parameter monitors the actual CPU usage by the thread that executes the query. The same CPU usage limit is applied to the query coordinator as to each replica that participates in the distributed search (although reaching this limit first in the query coordinator is unlikely).
 Should any replica locally exceed the allowed CPU time the whole distributed search will be terminated (by canceling requests to other shards).
 
-Note: the same CPU limit is applied to each stage in the distributed query processing. Typically this involves two or more stages (e.g. getting top document id-s, retrieving their fields, additional stages may be required for faceting, grouping, etc).
+Note: the same CPU limit is applied to each stage in the distributed query processing. Typically this involves two or more stages where the request is processed by different
+Solr nodes (e.g. getting top document id-s, retrieving their fields, additional stages may be required for faceting, grouping, etc).
 For example, setting `cpuAllowed=500` gives a limit of at most 500 ms of CPU time for each of these stages - meaning that the total CPU usage by the query may reach a multiple of the `cpuAllowed` value depending on the number of stages.
 
 All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
+
+== memAllowed Parameter
+
+This parameter specifies the amount of memory (a float value, in MiB) allowed for a search thread to allocate
+during query execution. Similarly to the `cpuAllowed` this parameter monitors the additional memory
+allocated to the thread that executes the current query. Similarly, the same hard limit is applied to
+the query coordinator as to each replica that participates in the distributed search. As is the case with
+the `cpuAllowed` also here the limit is applied separately to each stage of the distributed query processing.
 
 == segmentTerminateEarly Parameter
 
