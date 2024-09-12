@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -132,7 +133,7 @@ public class PackageTool extends ToolBase {
                   printGreen("\t" + packages.get(packageName));
                 }
               } else {
-                // nuance that we use a arg here instead of requiring a --package parameter with a
+                // nuance that we use an arg here instead of requiring a --package parameter with a
                 // value
                 // in this code path
                 String packageName = cli.getArgs()[1];
@@ -174,21 +175,25 @@ public class PackageTool extends ToolBase {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean noprompt = cli.hasOption("no-prompt");
+                  boolean noPrompt = cli.hasOption("no-prompt");
                   boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
                           ? PackageUtils.validateCollections(
                               cli.getOptionValue("collections").split(","))
                           : new String[] {};
+                  String[] parameters =
+                      cli.hasOption("param")
+                          ? cli.getOptionValues("param")
+                          : cli.getOptionValues("p");
                   packageManager.deploy(
                       packageName,
                       version,
                       collections,
                       cli.hasOption("cluster"),
-                      cli.getOptionValues("param"),
+                      parameters,
                       isUpdate,
-                      noprompt);
+                      noPrompt);
                 } else {
                   printRed(
                       "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
@@ -340,10 +345,22 @@ public class PackageTool extends ToolBase {
             .longOpt("cluster")
             .desc("Specifies that this action should affect cluster-level plugins only.")
             .build(),
-        Option.builder("p")
+        Option.builder()
             .longOpt("param")
             .hasArgs()
             .argName("PARAMS")
+            .desc("List of parameters to be used with deploy command.")
+            .build(),
+        Option.builder("p")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --param instead")
+                    .get())
+            .hasArg()
+            .argName("PARAMS")
+            .required(false)
             .desc("List of parameters to be used with deploy command.")
             .build(),
         Option.builder()

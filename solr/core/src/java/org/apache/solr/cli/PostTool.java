@@ -241,12 +241,24 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("default: " + DEFAULT_FILE_TYPES)
             .build(),
-        Option.builder("p")
+        Option.builder()
             .longOpt("params")
             .hasArg()
             .argName("<key>=<value>[&<key>=<value>...]")
             .required(false)
-            .desc("values must be URL-encoded; these pass through to Solr update request.")
+            .desc("Values must be URL-encoded; these pass through to Solr update request.")
+            .build(),
+        Option.builder("p")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --params instead")
+                    .get())
+            .hasArg()
+            .argName("<key>=<value>[&<key>=<value>...]")
+            .required(false)
+            .desc("Values must be URL-encoded; these pass through to Solr update request.")
             .build(),
         Option.builder()
             .longOpt("out")
@@ -309,7 +321,7 @@ public class PostTool extends ToolBase {
 
     args = cli.getArgs();
 
-    params = cli.getOptionValue("params", "");
+    params = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "params", "p", "");
 
     execute(mode);
   }

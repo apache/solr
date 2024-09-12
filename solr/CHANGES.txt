@@ -21,6 +21,8 @@ Improvements
 
 * SOLR-17382: Deprecate -a and -addlopts in favour of --jvm-opts for passing options into the JVM in bin/solr.   (Eric Pugh, Christos Malliaridis)
 
+* SOLR-17431: Deprecate -p parameter where it doesn't refer to a port in bin/solr. (Eric Pugh, Christos Malliaridis)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
