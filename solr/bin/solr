@@ -1030,8 +1030,9 @@ if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
+LOG4J_CONFIG=()
 if [ -n "${LOG4J_PROPS:-}" ]; then
-  LOG4J_CONFIG=("-Dlog4j.configurationFile=$LOG4J_PROPS")
+  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
