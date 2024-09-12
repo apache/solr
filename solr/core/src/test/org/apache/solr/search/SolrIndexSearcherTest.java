@@ -120,16 +120,14 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
 
   private void assertMatchesEqual(int expectedCount, SolrIndexSearcher searcher, QueryCommand cmd)
       throws IOException {
-    QueryResult qr = new QueryResult();
-    searcher.search(qr, cmd);
+    QueryResult qr = searcher.search(cmd);
     assertEquals(expectedCount, qr.getDocList().matches());
     assertEquals(TotalHits.Relation.EQUAL_TO, qr.getDocList().hitCountRelation());
   }
 
   private QueryResult assertMatchesGreaterThan(
       int expectedCount, SolrIndexSearcher searcher, QueryCommand cmd) throws IOException {
-    QueryResult qr = new QueryResult();
-    searcher.search(qr, cmd);
+    QueryResult qr = searcher.search(cmd);
     assertTrue(
         "Expecting returned matches to be greater than "
             + expectedCount
@@ -182,7 +180,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             searcher -> {
               QueryCommand cmd = createBasicQueryCommand(NUM_DOCS / 2, 10, "field1_s", "foo");
               cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-              searcher.search(new QueryResult(), cmd);
+              searcher.search(cmd);
               assertMatchesGreaterThan(NUM_DOCS, searcher, cmd);
               return null;
             });
@@ -194,7 +192,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
             searcher -> {
               QueryCommand cmd = createBasicQueryCommand(NUM_DOCS, 2, "field1_s", "foo");
               cmd.clearFlags(SolrIndexSearcher.NO_CHECK_QCACHE | SolrIndexSearcher.NO_SET_QCACHE);
-              searcher.search(new QueryResult(), cmd);
+              searcher.search(cmd);
               assertMatchesEqual(NUM_DOCS, searcher, cmd);
               return null;
             });
@@ -278,8 +276,7 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
                 cmd.setQuery(new FixedScoreReRankQuery(cmd.getQuery(), expectedScore));
               }
 
-              final QueryResult qr = new QueryResult();
-              searcher.search(qr, cmd);
+              final QueryResult qr = searcher.search(cmd);
 
               // check score for the first document
               final DocIterator iter = qr.getDocList().iterator();

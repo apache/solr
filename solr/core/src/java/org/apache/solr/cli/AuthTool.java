@@ -75,7 +75,7 @@ public class AuthTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    return "\nUpdates or enables/disables authentication.  Must be run on the machine hosting Solr.\n"
+    return "Updates or enables/disables authentication.  Must be run on the Solr server itself.\n"
         + "\n"
         + "List of options:";
   }
