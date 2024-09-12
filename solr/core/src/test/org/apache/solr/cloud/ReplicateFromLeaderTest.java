@@ -33,7 +33,6 @@ public class ReplicateFromLeaderTest {
   @Before
   public void setUp() {
     jettyTestMode = System.getProperty("jetty.testMode");
-    System.clearProperty("jetty.testMode");
   }
 
   @After
@@ -44,7 +43,19 @@ public class ReplicateFromLeaderTest {
   }
 
   @Test
+  public void determineTestPollIntervalString() {
+    SolrConfig.UpdateHandlerInfo updateHandlerInfo =
+        new SolrConfig.UpdateHandlerInfo(
+            "solr.DirectUpdateHandler2", -1, 60000, -1, true, -1, -1, false, "0:0:56");
+    String pollInterval = ReplicateFromLeader.determinePollInterval(updateHandlerInfo);
+    assertEquals("00:00:01", pollInterval);
+  }
+
+  @Test
   public void determinePollIntervalString() {
+    // disable jetty test mode
+    System.clearProperty("jetty.testMode");
+
     SolrConfig.UpdateHandlerInfo updateHandlerInfo =
         new SolrConfig.UpdateHandlerInfo(
             "solr.DirectUpdateHandler2", -1, 15000, -1, true, -1, 60000, false, null);
