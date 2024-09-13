@@ -370,25 +370,25 @@ public class CreateTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (isVerbose()) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
       echo(arr.toString());
-    } else {
-      String endMessage =
-          String.format(
-              Locale.ROOT,
-              "Created collection '%s' with %d shard(s), %d replica(s)",
-              collectionName,
-              numShards,
-              replicationFactor);
-      if (confName != null && !confName.trim().isEmpty()) {
-        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
-      }
-
-      echo(endMessage);
     }
+
+    String endMessage =
+        String.format(
+            Locale.ROOT,
+            "Created collection '%s' with %d shard(s), %d replica(s)",
+            collectionName,
+            numShards,
+            replicationFactor);
+    if (confName != null && !confName.trim().isEmpty()) {
+      endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
+    }
+
+    echo(endMessage);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
