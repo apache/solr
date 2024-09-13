@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -152,7 +153,7 @@ public class SolrProcessMgr {
     }
 
     public String getLocalUrl() {
-      return String.format("%s://localhost:%s/solr", isHttps ? "https" : "http", port);
+      return String.format(Locale.ROOT, "%s://localhost:%s/solr", isHttps ? "https" : "http", port);
     }
   }
 }

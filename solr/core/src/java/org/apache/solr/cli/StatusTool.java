@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -40,8 +41,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Supports status command in the bin/solr script.
@@ -49,8 +48,6 @@ import org.slf4j.LoggerFactory;
  * <p>Get the status of a Solr server.
  */
 public class StatusTool extends ToolBase {
-  private static final Logger log = LoggerFactory.getLogger(StatusTool.class);
-
   private static Map<Long, ProcessHandle> processes;
   private final SolrProcessMgr processMgr;
 
@@ -127,7 +124,7 @@ public class StatusTool extends ToolBase {
       }
       Collection<SolrProcess> procs = processMgr.getAllRunning();
       if (!shortFormat) {
-        CLIO.out(String.format("\nFound %s Solr nodes: ", procs.size()));
+        CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", procs.size()));
       }
       if (!procs.isEmpty()) {
         for (SolrProcess process : procs) {
@@ -149,7 +146,7 @@ public class StatusTool extends ToolBase {
           CLIO.out(solrUrl);
         }
       } else {
-        CLIO.out(String.format("\nFound %s Solr nodes: ", 1));
+        CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", 1));
         Optional<SolrProcess> process = processMgr.processForPort(urlPort);
         if (process.isPresent()) {
           printProcessStatus(process.get(), cli);
@@ -165,7 +162,11 @@ public class StatusTool extends ToolBase {
     boolean shortFormat = cli.hasOption(OPTION_SHORT);
     String pidUrl = process.getLocalUrl();
     CLIO.out(
-        String.format("\nSolr process %s running on port %s", process.getPid(), process.getPort()));
+        String.format(
+            Locale.ROOT,
+            "\nSolr process %s running on port %s",
+            process.getPid(),
+            process.getPort()));
     if (shortFormat) {
       CLIO.out(pidUrl);
     } else {
