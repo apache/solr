@@ -39,3 +39,13 @@ teardown() {
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 }
+
+@test "ensure port parameter is used" {
+  solr start -p ${SOLR2_PORT}
+  solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
+  
+  run solr create -c COLL_NAME -p ${SOLR2_PORT}
+  assert_output --partial "Created new core 'COLL_NAME'"
+  
+}
