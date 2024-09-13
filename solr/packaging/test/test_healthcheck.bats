@@ -30,7 +30,7 @@ teardown() {
 
 @test "healthcheck on cloud solr" {
   solr start -c -e films
-  run solr healthcheck -c films -V
+  run solr healthcheck -c films -z localhost:${ZK_PORT} -V
   refute_output --partial 'error'
   assert_output --partial '"collection":"films"'
   
