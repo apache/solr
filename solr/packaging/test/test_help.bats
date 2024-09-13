@@ -60,10 +60,8 @@ setup() {
 
 @test "status help flag prints help" {
   run solr status --help
-  assert_output --partial 'usage: status'
+  assert_output --partial 'usage: bin/solr status [--max-wait-secs <SECS>] [-p <PORT>] [--short] [-url <HOST>]'
   refute_output --partial 'ERROR'
-  # Make sure custom selection of options for status help works.
-  refute_output --partial '--solr-url'
 }
 
 @test "healthcheck help flag prints help" {
