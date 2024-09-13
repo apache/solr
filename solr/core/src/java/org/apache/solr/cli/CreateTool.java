@@ -45,6 +45,7 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
 import org.noggit.CharArr;
@@ -148,6 +149,19 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
+        Option.builder("p")
+            .longOpt("port")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-url instead")
+                    .get())
+            .argName("PORT")
+            .hasArg()
+            .required(false)
+            .desc("Port of a local Solr instance where you want to create the new core.")
+            .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
@@ -157,6 +171,12 @@ public class CreateTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
+
+    // If a port is provided, inject it into the environment variables so
+    // that {@link SolrCLI#getDefaultSolrUrl()} can use it instead of the default 8983.
+    if (cli.hasOption("p")) {
+      EnvUtils.setProperty("jetty.port", cli.getOptionValue("p"));
+    }
 
     try (var solrClient = SolrCLI.getSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
