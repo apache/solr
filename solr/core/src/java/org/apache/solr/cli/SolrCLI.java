@@ -150,6 +150,17 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc("Enable verbose command output.")
           .build();
+  public static final Option OPTION_VERBOSE_DEPRECATED =
+      Option.builder("V")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use -v instead")
+                  .get())
+          .required(false)
+          .desc("Enable verbose command output.")
+          .build();
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
@@ -294,7 +305,8 @@ public class SolrCLI implements CLIO {
   }
 
   public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(OPTION_VERBOSE.getOpt())) {
+    if (!(cli.hasOption(OPTION_VERBOSE.getOpt())
+        || cli.hasOption(OPTION_VERBOSE_DEPRECATED.getOpt()))) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }

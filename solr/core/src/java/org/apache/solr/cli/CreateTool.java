@@ -165,7 +165,8 @@ public class CreateTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_VERBOSE_DEPRECATED);
   }
 
   @Override
@@ -244,12 +245,12 @@ public class CreateTool extends ToolBase {
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      if (isVerbose()) {
         echo(res.jsonStr());
         echo("\n");
-      } else {
-        echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
       }
+      echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
+
     } catch (Exception e) {
       /* create-core failed, cleanup the copied configset before propagating the error. */
       PathUtils.deleteDirectory(coreInstanceDir);

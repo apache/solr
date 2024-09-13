@@ -34,18 +34,33 @@ teardown() {
   assert_output --partial "Created new core 'COLL_NAME'"
 }
 
+@test "create_core works" {
+  run solr start
+  run solr create_core -c COLL_NAME
+  assert_output --partial "Created new core 'COLL_NAME'"
+}
+
 @test "create for cloud mode" {
   run solr start -c
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
-@test "ensure port parameter is used" {
+@test "ensure -p port parameter is supported" {
   solr start -p ${SOLR2_PORT}
   solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000
   solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
   
   run solr create -c COLL_NAME -p ${SOLR2_PORT}
+  assert_output --partial "Created new core 'COLL_NAME'"
+  
+}
+
+@test "ensure -V verbose parameter is supported" {
+  solr start 
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  
+  run solr create -c COLL_NAME -V
   assert_output --partial "Created new core 'COLL_NAME'"
   
 }
