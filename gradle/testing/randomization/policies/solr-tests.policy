@@ -107,6 +107,8 @@ grant {
   permission java.lang.RuntimePermission "writeFileDescriptor";
   // needed by hadoop http
   permission java.lang.RuntimePermission "getProtectionDomain";
+  // SolrProcessMgr to list processes
+  permission java.lang.RuntimePermission "manageProcess";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
