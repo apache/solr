@@ -28,12 +28,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterState;
@@ -170,7 +172,15 @@ public class HealthcheckTool extends ToolBase {
           q = new SolrQuery("*:*");
           q.setRows(0);
           q.set(DISTRIB, "false");
-          try (var solrClientForCollection = SolrCLI.getSolrClient(coreUrl)) {
+
+          // SolrCLI.getSolrClient converts the coreUrl back into a root Solr url, but we need to
+          // talk to specific core so manually creating the client.
+          // try (var solrClientForCollection = SolrCLI.getSolrClient(coreUrl)) {
+          try (var solrClientForCollection =
+              new Http2SolrClient.Builder(coreUrl)
+                  .withMaxConnectionsPerHost(32)
+                  .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+                  .build()) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient = SolrCLI.getSolrClient(replicaCoreProps.getBaseUrl())) {
