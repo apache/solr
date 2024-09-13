@@ -53,7 +53,6 @@ teardown() {
   
   run solr create -c COLL_NAME -p ${SOLR2_PORT}
   assert_output --partial "Created new core 'COLL_NAME'"
-  
 }
 
 @test "ensure -V verbose parameter is supported" {
@@ -62,5 +61,4 @@ teardown() {
   
   run solr create -c COLL_NAME -V
   assert_output --partial "Created new core 'COLL_NAME'"
-  
 }
