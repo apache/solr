@@ -77,7 +77,7 @@ public class SolrProcessMgrTest extends SolrTestCase {
             "-Djetty.port=" + port,
             "-DisHttps=" + https,
             "-DmockSolr=true",
-            https ? "--module=http" : "--module=https",
+            https ? "--module=https" : "--module=http",
             "SolrProcessMgrTest$MockSolrProcess");
 
     // Start the process
@@ -134,6 +134,20 @@ public class SolrProcessMgrTest extends SolrTestCase {
   public void testGetAllRunning() {
     Collection<SolrProcess> processes = solrProcessMgr.getAllRunning();
     assertEquals(2, processes.size());
+  }
+
+  public void testSolrProcessMethods() {
+    SolrProcess http = solrProcessMgr.processForPort(processHttp.getKey()).orElseThrow();
+    assertEquals(processHttp.getValue().pid(), http.getPid());
+    assertEquals(processHttp.getKey().intValue(), http.getPort());
+    assertFalse(http.isHttps());
+    assertEquals("http://localhost:" + processHttp.getKey() + "/solr", http.getLocalUrl());
+
+    SolrProcess https = solrProcessMgr.processForPort(processHttps.getKey()).orElseThrow();
+    assertEquals(processHttps.getValue().pid(), https.getPid());
+    assertEquals(processHttps.getKey().intValue(), https.getPort());
+    assertTrue(https.isHttps());
+    assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
   }
 
   public static class MockSolrProcess {
