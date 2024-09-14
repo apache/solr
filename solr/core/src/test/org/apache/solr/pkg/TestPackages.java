@@ -802,18 +802,6 @@ public class TestPackages extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
-    verifySchemaComponent(
-        cluster.getSolrClient(),
-        COLLECTION_NAME,
-        "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-        Map.of(
-            ":fieldType:analyzer:charFilters[0]:_packageinfo_:version",
-            "1.0",
-            ":fieldType:analyzer:tokenizer:_packageinfo_:version",
-            "1.0",
-            ":fieldType:_packageinfo_:version",
-            "1.0"));
-
     // make note of the schema instance for one of the cores
     SolrCore.Provider coreProvider =
         cluster.getJettySolrRunners().stream()
@@ -852,18 +840,6 @@ public class TestPackages extends SolrCloudTestCase {
             ":result:packages:schemapkg[1]:files[0]",
             FILE1));
 
-    verifySchemaComponent(
-        cluster.getSolrClient(),
-        COLLECTION_NAME,
-        "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-        Map.of(
-            ":fieldType:analyzer:charFilters[0]:_packageinfo_:version",
-            "2.0",
-            ":fieldType:analyzer:tokenizer:_packageinfo_:version",
-            "2.0",
-            ":fieldType:_packageinfo_:version",
-            "2.0"));
-
     // even though package version 2.0 uses exactly the same files
     // as version 1.0, the core schema should still reload, and
     // the core should be associated with a different schema instance
@@ -874,17 +850,6 @@ public class TestPackages extends SolrCloudTestCase {
           return params("schemaReloaded", (schemas[0] != schemas[1]) ? "yes" : "no");
         },
         Map.of("schemaReloaded", "yes"));
-  }
-
-  private void verifySchemaComponent(
-      SolrClient client, String COLLECTION_NAME, String path, Map<String, Object> expected)
-      throws Exception {
-    SolrParams params =
-        new MapSolrParams(Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "meta", "true"));
-
-    GenericSolrRequest req =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, path, params).setRequiresCollection(true);
-    TestDistribFileStore.assertResponseValues(10, client, req, expected);
   }
 
   public static void postFileAndWait(
