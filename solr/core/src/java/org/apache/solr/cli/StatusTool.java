@@ -104,8 +104,7 @@ public class StatusTool extends ToolBase {
     boolean shortFormat = cli.hasOption(OPTION_SHORT);
 
     if (port != null && solrUrl != null) {
-      CLIO.err("Please provide either --port or --solr-url, not both");
-      System.exit(1);
+      throw new IllegalArgumentException("Only one of port or url can be specified");
     }
 
     if (port != null) {
