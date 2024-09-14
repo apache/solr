@@ -73,6 +73,7 @@ import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -850,6 +851,20 @@ public class TestPackages extends SolrCloudTestCase {
           return params("schemaReloaded", (schemas[0] != schemas[1]) ? "yes" : "no");
         },
         Map.of("schemaReloaded", "yes"));
+
+    // after the reload, the custom field type class now comes from package v2.0
+    String fieldTypeName = "myNewTextFieldWithAnalyzerClass";
+
+    FieldType fieldTypeV1 = schemas[0].getFieldTypeByName(fieldTypeName);
+    assertEquals("my.pkg.MyTextField", fieldTypeV1.getClass().getCanonicalName());
+
+    FieldType fieldTypeV2 = schemas[1].getFieldTypeByName(fieldTypeName);
+    assertEquals("my.pkg.MyTextField", fieldTypeV2.getClass().getCanonicalName());
+
+    assertNotEquals(
+        "my.pkg.MyTextField classes should be from different classloaders",
+        fieldTypeV1.getClass(),
+        fieldTypeV2.getClass());
   }
 
   public static void postFileAndWait(
