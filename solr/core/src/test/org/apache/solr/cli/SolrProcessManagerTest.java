@@ -31,7 +31,6 @@ public class SolrProcessManagerTest extends SolrTestCase {
   private static SolrProcessManager solrProcessManager;
   private static Pair<Integer, Process> processHttp;
   private static Pair<Integer, Process> processHttps;
-  private static Path pidDir;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -39,7 +38,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     processHttps = createProcess(findAvailablePort(), true);
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
-    pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
+    Path pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
     pidDir.toFile().deleteOnExit();
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
@@ -89,11 +88,9 @@ public class SolrProcessManagerTest extends SolrTestCase {
     solrProcessManager
         .getAllRunning()
         .forEach(
-            p -> {
-              assertEquals(
-                  (p.isHttps() ? "https" : "http") + "://localhost:" + p.getPort() + "/solr",
-                  p.getLocalUrl());
-            });
+            p -> assertEquals(
+                (p.isHttps() ? "https" : "http") + "://localhost:" + p.getPort() + "/solr",
+                p.getLocalUrl()));
   }
 
   public void testIsRunningWithPort() {
