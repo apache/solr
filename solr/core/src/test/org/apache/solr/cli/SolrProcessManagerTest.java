@@ -123,7 +123,10 @@ public class SolrProcessManagerTest extends SolrTestCase {
         (solrProcessManager.getProcessForPid(processHttp.getValue().pid()).orElseThrow().getPid()));
     assertEquals(
         processHttps.getValue().pid(),
-        (solrProcessManager.getProcessForPid(processHttps.getValue().pid()).orElseThrow().getPid()));
+        (solrProcessManager
+            .getProcessForPid(processHttps.getValue().pid())
+            .orElseThrow()
+            .getPid()));
   }
 
   public void testScanSolrPidFiles() throws IOException {

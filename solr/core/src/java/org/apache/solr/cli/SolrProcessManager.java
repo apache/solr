@@ -45,7 +45,8 @@ public class SolrProcessManager {
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
   private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
-  // Set this to true during testing to allow the SolrProcessManager to find only mock Solr processes
+  // Set this to true during testing to allow the SolrProcessManager to find only mock Solr
+  // processes
   public static boolean enableTestingMode = false;
 
   public SolrProcessManager() {
