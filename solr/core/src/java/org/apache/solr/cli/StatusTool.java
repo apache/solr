@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.cli.SolrProcessMgr.SolrProcess;
+import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -49,7 +49,7 @@ import org.noggit.JSONWriter;
  */
 public class StatusTool extends ToolBase {
   private static Map<Long, ProcessHandle> processes;
-  private final SolrProcessMgr processMgr;
+  private final SolrProcessManager processMgr;
 
   public StatusTool() {
     this(CLIO.getOutStream());
@@ -57,7 +57,7 @@ public class StatusTool extends ToolBase {
 
   public StatusTool(PrintStream stdout) {
     super(stdout);
-    processMgr = new SolrProcessMgr();
+    processMgr = new SolrProcessManager();
   }
 
   @Override

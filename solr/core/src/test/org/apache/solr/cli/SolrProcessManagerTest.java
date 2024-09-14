@@ -23,12 +23,12 @@ import java.nio.file.Path;
 import java.util.Collection;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.cli.SolrProcessMgr.SolrProcess;
+import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-public class SolrProcessMgrTest extends SolrTestCase {
-  private static SolrProcessMgr solrProcessMgr;
+public class SolrProcessManagerTest extends SolrTestCase {
+  private static SolrProcessManager solrProcessManager;
   private static Pair<Integer, Process> processHttp;
   private static Pair<Integer, Process> processHttps;
   private static Path pidDir;
@@ -37,7 +37,7 @@ public class SolrProcessMgrTest extends SolrTestCase {
   public static void beforeClass() throws Exception {
     processHttp = createProcess(findAvailablePort(), false);
     processHttps = createProcess(findAvailablePort(), true);
-    SolrProcessMgr.enableTestingMode = true;
+    SolrProcessManager.enableTestingMode = true;
     System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
     pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
     pidDir.toFile().deleteOnExit();
@@ -49,14 +49,14 @@ public class SolrProcessMgrTest extends SolrTestCase {
         pidDir.resolve("solr-" + processHttps.getKey() + ".pid"),
         Long.toString(processHttps.getValue().pid()));
     Files.writeString(pidDir.resolve("solr-99999.pid"), "99999"); // Invalid
-    solrProcessMgr = new SolrProcessMgr();
+    solrProcessManager = new SolrProcessManager();
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
     processHttp.getValue().destroyForcibly();
     processHttps.getValue().destroyForcibly();
-    SolrProcessMgr.enableTestingMode = false;
+    SolrProcessManager.enableTestingMode = false;
     System.clearProperty("jetty.port");
     System.clearProperty("solr.pid.dir");
   }
@@ -78,7 +78,7 @@ public class SolrProcessMgrTest extends SolrTestCase {
             "-DisHttps=" + https,
             "-DmockSolr=true",
             https ? "--module=https" : "--module=http",
-            "SolrProcessMgrTest$MockSolrProcess");
+            "SolrProcessManagerTest$MockSolrProcess");
 
     // Start the process
     Process process = processBuilder.start();
@@ -86,7 +86,7 @@ public class SolrProcessMgrTest extends SolrTestCase {
   }
 
   public void testGetLocalUrl() {
-    solrProcessMgr
+    solrProcessManager
         .getAllRunning()
         .forEach(
             p -> {
@@ -97,53 +97,53 @@ public class SolrProcessMgrTest extends SolrTestCase {
   }
 
   public void testIsRunningWithPort() {
-    assertFalse(solrProcessMgr.isRunningWithPort(0));
-    assertTrue(solrProcessMgr.isRunningWithPort(processHttp.getKey()));
-    assertTrue(solrProcessMgr.isRunningWithPort(processHttps.getKey()));
+    assertFalse(solrProcessManager.isRunningWithPort(0));
+    assertTrue(solrProcessManager.isRunningWithPort(processHttp.getKey()));
+    assertTrue(solrProcessManager.isRunningWithPort(processHttps.getKey()));
   }
 
   public void testIsRunningWithPid() {
-    assertFalse(solrProcessMgr.isRunningWithPid(0L));
-    assertTrue(solrProcessMgr.isRunningWithPid(processHttp.getValue().pid()));
-    assertTrue(solrProcessMgr.isRunningWithPid(processHttps.getValue().pid()));
+    assertFalse(solrProcessManager.isRunningWithPid(0L));
+    assertTrue(solrProcessManager.isRunningWithPid(processHttp.getValue().pid()));
+    assertTrue(solrProcessManager.isRunningWithPid(processHttps.getValue().pid()));
   }
 
   public void testProcessForPort() {
     assertEquals(
         processHttp.getKey().intValue(),
-        (solrProcessMgr.processForPort(processHttp.getKey()).orElseThrow().getPort()));
+        (solrProcessManager.processForPort(processHttp.getKey()).orElseThrow().getPort()));
     assertEquals(
         processHttps.getKey().intValue(),
-        (solrProcessMgr.processForPort(processHttps.getKey()).orElseThrow().getPort()));
+        (solrProcessManager.processForPort(processHttps.getKey()).orElseThrow().getPort()));
   }
 
   public void testGetProcessForPid() {
     assertEquals(
         processHttp.getValue().pid(),
-        (solrProcessMgr.getProcessForPid(processHttp.getValue().pid()).orElseThrow().getPid()));
+        (solrProcessManager.getProcessForPid(processHttp.getValue().pid()).orElseThrow().getPid()));
     assertEquals(
         processHttps.getValue().pid(),
-        (solrProcessMgr.getProcessForPid(processHttps.getValue().pid()).orElseThrow().getPid()));
+        (solrProcessManager.getProcessForPid(processHttps.getValue().pid()).orElseThrow().getPid()));
   }
 
   public void testScanSolrPidFiles() throws IOException {
-    Collection<SolrProcess> processes = solrProcessMgr.scanSolrPidFiles();
+    Collection<SolrProcess> processes = solrProcessManager.scanSolrPidFiles();
     assertEquals(2, processes.size());
   }
 
   public void testGetAllRunning() {
-    Collection<SolrProcess> processes = solrProcessMgr.getAllRunning();
+    Collection<SolrProcess> processes = solrProcessManager.getAllRunning();
     assertEquals(2, processes.size());
   }
 
   public void testSolrProcessMethods() {
-    SolrProcess http = solrProcessMgr.processForPort(processHttp.getKey()).orElseThrow();
+    SolrProcess http = solrProcessManager.processForPort(processHttp.getKey()).orElseThrow();
     assertEquals(processHttp.getValue().pid(), http.getPid());
     assertEquals(processHttp.getKey().intValue(), http.getPort());
     assertFalse(http.isHttps());
     assertEquals("http://localhost:" + processHttp.getKey() + "/solr", http.getLocalUrl());
 
-    SolrProcess https = solrProcessMgr.processForPort(processHttps.getKey()).orElseThrow();
+    SolrProcess https = solrProcessManager.processForPort(processHttps.getKey()).orElseThrow();
     assertEquals(processHttps.getValue().pid(), https.getPid());
     assertEquals(processHttps.getKey().intValue(), https.getPort());
     assertTrue(https.isHttps());

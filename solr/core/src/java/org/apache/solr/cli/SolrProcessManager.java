@@ -38,17 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Class to interact with Solr OS processes */
-public class SolrProcessMgr {
+public class SolrProcessManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<Long, SolrProcess> pidProcessMap;
   private final Map<Integer, SolrProcess> portProcessMap;
   private final Path pidDir;
   private static final Pattern pidFilePattern = Pattern.compile("^solr-([0-9]+)\\.(pid|port)$");
-  // Set this to true during testing to allow the SolrProcessMgr to find only mock Solr processes
+  // Set this to true during testing to allow the SolrProcessManager to find only mock Solr processes
   public static boolean enableTestingMode = false;
 
-  public SolrProcessMgr() {
+  public SolrProcessManager() {
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
