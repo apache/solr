@@ -34,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -67,7 +66,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.ClusterFileStore;
@@ -756,6 +754,8 @@ public class TestPackages extends SolrCloudTestCase {
     String COLLECTION_NAME = "testSchemaLoadingColl";
     System.setProperty("managed.schema.mutable", "true");
 
+    IndexSchema[] schemas = new IndexSchema[2]; // tracks schemas for a selected core
+
     String FILE1 = "/schemapkg/schema-plugins.jar";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
     uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
@@ -772,6 +772,7 @@ public class TestPackages extends SolrCloudTestCase {
         FILE2,
         "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
 
+    // upload package v1.0
     PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "schemapkg";
@@ -813,14 +814,19 @@ public class TestPackages extends SolrCloudTestCase {
             ":fieldType:_packageinfo_:version",
             "1.0"));
 
-    JettySolrRunner jetty =
+    // make note of the schema instance for one of the cores
+    SolrCore.Provider coreProvider =
         cluster.getJettySolrRunners().stream()
-            .dropWhile(j -> j.getCoreContainer().getAllCoreNames().isEmpty())
+            .flatMap(
+                jetty ->
+                    jetty.getCoreContainer().getAllCoreNames().stream()
+                        .map(name -> new SolrCore.Provider(jetty.getCoreContainer(), name, null)))
             .findFirst()
             .orElseThrow();
 
-    IndexSchema schemaBeforePackageUpdate = withOnlyCoreInJetty(jetty, SolrCore::getLatestSchema);
+    coreProvider.withCore(core -> schemas[0] = core.getLatestSchema());
 
+    // upload package v2.0
     add = new PackagePayload.AddVersion();
     add.version = "2.0";
     add.pkg = "schemapkg";
@@ -858,24 +864,16 @@ public class TestPackages extends SolrCloudTestCase {
             ":fieldType:_packageinfo_:version",
             "2.0"));
 
-    IndexSchema schemaAfterPackageUpdate = withOnlyCoreInJetty(jetty, SolrCore::getLatestSchema);
-
     // even though package version 2.0 uses exactly the same files
     // as version 1.0, the core schema should still reload, and
     // the core should be associated with a different schema instance
-    assertNotSame(
-        "Schema of the same core before and after package update",
-        schemaBeforePackageUpdate,
-        schemaAfterPackageUpdate);
-  }
-
-  private static <T> T withOnlyCoreInJetty(JettySolrRunner jetty, Function<SolrCore, T> function) {
-    CoreContainer cc = jetty.getCoreContainer();
-    assertEquals("expected a single core", 1, cc.getAllCoreNames().size());
-    String coreName = cc.getAllCoreNames().get(0);
-    try (SolrCore core = cc.getCore(coreName)) {
-      return function.apply(core);
-    }
+    TestDistribFileStore.assertResponseValues(
+        10,
+        () -> {
+          coreProvider.withCore(core -> schemas[1] = core.getLatestSchema());
+          return params("schemaReloaded", (schemas[0] != schemas[1]) ? "yes" : "no");
+        },
+        Map.of("schemaReloaded", "yes"));
   }
 
   private void verifySchemaComponent(
