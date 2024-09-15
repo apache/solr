@@ -16,8 +16,12 @@
  */
 package org.apache.solr.cli;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -76,21 +80,28 @@ public class SolrProcessManagerTest extends SolrTestCase {
             "-Djetty.port=" + port,
             "-DisHttps=" + https,
             "-DmockSolr=true",
-            https ? "--module=https" : "--module=http",
-            "SolrProcessManagerTest$MockSolrProcess");
+            "org.apache.solr.cli.SolrProcessManagerTest$MockSolrProcess",
+            https ? "--module=https" : "--module=http");
 
-    // Start the process
+    // Start the process and read first line of output
     Process process = processBuilder.start();
+    try (InputStream is = process.getInputStream();
+        InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+        BufferedReader br = new BufferedReader(isr)) {
+      System.out.println(br.readLine());
+    }
     return new Pair<>(port, process);
   }
 
   public void testGetLocalUrl() {
+    assertFalse(solrProcessManager.getAllRunning().isEmpty());
     solrProcessManager
         .getAllRunning()
         .forEach(
-            p -> assertEquals(
-                (p.isHttps() ? "https" : "http") + "://localhost:" + p.getPort() + "/solr",
-                p.getLocalUrl()));
+            p ->
+                assertEquals(
+                    (p.isHttps() ? "https" : "http") + "://localhost:" + p.getPort() + "/solr",
+                    p.getLocalUrl()));
   }
 
   public void testIsRunningWithPort() {
@@ -150,6 +161,10 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
   }
 
+  /**
+   * This class is started as new java process by {@link SolrProcessManagerTest#createProcess}, and
+   * it listens to a HTTP(s) port to simulate a real Solr process.
+   */
   public static class MockSolrProcess {
     public static void main(String[] args) {
       int port = Integer.parseInt(System.getProperty("jetty.port"));
