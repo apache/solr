@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,7 +25,9 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
@@ -72,14 +75,18 @@ public class SolrProcessManagerTest extends SolrTestCase {
 
   private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
     // Get the path to the java executable from the current JVM
+    String classPath =
+        Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
+            .filter(p -> p.contains("solr/core/build"))
+            .collect(Collectors.joining(File.pathSeparator));
     ProcessBuilder processBuilder =
         new ProcessBuilder(
             System.getProperty("java.home") + "/bin/java",
-            "-cp",
-            System.getProperty("java.class.path"),
             "-Djetty.port=" + port,
             "-DisHttps=" + https,
             "-DmockSolr=true",
+            "-cp",
+            classPath,
             "org.apache.solr.cli.SolrProcessManagerTest$MockSolrProcess",
             https ? "--module=https" : "--module=http");
 
