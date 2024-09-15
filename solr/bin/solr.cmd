@@ -664,6 +664,9 @@ goto parse_args
 :set_jvm_opts
 set "arg=%~2"
 set "SOLR_ADDL_ARGS=%~2"
+IF "%SOLR_ADDL_ARGS%"=="" (
+  set "EMPTY_SOLR_ARGS=true"
+)
 SHIFT
 SHIFT
 goto parse_args
@@ -874,6 +877,11 @@ IF "%SCRIPT_CMD%"=="start" (
         goto err
       )
     )
+  )
+  
+  IF "%EMPTY_SOLR_ARGS%"=="true" (
+    set "SCRIPT_ERROR=JVM options are required when using the -a or --jvm-opts option!"
+	goto err
   )
 )
 
