@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -1192,6 +1193,24 @@ public abstract class SolrClient implements Serializable, Closeable {
   public final NamedList<Object> request(final SolrRequest<?> request)
       throws SolrServerException, IOException {
     return request(request, null);
+  }
+
+  /**
+   * A lambda intended for invoking SolrClient operations
+   *
+   * <p>Exceptions commonly thrown by SolrClient operations, IOException and SolrServerException,
+   * are permitted to be thrown by lambda instances.
+   */
+  @FunctionalInterface
+  public interface SolrClientFunction<T, R> {
+    R apply(T t) throws IOException, SolrServerException;
+  }
+
+  public <R> R requestWithBaseUrl(String baseUrl, SolrClientFunction<SolrClient, R> clientFunction)
+      throws SolrServerException, IOException {
+    try (final var override = new ClientUtils.BaseUrlOverride(baseUrl)) {
+      return clientFunction.apply(this);
+    }
   }
 
   /**

@@ -376,10 +376,9 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-    req.setBasePath(leaderBaseUrl);
     // TODO modify to use shardhandler
     try {
-      return solrClient.request(req, leaderCoreName);
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, (c) -> c.request(req, leaderCoreName));
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -397,10 +396,10 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-    req.setBasePath(leaderBaseUrl);
     // TODO modify to use shardhandler
     try {
-      NamedList<?> response = solrClient.request(req, leaderCoreName);
+      NamedList<?> response =
+          solrClient.requestWithBaseUrl(leaderBaseUrl, (c) -> c.request(req, leaderCoreName));
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -2132,9 +2131,8 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     QueryRequest request = new QueryRequest(params);
-    request.setBasePath(leaderBaseUrl);
     // TODO use shardhandler
-    return solrClient.request(request, leaderCoreName);
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, (c) -> c.request(request, leaderCoreName));
   }
 
   public void destroy() {
