@@ -80,9 +80,10 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
       throws IOException {
 
     // make coordinator mode explicit
-    if (solrRsp.getValues().get(CommonParams.DEBUG) != null) {
+    final Object debugObj = solrRsp.getValues().get(CommonParams.DEBUG);
+    if (debugObj != null) {
       final NamedList<Object> debug =
-          (NamedList<Object>) solrRsp.getValues().get(CommonParams.DEBUG);
+          (NamedList<Object>) debugObj;
       if (debug.get(CommonParams.TRACK) != null) {
         final NamedList<Object> track = (NamedList<Object>) debug.get(CommonParams.TRACK);
         track.add("requestCoordinatorNode", cores.getHostName());
