@@ -82,8 +82,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     // make coordinator mode explicit
     final Object debugObj = solrRsp.getValues().get(CommonParams.DEBUG);
     if (debugObj != null) {
-      final NamedList<Object> debug =
-          (NamedList<Object>) debugObj;
+      final NamedList<Object> debug = (NamedList<Object>) debugObj;
       final Object trackObj = debug.get(CommonParams.TRACK);
       if (trackObj != null) {
         final NamedList<Object> track = (NamedList<Object>) trackObj;
