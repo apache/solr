@@ -84,8 +84,9 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     if (debugObj != null) {
       final NamedList<Object> debug =
           (NamedList<Object>) debugObj;
-      if (debug.get(CommonParams.TRACK) != null) {
-        final NamedList<Object> track = (NamedList<Object>) debug.get(CommonParams.TRACK);
+      final Object trackObj = debug.get(CommonParams.TRACK);
+      if (trackObj != null) {
+        final NamedList<Object> track = (NamedList<Object>) trackObj;
         track.add("requestCoordinatorNode", cores.getHostName());
       }
     }
