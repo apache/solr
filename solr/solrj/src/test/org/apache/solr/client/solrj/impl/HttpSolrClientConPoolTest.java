@@ -119,31 +119,30 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
         ExecutorUtil.newMDCAwareFixedThreadPool(
             threadCount, new SolrNamedThreadFactory(getClass().getSimpleName() + "TestScheduler"));
     CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool);
-    try {
-      final LBHttpSolrClient roundRobin =
-          new LBHttpSolrClient.Builder()
-              .withBaseEndpoint(fooUrl)
-              .withBaseEndpoint(barUrl)
-              .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
-              .withHttpClient(httpClient)
-              .build();
-
-      List<ConcurrentUpdateSolrClient> concurrentClients =
-          Arrays.asList(
-              new ConcurrentUpdateSolrClient.Builder(fooUrl)
-                  .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
-                  .withHttpClient(httpClient)
-                  .withThreadCount(threadCount)
-                  .withQueueSize(10)
-                  .withExecutorService(threads)
-                  .build(),
-              new ConcurrentUpdateSolrClient.Builder(barUrl)
-                  .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
-                  .withHttpClient(httpClient)
-                  .withThreadCount(threadCount)
-                  .withQueueSize(10)
-                  .withExecutorService(threads)
-                  .build());
+    try (var roundRobin =
+            new LBHttpSolrClient.Builder()
+                .withBaseEndpoint(fooUrl)
+                .withBaseEndpoint(barUrl)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+                .withHttpClient(httpClient)
+                .build();
+        final var fooClient =
+            new ConcurrentUpdateSolrClient.Builder(fooUrl)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+                .withHttpClient(httpClient)
+                .withThreadCount(threadCount)
+                .withQueueSize(10)
+                .withExecutorService(threads)
+                .build();
+        final var barClient =
+            new ConcurrentUpdateSolrClient.Builder(barUrl)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+                .withHttpClient(httpClient)
+                .withThreadCount(threadCount)
+                .withQueueSize(10)
+                .withExecutorService(threads)
+                .build()) {
+      List<ConcurrentUpdateSolrClient> concurrentClients = Arrays.asList(fooClient, barClient);
 
       for (int i = 0; i < 2; i++) {
         roundRobin.deleteByQuery("*:*");

@@ -74,7 +74,7 @@ usage: post
                                                   of posting documents.
     --out                                         sends Solr response
                                                   outputs to console.
- -p,--params <<key>=<value>[&<key>=<value>...]>   values must be
+ --params <<key>=<value>[&<key>=<value>...]>      values must be
                                                   URL-encoded; these pass
                                                   through to Solr update
                                                   request.

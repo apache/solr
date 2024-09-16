@@ -57,6 +57,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
 import org.slf4j.MDC;
@@ -403,6 +404,7 @@ public abstract class LBSolrClient extends SolrClient {
       }
       updateAliveList();
     }
+    ObjectReleaseTracker.track(this);
   }
 
   protected void updateAliveList() {
@@ -793,5 +795,6 @@ public abstract class LBSolrClient extends SolrClient {
         ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
       }
     }
+    ObjectReleaseTracker.release(this);
   }
 }

@@ -207,7 +207,7 @@ public class ComplementStream extends TupleStream implements Expressible {
       }
 
       // if a == b then ignore a cause it exists in b
-      // else we know that b < a so we can ignore b
+      // else we know that b < a, so we can ignore b
       if (eq.test(a, b)) {
         streamB.pushBack(b);
       } else {
