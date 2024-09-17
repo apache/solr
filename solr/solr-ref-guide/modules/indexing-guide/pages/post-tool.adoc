@@ -207,7 +207,7 @@ Notice the `-out` providing raw responses from Solr.
 
 [,console]
 ----
-$ echo '{commit: {}}' | bin/solr post --mode stdin -url http://localhost:8983/my_collection/update --out
+$ echo '{commit: {}}' | bin/solr post --mode stdin -url http://localhost:8983/solr/my_collection/update --out
 ----
 
 === Raw Data as Source for Indexing
@@ -216,5 +216,5 @@ Provide the raw document as a string for indexing.
 
 [,console]
 ----
-$ bin/solr post -url http://localhost:8983/signals/update -mode args --type text/csv -out $'id,value\n1,0.47' 
+$ bin/solr post -url http://localhost:8983/solr/signals/update -mode args --type text/csv -out $'id,value\n1,0.47' 
 ----
