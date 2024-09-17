@@ -159,7 +159,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -512,7 +512,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     this.serializeBucketSizeLimit = serializeBucketSizeLimit;
     this.overfetch = overfetch;
 
-    // In a facet world it only makes sense to have the same field name in all of the sorters
+    // In a facet world it only makes sense to have the same field name in all the sorters
     // Because FieldComparator allows for left and right field names we will need to validate
     // that they are the same
     for (FieldComparator sort : bucketSorts) {
@@ -800,12 +800,12 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     } else if (_sorts.length == 1) {
       FieldComparator[] adjustedSorts = new FieldComparator[_buckets.length];
       if (_sorts[0].getLeftFieldName().contains("(")) {
-        // Its a metric sort so apply the same sort criteria at each level.
+        // It's a metric sort so apply the same sort criteria at each level.
         for (int i = 0; i < adjustedSorts.length; i++) {
           adjustedSorts[i] = _sorts[0];
         }
       } else {
-        // Its an index sort so apply an index sort at each level.
+        // It's an index sort so apply an index sort at each level.
         for (int i = 0; i < adjustedSorts.length; i++) {
           adjustedSorts[i] = new FieldComparator(_buckets[i].toString(), _sorts[0].getOrder());
         }

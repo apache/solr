@@ -67,7 +67,7 @@ public class TupStream extends TupleStream implements Expressible {
       fieldLabels.put(name, name);
       StreamExpressionParameter param = np.getParameter();
 
-      // we're going to split these up here so we only make the choice once
+      // we're going to split these up here, so we only make the choice once
       // order of these in read() doesn't matter
       if (param instanceof StreamExpressionValue) {
         stringParams.put(name, ((StreamExpressionValue) param).getValue());

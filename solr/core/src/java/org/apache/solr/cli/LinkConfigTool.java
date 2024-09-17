@@ -43,6 +43,11 @@ public class LinkConfigTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk linkconfig -c <NAME> -n <NAME> [-z <HOST>]";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
         Option.builder("c")

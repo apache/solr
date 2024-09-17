@@ -71,7 +71,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -1999,7 +1998,7 @@ public class IndexFetcher {
                   "Unexpected status code [%d] when downloading file [%s].",
                   responseStatus,
                   fileName);
-          closeStreamAndThrowIOE(is, errorMsg, Optional.empty());
+          closeStreamAndBuildIOE(is, errorMsg, null);
         }
 
         if (useInternalCompression) {
@@ -2007,20 +2006,18 @@ public class IndexFetcher {
         }
         return new FastInputStream(is);
       } catch (Exception e) {
-        closeStreamAndThrowIOE(is, "Could not download file '" + fileName + "'", Optional.of(e));
+        final var ioe = closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
+        throw ioe;
       }
-
-      // Unreachable b/c closeStreamAndThrowIOE will always throw
-      return null;
     }
 
-    private void closeStreamAndThrowIOE(
-        InputStream is, String exceptionMessage, Optional<Exception> e) throws IOException {
+    private IOException closeStreamAndBuildIOE(
+        InputStream is, String exceptionMessage, Exception e) {
       IOUtils.closeQuietly(is);
-      if (e.isPresent()) {
-        throw new IOException(exceptionMessage, e.get());
+      if (e != null) {
+        return new IOException(exceptionMessage, e);
       }
-      throw new IOException(exceptionMessage);
+      return new IOException(exceptionMessage);
     }
   }
 

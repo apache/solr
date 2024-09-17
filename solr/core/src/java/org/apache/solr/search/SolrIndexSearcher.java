@@ -753,19 +753,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /**
-   * Thrown when {@link org.apache.solr.common.params.CommonParams#TIME_ALLOWED} is exceeded.
-   * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
-   * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
-   */
-  public static class LimitExceededFromScorerException
-      extends ExitableDirectoryReader.ExitingReaderException {
-
-    public LimitExceededFromScorerException(String msg) {
-      super(msg);
-    }
-  }
-
-  /**
    * Retrieve the {@link Document} instance corresponding to the document id.
    *
    * @see SolrDocumentFetcher
@@ -1920,7 +1907,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
@@ -2041,7 +2028,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
         log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
 
         @SuppressWarnings({"rawtypes"})

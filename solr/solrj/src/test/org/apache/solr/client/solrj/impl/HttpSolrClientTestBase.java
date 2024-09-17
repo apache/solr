@@ -442,7 +442,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
       // NOTE: single stream requests send all the params
-      // as part of the query string.  So add "neither" to the request
+      // as part of the query string.  So add "neither" to the request,
       // so it passes the verification step.
       req.setQueryParams(Set.of("requestOnly", "both", "neither"));
       verifyServletState(client, req);

@@ -22,7 +22,7 @@ plugins {
   id 'base'
   id 'com.palantir.consistent-versions' version '2.16.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
-  id 'ca.cutterslade.analyze' version '1.9.1'
+  id 'ca.cutterslade.analyze' version '1.10.0'
   id 'de.thetaphi.forbiddenapis' version '3.7' apply false
   id 'de.undercouch.download' version '5.5.0' apply false
   id 'net.ltgt.errorprone' version '3.1.0' apply false
@@ -132,6 +132,7 @@ apply from: file('gradle/testing/fail-on-no-tests.gradle')
 apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
+apply from: file('gradle/testing/retry-test.gradle')
 
 // Publishing and releasing
 apply from: file('gradle/maven/defaults-maven.gradle')

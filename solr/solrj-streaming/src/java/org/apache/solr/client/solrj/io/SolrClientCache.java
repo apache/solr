@@ -155,8 +155,8 @@ public class SolrClientCache implements Closeable {
   /**
    * Create (and cache) a SolrClient based around the provided URL
    *
-   * @param baseUrl a Solr URL. It may either be a "base" URL (i.e. ending in "/solr"), or point to
-   *     a particular collection or core.
+   * @param baseUrl a Solr URL. May either be a "base" URL (i.e. ending in "/solr"), or point to a
+   *     particular collection or core.
    * @return a SolrClient configured to use the provided URL. The cache retains a reference to the
    *     returned client, and will close it when callers invoke {@link SolrClientCache#close()}
    */

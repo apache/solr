@@ -41,7 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
@@ -67,6 +67,14 @@ public class CreateTool extends ToolBase {
   }
 
   @Override
+  public String getHeader() {
+    return "Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).\n"
+        + "If you are using standalone mode you must run this command on the Solr server itself.\n"
+        + "\n"
+        + "List of options:";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
         Option.builder("c")
@@ -76,7 +84,7 @@ public class CreateTool extends ToolBase {
             .required(true)
             .desc("Name of collection or core to create.")
             .build(),
-        Option.builder("s")
+        Option.builder("sh")
             .longOpt("shards")
             .hasArg()
             .argName("#")
@@ -311,7 +319,10 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
+      // TODO: This should be done using the configSet API
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
+      ConfigSetService configSetService =
+          new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echoIfVerbose(
@@ -322,11 +333,8 @@ public class CreateTool extends ToolBase {
               + " to ZooKeeper at "
               + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
           cli);
-      ZkMaintenanceUtils.uploadToZK(
-          ZkStateReader.from(cloudSolrClient).getZkClient(),
-          confPath,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
-          ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+      // We will trust the config since we have the Zookeeper Address
+      configSetService.uploadConfig(confName, confPath, true);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first

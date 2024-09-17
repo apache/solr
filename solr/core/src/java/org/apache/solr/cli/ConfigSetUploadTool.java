@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -49,14 +50,40 @@ public class ConfigSetUploadTool extends ToolBase {
             .longOpt("conf-name")
             .hasArg()
             .argName("NAME")
-            .required(true)
+            .required(false) // should be true, but we have deprecated option as well.
+            .desc("Configset name in ZooKeeper.")
+            .build(),
+        Option.builder()
+            .longOpt("confname")
+            .hasArg()
+            .argName("NAME")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --conf-name instead")
+                    .get())
+            .required(false)
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder("d")
             .longOpt("conf-dir")
             .hasArg()
             .argName("DIR")
-            .required(true)
+            .required(false) // should be true, but we have deprecated option as well.
+            .desc("Local directory with configs.")
+            .build(),
+        Option.builder()
+            .longOpt("confdir")
+            .hasArg()
+            .argName("DIR")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --conf-dir instead")
+                    .get())
+            .required(false)
             .desc("Local directory with configs.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
@@ -72,6 +99,11 @@ public class ConfigSetUploadTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    return "bin/solr zk upconfig [-d <DIR>] [-n <NAME>] [-s <HOST>] [-u <credentials>] [-z <HOST>]";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
@@ -79,14 +111,17 @@ public class ConfigSetUploadTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     Path solrInstallDirPath = Paths.get(solrInstallDir);
 
-    String confName = cli.getOptionValue("conf-name");
+    String confName =
+        cli.hasOption("conf-name")
+            ? cli.getOptionValue("conf-name")
+            : cli.getOptionValue("confname");
+    String confDir =
+        cli.hasOption("conf-dir") ? cli.getOptionValue("conf-dir") : cli.getOptionValue("confdir");
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
-      Path confPath =
-          ConfigSetService.getConfigsetPath(
-              cli.getOptionValue("conf-dir"), configsetsDirPath.toString());
+      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echo(
           "Uploading "

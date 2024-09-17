@@ -54,7 +54,7 @@ teardown() {
   solr start -c
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
@@ -92,7 +92,7 @@ teardown() {
   solr start -c
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
@@ -217,7 +217,7 @@ teardown() {
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -335,7 +335,7 @@ teardown() {
     solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
     solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
-    run solr create -c test -s 2
+    run solr create -c test --shards 2
     assert_output --partial "Created collection 'test'"
 
     run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -472,7 +472,7 @@ teardown() {
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -526,21 +526,23 @@ teardown() {
   # server1 will run on $SOLR_PORT and will use server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
-  solr start -c -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start -c --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
   # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
+  
+  # leaving -a instead of --jvm-opts for back compat testing.
   solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT} -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
   # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
-  run solr create -c test -s 2
+  run solr create -c test --shards 2
   assert_output --partial "Created collection 'test'"
 
   # "test-single-shard" is one shard and one replica, this means that one of the nodes will have to forward requests to the other
-  run solr create -c test-single-shard -s 1
+  run solr create -c test-single-shard --shards 1
   assert_output --partial "Created collection 'test-single-shard'"
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
