@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -52,13 +53,27 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  public static final Option OPTION_MAXWAITSECS =
+  private static final Option OPTION_MAXWAITSECS =
       Option.builder()
           .longOpt("max-wait-secs")
           .argName("SECS")
           .hasArg()
           .required(false)
           .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
+
+  private static final Option OPTION_MAXWAITSECS_DEPRECATED =
+      Option.builder("maxWaitSecs")
+          .argName("SECS")
+          .hasArg()
+          .required(false)
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use --max-wait-secs instead")
+                  .get())
           .build();
 
   @Override
@@ -77,12 +92,8 @@ public class StatusTool extends ToolBase {
                     + SolrCLI.getDefaultSolrUrl()
                     + '.')
             .build(),
-        Option.builder("maxWaitSecs")
-            .argName("SECS")
-            .hasArg()
-            .required(false)
-            .desc("Wait up to the specified number of seconds to see Solr running.")
-            .build());
+        OPTION_MAXWAITSECS,
+        OPTION_MAXWAITSECS_DEPRECATED);
   }
 
   @Override
