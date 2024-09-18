@@ -18,8 +18,9 @@
 
 The Stream tool allows you to run a xref:streaming-expressions.adoc[] and see the results from the command line.
 It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
+Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well. 
 
-To run it, open a window and enter:
+To run it, open a terminal and enter:
 
 [,console]
 ----
@@ -36,10 +37,10 @@ CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Me
 A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM|
 ----
 
-TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe with in the shell script.
+TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe within the shell script.
 
 You can also specify a file with the suffix `.expr` containing your streaming expression.
-This is useful for longer expressions or if you having command line parsing issues with your expression.
+This is useful for longer expressions or if you are experiencing shell character-escaping issues with your expression.
 
 Assuming you have create the file `stream.expr` with the contents:
 
@@ -71,13 +72,15 @@ CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Me
 A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM
 ----
 
-The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream --help)`.
-
 == Using the bin/solr stream Tool
+
+NOTE: The Stream Tool is classified as "experimental".
+It may change in backwards-incompatible ways as it evolves to cover additional functionality.
+
 
 To use the tool you need to provide the streaming expression either inline as the last argument, or provide a file ending in `.expr` that contains the expression.
 
-The basic usage of `bin/solr stream` is:
+The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream --help)`:
 
 [source,plain]
 ----
@@ -95,7 +98,7 @@ List of options:
  -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
  -url,--solr-url <HOST>             Base Solr URL, which can be used to determine the zk-host if that's not known;
                                     defaults to: http://localhost:8983.
- -e,--execution <CONTEXT>           Execution context is either 'local' or 'solr'. Default is 'solr'
+ -e,--execution <CONTEXT>           Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'
  -z,--zk-host <HOST>                Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;
                                     otherwise, defaults to localhost:9983.
 ----
@@ -144,6 +147,7 @@ The StreamTool adds some Streaming Expressions specifically for local use:
 Caveats:
 
  * You don't get to use any of the parallelization support that is available when you run the expression on the cluster.
+ * Anything that requires Solr internals access won't work with the `--execution local` context.
 
 === Piping data to an expression
 
@@ -164,4 +168,4 @@ $ bin/solr stream -c techproducts 'echo("$1")' "Hello World"
 Hello World
 ----
 
-This also works with a `.expr` files.
+This also works when using `.expr` files.

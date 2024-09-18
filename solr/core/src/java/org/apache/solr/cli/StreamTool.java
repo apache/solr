@@ -81,7 +81,8 @@ public class StreamTool extends ToolBase {
             .hasArg()
             .argName("CONTEXT")
             .required(false)
-            .desc("Execution context is either 'local' or 'solr'. Default is 'solr'")
+            .desc(
+                "Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'")
             .build(),
         Option.builder("c")
             .longOpt("name")
