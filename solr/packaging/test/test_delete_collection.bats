@@ -78,11 +78,7 @@ teardown() {
   assert config_exists "COLL_NAME"
 }
 
-@test "ensure -p port parameter is supported" {
-
-  #solr start -c -p ${SOLR2_PORT}
-  #solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
-  
+@test "ensure -p port parameter is supported" {  
   run solr create -c COLL_NAME -p ${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   
