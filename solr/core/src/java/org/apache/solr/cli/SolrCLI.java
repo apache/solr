@@ -533,7 +533,7 @@ public class SolrCLI implements CLIO {
    *
    * <p>Note that this should not be used with individual core specific urls such as
    * "http://127.0.0.1:51428/solr/bob_shard1_replica_n1/" as it removes the core name by converting
-   * the url to "http://127.0.0.1:51428/" before creating the client, which gives you the wrong SolrCLient.
+   * the url to "http://127.0.0.1:51428/" before creating the client.
    *
    * @param solrUrl the base URL of Solr
    * @return a SolrClient initialized with correct hostContext, default '/solr'
