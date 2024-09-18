@@ -39,11 +39,7 @@ public abstract class ToolBase implements Tool {
     }
   }
 
-  /**
-   * Is this tool being run in a verbose mode?
-   *
-   * @return verbose or not
-   */
+  /** Is this tool being run in a verbose mode? */
   protected boolean isVerbose() {
     return verbose;
   }
