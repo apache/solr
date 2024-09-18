@@ -1,0 +1,14 @@
+{
+  "class": "dev.langchain4j.model.cohere.CohereEmbeddingModel",
+  "name": "cohere",
+  "params": {
+      "baseUrl": "cohereUrl",
+      "apiKey": "cohereApiKey",
+      "modelName": "cohereName",
+      "inputType": "cohereInputType",
+      "timeout": 10,
+      "logRequests": true,
+      "logResponses": false,
+      "maxSegmentsPerBatch": 55
+  }
+}
