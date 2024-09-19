@@ -146,6 +146,8 @@ Optimizations
 
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
+* SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)

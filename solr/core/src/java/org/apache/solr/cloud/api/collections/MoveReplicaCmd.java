@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
@@ -46,7 +47,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,9 +161,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
           dataDir.toString(),
           targetNode,
           async,
-          coll,
           replica,
-          slice,
           timeout,
           waitForFinalState);
     } else {
@@ -187,9 +185,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
       String dataDir,
       String targetNode,
       String async,
-      DocCollection coll,
       Replica replica,
-      Slice slice,
       int timeout,
       boolean waitForFinalState)
       throws Exception {
@@ -198,8 +194,8 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
       skipCreateReplicaInClusterState = "false";
       ZkNodeProps removeReplicasProps =
           new ZkNodeProps(
-              COLLECTION_PROP, coll.getName(),
-              SHARD_ID_PROP, slice.getName(),
+              COLLECTION_PROP, replica.getCollection(),
+              SHARD_ID_PROP, replica.getShard(),
               REPLICA_PROP, replica.getName());
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_DATA_DIR, false);
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_INDEX, false);
@@ -217,8 +213,8 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
             String.format(
                 Locale.ROOT,
                 "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s",
-                coll.getName(),
-                slice.getName(),
+                replica.getCollection(),
+                replica.getShard(),
                 replica.getName(),
                 deleteResult.get("failure"));
         log.warn(errorString);
@@ -226,17 +222,14 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
         return;
       }
 
-      TimeOut timeOut =
-          new TimeOut(20L, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-      while (!timeOut.hasTimedOut()) {
-        coll = ccc.getZkStateReader().getClusterState().getCollection(coll.getName());
-        if (coll.getReplica(replica.getName()) != null) {
-          timeOut.sleep(100);
-        } else {
-          break;
-        }
-      }
-      if (timeOut.hasTimedOut()) {
+      try {
+        ccc.getZkStateReader()
+            .waitForState(
+                replica.getCollection(),
+                20L,
+                TimeUnit.SECONDS,
+                c -> c.getReplica(replica.getName()) != null);
+      } catch (TimeoutException e) {
         results.add("failure", "Still see deleted replica in clusterstate!");
         return;
       }
@@ -246,9 +239,9 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     ZkNodeProps addReplicasProps =
         new ZkNodeProps(
             COLLECTION_PROP,
-            coll.getName(),
+            replica.getCollection(),
             SHARD_ID_PROP,
-            slice.getName(),
+            replica.getShard(),
             CoreAdminParams.NODE,
             targetNode,
             CoreAdminParams.CORE_NODE_NAME,
@@ -277,8 +270,8 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
           String.format(
               Locale.ROOT,
               "Failed to create replica for collection=%s shard=%s" + " on node=%s, failure=%s",
-              coll.getName(),
-              slice.getName(),
+              replica.getCollection(),
+              replica.getShard(),
               targetNode,
               addResult.get("failure"));
       results.add("failure", errorString);
@@ -302,8 +295,8 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
           String.format(
               Locale.ROOT,
               "Failed to create replica for collection=%s shard=%s" + " on node=%s, failure=%s",
-              coll.getName(),
-              slice.getName(),
+              replica.getCollection(),
+              replica.getShard(),
               targetNode,
               addResult.get("failure"));
       log.warn(errorString);
