@@ -80,12 +80,14 @@ public class HttpShardHandler extends ShardHandler {
   protected HttpShardHandlerFactory httpShardHandlerFactory;
   protected Map<ShardResponse, CompletableFuture<LBSolrClient.Rsp>> responseFutureMap;
   protected BlockingQueue<ShardResponse> responses;
+
   /**
    * The number of pending requests. This must be incremented before a {@link ShardResponse} is
    * added to {@link #responses}, and decremented after a ShardResponse is removed from {@code
    * responses}. We cannot rely on responses.size() bec
    */
   protected AtomicInteger pending;
+
   protected Map<String, List<String>> shardToURLs;
   protected LBHttp2SolrClient lbClient;
 
