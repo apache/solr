@@ -21,9 +21,7 @@ import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.loader.CSVLoaderBase.SEPARATOR;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
@@ -65,14 +63,11 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   private static final int MAX_STREAM_SIZE = (5 * 1024 * 1024);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static byte[] streamAsBytes(final InputStream in) throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    byte[] buf = new byte[1024];
-    int r;
-    try (in) {
-      while ((r = in.read(buf)) != -1) baos.write(buf, 0, r);
+  /** Reads all bytes from the stream. */
+  private static byte[] readAllBytes(ContentStream cs) throws IOException {
+    try (var is = cs.getStream()) {
+      return is.readAllBytes();
     }
-    return baos.toByteArray();
   }
 
   @Override
@@ -101,7 +96,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       fileSource = stream.getSourceInfo() != null ? stream.getSourceInfo() : "file";
     }
 
-    byte[] uploadedBytes = streamAsBytes(stream.getStream());
+    byte[] uploadedBytes = readAllBytes(stream);
     // recheck the upload size in case the stream returned null for getSize
     if (uploadedBytes.length > MAX_STREAM_SIZE) {
       throw new SolrException(
@@ -208,8 +203,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
-              streamAsBytes(stream.getStream()),
-              charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
+              readAllBytes(stream), charset != null ? charset : ContentStreamBase.DEFAULT_CHARSET);
       String[] lines = jsonStr.split("\n");
       if (lines.length > 1) {
         for (String line : lines) {
@@ -239,7 +233,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   protected List<SolrInputDocument> loadXmlDocs(
       SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
       throws IOException {
-    String xmlString = readInputAsString(stream.getStream()).trim();
+    String xmlString = new String(readAllBytes(stream), StandardCharsets.UTF_8).trim();
     List<SolrInputDocument> docs;
     if (xmlString.contains("<add>") && xmlString.contains("<doc>")) {
       XMLInputFactory inputFactory = XMLInputFactory.newInstance();
@@ -318,10 +312,6 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       }
     }
     return docs;
-  }
-
-  protected String readInputAsString(InputStream in) throws IOException {
-    return new String(streamAsBytes(in), StandardCharsets.UTF_8);
   }
 
   protected char detectTSV(String csvStr) {

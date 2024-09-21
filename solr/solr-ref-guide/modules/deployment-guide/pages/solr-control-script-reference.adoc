@@ -51,7 +51,7 @@ If no nodes are already running, restart will skip the step to stop and proceed 
 The `bin/solr` script provides many options to allow you to customize the server in common ways, such as changing the listening port.
 However, most of the defaults are adequate for most Solr installations, especially when just getting started.
 
-`-a <jvmParams>`::
+`--jvm-opts <jvmParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -59,15 +59,15 @@ However, most of the defaults are adequate for most Solr installations, especial
 |===
 +
 Start Solr with additional JVM parameters, such as those starting with `-X`.
-For example setting up Java debugger to attach to the Solr JVM you could pass: `-a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"`.
+For example setting up Java debugger to attach to the Solr JVM you could pass: `--jvm-opts "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"`.
 In most cases, you should wrap the additional parameters in double quotes.
 +
-If you are passing JVM parameters that begin with `-D`, you can omit the `-a` option.
+If you are passing JVM parameters that begin with `-D`, you can omit the `--jvm-opts` option.
 +
 *Example*:
 +
 [source,bash]
-bin/solr start -a "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
+bin/solr start --jvm-opts "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
 `-j <jettyParams>`::
 +
@@ -289,7 +289,7 @@ To emphasize how the default settings work take a moment to understand that the 
 
 `bin/solr start`
 
-`bin/solr start -h localhost -p 8983 -d server -s solr -m 512m`
+`bin/solr start --host localhost -p 8983 -d server -s solr -m 512m`
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 

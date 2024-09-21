@@ -20,14 +20,14 @@ def isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w
 
 // https://docs.gradle.com/enterprise/gradle-plugin/
 
-gradleEnterprise {
+develocity {
     server = "https://ge.apache.org"
+    projectId = "solr"
 
     buildScan {
-        capture { taskInputFiles = true }
         uploadInBackground = !isCIBuild
-        publishAlways()
-        publishIfAuthenticated()
+
+        publishing.onlyIf { it.authenticated }
         obfuscation {
             ipAddresses { addresses -> addresses.collect { address -> "0.0.0.0"} }
         }
@@ -58,7 +58,7 @@ buildCache {
         enabled = !isCIBuild
     }
 
-    remote(gradleEnterprise.buildCache) {
+    remote(develocity.buildCache) {
         enabled = false
     }
 }
