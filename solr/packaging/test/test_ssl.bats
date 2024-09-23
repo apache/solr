@@ -113,7 +113,7 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=true
 
   # This should fail the peername check
-  run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! solr api --debug --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --regexp '(No subject alternative DNS name matching localhost found|Server refused connection)'
 
   # Restart the server enabling the SNI hostcheck
