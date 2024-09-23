@@ -215,8 +215,7 @@ public class DeleteTool extends ToolBase {
       }
     }
 
-    echoIfDebug(
-        "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
+    echoIfDebug("\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
     NamedList<Object> response;
     try {
