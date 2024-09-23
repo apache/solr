@@ -137,6 +137,12 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_SOLRURL =
       Option.builder("url")
           .longOpt("solr-url")
+              .deprecated(
+                      DeprecatedAttributes.builder()
+                              .setForRemoval(true)
+                              .setSince("9.7")
+                              .setDescription("Use --solr-url instead")
+                              .get())
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -148,9 +154,21 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_VERBOSE =
       Option.builder("v")
           .longOpt("verbose")
+              .deprecated(
+                      DeprecatedAttributes.builder()
+                              .setForRemoval(true)
+                              .setSince("9.8")
+                              .setDescription("Use --debug instead")
+                              .get())
           .required(false)
           .desc("Enable verbose command output.")
           .build();
+  public static final Option OPTION_DEBUG =
+          Option.builder("d")
+                  .longOpt("debug")
+                  .required(false)
+                  .desc("Enable additional command output.")
+                  .build();
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
@@ -308,7 +326,7 @@ public class SolrCLI implements CLIO {
   }
 
   public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(OPTION_VERBOSE.getOpt())) {
+    if (!cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt())) || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }
@@ -362,6 +380,7 @@ public class SolrCLI implements CLIO {
     Options options = new Options();
     options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
+    options.addOption(OPTION_DEBUG);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
       if (!toolOpt.isDeprecated()) {
@@ -405,6 +424,7 @@ public class SolrCLI implements CLIO {
 
     options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
+    options.addOption(OPTION_DEBUG);
 
     if (customOptions != null) {
       for (Option customOption : customOptions) {
@@ -452,7 +472,7 @@ public class SolrCLI implements CLIO {
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
     Options optionsNoDeprecated = new Options();
-    tool.getOptions().stream()
+    SolrCLI.getToolOptions(tool).getOptions().stream()
         .filter(option -> !option.isDeprecated())
         .forEach(optionsNoDeprecated::addOption);
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
