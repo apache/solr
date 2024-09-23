@@ -368,7 +368,7 @@ goto done
 
 :stop_usage
 @echo.
-@echo Usage: solr stop [-k key] [-p port] [-V]
+@echo Usage: solr stop [-k key] [-p port] [-d]
 @echo.
 @echo  -k key         Stop key; default is solrrocks
 @echo.

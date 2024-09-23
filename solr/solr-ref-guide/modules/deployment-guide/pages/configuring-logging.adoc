@@ -115,8 +115,8 @@ Examples:
 
 [source,bash]
 ----
-# Start with verbose (DEBUG) looging
-bin/solr start -f -v
+# Start with detailed (DEBUG) logging
+bin/solr start -f --debug
 # Start with quiet (WARN) logging
 bin/solr start -f -q
 ----
