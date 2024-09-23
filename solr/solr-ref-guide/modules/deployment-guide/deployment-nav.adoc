@@ -32,9 +32,6 @@
 
 * Scaling Solr
 ** xref:cluster-types.adoc[]
-** User-Managed Clusters
-*** xref:user-managed-index-replication.adoc[]
-*** xref:user-managed-distributed-search.adoc[]
 ** SolrCloud Clusters
 *** xref:solrcloud-shards-indexing.adoc[]
 *** xref:solrcloud-recoveries-and-write-tolerance.adoc[]
@@ -55,6 +52,9 @@
 *** Admin UI
 **** xref:collections-core-admin.adoc[]
 **** xref:cloud-screens.adoc[]
+** Standalone Clusters
+*** xref:standalone-index-replication.adoc[]
+*** xref:standalone-distributed-search.adoc[]
 
 * Monitoring Solr
 ** xref:configuring-logging.adoc[]

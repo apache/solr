@@ -41,7 +41,7 @@ Several xref:deployment-guide:client-apis.adoc[] are provided for use in common 
 
 In addition to providing a network accessible engine for Lucene based document retrieval, Solr provides the ability to scale beyond the limitations of a single machine.
 Indexes can be sharded and replicated for performance and reliability, using either one of two xref:deployment-guide:cluster-types.adoc[].
-One type of cluster requires no supporting infrastructure, and instances are managed directly by administrators. The second type uses https://zookeeper.apache.org/[Apache Zookeeper^TM^] to coordinate management activities across the cluster.
+The most scalable option uses https://zookeeper.apache.org/[Apache Zookeeper^TM^] to coordinate management activities across the cluster. The older approach requires no supporting infrastructure, however instances are managed directly by administrators. 
 
 Solr scaling and high availability features are so effective that some of the largest and most famous internet sites use Solr.
 A partial, typically self nominated, list of sites using Solr can be found at https://solr.apache.org/community.html#powered-by.

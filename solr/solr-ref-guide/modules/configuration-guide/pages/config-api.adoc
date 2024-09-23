@@ -19,7 +19,7 @@
 
 The Config API enables manipulating various aspects of your `solrconfig.xml` using REST-like API calls.
 
-This feature is enabled by default and works similarly in both SolrCloud, user-managed clusters, and single-node installations.
+This feature is enabled by default and works similarly in both SolrCloud and standalone installations.
 Many commonly edited properties (such as cache sizes and commit settings) and request handler definitions can be changed with this API.
 
 When using this API, `solrconfig.xml` is not changed.
@@ -850,7 +850,7 @@ In order to be able to `update` and `delete` of the same item in `configoverlay.
 When using SolrCloud, every core watches the ZooKeeper directory for the configset being used with that core.
 If there are multiple cores in the same node using the same configset, only one ZooKeeper watch is used.
 
-TIP:: In a user-managed cluster or single-node installation, there is no watch (because ZooKeeper is not running).
+TIP:: In a standalone installation, there is no watch (because ZooKeeper is not running).
 
 For instance, if the configset 'myconf' is used by a core, the node would watch `/configs/myconf`.
 Every write operation performed through the API would 'touch' the directory and all watchers are notified.

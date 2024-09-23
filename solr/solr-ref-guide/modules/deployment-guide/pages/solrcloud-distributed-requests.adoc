@@ -126,7 +126,7 @@ Because SolrCloud automatically load balances queries, a query across all shards
 http://localhost:8983/solr/gettingstarted/select?q=*:*
 ----
 
-This is in contrast to user-managed clusters, where the `shards` parameter is required in order to distribute the query.
+This is in contrast to standalone mode, where the `shards` parameter is required in order to distribute the query.
 
 To limit the query to just one shard, use the `shards` parameter to specify the shard by its logical ID, as in:
 
@@ -297,7 +297,7 @@ http://localhost:8983/solr/collection1/select?q=*:*&_route_=user1!,user2!
 == Near Real Time (NRT) Use Cases
 
 Near Real Time (NRT) search means that documents are available for search soon after being indexed.
-NRT searching is one of the main features of SolrCloud and is rarely attempted in user-managed clusters or single-node installations.
+NRT searching is one of the main features of SolrCloud and is rarely attempted in standalone mode.
 
 Document durability and searchability are controlled by `commits`.
 The "Near" in "Near Real Time" is configurable to meet the needs of your application.

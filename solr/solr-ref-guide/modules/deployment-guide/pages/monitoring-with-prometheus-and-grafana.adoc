@@ -58,7 +58,7 @@ See the commands below depending on your operating system and Solr operating mod
 Linux::
 +
 ====
-.User-managed / Single-node
+.Standalone
 [source,bash]
 ----
 $ cd prometheus-exporter
@@ -76,7 +76,7 @@ $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-con
 Windows::
 +
 ====
-.User-managed / Single-node
+.Standalone
 [source,text]
 ----
 > cd prometheus-exporter
@@ -124,7 +124,7 @@ It can be any port not already in use on your server.
 |Optional |Default: _see description_
 |===
 +
-The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
+The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a standalone installation.
 If you are running SolrCloud, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
@@ -136,7 +136,7 @@ If neither the `-b` parameter nor the `-z` parameter are defined, the default is
 |===
 +
 The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running SolrCloud.
-If you are running a user-managed cluster or single-node installation, do not specify this parameter.
+If you are running a standalone installation, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
 `-f`, `--config-file`, `$CONFIG_FILE`::
@@ -476,7 +476,7 @@ Only used with SolrCloud clusters.
 |===
 +
 The core to issue the query against.
-Only used with user-managed clusters or single-node installations.
+Only used with standalone installations.
 
 `path`:::
 +

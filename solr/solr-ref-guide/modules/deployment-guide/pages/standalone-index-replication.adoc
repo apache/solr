@@ -1,4 +1,4 @@
-= User-Managed Index Replication
+= Standalone Index Replication
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-User-Managed index replication distributes complete copies of a leader index to one or more follower replicas.
+Standalone index replication distributes complete copies of a leader index to one or more follower replicas.
 The leader continues to manage updates to the index.
 All querying is handled by the followers.
 This division of labor enables Solr to scale to provide adequate responsiveness to queries against large search volumes.
@@ -25,7 +25,7 @@ The figure below shows a Solr configuration using index replication.
 The leader server's index is replicated on the followers.
 
 .A Solr index can be replicated across multiple follower servers, which then process requests.
-image::user-managed-index-replication/user-managed-replication.png[]
+image::standalone-index-replication/standalone-replication.png[]
 
 
 == Index Replication in Solr
@@ -304,7 +304,7 @@ If you are using Leader-Follower index replication, you can use this screen to:
 . View the current replication status (on a follower node)
 . Disable replication (on a leader node)
 
-image::user-managed-index-replication/replication.png[image,width=412,height=250]
+image::standalone-index-replication/replication.png[image,width=412,height=250]
 
 == Follower Replication
 

@@ -112,13 +112,11 @@ Once `security.json` has been uploaded to ZooKeeper, you should use the appropri
 You can edit it manually, but you must take care to remove any version data so it will be properly updated across all ZooKeeper nodes.
 The version data is found at the end of the `security.json` file, and will appear as the letter "v" followed by a number, such as `{"v":138}`.
 
-=== In a User-Managed Cluster or Single-Node Installation
+=== In Standalone Installation
 
-When running Solr in either a user-managed cluster or a single-node installation, you create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
+When running Solr in standalone mode, you create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
 
-With a user-managed cluster, you will need to place `security.json` on each node of the cluster.
-
-You can use the authentication and authorization APIs, but with a user-managed cluster you will need to make the same API requests on each node separately.
+You can use the authentication and authorization APIs, but with a standalone cluster you will need to make the same API requests on each node separately.
 You can also edit `security.json` by hand if you prefer.
 
 [#configuring-authentication]

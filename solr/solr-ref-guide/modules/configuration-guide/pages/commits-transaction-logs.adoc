@@ -187,7 +187,7 @@ An alternative to `autoCommit` is to use `commitWithin`, which can be defined wh
 
 The `commitWithin` settings allow forcing document commits to happen in a defined time period.
 This is used most frequently with xref:deployment-guide:solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases[Near Real Time use cases], and for that reason the default is to perform a soft commit.
-This does not, however, replicate new documents to follower servers in a user-managed cluster.
+This does not, however, replicate new documents to follower servers in a standalone setup.
 If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 
 [source,xml]

@@ -32,7 +32,7 @@ For example:
 
 The `${solr.core.name}` substitution will cause the name of the current core to be substituted, which results in each core's data being kept in a separate subdirectory.
 
-If you are using xref:deployment-guide:user-managed-index-replication.adoc[] to replicate the Solr index, then the `<dataDir>` directory should correspond to the index directory used in the replication configuration.
+If you are using xref:deployment-guide:standalone-index-replication.adoc[] to replicate the Solr index, then the `<dataDir>` directory should correspond to the index directory used in the replication configuration.
 
 NOTE: If the environment variable `SOLR_DATA_HOME` is defined, or if `solr.data.home` is configured for your DirectoryFactory, or if `solr.xml` contains an
 element `<solrDataHome>` then the location of data directory will be `<SOLR_DATA_HOME>/<instance_name>/data`.

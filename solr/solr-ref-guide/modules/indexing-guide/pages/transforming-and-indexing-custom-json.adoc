@@ -134,7 +134,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -261,7 +261,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -359,7 +359,7 @@ V1 API::
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -416,7 +416,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs?useParams=my_para
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -513,7 +513,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -602,7 +602,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs'\
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -690,7 +690,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs?split=/exams'\
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -780,7 +780,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -818,7 +818,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]
@@ -894,7 +894,7 @@ V1 API::
 ----
 ====
 
-V2 API User-Managed / Single-Node Solr::
+V2 API Standalone Solr::
 +
 ====
 [source,bash]

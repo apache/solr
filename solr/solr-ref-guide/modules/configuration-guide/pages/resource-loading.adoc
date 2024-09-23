@@ -23,7 +23,7 @@ Examples of resources include: files needed by schema components, e.g., a stopwo
 _Resources are typically resolved from the configSet_ but there are other options too.
 
 Solr's resources are generally only loaded initially when the Solr collection or Solr core is loaded.
-After you update a resource, you'll typically need to _reload_ the affected collections when running SolrCloud, or the cores when running a user-managed cluster or single-node installation.
+After you update a resource, you'll typically need to _reload_ the affected collections when running SolrCloud, or the cores when running a standalone installation.
 Restarting all affected Solr nodes also works.
 xref:managed-resources.adoc[] can be manipulated via APIs and do not need an explicit reload.
 
@@ -31,7 +31,7 @@ xref:managed-resources.adoc[] can be manipulated via APIs and do not need an exp
 
 xref:config-sets.adoc[] are the directories containing `solrconfig.xml`, the schema, and resources referenced by them.
 In SolrCloud they are stored in ZooKeeper.
-In a user-managed cluster and a single-node installation they are stored on the file system.
+In a standalone installation they are stored on the file system.
 In any mode, resources may be shared or may be dedicated to a configSet.
 Prefer to put resources here.
 

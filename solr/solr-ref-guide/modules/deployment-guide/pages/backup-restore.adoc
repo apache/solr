@@ -21,7 +21,7 @@ If you are worried about data loss, and of course you _should_ be, you need a wa
 
 Solr provides two approaches to backing up and restoring Solr cores or collections, depending on how you are running Solr.
 If you run a SolrCloud cluster, you will use the Collections API.
-If you run a user-managed cluster or a single-node installation, you will use the replication handler.
+If you run a standalone installation, you will use the replication handler.
 
 [NOTE]
 ====
@@ -49,12 +49,12 @@ More information is available in the section xref:collection-management.adoc#lis
 * `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.
 More information is available in the section xref:collection-management.adoc#deletebackup[Delete Backups].
 
-== User-Managed Clusters and Single-Node Installations
+== Standalone Installations
 
 Backups and restoration uses Solr's replication handler.
 Out of the box, Solr includes implicit support for replication so this API can be used.
 Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml`.
-For details on configuring the replication handler, see the section xref:user-managed-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
+For details on configuring the replication handler, see the section xref:standalone-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
 
 === Backup API
 
@@ -106,7 +106,7 @@ If a name is not specified then the directory name will have the following forma
 The number of backups to keep.
 If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error.
 Also, this parameter is not taken into consideration if the backup name is specified.
-More information about `maxNumberOfBackups` can be found in the section xref:user-managed-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
+More information about `maxNumberOfBackups` can be found in the section xref:standalone-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
 
 `repository`::
 +
