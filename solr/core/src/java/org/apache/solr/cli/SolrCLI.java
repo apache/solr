@@ -210,7 +210,12 @@ public class SolrCLI implements CLIO {
       exit(1);
     }
 
-    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
+    if (Arrays.asList("-version", "version").contains(args[0])) {
+      // select the version tool to be run
+      CLIO.out("Deprecated operation as of 9.8.  Please use -v or --version.");
+      args[0] = "version";
+    }
+    if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
       args[0] = "version";
     }
@@ -643,8 +648,10 @@ public class SolrCLI implements CLIO {
   private static void printHelp() {
 
     print("Usage: solr COMMAND OPTIONS");
+    print("       where COMMAND is one of: start, stop, restart, status, ");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, auth, assert, config, export, api, package, post, ");
+        "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, ");
+
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
@@ -663,8 +670,13 @@ public class SolrCLI implements CLIO {
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print("Pass --help or -h after any COMMAND to see command-specific usage information,");
-    print("such as:    ./solr start --help or ./solr stop -h");
+    print("Global Options:");
+    print("  -v,  --version           Print version information and quit");
+    print("  -d,  --debug             Enable debug mode");
+    print("");
+    print("Run 'solr COMMAND --help' for more information on a command.");
+    print("");
+    print("For more help on how to use Solr, head to https://solr.apache.org/");
   }
 
   /**
