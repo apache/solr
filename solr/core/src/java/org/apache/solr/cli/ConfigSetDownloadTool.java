@@ -107,7 +107,7 @@ public class ConfigSetDownloadTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfDebug("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       String confName =
           cli.hasOption("conf-name")
               ? cli.getOptionValue("conf-name")

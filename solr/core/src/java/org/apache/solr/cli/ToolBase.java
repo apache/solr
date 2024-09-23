@@ -33,7 +33,7 @@ public abstract class ToolBase implements Tool {
     this.stdout = stdout;
   }
 
-  protected void echoIfVerbose(final String msg, CommandLine cli) {
+  protected void echoIfDebug(final String msg, CommandLine cli) {
     if (cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
         || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
       echo(msg);

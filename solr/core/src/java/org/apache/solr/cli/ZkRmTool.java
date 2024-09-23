@@ -75,7 +75,7 @@ public class ZkRmTool extends ToolBase {
     if (znode.equals("/")) {
       throw new SolrServerException("You may not remove the root ZK node ('/')!");
     }
-    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    echoIfDebug("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(

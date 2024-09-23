@@ -234,7 +234,7 @@ public class RunExampleTool extends ToolBase {
               + exampleDir.getAbsolutePath()
               + " is not a directory!");
 
-    echoIfVerbose(
+    echoIfDebug(
         "Running with\nserverDir="
             + serverDir.getAbsolutePath()
             + ",\nexampleDir="
@@ -497,7 +497,7 @@ public class RunExampleTool extends ToolBase {
         }
 
         cloudPorts[n] = port;
-        echoIfVerbose("Using port " + port + " for node " + (n + 1), cli);
+        echoIfDebug("Using port " + port + " for node " + (n + 1), cli);
       }
     } else {
       echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");

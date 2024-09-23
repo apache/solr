@@ -149,7 +149,7 @@ public class DeleteTool extends ToolBase {
 
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+      echoIfDebug("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);
     }
@@ -215,7 +215,7 @@ public class DeleteTool extends ToolBase {
       }
     }
 
-    echoIfVerbose(
+    echoIfDebug(
         "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
     NamedList<Object> response;
@@ -272,8 +272,8 @@ public class DeleteTool extends ToolBase {
     }
 
     if (response != null) {
-      echoIfVerbose((String) response.get("response"), cli);
-      echoIfVerbose("\n", cli);
+      echoIfDebug((String) response.get("response"), cli);
+      echoIfDebug("\n", cli);
     }
   }
 }

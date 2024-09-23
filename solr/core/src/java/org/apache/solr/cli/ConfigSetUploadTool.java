@@ -118,7 +118,7 @@ public class ConfigSetUploadTool extends ToolBase {
     String confDir =
         cli.hasOption("conf-dir") ? cli.getOptionValue("conf-dir") : cli.getOptionValue("confdir");
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfDebug("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());

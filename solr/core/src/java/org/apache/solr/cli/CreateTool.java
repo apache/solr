@@ -224,13 +224,13 @@ public class CreateTool extends ToolBase {
 
       FileUtils.copyDirectoryToDirectory(confDir.toFile(), coreInstanceDir.toFile());
 
-      echoIfVerbose(
+      echoIfDebug(
           "\nCopying configuration to new core instance directory:\n"
               + coreInstanceDir.toAbsolutePath(),
           cli);
     }
 
-    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
+    echoIfDebug("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
@@ -258,7 +258,7 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+      echoIfDebug("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -326,7 +326,7 @@ public class CreateTool extends ToolBase {
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
-      echoIfVerbose(
+      echoIfDebug(
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
@@ -348,7 +348,7 @@ public class CreateTool extends ToolBase {
     }
 
     // doesn't seem to exist ... try to create
-    echoIfVerbose(
+    echoIfDebug(
         "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
     NamedList<Object> response;
