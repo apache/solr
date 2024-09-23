@@ -65,7 +65,7 @@ import org.apache.solr.security.AllowListUrlChecker;
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
   /** */
-  private final Object RESPONSE_CANCELABLE_LOCK = new Object();
+  protected final Object RESPONSE_CANCELABLE_LOCK = new Object();
 
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
@@ -84,7 +84,9 @@ public class HttpShardHandler extends ShardHandler {
   /**
    * The number of pending requests. This must be incremented before a {@link ShardResponse} is
    * added to {@link #responses}, and decremented after a ShardResponse is removed from {@code
-   * responses}. We cannot rely on responses.size() bec
+   * responses}. We can't rely on responseFutureMap.size() because it is an unsynchronized
+   * collection updated by multiple threads, and it's internal state including the size field is not
+   * volatile/synchronized.
    */
   protected AtomicInteger pending;
 
@@ -104,7 +106,6 @@ public class HttpShardHandler extends ShardHandler {
     // so that we use the same replica for all phases of a distributed request.
     shardToURLs = new HashMap<>();
   }
-
 
   /**
    * Parse the {@value ShardParams#SHARDS_TOLERANT} param from <code>params</code> as a boolean;
@@ -221,38 +222,40 @@ public class HttpShardHandler extends ShardHandler {
     final var srsp = prepareShardResponse(sreq, shard);
     final var ssr = new SimpleSolrResponse();
     srsp.setSolrResponse(ssr);
-    synchronized (RESPONSE_CANCELABLE_LOCK) {
-      pending.incrementAndGet();
+    if (urls.isEmpty()) {
+      recordNoUrlShardResponse(srsp, shard);
+      return;
+    }
+    long startTime = System.nanoTime();
 
-      if (urls.isEmpty()) {
-        recordNoUrlShardResponse(srsp, shard);
-        return;
-      }
-
-      long startTime = System.nanoTime();
-      CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-      future.whenComplete(
-          (rsp, throwable) -> {
-            if (rsp != null) {
-              ssr.nl = rsp.getResponse();
-              srsp.setShardAddress(rsp.getServer());
-              ssr.elapsedTime =
-                  TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-              responses.add(transformResponse(sreq, srsp, shard));
-            } else if (throwable != null) {
-              ssr.elapsedTime =
-                  TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-              srsp.setException(throwable);
-              if (throwable instanceof SolrException) {
-                srsp.setResponseCode(((SolrException) throwable).code());
-              }
-              responses.add(transformResponse(sreq, srsp, shard));
-              if (shouldDiscardPartials(params)) {
-                cancelAll();
-              }
+    CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
+    future.whenComplete(
+        (rsp, throwable) -> {
+          if (rsp != null) {
+            ssr.nl = rsp.getResponse();
+            srsp.setShardAddress(rsp.getServer());
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+            responses.add(transfomResponse(sreq, srsp, shard));
+          } else if (throwable != null) {
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+            srsp.setException(throwable);
+            if (throwable instanceof SolrException) {
+              srsp.setResponseCode(((SolrException) throwable).code());
             }
-          });
-
+            responses.add(transfomResponse(sreq, srsp, shard));
+            if (shouldDiscardPartials(params)) {
+              cancelAll(); // Note: method synchronizes RESPONSE_CANCELABLE_LOCK on entry
+            }
+          }
+        });
+    synchronized (RESPONSE_CANCELABLE_LOCK) {
+      // we want to ensure that there is a future in flight before incrementing
+      // pending. If anything fails such that a request/future is not created there is
+      // potential for the request to hang forever waiting on a responses.take()
+      // and so if anything failed during future creation we would get stuck.
+      pending.incrementAndGet();
       responseFutureMap.put(srsp, future);
     }
   }
@@ -265,7 +268,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   /** Subclasses could modify the Response based on the shard */
-  protected ShardResponse transformResponse(
+  protected ShardResponse transfomResponse(
       final ShardRequest sreq, ShardResponse rsp, String shard) {
     return rsp;
   }
@@ -282,20 +285,19 @@ public class HttpShardHandler extends ShardHandler {
 
   private ShardResponse take(boolean bailOnError) {
     try {
-      // although nothing in this class guarantees that pending has been incremented to the total
-      // number of expected requests, actual usage in SearchHandler results in this method never
-      // being called until all requests have been added in a prior loop over
-      // ShardRequest.actualShards in the same thread that invokes take() (I haven't checked but
-      // hopefully other handlers do the same) The net effect is we shouldn't arrive here with
-      // pending < ShardRequest.actualShards.size()
-      while (pending.get() > 0) {
+      while (responsesPending()) {
         ShardResponse rsp;
         synchronized (RESPONSE_CANCELABLE_LOCK) {
-          rsp = responses.take();
+          // in the parallel case we need to recheck responsesPending()
+          // in case all attempts to submit failed.
+          rsp = responses.poll(50, TimeUnit.MILLISECONDS);
+          if (rsp == null) {
+            continue;
+          }
           responseFutureMap.remove(rsp);
+          pending.decrementAndGet();
         }
 
-        pending.decrementAndGet();
         if (bailOnError && rsp.getException() != null)
           return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
@@ -312,6 +314,10 @@ public class HttpShardHandler extends ShardHandler {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     return null;
+  }
+
+  protected boolean responsesPending() {
+    return pending.get() > 0;
   }
 
   @Override
