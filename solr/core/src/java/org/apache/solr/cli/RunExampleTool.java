@@ -615,7 +615,7 @@ public class RunExampleTool extends ToolBase {
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "--cloud " : "";
     String forceArg = cli.hasOption("force") ? " --force" : "";
-    String verboseArg = verbose ? "-V" : "";
+    String verboseArg = debug ? "-V" : "";
 
     String jvmOpts =
         cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');
@@ -890,7 +890,7 @@ public class RunExampleTool extends ToolBase {
   protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
       throws Exception {
     StatusTool statusTool = new StatusTool();
-    if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
+    if (debug) echo("\nChecking status of Solr at " + solrUrl + " ...");
 
     URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
@@ -899,7 +899,7 @@ public class RunExampleTool extends ToolBase {
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);
     String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
-    if (verbose)
+    if (debug)
       echo(
           "\nSolr is running on "
               + solrURI.getPort()
@@ -1004,7 +1004,7 @@ public class RunExampleTool extends ToolBase {
           }
 
         } catch (NumberFormatException nfe) {
-          if (verbose) echo(value + " is not a number!");
+          if (debug) echo(value + " is not a number!");
 
           if (min != null && max != null) {
             value =

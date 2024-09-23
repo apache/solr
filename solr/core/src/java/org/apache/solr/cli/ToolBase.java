@@ -23,7 +23,7 @@ import org.apache.commons.cli.CommandLine;
 public abstract class ToolBase implements Tool {
 
   protected PrintStream stdout;
-  protected boolean verbose = false;
+  protected boolean debug = false;
 
   protected ToolBase() {
     this(CLIO.getOutStream());
@@ -34,7 +34,8 @@ public abstract class ToolBase implements Tool {
   }
 
   protected void echoIfVerbose(final String msg, CommandLine cli) {
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
+        || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
       echo(msg);
     }
   }
@@ -45,7 +46,9 @@ public abstract class ToolBase implements Tool {
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    debug =
+        cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
+            || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
     int toolExitStatus = 0;
     try {
@@ -55,7 +58,7 @@ public abstract class ToolBase implements Tool {
       String excMsg = exc.getMessage();
       if (excMsg != null) {
         CLIO.err("\nERROR: " + excMsg + "\n");
-        if (verbose) {
+        if (debug) {
           exc.printStackTrace(CLIO.getErrStream());
         }
         toolExitStatus = 1;
