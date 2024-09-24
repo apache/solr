@@ -1579,9 +1579,6 @@ IF "%1"=="-z" goto set_config_zk
 IF "%1"=="--zk-host" goto set_config_zk
 IF "%1"=="-zkHost" goto set_config_zk
 IF "%1"=="--zkHost" goto set_config_zk
-IF "%1"=="-s" goto set_config_url_scheme
-IF "%1"=="--scheme" goto set_config_url_scheme
-IF "%1"=="-scheme" goto set_config_url_scheme
 set "CONFIG_ARGS=!CONFIG_ARGS! %1"
 SHIFT
 goto parse_config_args
@@ -1592,15 +1589,8 @@ SHIFT
 SHIFT
 goto parse_config_args
 
-:set_config_url_scheme
-set SOLR_URL_SCHEME=%~2
-SHIFT
-SHIFT
-goto parse_config_args
-
 :run_config
 IF NOT "!ZK_HOST!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! -z !ZK_HOST!"
-IF NOT "!SOLR_URL_SCHEME!"=="" SET "CONFIG_ARGS=!CONFIG_ARGS! --scheme !SOLR_URL_SCHEME!"
 
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
