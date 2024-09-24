@@ -81,8 +81,7 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
     create.process(solrClient);
-    CloudUtil.waitForState(
-        cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(3, 6));
+    waitForState("active", COLLECTION, clusterShape(3, 6));
     for (int j = 0; j < 100; j++) {
       solrClient.add(COLLECTION, sdoc("id", "id-" + j, "val_i", j % 5));
       solrClient.commit(COLLECTION); // need to commit every doc to create many segments.
