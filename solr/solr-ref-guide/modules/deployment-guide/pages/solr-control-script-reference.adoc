@@ -1272,16 +1272,6 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
-`-s <scheme>` or `-scheme <scheme>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `http`
-|===
-+
-The scheme for accessing Solr. Accepted values: http or https.  Default is 'http'
-
-
 == ZooKeeper Operations
 
 The `bin/solr` script allows certain operations affecting ZooKeeper.
