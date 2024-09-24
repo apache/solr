@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "assert for non cloud mode" {
-  run solr start
+  run solr start --standalone
 
   run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr
   assert_output --partial "needn't include Solr's context-root"
@@ -42,7 +42,7 @@ teardown() {
 }
 
 @test "assert for cloud mode" {
-  run solr start -c
+  run solr start
 
   run solr assert --cloud http://localhost:${SOLR_PORT}
   refute_output --partial "ERROR"

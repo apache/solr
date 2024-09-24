@@ -367,14 +367,12 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
+    echo "Usage: solr $CMD [-f] [--standalone] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
     echo ""
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or --cloud         Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
-    echo "                          solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
-    echo "                          such as 9983 if Solr is bound to 8983"
+    echo "  --standalone          Start Solr in Standalone mode"
     echo ""
     echo "  --host <host>         Specify the hostname for this Solr instance"
     echo ""
@@ -385,7 +383,7 @@ function print_usage() {
     echo ""
     echo "  -d <dir>              Specify the Solr server directory; defaults to server"
     echo ""
-    echo "  -z/--zk-host <zkHost> Zookeeper connection string; only used when running in SolrCloud mode using -c"
+    echo "  -z/--zk-host <zkHost> Zookeeper connection string; ignored when running in Standalone (--standalone) mode."
     echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                          an embedded ZooKeeper instance will be launched."
     echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
@@ -739,13 +737,14 @@ FORCE=false
 SOLR_OPTS=(${SOLR_OPTS:-})
 SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
+SOLR_MODE="solrcloud"
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
-        -c|--cloud|-cloud)
-            SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=("-c")
+        --standalone)
+            SOLR_MODE="standalone"
+            PASS_TO_RUN_EXAMPLE+=("--standalone")
             shift
         ;;
         -d|--dir|-dir)
@@ -827,7 +826,6 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             ZK_HOST="$2"
-            SOLR_MODE="solrcloud"
             PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
@@ -1136,11 +1134,6 @@ if [ "${#GC_LOG_OPTS[@]}" -gt 0 ]; then
       GC_LOG_OPTS[$i]=$(echo "${GC_LOG_OPTS[$i]}" | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
     done
   fi
-fi
-
-# If ZK_HOST is defined, the assume SolrCloud mode
-if [[ -n "${ZK_HOST:-}" ]]; then
-  SOLR_MODE="solrcloud"
 fi
 
 if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then

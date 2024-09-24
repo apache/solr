@@ -167,11 +167,11 @@ public class RunExampleTool extends ToolBase {
             .required(false)
             .desc("Specify the hostname for this Solr instance.")
             .build(),
-        Option.builder("c")
-            .longOpt("cloud")
+        Option.builder()
+            .longOpt("standalone")
             .required(false)
             .desc(
-                "Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983.")
+                "Start Solr in Standalone mode.")
             .build(),
         Option.builder("m")
             .longOpt("memory")
@@ -264,13 +264,13 @@ public class RunExampleTool extends ToolBase {
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isCloudMode = cli.hasOption('c');
+    boolean isStandalone = cli.hasOption("standalone");
     String zkHost = cli.getOptionValue('z');
     int port =
         Integer.parseInt(
             cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
-        startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
+        startSolr(new File(exDir, "solr"), isStandalone, cli, port, zkHost, 30);
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
@@ -520,7 +520,7 @@ public class RunExampleTool extends ToolBase {
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
-        startSolr(new File(node1Dir, "solr"), true, cli, cloudPorts[0], zkHost, 30);
+        startSolr(new File(node1Dir, "solr"), false, cli, cloudPorts[0], zkHost, 30);
 
     if (zkHost == null) {
       @SuppressWarnings("unchecked")
@@ -537,7 +537,7 @@ public class RunExampleTool extends ToolBase {
       // start the other nodes
       for (int n = 1; n < numNodes; n++)
         startSolr(
-            new File(cloudDir, "node" + (n + 1) + "/solr"), true, cli, cloudPorts[n], zkHost, 30);
+            new File(cloudDir, "node" + (n + 1) + "/solr"), false, cli, cloudPorts[n], zkHost, 30);
     }
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
@@ -598,7 +598,7 @@ public class RunExampleTool extends ToolBase {
 
   protected Map<String, Object> startSolr(
       File solrHomeDir,
-      boolean cloudMode,
+      boolean standaloneMode,
       CommandLine cli,
       int port,
       String zkHost,
@@ -613,7 +613,7 @@ public class RunExampleTool extends ToolBase {
     String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
-    String cloudModeArg = cloudMode ? "--cloud " : "";
+    String standaloneModeArg = standaloneMode ? "--standalone " : "";
     String forceArg = cli.hasOption("force") ? " --force" : "";
     String verboseArg = verbose ? "-V" : "";
 
@@ -639,7 +639,7 @@ public class RunExampleTool extends ToolBase {
             Locale.ROOT,
             "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
             callScript,
-            cloudModeArg,
+                standaloneModeArg,
             port,
             solrHome,
             hostArg,

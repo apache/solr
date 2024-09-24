@@ -31,7 +31,7 @@ teardown() {
 }
 
 @test "should start solr prometheus exporter that scrapes solr for metrics" {
-  solr start
+  solr start --standalone
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   
   run solr create -c COLL_NAME
