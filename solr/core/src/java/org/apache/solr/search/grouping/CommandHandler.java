@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.grouping;
 
-import static org.apache.solr.request.SolrRequestInfo.shouldDiscardPartials;
 import static org.apache.solr.response.SolrQueryResponse.partialResultsStatus;
 
 import java.io.IOException;
@@ -37,6 +36,8 @@ import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
@@ -227,7 +228,13 @@ public class CommandHandler {
       queryResult.setDocSet(docSet);
     }
     if (queryResult.isPartialResults()) {
-      queryResult.setPartialResults(partialResultsStatus(shouldDiscardPartials()));
+      queryResult.setPartialResults(
+          partialResultsStatus(
+              SolrRequestInfo.getRequest()
+                  .map(
+                      solrQueryRequest ->
+                          SolrQueryRequest.disallowPartialResults(solrQueryRequest.getParams()))
+                  .orElse(false)));
     }
     return transformer.transform(commands);
   }

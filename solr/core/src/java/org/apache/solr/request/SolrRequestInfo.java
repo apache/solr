@@ -75,14 +75,6 @@ public class SolrRequestInfo {
     return getReqInfo().map(i -> i.req);
   }
 
-  public static boolean shouldDiscardPartials() {
-    return getRequest()
-        .map(
-            solrQueryRequest ->
-                SolrQueryRequest.shouldDiscardPartials(solrQueryRequest.getParams()))
-        .orElse(false);
-  }
-
   /**
    * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}. Remember to call {@link
    * #clearRequestInfo()}!

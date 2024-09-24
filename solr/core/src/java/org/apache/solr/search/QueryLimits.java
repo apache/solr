@@ -61,8 +61,7 @@ public class QueryLimits implements QueryTimeout {
    */
   public QueryLimits(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.rsp = rsp;
-    this.allowPartialResults =
-        req == null || !SolrQueryRequest.shouldDiscardPartials(req.getParams());
+    this.allowPartialResults = req == null || SolrQueryRequest.allowPartialResults(req.getParams());
     if (req != null) {
       if (hasTimeLimit(req)) {
         limits.add(new TimeAllowedLimit(req));

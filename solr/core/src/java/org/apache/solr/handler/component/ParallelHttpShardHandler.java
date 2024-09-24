@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.request.SolrQueryRequest.shouldDiscardPartials;
+import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -103,7 +103,7 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
                     }
                     // unclear why we don't call transformResponse() here?
                     responses.add(srsp); // LinkedBlockingQueue so thread safe
-                    if (shouldDiscardPartials(params)) {
+                    if (disallowPartialResults(params)) {
                       cancelAll(); // Note: method synchronizes RESPONSE_CANCELABLE_LOCK on entry
                     }
                   }

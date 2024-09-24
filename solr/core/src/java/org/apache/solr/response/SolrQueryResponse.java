@@ -16,7 +16,7 @@
  */
 package org.apache.solr.response;
 
-import static org.apache.solr.request.SolrQueryRequest.shouldDiscardPartials;
+import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
 import java.util.Collection;
 import java.util.Date;
@@ -148,7 +148,7 @@ public class SolrQueryResponse {
     NamedList<Object> header = getResponseHeader();
     if (header != null) {
       if (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
-        Object value = partialResultsStatus(shouldDiscardPartials(req.getParams()));
+        Object value = partialResultsStatus(disallowPartialResults(req.getParams()));
         header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, value);
       }
     }

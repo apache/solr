@@ -17,7 +17,7 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.PARTIAL_RESULTS;
-import static org.apache.solr.request.SolrQueryRequest.shouldDiscardPartials;
+import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 
 import java.util.HashMap;
 import java.util.List;
@@ -144,7 +144,7 @@ public class HttpShardHandler extends ShardHandler {
       return false;
     } else {
       boolean tolerant = StrUtils.parseBool(shardsTolerantValue.trim());
-      if (tolerant && shouldDiscardPartials(req.getParams())) {
+      if (tolerant && disallowPartialResults(req.getParams())) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Use of "
@@ -271,7 +271,7 @@ public class HttpShardHandler extends ShardHandler {
               srsp.setResponseCode(((SolrException) throwable).code());
             }
             responses.add(transfomResponse(sreq, srsp, shard));
-            if (shouldDiscardPartials(params)) {
+            if (disallowPartialResults(params)) {
               cancelAll(); // Note: method synchronizes RESPONSE_CANCELABLE_LOCK on entry
             }
           }

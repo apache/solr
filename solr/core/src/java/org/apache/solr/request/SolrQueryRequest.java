@@ -26,6 +26,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
@@ -54,8 +55,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * contain a partialResults element with the value "omitted"
    */
   boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
-      System.getProperty(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT) == null
-          || Boolean.getBoolean(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
+      EnvUtils.getPropertyAsBool(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT, true);
 
   /**
    * Tests if the partials for the request should be discarded. Examines {@link
@@ -66,8 +66,12 @@ public interface SolrQueryRequest extends AutoCloseable {
    * @return true if partials should be discarded.
    * @param params the request parameters
    */
-  static boolean shouldDiscardPartials(SolrParams params) {
-    return !params.getBool(CommonParams.PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
+  static boolean allowPartialResults(SolrParams params) {
+    return params.getBool(CommonParams.PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
+  }
+
+  static boolean disallowPartialResults(SolrParams params) {
+    return !allowPartialResults(params);
   }
 
   /** returns the current request parameters */
