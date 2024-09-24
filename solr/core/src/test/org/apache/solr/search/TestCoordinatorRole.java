@@ -863,4 +863,67 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       cluster.shutdown();
     }
   }
+
+  public void testCoreReload() throws Exception {
+    final int DATA_NODE_COUNT = 1;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+
+    List<String> dataNodes =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getNodeName)
+            .collect(Collectors.toUnmodifiableList());
+
+    try {
+      CollectionAdminRequest.createCollection("c1", "conf1", 1, 1).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c1", 1, 1);
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      try (HttpSolrClient coordinatorClient =
+          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+        HttpResponse response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(
+                    new HttpGet(
+                        coordinatorJetty.getBaseUrl()
+                            + "/c1/select?q:*:*")); // make a call so the synthetic core would be
+        // created
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        // conf1 has no cache-control
+        assertNull(response.getFirstHeader("cache-control"));
+
+        // now update conf1
+        cluster.uploadConfigSet(configset("cache-control"), "conf1");
+
+        response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(
+                    new HttpGet(
+                        coordinatorJetty.getBaseUrl()
+                            + "/admin/cores?core=.sys.COORDINATOR-COLL-conf1_core&action=reload"));
+        assertEquals(200, response.getStatusLine().getStatusCode());
+
+        response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c1/select?q:*:*"));
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        // now the response should show cache-control
+        assertTrue(response.getFirstHeader("cache-control").getValue().contains("max-age=30"));
+      }
+    } finally {
+      cluster.shutdown();
+    }
+  }
 }

@@ -21,7 +21,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name ADMIN/QUERY/UPDATE/REPLICATION.* */
 public class SolrCoreHandlerMetric extends SolrCoreMetric {
@@ -53,26 +53,26 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (dropwizardMetric instanceof Meter) {
-      exporter.exportMeter(CORE_REQUESTS_TOTAL, (Meter) dropwizardMetric, getLabels());
+      formatter.exportMeter(CORE_REQUESTS_TOTAL, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
       if (metricName.endsWith("requests")) {
-        exporter.exportCounter(CORE_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
+        formatter.exportCounter(CORE_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
       } else if (metricName.endsWith("totalTime")) {
         // Do not need type label for total time
         labels.remove("type");
-        exporter.exportCounter(CORE_REQUESTS_TOTAL_TIME, (Counter) dropwizardMetric, getLabels());
+        formatter.exportCounter(CORE_REQUESTS_TOTAL_TIME, (Counter) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Gauge) {
       if (!metricName.endsWith("handlerStart")) {
-        exporter.exportGauge(
+        formatter.exportGauge(
             CORE_REQUESTS_UPDATE_HANDLER, (Gauge<?>) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Timer) {
       // Do not need type label for request times
       labels.remove("type");
-      exporter.exportTimer(CORE_REQUEST_TIMES, (Timer) dropwizardMetric, getLabels());
+      formatter.exportTimer(CORE_REQUEST_TIMES, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

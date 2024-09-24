@@ -545,7 +545,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param collection the Solr collection to send the optimize to
+   * @param collection the Solr collection to send the optimize command to
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
    *     from the server
    * @throws IOException If there is a low-level I/O error.
@@ -576,7 +576,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param collection the Solr collection to send the optimize to
+   * @param collection the Solr collection to send the optimize command to
    * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
@@ -613,7 +613,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param collection the Solr collection to send the optimize to
+   * @param collection the Solr collection to send the optimize command to
    * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
@@ -974,7 +974,7 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Query solr, and stream the results. Unlike the standard query, this will send events for each
-   * Document rather then add them to the QueryResponse.
+   * Document rather than add them to the QueryResponse.
    *
    * <p>Although this function returns a 'QueryResponse' it should be used with care since it
    * excludes anything that was passed to callback. Also note that future version may pass even more
@@ -1014,7 +1014,7 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Query solr, and stream the results. Unlike the standard query, this will send events for each
-   * Document rather then add them to the QueryResponse.
+   * Document rather than add them to the QueryResponse.
    *
    * <p>Although this function returns a 'QueryResponse' it should be used with care since it
    * excludes anything that was passed to callback. Also note that future version may pass even more

@@ -383,7 +383,7 @@ public class JdbcTest extends SolrCloudTestCase {
   @Test
   public void testJDBCUrlParameters() throws Exception {
 
-    // Test JDBC paramters in URL
+    // Test JDBC parameters in URL
     try (Connection con =
         DriverManager.getConnection(
             "jdbc:solr://"
@@ -436,7 +436,7 @@ public class JdbcTest extends SolrCloudTestCase {
   @Test
   public void testJDBCPropertiesParameters() throws Exception {
 
-    // Test JDBC paramters in properties
+    // Test JDBC parameters in properties
     Properties providedProperties = new Properties();
     providedProperties.put("collection", COLLECTIONORALIAS);
     providedProperties.put("username", "");

@@ -93,7 +93,7 @@ To see available options, simply do:
 
 [source,bash]
 ----
-sudo bash ./install_solr_service.sh -help
+sudo bash ./install_solr_service.sh --help
 ----
 
 Once the script completes, Solr will be installed as a service and running in the background on your server (on port 8983).

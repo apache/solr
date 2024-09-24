@@ -413,7 +413,7 @@ If you specify "de" as the language and "CH" as the country, you will get German
            strength="primary" />
 ...
 <!-- Define a field to store the German collated manufacturer names. -->
-<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false" docValues="true"/>
+<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false"/>
 ...
 <!-- Copy the text to this field. We could create French, English, Spanish versions too,
      and sort differently for different users! -->
@@ -604,7 +604,7 @@ See {java-javadocs}java/text/Collator.html[Java Collator javadocs] for more info
            country="DE"
            strength="primary" /> <!-- ignore Umlauts and letter case when sorting -->
 ...
-<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false" docValues="true" />
+<field name="manuGERMAN" type="collatedGERMAN" indexed="false" stored="false" />
 ...
 <copyField source="manu" dest="manuGERMAN"/>
 ----

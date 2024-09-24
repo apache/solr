@@ -20,8 +20,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
@@ -39,6 +37,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -77,6 +76,11 @@ import org.slf4j.LoggerFactory;
 
 /** Command-line utility for working with Solr. */
 public class SolrCLI implements CLIO {
+
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
@@ -150,14 +154,11 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
-  // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
       Option.builder("r")
           .longOpt("recurse")
-          .argName("recurse")
-          .hasArg()
           .required(false)
-          .desc("Recurse (true|false), default is false.")
+          .desc("Apply the command recursively.")
           .build();
 
   public static final Option OPTION_CREDENTIALS =
@@ -195,7 +196,38 @@ public class SolrCLI implements CLIO {
       // select the version tool to be run
       args[0] = "version";
     }
+    if (Arrays.asList(
+            "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
+        .contains(args[0])) {
+      // remap our arguments to invoke the zk short tool help
+      args = new String[] {"zk-tool-help", "--print-zk-subcommand-usage", args[0]};
+    }
+    if (Objects.equals(args[0], "zk")) {
+      if (args.length == 1) {
+        // remap our arguments to invoke the ZK tool help.
+        args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+      } else if (args.length == 2) {
+        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+          // remap our arguments to invoke the ZK tool help.
+          args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
+        } else {
+          // remap our arguments to invoke the zk sub command with help
+          String[] trimmedArgs = new String[args.length - 1];
+          System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
+          args = trimmedArgs;
 
+          String[] remappedArgs = new String[args.length + 1];
+          System.arraycopy(args, 0, remappedArgs, 0, args.length);
+          remappedArgs[remappedArgs.length - 1] = "--help";
+          args = remappedArgs;
+        }
+      } else {
+        // chop the leading zk argument so we invoke the correct zk sub tool
+        String[] trimmedArgs = new String[args.length - 1];
+        System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
+        args = trimmedArgs;
+      }
+    }
     SSLConfigurationsFactory.current().init();
 
     Tool tool = null;
@@ -292,6 +324,7 @@ public class SolrCLI implements CLIO {
     else if ("run_example".equals(toolType)) return new RunExampleTool();
     else if ("upconfig".equals(toolType)) return new ConfigSetUploadTool();
     else if ("downconfig".equals(toolType)) return new ConfigSetDownloadTool();
+    else if ("zk-tool-help".equals(toolType)) return new ZkToolHelp();
     else if ("rm".equals(toolType)) return new ZkRmTool();
     else if ("mv".equals(toolType)) return new ZkMvTool();
     else if ("cp".equals(toolType)) return new ZkCpTool();
@@ -307,6 +340,11 @@ public class SolrCLI implements CLIO {
     else if ("post".equals(toolType)) return new PostTool();
     else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
+    else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool();
+    else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool();
+    else if ("snapshot-list".equals(toolType)) return new SnapshotListTool();
+    else if ("snapshot-describe".equals(toolType)) return new SnapshotDescribeTool();
+    else if ("snapshot-export".equals(toolType)) return new SnapshotExportTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -333,10 +371,36 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
+  /**
+   * Returns the value of the option with the given name, or the value of the deprecated option. If
+   * both values are null, then it returns the default value.
+   */
+  public static String getOptionWithDeprecatedAndDefault(
+      CommandLine cli, String opt, String deprecated, String def) {
+    String val = cli.getOptionValue(opt);
+    if (val == null) {
+      val = cli.getOptionValue(deprecated);
+    }
+    return val == null ? def : val;
+  }
+
+  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  // makes stderr the default, or makes Option.toDeprecatedString() public.
+  private static void deprecatedHandlerStdErr(Option o) {
+    if (o.isDeprecated()) {
+      final StringBuilder buf =
+          new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
+      if (o.getLongOpt() != null) {
+        buf.append(",'--").append(o.getLongOpt()).append('\'');
+      }
+      buf.append(": ").append(o.getDeprecated());
+      CLIO.err(buf.toString());
+    }
+  }
+
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
-    String toolName = tool.getName();
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
@@ -350,7 +414,11 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new DefaultParser()).parse(options, args);
+      cli =
+          DefaultParser.builder()
+              .setDeprecatedHandler(SolrCLI::deprecatedHandlerStdErr)
+              .build()
+              .parse(options, args);
     } catch (ParseException exp) {
       // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
@@ -381,9 +449,8 @@ public class SolrCLI implements CLIO {
   }
 
   /** Prints tool help for a given tool */
-  private static void printToolHelp(Tool tool) {
-    HelpFormatter formatter = HelpFormatter.builder().get();
-    formatter.setWidth(120);
+  public static void printToolHelp(Tool tool) {
+    HelpFormatter formatter = getFormatter();
     Options optionsNoDeprecated = new Options();
     tool.getOptions().stream()
         .filter(option -> !option.isDeprecated())
@@ -391,7 +458,17 @@ public class SolrCLI implements CLIO {
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
-        usageString, tool.getHeader(), optionsNoDeprecated, tool.getFooter(), autoGenerateUsage);
+        usageString,
+        "\n" + tool.getHeader(),
+        optionsNoDeprecated,
+        tool.getFooter(),
+        autoGenerateUsage);
+  }
+
+  public static HelpFormatter getFormatter() {
+    HelpFormatter formatter = HelpFormatter.builder().get();
+    formatter.setWidth(120);
+    return formatter;
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */
@@ -546,7 +623,11 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, zk, auth, assert, config, export, api, package, post");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, auth, assert, config, export, api, package, post, ");
+    print(
+        "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
+    print(
+        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");
@@ -556,7 +637,7 @@ public class SolrCLI implements CLIO {
         "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
     print("");
     printGreen(
-        "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+        "    ./solr start -c -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
@@ -586,10 +667,13 @@ public class SolrCLI implements CLIO {
    */
   public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
     if (solrUrl != null) {
-      if (solrUrl.contains("/solr")) { //
-        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+      URI uri = URI.create(solrUrl);
+      String urlPath = uri.getRawPath();
+      if (urlPath != null && urlPath.contains("/solr")) {
+        String newSolrUrl =
+            uri.resolve(urlPath.substring(0, urlPath.lastIndexOf("/solr") + 1)).toString();
         if (logUrlFormatWarning) {
-          CLIO.out(
+          CLIO.err(
               "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
                   + solrUrl
                   + "] to ["
@@ -617,13 +701,11 @@ public class SolrCLI implements CLIO {
           cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
-        CLIO.getOutStream()
-            .println(
-                "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
-                    + solrUrl
-                    + ".");
+        CLIO.err(
+            "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
+                + solrUrl
+                + ".");
       } else {
-
         try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -755,5 +837,29 @@ public class SolrCLI implements CLIO {
   public static Path getConfigSetsDir(Path solrInstallDir) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath);
+  }
+
+  public static void print(Object message) {
+    print(null, message);
+  }
+
+  /** Console print using green color */
+  public static void printGreen(Object message) {
+    print(GREEN, message);
+  }
+
+  /** Console print using red color */
+  public static void printRed(Object message) {
+    print(RED, message);
+  }
+
+  public static void print(String color, Object message) {
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      CLIO.out(color + String.valueOf(message) + RESET);
+    } else {
+      CLIO.out(String.valueOf(message));
+    }
   }
 }

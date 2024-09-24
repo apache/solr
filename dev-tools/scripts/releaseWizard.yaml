@@ -87,7 +87,7 @@ templates:
 
     The Solr PMC is pleased to announce the release of Apache Solr {{ release_version }}.
 
-    Solr is the popular, blazing fast, open source NoSQL search platform from the Apache Solr project. Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering, database integration, rich document handling, and geospatial search. Solr is highly scalable, providing fault tolerant distributed search and indexing, and powers the search and navigation features of many of the world's largest internet sites.
+    Solr is the blazing-fast, open source, multi-modal search platform built on Apache Lucene. It powers full-text, vector, analytics, and geospatial search at many of the world's largest organizations. Other major features include Kubernetes and docker integration, streaming, highlighting, faceting, and spellchecking.
 
     Solr {{ release_version }} is available for immediate download at:
 
@@ -689,7 +689,7 @@ groups:
       {% if release_type == 'major' -%}
       . Change name of version `main ({{ release_version_major }}.0)` into `{{ release_version_major }}.0`
       {%- endif %}
-      . Create a new (unreleased) version `{{ get_next_version }}`
+      . Create a new (unreleased) version `{{ release_version_major }}.{{ release_version_minor + 1 }}`
     types:
     - major
     - minor

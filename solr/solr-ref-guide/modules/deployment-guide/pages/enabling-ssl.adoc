@@ -234,7 +234,7 @@ The examples below use the `zkcli` tool that comes with Solr to do this.
 ====
 [source,terminal]
 ----
-$ bin/solr cluster -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
+$ bin/solr cluster --property urlSchema --value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -243,13 +243,13 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin/solr.cmd -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
+C:\> bin/solr.cmd --property urlSchema --value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 ======
 
 Be sure to use the correct `zkhost` value for your system.
-If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkhost` string, e.g., `-zkhost server1:2181,server2:2181,server3:2181/solr`.
+If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkHost` string, e.g., `--zk-host server1:2181,server2:2181,server3:2181/solr`.
 
 === Update Cluster Properties for Existing Collections
 

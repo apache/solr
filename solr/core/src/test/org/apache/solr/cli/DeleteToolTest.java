@@ -64,7 +64,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
       "false",
       "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
+      "--credentials",
       SecurityJson.USER_PASS,
       "-verbose"
     };

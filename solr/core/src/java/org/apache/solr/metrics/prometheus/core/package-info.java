@@ -16,7 +16,7 @@
  */
 
 /**
- * The {@link org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreExporter} is responsible for
- * exporting solr.core registry metrics to Prometheus.
+ * The {@link org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreFormatter} is responsible
+ * for exporting solr.core registry metrics to Prometheus.
  */
 package org.apache.solr.metrics.prometheus.core;

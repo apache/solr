@@ -107,14 +107,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't
+    // Validate there are no unknown parameters - zkHost and alias are namedParameter, so we don't
     // need to count it twice
     if (expression.getParameters().size() != 1 + namedParams.size()) {
       throw new IOException(
           String.format(Locale.ROOT, "invalid expression %s - unknown operands found", expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (0 == namedParams.size()) {
       throw new IOException(
           String.format(
@@ -246,7 +246,8 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     this.collection = collectionName;
     this.params = new ModifiableSolrParams(params);
 
-    // If the comparator is null then it was not explicitly set so we will create one using the sort
+    // If the comparator is null then it was not explicitly set, so we will create one using the
+    // sort
     // parameter of the query. While doing this we will also take into account any aliases such that
     // if we are sorting on fieldA but fieldA is aliased to alias.fieldA then the comparator will be
     // against alias.fieldA.

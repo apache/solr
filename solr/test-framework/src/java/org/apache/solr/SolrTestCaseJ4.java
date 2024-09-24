@@ -769,10 +769,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     log.info("####initCore");
 
     ignoreException("ignore_exception");
-    factoryProp = System.getProperty("solr.directoryFactory");
-    if (factoryProp == null) {
-      System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-    }
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");

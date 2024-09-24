@@ -232,7 +232,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
-    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    /** Whether to use the default ZK ACLs when building a ZK Client. */
     public Builder canUseZkACLs(boolean canUseZkACLs) {
       this.canUseZkACLs = canUseZkACLs;
       return this;
@@ -288,7 +288,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     /**
      * This method has no effect.
      *
-     * <p>In older versions of Solr, this method was an incorrectly named equivilent to {@link
+     * <p>In older versions of Solr, this method was an incorrectly named equivalent to {@link
      * #sendUpdatesToAnyReplica}, which had no effect because that setting was ignored in the
      * created clients. When the underlying {@link CloudSolrClient} behavior was fixed, this method
      * was modified to be an explicit No-Op, since the implied behavior of sending updates to
@@ -323,7 +323,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      * Tells {@link Builder} that created clients can send updates to any shard replica (shard
      * leaders and non-leaders).
      *
-     * <p>Shard leaders are still preferred, but the created clients will fallback to using other
+     * <p>Shard leaders are still preferred, but the created clients will fall back to using other
      * replicas if a leader cannot be found.
      *
      * @see #sendDirectUpdatesToShardLeadersOnly

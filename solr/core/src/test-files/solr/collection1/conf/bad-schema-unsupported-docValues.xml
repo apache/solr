@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-docValues-unsupported" version="1.6">
+<schema name="bad-schema-docValues-unsupported" version="1.7">
   <fieldType name="random" class="solr.RandomSortField" />
 
 

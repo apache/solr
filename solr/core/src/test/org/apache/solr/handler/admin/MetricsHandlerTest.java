@@ -40,7 +40,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -67,7 +67,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo:bar");
     c.inc(3);
 
-    // Manually register for Prometheus exporter tests
+    // Manually register for Prometheus Formatter tests
     registerGauge("solr.jvm", "gc.G1-Old-Generation.count");
     registerGauge("solr.jvm", "gc.G1-Old-Generation.time");
     registerGauge("solr.jvm", "memory.heap.committed");
@@ -725,9 +725,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.core.collection1");
-    assertNotNull(exporter);
-    MetricSnapshots actualSnapshots = exporter.collect();
+    SolrPrometheusFormatter formatter =
+        (SolrPrometheusFormatter) values.get("solr.core.collection1");
+    assertNotNull(formatter);
+    MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot =
@@ -824,9 +825,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.node");
-    assertNotNull(exporter);
-    MetricSnapshots actualSnapshots = exporter.collect();
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.node");
+    assertNotNull(formatter);
+    MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot =
@@ -908,9 +909,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.jvm");
-    assertNotNull(exporter);
-    MetricSnapshots actualSnapshots = exporter.collect();
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.jvm");
+    assertNotNull(formatter);
+    MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_threads");
@@ -962,9 +963,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.jetty");
-    assertNotNull(exporter);
-    MetricSnapshots actualSnapshots = exporter.collect();
+    SolrPrometheusFormatter formatter = (SolrPrometheusFormatter) values.get("solr.jetty");
+    assertNotNull(formatter);
+    MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
 
     MetricSnapshot actualSnapshot =
@@ -1008,9 +1009,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.core.collection1");
-    assertNotNull(exporter);
-    MetricSnapshots actualSnapshots = exporter.collect();
+    SolrPrometheusFormatter formatter =
+        (SolrPrometheusFormatter) values.get("solr.core.collection1");
+    assertNotNull(formatter);
+    MetricSnapshots actualSnapshots = formatter.collect();
     assertNotNull(actualSnapshots);
 
     actualSnapshots.forEach(

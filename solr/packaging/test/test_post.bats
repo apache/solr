@@ -162,14 +162,14 @@ teardown() {
   run solr create -c test_args -d _default
   assert_output --partial "Created collection 'test_args'"
 
-  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update --mode args -type application/xml --out "<delete><query>*:*</query></delete>"
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update --mode args --type application/xml --out "<delete><query>*:*</query></delete>"
   assert_output --partial '<int name="status">0</int>'
 
   # confirm default type
   run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update --mode args --out "{'delete': {'query': '*:*'}}"
   assert_output --partial '"status":0'
 
-  # confirm we don't get back output without -out
+  # confirm we don't get back output without --out
   run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update --mode args "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
 
