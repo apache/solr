@@ -59,6 +59,6 @@ teardown() {
   solr start 
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   
-  run solr create -c COLL_NAME -V
-  assert_output --partial "Created new core 'COLL_NAME'"
+  run solr create -c COLL_NAME -v
+  assert_output --partial "Creating new core 'COLL_NAME' using CoreAdminRequest"
 }
