@@ -64,8 +64,6 @@ import org.apache.solr.security.AllowListUrlChecker;
  */
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
-  /** */
-  protected final Object RESPONSE_CANCELABLE_LOCK = new Object();
 
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
@@ -78,6 +76,29 @@ public class HttpShardHandler extends ShardHandler {
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
   protected HttpShardHandlerFactory httpShardHandlerFactory;
+
+  /*
+   * Three critical fields:
+   *  - pending: keeps track of how many things we started
+   *  - responseFutureMap: holds futures for anything not yet complete
+   *  - responses: the result of things we started, when responses.size()
+   *
+   * All of this must be kept consistent and is therefore synchronized on RESPONSES_LOCK
+   * The exception is when a response is added so long as pending is incremented first
+   * because responses is a LinkedBlockingQueue and that is synchronized. The response
+   * future map is not synchronized however, and so we need to guard it for both order
+   * and memory consistency (happens before) reasons.
+   *
+   * The code works by looping/decrementing pending until responses.size() matches the
+   * size of the shard list. Thus, there is a tricky, hidden assumption of one response
+   * for every shard, even if the shard is down (so we add a fake response with a shard
+   * down exception). Note that down shards have a shard url of empty string in this case.
+   *
+   * This seems overcomplicated. Perhaps this can someday be changed to simply
+   * test responses.size == pending.size?
+   */
+  protected final Object FUTURE_MAP_LOCK = new Object();
+
   protected Map<ShardResponse, CompletableFuture<LBSolrClient.Rsp>> responseFutureMap;
   protected BlockingQueue<ShardResponse> responses;
 
@@ -206,11 +227,16 @@ public class HttpShardHandler extends ShardHandler {
   protected void recordNoUrlShardResponse(ShardResponse srsp, String shard) {
     // TODO: what's the right error code here? We should use the same thing when
     // all of the servers for a shard are down.
+    // TODO: shard is a blank string in this case, which is somewhat less than helpful
     SolrException exception =
         new SolrException(
             SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
     srsp.setException(exception);
     srsp.setResponseCode(exception.code());
+
+    // order of next two statements is important. Both are synchronized objects so
+    // synchronization is needed so long as the order is correct.
+    pending.incrementAndGet();
     responses.add(srsp);
   }
 
@@ -250,7 +276,7 @@ public class HttpShardHandler extends ShardHandler {
             }
           }
         });
-    synchronized (RESPONSE_CANCELABLE_LOCK) {
+    synchronized (FUTURE_MAP_LOCK) {
       // we want to ensure that there is a future in flight before incrementing
       // pending. If anything fails such that a request/future is not created there is
       // potential for the request to hang forever waiting on a responses.take()
@@ -287,7 +313,7 @@ public class HttpShardHandler extends ShardHandler {
     try {
       while (responsesPending()) {
         ShardResponse rsp;
-        synchronized (RESPONSE_CANCELABLE_LOCK) {
+        synchronized (FUTURE_MAP_LOCK) {
           // in the parallel case we need to recheck responsesPending()
           // in case all attempts to submit failed.
           rsp = responses.poll(50, TimeUnit.MILLISECONDS);
@@ -322,7 +348,7 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
-    synchronized (RESPONSE_CANCELABLE_LOCK) {
+    synchronized (FUTURE_MAP_LOCK) {
       for (CompletableFuture<LBSolrClient.Rsp> future : responseFutureMap.values()) {
         future.cancel(true);
         pending.decrementAndGet();

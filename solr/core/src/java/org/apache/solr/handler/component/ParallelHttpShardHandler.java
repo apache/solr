@@ -108,7 +108,7 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
                     }
                   }
                 });
-            synchronized (RESPONSE_CANCELABLE_LOCK) {
+            synchronized (FUTURE_MAP_LOCK) {
               // we want to ensure that there is a future in flight before incrementing
               // pending, because there is a risk that the  request will hang forever waiting
               // on a responses.take() in HttpShardHandler.take(boolean) if anything failed
