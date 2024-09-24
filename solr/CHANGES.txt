@@ -157,6 +157,8 @@ Other Changes
 
 * SOLR-17142: Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. (Uwe Schindler)
 
+* SOLR-17448: Audit usage of ExecutorService#submit in Solr codebase (Andrey Bozhko)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
