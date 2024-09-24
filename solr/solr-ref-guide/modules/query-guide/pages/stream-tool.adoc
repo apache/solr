@@ -20,6 +20,9 @@ The Stream tool allows you to run a xref:streaming-expressions.adoc[] and see th
 It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
 Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well. 
 
+NOTE: The Stream Tool is classified as "experimental".
+It may change in backwards-incompatible ways as it evolves to cover additional functionality.
+
 To run it, open a terminal and enter:
 
 [,console]
@@ -73,10 +76,6 @@ A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory
 ----
 
 == Using the bin/solr stream Tool
-
-NOTE: The Stream Tool is classified as "experimental".
-It may change in backwards-incompatible ways as it evolves to cover additional functionality.
-
 
 To use the tool you need to provide the streaming expression either inline as the last argument, or provide a file ending in `.expr` that contains the expression.
 
