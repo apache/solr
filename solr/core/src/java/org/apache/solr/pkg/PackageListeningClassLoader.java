@@ -108,8 +108,7 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   @Override
   public MapWriter getPackageVersion(PluginInfo.ClassName cName) {
     if (cName.pkg == null) return null;
-    PackageAPI.PkgVersion p = packageVersions.get(cName.pkg);
-    return p == null ? null : p::writeMap;
+    return packageVersions.get(cName.pkg);
   }
 
   private <T> T applyResourceLoaderAware(SolrPackageLoader.SolrPackage.Version version, T obj) {
