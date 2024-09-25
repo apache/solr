@@ -851,7 +851,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
-        -V|--verbose|-verbose|-v|-d|--debug)
+        -V|--verbose|-verbose|-v|--debug)
             debug=true
             SOLR_LOG_LEVEL=DEBUG
             PASS_TO_RUN_EXAMPLE+=("--debug")

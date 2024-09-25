@@ -223,7 +223,7 @@ If passed relative dir, validation with current dir will be done, before trying 
 Sets the `solr.data.home` system property, where Solr will store index data in <instance_dir>/data subdirectories.
 If not set, Solr uses solr.solr.home for config and data.
 
-`-d` or `--debug`::
+`--debug`::
 +
 [%autowidth,frame=none]
 |===
@@ -508,7 +508,6 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                should be for root Solr path.
  -e,--exitcode                 Return an exit code instead of printing
                                error message on assert fail.
- -h,--help                     Print this message.
  -m,--message <message>        Exception message to be used in place of
                                the default error message.
  -R,--not-root                 Asserts that we are NOT the root user.
@@ -521,7 +520,6 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                timeout.
  -u,--same-user <directory>    Asserts that we run as same user that owns
                                <directory>.
- -v,--verbose                  Enable more verbose command output.
  -x,--exists <directory>       Asserts that directory <directory> exists.
  -X,--not-exists <directory>   Asserts that directory <directory> does NOT
                                exist.

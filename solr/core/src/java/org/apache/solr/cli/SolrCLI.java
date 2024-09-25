@@ -159,7 +159,7 @@ public class SolrCLI implements CLIO {
           .desc("Enable verbose command output.")
           .build();
   public static final Option OPTION_DEBUG =
-      Option.builder("d")
+      Option.builder()
           .longOpt("debug")
           .required(false)
           .desc("Enable additional command output.")
