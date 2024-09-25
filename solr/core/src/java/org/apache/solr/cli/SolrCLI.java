@@ -136,13 +136,7 @@ public class SolrCLI implements CLIO {
           .build();
   public static final Option OPTION_SOLRURL =
       Option.builder("url")
-          .longOpt("solr-url")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --solr-url instead")
-                  .get())
+          .longOpt("solr-url"
           .argName("HOST")
           .hasArg()
           .required(false)
