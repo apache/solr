@@ -2568,6 +2568,18 @@ Bug Fixes
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
 
+==================  8.11.4 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+* SOLR-17168: Add netty-transport-classes-epoll dependency (Colvin Cowie)
+
+* SOLR-17417: Remove unnecessary code in PKIAuthPlugin and HttpSolrCall  (Houston Putman, janhoy, Liu Huajin)
+
+* SOLR-17418: Streamline ConfigSet modification logic.  (Houston Putman, Liu Huajin)
+
 ==================  8.11.3 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
