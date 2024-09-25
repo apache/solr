@@ -227,8 +227,9 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
           (k, v) -> {
             double size = fromHumanReadableUnits((String) v);
             double sampledSize = fromHumanReadableUnits((String) sampledFieldsBySize.get(k));
-            assertNotNull(
-                "sampled size missing for field " + k + " in " + sampledFieldsBySize, sampledSize);
+            assertTrue(
+                "sampled size missing for field " + k + " in " + sampledFieldsBySize,
+                sampledSize > 0);
             double delta = size * 0.5;
             assertEquals("sampled size of " + k + " is wildly off", size, sampledSize, delta);
           });
