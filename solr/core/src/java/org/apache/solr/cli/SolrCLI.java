@@ -136,7 +136,7 @@ public class SolrCLI implements CLIO {
           .build();
   public static final Option OPTION_SOLRURL =
       Option.builder("url")
-          .longOpt("solr-url"
+          .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -145,6 +145,7 @@ public class SolrCLI implements CLIO {
                   + getDefaultSolrUrl()
                   + '.')
           .build();
+
   public static final Option OPTION_VERBOSE =
       Option.builder("v")
           .longOpt("verbose")
