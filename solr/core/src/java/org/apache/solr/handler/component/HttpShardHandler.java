@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -75,7 +76,7 @@ public class HttpShardHandler extends ShardHandler {
    */
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
-  protected HttpShardHandlerFactory httpShardHandlerFactory;
+  private final HttpShardHandlerFactory httpShardHandlerFactory;
 
   /*
    * Three critical fields:
@@ -111,7 +112,7 @@ public class HttpShardHandler extends ShardHandler {
    */
   protected AtomicInteger pending;
 
-  protected Map<String, List<String>> shardToURLs;
+  private final Map<String, List<String>> shardToURLs;
   protected LBHttp2SolrClient lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
@@ -190,7 +191,7 @@ public class HttpShardHandler extends ShardHandler {
 
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
-  protected List<String> getURLs(String shard) {
+  private List<String> getURLs(String shard) {
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.buildURLList(shard);
@@ -199,11 +200,11 @@ public class HttpShardHandler extends ShardHandler {
     return urls;
   }
 
-  protected LBSolrClient.Req prepareLBRequest(
+  private LBSolrClient.Req prepareLBRequest(
       ShardRequest sreq, String shard, ModifiableSolrParams params, List<String> urls) {
     params.remove(CommonParams.WT); // use default (currently javabin)
     params.remove(CommonParams.VERSION);
-    QueryRequest req = makeQueryRequest(sreq, params, shard);
+    QueryRequest req = createQueryRequest(sreq, params, shard);
     req.setMethod(SolrRequest.METHOD.POST);
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (requestInfo != null) {
@@ -213,7 +214,7 @@ public class HttpShardHandler extends ShardHandler {
     return httpShardHandlerFactory.newLBHttpSolrClientReq(req, urls);
   }
 
-  protected ShardResponse prepareShardResponse(ShardRequest sreq, String shard) {
+  private ShardResponse prepareShardResponse(ShardRequest sreq, String shard) {
     ShardResponse srsp = new ShardResponse();
     if (sreq.nodeName != null) {
       srsp.setNodeName(sreq.nodeName);
@@ -224,7 +225,7 @@ public class HttpShardHandler extends ShardHandler {
     return srsp;
   }
 
-  protected void recordNoUrlShardResponse(ShardResponse srsp, String shard) {
+  private void recordNoUrlShardResponse(ShardResponse srsp, String shard) {
     // TODO: what's the right error code here? We should use the same thing when
     // all of the servers for a shard are down.
     // TODO: shard is a blank string in this case, which is somewhat less than helpful
@@ -252,30 +253,35 @@ public class HttpShardHandler extends ShardHandler {
       recordNoUrlShardResponse(srsp, shard);
       return;
     }
-    long startTime = System.nanoTime();
+    long startTimeNS = System.nanoTime();
 
+    makeShardRequest(sreq, shard, params, lbReq, ssr, srsp, startTimeNS);
+  }
+
+  /**
+   * Do the actual work of sending a request to a shard and receiving the response
+   *
+   * @param sreq the request to make
+   * @param shard the shard to address
+   * @param params request parameters
+   * @param lbReq the load balanced request suitable for LBHttp2SolrClient
+   * @param ssr the response collector part 1
+   * @param srsp the shard response collector
+   * @param startTimeNS the time at which the request was initiated, likely just prior to calling
+   *     this method.
+   */
+  // future work might see if we can reduce this parameter list. For example,
+  // why do we need 2 separate response objects?
+  protected void makeShardRequest(
+      ShardRequest sreq,
+      String shard,
+      ModifiableSolrParams params,
+      LBSolrClient.Req lbReq,
+      SimpleSolrResponse ssr,
+      ShardResponse srsp,
+      long startTimeNS) {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-    future.whenComplete(
-        (rsp, throwable) -> {
-          if (rsp != null) {
-            ssr.nl = rsp.getResponse();
-            srsp.setShardAddress(rsp.getServer());
-            ssr.elapsedTime =
-                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-            responses.add(transfomResponse(sreq, srsp, shard));
-          } else if (throwable != null) {
-            ssr.elapsedTime =
-                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-            srsp.setException(throwable);
-            if (throwable instanceof SolrException) {
-              srsp.setResponseCode(((SolrException) throwable).code());
-            }
-            responses.add(transfomResponse(sreq, srsp, shard));
-            if (disallowPartialResults(params)) {
-              cancelAll(); // Note: method synchronizes RESPONSE_CANCELABLE_LOCK on entry
-            }
-          }
-        });
+    future.whenComplete(new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
     synchronized (FUTURE_MAP_LOCK) {
       // we want to ensure that there is a future in flight before incrementing
       // pending. If anything fails such that a request/future is not created there is
@@ -287,14 +293,16 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   /** Subclasses could modify the request based on the shard */
-  protected QueryRequest makeQueryRequest(
+  @SuppressWarnings("unused")
+  protected QueryRequest createQueryRequest(
       final ShardRequest sreq, ModifiableSolrParams params, String shard) {
     // use generic request to avoid extra processing of queries
     return new QueryRequest(params);
   }
 
   /** Subclasses could modify the Response based on the shard */
-  protected ShardResponse transfomResponse(
+  @SuppressWarnings("unused")
+  protected ShardResponse transformResponse(
       final ShardRequest sreq, ShardResponse rsp, String shard) {
     return rsp;
   }
@@ -491,5 +499,52 @@ public class HttpShardHandler extends ShardHandler {
   @Override
   public ShardHandlerFactory getShardHandlerFactory() {
     return httpShardHandlerFactory;
+  }
+
+  class ShardRequestCallback implements BiConsumer<LBSolrClient.Rsp, Throwable> {
+    private final SimpleSolrResponse ssr;
+    private final ShardResponse srsp;
+    private final long startTimeNS;
+    private final ShardRequest sreq;
+    private final String shard;
+    private final ModifiableSolrParams params;
+
+    public ShardRequestCallback(
+        SimpleSolrResponse ssr,
+        ShardResponse srsp,
+        long startTimeNS,
+        ShardRequest sreq,
+        String shard,
+        ModifiableSolrParams params) {
+      this.ssr = ssr;
+      this.srsp = srsp;
+      this.startTimeNS = startTimeNS;
+      this.sreq = sreq;
+      this.shard = shard;
+      this.params = params;
+    }
+
+    @Override
+    public void accept(LBSolrClient.Rsp rsp, Throwable throwable) {
+      if (rsp != null) {
+        ssr.nl = rsp.getResponse();
+        srsp.setShardAddress(rsp.getServer());
+        ssr.elapsedTime =
+            TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+        responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+      } else if (throwable != null) {
+        ssr.elapsedTime =
+            TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNS, TimeUnit.NANOSECONDS);
+        srsp.setException(throwable);
+        if (throwable instanceof SolrException) {
+          srsp.setResponseCode(((SolrException) throwable).code());
+        }
+        responses.add(HttpShardHandler.this.transformResponse(sreq, srsp, shard));
+        if (disallowPartialResults(params)) {
+          HttpShardHandler.this
+              .cancelAll(); // Note: method synchronizes RESPONSE_CANCELABLE_LOCK on entry
+        }
+      }
+    }
   }
 }
