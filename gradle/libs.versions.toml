@@ -183,7 +183,7 @@ openapi-generator = { id = "org.openapi.generator", version.ref = "openapi" }
 owasp-dependencycheck = { id = "org.owasp.dependencycheck", version.ref = "owasp-dependencycheck" }
 swagger3-core = { id = "io.swagger.core.v3.swagger-gradle-plugin", version.ref = "swagger3" }
 thetaphi-forbiddenapis = { id = "de.thetaphi.forbiddenapis", version.ref = "thetaphi-forbiddenapis" }
-udnercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
+undercouch-download = { id = "de.undercouch.download", version.ref = "undercouch-download" }
 
 [libraries]
 adobe-testing-s3mock-junit4 = { module = "com.adobe.testing:s3mock-junit4", version.ref = "adobe-testing-s3mock" }

@@ -28,7 +28,7 @@ plugins {
   alias(libs.plugins.benmanes.versions)
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
-  alias(libs.plugins.udnercouch.download) apply false
+  alias(libs.plugins.undercouch.download) apply false
   alias(libs.plugins.ltgt.errorprone) apply false
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
