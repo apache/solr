@@ -114,6 +114,9 @@ However there are use cases where you want to interact with data in your local e
 
 The Stream Tool allows you to specify `--execution local` to process the expression in the Solr CLI's JVM.
 
+However, "local" processing does not imply a networking sandbox.
+Many streaming expressions, such as search and update, will make network requests to remote Solr nodes if configured to do so, even in "local" execution mode.
+
 Assuming you have create the file `load_data.expr` with the contents:
 
 ----
