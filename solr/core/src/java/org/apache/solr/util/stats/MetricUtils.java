@@ -35,6 +35,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -792,20 +793,22 @@ public class MetricUtils {
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
-        // skip properties without a read method
-        if (desc.getReadMethod() == null) {
-          continue;
-        }
+        Method readMethod;
 
-        final String name = desc.getName();
-        // test if it works at all
         try {
-          desc.getReadMethod().invoke(obj);
+          readMethod = desc.getReadMethod();
+          if (readMethod == null) {
+            continue; // skip properties without a read method
+          }
+
+          final String name = desc.getName();
+          // test if it works at all
+          readMethod.invoke(obj);
           // worked - consume it
           final Gauge<?> gauge =
               () -> {
                 try {
-                  return desc.getReadMethod().invoke(obj);
+                  return readMethod.invoke(obj);
                 } catch (InvocationTargetException ite) {
                   // ignore (some properties throw UOE)
                   return null;
