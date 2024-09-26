@@ -793,10 +793,8 @@ public class MetricUtils {
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
-        Method readMethod;
-
         try {
-          readMethod = desc.getReadMethod();
+          Method readMethod = desc.getReadMethod();
           if (readMethod == null) {
             continue; // skip properties without a read method
           }
