@@ -124,6 +124,26 @@ public class ZkIndexSchemaReader implements OnReconnect {
       this.schemaReader = reader;
     }
 
+    @Override
+    public void process(WatchedEvent event) {
+      ZkIndexSchemaReader indexSchemaReader = schemaReader;
+      if (indexSchemaReader == null) {
+        return; // the core for this reader has already been removed, don't process this event
+      }
+
+      try {
+        doProcess(indexSchemaReader, event);
+      } catch (Exception e) {
+        if (schemaReader == null) {
+          // the core has been removed and started shutting down while
+          // we were processing the event, so let's just log the exception
+          log.warn("", e);
+          return;
+        }
+        throw e;
+      }
+    }
+
     private void doProcess(ZkIndexSchemaReader indexSchemaReader, WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
       if (Event.EventType.None.equals(event.getType())) {
@@ -148,26 +168,6 @@ public class ZkIndexSchemaReader implements OnReconnect {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
         log.warn("", e);
-      }
-    }
-
-    @Override
-    public void process(WatchedEvent event) {
-      ZkIndexSchemaReader indexSchemaReader = schemaReader;
-      if (indexSchemaReader == null) {
-        return; // the core for this reader has already been removed, don't process this event
-      }
-
-      try {
-        doProcess(indexSchemaReader, event);
-      } catch (Exception e) {
-        if (schemaReader == null) {
-          // the core has been removed and started shutting down while
-          // we were processing the event, so let's just log the exception
-          log.warn("", e);
-          return;
-        }
-        throw e;
       }
     }
 

@@ -1985,10 +1985,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.execute(() -> coreClients.parallelStream().forEach(IOUtils::closeQuietly));
+    for (SolrClient client : coreClients) {
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
+    }
 
-    customThreadPool.execute(
-        () -> solrClientByCollection.values().parallelStream().forEach(IOUtils::closeQuietly));
+    for (SolrClient client : solrClientByCollection.values()) {
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
+    }
 
     customThreadPool.execute(() -> IOUtils.closeQuietly(controlClientCloud));
 
