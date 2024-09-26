@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,6 +43,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.apache.commons.lang3.exception.UncheckedInterruptedException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -233,21 +234,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         indexSearcherExecutorThreads,
         0L,
         TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<>(),
+        new SynchronousQueue<>() {
+          // a hack to force ThreadPoolExecutor to block if threads are busy
+          // -- otherwise it will throw RejectedExecutionException; unacceptable
+          @Override
+          public boolean offer(Runnable runnable) { // is supposed to not block, but we do anyway
+            try {
+              put(runnable); // blocks
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new UncheckedInterruptedException(e);
+            }
+            return true;
+          }
+        },
         new SolrNamedThreadFactory("searcherCollector")) {
 
       @Override
       protected void beforeExecute(Thread t, Runnable r) {
         ThreadCpuTimer.reset(TIMING_CONTEXT);
-      }
-
-      @Override
-      public void execute(Runnable command) {
-        if (!getQueue().isEmpty()) {
-          command.run();
-        } else {
-          super.execute(command);
-        }
       }
     };
   }
