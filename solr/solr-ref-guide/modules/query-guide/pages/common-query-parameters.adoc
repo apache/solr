@@ -391,10 +391,10 @@ All other considerations regarding partial results listed for the `timeAllowed` 
 == memAllowed Parameter
 
 This parameter specifies the amount of memory (a float value, in MiB) allowed for a search thread to allocate
-during query execution. Similarly to the `cpuAllowed` this parameter monitors the additional memory
-allocated to the thread that executes the current query. Similarly, the same hard limit is applied to
-the query coordinator as to each replica that participates in the distributed search. As is the case with
-the `cpuAllowed` also here the limit is applied separately to each stage of the distributed query processing.
+during query execution. This parameter monitors additional memory allocated in the thread that executes the
+current query. The same limit is applied both to the query coordinator and to each replica that participates in
+the distributed search. As is the case with the `cpuAllowed` also here the limit is applied separately to each stage
+of the distributed query processing.
 
 == segmentTerminateEarly Parameter
 

@@ -27,15 +27,31 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Enforces a memory-based limit on a given SolrQueryRequest, as specified by the {@code memAllowed}
+ * query parameter.
+ *
+ * <p>This class tracks per-thread memory allocations using its own ThreadLocal. It records the
+ * current thread allocation when the instance was created (typically at the start of
+ * SolrQueryRequest processing) as a starting point, and then on every call to {@link #shouldExit()}
+ * it accumulates the amount of reported allocated memory since the previous call, and compares the
+ * accumulated amount to the configured threshold, expressed in mebi-bytes.
+ *
+ * <p>NOTE: this class accesses {@code
+ * com.sun.management.ThreadMXBean#getCurrentThreadAllocatedBytes} using reflection. On JVM-s where
+ * this implementation is not available an exception will be thrown when attempting to use the
+ * {@code memAllowed} parameter.
+ */
 public class MemAllowedLimit implements QueryLimit {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final double MEBI = 1024.0 * 1024.0;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-  private static Method GET_BYTES_METHOD;
-  private static boolean supported;
+  private static final Method GET_BYTES_METHOD;
+  private static final boolean supported;
 
   static {
     boolean testSupported;
+    Method getBytesMethod = null;
     try {
       Class<?> sunThreadBeanClz = Class.forName("com.sun.management.ThreadMXBean");
       if (sunThreadBeanClz.isAssignableFrom(threadBean.getClass())) {
@@ -45,7 +61,7 @@ public class MemAllowedLimit implements QueryLimit {
           m = sunThreadBeanClz.getMethod("setThreadAllocatedMemoryEnabled", boolean.class);
           m.invoke(threadBean, Boolean.TRUE);
           testSupported = true;
-          GET_BYTES_METHOD = sunThreadBeanClz.getMethod("getCurrentThreadAllocatedBytes");
+          getBytesMethod = sunThreadBeanClz.getMethod("getCurrentThreadAllocatedBytes");
         } else {
           testSupported = false;
         }
@@ -56,13 +72,14 @@ public class MemAllowedLimit implements QueryLimit {
       testSupported = false;
     }
     supported = testSupported;
+    GET_BYTES_METHOD = getBytesMethod;
   }
 
   private static final ThreadLocal<AtomicLong> threadLocalMem =
       ThreadLocal.withInitial(() -> new AtomicLong(-1L));
 
   private long limitBytes;
-  private AtomicLong accumulatedMem = new AtomicLong();
+  private final AtomicLong accumulatedMem = new AtomicLong();
   private long exitedAt = 0;
 
   public MemAllowedLimit(SolrQueryRequest req) {
@@ -76,11 +93,31 @@ public class MemAllowedLimit implements QueryLimit {
           "Check for limit with hasMemLimit(req) before creating a MemAllowedLimit!");
     }
     limitBytes = Math.round(reqMemLimit * MEBI);
+    // init the tread-local
+    initAndGetCurrentAllocatedBytes();
   }
 
   @VisibleForTesting
   MemAllowedLimit(float memLimit) {
+    if (!supported) {
+      throw new IllegalArgumentException(
+          "Per-thread memory allocation monitoring not available in this JVM.");
+    }
     limitBytes = Math.round(memLimit * MEBI);
+    // init the tread-local
+    initAndGetCurrentAllocatedBytes();
+  }
+
+  private long initAndGetCurrentAllocatedBytes() {
+    long currentAllocatedBytes = 0;
+    try {
+      currentAllocatedBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Unexpected error checking thread allocation!", e);
+    }
+    AtomicLong threadMem = threadLocalMem.get();
+    threadMem.compareAndSet(-1L, currentAllocatedBytes);
+    return currentAllocatedBytes;
   }
 
   @VisibleForTesting
@@ -99,9 +136,8 @@ public class MemAllowedLimit implements QueryLimit {
     }
 
     try {
-      long currentAllocatedBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
+      long currentAllocatedBytes = initAndGetCurrentAllocatedBytes();
       AtomicLong threadMem = threadLocalMem.get();
-      threadMem.compareAndExchange(-1L, currentAllocatedBytes);
       long lastAllocatedBytes = threadMem.get();
       accumulatedMem.addAndGet(currentAllocatedBytes - lastAllocatedBytes);
       threadMem.set(currentAllocatedBytes);
@@ -117,9 +153,7 @@ public class MemAllowedLimit implements QueryLimit {
       }
       return false;
     } catch (Exception e) {
-      supported = false;
-      throw new IllegalArgumentException(
-          "Unexpected error checking thread allocation, disabling!", e);
+      throw new IllegalArgumentException("Unexpected error checking thread allocation!", e);
     }
   }
 
