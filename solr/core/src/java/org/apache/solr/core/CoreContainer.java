@@ -67,7 +67,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -840,9 +839,9 @@ public class CoreContainer {
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
-    solrClientProvider = new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig());
+    solrClientProvider =
+        new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-    solrClientProvider.initializeMetrics(solrMetricsContext);
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
@@ -1228,11 +1227,6 @@ public class CoreContainer {
     initializeAuthenticationPlugin(
         (Map<String, Object>) securityConfig.getData().get("authentication"));
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
-  }
-
-  private SolrClient createDefaultHttpSolrClient() {
-
-    return null;
   }
 
   private void warnUsersOfInsecureSettings() {
@@ -2577,9 +2571,22 @@ public class CoreContainer {
     return this.distributedCollectionCommandRunner;
   }
 
-  /** Returns default http solr client. */
-  public Http2SolrClient getDefaultHttpClient() {
-    return solrClientProvider.getSolrClient();
+  /**
+   * Creates a general-purpose HTTP/2 Solr client, re-using the existing client from {@link
+   * HttpSolrClientProvider}.
+   *
+   * <p>The base path is set at the client level as {@link
+   * org.apache.solr.client.solrj.SolrRequest#setBasePath(String)} is deprecated. This method is
+   * experimental, and the caller is responsible for managing the client lifecycle (e.g., using
+   * try-with-resources).
+   *
+   * @param basePath the base URL for the Solr client.
+   * @return a new {@link Http2SolrClient} using the provided base path.
+   */
+  public Http2SolrClient getDefaultHttpSolrClient(String basePath) {
+    return new Http2SolrClient.Builder(basePath)
+        .withHttpClient(solrClientProvider.getSolrClient())
+        .build();
   }
 
   /**

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -26,16 +25,13 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Provider of the default SolrClient implementation.
  *
  * @lucene.internal
  */
-class HttpSolrClientProvider {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+final class HttpSolrClientProvider implements AutoCloseable {
 
   static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
 
@@ -43,8 +39,10 @@ class HttpSolrClientProvider {
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
-  HttpSolrClientProvider(UpdateShardHandlerConfig cfg) {
+  HttpSolrClientProvider(UpdateShardHandlerConfig cfg, SolrMetricsContext parentContext) {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
+    initializeMetrics(parentContext);
+
     Http2SolrClient.Builder httpClientBuilder =
         new Http2SolrClient.Builder().withListenerFactory(List.of(trackHttpSolrMetrics));
 
@@ -66,6 +64,13 @@ class HttpSolrClientProvider {
     return InstrumentedHttpListenerFactory.getNameStrategy(metricNameStrategy);
   }
 
+  private void initializeMetrics(SolrMetricsContext parentContext) {
+    var solrMetricsContext = parentContext.getChildContext(this);
+    String expandedScope =
+        SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+  }
+
   Http2SolrClient getSolrClient() {
     return httpSolrClient;
   }
@@ -74,14 +79,8 @@ class HttpSolrClientProvider {
     builder.setup(httpSolrClient);
   }
 
-  void initializeMetrics(SolrMetricsContext parentContext) {
-    var solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope =
-        SolrMetricManager.mkName(METRIC_SCOPE_NAME, SolrInfoBean.Category.HTTP.name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
-  }
-
-  void close() {
+  @Override
+  public void close() {
     IOUtils.closeQuietly(httpSolrClient);
     IOUtils.closeQuietly(trackHttpSolrMetrics);
   }

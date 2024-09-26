@@ -32,18 +32,20 @@ import org.mockito.Mockito;
 public class TestHttpSolrClientProvider extends SolrTestCase {
 
   HttpSolrClientProvider httpSolrClientProvider;
+  SolrMetricsContext parentSolrMetricCtx;
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     assumeWorkingMockito();
+    parentSolrMetricCtx = Mockito.mock(SolrMetricsContext.class);
   }
 
   @Test
   public void test_when_updateShardHandler_cfg_is_null() {
     try {
-      httpSolrClientProvider = new HttpSolrClientProvider(null);
+      httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx);
       assertEquals(
           httpSolrClientProvider.getSolrClient().getIdleTimeout(),
           HttpClientUtil.DEFAULT_SO_TIMEOUT);
@@ -57,7 +59,7 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     var idleTimeout = 10000;
     UpdateShardHandlerConfig cfg = new UpdateShardHandlerConfig(-1, -1, idleTimeout, -1, null, -1);
     try {
-      httpSolrClientProvider = new HttpSolrClientProvider(cfg);
+      httpSolrClientProvider = new HttpSolrClientProvider(cfg, parentSolrMetricCtx);
       assertEquals(httpSolrClientProvider.getSolrClient().getIdleTimeout(), idleTimeout);
     } finally {
       httpSolrClientProvider.close();
@@ -67,12 +69,10 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
   @Test
   public void test_closing_solr_metric_context() {
     SolrMetricsContext childSolrMetricContext = Mockito.mock(SolrMetricsContext.class);
-    SolrMetricsContext parentSolrMetricCtx = Mockito.mock(SolrMetricsContext.class);
     Mockito.when(parentSolrMetricCtx.getChildContext(any(HttpSolrClientProvider.class)))
         .thenReturn(childSolrMetricContext);
     try {
-      httpSolrClientProvider = new HttpSolrClientProvider(null);
-      httpSolrClientProvider.initializeMetrics(parentSolrMetricCtx);
+      httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx);
     } finally {
       httpSolrClientProvider.close();
       verify(childSolrMetricContext, times(1)).unregister();
