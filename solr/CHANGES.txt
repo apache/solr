@@ -117,6 +117,10 @@ Improvements
   which may help reduce distributed-search latency in collections with many shards, especially
   when PKI is used between nodes. (Jason Gerlowski)
 
+* SOLR-17382: Deprecate -a and -addlopts in favour of --jvm-opts for passing options into the JVM in bin/solr.   (Eric Pugh, Christos Malliaridis)
+
+* SOLR-17431: Deprecate -p parameter where it doesn't refer to a port in bin/solr. (Eric Pugh, Christos Malliaridis)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
@@ -144,6 +148,8 @@ Bug Fixes
   node role for preferred overseer. (Pierre Salagnac)
 
 * SOLR-17416: Fixed ExportHandler bug that silently suppressed errors and returned partial results in some situations (hossman)
+
+* SOLR-16254: Clarify when a bin/solr create needs to be run on the same server as Solr. (Eric Pugh)
 
 Dependency Upgrades
 ---------------------
@@ -2636,6 +2642,18 @@ Bug Fixes
 * SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
+
+==================  8.11.4 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Bug Fixes
+---------------------
+* SOLR-17168: Add netty-transport-classes-epoll dependency (Colvin Cowie)
+
+* SOLR-17417: Remove unnecessary code in PKIAuthPlugin and HttpSolrCall  (Houston Putman, janhoy, Liu Huajin)
+
+* SOLR-17418: Streamline ConfigSet modification logic.  (Houston Putman, Liu Huajin)
 
 ==================  8.11.3 ==================
 
