@@ -376,7 +376,7 @@ goto done
 @echo.
 @echo  --all          Find and stop all running Solr servers on this host
 @echo.
-@echo  -d/--debug     Debug messages from this script
+@echo  --debug        Debug messages from this script
 @echo.
 @echo  NOTE: To see if any Solr servers are running, do: solr status
 @echo.
@@ -398,6 +398,7 @@ IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="-V" goto set_debug
 IF "%1"=="--verbose" goto set_debug
+IF "%1"=="--debug" goto set_debug
 IF "%1"=="-v" goto set_debug
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn

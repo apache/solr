@@ -667,7 +667,7 @@ public class SolrCLI implements CLIO {
     print("");
     print("Global Options:");
     print("  -v,  --version           Print version information and quit");
-    print("  -d,  --debug             Enable debug mode");
+    print("       --debug             Enable debug mode");
     print("");
     print("Run 'solr COMMAND --help' for more information on a command.");
     print("");
