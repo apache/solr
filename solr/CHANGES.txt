@@ -140,6 +140,8 @@ Optimizations
 
 * SOLR-3913: Optimize PostTool to call just optimize when both commit and optimize requested. (Eric Pugh)
 
+* SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
+
 Bug Fixes
 ---------------------
 * SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)
@@ -162,6 +164,10 @@ Other Changes
 * SOLR-17399: Replace the use of the deprecated java.util.Locale constructor with Locale Builder API. (Sanjay Dutt)
 
 * SOLR-17142: Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. (Uwe Schindler)
+
+* SOLR-17448: Fixed inadvertent suppression of exceptions in the background tasks across the codebase. For certain
+tasks that were scheduled via ExecutorService#submit, the results of the task execution were never examined which
+led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
 
