@@ -49,6 +49,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -380,8 +381,11 @@ public class SolrCLI implements CLIO {
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
-    options.addOption(OPTION_VERBOSE);
-    options.addOption(OPTION_DEBUG);
+
+    OptionGroup debugOptionGroup = new OptionGroup();
+    debugOptionGroup.addOption(OPTION_VERBOSE);
+    debugOptionGroup.addOption(OPTION_DEBUG);
+    options.addOptionGroup(debugOptionGroup);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
       if (!toolOpt.isDeprecated()) {
@@ -424,8 +428,11 @@ public class SolrCLI implements CLIO {
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
-    options.addOption(OPTION_VERBOSE);
-    options.addOption(OPTION_DEBUG);
+
+    OptionGroup debugOptionGroup = new OptionGroup();
+    debugOptionGroup.addOption(OPTION_VERBOSE);
+    debugOptionGroup.addOption(OPTION_DEBUG);
+    options.addOptionGroup(debugOptionGroup);
 
     if (customOptions != null) {
       for (Option customOption : customOptions) {
