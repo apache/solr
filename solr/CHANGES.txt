@@ -163,6 +163,10 @@ Other Changes
 
 * SOLR-17142: Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. (Uwe Schindler)
 
+* SOLR-17448: Fixed inadvertent suppression of exceptions in the background tasks across the codebase. For certain
+tasks that were scheduled via ExecutorService#submit, the results of the task execution were never examined which
+led to the suppression of exceptions. (Andrey Bozhko)
+
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
 
 ==================  9.7.0 ==================
