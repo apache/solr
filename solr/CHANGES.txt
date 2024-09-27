@@ -105,7 +105,9 @@ Other Changes
 ==================  9.8.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17065: The Solr Cross-DC Project has graduated from the sandbox repository.
+  It will now be released as a fully supported Solr feature.
+  This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
 Improvements
 ---------------------
