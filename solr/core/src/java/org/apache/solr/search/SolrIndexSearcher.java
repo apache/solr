@@ -43,7 +43,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.exception.UncheckedInterruptedException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -243,7 +242,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               put(runnable); // blocks
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
-              throw new UncheckedInterruptedException(e);
+              throw new RuntimeException("interrupted submitting to search multi-threaded pool", e);
             }
             return true;
           }
@@ -383,7 +382,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       boolean reserveDirectory,
       DirectoryFactory directoryFactory)
       throws IOException {
-    super(wrapReader(core, r), core.getCoreContainer().getCollectorExecutor());
+    super(wrapReader(core, r), core.getCoreContainer().getIndexSearcherExecutor());
 
     this.path = path;
     this.directoryFactory = directoryFactory;
