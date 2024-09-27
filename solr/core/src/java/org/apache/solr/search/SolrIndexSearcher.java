@@ -233,7 +233,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         indexSearcherExecutorThreads,
         0L,
         TimeUnit.MILLISECONDS,
-        new SynchronousQueue<>() {
+        new SynchronousQueue<>(true) { // fairness
           // a hack to force ThreadPoolExecutor to block if threads are busy
           // -- otherwise it will throw RejectedExecutionException; unacceptable
           @Override
