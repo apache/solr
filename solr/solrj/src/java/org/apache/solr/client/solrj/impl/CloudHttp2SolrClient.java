@@ -22,12 +22,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient. Instances of this class
@@ -158,6 +161,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   @Override
   protected boolean wasCommError(Throwable rootCause) {
     return false;
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 
   /** Constructs {@link CloudHttp2SolrClient} instances from provided configuration. */

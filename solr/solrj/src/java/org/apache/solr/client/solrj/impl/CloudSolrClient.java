@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -1333,5 +1334,11 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     return true;
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 }

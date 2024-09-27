@@ -22,10 +22,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -155,6 +157,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     lbBuilder.withResponseParser(new BinaryResponseParser());
 
     return lbBuilder.build();
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 
   /** Constructs {@link CloudLegacySolrClient} instances from provided configuration. */

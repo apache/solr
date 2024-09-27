@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrClient;
@@ -120,6 +121,12 @@ public class MockSearchableSolrClient extends SolrClient {
           "Unsupported request type: " + request.getClass() + ":" + request);
     }
     return res;
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 
   public long getNumUpdates() {

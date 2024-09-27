@@ -20,11 +20,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
@@ -207,6 +210,12 @@ public class LBHttpSolrClient extends LBSolrClient {
   /** Return the HttpClient this instance uses. */
   public HttpClient getHttpClient() {
     return httpClient;
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */

@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -598,6 +599,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     NamedList<Object> dummy = new NamedList<>();
     dummy.add("NOTE", "the request is processed in a background stream");
     return dummy;
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 
   public synchronized void blockUntilFinished() throws IOException {

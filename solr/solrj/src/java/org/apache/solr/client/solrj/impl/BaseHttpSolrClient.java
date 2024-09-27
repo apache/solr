@@ -20,7 +20,9 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
@@ -73,5 +75,11 @@ public abstract class BaseHttpSolrClient extends SolrClient {
     public NamedList<?> getMetaData() {
       return meta;
     }
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> request, String collection) {
+    throw new UnsupportedOperationException();
   }
 }
