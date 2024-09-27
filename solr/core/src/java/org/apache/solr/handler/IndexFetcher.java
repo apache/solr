@@ -94,7 +94,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -185,7 +184,7 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final SolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
   private Integer connTimeout;
 
@@ -263,17 +262,15 @@ public class IndexFetcher {
   // It's crucial not to remove the authentication credentials as they are essential for User
   // managed replication.
   // GitHub PR #2276
-  private SolrClient createSolrClient(
+  private Http2SolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
-    Http2SolrClient httpClient =
-        new Http2SolrClient.Builder(leaderBaseUrl)
-            .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
-            .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
-            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
-            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-            .build();
-    return httpClient;
+    return new Http2SolrClient.Builder(leaderBaseUrl)
+        .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
+        .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
+        .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   public IndexFetcher(

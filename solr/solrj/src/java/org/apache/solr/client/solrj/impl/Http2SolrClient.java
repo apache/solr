@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -530,6 +531,25 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (abortCause != null && req != null) {
         req.abort(abortCause);
       }
+    }
+  }
+
+  public <R> R requestWithBaseUrl(String baseUrl, SolrClientFunction<SolrClient, R> clientFunction)
+      throws SolrServerException, IOException {
+    try (final var derivedClient =
+        new DerivedHttp2SolrClient.Builder(baseUrl).withHttpClient(this).build()) {
+      return clientFunction.apply(derivedClient);
+    }
+  }
+
+  public static class DerivedHttp2SolrClient extends Http2SolrClient {
+    protected DerivedHttp2SolrClient(String serverBaseUrl, Builder builder) {
+      super(serverBaseUrl, builder);
+    }
+
+    @Override
+    public void close() {
+      /* Intentional no-op */
     }
   }
 

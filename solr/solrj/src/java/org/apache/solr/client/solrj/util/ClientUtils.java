@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.util;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -88,11 +87,6 @@ public class ClientUtils {
     // approach is adopted.
     String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
-    final String urlOverride = baseUrlOverride.get();
-    if (urlOverride != null) {
-      basePath = urlOverride;
-    }
-
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
       if (solrRequest instanceof V2Request && System.getProperty("solr.v2RealPath") != null) {
         basePath = serverRootUrl + "/____v2";
@@ -110,24 +104,6 @@ public class ClientUtils {
 
     return basePath + path;
   }
-
-  /**
-   * Syntactic-sugar to set/unset {@link ClientUtils#baseUrlOverride} via try-with-resources blocks
-   *
-   * <p>Instances should not be used across threads, and <em>must</em> be closed by the same thread
-   * that opened them
-   */
-  public static class BaseUrlOverride implements Closeable {
-    public BaseUrlOverride(String baseUrl) {
-      baseUrlOverride.set(baseUrl);
-    }
-
-    public void close() {
-      baseUrlOverride.remove();
-    }
-  }
-
-  public static final ThreadLocal<String> baseUrlOverride = new ThreadLocal<>();
 
   private static String addNormalV2ApiRoot(String basePath) throws MalformedURLException {
     final var oldURI = URI.create(basePath);
