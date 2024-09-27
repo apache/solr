@@ -80,6 +80,6 @@ public class LTRQuery extends AbstractReRankQuery {
 
   @Override
   protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-    return new LTRQuery(scoringQuery, reRankDocs).wrap(rewrittenMainQuery);
+    return new LTRQuery(scoringQuery.clone(), reRankDocs).wrap(rewrittenMainQuery);
   }
 }
