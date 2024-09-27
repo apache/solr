@@ -102,13 +102,6 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return getFileList(generation, replicationHandler);
   }
 
-  /**
-   * This method adds an Object of FileStream to the response . The FileStream implements a custom
-   * protocol which is understood by IndexFetcher.FileFetcher
-   *
-   * <p>// * @see IndexFetcher.LocalFsFileFetcher // * @see IndexFetcher.DirectoryFileFetcher
-   */
-  // TODO FIX THIS COMMENT
   protected String doFetchFile(
       String filePath,
       String dirType,
@@ -120,11 +113,11 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       Long gen)
       throws IOException {
     DirectoryFileStream dfs;
-    if (Objects.equals(dirType, "cFile")) {
+    if (Objects.equals(dirType, CONF_FILE_SHORT)) {
       dfs =
           new LocalFsConfFileStream(
               filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
-    } else if (Objects.equals(dirType, "tlFile")) {
+    } else if (Objects.equals(dirType, TLOG_FILE)) {
       dfs =
           new LocalFsTlogFileStream(
               filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
@@ -296,10 +289,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       fileName = validateFilenameOrError(file);
 
       switch (dirType) {
-        case "cFile":
+        case CONF_FILE_SHORT:
           cfileName = file;
           break;
-        case "tFile":
+        case TLOG_FILE:
           tlogFileName = file;
           break;
         default:
@@ -311,7 +304,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       this.sLen = len;
       this.compress = compression;
       this.useChecksum = useChecksum;
-      this.indexGen = gen; // FIX LATER
+      this.indexGen = gen;
       if (useChecksum) {
         checksum = new Adler32();
       }
@@ -367,7 +360,6 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     }
 
     protected void extendReserveAndReleaseCommitPoint() {
-      // TODO FIX LATER
       ReplicationHandler replicationHandler =
           (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
 
@@ -521,7 +513,6 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         double maxWriteMBPerSec,
         Long gen) {
       super(file, dirType, offset, len, compression, useChecksum, maxWriteMBPerSec, gen);
-//      tlogFileName = file;
     }
 
     @Override
@@ -543,7 +534,6 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         double maxWriteMBPerSec,
         Long gen) {
       super(file, dirType, offset, len, compression, useChecksum, maxWriteMBPerSec, gen);
-//      cfileName = file;
     }
 
     @Override

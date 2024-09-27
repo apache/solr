@@ -280,10 +280,10 @@ public class ReplicationHandler extends RequestHandlerBase
       String dirType;
       if (solrParams.get(CONF_FILE_SHORT) != null) {
         fileName = solrParams.get(CONF_FILE_SHORT);
-        dirType = "cFile";
+        dirType = CONF_FILE_SHORT;
       } else if (solrParams.get(TLOG_FILE) != null) {
         fileName = solrParams.get(TLOG_FILE);
-        dirType = "tFile";
+        dirType = TLOG_FILE;
       } else {
         fileName = solrParams.get(FILE);
         dirType = FILE;

@@ -32,6 +32,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
@@ -77,26 +78,34 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       @PathParam("filePath") String filePath,
       @Parameter(
               description =
-                  "Directory type for specific filePath (cf or tlf). Lucene index default if empty",
-              required = false)
+                  "Directory type for specific filePath (cf or tlogFile). Defaults to Lucene index (file) directory if empty",
+              required = true)
           @QueryParam("dirType")
           String dirType,
-      @Parameter(description = "offset", required = false) @QueryParam("offset") String offset,
-      @Parameter(description = "len", required = false) @QueryParam("len") String len,
-      @Parameter(description = "compress", required = false)
+      @Parameter(description = "Output stream read/write offset", required = false)
+          @QueryParam("offset")
+          String offset,
+      @Parameter(required = false) @QueryParam("len") String len,
+      @Parameter(description = "Compress file output", required = false)
           @QueryParam("compression")
           @DefaultValue("false")
           Boolean compression,
-      @Parameter(description = "checksum", required = false)
+      @Parameter(description = "Write checksum with output stream", required = false)
           @QueryParam("checksum")
           @DefaultValue("false")
           Boolean checksum,
-      @Parameter(description = "maxWriteMBPerSec", required = false) @QueryParam("maxWriteMBPerSec")
+      @Parameter(
+              description = "Limit data write per seconds. Defaults to no thorttling",
+              required = false)
+          @QueryParam("maxWriteMBPerSec")
           double maxWriteMBPerSec,
       @Parameter(description = "The generation number of the index", required = false)
           @QueryParam("generation")
           Long gen)
       throws IOException {
+    if (dirType == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must provide a dirType ");
+    }
     return doFetchFile(
         filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
   }
