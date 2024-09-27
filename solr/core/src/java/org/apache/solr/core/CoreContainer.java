@@ -181,8 +181,8 @@ public class CoreContainer {
 
   final SolrCores solrCores;
 
-  public Executor getCollectorExecutor() {
-    return collectorExecutor;
+  public Executor getIndexSearcherExecutor() {
+    return indexSearcherExecutor;
   }
 
   public static class CoreLoadFailure {
@@ -286,7 +286,7 @@ public class CoreContainer {
 
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
-  private final ExecutorService collectorExecutor;
+  private final ExecutorService indexSearcherExecutor;
 
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
@@ -444,7 +444,7 @@ public class CoreContainer {
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
-    this.collectorExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
+    this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -670,7 +670,7 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
-    collectorExecutor = null;
+    indexSearcherExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1272,7 +1272,7 @@ public class CoreContainer {
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
-    ExecutorUtil.shutdownAndAwaitTermination(collectorExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
