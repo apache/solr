@@ -19,11 +19,24 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
 import static org.apache.solr.handler.ReplicationHandler.OK_STATUS;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
+import java.util.zip.DeflaterOutputStream;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.SegmentCommitInfo;
@@ -31,7 +44,11 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -44,7 +61,24 @@ import org.slf4j.LoggerFactory;
 /** A common parent for "replication" (i.e. replication-level) APIs. */
 public abstract class ReplicationAPIBase extends JerseyResource {
 
+  public static final String CONF_FILE_SHORT = "cf";
+  public static final String TLOG_FILE = "tlogFile";
+  public static final String FILE_STREAM = "filestream";
+  public static final String STATUS = "status";
+  public static final int PACKET_SZ = 1024 * 1024; // 1MB
+  public static final String GENERATION = "generation";
+  public static final String OFFSET = "offset";
+  public static final String LEN = "len";
+  public static final String FILE = "file";
+  public static final String MAX_WRITE_PER_SECOND = "maxWriteMBPerSec";
+  public static final String CHECKSUM = "checksum";
+  public static final String COMPRESSION = "compression";
+  public static final String POLL_INTERVAL = "pollInterval";
+  public static final String INTERVAL_ERR_MSG =
+      "The " + POLL_INTERVAL + " must be in this format 'HH:mm:ss'";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
   protected final SolrCore solrCore;
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
@@ -66,6 +100,43 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return getFileList(generation, replicationHandler);
+  }
+
+  /**
+   * This method adds an Object of FileStream to the response . The FileStream implements a custom
+   * protocol which is understood by IndexFetcher.FileFetcher
+   *
+   * <p>// * @see IndexFetcher.LocalFsFileFetcher // * @see IndexFetcher.DirectoryFileFetcher
+   */
+  // TODO FIX THIS COMMENT
+  protected String doFetchFile(
+      String filePath,
+      String dirType,
+      String offset,
+      String len,
+      boolean compression,
+      boolean checksum,
+      double maxWriteMBPerSec,
+      Long gen)
+      throws IOException {
+    DirectoryFileStream dfs;
+    if (Objects.equals(dirType, "cFile")) {
+      dfs =
+          new LocalFsConfFileStream(
+              filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
+    } else if (Objects.equals(dirType, "tlFile")) {
+      dfs =
+          new LocalFsTlogFileStream(
+              filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
+    } else {
+      dfs =
+          new DirectoryFileStream(
+              filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
+    }
+    solrQueryResponse.add(FILE_STREAM, dfs);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    dfs.write(out);
+    return out.toString();
   }
 
   protected CoreReplicationAPI.FileListResponse getFileList(
@@ -183,6 +254,303 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       }
     }
     return filesResponse;
+  }
+
+  /** This class is used to read and send files in the lucene index */
+  private class DirectoryFileStream implements SolrCore.RawWriter {
+    protected SolrParams params;
+
+    protected FastOutputStream fos;
+
+    protected Long indexGen;
+    protected IndexDeletionPolicyWrapper delPolicy;
+
+    protected String fileName;
+    protected String cfileName;
+    protected String tlogFileName;
+    protected String sOffset;
+    protected String sLen;
+    protected final boolean compress;
+    protected boolean useChecksum;
+
+    protected long offset = -1;
+    protected int len = -1;
+
+    protected Checksum checksum;
+
+    private RateLimiter rateLimiter;
+
+    byte[] buf;
+
+    public DirectoryFileStream(
+        String file,
+        String dirType,
+        String offset,
+        String len,
+        boolean compression,
+        boolean useChecksum,
+        double maxWriteMBPerSec,
+        Long gen) {
+      delPolicy = solrCore.getDeletionPolicy();
+
+      fileName = validateFilenameOrError(file);
+
+      switch (dirType) {
+        case "cFile":
+          cfileName = file;
+          break;
+        case "tFile":
+          tlogFileName = file;
+          break;
+        default:
+          fileName = file;
+          break;
+      }
+
+      this.sOffset = offset;
+      this.sLen = len;
+      this.compress = compression;
+      this.useChecksum = useChecksum;
+      this.indexGen = gen; // FIX LATER
+      if (useChecksum) {
+        checksum = new Adler32();
+      }
+      // No throttle if MAX_WRITE_PER_SECOND is not specified
+      if (maxWriteMBPerSec == 0) { // CHECK THIS
+        this.rateLimiter = new RateLimiter.SimpleRateLimiter(Double.MAX_VALUE);
+      } else {
+        this.rateLimiter = new RateLimiter.SimpleRateLimiter(maxWriteMBPerSec);
+      }
+    }
+
+    // Throw exception on directory traversal attempts
+    protected String validateFilenameOrError(String fileName) {
+      if (fileName != null) {
+        Path filePath = Paths.get(fileName);
+        filePath.forEach(
+            subpath -> {
+              if ("..".equals(subpath.toString())) {
+                throw new SolrException(
+                    SolrException.ErrorCode.FORBIDDEN, "File name cannot contain ..");
+              }
+            });
+        if (filePath.isAbsolute()) {
+          throw new SolrException(SolrException.ErrorCode.FORBIDDEN, "File name must be relative");
+        }
+        return fileName;
+      } else return null;
+    }
+
+    protected void initWrite() throws IOException {
+      if (sOffset != null) offset = Long.parseLong(sOffset);
+      if (sLen != null) len = Integer.parseInt(sLen);
+      if (fileName == null && cfileName == null && tlogFileName == null) {
+        // no filename do nothing
+        writeNothingAndFlush();
+      }
+      buf = new byte[(len == -1 || len > PACKET_SZ) ? PACKET_SZ : len];
+
+      // reserve commit point till write is complete
+      if (indexGen != null) {
+        delPolicy.saveCommitPoint(indexGen);
+      }
+    }
+
+    protected void createOutputStream(OutputStream out) {
+      // DeflaterOutputStream requires a close call, but don't close the request outputstream
+      out = new CloseShieldOutputStream(out);
+      if (compress) {
+        fos = new FastOutputStream(new DeflaterOutputStream(out));
+      } else {
+        fos = new FastOutputStream(out);
+      }
+    }
+
+    protected void extendReserveAndReleaseCommitPoint() {
+      // TODO FIX LATER
+      ReplicationHandler replicationHandler =
+          (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+
+      if (indexGen != null) {
+        // Reserve the commit point for another 10s for the next file to be to fetched.
+        // We need to keep extending the commit reservation between requests so that the replica can
+        // fetch all the files correctly.
+        delPolicy.setReserveDuration(indexGen, replicationHandler.getReserveCommitDuration());
+
+        // release the commit point as the write is complete
+        delPolicy.releaseCommitPoint(indexGen);
+      }
+    }
+
+    @Override
+    public void write(OutputStream out) throws IOException {
+      createOutputStream(out);
+
+      IndexInput in = null;
+      try {
+        initWrite();
+
+        Directory dir = solrCore.withSearcher(searcher -> searcher.getIndexReader().directory());
+        in = dir.openInput(fileName, IOContext.READONCE);
+        // if offset is mentioned move the pointer to that point
+        if (offset != -1) in.seek(offset);
+
+        long filelen = dir.fileLength(fileName);
+        long maxBytesBeforePause = 0;
+
+        while (true) {
+          offset = offset == -1 ? 0 : offset;
+          int read = (int) Math.min(buf.length, filelen - offset);
+          in.readBytes(buf, 0, read);
+
+          fos.writeInt(read);
+          if (useChecksum) {
+            checksum.reset();
+            checksum.update(buf, 0, read);
+            fos.writeLong(checksum.getValue());
+          }
+          fos.write(buf, 0, read);
+          fos.flush();
+          log.error("Wrote {} bytes for file {}", offset + read, fileName); // nowarn
+
+          // Pause if necessary
+          maxBytesBeforePause += read;
+          if (maxBytesBeforePause >= rateLimiter.getMinPauseCheckBytes()) {
+            rateLimiter.pause(maxBytesBeforePause);
+            maxBytesBeforePause = 0;
+          }
+          if (read != buf.length) {
+            writeNothingAndFlush();
+            // we close because DeflaterOutputStream requires a close call, but  the request
+            // outputstream is protected
+            fos.close();
+            break;
+          }
+          offset += read;
+          in.seek(offset);
+        }
+      } catch (IOException e) {
+        log.warn("Exception while writing response for params: {}", params, e);
+      } finally {
+        if (in != null) {
+          in.close();
+        }
+        extendReserveAndReleaseCommitPoint();
+      }
+    }
+
+    /** Used to write a marker for EOF */
+    protected void writeNothingAndFlush() throws IOException {
+      fos.writeInt(0);
+      fos.flush();
+    }
+  }
+
+  /** This is used to write files in the conf directory. */
+  private abstract class LocalFsFileStream extends DirectoryFileStream {
+
+    private Path file;
+
+    public LocalFsFileStream(
+        String file,
+        String dirType,
+        String offset,
+        String len,
+        boolean compression,
+        boolean useChecksum,
+        double maxWriteMBPerSec,
+        Long gen) {
+      super(file, dirType, offset, len, compression, useChecksum, maxWriteMBPerSec, gen);
+      this.file = this.initFile();
+    }
+
+    protected abstract Path initFile();
+
+    @Override
+    public void write(OutputStream out) throws IOException {
+      createOutputStream(out);
+      try {
+        initWrite();
+
+        if (Files.isReadable(file)) {
+          try (SeekableByteChannel channel = Files.newByteChannel(file)) {
+            // if offset is mentioned move the pointer to that point
+            if (offset != -1) channel.position(offset);
+            ByteBuffer bb = ByteBuffer.wrap(buf);
+
+            while (true) {
+              bb.clear();
+              long bytesRead = channel.read(bb);
+              if (bytesRead <= 0) {
+                writeNothingAndFlush();
+                // we close because DeflaterOutputStream requires a close call, but the request
+                // outputstream is protected
+                fos.close();
+                break;
+              }
+              fos.writeInt((int) bytesRead);
+              if (useChecksum) {
+                checksum.reset();
+                checksum.update(buf, 0, (int) bytesRead);
+                fos.writeLong(checksum.getValue());
+              }
+              fos.write(buf, 0, (int) bytesRead);
+              fos.flush();
+            }
+          }
+        } else {
+          writeNothingAndFlush();
+        }
+      } catch (IOException e) {
+        log.warn("Exception while writing response for params: {}", params, e);
+      } finally {
+        extendReserveAndReleaseCommitPoint();
+      }
+    }
+  }
+
+  private class LocalFsTlogFileStream extends LocalFsFileStream {
+
+    public LocalFsTlogFileStream(
+        String file,
+        String dirType,
+        String offset,
+        String len,
+        boolean compression,
+        boolean useChecksum,
+        double maxWriteMBPerSec,
+        Long gen) {
+      super(file, dirType, offset, len, compression, useChecksum, maxWriteMBPerSec, gen);
+//      tlogFileName = file;
+    }
+
+    @Override
+    protected Path initFile() {
+      // if it is a tlog file read from tlog directory
+      return Path.of(solrCore.getUpdateHandler().getUpdateLog().getTlogDir(), tlogFileName);
+    }
+  }
+
+  private class LocalFsConfFileStream extends LocalFsFileStream {
+
+    public LocalFsConfFileStream(
+        String file,
+        String dirType,
+        String offset,
+        String len,
+        boolean compression,
+        boolean useChecksum,
+        double maxWriteMBPerSec,
+        Long gen) {
+      super(file, dirType, offset, len, compression, useChecksum, maxWriteMBPerSec, gen);
+//      cfileName = file;
+    }
+
+    @Override
+    protected Path initFile() {
+      // if it is a conf file read from config directory
+      return solrCore.getResourceLoader().getConfigPath().resolve(cfileName);
+    }
   }
 
   private void reportErrorOnResponse(

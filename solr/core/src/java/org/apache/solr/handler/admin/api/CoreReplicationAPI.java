@@ -22,8 +22,10 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -66,6 +68,37 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
           @QueryParam("generation")
           long gen) {
     return doFetchFileList(gen);
+  }
+
+  @GET
+  @Path("/files/{filePath}")
+  @Produces({MediaType.TEXT_PLAIN, BINARY_CONTENT_TYPE_V2})
+  public String fetchFile(
+      @PathParam("filePath") String filePath,
+      @Parameter(
+              description =
+                  "Directory type for specific filePath (cf or tlf). Lucene index default if empty",
+              required = false)
+          @QueryParam("dirType")
+          String dirType,
+      @Parameter(description = "offset", required = false) @QueryParam("offset") String offset,
+      @Parameter(description = "len", required = false) @QueryParam("len") String len,
+      @Parameter(description = "compress", required = false)
+          @QueryParam("compression")
+          @DefaultValue("false")
+          Boolean compression,
+      @Parameter(description = "checksum", required = false)
+          @QueryParam("checksum")
+          @DefaultValue("false")
+          Boolean checksum,
+      @Parameter(description = "maxWriteMBPerSec", required = false) @QueryParam("maxWriteMBPerSec")
+          double maxWriteMBPerSec,
+      @Parameter(description = "The generation number of the index", required = false)
+          @QueryParam("generation")
+          Long gen)
+      throws IOException {
+    return doFetchFile(
+        filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
   }
 
   /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
