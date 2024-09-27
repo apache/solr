@@ -524,7 +524,7 @@ public class ExportTool extends ToolBase {
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach(
             (s, coreHandler) ->
-                producerThreadpool.submit(
+                producerThreadpool.execute(
                     () -> {
                       try {
                         coreHandler.exportDocsFromCore();
@@ -570,7 +570,7 @@ public class ExportTool extends ToolBase {
     }
 
     private void addConsumer(CountDownLatch consumerlatch) {
-      consumerThreadpool.submit(
+      consumerThreadpool.execute(
           () -> {
             while (true) {
               SolrDocument doc;

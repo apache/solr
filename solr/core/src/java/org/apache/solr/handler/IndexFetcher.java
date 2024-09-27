@@ -1803,7 +1803,7 @@ public class IndexFetcher {
       } finally {
         cleanup();
         // if cleanup succeeds . The file is downloaded fully. do an fsync
-        fsyncService.submit(
+        fsyncService.execute(
             () -> {
               try {
                 file.sync();

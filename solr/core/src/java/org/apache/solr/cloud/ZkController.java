@@ -733,14 +733,16 @@ public class ZkController implements Closeable {
 
     try {
       synchronized (collectionToTerms) {
-        customThreadPool.submit(
-            () -> collectionToTerms.values().parallelStream().forEach(ZkCollectionTerms::close));
+        collectionToTerms
+            .values()
+            .forEach(zkCollectionTerms -> customThreadPool.execute(zkCollectionTerms::close));
       }
 
-      customThreadPool.submit(
-          () ->
-              replicateFromLeaders.values().parallelStream()
-                  .forEach(ReplicateFromLeader::stopReplication));
+      replicateFromLeaders
+          .values()
+          .forEach(
+              replicateFromLeader ->
+                  customThreadPool.execute(replicateFromLeader::stopReplication));
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
     }
@@ -754,12 +756,12 @@ public class ZkController implements Closeable {
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(overseerElector.getContext()));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(overseerElector.getContext()));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(overseer));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(overseer));
 
     try {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             Collection<ElectionContext> values = electionContexts.values();
             synchronized (electionContexts) {
@@ -770,8 +772,8 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
-      customThreadPool.submit(() -> IOUtils.closeQuietly(cloudSolrClient));
-      customThreadPool.submit(() -> IOUtils.closeQuietly(cloudManager));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
 
       try {
         try {
@@ -2757,7 +2759,7 @@ public class ZkController implements Closeable {
       final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
       if (listeners != null && !listeners.isEmpty()) {
         final Set<Runnable> listenersCopy = new HashSet<>(listeners);
-        // run these in a separate thread because this can be long running
+        // run these in a separate thread because this can be long-running
         Runnable work =
             () -> {
               log.debug("Running listeners for {}", zkDir);
@@ -2769,7 +2771,7 @@ public class ZkController implements Closeable {
                 }
               }
             };
-        cc.getCoreZkRegisterExecutorService().submit(work);
+        cc.getCoreZkRegisterExecutorService().execute(work);
       }
     }
     return true;
@@ -2779,7 +2781,7 @@ public class ZkController implements Closeable {
     try {
       Stat newStat = zkClient.exists(zkDir, watcher, true);
       if (stat != null && newStat.getVersion() > stat.getVersion()) {
-        // a race condition where a we missed an event fired
+        // a race condition where we missed an event fired
         // so fire the event listeners
         fireEventListeners(zkDir);
       }
