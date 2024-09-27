@@ -410,7 +410,7 @@ public class MiniClusterState {
           10,
           TimeUnit.SECONDS);
       for (int i = 0; i < docCount; i++) {
-        executorService.submit(
+        executorService.execute(
             new Runnable() {
               final SplittableRandom threadRandom = random.split();
 

@@ -256,7 +256,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
             numThreads, new SolrNamedThreadFactory("testAsyncIdRaceCondition"));
     try {
       for (int i = 0; i < numThreads; i++) {
-        es.submit(
+        es.execute(
             new Runnable() {
 
               @Override

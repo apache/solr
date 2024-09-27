@@ -144,9 +144,6 @@ $done = false
 while (not $done) {
   $results = fetch_solr($params)
   // do something with $results
-  if (count($results[response][docs]) < $r) {
-    $done = true
-  }
   if ($params[cursorMark] == $results[nextCursorMark]) {
     $done = true
   }

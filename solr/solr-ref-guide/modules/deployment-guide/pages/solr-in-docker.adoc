@@ -342,6 +342,13 @@ Usage: jattach <pid> <cmd> [args ...]
     jcmd : execute jcmd command
 ....
 
+To find out the PID of Solr you can execute the following command:
+
+[source,bash]
+----
+ps -ef | grep java
+----
+
 Example commands to do a thread dump and get heap info for `PID 10`:
 
 
