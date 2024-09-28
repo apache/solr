@@ -47,7 +47,7 @@
 # ensuring that no include files exist in the aforementioned search list.
 
 SOLR_SCRIPT="$0"
-debug=false
+verbose=false
 THIS_OS=$(uname -s)
 
 # What version of Java is required to run this version of Solr.
@@ -425,7 +425,7 @@ function print_usage() {
     echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '--force' parameter."
     echo ""
-    echo "  --debug or -q/--quiet Debug or quiet logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
+    echo "  --verbose or --quiet/-q  Verbose or quiet logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -437,7 +437,7 @@ function print_usage() {
     echo ""
     echo "  --all         Find and stop all running Solr servers on this host"
     echo ""
-    echo "  --debug       Debug messages from this script"
+    echo "  --verbose     Verbose messages from this script"
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
@@ -851,10 +851,10 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
-        -V|--verbose|-verbose|-v|--debug)
-            debug=true
+        -V|--verbose|-verbose|-v)
+            verbose=true
             SOLR_LOG_LEVEL=DEBUG
-            PASS_TO_RUN_EXAMPLE+=("--debug")
+            PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
         ;;
         -q|--quiet)
@@ -928,7 +928,7 @@ fi
 
 ############# start/stop logic below here ################
 
-if $debug ; then
+if $verbose ; then
   echo "Using Solr root directory: $SOLR_TIP"
   echo "Using Java: $JAVA"
   "$JAVA" -version
@@ -1149,7 +1149,7 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
       echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
       exit 1
     fi
-    if $debug ; then
+    if $verbose ; then
       echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
     fi
 
@@ -1316,7 +1316,7 @@ function start_solr() {
     SCRIPT_SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
   fi
 
-  if $debug ; then
+  if $verbose ; then
     echo -e "\nStarting Solr using the following settings:"
     echo -e "    JAVA               = $JAVA"
     echo -e "    SOLR_SERVER_DIR    = $SOLR_SERVER_DIR"

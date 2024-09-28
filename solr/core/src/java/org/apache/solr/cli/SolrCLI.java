@@ -49,7 +49,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -158,12 +157,6 @@ public class SolrCLI implements CLIO {
                   .get())
           .required(false)
           .desc("Enable verbose command output.")
-          .build();
-  public static final Option OPTION_DEBUG =
-      Option.builder()
-          .longOpt("debug")
-          .required(false)
-          .desc("Enable additional command output.")
           .build();
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
@@ -327,8 +320,7 @@ public class SolrCLI implements CLIO {
   }
 
   public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
-        || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (!cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }
@@ -381,11 +373,8 @@ public class SolrCLI implements CLIO {
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
+    options.addOption(OPTION_VERBOSE);
 
-    OptionGroup debugOptionGroup = new OptionGroup();
-    debugOptionGroup.addOption(OPTION_VERBOSE);
-    debugOptionGroup.addOption(OPTION_DEBUG);
-    options.addOptionGroup(debugOptionGroup);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
       if (!toolOpt.isDeprecated()) {
@@ -428,11 +417,7 @@ public class SolrCLI implements CLIO {
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
-
-    OptionGroup debugOptionGroup = new OptionGroup();
-    debugOptionGroup.addOption(OPTION_VERBOSE);
-    debugOptionGroup.addOption(OPTION_DEBUG);
-    options.addOptionGroup(debugOptionGroup);
+    options.addOption(OPTION_VERBOSE);
 
     if (customOptions != null) {
       for (Option customOption : customOptions) {
@@ -674,7 +659,7 @@ public class SolrCLI implements CLIO {
     print("");
     print("Global Options:");
     print("  -v,  --version           Print version information and quit");
-    print("       --debug             Enable debug mode");
+    print("       --verbose           Enable verbose mode");
     print("");
     print("Run 'solr COMMAND --help' for more information on a command.");
     print("");

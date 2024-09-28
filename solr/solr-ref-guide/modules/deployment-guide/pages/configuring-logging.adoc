@@ -116,9 +116,9 @@ Examples:
 [source,bash]
 ----
 # Start with detailed (DEBUG) logging
-bin/solr start -f --debug
+bin/solr start -f --verbose
 # Start with quiet (WARN) logging
-bin/solr start -f -q
+bin/solr start -f --quiet
 ----
 
 == Permanent Logging Settings

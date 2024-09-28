@@ -147,7 +147,7 @@ public class ConfigTool extends ToolBase {
     String updatePath = "/" + collection + "/config";
 
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
-    echoIfDebug(jsonBody, cli);
+    echoIfVerbose(jsonBody, cli);
 
     try (SolrClient solrClient =
         SolrCLI.getSolrClient(

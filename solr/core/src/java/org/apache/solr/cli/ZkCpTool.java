@@ -128,7 +128,7 @@ public class ZkCpTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
-    echoIfDebug("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
     boolean recurse = cli.hasOption("recurse");
@@ -166,7 +166,7 @@ public class ZkCpTool extends ToolBase {
       }
 
       if (solrHome != null) {
-        echoIfDebug("Using SolrHome: " + solrHome, cli);
+        echoIfVerbose("Using SolrHome: " + solrHome, cli);
         try {
           // Be aware that if you start Solr and pass in some variables via -D like
           // solr start -DminStateByteLenForCompression=0 -c, this logic will not
@@ -199,7 +199,7 @@ public class ZkCpTool extends ToolBase {
       }
     }
     if (minStateByteLenForCompression > -1) {
-      echoIfDebug("Compression of state.json has been enabled", cli);
+      echoIfVerbose("Compression of state.json has been enabled", cli);
     }
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()

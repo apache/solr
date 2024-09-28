@@ -131,9 +131,7 @@ public class AssertTool extends ToolBase {
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    debug =
-        cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
-            || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
     int toolExitStatus;
     try {
@@ -142,7 +140,7 @@ public class AssertTool extends ToolBase {
       // since this is a CLI, spare the user the stacktrace
       String excMsg = exc.getMessage();
       if (excMsg != null) {
-        if (debug) {
+        if (verbose) {
           CLIO.err("\nERROR: " + exc + "\n");
         } else {
           CLIO.err("\nERROR: " + excMsg + "\n");

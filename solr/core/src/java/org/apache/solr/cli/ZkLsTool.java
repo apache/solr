@@ -66,10 +66,10 @@ public class ZkLsTool extends ToolBase {
     String znode = cli.getArgs()[0];
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfDebug("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
       boolean recurse = cli.hasOption("recurse");
-      echoIfDebug(
+      echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode
               + " from ZooKeeper at "

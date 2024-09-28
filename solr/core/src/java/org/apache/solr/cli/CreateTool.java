@@ -224,18 +224,17 @@ public class CreateTool extends ToolBase {
 
       FileUtils.copyDirectoryToDirectory(confDir.toFile(), coreInstanceDir.toFile());
 
-      echoIfDebug(
+      echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
               + coreInstanceDir.toAbsolutePath(),
           cli);
     }
 
-    echoIfDebug("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
+    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
-          || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      if (verbose) {
         echo(res.jsonStr());
         echo("\n");
       } else {
@@ -258,7 +257,7 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfDebug("Connecting to ZooKeeper at " + zkHost, cli);
+      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -326,7 +325,7 @@ public class CreateTool extends ToolBase {
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
-      echoIfDebug(
+      echoIfVerbose(
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
@@ -348,7 +347,7 @@ public class CreateTool extends ToolBase {
     }
 
     // doesn't seem to exist ... try to create
-    echoIfDebug(
+    echoIfVerbose(
         "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
 
     NamedList<Object> response;
@@ -363,8 +362,7 @@ public class CreateTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption((SolrCLI.OPTION_DEBUG.getOpt()))
-        || cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (verbose) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());

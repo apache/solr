@@ -223,7 +223,7 @@ If passed relative dir, validation with current dir will be done, before trying 
 Sets the `solr.data.home` system property, where Solr will store index data in <instance_dir>/data subdirectories.
 If not set, Solr uses solr.solr.home for config and data.
 
-`--debug`::
+`--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -233,7 +233,7 @@ If not set, Solr uses solr.solr.home for config and data.
 This does two things.  It provides additional debugging information on how the script is configured to start Solr.
 It also changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
 +
-*Example*: `bin/solr start -f --debug`
+*Example*: `bin/solr start -f --verbose`
 
 `-q` or `--quiet`::
 +
@@ -415,16 +415,16 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
-`-d` or `--debug`::
+`-d` or `--verbose`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Stop Solr with debugging messages from this script.
+Stop Solr with verbose messages from this script.
 +
-*Example*: `bin/solr stop --debug`
+*Example*: `bin/solr stop --verbose`
 
 == System Information
 

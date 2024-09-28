@@ -234,7 +234,7 @@ public class RunExampleTool extends ToolBase {
               + exampleDir.getAbsolutePath()
               + " is not a directory!");
 
-    echoIfDebug(
+    echoIfVerbose(
         "Running with\nserverDir="
             + serverDir.getAbsolutePath()
             + ",\nexampleDir="
@@ -497,7 +497,7 @@ public class RunExampleTool extends ToolBase {
         }
 
         cloudPorts[n] = port;
-        echoIfDebug("Using port " + port + " for node " + (n + 1), cli);
+        echoIfVerbose("Using port " + port + " for node " + (n + 1), cli);
       }
     } else {
       echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");
@@ -615,7 +615,7 @@ public class RunExampleTool extends ToolBase {
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "--cloud " : "";
     String forceArg = cli.hasOption("force") ? " --force" : "";
-    String verboseArg = debug ? "-V" : "";
+    String verboseArg = verbose ? "-V" : "";
 
     String jvmOpts =
         cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');
@@ -708,7 +708,7 @@ public class RunExampleTool extends ToolBase {
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
     return getNodeStatus(
-        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
+        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs, cli);
   }
 
   protected Map<String, Object> checkPortConflict(
@@ -887,10 +887,10 @@ public class RunExampleTool extends ToolBase {
     return configDir.isDirectory();
   }
 
-  protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
-      throws Exception {
+  protected Map<String, Object> getNodeStatus(
+      String solrUrl, String credentials, int maxWaitSecs, CommandLine cli) throws Exception {
     StatusTool statusTool = new StatusTool();
-    if (debug) echo("\nChecking status of Solr at " + solrUrl + " ...");
+    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...", cli);
 
     URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
@@ -899,14 +899,10 @@ public class RunExampleTool extends ToolBase {
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);
     String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
-    if (debug)
-      echo(
-          "\nSolr is running on "
-              + solrURI.getPort()
-              + " in "
-              + mode
-              + " mode with status:\n"
-              + arr);
+
+    echoIfVerbose(
+        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr,
+        cli);
 
     return nodeStatus;
   }
@@ -1004,7 +1000,7 @@ public class RunExampleTool extends ToolBase {
           }
 
         } catch (NumberFormatException nfe) {
-          if (debug) echo(value + " is not a number!");
+          if (verbose) echo(value + " is not a number!");
 
           if (min != null && max != null) {
             value =
