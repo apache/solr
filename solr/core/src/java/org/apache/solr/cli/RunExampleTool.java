@@ -707,7 +707,7 @@ public class RunExampleTool extends ToolBase {
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
     return getNodeStatus(
-        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs, cli);
+        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(
@@ -886,10 +886,10 @@ public class RunExampleTool extends ToolBase {
     return configDir.isDirectory();
   }
 
-  protected Map<String, Object> getNodeStatus(
-      String solrUrl, String credentials, int maxWaitSecs, CommandLine cli) throws Exception {
+  protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
+      throws Exception {
     StatusTool statusTool = new StatusTool();
-    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...", cli);
+    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...");
 
     URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
@@ -900,8 +900,7 @@ public class RunExampleTool extends ToolBase {
     String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
 
     echoIfVerbose(
-        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr,
-        cli);
+        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr);
 
     return nodeStatus;
   }
