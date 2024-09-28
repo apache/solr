@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -156,11 +157,18 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
+  }
+
+  @Override
+  public List<OptionGroup> getOptionGroups() {
+    System.out.println("Now making solr and zk");
+    OptionGroup group = new OptionGroup();
+    group.addOption(SolrCLI.OPTION_SOLRURL);
+    group.addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED);
+    group.addOption(SolrCLI.OPTION_ZKHOST);
+    group.addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED);
+    return List.of(group);
   }
 
   @Override

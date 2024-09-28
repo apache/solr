@@ -49,6 +49,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -358,10 +359,23 @@ public class SolrCLI implements CLIO {
   }
 
   /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
-  public static Options getToolOptions(Tool tool) {
+  public static Options getToolOptionsForHelp(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
+
+    List<OptionGroup> optionGroups = tool.getOptionGroups();
+    for (OptionGroup optionGroup : optionGroups) {
+      System.out.println("I am in option group");
+      System.out.println(optionGroup);
+      // options.addOptionGroup(optionGroup);
+      for (Option o : optionGroup.getOptions()) {
+        System.out.println("here is option: " + o.getArgName());
+        if (!o.isDeprecated()) {
+          options.addOption(o);
+        }
+      }
+    }
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
       if (!toolOpt.isDeprecated()) {
@@ -401,6 +415,7 @@ public class SolrCLI implements CLIO {
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     List<Option> customOptions = tool.getOptions();
+    List<OptionGroup> customOptionGroups = tool.getOptionGroups();
     Options options = new Options();
 
     options.addOption(OPTION_HELP);
@@ -409,6 +424,11 @@ public class SolrCLI implements CLIO {
     if (customOptions != null) {
       for (Option customOption : customOptions) {
         options.addOption(customOption);
+      }
+    }
+    if (customOptionGroups != null) {
+      for (OptionGroup optionGroup : customOptionGroups) {
+        options.addOptionGroup(optionGroup);
       }
     }
 
@@ -451,10 +471,10 @@ public class SolrCLI implements CLIO {
   /** Prints tool help for a given tool */
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
-    Options optionsNoDeprecated = new Options();
-    tool.getOptions().stream()
-        .filter(option -> !option.isDeprecated())
-        .forEach(optionsNoDeprecated::addOption);
+    Options optionsNoDeprecated = getToolOptionsForHelp(tool);
+    // tool.getOptions().stream()
+    //    .filter(option -> !option.isDeprecated())
+    //    .forEach(optionsNoDeprecated::addOption);
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
