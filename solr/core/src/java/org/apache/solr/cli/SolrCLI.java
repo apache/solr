@@ -222,7 +222,7 @@ public class SolrCLI implements CLIO {
           args = remappedArgs;
         }
       } else {
-        // chop the leading zk argument so we invoke the correct zk sub tool
+        // chop the leading zk argument, so we invoke the correct zk sub tool
         String[] trimmedArgs = new String[args.length - 1];
         System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
         args = trimmedArgs;

@@ -233,12 +233,12 @@ public class CreateTool extends ToolBase {
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      if (isVerbose()) {
         echo(res.jsonStr());
         echo("\n");
-      } else {
-        echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
       }
+      echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
+
     } catch (Exception e) {
       /* create-core failed, cleanup the copied configset before propagating the error. */
       PathUtils.deleteDirectory(coreInstanceDir);
@@ -255,8 +255,8 @@ public class CreateTool extends ToolBase {
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
+    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -360,25 +360,24 @@ public class CreateTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (isVerbose()) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
       echo(arr.toString());
-    } else {
-      String endMessage =
-          String.format(
-              Locale.ROOT,
-              "Created collection '%s' with %d shard(s), %d replica(s)",
-              collectionName,
-              numShards,
-              replicationFactor);
-      if (confName != null && !confName.trim().isEmpty()) {
-        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
-      }
-
-      echo(endMessage);
     }
+    String endMessage =
+        String.format(
+            Locale.ROOT,
+            "Created collection '%s' with %d shard(s), %d replica(s)",
+            collectionName,
+            numShards,
+            replicationFactor);
+    if (confName != null && !confName.trim().isEmpty()) {
+      endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
+    }
+
+    echo(endMessage);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
