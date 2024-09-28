@@ -345,10 +345,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     @Override
     protected Comparator<Passage> getPassageSortComparator(String fieldName) {
-      PassageSort passageSort =
-          PassageSort.parse(
-              params.getFieldParam(
-                  fieldName, HighlightParams.PASSAGE_SORT, PassageSort.START_OFFSET.key));
+      String value = params.get(HighlightParams.PASSAGE_SORT, PassageSort.START_OFFSET.key);
+
+      PassageSort passageSort = PassageSort.parse(value);
 
       switch (passageSort) {
         case START_OFFSET:
@@ -358,7 +357,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         case SCORE:
           return Comparator.comparingDouble(Passage::getScore);
         default:
-          throw new AssertionError();
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "passed " + HighlightParams.PASSAGE_SORT + " value is not supported: " + value);
       }
     }
 
