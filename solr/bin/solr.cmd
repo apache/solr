@@ -881,7 +881,7 @@ IF "%SCRIPT_CMD%"=="start" (
   
   IF "%EMPTY_ADDL_JVM_ARGS%"=="true" (
     set "SCRIPT_ERROR=JVM options are required when using the -a or --jvm-opts option!"
-	goto err
+    goto err
   )
 )
 
