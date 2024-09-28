@@ -1242,7 +1242,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *     {@link SolrServerException} during the request. Once completed, the CompletableFuture will
    *     contain a {@link NamedList} with the response from the server.
    */
-  public  CompletableFuture<NamedList<Object>> requestAsync(
+  public CompletableFuture<NamedList<Object>> requestAsync(
       final SolrRequest<?> request, String collection) {
     throw new UnsupportedOperationException();
   }
