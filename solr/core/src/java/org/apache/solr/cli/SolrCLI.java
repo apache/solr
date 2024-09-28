@@ -234,7 +234,7 @@ public class SolrCLI implements CLIO {
           args = remappedArgs;
         }
       } else {
-        // chop the leading zk argument so we invoke the correct zk sub tool
+        // chop the leading zk argument, so we invoke the correct zk sub tool
         String[] trimmedArgs = new String[args.length - 1];
         System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
         args = trimmedArgs;
@@ -877,7 +877,7 @@ public class SolrCLI implements CLIO {
     String RESET = "\u001B[0m";
 
     if (color != null) {
-      CLIO.out(color + String.valueOf(message) + RESET);
+      CLIO.out(color + message + RESET);
     } else {
       CLIO.out(String.valueOf(message));
     }
