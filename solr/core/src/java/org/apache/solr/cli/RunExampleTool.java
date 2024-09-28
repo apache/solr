@@ -692,8 +692,7 @@ public class RunExampleTool extends ToolBase {
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
-    return getNodeStatus(
-        solrUrl, maxWaitSecs, cli);
+    return getNodeStatus(solrUrl, maxWaitSecs, cli);
   }
 
   protected Map<String, Object> checkPortConflict(String solrUrl, File solrHomeDir, int port) {
@@ -870,8 +869,8 @@ public class RunExampleTool extends ToolBase {
     return configDir.isDirectory();
   }
 
-  protected Map<String, Object> getNodeStatus(
-      String solrUrl, int maxWaitSecs, CommandLine cli) throws Exception {
+  protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs, CommandLine cli)
+      throws Exception {
     StatusTool statusTool = new StatusTool();
     echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...", cli);
 
