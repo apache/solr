@@ -50,6 +50,7 @@ teardown() {
 
   run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+  assert_output --partial "Deprecated for removal since 9.8: Use --value instead"
   assert_output --partial "assuming solr url is http://localhost:${SOLR_PORT}."
 }
 

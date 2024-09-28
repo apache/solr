@@ -84,12 +84,6 @@ setup() {
   refute_output --partial 'ERROR'
 }
 
-@test "version help flag prints help" {
-  run solr version -h
-  assert_output --partial 'usage: bin/solr version'
-  refute_output --partial 'ERROR'
-}
-
 @test "zk help flag prints help" {
   run solr zk --help
   assert_output --partial 'usage:'

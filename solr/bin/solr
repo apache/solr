@@ -425,13 +425,11 @@ function print_usage() {
     echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '--force' parameter."
     echo ""
-    echo "  -v and -q             Verbose (-v) or quiet (-q) logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
-    echo ""
-    echo "  -V/--verbose           Verbose messages from this script"
+    echo "  --verbose or --quiet/-q  Verbose or quiet logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
-    echo "Usage: solr stop [-k key] [-p port] [-V]"
+    echo "Usage: solr stop [-k key] [-p port] [--all]"
     echo ""
     echo "  -k <key>      Stop key; default is solrrocks"
     echo ""
@@ -439,7 +437,7 @@ function print_usage() {
     echo ""
     echo "  --all         Find and stop all running Solr servers on this host"
     echo ""
-    echo "  -V/--verbose   Verbose messages from this script"
+    echo "  --verbose     Verbose messages from this script"
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
@@ -861,16 +859,13 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
-        -V|--verbose|-verbose)
+        -V|--verbose|-verbose|-v)
             verbose=true
+            SOLR_LOG_LEVEL=DEBUG
             PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
         ;;
-        -v)
-            SOLR_LOG_LEVEL=DEBUG
-            shift
-        ;;
-        -q)
+        -q|--quiet)
             SOLR_LOG_LEVEL=WARN
             shift
         ;;

@@ -72,8 +72,7 @@ public class SnapshotDescribeTool extends ToolBase {
             .required(true)
             .desc("Name of the snapshot to describe")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
