@@ -20,6 +20,7 @@ package org.apache.solr.cli;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 
 public interface Tool {
   /** Defines the interface to a Solr tool that can be run from this command-line app. */
@@ -51,6 +52,8 @@ public interface Tool {
   }
 
   List<Option> getOptions();
+
+  List<OptionGroup> getOptionGroups();
 
   int runTool(CommandLine cli) throws Exception;
 }
