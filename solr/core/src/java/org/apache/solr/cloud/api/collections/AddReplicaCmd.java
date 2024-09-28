@@ -215,7 +215,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
         runnable.run();
       }
     } else {
-      ccc.getExecutorService().submit(runnable);
+      ccc.getExecutorService().execute(runnable);
     }
 
     return createReplicas.stream()

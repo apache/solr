@@ -648,7 +648,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
-  
+
   if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
   elif [[ $SOLR_HOME != /* ]]; then
@@ -659,7 +659,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
       SOLR_PID_DIR="$SOLR_HOME"
     fi
   fi
-  
+
   if [ -z "${AUTH_PORT:-}" ]; then
     for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
       do
@@ -669,22 +669,18 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
           break
         fi
       done
-  fi  
-  
+  fi
+
   run_tool auth $@ --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
   exit $?
 fi
 
-# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.  
+# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
-  ret=$?
-  if [ $ret -ne 0 ]; then
-    exit $ret
-  fi
-  exit 0
+  exit $?
 fi
 
 # Everything below here is to support start, stop and restart.
@@ -695,7 +691,7 @@ fi
 : "${SOLR_RECOMMENDED_OPEN_FILES:=65000}"
 
 if [[ "${SOLR_ULIMIT_CHECKS:-}" != "false" ]]; then
-  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] || [ "$SCRIPT_CMD" == "status" ]; then
+  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
@@ -832,16 +828,28 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         -a|--jvm-opts|-addlopts)
+            if [[ -z "$2" ]]; then
+              print_usage "$SCRIPT_CMD" "JVM options are required when using the $1 option!"
+              exit 1
+            fi
             ADDITIONAL_CMD_OPTS="$2"
             PASS_TO_RUN_EXAMPLE+=("--jvm-opts" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
         -j|--jettyconfig|-jettyconfig)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
+              exit 1
+            fi
             ADDITIONAL_JETTY_CONFIG="$2"
             PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
         -k|--key|-key)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Stop key is required when using the $1 option!"
+              exit 1
+            fi
             STOP_KEY="$2"
             shift 2
         ;;
@@ -1226,7 +1234,7 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
-# Enable ADMIN UI by default, and give the option for users to disable it
+# Enable Admin UI by default, and give the option for users to disable it
 if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
   SOLR_ADMIN_UI="-DdisableAdminUI=true"
   echo -e "ADMIN UI Disabled"
