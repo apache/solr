@@ -24,7 +24,6 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -694,12 +693,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     } else {
       interruptRunnerThreadsPolling();
     }
-  }
-
-  @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(
-      SolrRequest<?> request, String collection) {
-    throw new UnsupportedOperationException();
   }
 
   /** Constructs {@link ConcurrentUpdateHttp2SolrClient} instances from provided configuration. */

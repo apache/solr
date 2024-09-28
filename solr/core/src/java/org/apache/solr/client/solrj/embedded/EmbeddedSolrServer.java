@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
@@ -376,11 +375,5 @@ public class EmbeddedSolrServer extends SolrClient {
    */
   public CoreContainer getCoreContainer() {
     return coreContainer;
-  }
-
-  @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(
-      SolrRequest<?> request, String collection) {
-    throw new UnsupportedOperationException();
   }
 }

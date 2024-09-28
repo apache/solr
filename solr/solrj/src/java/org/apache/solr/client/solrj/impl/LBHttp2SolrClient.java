@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -193,12 +192,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
           return null;
         });
     return apiFuture;
-  }
-
-  @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(
-      SolrRequest<?> request, String collection) {
-    throw new UnsupportedOperationException();
   }
 
   private interface RetryListener {

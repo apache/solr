@@ -19,7 +19,6 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
-import java.util.concurrent.CompletableFuture;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -97,11 +96,5 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
 
     @Override
     public void close() {}
-
-    @Override
-    public CompletableFuture<NamedList<Object>> requestAsync(
-        SolrRequest<?> request, String collection) {
-      throw new UnsupportedOperationException();
-    }
   }
 }
