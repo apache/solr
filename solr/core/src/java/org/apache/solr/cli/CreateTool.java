@@ -226,11 +226,10 @@ public class CreateTool extends ToolBase {
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
-              + coreInstanceDir.toAbsolutePath(),
-          cli);
+              + coreInstanceDir.toAbsolutePath());
     }
 
-    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
+    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest");
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
@@ -257,7 +256,7 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+      echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -331,8 +330,7 @@ public class CreateTool extends ToolBase {
               + " for config "
               + confName
               + " to ZooKeeper at "
-              + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
-          cli);
+              + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
       // We will trust the config since we have the Zookeeper Address
       configSetService.uploadConfig(confName, confPath, true);
     }
@@ -348,7 +346,7 @@ public class CreateTool extends ToolBase {
 
     // doesn't seem to exist ... try to create
     echoIfVerbose(
-        "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
+        "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest");
 
     NamedList<Object> response;
     try {

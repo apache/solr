@@ -67,7 +67,7 @@ public class ZkLsTool extends ToolBase {
     String znode = cli.getArgs()[0];
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
       boolean recurse = cli.hasOption("recurse");
       echoIfVerbose(
@@ -76,8 +76,7 @@ public class ZkLsTool extends ToolBase {
               + " from ZooKeeper at "
               + zkHost
               + " recurse: "
-              + recurse,
-          cli);
+              + recurse);
       stdout.print(zkClient.listZnode(znode, recurse));
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
