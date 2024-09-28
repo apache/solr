@@ -355,7 +355,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         case END_OFFSET:
           return Comparator.comparingInt(Passage::getEndOffset);
         case SCORE:
-          return Comparator.comparingDouble(Passage::getScore);
+          return Comparator.comparingDouble(Passage::getScore).reversed();
         default:
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
