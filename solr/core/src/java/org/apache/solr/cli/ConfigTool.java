@@ -88,10 +88,22 @@ public class ConfigTool extends ToolBase {
                 "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
             .build(),
         Option.builder("v")
-            .longOpt("value")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --value instead")
+                    .get())
             .argName("VALUE")
             .hasArg()
             .required(false)
+            .desc("Set the property to this value; accepts JSON objects and strings.")
+            .build(),
+        Option.builder()
+            .longOpt("value")
+            .argName("VALUE")
+            .hasArg()
+            .required(false) // should be true when -v is removed.
             .desc("Set the property to this value; accepts JSON objects and strings.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
@@ -106,12 +118,14 @@ public class ConfigTool extends ToolBase {
     String action = cli.getOptionValue("action", "set-property");
     String collection = cli.getOptionValue("name");
     String property = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "property", "p", null);
-    String value = cli.getOptionValue("value");
+    String value = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "value", "v", null);
 
     if (property == null) {
       throw new MissingArgumentException("'property' is a required option.");
     }
-
+    if (value == null) {
+      throw new MissingArgumentException("'value' is a required option.");
+    }
     Map<String, Object> jsonObj = new HashMap<>();
     if (value != null) {
       Map<String, String> setMap = new HashMap<>();
@@ -128,7 +142,7 @@ public class ConfigTool extends ToolBase {
     String updatePath = "/" + collection + "/config";
 
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
-    echo(jsonBody);
+    echoIfVerbose(jsonBody, cli);
 
     try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
