@@ -347,7 +347,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     protected Comparator<Passage> getPassageSortComparator(String fieldName) {
       PassageSort passageSort =
           PassageSort.parse(
-              params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT, "startOffset"));
+              params.getFieldParam(fieldName, HighlightParams.PASSAGE_SORT, PassageSort.START_OFFSET.key));
 
       switch (passageSort) {
         case START_OFFSET:
