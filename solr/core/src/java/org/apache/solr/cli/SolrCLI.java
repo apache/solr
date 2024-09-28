@@ -150,6 +150,17 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc("Enable verbose command output.")
           .build();
+  public static final Option OPTION_VERBOSE_DEPRECATED =
+      Option.builder("V")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use -v instead")
+                  .get())
+          .required(false)
+          .desc("Enable verbose command output.")
+          .build();
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
@@ -294,7 +305,8 @@ public class SolrCLI implements CLIO {
   }
 
   public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(OPTION_VERBOSE.getOpt())) {
+    if (!(cli.hasOption(OPTION_VERBOSE.getOpt())
+        || cli.hasOption(OPTION_VERBOSE_DEPRECATED.getOpt()))) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }
@@ -518,6 +530,10 @@ public class SolrCLI implements CLIO {
    *
    * <p>Note that from Solr 10.0 Solr will use / as base URL to support /api and other contexts, so
    * handling of hostContext differs between Solr 9.x and 10.x.
+   *
+   * <p>Note that this should not be used with individual core specific urls such as
+   * "http://127.0.0.1:51428/solr/bob_shard1_replica_n1/" as it removes the core name by converting
+   * the url to "http://127.0.0.1:51428/" before creating the client.
    *
    * @param solrUrl the base URL of Solr
    * @return a SolrClient initialized with correct hostContext, default '/solr'

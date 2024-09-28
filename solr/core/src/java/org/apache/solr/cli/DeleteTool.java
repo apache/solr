@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -40,6 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -122,15 +124,35 @@ public class DeleteTool extends ToolBase {
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
             .build(),
+        Option.builder("p")
+            .longOpt("port")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-url instead")
+                    .get())
+            .argName("PORT")
+            .hasArg()
+            .required(false)
+            .desc("Port of a local Solr instance where you want to create the new core.")
+            .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_VERBOSE_DEPRECATED);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
+
+    // If a port is provided, inject it into the environment variables so
+    // that {@link SolrCLI#getDefaultSolrUrl()} can use it instead of the default 8983.
+    if (cli.hasOption("p")) {
+      EnvUtils.setProperty("jetty.port", cli.getOptionValue("p"));
+    }
 
     try (var solrClient = SolrCLI.getSolrClient(cli)) {
       Map<String, Object> systemInfo =
@@ -248,21 +270,22 @@ public class DeleteTool extends ToolBase {
       }
     }
 
-    if (response != null) {
-      // pretty-print the response to stdout
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
-      echo(arr.toString());
-      echo("\n");
+    if (isVerbose()) {
+      if (response != null) {
+        // pretty-print the response to stdout
+        CharArr arr = new CharArr();
+        new JSONWriter(arr, 2).write(response.asMap());
+        echo(arr.toString());
+      }
     }
 
-    echo("Deleted collection '" + collectionName + "' using CollectionAdminRequest");
+    echo(String.format(Locale.ROOT, "\nDeleted collection '%s'", collectionName));
   }
 
   protected void deleteCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue(NAME);
 
-    echo("\nDeleting core '" + coreName + "' using CoreAdminRequest\n");
+    echoIfVerbose("\nDeleting core '" + coreName + "'", cli);
 
     NamedList<Object> response;
     try {
@@ -281,5 +304,6 @@ public class DeleteTool extends ToolBase {
       echoIfVerbose((String) response.get("response"), cli);
       echoIfVerbose("\n", cli);
     }
+    echo(String.format(Locale.ROOT, "\nDeleted core '%s'", coreName));
   }
 }
