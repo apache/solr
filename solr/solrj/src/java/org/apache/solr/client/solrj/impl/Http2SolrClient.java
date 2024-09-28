@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
@@ -534,6 +535,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  public final <T extends SolrResponse> T requestWithBaseUrl(String baseUrl, SolrRequest<T> req)
+      throws SolrServerException, IOException {
+    return requestWithBaseUrl(baseUrl, req::process);
+  }
+
   /**
    * Temporarily modifies the client to use a different base URL and runs the provided lambda
    *
@@ -544,8 +550,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
    */
   public <R> R requestWithBaseUrl(String baseUrl, SolrClientFunction<SolrClient, R> clientFunction)
       throws SolrServerException, IOException {
-    try (final var derivedClient =
-        new NoCloseHttp2SolrClient(baseUrl, this)) {
+    try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
     }
   }
@@ -553,7 +558,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
   /**
    * An Http2SolrClient that doesn't close or cleanup any resources
    *
-   * Only safe to use as a derived copy of an existing instance which retains responsibility for closing all involved resources.
+   * <p>Only safe to use as a derived copy of an existing instance which retains responsibility for
+   * closing all involved resources.
    */
   private static class NoCloseHttp2SolrClient extends Http2SolrClient {
 
@@ -568,7 +574,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       /* Intentional no-op */
       ObjectReleaseTracker.release(this);
     }
-
   }
 
   private NamedList<Object> processErrorsAndResponse(
