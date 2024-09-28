@@ -106,7 +106,7 @@ teardown() {
   touch myfile2.txt
   run solr zk cp myfile2.txt zk:myfile2.txt -z localhost:${ZK_PORT}
   sleep 1
-  run solr zk ls / -z localhost:${ZK_PORT}
+  run solr zk ls / -z localhost:${ZK_PORT} -v
   assert_output --partial "myfile2.txt"
 
   touch myfile3.txt

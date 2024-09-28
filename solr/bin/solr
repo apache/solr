@@ -702,6 +702,11 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   exit $?
 fi
 
+# Map create_collection and create_core commands to create to preserve backwards compatibility
+if [ "$SCRIPT_CMD" == "create_collection" ] || [ "$SCRIPT_CMD" == "create_core" ]; then
+  SCRIPT_CMD="create"
+fi
+
 # at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then

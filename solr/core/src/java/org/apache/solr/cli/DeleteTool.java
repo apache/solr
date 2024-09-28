@@ -110,6 +110,19 @@ public class DeleteTool extends ToolBase {
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
             .build(),
+        Option.builder("p")
+            .longOpt("port")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-url instead")
+                    .get())
+            .argName("PORT")
+            .hasArg()
+            .required(false)
+            .desc("Port of a local Solr instance where you want to create the new core.")
+            .build(),
         Option.builder()
             .longOpt("forceDeleteConfig")
             .deprecated(
@@ -125,7 +138,8 @@ public class DeleteTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_VERBOSE_DEPRECATED);
   }
 
   @Override

@@ -77,3 +77,11 @@ teardown() {
   solr delete -c "COLL_NAME" --delete-config false
   assert config_exists "COLL_NAME"
 }
+
+@test "ensure -p port parameter is supported" {  
+  run solr create -c COLL_NAME -p ${SOLR_PORT}
+  assert_output --partial "Created collection 'COLL_NAME'"
+
+  run solr delete -c COLL_NAME --delete-config false -p ${SOLR_PORT} -V
+  assert_output --partial "Deleted collection 'COLL_NAME'"
+}

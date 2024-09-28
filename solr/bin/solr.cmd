@@ -275,6 +275,17 @@ IF "%1"=="create" goto run_solrcli
 IF "%1"=="delete" goto run_solrcli
 IF "%1"=="postlogs" goto run_solrcli
 
+IF "%1"=="create_collection" (
+  set SCRIPT_CMD=create
+  SHIFT
+  goto run_solrcli
+)
+IF "%1"=="create_core" (
+  set SCRIPT_CMD=create
+  SHIFT
+  goto run_solrcli
+)
+
 IF "%1"=="auth" (
   set SCRIPT_CMD=auth
   SHIFT

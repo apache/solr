@@ -52,7 +52,7 @@ setup() {
 
 @test "healthcheck help flag prints help" {
   run solr healthcheck --help
-  assert_output --partial 'Usage: solr healthcheck'
+  assert_output --partial 'usage: bin/solr healthcheck'
   refute_output --partial 'ERROR'
 }
 
