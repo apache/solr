@@ -59,8 +59,7 @@ public class SnapshotCreateTool extends ToolBase {
             .required(true)
             .desc("Name of the snapshot to produce")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

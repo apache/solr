@@ -362,15 +362,13 @@ goto done
 @echo.
 @echo   --no-prompt   Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
-@echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
-@echo.
-@echo   -V/--verbose  Verbose messages from this script
+@echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
 goto done
 
 :stop_usage
 @echo.
-@echo Usage: solr stop [-k key] [-p port] [-V]
+@echo Usage: solr stop [-k key] [-p port] [--verbose]
 @echo.
 @echo  -k key         Stop key; default is solrrocks
 @echo.
@@ -378,7 +376,7 @@ goto done
 @echo.
 @echo  --all          Find and stop all running Solr servers on this host
 @echo.
-@echo  -V/--verbose   Verbose messages from this script
+@echo  --verbose      Verbose messages from this script
 @echo.
 @echo  NOTE: To see if any Solr servers are running, do: solr status
 @echo.
@@ -400,8 +398,9 @@ IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="-V" goto set_verbose
 IF "%1"=="--verbose" goto set_verbose
-IF "%1"=="-v" goto set_debug
+IF "%1"=="-v" goto set_verbose
 IF "%1"=="-q" goto set_warn
+IF "%1"=="--quiet" goto set_warn
 IF "%1"=="-c" goto set_cloud_mode
 IF "%1"=="-cloud" goto set_cloud_mode
 IF "%1"=="--cloud" goto set_cloud_mode
@@ -451,12 +450,8 @@ goto parse_args
 
 :set_verbose
 set verbose=1
-set "PASS_TO_RUN_EXAMPLE=--verbose !PASS_TO_RUN_EXAMPLE!"
-SHIFT
-goto parse_args
-
-:set_debug
 set SOLR_LOG_LEVEL=DEBUG
+set "PASS_TO_RUN_EXAMPLE=--verbose !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 

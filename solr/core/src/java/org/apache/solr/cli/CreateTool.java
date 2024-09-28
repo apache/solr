@@ -234,7 +234,7 @@ public class CreateTool extends ToolBase {
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      if (verbose) {
         echo(res.jsonStr());
         echo("\n");
       } else {
@@ -362,7 +362,7 @@ public class CreateTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (verbose) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());

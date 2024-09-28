@@ -15,35 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file has stubs for setup and teardown of a cluster and debugging hints
-
 load bats_helper
 
-setup_file() {
-  # set up paths and helpers
+setup() {
   common_clean_setup
-
-  solr start -c -V
-  # echo $output >&3
 }
 
-teardown_file() {
-  # set up paths, not preserved from setup
-  common_setup
-  sleep 3
-
-  # Conversely, on shutdown, we do need this to execute strictly
-  # because using "run" will eat failing test exit codes
-  solr stop --all
-  # DEBUG : (echo -n "# " ; solr stop --verbose --all) >&3
+@test "--version and -v both return Solr version" {
+  run solr --version
+  assert_output --partial "Solr version is:"
+  
+  run solr -v
+  assert_output --partial "Solr version is:"
+  
 }
 
-teardown() {
-  # save a snapshot of SOLR_HOME for failed tests
-  save_home_on_failure
-}
-
-@test "nothing" {
-  # hint: if we need to demonstrate a failing test, change this line to 'false'
-  true
+@test "-version and version both return Solr version and deprecation" {
+  run solr -version
+  assert_output --partial "Solr version is:"
+  assert_output --partial "Deprecated operation as of 9.8.  Please use -v or --version."
+  
+  run solr version
+  assert_output --partial "Solr version is:"
+  assert_output --partial "Deprecated operation as of 9.8.  Please use -v or --version."
+  
 }
