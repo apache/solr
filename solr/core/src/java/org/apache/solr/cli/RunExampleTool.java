@@ -170,8 +170,7 @@ public class RunExampleTool extends ToolBase {
         Option.builder()
             .longOpt("standalone")
             .required(false)
-            .desc(
-                "Start Solr in Standalone mode.")
+            .desc("Start Solr in Standalone mode.")
             .build(),
         Option.builder("m")
             .longOpt("memory")
@@ -639,7 +638,7 @@ public class RunExampleTool extends ToolBase {
             Locale.ROOT,
             "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
             callScript,
-                standaloneModeArg,
+            standaloneModeArg,
             port,
             solrHome,
             hostArg,
