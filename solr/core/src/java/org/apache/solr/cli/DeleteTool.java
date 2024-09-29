@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -149,7 +150,7 @@ public class DeleteTool extends ToolBase {
 
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+      echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);
     }
@@ -215,8 +216,7 @@ public class DeleteTool extends ToolBase {
       }
     }
 
-    echoIfVerbose(
-        "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
+    echoIfVerbose("\nDeleting collection '" + collectionName + "' using CollectionAdminRequest");
 
     NamedList<Object> response;
     try {
@@ -238,11 +238,11 @@ public class DeleteTool extends ToolBase {
                 + configZnode
                 + " in ZooKeeper due to: "
                 + exc.getMessage()
-                + "\nYou'll need to manually delete this znode using the zkcli script.");
+                + "\nYou'll need to manually delete this znode using the bin/solr zk rm command.");
       }
     }
 
-    if (response != null) {
+    if (isVerbose() && response != null) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
@@ -250,7 +250,7 @@ public class DeleteTool extends ToolBase {
       echo("\n");
     }
 
-    echo("Deleted collection '" + collectionName + "' using CollectionAdminRequest");
+    echo(String.format(Locale.ROOT, "\nDeleted collection '%s'", collectionName));
   }
 
   protected void deleteCore(CommandLine cli, SolrClient solrClient) throws Exception {
@@ -272,8 +272,8 @@ public class DeleteTool extends ToolBase {
     }
 
     if (response != null) {
-      echoIfVerbose((String) response.get("response"), cli);
-      echoIfVerbose("\n", cli);
+      echoIfVerbose((String) response.get("response"));
+      echoIfVerbose("\n");
     }
   }
 }

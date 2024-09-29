@@ -240,8 +240,7 @@ public class RunExampleTool extends ToolBase {
             + ",\nexampleDir="
             + exampleDir.getAbsolutePath()
             + "\nscript="
-            + script,
-        cli);
+            + script);
 
     String exampleType = cli.getOptionValue("example");
     if ("cloud".equals(exampleType)) {
@@ -497,7 +496,7 @@ public class RunExampleTool extends ToolBase {
         }
 
         cloudPorts[n] = port;
-        echoIfVerbose("Using port " + port + " for node " + (n + 1), cli);
+        echoIfVerbose("Using port " + port + " for node " + (n + 1));
       }
     } else {
       echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");
@@ -708,7 +707,7 @@ public class RunExampleTool extends ToolBase {
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
     return getNodeStatus(
-        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs, cli);
+        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(
@@ -887,10 +886,10 @@ public class RunExampleTool extends ToolBase {
     return configDir.isDirectory();
   }
 
-  protected Map<String, Object> getNodeStatus(
-      String solrUrl, String credentials, int maxWaitSecs, CommandLine cli) throws Exception {
+  protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
+      throws Exception {
     StatusTool statusTool = new StatusTool();
-    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...", cli);
+    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...");
 
     URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
@@ -901,8 +900,7 @@ public class RunExampleTool extends ToolBase {
     String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
 
     echoIfVerbose(
-        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr,
-        cli);
+        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr);
 
     return nodeStatus;
   }
