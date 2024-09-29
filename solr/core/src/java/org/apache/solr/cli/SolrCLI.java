@@ -201,12 +201,12 @@ public class SolrCLI implements CLIO {
 
     if (Arrays.asList("-version", "version").contains(args[0])) {
       // select the version tool to be run
-      CLIO.out("Deprecated operation as of 9.8.  Please use -v or --version.");
-      args[0] = "version";
+      CLIO.out("Deprecated operation as of 9.8.  Please use bin/solr --version.");
+      args = new String[] {"version"};
     }
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
-      args[0] = "version";
+      args = new String[] {"version"};
     }
     if (Arrays.asList(
             "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
