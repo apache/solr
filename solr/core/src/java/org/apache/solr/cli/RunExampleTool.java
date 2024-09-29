@@ -612,9 +612,9 @@ public class RunExampleTool extends ToolBase {
     String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
-    String standaloneModeArg = standaloneMode ? "--standalone " : "";
+    String standaloneModeArg = standaloneMode ? "--standalone" : "";
     String forceArg = cli.hasOption("force") ? " --force" : "";
-    String verboseArg = verbose ? "-V" : "";
+    String verboseArg = verbose ? "--verbose" : "";
 
     String jvmOpts =
         cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');

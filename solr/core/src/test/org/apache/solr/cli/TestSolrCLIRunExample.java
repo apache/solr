@@ -115,7 +115,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       if (exe.endsWith("solr")) {
         String[] args = cmd.getArguments();
         if ("start".equals(args[0])) {
-          if (!hasFlag("--cloud", args) && !hasFlag("-c", args)) {
+          if (hasFlag("--standalone", args)) {
             return startStandaloneSolr(args);
           }
 
