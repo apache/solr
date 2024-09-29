@@ -33,10 +33,10 @@ setup() {
 @test "-version and version both return Solr version and deprecation" {
   run solr -version
   assert_output --partial "Solr version is:"
-  assert_output --partial "Deprecated operation as of 9.8.  Please use -v or --version."
+  assert_output --partial "Deprecated operation as of 9.8.  Please use bin/solr --version."
   
   run solr version
   assert_output --partial "Solr version is:"
-  assert_output --partial "Deprecated operation as of 9.8.  Please use -v or --version."
+  assert_output --partial "Deprecated operation as of 9.8.  Please use bin/solr --version."
   
 }
