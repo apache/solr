@@ -336,9 +336,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   protected void testExample(String exampleName) throws Exception {
+    // Occasionally we want to test in Standalone mode, not the default SolrCloud mode.
+    String testStandaloneMode = LuceneTestCase.rarely() ? "--standalone" : "";
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
-    if (!solrHomeDir.isDirectory())
+    if (!solrHomeDir.isDirectory()) {
       fail(solrHomeDir.getAbsolutePath() + " not found and is required to run this test!");
+    }
 
     Path tmpDir = createTempDir();
     File solrExampleDir = tmpDir.toFile();
@@ -355,10 +358,15 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       String[] toolArgs =
           new String[] {
-            "-e", exampleName,
-            "--server-dir", solrServerDir.getAbsolutePath(),
-            "--example-dir", solrExampleDir.getAbsolutePath(),
-            "-p", String.valueOf(bindPort)
+            "-e",
+            exampleName,
+            "--server-dir",
+            solrServerDir.getAbsolutePath(),
+            "--example-dir",
+            solrExampleDir.getAbsolutePath(),
+            "-p",
+            String.valueOf(bindPort),
+            testStandaloneMode
           };
 
       // capture tool output to stdout
