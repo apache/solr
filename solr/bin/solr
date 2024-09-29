@@ -642,9 +642,12 @@ if [ $# -eq 1 ]; then
 fi
 
 if [ $# -gt 0 ]; then
-  # if first arg starts with a dash (and it's not --help or -info),
-  # then assume they are starting Solr, such as: solr -f
-  if [[ $1 == -* ]]; then
+  if [ $1 == -v ] || [ $1 == --version ] || [ $1 == -version ]; then
+    # capture this situation and set the script command to what was passed in
+    SCRIPT_CMD=$1
+  elif [[ $1 == -* ]]; then
+    # if first arg starts with a dash (and it's not --help or -info),
+    # then assume they are starting Solr, such as: solr -f
     SCRIPT_CMD="start"
   else
     SCRIPT_CMD="$1"
