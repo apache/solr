@@ -83,8 +83,7 @@ public class ClientUtils {
       String collection)
       throws MalformedURLException {
 
-    // TODO SolrRequest.getBasePath() usage will be removed if we the SolrClient.requestWithBaseUrl
-    // approach is adopted.
+    // TODO remove getBasePath support here prior to closing SOLR-17256
     String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {

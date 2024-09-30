@@ -1195,17 +1195,6 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * A lambda intended for invoking SolrClient operations
-   *
-   * <p>Exceptions commonly thrown by SolrClient operations, IOException and SolrServerException,
-   * are permitted to be thrown by lambda instances.
-   */
-  @FunctionalInterface
-  public interface SolrClientFunction<T, R> {
-    R apply(T t) throws IOException, SolrServerException;
-  }
-
-  /**
    * Get the {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder} for this client.
    *
    * @return a DocumentObjectBinder

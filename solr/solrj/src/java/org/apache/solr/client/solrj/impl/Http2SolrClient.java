@@ -41,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -535,6 +536,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  /**
+   * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
+   * used by this client
+   *
+   * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param req the SolrRequest to send
+   * @throws SolrServerException
+   * @throws IOException
+   */
   public final <T extends SolrResponse> T requestWithBaseUrl(String baseUrl, SolrRequest<T> req)
       throws SolrServerException, IOException {
     return requestWithBaseUrl(baseUrl, req::process);
@@ -550,29 +560,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
    */
   public <R> R requestWithBaseUrl(String baseUrl, SolrClientFunction<SolrClient, R> clientFunction)
       throws SolrServerException, IOException {
+
+    // Despite the name, try-with-resources used here to avoid IDE and ObjectReleaseTracker
+    // complaints
     try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
-    }
-  }
-
-  /**
-   * An Http2SolrClient that doesn't close or cleanup any resources
-   *
-   * <p>Only safe to use as a derived copy of an existing instance which retains responsibility for
-   * closing all involved resources.
-   */
-  private static class NoCloseHttp2SolrClient extends Http2SolrClient {
-
-    public NoCloseHttp2SolrClient(String baseUrl, Http2SolrClient parentClient) {
-      super(baseUrl, new Http2SolrClient.Builder(baseUrl).withHttpClient(parentClient));
-
-      this.asyncTracker = parentClient.asyncTracker;
-    }
-
-    @Override
-    public void close() {
-      /* Intentional no-op */
-      ObjectReleaseTracker.release(this);
     }
   }
 
@@ -826,6 +818,29 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   protected RequestWriter getRequestWriter() {
     return requestWriter;
+  }
+
+  /**
+   * An Http2SolrClient that doesn't close or cleanup any resources
+   *
+   * <p>Only safe to use as a derived copy of an existing instance which retains responsibility for
+   * closing all involved resources.
+   *
+   * @see #requestWithBaseUrl(String, SolrClientFunction)
+   */
+  private static class NoCloseHttp2SolrClient extends Http2SolrClient {
+
+    public NoCloseHttp2SolrClient(String baseUrl, Http2SolrClient parentClient) {
+      super(baseUrl, new Http2SolrClient.Builder(baseUrl).withHttpClient(parentClient));
+
+      this.asyncTracker = parentClient.asyncTracker;
+    }
+
+    @Override
+    public void close() {
+      /* Intentional no-op */
+      ObjectReleaseTracker.release(this);
+    }
   }
 
   private static class AsyncTracker {
