@@ -95,7 +95,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
           @DefaultValue("false")
           Boolean checksum,
       @Parameter(
-              description = "Limit data write per seconds. Defaults to no thorttling",
+              description = "Limit data write per seconds. Defaults to no throttling",
               required = false)
           @QueryParam("maxWriteMBPerSec")
           double maxWriteMBPerSec,

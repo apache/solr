@@ -316,6 +316,13 @@ public class ReplicationHandler extends RequestHandlerBase
     }
   }
 
+  /**
+   * This method adds an Object of FileStream to the response . The FileStream implements a custom
+   * protocol which is understood by IndexFetcher.FileFetcher
+   *
+   * @see IndexFetcher.LocalFsFileFetcher
+   * @see IndexFetcher.DirectoryFileFetcher
+   */
   private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp, SolrQueryRequest req)
       throws IOException {
     final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
