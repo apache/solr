@@ -147,17 +147,12 @@ public class SolrCLI implements CLIO {
           .build();
 
   public static final Option OPTION_VERBOSE =
-      Option.builder("v")
+      Option.builder()
           .longOpt("verbose")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.8")
-                  .setDescription("Use --debug instead")
-                  .get())
           .required(false)
           .desc("Enable verbose command output.")
           .build();
+
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
