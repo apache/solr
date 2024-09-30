@@ -128,6 +128,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     }
     solrQueryResponse.add(FILE_STREAM, dfs);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
+    return getFile(dfs, out);
+  }
+
+  protected String getFile(DirectoryFileStream dfs, ByteArrayOutputStream out) throws IOException {
     dfs.write(out);
     return new String(out.toByteArray(), StandardCharsets.UTF_8);
   }
@@ -250,7 +254,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   }
 
   /** This class is used to read and send files in the lucene index */
-  private class DirectoryFileStream implements SolrCore.RawWriter {
+  protected class DirectoryFileStream implements SolrCore.RawWriter {
     protected FastOutputStream fos;
 
     protected Long indexGen;

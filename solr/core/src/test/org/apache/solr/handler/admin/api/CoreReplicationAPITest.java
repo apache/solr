@@ -21,6 +21,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.trace.Span;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +45,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   private ReplicationHandler mockReplicationHandler;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
+  private ReplicationAPIBase.DirectoryFileStream mockDirectoryFileStream;
+  private OutputStream outputStream;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -79,7 +85,17 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     assertEquals(123456789, actualResponse.fileList.get(0).checksum);
   }
 
-  private void setUpMocks() {
+  @Test
+  public void testFetchFile() throws Exception {
+    String expected = "Random output stream data";
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    String actual =
+        coreReplicationAPI.doFetchFile(
+            "_0_Lucene99_0.tmd", "file", null, null, false, false, 0, null);
+    assertEquals(expected, actual);
+  }
+
+  private void setUpMocks() throws IOException {
     mockCore = mock(SolrCore.class);
     mockReplicationHandler = mock(ReplicationHandler.class);
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
@@ -96,6 +112,14 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
       List<FileMetaData> fileMetaData = Arrays.asList(new FileMetaData(123, "test", 123456789));
       filesResponse.fileList = new ArrayList<>(fileMetaData);
       return filesResponse;
+    }
+
+    @Override
+    protected String getFile(DirectoryFileStream dfs, ByteArrayOutputStream out)
+        throws IOException {
+      String mockOutputStream = "Random output stream data";
+      out.write(mockOutputStream.getBytes(StandardCharsets.UTF_8));
+      return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
   }
 }
