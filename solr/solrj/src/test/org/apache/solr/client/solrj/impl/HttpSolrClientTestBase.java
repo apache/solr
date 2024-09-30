@@ -49,7 +49,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -656,6 +655,4 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
   }
-
-
 }

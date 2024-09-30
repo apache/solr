@@ -128,7 +128,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
-      if(this.executor == null) {
+      if (this.executor == null) {
         this.executor = builder.executor;
       }
       this.closeClient = false;

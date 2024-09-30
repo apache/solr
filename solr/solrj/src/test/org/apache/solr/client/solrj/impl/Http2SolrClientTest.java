@@ -269,7 +269,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     ResponseParser rp = new XMLResponseParser();
     HttpSolrClientBuilderBase<?, ?> b =
-            builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     super.testQueryAsync(b);
   }
 
@@ -289,13 +289,13 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     final var url = getBaseUrl() + DEBUG_SERVLET_PATH;
     ResponseParser rp = new XMLResponseParser();
     final var queryParams = new MapSolrParams(Collections.singletonMap("q", "*:*"));
-    final var builder = new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).withResponseParser(rp);
+    final var builder =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).withResponseParser(rp);
     try (Http2SolrClient originalClient = builder.build()) {
       final var derivedBuilder = builder.withHttpClient(originalClient);
       super.testQueryAsync(derivedBuilder);
     }
   }
-
 
   @Test
   public void testFollowRedirect() throws Exception {
