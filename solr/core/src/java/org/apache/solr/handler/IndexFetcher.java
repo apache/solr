@@ -1729,7 +1729,7 @@ public class IndexFetcher {
    * The class acts as a client for ReplicationHandler.FileStream. It understands the protocol of
    * wt=filestream
    *
-   * @see org.apache.solr.handler.ReplicationHandler.DirectoryFileStream
+   * <p>see org.apache.solr.handler.admin.api.ReplicationAPIBase.DirectoryFileStream
    */
   private class FileFetcher {
     private final FileInterface file;

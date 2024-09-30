@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,7 +48,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -129,7 +129,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     solrQueryResponse.add(FILE_STREAM, dfs);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     dfs.write(out);
-    return out.toString();
+    return new String(out.toByteArray(), StandardCharsets.UTF_8);
   }
 
   protected CoreReplicationAPI.FileListResponse getFileList(
@@ -251,8 +251,6 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
   /** This class is used to read and send files in the lucene index */
   private class DirectoryFileStream implements SolrCore.RawWriter {
-    protected SolrParams params;
-
     protected FastOutputStream fos;
 
     protected Long indexGen;
@@ -335,8 +333,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     }
 
     protected void initWrite() throws IOException {
-      if (sOffset != null) offset = Long.parseLong(sOffset);
-      if (sLen != null) len = Integer.parseInt(sLen);
+      this.offset = (sOffset != null) ? Long.parseLong(sOffset) : -1;
+      this.len = (sLen != null) ? Integer.parseInt(sLen) : -1;
       if (fileName == null && cfileName == null && tlogFileName == null) {
         // no filename do nothing
         writeNothingAndFlush();
@@ -403,7 +401,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
           }
           fos.write(buf, 0, read);
           fos.flush();
-          log.error("Wrote {} bytes for file {}", offset + read, fileName); // nowarn
+          log.debug("Wrote {} bytes for file {}", offset + read, fileName); // nowarn
 
           // Pause if necessary
           maxBytesBeforePause += read;
@@ -422,7 +420,16 @@ public abstract class ReplicationAPIBase extends JerseyResource {
           in.seek(offset);
         }
       } catch (IOException e) {
-        log.warn("Exception while writing response for params: {}", params, e);
+        log.warn(
+            "Exception while writing response for params fileName={} cfileName={} tlogFileName={} offset={} len={} compression={} generation={} checksum={}",
+            fileName,
+            cfileName,
+            tlogFileName,
+            sOffset,
+            sLen,
+            compress,
+            indexGen,
+            useChecksum);
       } finally {
         if (in != null) {
           in.close();
@@ -494,7 +501,16 @@ public abstract class ReplicationAPIBase extends JerseyResource {
           writeNothingAndFlush();
         }
       } catch (IOException e) {
-        log.warn("Exception while writing response for params: {}", params, e);
+        log.warn(
+            "Exception while writing response for params fileName={} cfileName={} tlogFileName={} offset={} len={} compression={} generation={} checksum={}",
+            fileName,
+            cfileName,
+            tlogFileName,
+            sOffset,
+            sLen,
+            compress,
+            indexGen,
+            useChecksum);
       } finally {
         extendReserveAndReleaseCommitPoint();
       }

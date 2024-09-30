@@ -99,6 +99,7 @@ import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProvider.APIConfig;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
