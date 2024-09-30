@@ -37,6 +37,7 @@ apache-hadoop-thirdparty = "1.2.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
+apache-kafka = "3.7.1"
 apache-kerby = "1.0.1"
 apache-log4j = "2.21.0"
 apache-lucene = "9.11.1"
@@ -224,6 +225,10 @@ apache-hadoop-thirdparty-shadedguava = { module = "org.apache.hadoop.thirdparty:
 apache-httpcomponents-httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "apache-httpcomponents-httpclient" }
 apache-httpcomponents-httpcore = { module = "org.apache.httpcomponents:httpcore", version.ref = "apache-httpcomponents-httpcore" }
 apache-httpcomponents-httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "apache-httpcomponents-httpmime" }
+apache-kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "apache-kafka" }
+apache-kafka-kafka213 = { module = "org.apache.kafka:kafka_2.13", version.ref = "apache-kafka" }
+apache-kafka-server-common = { module = "org.apache.kafka:kafka-server-common", version.ref = "apache-kafka" }
+apache-kafka-streams = { module = "org.apache.kafka:kafka-streams", version.ref = "apache-kafka" }
 apache-kerby-core = { module = "org.apache.kerby:kerb-core", version.ref = "apache-kerby" }
 apache-kerby-util = { module = "org.apache.kerby:kerb-util", version.ref = "apache-kerby" }
 apache-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "apache-log4j" }
@@ -286,6 +291,7 @@ dropwizard-metrics-graphite = { module = "io.dropwizard.metrics:metrics-graphite
 dropwizard-metrics-jetty10 = { module = "io.dropwizard.metrics:metrics-jetty10", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jvm = { module = "io.dropwizard.metrics:metrics-jvm", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard-metrics" }
 eclipse-jdt-ecj = { module = "org.eclipse.jdt:ecj", version.ref = "eclipse-ecj" }
 eclipse-jetty-alpnjavaclient = { module = "org.eclipse.jetty:jetty-alpn-java-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "eclipse-jetty" }
@@ -342,6 +348,7 @@ google-gson = { module = "com.google.code.gson:gson", version.ref = "google-gson
 google-guava = { module = "com.google.guava:guava", version.ref = "google-guava" }
 # @keep transitive dependency for version alignment
 google-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "google-protobuf" }
+google-protobuf-javautils = { module = "com.google.protobuf:protobuf-java-util", version.ref = "google-protobuf" }
 google-re2j = { module = "com.google.re2j:re2j", version.ref = "google-re2j" }
 # @keep transitive dependency for version alignment
 grpc-api = { module = "io.grpc:grpc-api", version.ref = "grpc" }
