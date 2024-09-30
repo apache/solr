@@ -205,7 +205,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
-        client.requestWithBaseUrl(urlToUse, new QueryRequest(queryParams));
+        client.requestWithBaseUrl(urlToUse, null, new QueryRequest(queryParams));
       } catch (BaseHttpSolrClient.RemoteSolrException rse) {
       }
 

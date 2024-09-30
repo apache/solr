@@ -374,7 +374,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     try {
-      return solrClient.requestWithBaseUrl(leaderCoreUrl, req).getResponse();
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -393,7 +393,8 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     try {
-      NamedList<?> response = solrClient.requestWithBaseUrl(leaderCoreUrl, req).getResponse();
+      NamedList<?> response =
+          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);

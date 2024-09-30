@@ -541,13 +541,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
    * used by this client
    *
    * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param collection an optional collection or core name used to override the client's "default
+   *     collection". May be 'null' for any requests that don't require a collection or wish to rely
+   *     on the client's default
    * @param req the SolrRequest to send
-   * @throws SolrServerException
-   * @throws IOException
    */
-  public final <T extends SolrResponse> T requestWithBaseUrl(String baseUrl, SolrRequest<T> req)
+  public final <T extends SolrResponse> T requestWithBaseUrl(
+      String baseUrl, String collection, SolrRequest<T> req)
       throws SolrServerException, IOException {
-    return requestWithBaseUrl(baseUrl, req::process);
+    return requestWithBaseUrl(baseUrl, (c) -> req.process(c, collection));
   }
 
   /**
