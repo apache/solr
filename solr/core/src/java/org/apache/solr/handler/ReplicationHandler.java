@@ -276,28 +276,7 @@ public class ReplicationHandler extends RequestHandlerBase
       final SolrJerseyResponse indexVersionResponse = getIndexVersionResponse();
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, indexVersionResponse);
     } else if (command.equals(CMD_GET_FILE)) {
-      final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
-      String fileName;
-      String dirType;
-      if (solrParams.get(CONF_FILE_SHORT) != null) {
-        fileName = solrParams.get(CONF_FILE_SHORT);
-        dirType = CONF_FILE_SHORT;
-      } else if (solrParams.get(TLOG_FILE) != null) {
-        fileName = solrParams.get(TLOG_FILE);
-        dirType = TLOG_FILE;
-      } else {
-        fileName = solrParams.get(FILE);
-        dirType = FILE;
-      }
-      coreReplicationAPI.fetchFile(
-          fileName,
-          dirType,
-          solrParams.get(OFFSET),
-          solrParams.get(LEN),
-          Boolean.parseBoolean(solrParams.get(COMPRESSION)),
-          solrParams.getBool(CHECKSUM, false),
-          solrParams.getDouble(MAX_WRITE_PER_SECOND, Double.MAX_VALUE),
-          solrParams.getLong(GENERATION));
+      getFileStream(solrParams, rsp, req);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
@@ -335,6 +314,33 @@ public class ReplicationHandler extends RequestHandlerBase
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
     }
+  }
+
+  private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp, SolrQueryRequest req)
+      throws IOException {
+    final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
+    String fileName;
+    String dirType;
+
+    if (solrParams.get(CONF_FILE_SHORT) != null) {
+      fileName = solrParams.get(CONF_FILE_SHORT);
+      dirType = CONF_FILE_SHORT;
+    } else if (solrParams.get(TLOG_FILE) != null) {
+      fileName = solrParams.get(TLOG_FILE);
+      dirType = TLOG_FILE;
+    } else {
+      fileName = solrParams.get(FILE);
+      dirType = FILE;
+    }
+    coreReplicationAPI.fetchFile(
+        fileName,
+        dirType,
+        solrParams.get(OFFSET),
+        solrParams.get(LEN),
+        Boolean.parseBoolean(solrParams.get(COMPRESSION)),
+        solrParams.getBool(CHECKSUM, false),
+        solrParams.getDouble(MAX_WRITE_PER_SECOND, Double.MAX_VALUE),
+        solrParams.getLong(GENERATION));
   }
 
   static boolean getBoolWithBackwardCompatibility(
