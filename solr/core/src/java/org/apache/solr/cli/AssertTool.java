@@ -130,12 +130,12 @@ public class AssertTool extends ToolBase {
   }
 
   /**
-   * Returns 100 error code for a true "error", otherwise returns the number of tests that
-   * failed.
+   * Returns 100 error code for a true "error", otherwise returns the number of tests that failed.
    * Otherwise, very similar to the parent runTool method.
    *
    * @param cli the command line object
-   * @return 0 on success, or a number corresponding to number of tests that failed, or 100 for a Error
+   * @return 0 on success, or a number corresponding to number of tests that failed, or 100 for a
+   *     Error
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   @Override
