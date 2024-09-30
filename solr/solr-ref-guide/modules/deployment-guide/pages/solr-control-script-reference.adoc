@@ -271,7 +271,7 @@ If `ZK_HOST` is not specified in `solr.in.sh`/`solr.in.cmd` and this option is n
 +
 Set the `ZK_CREATE_CHROOT` environment variable to true if your ZK host has a chroot path, and you want to create it automatically.
 +
-*Example*: `bin/solr start -c -z server1:2181,server2:2181`
+*Example*: `bin/solr start -z server1:2181,server2:2181`
 
 `--force`::
 +

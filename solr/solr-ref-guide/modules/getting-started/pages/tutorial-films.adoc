@@ -32,7 +32,7 @@ If you did, though, and need to restart Solr, issue these commands:
 
 [,console]
 ----
-$ bin/solr start -c -p 8983 -s example/cloud/node1/solr
+$ bin/solr start -p 8983 -s example/cloud/node1/solr
 ----
 
 This starts the first node.
@@ -40,7 +40,7 @@ When it's done start the second node, and tell it how to connect to ZooKeeper:
 
 [,console]
 ----
-$ bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983
+$ bin/solr start -p 7574 -s example/cloud/node2/solr -z localhost:9983
 ----
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:deployment-guide:zookeeper-ensemble#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.
