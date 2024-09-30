@@ -393,7 +393,7 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *User-Managed Clusters*
 
-* In the xref:deployment-guide:user-managed-index-replication.adoc[leader-follower model] of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
+* In the xref:deployment-guide:standalone-index-replication.adoc[leader-follower model] of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 
 If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
 
