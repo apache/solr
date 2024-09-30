@@ -146,6 +146,9 @@ allprojects {
                 handler.add(conf.name, libs.netty.codechttp, {
                     because 'version alignment for consistency across project'
                 })
+                handler.add(conf.name, libs.bc.jose4j, {
+                    because 'version alignment for consistency across project'
+                })
 
                 // Add transitive dependencies as constraints to align versions
                 handler.add(conf.name, libs.checkerframework.qual, {
@@ -250,6 +253,11 @@ allprojects {
                     because "transitive version alignment for consistency across project" +
                             "\n- ${getFullName(libs.netty.bom)} uses 4.1.112.Final" +
                             "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 4.1.105.Final"
+                })
+                handler.add(conf.name, libs.google.j2objc.annotations, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- ${getFullName(libs.google.guava)} uses 3.0.0" +
+                            "\n- ${getFullName(libs.google.protobuf.javautils)} uses 2.8"
                 })
             }
         }

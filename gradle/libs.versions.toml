@@ -101,6 +101,8 @@ google-guava = "33.1.0-jre"
 # @keep This is GJF version for spotless/ tidy.
 google-javaformat = "1.18.1"
 # @keep for version alignment
+google-j2objc = "3.0.0"
+# @keep for version alignment
 google-protobuf = "3.25.3"
 google-re2j = "1.7"
 # @keep Gradle version to run the build
@@ -346,6 +348,8 @@ google-errorprone-core = { module = "com.google.errorprone:error_prone_core", ve
 # @keep transitive dependency for version alignment
 google-gson = { module = "com.google.code.gson:gson", version.ref = "google-gson" }
 google-guava = { module = "com.google.guava:guava", version.ref = "google-guava" }
+# @keep transitive dependency for version alignment
+google-j2objc-annotations = { module = "com.google.j2objc:j2objc-annotations", version.ref = "google-j2objc" }
 # @keep transitive dependency for version alignment
 google-protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "google-protobuf" }
 google-protobuf-javautils = { module = "com.google.protobuf:protobuf-java-util", version.ref = "google-protobuf" }
