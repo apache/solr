@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.util.NamedList;
@@ -66,15 +68,42 @@ public class ConfigTool extends ToolBase {
             .desc(
                 "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
             .build(),
-        Option.builder("p")
+        Option.builder()
             .longOpt("property")
             .argName("PROP")
             .hasArg()
-            .required(true)
+            .required(
+                false) // Should be TRUE but have a deprecated option to deal with first, so we
+            // enforce in code
+            .desc(
+                "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
+            .build(),
+        Option.builder("p")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --property instead")
+                    .get())
+            .hasArg()
+            .argName("PROP")
+            .required(false)
             .desc(
                 "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
             .build(),
         Option.builder("v")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --value instead")
+                    .get())
+            .argName("VALUE")
+            .hasArg()
+            .required(false)
+            .desc("Set the property to this value; accepts JSON objects and strings.")
+            .build(),
+        Option.builder()
             .longOpt("value")
             .argName("VALUE")
             .hasArg()
@@ -93,9 +122,17 @@ public class ConfigTool extends ToolBase {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String action = cli.getOptionValue("action", "set-property");
     String collection = cli.getOptionValue("name");
-    String property = cli.getOptionValue("property");
-    String value = cli.getOptionValue("value");
+    String property = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "property", "p", null);
+    String value = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "value", "v", null);
 
+    if (property == null) {
+      throw new MissingArgumentException("'property' is a required option.");
+    }
+
+    // value is required unless the property is one of the unset- type.
+    if (!action.contains("unset-") && value == null) {
+      throw new MissingArgumentException("'value' is a required option.");
+    }
     Map<String, Object> jsonObj = new HashMap<>();
     if (value != null) {
       Map<String, String> setMap = new HashMap<>();
@@ -112,7 +149,7 @@ public class ConfigTool extends ToolBase {
     String updatePath = "/" + collection + "/config";
 
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
-    echo(jsonBody);
+    echoIfVerbose(jsonBody);
 
     try (SolrClient solrClient =
         SolrCLI.getSolrClient(

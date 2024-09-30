@@ -367,7 +367,7 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a \"additional-options\"] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
     echo ""
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
@@ -410,9 +410,9 @@ function print_usage() {
     echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
     echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
     echo ""
-    echo "  -a <jvmParams>        Additional parameters to pass to the JVM when starting Solr, such as to setup"
+    echo "  --jvm-opts <jvmParams> Additional parameters to pass to the JVM when starting Solr, such as to setup"
     echo "                          Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
-    echo "                          you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
+    echo "                          you could pass: --jvm-opts \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
     echo "  -j <jettyParams>      Additional parameters to pass to Jetty when starting Solr."
@@ -425,13 +425,11 @@ function print_usage() {
     echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '--force' parameter."
     echo ""
-    echo "  -v and -q             Verbose (-v) or quiet (-q) logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
-    echo ""
-    echo "  -V/--verbose           Verbose messages from this script"
+    echo "  --verbose or --quiet/-q  Verbose or quiet logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
-    echo "Usage: solr stop [-k key] [-p port] [-V]"
+    echo "Usage: solr stop [-k key] [-p port] [--all]"
     echo ""
     echo "  -k <key>      Stop key; default is solrrocks"
     echo ""
@@ -439,7 +437,7 @@ function print_usage() {
     echo ""
     echo "  --all         Find and stop all running Solr servers on this host"
     echo ""
-    echo "  -V/--verbose   Verbose messages from this script"
+    echo "  --verbose     Verbose messages from this script"
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
@@ -648,7 +646,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
-  
+
   if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
   elif [[ $SOLR_HOME != /* ]]; then
@@ -659,7 +657,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
       SOLR_PID_DIR="$SOLR_HOME"
     fi
   fi
-  
+
   if [ -z "${AUTH_PORT:-}" ]; then
     for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
       do
@@ -669,22 +667,18 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
           break
         fi
       done
-  fi  
-  
+  fi
+
   run_tool auth $@ --solr-url "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" --auth-conf-dir "$SOLR_HOME" "--solr-include-file" "$SOLR_INCLUDE"
   exit $?
 fi
 
-# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.  
+# at this point all tools that have a custom run process, like "status" and "auth" have been run and exited.
 # Unless a command is one of the ones in the if clause below, we will just run it with the default run_tool function and then exit.
 if [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "restart" ]; then
   # hand off the command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
-  ret=$?
-  if [ $ret -ne 0 ]; then
-    exit $ret
-  fi
-  exit 0
+  exit $?
 fi
 
 # Everything below here is to support start, stop and restart.
@@ -695,7 +689,7 @@ fi
 : "${SOLR_RECOMMENDED_OPEN_FILES:=65000}"
 
 if [[ "${SOLR_ULIMIT_CHECKS:-}" != "false" ]]; then
-  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] || [ "$SCRIPT_CMD" == "status" ]; then
+  if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
@@ -831,17 +825,29 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
-        -a|--additional-options|-addlopts)
+        -a|--jvm-opts|-addlopts)
+            if [[ -z "$2" ]]; then
+              print_usage "$SCRIPT_CMD" "JVM options are required when using the $1 option!"
+              exit 1
+            fi
             ADDITIONAL_CMD_OPTS="$2"
-            PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
+            PASS_TO_RUN_EXAMPLE+=("--jvm-opts" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
         -j|--jettyconfig|-jettyconfig)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Jetty config is required when using the $1 option!"
+              exit 1
+            fi
             ADDITIONAL_JETTY_CONFIG="$2"
             PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
         -k|--key|-key)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Stop key is required when using the $1 option!"
+              exit 1
+            fi
             STOP_KEY="$2"
             shift 2
         ;;
@@ -853,16 +859,13 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
-        -V|--verbose|-verbose)
+        -V|--verbose|-verbose|-v)
             verbose=true
+            SOLR_LOG_LEVEL=DEBUG
             PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
         ;;
-        -v)
-            SOLR_LOG_LEVEL=DEBUG
-            shift
-        ;;
-        -q)
+        -q|--quiet)
             SOLR_LOG_LEVEL=WARN
             shift
         ;;
@@ -1226,7 +1229,7 @@ else
   SECURITY_MANAGER_OPTS=()
 fi
 
-# Enable ADMIN UI by default, and give the option for users to disable it
+# Enable Admin UI by default, and give the option for users to disable it
 if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
   SOLR_ADMIN_UI="-DdisableAdminUI=true"
   echo -e "ADMIN UI Disabled"

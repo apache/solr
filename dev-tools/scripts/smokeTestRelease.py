@@ -628,7 +628,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'cross-dc-manager', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -638,7 +638,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   elif isSlim:
     is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
