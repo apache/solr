@@ -26,11 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
@@ -137,30 +134,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * @lucene.experimental
  */
 public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
-
-  public enum PassageSort {
-    START_OFFSET("startOffset"),
-    END_OFFSET("endOffset"),
-    SCORE("score");
-
-    private final String key;
-
-    private static final Map<String, PassageSort> PASSAGE_SORTS =
-        Stream.of(values())
-            .collect(Collectors.toUnmodifiableMap(PassageSort::getKey, Function.identity()));
-
-    PassageSort(String method) {
-      this.key = method;
-    }
-
-    public String getKey() {
-      return key;
-    }
-
-    public static PassageSort parse(String sort) {
-      return PASSAGE_SORTS.get(sort);
-    }
-  }
 
   protected static final String SNIPPET_SEPARATOR = "\u0000";
 
@@ -345,21 +318,19 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     @Override
     protected Comparator<Passage> getPassageSortComparator(String fieldName) {
-      String value = params.get(HighlightParams.PASSAGE_SORT, PassageSort.START_OFFSET.key);
-
-      PassageSort passageSort = PassageSort.parse(value);
+      String passageSort = params.get(HighlightParams.PASSAGE_SORT, "startOffset");
 
       switch (passageSort) {
-        case START_OFFSET:
+        case "startOffset":
           return Comparator.comparingInt(Passage::getStartOffset);
-        case END_OFFSET:
+        case "endOffset":
           return Comparator.comparingInt(Passage::getEndOffset);
-        case SCORE:
+        case "score":
           return Comparator.comparingDouble(Passage::getScore).reversed();
         default:
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
-              "passed " + HighlightParams.PASSAGE_SORT + " value is not supported: " + value);
+              "passed " + HighlightParams.PASSAGE_SORT + " value is not supported: " + passageSort);
       }
     }
 
