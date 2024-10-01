@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -560,7 +559,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
    * @return the value returned after invoking 'clientFunction'
    * @param <R> the type returned by the provided function (and by this method)
    */
-  public <R> R requestWithBaseUrl(String baseUrl, SolrClientFunction<SolrClient, R> clientFunction)
+  public <R> R requestWithBaseUrl(
+      String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
       throws SolrServerException, IOException {
 
     // Despite the name, try-with-resources used here to avoid IDE and ObjectReleaseTracker
