@@ -109,7 +109,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     run(tool, new String[] {"--solr-url", solrUrl, "list-deployed", "question-answer"});
 
-    // Leaving -p in for --params to test the deprecated value continues to work.
+    // Leaving -p in for --param to test the deprecated value continues to work.
     run(
         tool,
         new String[] {
@@ -165,7 +165,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
               "question-answer",
               "--collections",
               "abc",
-              "--params",
+              "--param",
               "RH-HANDLER-PATH=" + rhPath
             });
       } else {
