@@ -362,11 +362,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
-      request.setBasePath(basePath);
-      return client.request(request, collection);
+      return client.requestWithBaseUrl(basePath, collection, request).getResponse();
     }
     UpdateRequest req = (UpdateRequest) request;
-    req.setBasePath(basePath);
     // this happens for commit...
     if (streamDeletes) {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())
@@ -374,13 +372,13 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
         if (req.getDeleteQuery() == null) {
           blockUntilFinished();
-          return client.request(request, collection);
+          return client.requestWithBaseUrl(basePath, collection, request).getResponse();
         }
       }
     } else {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())) {
         blockUntilFinished();
-        return client.request(request, collection);
+        return client.requestWithBaseUrl(basePath, collection, request).getResponse();
       }
     }
 
@@ -390,7 +388,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       if (params.getBool(UpdateParams.WAIT_SEARCHER, false)) {
         log.info("blocking for commit/optimize");
         blockUntilFinished(); // empty the queue
-        return client.request(request, collection);
+        return client.requestWithBaseUrl(basePath, collection, request).getResponse();
       }
     }
 

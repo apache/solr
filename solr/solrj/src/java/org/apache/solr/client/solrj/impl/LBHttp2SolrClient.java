@@ -210,17 +210,23 @@ public class LBHttp2SolrClient extends LBSolrClient {
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    CompletableFuture<NamedList<Object>> future =
-        ((Http2SolrClient) getClient(endpoint)).requestAsync(req.getRequest());
-    future.whenComplete(
-        (result, throwable) -> {
-          if (!future.isCompletedExceptionally()) {
-            onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
-          } else if (!future.isCancelled()) {
-            onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
-          }
-        });
-    return future;
+    final var client = (Http2SolrClient) getClient(endpoint);
+    try {
+      CompletableFuture<NamedList<Object>> future =
+          client.requestWithBaseUrl(baseUrl, (c) -> c.requestAsync(req.getRequest()));
+      future.whenComplete(
+          (result, throwable) -> {
+            if (!future.isCompletedExceptionally()) {
+              onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
+            } else if (!future.isCancelled()) {
+              onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
+            }
+          });
+      return future;
+    } catch (SolrServerException | IOException e) {
+      // Unreachable, since 'requestWithBaseUrl' above is running the request asynchronously
+      throw new RuntimeException(e);
+    }
   }
 
   private void onSuccessfulRequest(
