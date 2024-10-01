@@ -29,11 +29,20 @@ allprojects {
 
     def consolidatedConfigurations = project.configurations.matching {
         it.name in [
-                "compileClasspath",
-                "runtimeClasspath",
                 "annotationProcessor",
+                "compileClasspath",
+                "libExt",
+                "packaging",
+                "runtimeClasspath",
+                "runtimeLibs",
+                "server",
+                "serverLib",
+                "solrCore",
+                "solrFullTgz",
+                "solrPlatformLibs",
+                "solrSlimTgz",
                 "testCompileClasspath",
-                "testRuntimeClasspath"
+                "testRuntimeClasspath",
         ]
     }
 
@@ -92,6 +101,9 @@ allprojects {
                 handler.add(conf.name, libs.grpc.context, {
                     because 'version alignment for consistency across project'
                 })
+                handler.add(conf.name, libs.commonscli.commonscli, {
+                    because 'version alignment for consistency across project'
+                })
                 handler.add(conf.name, libs.commonscodec.commonscodec, {
                     because 'version alignment for consistency across project'
                 })
@@ -122,6 +134,9 @@ allprojects {
                 handler.add(conf.name, libs.fasterxml.woodstox.core, {
                     because 'version alignment for consistency across project'
                 })
+                handler.add(conf.name, libs.slf4j.api, {
+                    because 'version alignment for consistency across project'
+                })
                 handler.add(conf.name, libs.slf4j.jultoslf4j, {
                     because 'version alignment for consistency across project'
                 })
@@ -147,6 +162,24 @@ allprojects {
                     because 'version alignment for consistency across project'
                 })
                 handler.add(conf.name, libs.bc.jose4j, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.lmax.disruptor, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.apache.httpcomponents.httpclient, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.apache.httpcomponents.httpcore, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.apache.httpcomponents.httpmime, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.apache.zookeeper.zookeeper, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.apache.zookeeper.jute, {
                     because 'version alignment for consistency across project'
                 })
 
