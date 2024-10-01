@@ -51,7 +51,7 @@ public abstract class ToolBase implements Tool {
   @Override
   public int runTool(CommandLine cli) throws Exception {
     verbose =
-        cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())
+        cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt())
             || cli.hasOption(SolrCLI.OPTION_VERBOSE_DEPRECATED);
 
     int toolExitStatus = 0;
