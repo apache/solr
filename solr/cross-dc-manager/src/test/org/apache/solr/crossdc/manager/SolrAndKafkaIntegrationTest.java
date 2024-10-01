@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -57,6 +58,7 @@ import org.apache.solr.crossdc.manager.consumer.Consumer;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -88,6 +90,11 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final String ALT_COLLECTION = "collection2";
   private static Thread.UncaughtExceptionHandler uceh;
+
+  @BeforeClass
+  public static void beforeAll() {
+    ensureCompatibleLocale();
+  }
 
   @Before
   public void beforeSolrAndKafkaIntegrationTest() throws Exception {
@@ -350,5 +357,11 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     }
 
     assertTrue("results=" + results, foundUpdates);
+  }
+
+  public static void ensureCompatibleLocale() {
+    assumeTrue(
+        "The current default locale is not compatible with the Kafka server",
+        "CLASSIC".equals("classic".toUpperCase(Locale.getDefault())));
   }
 }
