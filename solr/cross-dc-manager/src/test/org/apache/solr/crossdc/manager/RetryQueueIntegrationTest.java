@@ -80,6 +80,7 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeRetryQueueIntegrationTestTest() throws Exception {
+    SolrAndKafkaIntegrationTest.ensureCompatibleLocale();
 
     System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer = new Consumer();
@@ -169,10 +170,14 @@ public class RetryQueueIntegrationTest extends SolrTestCaseJ4 {
   public static void afterRetryQueueIntegrationTest() throws Exception {
     ObjectReleaseTracker.clear();
 
-    consumer.shutdown();
+    if (consumer != null) {
+      consumer.shutdown();
+    }
 
     try {
-      kafkaCluster.stop();
+      if (kafkaCluster != null) {
+        kafkaCluster.stop();
+      }
     } catch (Exception e) {
       log.error("Exception stopping Kafka cluster", e);
     }
