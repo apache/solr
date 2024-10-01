@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -247,33 +246,6 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       fail("Didn't get excepted exception from oversided request");
     } catch (SolrException e) {
       assertEquals("Unexpected exception status code", status, e.code());
-    }
-  }
-
-  /**
-   * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
-   * even when not on the list of ErrorCodes solr may return.
-   */
-  public void testSolrExceptionWithNullBaseurl(HttpSolrClientBase client)
-      throws IOException, SolrServerException {
-    final int status = 527;
-    assertEquals(
-        status
-            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
-        SolrException.ErrorCode.UNKNOWN,
-        SolrException.ErrorCode.getErrorCode(status));
-
-    DebugServlet.setErrorCode(status);
-    try {
-      // if client base url is null, request url will be used in exception message
-      SolrPing ping = new SolrPing();
-      ping.setBasePath(getBaseUrl() + DEBUG_SERVLET_PATH);
-      client.request(ping, DEFAULT_CORE);
-
-      fail("Didn't get excepted exception from oversided request");
-    } catch (SolrException e) {
-      assertEquals("Unexpected exception status code", status, e.code());
-      assertTrue(e.getMessage().contains(getBaseUrl()));
     }
   }
 

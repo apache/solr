@@ -72,14 +72,6 @@ public class ClientUtilsTest extends SolrTestCase {
       assertEquals("http://localhost:8983/solr/someColl/select", url);
     }
 
-    // Uses SolrRequest.getBasePath() to override baseUrl
-    {
-      final var request = new HealthCheckRequest();
-      request.setBasePath("http://alternate-url:7574/solr");
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://alternate-url:7574/solr/admin/info/health", url);
-    }
-
     // V2 path is correct when solr.v2RealPath sysprop set
     {
       System.setProperty("solr.v2RealPath", "true");

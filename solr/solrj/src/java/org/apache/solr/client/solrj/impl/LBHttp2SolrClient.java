@@ -209,7 +209,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
       RetryListener listener) {
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
-    req.getRequest().setBasePath(baseUrl);
     final var client = (Http2SolrClient) getClient(endpoint);
     try {
       CompletableFuture<NamedList<Object>> future =
