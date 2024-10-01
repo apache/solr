@@ -2127,7 +2127,7 @@ public class IndexFetcher {
 
     QueryRequest request = new QueryRequest(params);
     // TODO use shardhandler
-    return solrClient.requestWithBaseUrl(leaderBaseUrl, (c) -> c.request(request, leaderCoreName));
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
   }
 
   public void destroy() {

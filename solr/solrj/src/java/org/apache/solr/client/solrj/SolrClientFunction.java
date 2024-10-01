@@ -18,13 +18,8 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 
-/**
- * A lambda intended for invoking SolrClient operations
- *
- * <p>Exceptions commonly thrown by SolrClient operations, IOException and SolrServerException, are
- * permitted to be thrown by lambda instances.
- */
+/** A lambda intended for invoking SolrClient operations */
 @FunctionalInterface
-public interface SolrClientFunction<T, R> {
-  R apply(T t) throws IOException, SolrServerException;
+public interface SolrClientFunction<C extends SolrClient, R> {
+  R apply(C c) throws IOException, SolrServerException;
 }
