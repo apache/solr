@@ -533,9 +533,47 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
+  public long getOnDiskSize() {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      return (Long)
+          requestInfo
+              .getReq()
+              .getContext()
+              .computeIfAbsent(cachedOnDiskIndexSizeKeyName(), key -> calculateOnDiskSize());
+    } else {
+      return calculateOnDiskSize();
+    }
+  }
+
+  private long calculateOnDiskSize() {
+    Directory dir;
+    long size = 0;
+    try {
+      if (directoryFactory.exists(getIndexDir())) {
+        dir =
+            directoryFactory.get(
+                getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+        try {
+          size = directoryFactory.onDiskSize(dir);
+        } finally {
+          directoryFactory.release(dir);
+        }
+      }
+    } catch (IOException e) {
+      log.error("IO error while trying to get the size of the Directory", e);
+    }
+    return size;
+  }
+
   private String cachedIndexSizeKeyName() {
     // avoid collision when we put index sizes for multiple cores in the same metrics request
     return "indexSize_" + getName();
+  }
+
+  private String cachedOnDiskIndexSizeKeyName() {
+    // avoid collision when we put index sizes for multiple cores in the same metrics request
+    return "onDiskIndexSize_" + getName();
   }
 
   public int getSegmentCount() {

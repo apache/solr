@@ -380,8 +380,14 @@ public enum CoreAdminOperation implements CoreAdminOp {
                 SimpleOrderedMap<Object> indexInfo =
                     LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
                 long size = core.getIndexSize();
+                long onDiskSize = core.getOnDiskSize();
+                String readableSize = NumberUtils.readableSize(size);
+                String readableOnDiskSize =
+                    size == onDiskSize ? readableSize : NumberUtils.readableSize(onDiskSize);
                 indexInfo.add("sizeInBytes", size);
                 indexInfo.add("size", NumberUtils.readableSize(size));
+                indexInfo.add("onDiskSizeInBytes", onDiskSize);
+                indexInfo.add("onDiskSize", readableOnDiskSize);
                 info.add("index", indexInfo);
               } finally {
                 searcher.decref();

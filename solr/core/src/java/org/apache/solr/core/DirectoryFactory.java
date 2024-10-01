@@ -167,6 +167,18 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   }
 
   /**
+   * @param directory to calculate size of
+   * @return size in bytes on disk, regardless of compression, etc
+   * @throws IOException on low level IO error
+   */
+  public long onDiskSize(Directory directory) throws IOException {
+    if (directory instanceof OnDiskSizeDirectory) {
+      return onDiskSizeOfDirectory(directory);
+    }
+    return sizeOfDirectory(directory);
+  }
+
+  /**
    * @param path to calculate size of
    * @return size in bytes
    * @throws IOException on low level IO error
@@ -267,6 +279,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
 
   public interface SizeAware {
     long size() throws IOException;
+
+    long onDiskSize() throws IOException;
+  }
+
+  public interface OnDiskSizeDirectory {
+    long onDiskFileLength(String name) throws IOException;
   }
 
   public static long sizeOfDirectory(Directory directory) throws IOException {
@@ -293,6 +311,35 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
       // could be a race, file no longer exists, access denied, is a directory, etc.
       return 0;
     }
+  }
+
+  public static long onDiskSizeOfDirectory(Directory directory) throws IOException {
+    if (directory instanceof SizeAware) {
+      return ((SizeAware) directory).onDiskSize();
+    }
+    final String[] files = directory.listAll();
+    long size = 0;
+
+    for (final String file : files) {
+      size += onDiskSizeOf(directory, file);
+      if (size < 0) {
+        break;
+      }
+    }
+
+    return size;
+  }
+
+  public static long onDiskSizeOf(Directory directory, String file) throws IOException {
+    if (directory instanceof DirectoryFactory.OnDiskSizeDirectory) {
+      try {
+        return ((OnDiskSizeDirectory) directory).onDiskFileLength(file);
+      } catch (IOException e) {
+        // could be a race, file no longer exists, access denied, is a directory, etc.
+        return 0;
+      }
+    }
+    return directory.fileLength(file);
   }
 
   /** Delete the files in the Directory */

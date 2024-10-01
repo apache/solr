@@ -38,8 +38,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.compress.LZ4;
+import org.apache.solr.core.DirectoryFactory;
 
-public class CompressingDirectory extends FSDirectory {
+public class CompressingDirectory extends FSDirectory
+    implements DirectoryFactory.OnDiskSizeDirectory {
 
   /**
    * Reference to {@code com.sun.nio.file.ExtendedOpenOption.DIRECT} by reflective class and enum
@@ -148,6 +150,11 @@ public class CompressingDirectory extends FSDirectory {
     return readLengthFromHeader(path);
   }
 
+  @Override
+  public long onDiskFileLength(String name) throws IOException {
+    return Files.size(directoryPath.resolve(name));
+  }
+
   public static long readLengthFromHeader(Path path) throws IOException {
     if (Files.size(path) < Long.BYTES) {
       return 0;
@@ -224,7 +231,11 @@ public class CompressingDirectory extends FSDirectory {
     }
   }
 
-  static final class DirectIOIndexOutput extends IndexOutput {
+  public interface SizeReportingIndexOutput {
+    long getBytesWritten();
+  }
+
+  static final class DirectIOIndexOutput extends IndexOutput implements SizeReportingIndexOutput {
     private final byte[] compressBuffer = new byte[COMPRESSION_BLOCK_SIZE];
     private final LZ4.FastCompressionHashTable ht = new LZ4.FastCompressionHashTable();
     private final ByteBuffer preBuffer;
@@ -245,6 +256,7 @@ public class CompressingDirectory extends FSDirectory {
     static final int HEADER_SIZE = 16; // 16 bytes
 
     private long filePos;
+    private long bytesWritten;
     private boolean isOpen;
 
     private final DirectBufferPool initialBlockBufferPool;
@@ -277,6 +289,7 @@ public class CompressingDirectory extends FSDirectory {
       preBuffer = ByteBuffer.wrap(compressBuffer);
       this.initialBlockBufferPool = initialBlockBufferPool;
       initialBlock = initialBlockBufferPool.get();
+      bytesWritten = HEADER_SIZE;
 
       // allocate space for the header
       buffer.position(buffer.position() + HEADER_SIZE);
@@ -321,6 +334,7 @@ public class CompressingDirectory extends FSDirectory {
 
       LZ4.compressWithDictionary(compressBuffer, 0, 0, COMPRESSION_BLOCK_SIZE, out, ht);
       int nextBlockSize = out.resetSize();
+      bytesWritten += nextBlockSize;
       blockDeltas.writeZInt(nextBlockSize - prevBlockSize);
       prevBlockSize = nextBlockSize;
       filePos += COMPRESSION_BLOCK_SIZE;
@@ -336,6 +350,7 @@ public class CompressingDirectory extends FSDirectory {
         LZ4.compressWithDictionary(compressBuffer, 0, 0, preBufferRemaining, out, ht);
       }
       int blockMapFooterSize = blockDeltas.transferTo(out);
+      bytesWritten += out.resetSize();
       if (wroteBlock) {
         writeHelper.flush(buffer, true);
         initialBlock.putLong(0, filePos);
@@ -356,6 +371,11 @@ public class CompressingDirectory extends FSDirectory {
         }
         writeHelper.flush(buffer, true);
       }
+    }
+
+    @Override
+    public long getBytesWritten() {
+      return bytesWritten;
     }
 
     private final SizeTrackingDataOutput out = new SizeTrackingDataOutput();
