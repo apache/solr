@@ -546,8 +546,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
    *     on the client's default
    * @param req the SolrRequest to send
    */
-  public final <T extends SolrResponse> T requestWithBaseUrl(
-      String baseUrl, String collection, SolrRequest<T> req)
+  public final <R extends SolrResponse> R requestWithBaseUrl(
+      String baseUrl, String collection, SolrRequest<R> req)
       throws SolrServerException, IOException {
     return requestWithBaseUrl(baseUrl, (c) -> req.process(c, collection));
   }
