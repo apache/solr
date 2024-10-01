@@ -127,9 +127,9 @@ public class CloudIndexing {
   public Object indexDoc(MiniClusterState.MiniClusterBenchState miniClusterState, BenchState state)
       throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
-    updateRequest.setBasePath(
-        miniClusterState.nodes.get(miniClusterState.getRandom().nextInt(state.nodeCount)));
     updateRequest.add(state.getNextDoc());
-    return miniClusterState.client.request(updateRequest, BenchState.COLLECTION);
+    final var url =
+        miniClusterState.nodes.get(miniClusterState.getRandom().nextInt(state.nodeCount));
+    return miniClusterState.client.requestWithBaseUrl(url, BenchState.COLLECTION, updateRequest);
   }
 }
