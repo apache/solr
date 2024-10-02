@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.text.BreakIterator;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -33,17 +34,16 @@ import java.util.function.Supplier;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.uhighlight.CustomSeparatorBreakIterator;
 import org.apache.lucene.search.uhighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.uhighlight.FieldHighlighter;
+import org.apache.lucene.search.uhighlight.FieldOffsetStrategy;
 import org.apache.lucene.search.uhighlight.LengthGoalBreakIterator;
+import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
 import org.apache.lucene.search.uhighlight.PassageScorer;
-import org.apache.lucene.search.uhighlight.SplittingBreakIterator;
-import org.apache.lucene.search.uhighlight.UHComponents;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.search.uhighlight.WholeBreakIterator;
 import org.apache.solr.common.SolrDocument;
@@ -470,24 +470,37 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
     }
 
-    protected FieldHighlighter getFieldHighlighter(
-        String field, Query query, Set<Term> allTerms, int maxPassages) {
-
+    @Override
+    protected FieldHighlighter newFieldHighlighter(
+        String field,
+        FieldOffsetStrategy fieldOffsetStrategy,
+        BreakIterator breakIterator,
+        PassageScorer passageScorer,
+        int maxPassages,
+        int maxNoHighlightPassages,
+        PassageFormatter passageFormatter,
+        Comparator<Passage> passageSortComparator) {
       if (!"stripHTML".equals(params.getFieldParam(field, HighlightParams.ENCODER, "simple"))) {
-        return super.getFieldHighlighter(field, query, allTerms, maxPassages);
+        return super.newFieldHighlighter(
+            field,
+            fieldOffsetStrategy,
+            breakIterator,
+            passageScorer,
+            maxPassages,
+            maxNoHighlightPassages,
+            passageFormatter,
+            passageSortComparator);
       }
-
-      UHComponents components = getHighlightComponents(field, query, allTerms);
-      OffsetSource offsetSource = getOptimizedOffsetSource(components);
 
       return new FieldHighlighter(
           field,
-          getOffsetStrategy(offsetSource, components),
-          new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
-          getScorer(field),
+          fieldOffsetStrategy,
+          breakIterator,
+          passageScorer,
           maxPassages,
-          getMaxNoHighlightPassages(field),
-          getFormatter(field)) {
+          maxNoHighlightPassages,
+          passageFormatter,
+          passageSortComparator) {
 
         @Override
         public Object highlightFieldForDoc(LeafReader reader, int docId, String content)

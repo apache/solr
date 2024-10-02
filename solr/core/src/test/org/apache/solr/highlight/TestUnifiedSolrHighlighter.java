@@ -528,15 +528,24 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
 
   public void testEncoder() {
     assertU(adoc("text", "Document one has a first <i>sentence</i>.", "id", "103"));
+    assertU(adoc("text", "Text two has <i>complete</i> and <i>incomplete<", "id", "104"));
     assertU(commit());
     assertQ(
         "html escaped",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first &lt;i&gt;sentence&lt;&#x2F;i&gt;.'");
     assertQ(
+        "html escaped",
+        req("q", "text:text", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
+        "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='<em>Text</em> two has &lt;i&gt;complete&lt;&#x2F;i&gt; and &lt;i&gt;incomplete&lt;'");
+    assertQ(
         "html stripped",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "stripHTML"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first sentence.'");
+    assertQ(
+        "html stripped",
+        req("q", "text:text", "sort", "id asc", "hl", "true", "hl.encoder", "stripHTML"),
+        "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='<em>Text</em> two has complete and incomplete<'");
   }
 
   public void testRangeQuery() {
