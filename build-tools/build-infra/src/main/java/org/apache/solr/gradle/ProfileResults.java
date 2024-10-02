@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.gradle;
+package org.apache.solr.gradle;
 
 import java.io.IOException;
 import java.nio.file.Paths;
