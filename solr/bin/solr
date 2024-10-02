@@ -1185,7 +1185,7 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   : "${ZK_CLIENT_TIMEOUT:=30000}"
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
 
-  echo -e "\nSolr will start in SolrCloud mode by default in version 10, and you will no longer need to pass in -c or --cloud flag.\n"
+  echo -e "\nSolr will start in SolrCloud mode by default in version 10, even if no -c or --cloud flag is specified.\n"
   
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
