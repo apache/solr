@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.similarities;
 
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Distribution;
 import org.apache.lucene.search.similarities.DistributionLL;
 import org.apache.lucene.search.similarities.DistributionSPL;
@@ -56,7 +58,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * <p>Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link IBSimilarity#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -100,8 +102,17 @@ public class IBSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    IBSimilarity sim = new IBSimilarity(distribution, lambda, normalization);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new IBSimilarity(distribution, lambda, normalization) {
+      private final Similarity computeNormProxySimilarity = new ClassicSimilarity(discountOverlaps);
+
+      @Override
+      public long computeNorm(FieldInvertState state) {
+        return computeNormProxySimilarity.computeNorm(state);
+      }
+    };
+
+    // TODO: when available, use a constructor with 'discountOverlaps' parameter and remove above
+    // TODO: hack
+    // return new IBSimilarity(distribution, lambda, normalization, discountOverlaps);
   }
 }
