@@ -167,7 +167,7 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* SOLR-17471: Upgrade Lucene to 9.12.0 (Pierre Salagnac)
 
 Other Changes
 ---------------------
