@@ -25,9 +25,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
@@ -41,6 +43,39 @@ import org.apache.solr.util.RTimerTree;
  * <p><code>SolrQueryRequest</code> is not thread safe.
  */
 public interface SolrQueryRequest extends AutoCloseable {
+
+  /** This is the system property for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
+  String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
+
+  // silly getBoolean doesn't take a default.
+  /**
+   * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
+   * true, and solr will omit results when any shard fails due query execution limits (time, cpu
+   * etc.). By default, this is set to true. Setting it to false will reduce processing, cpu and
+   * network associated with collecting and transmitting partial results. This setting can be
+   * overridden (in either direction) on a per-request basis with {@code
+   * &allowPartialResults=[true|false]}. When results have been omitted the response header should
+   * contain a partialResults element with the value "omitted"
+   */
+  boolean ALLOW_PARTIAL_RESULTS_DEFAULT =
+      EnvUtils.getPropertyAsBool(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT, true);
+
+  /**
+   * Tests if the partials for the request should be discarded. Examines {@link
+   * SolrQueryRequest#ALLOW_PARTIAL_RESULTS_DEFAULT} system property and also examines {@link
+   * CommonParams#PARTIAL_RESULTS} request param. The Request Parameter takes precedence if both are
+   * set.
+   *
+   * @return true if partials should be discarded.
+   * @param params the request parameters
+   */
+  static boolean allowPartialResults(SolrParams params) {
+    return params.getBool(CommonParams.PARTIAL_RESULTS, ALLOW_PARTIAL_RESULTS_DEFAULT);
+  }
+
+  static boolean disallowPartialResults(SolrParams params) {
+    return !allowPartialResults(params);
+  }
 
   /** returns the current request parameters */
   SolrParams getParams();

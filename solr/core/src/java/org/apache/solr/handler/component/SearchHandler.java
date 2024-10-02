@@ -487,7 +487,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.setPartialResults();
+        rb.rsp.setPartialResults(rb.req);
       }
     } else {
       // a distributed request
@@ -551,7 +551,7 @@ public class SearchHandler extends RequestHandlerBase
           // now wait for replies, but if anyone puts more requests on
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
-          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
+          boolean tolerant = HttpShardHandler.getShardsTolerantAsBool(rb.req);
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp =
                 tolerant
@@ -559,6 +559,20 @@ public class SearchHandler extends RequestHandlerBase
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
 
+            boolean anyResponsesPartial =
+                srsp.getShardRequest().responses.stream()
+                    .anyMatch(
+                        response -> {
+                          NamedList<Object> resp = response.getSolrResponse().getResponse();
+                          if (resp == null) {
+                            return false;
+                          }
+                          Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          return recursive != null;
+                        });
+            if (anyResponsesPartial) {
+              rsp.setPartialResults(rb.req);
+            }
             // Was there an exception?
             if (srsp.getException() != null) {
               // If things are not tolerant, abort everything and rethrow
@@ -579,7 +593,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.setPartialResults();
+                  rsp.setPartialResults(rb.req);
                 }
               }
             }
