@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-repositories {
-  mavenCentral()
-}
+// Declare script dependency versions outside of palantir's
+// version unification control. These are not our main dependencies
+// but are reused in buildSrc and across applied scripts.
 
 ext {
-  // Minimum Java version required to compile buildSrc.
-  minJavaVersion = JavaVersion.VERSION_11
-}
-
-// Make sure the build environment is consistent.
-apply from: file('../gradle/validation/check-environment.gradle')
-
-// Load common buildSrc and script deps.
-apply from: file("scriptDepVersions.gradle")
-
-dependencies {
-  implementation gradleApi()
-  implementation localGroovy()
-
-  implementation "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+  scriptDepVersions = [
+      "min-java-version": "11",
+      "apache-rat": "0.15",
+      "commons-codec": "1.16.0",
+      "ecj": "3.33.0",
+      "javacc": "7.0.12",
+      "jgit": "6.7.0.202309050840-r",
+      "flexmark": "0.64.8",
+  ]
 }

@@ -16,17 +16,40 @@
  */
 
 plugins {
-  id 'java-library'
+  id "java-gradle-plugin"
 }
 
-version = "1.0.0-SNAPSHOT"
-group = "org.apache.solr.tools"
-description = 'Doclet-based javadoc validation'
+repositories {
+  mavenCentral()
+}
 
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
+group = "org.apache"
 
-tasks.withType(JavaCompile) {
-  options.compilerArgs += ["--release", targetCompatibility.toString()]
-  options.encoding = "UTF-8"
+gradlePlugin {
+  automatedPublishing = false
+
+  plugins {
+    buildInfra {
+      id = 'solr.build-infra'
+      implementationClass = 'org.apache.lucene.gradle.buildinfra.BuildInfraPlugin'
+    }
+  }
+}
+
+// Make sure the build environment is consistent.
+apply from: file('../../gradle/validation/check-environment.gradle')
+
+// Load common script dependencies.
+apply from: file("../scriptDepVersions.gradle")
+
+java {
+  sourceCompatibility = scriptDepVersions['min-java-version']
+  targetCompatibility = scriptDepVersions['min-java-version']
+}
+
+dependencies {
+  implementation gradleApi()
+  implementation localGroovy()
+
+  implementation "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
 }
