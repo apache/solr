@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.missingdoclet;
+package org.apache.lucene.missingdoclet;
 
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.ParamTree;

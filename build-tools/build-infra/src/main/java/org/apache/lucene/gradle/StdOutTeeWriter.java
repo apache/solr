@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.gradle;
+package org.apache.lucene.gradle;
 
 import java.io.IOException;
 import java.io.PrintStream;

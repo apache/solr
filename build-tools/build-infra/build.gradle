@@ -48,7 +48,7 @@ gradlePlugin {
   plugins {
     buildInfra {
       id = 'solr.build-infra'
-      implementationClass = 'org.apache.solr.gradle.buildinfra.BuildInfraPlugin'
+      implementationClass = 'org.apache.lucene.gradle.buildinfra.BuildInfraPlugin'
     }
   }
 }

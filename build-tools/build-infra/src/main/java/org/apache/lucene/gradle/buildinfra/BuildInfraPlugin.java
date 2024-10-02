@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.gradle.buildinfra;
+package org.apache.lucene.gradle.buildinfra;
 
 import java.nio.file.Path;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.gradle.Checksum;
-import org.apache.solr.gradle.ErrorReportingTestListener;
-import org.apache.solr.gradle.ProfileResults;
+import org.apache.lucene.gradle.Checksum;
+import org.apache.lucene.gradle.ErrorReportingTestListener;
+import org.apache.lucene.gradle.ProfileResults;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.testing.TestDescriptor;

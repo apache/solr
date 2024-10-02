@@ -25,7 +25,7 @@
  * https://github.com/gradle/gradle-checksum/blob/03351de/LICENSE
  */
 
-package org.apache.solr.gradle;
+package org.apache.lucene.gradle;
 
 import java.io.File;
 import java.io.IOException;
