@@ -139,7 +139,7 @@ The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`
 If you are running a user-managed cluster or single-node installation, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
-`-f`, `--config-file`, `$CONFIG_FILE`::
+`--config-file`, `$CONFIG_FILE`::
 +
 [%autowidth,frame=none]
 |===
