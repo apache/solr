@@ -66,11 +66,9 @@ public class HealthcheckTool extends ToolBase {
   public Options getAllOptions() {
     return new Options()
         .addOption(COLLECTION_NAME_OPTION)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   enum ShardState {
@@ -173,13 +171,13 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-              SolrCLI.getSolrClient(coreUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+              SolrCLI.getSolrClient(coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =
                 SolrCLI.getSolrClient(
                     replicaCoreProps.getBaseUrl(),
-                    cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(

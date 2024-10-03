@@ -83,14 +83,14 @@ public class PostLogsTool extends ToolBase {
     return new Options()
         .addOption(SOLR_URL_OPTION)
         .addOption(ROOT_DIR_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue(SOLR_URL_OPTION);
     String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     runCommand(url, rootDir, credentials);
   }
 

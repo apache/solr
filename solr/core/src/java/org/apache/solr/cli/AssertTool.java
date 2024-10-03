@@ -165,12 +165,12 @@ public class AssertTool extends ToolBase {
         .addOption(MESSAGE_OPTION)
         .addOption(TIMEOUT_OPTION)
         .addOption(EXIT_CODE_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE);
+    verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
 
     int toolExitStatus;
     try {
@@ -234,24 +234,24 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
       ret +=
           assertSolrRunning(
-              cli.getOptionValue(IS_RUNNING_ON_OPTION), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+              cli.getOptionValue(IS_RUNNING_ON_OPTION), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     if (cli.hasOption(IS_NOT_RUNNING_ON_OPTION)) {
       ret +=
           assertSolrNotRunning(
-              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     if (cli.hasOption(IS_CLOUD_OPTION)) {
       ret +=
           assertSolrRunningInCloudMode(
               SolrCLI.normalizeSolrUrl(cli.getOptionValue(IS_CLOUD_OPTION)),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
       ret +=
           assertSolrNotRunningInCloudMode(
               SolrCLI.normalizeSolrUrl(cli.getOptionValue(IS_NOT_CLOUD_OPTION)),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION.getLongOpt()));
     }
     return ret;
   }

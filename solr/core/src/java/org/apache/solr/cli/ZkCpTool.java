@@ -65,12 +65,10 @@ public class ZkCpTool extends ToolBase {
   public Options getAllOptions() {
     return new Options()
         .addOption(SOLR_HOME_OPTION)
-        .addOption(SolrCLI.OPTION_RECURSE)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.RECURSE_OPTION)
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -134,7 +132,7 @@ public class ZkCpTool extends ToolBase {
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
-    boolean recurse = cli.hasOption(SolrCLI.OPTION_RECURSE);
+    boolean recurse = cli.hasOption(CommonCLIOptions.RECURSE_OPTION);
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");

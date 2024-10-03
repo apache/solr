@@ -181,7 +181,7 @@ public class CreateTool extends ToolBase {
         .addOptionGroup(REPLICATION_FACTOR_OPTION)
         .addOptionGroup(CONF_DIR_OPTION)
         .addOptionGroup(CONF_NAME_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -199,7 +199,9 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl = cli.getOptionValue(SolrCLI.OPTION_SOLRURL, SolrCLI.getDefaultSolrUrl());
+    String solrUrl = cli.getOptionValue(
+        CommonCLIOptions.SOLR_URL_OPTION_GROUP,
+        SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName = cli.getOptionValue(CONF_DIR_OPTION, SolrCLI.DEFAULT_CONFIG_SET);
@@ -223,7 +225,7 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -251,7 +253,7 @@ public class CreateTool extends ToolBase {
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (cli.hasOption(SolrCLI.OPTION_VERBOSE)) {
+      if (cli.hasOption(CommonCLIOptions.VERBOSE_OPTION)) {
         echo(res.jsonStr());
         echo("\n");
       } else {
@@ -271,7 +273,7 @@ public class CreateTool extends ToolBase {
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(
-                cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+                cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
@@ -298,7 +300,7 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue(SolrCLI.OPTION_SOLRURL);
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION_GROUP);
     if (solrUrl == null) {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
@@ -344,7 +346,7 @@ public class CreateTool extends ToolBase {
 
     // since creating a collection is a heavy-weight operation, check for existence first
     if (SolrCLI.safeCheckCollectionExists(
-        solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+        solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       throw new IllegalStateException(
           "\nCollection '"
               + collectionName
@@ -367,7 +369,7 @@ public class CreateTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE)) {
+    if (cli.hasOption(CommonCLIOptions.VERBOSE_OPTION)) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
@@ -410,7 +412,7 @@ public class CreateTool extends ToolBase {
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-      final String solrUrl = cli.getOptionValue(SolrCLI.OPTION_SOLRURL, SolrCLI.getDefaultSolrUrl());
+      final String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION_GROUP, SolrCLI.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,

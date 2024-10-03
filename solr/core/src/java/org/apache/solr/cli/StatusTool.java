@@ -44,17 +44,6 @@ import org.noggit.JSONWriter;
  */
 public class StatusTool extends ToolBase {
 
-  // The solr-url option is not exposed to the end user, and is
-  // created by the bin/solr script and passed into this command directly,
-  // therefore we don't use the SolrCLI.OPTION_SOLRURL.
-  private static final Option SOLR_URL_OPTION = Option.builder()
-      .argName("URL")
-      .longOpt("solr-url")
-      .hasArg()
-      .required(false)
-      .desc("Property set by calling scripts, not meant for user configuration.")
-      .build();
-
   private static final Option MAX_WAIT_SECS_OPTION =
       Option.builder()
           .longOpt("max-wait-secs")
@@ -80,7 +69,7 @@ public class StatusTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return new Options()
-        .addOption(SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(MAX_WAIT_SECS_OPTION);
   }
 
@@ -88,7 +77,7 @@ public class StatusTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     // Override the default help behaviour to put out a customized message that only list user
     // settable Options.
-    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0) || cli.hasOption(SolrCLI.OPTION_HELP)) {
+    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0) || cli.hasOption(CommonCLIOptions.HELP_OPTION)) {
       final Options options = new Options();
       options.addOption(MAX_WAIT_SECS_OPTION);
       new HelpFormatter().printHelp("status", options);
@@ -103,7 +92,7 @@ public class StatusTool extends ToolBase {
       try {
         waitToSeeSolrUp(
             solrUrl,
-            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS),
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
             maxWaitSecs,
             TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
@@ -115,7 +104,7 @@ public class StatusTool extends ToolBase {
       try {
         CharArr arr = new CharArr();
         new JSONWriter(arr, 2)
-            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS)));
+            .write(getStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION)));
         echo(arr.toString());
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {

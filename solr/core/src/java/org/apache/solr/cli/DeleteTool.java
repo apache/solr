@@ -133,11 +133,9 @@ public class DeleteTool extends ToolBase {
         .addOption(COLLECTION_NAME_OPTION)
         .addOptionGroup(DELETE_CONFIG_OPTION)
         .addOptionGroup(FORCE_DELETE_CONFIG_OPTION)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -159,7 +157,7 @@ public class DeleteTool extends ToolBase {
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+            .withOptionalBasicAuthCredentials(cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {

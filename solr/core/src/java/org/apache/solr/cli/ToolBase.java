@@ -39,7 +39,7 @@ public abstract class ToolBase implements Tool {
   }
 
   protected void echoIfVerbose(final String msg, CommandLine cli) {
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE)) {
+    if (cli.hasOption(CommonCLIOptions.VERBOSE_OPTION)) {
       echo(msg);
     }
   }
@@ -55,7 +55,7 @@ public abstract class ToolBase implements Tool {
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE);
+    verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
 
     int toolExitStatus = 0;
     try {

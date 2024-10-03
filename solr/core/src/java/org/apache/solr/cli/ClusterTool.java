@@ -71,8 +71,7 @@ public class ClusterTool extends ToolBase {
     return new Options()
         .addOption(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
   }
 
   @Override

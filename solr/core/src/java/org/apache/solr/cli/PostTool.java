@@ -313,7 +313,7 @@ public class PostTool extends ToolBase {
         .addOption(OUTPUT_OPTION)
         .addOption(FORMAT_OPTION)
         .addOption(DRY_RUN_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -352,7 +352,7 @@ public class PostTool extends ToolBase {
     commit = !cli.hasOption(SKIP_COMMIT_OPTION);
     optimize = cli.hasOption(OPTIMIZE_OPTION);
 
-    credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS);
+    credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     args = cli.getArgs();
     params = cli.getOptionValue(PARAMS_OPTION, "");
 

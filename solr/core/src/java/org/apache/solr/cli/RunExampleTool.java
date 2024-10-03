@@ -232,8 +232,7 @@ public class RunExampleTool extends ToolBase {
         .addOption(CLOUD_OPTION)
         .addOption(MEMORY_OPTION)
         .addOptionGroup(JVM_OPTS_OPTION)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
   }
 
   @Override
@@ -308,7 +307,7 @@ public class RunExampleTool extends ToolBase {
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
     boolean isCloudMode = cli.hasOption(CLOUD_OPTION);
-    String zkHost = cli.getOptionValue(SolrCLI.OPTION_ZKHOST);
+    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
     int port =
         Integer.parseInt(
             cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
@@ -323,7 +322,7 @@ public class RunExampleTool extends ToolBase {
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
       if (SolrCLI.safeCheckCollectionExists(
-          solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+          solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
@@ -333,7 +332,7 @@ public class RunExampleTool extends ToolBase {
     } else {
       String coreName = collectionName;
       if (SolrCLI.safeCheckCoreExists(
-          solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+          solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -559,7 +558,7 @@ public class RunExampleTool extends ToolBase {
     }
 
     // deal with extra args passed to the script to run the example
-    String zkHost = cli.getOptionValue(SolrCLI.OPTION_ZKHOST);
+    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
@@ -596,7 +595,7 @@ public class RunExampleTool extends ToolBase {
             readInput,
             prompt,
             solrUrl,
-            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
@@ -749,7 +748,7 @@ public class RunExampleTool extends ToolBase {
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
-    return getNodeStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS), maxWaitSecs);
+    return getNodeStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(

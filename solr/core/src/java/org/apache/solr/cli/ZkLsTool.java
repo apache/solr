@@ -41,13 +41,11 @@ public class ZkLsTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return new Options()
-        .addOption(SolrCLI.OPTION_RECURSE)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS)
-        .addOption(SolrCLI.OPTION_VERBOSE);
+        .addOption(CommonCLIOptions.RECURSE_OPTION)
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.VERBOSE_OPTION);
   }
 
   @Override
@@ -70,7 +68,7 @@ public class ZkLsTool extends ToolBase {
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
-      boolean recurse = cli.hasOption(SolrCLI.OPTION_RECURSE);
+      boolean recurse = cli.hasOption(CommonCLIOptions.RECURSE_OPTION);
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode

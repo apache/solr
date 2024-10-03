@@ -100,11 +100,9 @@ public class ConfigSetDownloadTool extends ToolBase {
     return new Options()
         .addOptionGroup(CONF_NAME_OPTION)
         .addOptionGroup(CONF_DIR_OPTION)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override

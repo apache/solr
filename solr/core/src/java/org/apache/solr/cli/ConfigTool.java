@@ -113,11 +113,9 @@ public class ConfigTool extends ToolBase {
         .addOption(ACTION_OPTION)
         .addOptionGroup(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -147,7 +145,7 @@ public class ConfigTool extends ToolBase {
     echo(jsonBody);
 
     try (SolrClient solrClient =
-        SolrCLI.getSolrClient(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
+        SolrCLI.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
       if (statusCode == 0) {

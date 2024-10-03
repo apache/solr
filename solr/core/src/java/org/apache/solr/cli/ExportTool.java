@@ -148,7 +148,7 @@ public class ExportTool extends ToolBase {
         .addOption(LIMIT_OPTION)
         .addOption(QUERY_OPTION)
         .addOption(FIELDS_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   public abstract static class Info {
@@ -269,7 +269,7 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue(SOLR_URL_OPTION);
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
     info.setOutFormat(

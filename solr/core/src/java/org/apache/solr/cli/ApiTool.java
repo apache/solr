@@ -76,7 +76,7 @@ public class ApiTool extends ToolBase {
    * Solr URL option group that group deprecated and non options that are used to provide a URL of
    * the solr instance.
    * <pr/>
-   * In future this option will be replaced with {@link SolrCLI#OPTION_SOLRURL}
+   * In future this option will be replaced with {@link CommonCLIOptions#SOLR_URL_OPTION}
    */
   private static final OptionGroup SOLR_URL_OPTION = new OptionGroup()
       .addOption(SOLR_URL_OPTION_DEP)
@@ -103,7 +103,7 @@ public class ApiTool extends ToolBase {
   public Options getAllOptions() {
     return new Options()
         .addOptionGroup(SOLR_URL_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -111,7 +111,7 @@ public class ApiTool extends ToolBase {
     String response = null;
     String getUrl = cli.getOptionValue(SOLR_URL_OPTION);
     if (getUrl != null) {
-      response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+      response = callGet(getUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     if (response != null) {
       // pretty-print the response to stdout

@@ -69,8 +69,7 @@ public class LinkConfigTool extends ToolBase {
     return new Options()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(CONF_NAME_OPTION)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
   }
 
   @Override

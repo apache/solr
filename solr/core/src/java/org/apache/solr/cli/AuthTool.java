@@ -204,11 +204,9 @@ public class AuthTool extends ToolBase {
         .addOptionGroup(SOLR_INCLUDE_FILE_OPTION)
         .addOptionGroup(UPDATE_INCLUDE_FILE_OPTION)
         .addOption(AUTH_CONF_DIR_OPTION)
-        .addOption(SolrCLI.OPTION_SOLRURL)
-        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
-        .addOption(SolrCLI.OPTION_CREDENTIALS);
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
@@ -360,15 +358,15 @@ public class AuthTool extends ToolBase {
         Boolean.parseBoolean(cli.getOptionValue(UPDATE_INCLUDE_FILE_OPTION, "false"));
     switch (cmd) {
       case "enable":
-        if (!prompt && !cli.hasOption(SolrCLI.OPTION_CREDENTIALS)) {
+        if (!prompt && !cli.hasOption(CommonCLIOptions.CREDENTIALS_OPTION)) {
           CLIO.out("Option --credentials or --prompt is required with enable.");
           new HelpFormatter()
               .printHelp(
                   "bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptionsForHelp(this));
           SolrCLI.exit(1);
         } else if (!prompt
-            && (cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS) == null
-                || !cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS).contains(":"))) {
+            && (cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION) == null
+                || !cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION).contains(":"))) {
           CLIO.out("Option --credentials is not in correct format.");
           new HelpFormatter()
               .printHelp(
@@ -382,7 +380,7 @@ public class AuthTool extends ToolBase {
           try {
             zkHost = SolrCLI.getZkHost(cli);
           } catch (Exception ex) {
-            if (cli.hasOption(SolrCLI.OPTION_ZKHOST)) {
+            if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION_GROUP)) {
               CLIO.out(
                   "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zk-host has been passed in.");
             } else {
@@ -392,7 +390,7 @@ public class AuthTool extends ToolBase {
             SolrCLI.exit(1);
           }
           if (zkHost == null) {
-            if (cli.hasOption(SolrCLI.OPTION_ZKHOST)) {
+            if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION_GROUP)) {
               CLIO.out(
                   "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zk-host has been passed in.");
             } else {
@@ -409,8 +407,8 @@ public class AuthTool extends ToolBase {
         }
 
         String username, password;
-        if (cli.hasOption(SolrCLI.OPTION_CREDENTIALS)) {
-          String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS);
+        if (cli.hasOption(CommonCLIOptions.CREDENTIALS_OPTION)) {
+          String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
           username = credentials.split(":")[0];
           password = credentials.split(":")[1];
         } else {

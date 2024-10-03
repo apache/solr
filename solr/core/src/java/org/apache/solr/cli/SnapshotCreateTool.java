@@ -60,12 +60,12 @@ public class SnapshotCreateTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return new Options()
-        .addOption(SolrCLI.OPTION_ZKHOST)
-        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
+        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(SNAPSHOT_NAME_OPTION)
-        .addOption(SolrCLI.OPTION_CREDENTIALS)
-        .addOption(SolrCLI.OPTION_VERBOSE);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOption(CommonCLIOptions.VERBOSE_OPTION);
   }
 
   @Override

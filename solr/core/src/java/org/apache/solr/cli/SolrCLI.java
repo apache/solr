@@ -88,6 +88,10 @@ public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * @deprecated Use {@link CommonCLIOptions.DefaultValues#ZK_HOST} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static final String ZK_HOST = "localhost:9983";
 
   /**
@@ -349,7 +353,7 @@ public class SolrCLI implements CLIO {
   }
 
   public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(OPTION_VERBOSE.getOpt())) {
+    if (!cli.hasOption(CommonCLIOptions.VERBOSE_OPTION)) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }
@@ -402,8 +406,8 @@ public class SolrCLI implements CLIO {
   @Deprecated(since = "9.8")
   public static Options getToolOptionsForHelp(Tool tool) {
     Options options = new Options();
-    options.addOption(OPTION_HELP);
-    options.addOption(OPTION_VERBOSE);
+    options.addOption(CommonCLIOptions.HELP_OPTION);
+    options.addOption(CommonCLIOptions.VERBOSE_OPTION);
 
     Collection<Option> toolOpts = tool.getAllOptions().getOptions();
     for (Option toolOpt : toolOpts) {
@@ -432,8 +436,8 @@ public class SolrCLI implements CLIO {
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     Options options = tool.getAllOptions();
 
-    options.addOption(OPTION_HELP);
-    options.addOption(OPTION_VERBOSE);
+    options.addOption(CommonCLIOptions.HELP_OPTION);
+    options.addOption(CommonCLIOptions.VERBOSE_OPTION);
 
     CommandLine cli = null;
     try {
@@ -595,13 +599,13 @@ public class SolrCLI implements CLIO {
 
   public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION.getLongOpt());
     return getSolrClient(solrUrl, credentials, barePath);
   }
 
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION.getLongOpt());
     return getSolrClient(solrUrl, credentials, false);
   }
 
