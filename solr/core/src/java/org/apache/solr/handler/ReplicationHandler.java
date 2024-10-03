@@ -74,6 +74,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -335,10 +336,25 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (solrParams.get(TLOG_FILE) != null) {
       fileName = solrParams.get(TLOG_FILE);
       dirType = TLOG_FILE;
-    } else {
+    } else if (solrParams.get(FILE) != null) {
       fileName = solrParams.get(FILE);
       dirType = FILE;
+    } else {
+      reportErrorOnResponse(
+          rsp,
+          "Missing file parameter",
+          new SolrException(SolrException.ErrorCode.BAD_REQUEST, "File not specified in request"));
+      return;
     }
+
+    if (solrParams.getParams(CommonParams.WT) == null) {
+      reportErrorOnResponse(
+          rsp,
+          "Missing wt parameter",
+          new SolrException(SolrException.ErrorCode.BAD_REQUEST, "wt not specified in request"));
+      return;
+    }
+
     coreReplicationAPI.fetchFile(
         fileName,
         dirType,
