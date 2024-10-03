@@ -30,6 +30,7 @@ plugins {
 apply from: file('gradle/develocity.gradle')
 
 rootProject.name = "solr-root"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 includeBuild("dev-tools/solr-missing-doclet")
 
@@ -64,6 +65,7 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 include "solr:prometheus-exporter"
+include "solr:compose-ui"
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
