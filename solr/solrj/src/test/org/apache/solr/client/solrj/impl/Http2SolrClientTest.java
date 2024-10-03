@@ -80,7 +80,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
                 .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
     }
   }
@@ -141,7 +141,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, method);
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
   }
 
@@ -189,7 +189,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.deleteById("id");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
@@ -209,7 +209,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
             .build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);

@@ -147,17 +147,12 @@ public class SolrCLI implements CLIO {
           .build();
 
   public static final Option OPTION_VERBOSE =
-      Option.builder("v")
+      Option.builder()
           .longOpt("verbose")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.8")
-                  .setDescription("Use --debug instead")
-                  .get())
           .required(false)
           .desc("Enable verbose command output.")
           .build();
+
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
@@ -201,12 +196,12 @@ public class SolrCLI implements CLIO {
 
     if (Arrays.asList("-version", "version").contains(args[0])) {
       // select the version tool to be run
-      CLIO.out("Deprecated operation as of 9.8.  Please use -v or --version.");
-      args[0] = "version";
+      CLIO.out("Deprecated operation as of 9.8.  Please use bin/solr --version.");
+      args = new String[] {"version"};
     }
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
-      args[0] = "version";
+      args = new String[] {"version"};
     }
     if (Arrays.asList(
             "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
@@ -320,7 +315,7 @@ public class SolrCLI implements CLIO {
   }
 
   public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (!cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt())) {
       StartupLoggingUtils.changeLogLevel("WARN");
     }
   }

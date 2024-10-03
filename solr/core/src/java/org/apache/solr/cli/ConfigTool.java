@@ -107,7 +107,7 @@ public class ConfigTool extends ToolBase {
             .longOpt("value")
             .argName("VALUE")
             .hasArg()
-            .required(false) // should be true when -v is removed.
+            .required(false)
             .desc("Set the property to this value; accepts JSON objects and strings.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
@@ -128,7 +128,9 @@ public class ConfigTool extends ToolBase {
     if (property == null) {
       throw new MissingArgumentException("'property' is a required option.");
     }
-    if (value == null) {
+
+    // value is required unless the property is one of the unset- type.
+    if (!action.contains("unset-") && value == null) {
       throw new MissingArgumentException("'value' is a required option.");
     }
     Map<String, Object> jsonObj = new HashMap<>();
@@ -147,7 +149,7 @@ public class ConfigTool extends ToolBase {
     String updatePath = "/" + collection + "/config";
 
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
-    echoIfVerbose(jsonBody, cli);
+    echoIfVerbose(jsonBody);
 
     try (SolrClient solrClient =
         SolrCLI.getSolrClient(

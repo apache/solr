@@ -75,6 +75,8 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeSolrAndKafkaIntegrationTest() throws Exception {
+    SolrAndKafkaIntegrationTest.ensureCompatibleLocale();
+
     System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer1 = new Consumer();
     consumer2 = new Consumer();
@@ -170,13 +172,19 @@ public class ZkConfigIntegrationTest extends SolrCloudTestCase {
       solrCluster2.shutdown();
     }
 
-    consumer1.shutdown();
-    consumer2.shutdown();
+    if (consumer1 != null) {
+      consumer1.shutdown();
+    }
+    if (consumer2 != null) {
+      consumer2.shutdown();
+    }
 
-    try {
-      kafkaCluster.stop();
-    } catch (Exception e) {
-      log.error("Exception stopping Kafka cluster", e);
+    if (kafkaCluster != null) {
+      try {
+        kafkaCluster.stop();
+      } catch (Exception e) {
+        log.error("Exception stopping Kafka cluster", e);
+      }
     }
 
     solrCluster1 = null;
