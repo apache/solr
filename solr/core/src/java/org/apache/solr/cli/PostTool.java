@@ -268,6 +268,17 @@ public class PostTool extends ToolBase {
             .desc("sends Solr response outputs to console.")
             .build(),
         Option.builder("f")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --format instead")
+                    .get())
+            .required(false)
+            .desc(
+                "sends application/json content as Solr commands to /update instead of /update/json/docs.")
+            .build(),
+        Option.builder()
             .longOpt("format")
             .required(false)
             .desc(
@@ -307,7 +318,10 @@ public class PostTool extends ToolBase {
       // Turn off automatically looking up the mimetype in favour of what is passed in.
       auto = false;
     }
-    format = cli.hasOption("format") ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
+    format =
+        cli.hasOption("format") || cli.hasOption("f")
+            ? FORMAT_SOLR
+            : ""; // i.e not solr formatted json commands
 
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
