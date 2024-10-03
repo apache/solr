@@ -599,18 +599,14 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testQueryAsync() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
+  protected void testQueryAsync(HttpSolrClientBuilderBase<?, ?> builder) throws Exception {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b =
-        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
 
     List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
-    try (HttpSolrClientBase client = b.build()) {
+    try (HttpSolrClientBase client = builder.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
             ("id=KEY-" + i),
