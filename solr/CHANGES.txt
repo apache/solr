@@ -9,6 +9,8 @@ Bug Fixes
 ---------------------
 (No changes)
 
+* SOLR-17464: Fixed Http2SolrClient bug in that 'requestAsync' triggered NPE when using a shared Jetty client (Jason Gerlowski, James Dyer)
+
 Dependency Upgrades
 ---------------------
 (No changes)
