@@ -48,6 +48,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AL
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSIZING;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.COLLECTIONPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.COLSTATUS;
@@ -1203,6 +1204,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
           return null;
         }),
+    CLUSTERSIZING_OP(
+        CLUSTERSIZING,
+        (req, rsp, h) -> {
+          final ClusterSizing sizing = new ClusterSizing(h.coreContainer, req, rsp);
+          sizing.populate(rsp.getValues());
+          return null;
+        }),
     MOCK_COLL_TASK_OP(
         MOCK_COLL_TASK,
         (req, rsp, h) -> {
@@ -1383,7 +1391,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshot.class,
-        DeleteCollectionSnapshot.class);
+        DeleteCollectionSnapshot.class,
+        ClusterSizing.class);
   }
 
   @Override

@@ -17,23 +17,103 @@
 package org.apache.solr.util;
 
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Locale;
 import org.apache.lucene.util.BytesRef;
 
 /** */
 public class NumberUtils {
 
+  public enum sizeUnit {
+    GB("GB", (1024 * 1024 * 1024)),
+    MB("MB", (1024 * 1024)),
+    KB("KB", 1024),
+    bytes("bytes", 1);
+    private final String unit;
+    private final long factor;
+
+    private sizeUnit(String unit, long factor) {
+      this.unit = unit;
+      this.factor = factor;
+    }
+
+    public String getUnit() {
+      return unit;
+    }
+
+    public long getFactor() {
+      return factor;
+    }
+  }
+
+  public static double normalizedSize(long size, String unit) {
+    if (unit.equals(sizeUnit.bytes.getUnit())) {
+      return (double) size;
+
+    } else if (unit.equals(sizeUnit.GB.getUnit())) {
+      return size * 1.0d / sizeUnit.GB.getFactor();
+
+    } else if (unit.equals(sizeUnit.MB.getUnit())) {
+      return size * 1.0d / sizeUnit.MB.getFactor();
+
+    } else if (unit.equals(sizeUnit.KB.getUnit())) {
+      return size * 1.0d / sizeUnit.KB.getFactor();
+    }
+    return 0.0;
+  }
+
+  public static long sizeFromNormalized(double size, String unit) {
+    if (unit.equals(sizeUnit.bytes.getUnit())) {
+      return (long) size;
+
+    } else if (unit.equals(sizeUnit.GB.getUnit())) {
+      return (long) (size * sizeUnit.GB.getFactor());
+
+    } else if (unit.equals(sizeUnit.MB.getUnit())) {
+      return (long) (size * sizeUnit.MB.getFactor());
+
+    } else if (unit.equals(sizeUnit.KB.getUnit())) {
+      return (long) (size * sizeUnit.KB.getFactor());
+    }
+    return 0L;
+  }
+
   public static String readableSize(long size) {
     NumberFormat formatter = NumberFormat.getNumberInstance(Locale.ROOT);
     formatter.setMaximumFractionDigits(2);
-    if (size / (1024 * 1024 * 1024) > 0) {
-      return formatter.format(size * 1.0d / (1024 * 1024 * 1024)) + " GB";
-    } else if (size / (1024 * 1024) > 0) {
-      return formatter.format(size * 1.0d / (1024 * 1024)) + " MB";
-    } else if (size / 1024 > 0) {
-      return formatter.format(size * 1.0d / 1024) + " KB";
+    if (size / sizeUnit.GB.getFactor() > 0) {
+      return formatter.format(size * 1.0d / sizeUnit.GB.getFactor()) + " " + sizeUnit.GB.getUnit();
+
+    } else if (size / sizeUnit.MB.getFactor() > 0) {
+      return formatter.format(size * 1.0d / sizeUnit.MB.getFactor()) + " " + sizeUnit.MB.getUnit();
+
+    } else if (size / sizeUnit.KB.getFactor() > 0) {
+      return formatter.format(size * 1.0d / sizeUnit.KB.getFactor()) + " " + sizeUnit.KB.getUnit();
+
     } else {
-      return String.valueOf(size) + " bytes";
+      return String.valueOf(size) + " " + sizeUnit.bytes.getUnit();
+    }
+  }
+
+  public static long sizeFromReadable(String size) throws ParseException {
+    NumberFormat formatter = NumberFormat.getNumberInstance(Locale.ROOT);
+    formatter.setMaximumFractionDigits(2);
+    if (size.endsWith(sizeUnit.GB.getUnit())) {
+      return formatter.parse(size.substring(0, size.length() - 3)).longValue()
+          * sizeUnit.GB.getFactor();
+
+    } else if (size.endsWith(sizeUnit.MB.getUnit())) {
+      return formatter.parse(size.substring(0, size.length() - 3)).longValue()
+          * sizeUnit.MB.getFactor();
+
+    } else if (size.endsWith(sizeUnit.KB.getUnit())) {
+      return formatter.parse(size.substring(0, size.length() - 3)).longValue()
+          * sizeUnit.KB.getFactor();
+
+    } else if (size.endsWith(sizeUnit.bytes.getUnit())) {
+      return formatter.parse(size.substring(0, size.length() - 6)).longValue();
+    } else {
+      throw new ParseException("Size " + size + " is not readable", 0);
     }
   }
 
