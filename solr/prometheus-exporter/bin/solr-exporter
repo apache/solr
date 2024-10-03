@@ -104,7 +104,7 @@ fi
 EXPORTER_ARGS=()
 
 if [[ -n "$CONFIG_FILE" ]]; then
-  EXPORTER_ARGS+=(-f "$CONFIG_FILE")
+  EXPORTER_ARGS+=(--config-file "$CONFIG_FILE")
 fi
 
 if [[ -n "$PORT" ]]; then
