@@ -46,7 +46,7 @@ print_usage() {
   echo "    -u     User to own the Solr files and run the Solr process as; defaults to solr"
   echo "             This script will create the specified user account if it does not exist."
   echo ""
-  echo "    -f     Upgrade Solr. Overwrite symlink and init script of previous installation."
+  echo "    -f     Force upgrade of Solr. Overwrite symlink and init script of previous installation."
   echo ""
   echo "    -n     Do not start Solr service after install, and do not abort on missing Java"
   echo ""
