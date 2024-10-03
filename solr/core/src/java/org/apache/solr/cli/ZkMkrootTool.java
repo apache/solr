@@ -49,7 +49,7 @@ public class ZkMkrootTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(FAIL_ON_EXISTS_OPTION)
         .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
         .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)

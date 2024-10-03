@@ -97,7 +97,7 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOptionGroup(CONF_NAME_OPTION)
         .addOptionGroup(CONF_DIR_OPTION)
         .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)

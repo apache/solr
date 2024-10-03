@@ -63,7 +63,7 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(SOLR_HOME_OPTION)
         .addOption(CommonCLIOptions.RECURSE_OPTION)
         .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)

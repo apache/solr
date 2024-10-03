@@ -299,7 +299,7 @@ public class PostTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(SOLR_URL_OPTION)
         .addOption(COLLECTION_NAME_OPTION)
         .addOptionGroup(SKIP_COMMIT_OPTION)

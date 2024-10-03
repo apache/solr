@@ -156,7 +156,7 @@ public class AssertTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOptionGroup(ROOT_OPTION)
         .addOptionGroup(RUNNING_OPTION)
         .addOption(SAME_USER_OPTION)

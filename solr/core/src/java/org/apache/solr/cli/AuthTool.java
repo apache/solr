@@ -196,7 +196,7 @@ public class AuthTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(TYPE_OPTION)
         .addOption(PROMPT_OPTION)
         .addOption(CONFIG_OPTION)

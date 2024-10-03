@@ -101,7 +101,7 @@ public class ApiTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOptionGroup(SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }

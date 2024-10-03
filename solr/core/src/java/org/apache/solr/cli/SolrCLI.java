@@ -406,8 +406,6 @@ public class SolrCLI implements CLIO {
   @Deprecated(since = "9.8")
   public static Options getToolOptionsForHelp(Tool tool) {
     Options options = new Options();
-    options.addOption(CommonCLIOptions.HELP_OPTION);
-    options.addOption(CommonCLIOptions.VERBOSE_OPTION);
 
     Collection<Option> toolOpts = tool.getAllOptions().getOptions();
     for (Option toolOpt : toolOpts) {
@@ -435,9 +433,6 @@ public class SolrCLI implements CLIO {
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
     Options options = tool.getAllOptions();
-
-    options.addOption(CommonCLIOptions.HELP_OPTION);
-    options.addOption(CommonCLIOptions.VERBOSE_OPTION);
 
     CommandLine cli = null;
     try {

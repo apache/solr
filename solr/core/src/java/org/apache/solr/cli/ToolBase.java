@@ -50,7 +50,9 @@ public abstract class ToolBase implements Tool {
 
   @Override
   public Options getAllOptions() {
-    return new Options();
+    return new Options()
+        .addOption(CommonCLIOptions.HELP_OPTION)
+        .addOption(CommonCLIOptions.VERBOSE_OPTION);
   }
 
   @Override

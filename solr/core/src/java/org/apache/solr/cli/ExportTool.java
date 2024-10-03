@@ -140,7 +140,7 @@ public class ExportTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(SOLR_URL_OPTION)
         .addOption(OUTPUT_OPTION)
         .addOption(FORMAT_OPTION)

@@ -374,7 +374,7 @@ public class PackageTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(COLLECTIONS_OPTION)
         .addOption(CLUSTER_OPTION)
         .addOptionGroup(PARAM_OPTION)

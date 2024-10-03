@@ -49,7 +49,7 @@ public class ZkToolHelp extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(PRINT_ZK_SUBCOMMAND_OPTION)
         .addOption(PRINT_LONG_ZK_USAGE_OPTION);
   }

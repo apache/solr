@@ -68,7 +68,7 @@ public class StatusTool extends ToolBase {
 
   @Override
   public Options getAllOptions() {
-    return new Options()
+    return super.getAllOptions()
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(MAX_WAIT_SECS_OPTION);
   }
