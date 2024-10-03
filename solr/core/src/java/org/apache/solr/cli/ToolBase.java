@@ -49,6 +49,11 @@ public abstract class ToolBase implements Tool {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options();
+  }
+
+  @Override
   public List<Option> getOptions() {
     return new ArrayList<>(getAllOptions().getOptions());
   }
