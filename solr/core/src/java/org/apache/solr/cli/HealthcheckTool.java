@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.Options;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -53,16 +54,29 @@ import org.slf4j.LoggerFactory;
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
+      .longOpt("name")
+      .hasArg()
+      .argName("COLLECTION")
+      .required(true)
+      .desc("Name of the collection to check.")
+      .build();
+
+  @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS);
+  }
+
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .hasArg()
-            .argName("COLLECTION")
-            .required(true)
-            .desc("Name of the collection to check.")
-            .build(),
+        COLLECTION_NAME_OPTION,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
@@ -108,7 +122,7 @@ public class HealthcheckTool extends ToolBase {
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("name");
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -170,14 +184,13 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-              SolrCLI.getSolrClient(
-                  coreUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+              SolrCLI.getSolrClient(coreUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =
                 SolrCLI.getSolrClient(
                     replicaCoreProps.getBaseUrl(),
-                    cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+                    cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS))) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(

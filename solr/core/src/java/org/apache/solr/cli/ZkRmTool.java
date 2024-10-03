@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
@@ -37,6 +38,18 @@ public class ZkRmTool extends ToolBase {
 
   public ZkRmTool(PrintStream stdout) {
     super(stdout);
+  }
+
+  @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SolrCLI.OPTION_RECURSE)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS)
+        .addOption(SolrCLI.OPTION_VERBOSE);
   }
 
   @Override

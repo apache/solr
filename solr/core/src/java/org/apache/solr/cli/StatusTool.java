@@ -43,6 +43,27 @@ import org.noggit.JSONWriter;
  * <p>Get the status of a Solr server.
  */
 public class StatusTool extends ToolBase {
+
+  // The solr-url option is not exposed to the end user, and is
+  // created by the bin/solr script and passed into this command directly,
+  // therefore we don't use the SolrCLI.OPTION_SOLRURL.
+  private static final Option SOLR_URL_OPTION = Option.builder()
+      .argName("URL")
+      .longOpt("solr-url")
+      .hasArg()
+      .required(false)
+      .desc("Property set by calling scripts, not meant for user configuration.")
+      .build();
+
+  private static final Option MAX_WAIT_SECS_OPTION =
+      Option.builder()
+          .longOpt("max-wait-secs")
+          .argName("SECS")
+          .hasArg()
+          .required(false)
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
+
   public StatusTool() {
     this(CLIO.getOutStream());
   }
@@ -56,45 +77,32 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  public static final Option OPTION_MAXWAITSECS =
-      Option.builder()
-          .longOpt("max-wait-secs")
-          .argName("SECS")
-          .hasArg()
-          .required(false)
-          .desc("Wait up to the specified number of seconds to see Solr running.")
-          .build();
+  @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SOLR_URL_OPTION)
+        .addOption(MAX_WAIT_SECS_OPTION);
+  }
 
   @Override
   public List<Option> getOptions() {
     return List.of(
-        // The solr-url option is not exposed to the end user, and is
-        // created by the bin/solr script and passed into this command directly,
-        // therefore we don't use the SolrCLI.OPTION_SOLRURL.
-        Option.builder()
-            .argName("URL")
-            .longOpt("solr-url")
-            .hasArg()
-            .required(false)
-            .desc("Property set by calling scripts, not meant for user configuration.")
-            .build(),
-        OPTION_MAXWAITSECS);
+        SOLR_URL_OPTION,
+        MAX_WAIT_SECS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     // Override the default help behaviour to put out a customized message that only list user
     // settable Options.
-    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0)
-        || cli.hasOption("h")
-        || cli.hasOption("help")) {
+    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0) || cli.hasOption(SolrCLI.OPTION_HELP)) {
       final Options options = new Options();
-      options.addOption(OPTION_MAXWAITSECS);
+      options.addOption(MAX_WAIT_SECS_OPTION);
       new HelpFormatter().printHelp("status", options);
       return;
     }
 
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue(MAX_WAIT_SECS_OPTION, "0"));
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = new URI(solrUrl).getPort();
@@ -102,7 +110,7 @@ public class StatusTool extends ToolBase {
       try {
         waitToSeeSolrUp(
             solrUrl,
-            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS),
             maxWaitSecs,
             TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
@@ -114,7 +122,7 @@ public class StatusTool extends ToolBase {
       try {
         CharArr arr = new CharArr();
         new JSONWriter(arr, 2)
-            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
+            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS)));
         echo(arr.toString());
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {

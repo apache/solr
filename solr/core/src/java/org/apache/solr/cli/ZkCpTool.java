@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.Options;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
@@ -44,6 +45,14 @@ import org.slf4j.LoggerFactory;
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option SOLR_HOME_OPTION = Option.builder()
+      .longOpt("solr-home")
+      .argName("DIR")
+      .hasArg()
+      .required(false)
+      .desc("Required to look up configuration for compressing state.json.")
+      .build();
+
   public ZkCpTool() {
     this(CLIO.getOutStream());
   }
@@ -53,15 +62,21 @@ public class ZkCpTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SOLR_HOME_OPTION)
+        .addOption(SolrCLI.OPTION_RECURSE)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("solr-home")
-            .argName("DIR")
-            .hasArg()
-            .required(false)
-            .desc("Required to look up configuration for compressing state.json.")
-            .build(),
+        SOLR_HOME_OPTION,
         SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
@@ -131,7 +146,7 @@ public class ZkCpTool extends ToolBase {
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
-    boolean recurse = cli.hasOption("recurse");
+    boolean recurse = cli.hasOption(SolrCLI.OPTION_RECURSE);
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
@@ -160,7 +175,7 @@ public class ZkCpTool extends ToolBase {
     Compressor compressor = new ZLibCompressor();
 
     if (dstIsZk) {
-      String solrHome = cli.getOptionValue("solr-home");
+      String solrHome = cli.getOptionValue(SOLR_HOME_OPTION);
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }

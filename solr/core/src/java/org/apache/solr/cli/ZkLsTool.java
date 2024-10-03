@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,18 @@ public class ZkLsTool extends ToolBase {
 
   public ZkLsTool(PrintStream stdout) {
     super(stdout);
+  }
+
+  @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SolrCLI.OPTION_RECURSE)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS)
+        .addOption(SolrCLI.OPTION_VERBOSE);
   }
 
   @Override
@@ -69,7 +82,7 @@ public class ZkLsTool extends ToolBase {
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
-      boolean recurse = cli.hasOption("recurse");
+      boolean recurse = cli.hasOption(SolrCLI.OPTION_RECURSE);
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode

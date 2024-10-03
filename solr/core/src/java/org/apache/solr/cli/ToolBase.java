@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 
 public abstract class ToolBase implements Tool {
 
@@ -36,7 +37,7 @@ public abstract class ToolBase implements Tool {
   }
 
   protected void echoIfVerbose(final String msg, CommandLine cli) {
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (cli.hasOption(SolrCLI.OPTION_VERBOSE)) {
       echo(msg);
     }
   }
@@ -46,13 +47,8 @@ public abstract class ToolBase implements Tool {
   }
 
   @Override
-  public List<OptionGroup> getOptionGroups() {
-    return List.of();
-  }
-
-  @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE);
 
     int toolExitStatus = 0;
     try {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.Options;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
@@ -31,6 +32,13 @@ import org.slf4j.LoggerFactory;
 public class ZkMkrootTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option FAIL_ON_EXISTS_OPTION = Option.builder()
+      .longOpt("fail-on-exists")
+      .hasArg()
+      .required(false)
+      .desc("Raise an error if the root exists.  Defaults to false.")
+      .build();
+
   public ZkMkrootTool() {
     this(CLIO.getOutStream());
   }
@@ -40,14 +48,21 @@ public class ZkMkrootTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(FAIL_ON_EXISTS_OPTION)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS)
+        .addOption(SolrCLI.OPTION_VERBOSE);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("fail-on-exists")
-            .hasArg()
-            .required(false)
-            .desc("Raise an error if the root exists.  Defaults to false.")
-            .build(),
+        FAIL_ON_EXISTS_OPTION,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,

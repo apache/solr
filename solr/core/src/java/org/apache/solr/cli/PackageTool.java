@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 import static org.apache.solr.cli.SolrCLI.printGreen;
 import static org.apache.solr.cli.SolrCLI.printRed;
 import static org.apache.solr.packagemanager.PackageUtils.format;
@@ -49,6 +51,59 @@ import org.slf4j.LoggerFactory;
 public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Option COLLECTIONS_OPTION = Option.builder()
+      .longOpt("collections")
+      .hasArg()
+      .argName("COLLECTIONS")
+      .desc("Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
+      .build();
+
+  private static final Option CLUSTER_OPTION = Option.builder()
+      .longOpt("cluster")
+      .desc("Specifies that this action should affect cluster-level plugins only.")
+      .build();
+
+  private static final Option PARAM_OPTION_NEW = Option.builder()
+      .longOpt("param")
+      .hasArgs()
+      .argName("PARAMS")
+      .desc("List of parameters to be used with deploy command.")
+      .build();
+
+  private static final Option PARAM_OPTION_DEP = Option.builder("p")
+      .deprecated(
+          DeprecatedAttributes.builder()
+              .setForRemoval(true)
+              .setSince("9.8")
+              .setDescription("Use --param instead")
+              .get())
+      .hasArg()
+      .argName("PARAMS")
+      .required(false)
+      .desc("List of parameters to be used with deploy command.")
+      .build();
+
+  private static final OptionGroup PARAM_OPTION = new OptionGroup()
+      .addOption(PARAM_OPTION_NEW)
+      .addOption(PARAM_OPTION_DEP);
+
+  private static final Option UPDATE_OPTION = Option.builder()
+      .longOpt("update")
+      .desc("If a deployment is an update over a previous deployment.")
+      .build();
+
+  private static final Option COLLECTION_OPTION = Option.builder("c")
+      .longOpt("collection")
+      .hasArg()
+      .argName("COLLECTION")
+      .desc("The collection to apply the package to, not required.")
+      .build();
+
+  private static final Option NO_PROMPT_OPTION = Option.builder("y")
+      .longOpt("no-prompt")
+      .desc("Don't prompt for input; accept all default choices, defaults to false.")
+      .build();
 
   @SuppressForbidden(
       reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
@@ -116,8 +171,8 @@ public class PackageTool extends ToolBase {
               }
               break;
             case "list-deployed":
-              if (cli.hasOption("collection")) {
-                String collection = cli.getOptionValue("collection");
+              if (cli.hasOption(COLLECTION_OPTION)) {
+                String collection = cli.getOptionValue(COLLECTION_OPTION);
                 Map<String, SolrPackageInstance> packages =
                     packageManager.getPackagesDeployed(collection);
                 printGreen("Packages deployed on " + collection + ":");
@@ -163,26 +218,23 @@ public class PackageTool extends ToolBase {
               }
             case "deploy":
               {
-                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                if (cli.hasOption(CLUSTER_OPTION) || cli.hasOption(COLLECTIONS_OPTION)) {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean noPrompt = cli.hasOption("no-prompt");
-                  boolean isUpdate = cli.hasOption("update");
+                  boolean noPrompt = cli.hasOption(NO_PROMPT_OPTION);
+                  boolean isUpdate = cli.hasOption(UPDATE_OPTION);
                   String[] collections =
-                      cli.hasOption("collections")
+                      cli.hasOption(COLLECTIONS_OPTION)
                           ? PackageUtils.validateCollections(
-                              cli.getOptionValue("collections").split(","))
+                              cli.getOptionValue(COLLECTIONS_OPTION).split(","))
                           : new String[] {};
-                  String[] parameters =
-                      cli.hasOption("param")
-                          ? cli.getOptionValues("param")
-                          : cli.getOptionValues("p");
+                  String[] parameters = cli.getOptionValues(PARAM_OPTION);
                   packageManager.deploy(
                       packageName,
                       version,
                       collections,
-                      cli.hasOption("cluster"),
+                      cli.hasOption(CLUSTER_OPTION),
                       parameters,
                       isUpdate,
                       noPrompt);
@@ -194,7 +246,7 @@ public class PackageTool extends ToolBase {
               }
             case "undeploy":
               {
-                if (cli.hasOption("cluster") || cli.hasOption("collections")) {
+                if (cli.hasOption(CLUSTER_OPTION) || cli.hasOption(COLLECTIONS_OPTION)) {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   if (parsedVersion.second() != null) {
                     throw new SolrException(
@@ -204,13 +256,12 @@ public class PackageTool extends ToolBase {
                   }
                   String packageName = parsedVersion.first();
                   String[] collections =
-                      cli.hasOption("collections")
+                      cli.hasOption(COLLECTIONS_OPTION)
                           ? PackageUtils.validateCollections(
-                              cli.getOptionValue("collections").split(","))
+                              cli.getOptionValue(COLLECTIONS_OPTION).split(","))
                           : new String[] {};
-                  packageManager.undeploy(packageName, collections, cli.hasOption("cluster"));
+                  packageManager.undeploy(packageName, collections, cli.hasOption(CLUSTER_OPTION));
                 } else {
-
                   printRed(
                       "Either specify --cluster to undeploy cluster level plugins or -collections <list-of-collections> to undeploy collection level plugins");
                 }
@@ -322,51 +373,31 @@ public class PackageTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(COLLECTIONS_OPTION)
+        .addOption(CLUSTER_OPTION)
+        .addOptionGroup(PARAM_OPTION)
+        .addOption(UPDATE_OPTION)
+        .addOption(COLLECTION_OPTION)
+        .addOption(NO_PROMPT_OPTION)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("collections")
-            .hasArg()
-            .argName("COLLECTIONS")
-            .desc(
-                "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-            .build(),
-        Option.builder()
-            .longOpt("cluster")
-            .desc("Specifies that this action should affect cluster-level plugins only.")
-            .build(),
-        Option.builder()
-            .longOpt("param")
-            .hasArgs()
-            .argName("PARAMS")
-            .desc("List of parameters to be used with deploy command.")
-            .build(),
-        Option.builder("p")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --param instead")
-                    .get())
-            .hasArg()
-            .argName("PARAMS")
-            .required(false)
-            .desc("List of parameters to be used with deploy command.")
-            .build(),
-        Option.builder()
-            .longOpt("update")
-            .desc("If a deployment is an update over a previous deployment.")
-            .build(),
-        Option.builder("c")
-            .longOpt("collection")
-            .hasArg()
-            .argName("COLLECTION")
-            .desc("The collection to apply the package to, not required.")
-            .build(),
-        Option.builder("y")
-            .longOpt("no-prompt")
-            .desc("Don't prompt for input; accept all default choices, defaults to false.")
-            .build(),
+        COLLECTIONS_OPTION,
+        CLUSTER_OPTION,
+        PARAM_OPTION_NEW,
+        PARAM_OPTION_DEP,
+        UPDATE_OPTION,
+        COLLECTION_OPTION,
+        NO_PROMPT_OPTION,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,

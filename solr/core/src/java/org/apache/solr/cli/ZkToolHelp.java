@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.Options;
 import static org.apache.solr.cli.SolrCLI.print;
 
 import java.io.PrintStream;
@@ -26,6 +27,18 @@ import org.apache.commons.cli.Option;
 /** Supports zk help information in the bin/solr script. */
 public class ZkToolHelp extends ToolBase {
 
+  private static final Option PRINT_ZK_SUBCOMMAND_OPTION = Option.builder()
+      .longOpt("print-zk-subcommand-usage")
+      .desc("Reminds user to prepend zk to invoke the command.")
+      .required(false)
+      .build();
+
+  private static final Option PRINT_LONG_ZK_USAGE_OPTION = Option.builder()
+      .longOpt("print-long-zk-usage")
+      .required(false)
+      .desc("Invokes the detailed help for zk commands.")
+      .build();
+
   public ZkToolHelp() {
     this(CLIO.getOutStream());
   }
@@ -35,18 +48,17 @@ public class ZkToolHelp extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(PRINT_ZK_SUBCOMMAND_OPTION)
+        .addOption(PRINT_LONG_ZK_USAGE_OPTION);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("print-zk-subcommand-usage")
-            .desc("Reminds user to prepend zk to invoke the command.")
-            .required(false)
-            .build(),
-        Option.builder()
-            .longOpt("print-long-zk-usage")
-            .required(false)
-            .desc("Invokes the detailed help for zk commands.")
-            .build());
+        PRINT_ZK_SUBCOMMAND_OPTION,
+        PRINT_LONG_ZK_USAGE_OPTION);
   }
 
   @Override
@@ -58,14 +70,14 @@ public class ZkToolHelp extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    if (cli.hasOption("print-zk-subcommand-usage")) {
+    if (cli.hasOption(PRINT_ZK_SUBCOMMAND_OPTION)) {
       String scriptCommand = cli.getArgs()[0];
       print(
           "You must invoke this subcommand using the zk command.   bin/solr zk "
               + scriptCommand
               + ".");
     }
-    if (cli.hasOption("print-long-zk-usage")) {
+    if (cli.hasOption(PRINT_LONG_ZK_USAGE_OPTION)) {
       print("usage:");
       print(new ZkLsTool().getUsage());
       print(new ZkCpTool().getUsage());

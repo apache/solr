@@ -25,6 +25,8 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,58 @@ import org.slf4j.LoggerFactory;
 /** Supports zk downconfig command in the bin/solr script. */
 public class ConfigSetDownloadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Option CONF_NAME_OPTION_NEW = Option.builder("n")
+      .longOpt("conf-name")
+      .hasArg()
+      .argName("NAME")
+      .required(false) // should be true, but we have deprecated option as well.
+      .desc("Configset name in ZooKeeper.")
+      .build();
+
+  private static final Option CONF_NAME_OPTION_DEP = Option.builder()
+      .longOpt("confname")
+      .hasArg()
+      .argName("NAME")
+      .deprecated(
+          DeprecatedAttributes.builder()
+              .setForRemoval(true)
+              .setSince("9.8")
+              .setDescription("Use --conf-name instead")
+              .get())
+      .required(false)
+      .desc("Configset name in ZooKeeper.")
+      .build();
+
+  private static final OptionGroup CONF_NAME_OPTION = new OptionGroup()
+      .addOption(CONF_NAME_OPTION_NEW)
+      .addOption(CONF_NAME_OPTION_DEP);
+
+  private static final Option CONF_DIR_OPTION_NEW = Option.builder("d")
+      .longOpt("conf-dir")
+      .hasArg()
+      .argName("DIR")
+      .required(false) // should be true, but we have deprecated option as well.
+      .desc("Local directory with configs.")
+      .build();
+
+  public static final Option CONF_DIR_OPTION_DEP = Option.builder()
+      .longOpt("confdir")
+      .hasArg()
+      .argName("NAME")
+      .deprecated(
+          DeprecatedAttributes.builder()
+              .setForRemoval(true)
+              .setSince("9.8")
+              .setDescription("Use --conf-dir instead")
+              .get())
+      .required(false)
+      .desc("Local directory with configs.")
+      .build();
+
+  public static final OptionGroup CONF_DIR_OPTION = new OptionGroup()
+      .addOption(CONF_DIR_OPTION_NEW)
+      .addOption(CONF_DIR_OPTION_DEP);
 
   public ConfigSetDownloadTool() {
     this(CLIO.getOutStream());
@@ -42,48 +96,24 @@ public class ConfigSetDownloadTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOptionGroup(CONF_NAME_OPTION)
+        .addOptionGroup(CONF_DIR_OPTION)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("n")
-            .longOpt("conf-name")
-            .hasArg()
-            .argName("NAME")
-            .required(false) // should be true, but we have deprecated option as well.
-            .desc("Configset name in ZooKeeper.")
-            .build(),
-        Option.builder()
-            .longOpt("confname")
-            .hasArg()
-            .argName("NAME")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --conf-name instead")
-                    .get())
-            .required(false)
-            .desc("Configset name in ZooKeeper.")
-            .build(),
-        Option.builder("d")
-            .longOpt("conf-dir")
-            .hasArg()
-            .argName("DIR")
-            .required(false) // should be true, but we have deprecated option as well.
-            .desc("Local directory with configs.")
-            .build(),
-        Option.builder()
-            .longOpt("confdir")
-            .hasArg()
-            .argName("NAME")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --conf-dir instead")
-                    .get())
-            .required(false)
-            .desc("Local directory with configs.")
-            .build(),
+        CONF_NAME_OPTION_NEW,
+        CONF_NAME_OPTION_DEP,
+        CONF_DIR_OPTION_NEW,
+        CONF_DIR_OPTION_DEP,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
@@ -108,14 +138,8 @@ public class ConfigSetDownloadTool extends ToolBase {
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String confName =
-          cli.hasOption("conf-name")
-              ? cli.getOptionValue("conf-name")
-              : cli.getOptionValue("confname");
-      String confDir =
-          cli.hasOption("conf-dir")
-              ? cli.getOptionValue("conf-dir")
-              : cli.getOptionValue("confdir");
+      String confName = cli.getOptionValue(CONF_NAME_OPTION);
+      String confDir = cli.getOptionValue(CONF_DIR_OPTION);
 
       Path configSetPath = Paths.get(confDir);
       // we try to be nice about having the "conf" in the directory, and we create it if it's not

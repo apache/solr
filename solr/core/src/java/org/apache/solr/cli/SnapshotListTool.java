@@ -20,6 +20,7 @@ import java.io.PrintStream;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -28,6 +29,14 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 
 /** Supports snapshot-list command in the bin/solr script. */
 public class SnapshotListTool extends ToolBase {
+
+  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
+      .longOpt("name")
+      .argName("NAME")
+      .hasArg()
+      .required(true)
+      .desc("Name of collection to list snapshots for.")
+      .build();
 
   public SnapshotListTool() {
     this(CLIO.getOutStream());
@@ -43,17 +52,21 @@ public class SnapshotListTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(SolrCLI.OPTION_CREDENTIALS)
+        .addOption(SolrCLI.OPTION_VERBOSE);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of collection to list snapshots for.")
-            .build(),
+        COLLECTION_NAME_OPTION,
         SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
@@ -62,7 +75,7 @@ public class SnapshotListTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    String collectionName = cli.getOptionValue("name");
+    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     try (var solrClient = SolrCLI.getSolrClient(cli)) {
       listSnapshots(solrClient, collectionName);
     }

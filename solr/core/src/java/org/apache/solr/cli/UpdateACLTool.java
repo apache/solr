@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -50,6 +51,13 @@ public class UpdateACLTool extends ToolBase {
   @Override
   public String getUsage() {
     return "bin/solr zk updateacls [-z <HOST>";
+  }
+
+  @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   @Override

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.Options;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
@@ -39,6 +40,17 @@ public class ZkMvTool extends ToolBase {
 
   public ZkMvTool(PrintStream stdout) {
     super(stdout);
+  }
+
+  @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(SolrCLI.OPTION_SOLRURL)
+        .addOption(SolrCLI.OPTION_SOLRURL_DEPRECATED)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
+        .addOption(SolrCLI.OPTION_CREDENTIALS)
+        .addOption(SolrCLI.OPTION_VERBOSE);
   }
 
   @Override

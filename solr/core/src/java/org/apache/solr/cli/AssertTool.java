@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
@@ -44,6 +46,101 @@ public class AssertTool extends ToolBase {
   private static boolean useExitCode = false;
   private static Long timeoutMs = 1000L;
 
+  private static final Option IS_NOT_ROOT_OPTION = Option.builder("R")
+      .desc("Asserts that we are NOT the root user.")
+            .longOpt("not-root")
+            .build();
+
+  private static final Option IS_ROOT_OPTION = Option.builder("r")
+      .desc("Asserts that we are the root user.")
+      .longOpt("root")
+      .build();
+
+  private static final OptionGroup ROOT_OPTION = new OptionGroup()
+      .addOption(IS_NOT_ROOT_OPTION)
+      .addOption(IS_ROOT_OPTION);
+
+  private static final Option IS_NOT_RUNNING_ON_OPTION = Option.builder("S")
+      .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+      .longOpt("not-started")
+      .hasArg(true)
+      .argName("url")
+      .build();
+
+  private static final Option IS_RUNNING_ON_OPTION = Option.builder("s")
+      .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+      .longOpt("started")
+      .hasArg(true)
+      .argName("url")
+      .build();
+
+  private static final OptionGroup RUNNING_OPTION = new OptionGroup()
+      .addOption(IS_NOT_RUNNING_ON_OPTION)
+      .addOption(IS_RUNNING_ON_OPTION);
+
+  private static final Option SAME_USER_OPTION = Option.builder()
+      .desc("Asserts that we run as same user that owns <directory>.")
+      .longOpt("same-user")
+      .hasArg(true)
+      .argName("directory")
+      .build();
+
+  private static final Option DIRECTORY_EXISTS_OPTION = Option.builder("x")
+      .desc("Asserts that directory <directory> exists.")
+      .longOpt("exists")
+      .hasArg(true)
+      .argName("directory")
+      .build();
+
+  private static final Option DIRECTORY_NOT_EXISTS_OPTION = Option.builder("X")
+      .desc("Asserts that directory <directory> does NOT exist.")
+      .longOpt("not-exists")
+      .hasArg(true)
+      .argName("directory")
+      .build();
+
+  private static final OptionGroup DIRECTORY_OPTION = new OptionGroup()
+      .addOption(DIRECTORY_EXISTS_OPTION)
+      .addOption(DIRECTORY_NOT_EXISTS_OPTION);
+
+  private static final Option IS_CLOUD_OPTION = Option.builder("c")
+      .desc("Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+      .longOpt("cloud")
+      .hasArg(true)
+      .argName("url")
+      .build();
+
+  private static final Option IS_NOT_CLOUD_OPTION = Option.builder("C")
+      .desc("Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+      .longOpt("not-cloud")
+      .hasArg(true)
+      .argName("url")
+      .build();
+
+  private static final OptionGroup CLOUD_OPTION = new OptionGroup()
+      .addOption(IS_CLOUD_OPTION)
+      .addOption(IS_NOT_CLOUD_OPTION);
+
+  private static final Option MESSAGE_OPTION = Option.builder("m")
+      .desc("Exception message to be used in place of the default error message.")
+      .longOpt("message")
+      .hasArg(true)
+      .argName("message")
+      .build();
+
+  private static final Option TIMEOUT_OPTION = Option.builder("t")
+      .desc("Timeout in ms for commands supporting a timeout.")
+      .longOpt("timeout")
+      .hasArg(true)
+      .type(Long.class)
+      .argName("ms")
+      .build();
+
+  private static final Option EXIT_CODE_OPTION = Option.builder("e")
+      .desc("Return an exit code instead of printing error message on assert fail.")
+      .longOpt("exitcode")
+      .build();
+
   public AssertTool() {
     this(CLIO.getOutStream());
   }
@@ -58,80 +155,40 @@ public class AssertTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOptionGroup(ROOT_OPTION)
+        .addOptionGroup(RUNNING_OPTION)
+        .addOption(SAME_USER_OPTION)
+        .addOptionGroup(DIRECTORY_OPTION)
+        .addOptionGroup(CLOUD_OPTION)
+        .addOption(MESSAGE_OPTION)
+        .addOption(TIMEOUT_OPTION)
+        .addOption(EXIT_CODE_OPTION)
+        .addOption(SolrCLI.OPTION_CREDENTIALS);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("R")
-            .desc("Asserts that we are NOT the root user.")
-            .longOpt("not-root")
-            .build(),
-        Option.builder("r").desc("Asserts that we are the root user.").longOpt("root").build(),
-        Option.builder("S")
-            .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
-            .longOpt("not-started")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("s")
-            .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
-            .longOpt("started")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder()
-            .desc("Asserts that we run as same user that owns <directory>.")
-            .longOpt("same-user")
-            .hasArg(true)
-            .argName("directory")
-            .build(),
-        Option.builder("x")
-            .desc("Asserts that directory <directory> exists.")
-            .longOpt("exists")
-            .hasArg(true)
-            .argName("directory")
-            .build(),
-        Option.builder("X")
-            .desc("Asserts that directory <directory> does NOT exist.")
-            .longOpt("not-exists")
-            .hasArg(true)
-            .argName("directory")
-            .build(),
-        Option.builder("c")
-            .desc(
-                "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-            .longOpt("cloud")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("C")
-            .desc(
-                "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-            .longOpt("not-cloud")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("m")
-            .desc("Exception message to be used in place of the default error message.")
-            .longOpt("message")
-            .hasArg(true)
-            .argName("message")
-            .build(),
-        Option.builder("t")
-            .desc("Timeout in ms for commands supporting a timeout.")
-            .longOpt("timeout")
-            .hasArg(true)
-            .type(Long.class)
-            .argName("ms")
-            .build(),
-        Option.builder("e")
-            .desc("Return an exit code instead of printing error message on assert fail.")
-            .longOpt("exitcode")
-            .build(),
+        IS_ROOT_OPTION,
+        IS_NOT_ROOT_OPTION,
+        IS_NOT_RUNNING_ON_OPTION,
+        IS_RUNNING_ON_OPTION,
+        SAME_USER_OPTION,
+        DIRECTORY_EXISTS_OPTION,
+        DIRECTORY_NOT_EXISTS_OPTION,
+        IS_CLOUD_OPTION,
+        IS_NOT_CLOUD_OPTION,
+        MESSAGE_OPTION,
+        TIMEOUT_OPTION,
+        EXIT_CODE_OPTION,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE);
 
     int toolExitStatus;
     try {
@@ -166,52 +223,52 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    if (cli.hasOption("m")) {
-      message = cli.getOptionValue("m");
+    if (cli.hasOption(MESSAGE_OPTION)) {
+      message = cli.getOptionValue(MESSAGE_OPTION);
     }
-    if (cli.hasOption("t")) {
-      timeoutMs = Long.parseLong(cli.getOptionValue("t"));
+    if (cli.hasOption(TIMEOUT_OPTION)) {
+      timeoutMs = Long.parseLong(cli.getOptionValue(TIMEOUT_OPTION));
     }
-    if (cli.hasOption("e")) {
+    if (cli.hasOption(EXIT_CODE_OPTION)) {
       useExitCode = true;
     }
 
     int ret = 0;
-    if (cli.hasOption("r")) {
+    if (cli.hasOption(IS_ROOT_OPTION)) {
       ret += assertRootUser();
     }
-    if (cli.hasOption("R")) {
+    if (cli.hasOption(IS_NOT_ROOT_OPTION)) {
       ret += assertNotRootUser();
     }
-    if (cli.hasOption("x")) {
-      ret += assertFileExists(cli.getOptionValue("x"));
+    if (cli.hasOption(DIRECTORY_EXISTS_OPTION)) {
+      ret += assertFileExists(cli.getOptionValue(DIRECTORY_EXISTS_OPTION));
     }
-    if (cli.hasOption("X")) {
-      ret += assertFileNotExists(cli.getOptionValue("X"));
+    if (cli.hasOption(DIRECTORY_NOT_EXISTS_OPTION)) {
+      ret += assertFileNotExists(cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION));
     }
-    if (cli.hasOption("same-user")) {
-      ret += sameUser(cli.getOptionValue("same-user"));
+    if (cli.hasOption(SAME_USER_OPTION)) {
+      ret += sameUser(cli.getOptionValue(SAME_USER_OPTION));
     }
-    if (cli.hasOption("s")) {
+    if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
       ret +=
           assertSolrRunning(
-              cli.getOptionValue("s"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              cli.getOptionValue(IS_RUNNING_ON_OPTION), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
     }
-    if (cli.hasOption("S")) {
+    if (cli.hasOption(IS_NOT_RUNNING_ON_OPTION)) {
       ret +=
           assertSolrNotRunning(
-              cli.getOptionValue("S"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
     }
-    if (cli.hasOption("c")) {
+    if (cli.hasOption(IS_CLOUD_OPTION)) {
       ret +=
           assertSolrRunningInCloudMode(
-              SolrCLI.normalizeSolrUrl(cli.getOptionValue("c")),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.normalizeSolrUrl(cli.getOptionValue(IS_CLOUD_OPTION)),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
     }
-    if (cli.hasOption("C")) {
+    if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
       ret +=
           assertSolrNotRunningInCloudMode(
-              SolrCLI.normalizeSolrUrl(cli.getOptionValue("C")),
+              SolrCLI.normalizeSolrUrl(cli.getOptionValue(IS_NOT_CLOUD_OPTION)),
               cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     return ret;

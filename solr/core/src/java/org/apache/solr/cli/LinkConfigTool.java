@@ -22,12 +22,29 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 
 /** Supports linking a configset to a collection */
 public class LinkConfigTool extends ToolBase {
+
+  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
+      .longOpt("name")
+      .argName("NAME")
+      .hasArg()
+      .required(true)
+      .desc("Name of the collection to link.")
+      .build();
+
+  private static final Option CONF_NAME_OPTION = Option.builder("n")
+      .longOpt("conf-name")
+      .argName("NAME")
+      .hasArg()
+      .required(true)
+      .desc("Configset name in ZooKeeper.")
+      .build();
 
   public LinkConfigTool() {
     this(CLIO.getOutStream());
@@ -48,22 +65,19 @@ public class LinkConfigTool extends ToolBase {
   }
 
   @Override
+  public Options getAllOptions() {
+    return new Options()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(CONF_NAME_OPTION)
+        .addOption(SolrCLI.OPTION_ZKHOST)
+        .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED);
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the collection to link.")
-            .build(),
-        Option.builder("n")
-            .longOpt("conf-name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Configset name in ZooKeeper.")
-            .build(),
+        COLLECTION_NAME_OPTION,
+        CONF_NAME_OPTION,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }

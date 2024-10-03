@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import java.util.Collection;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -359,43 +360,19 @@ public class SolrCLI implements CLIO {
   }
 
   /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
+  @Deprecated(since = "9.8")
   public static Options getToolOptionsForHelp(Tool tool) {
     Options options = new Options();
     options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
 
-    List<OptionGroup> optionGroups = tool.getOptionGroups();
-    for (OptionGroup optionGroup : optionGroups) {
-      System.out.println("I am in option group");
-      System.out.println(optionGroup);
-      // options.addOptionGroup(optionGroup);
-      for (Option o : optionGroup.getOptions()) {
-        System.out.println("here is option: " + o.getArgName());
-        if (!o.isDeprecated()) {
-          options.addOption(o);
-        }
-      }
-    }
-    List<Option> toolOpts = tool.getOptions();
+    Collection<Option> toolOpts = tool.getAllOptions().getOptions();
     for (Option toolOpt : toolOpts) {
       if (!toolOpt.isDeprecated()) {
         options.addOption(toolOpt);
       }
     }
     return options;
-  }
-
-  /**
-   * Returns the value of the option with the given name, or the value of the deprecated option. If
-   * both values are null, then it returns the default value.
-   */
-  public static String getOptionWithDeprecatedAndDefault(
-      CommandLine cli, String opt, String deprecated, String def) {
-    String val = cli.getOptionValue(opt);
-    if (val == null) {
-      val = cli.getOptionValue(deprecated);
-    }
-    return val == null ? def : val;
   }
 
   // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
@@ -414,23 +391,10 @@ public class SolrCLI implements CLIO {
 
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
-    List<Option> customOptions = tool.getOptions();
-    List<OptionGroup> customOptionGroups = tool.getOptionGroups();
-    Options options = new Options();
+    Options options = tool.getAllOptions();
 
     options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
-
-    if (customOptions != null) {
-      for (Option customOption : customOptions) {
-        options.addOption(customOption);
-      }
-    }
-    if (customOptionGroups != null) {
-      for (OptionGroup optionGroup : customOptionGroups) {
-        options.addOptionGroup(optionGroup);
-      }
-    }
 
     CommandLine cli = null;
     try {

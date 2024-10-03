@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.api.util.SolrVersion;
 
 public class VersionTool extends ToolBase {
@@ -28,6 +29,11 @@ public class VersionTool extends ToolBase {
   @Override
   public String getName() {
     return "version";
+  }
+
+  @Override
+  public Options getAllOptions() {
+    return new Options();
   }
 
   @Override
