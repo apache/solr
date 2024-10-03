@@ -102,7 +102,7 @@ public class DeleteTool extends ToolBase {
             .desc(
                 "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
             .build(),
-        Option.builder("f")
+        Option.builder()
             .longOpt("force-delete-config")
             .deprecated(
                 DeprecatedAttributes.builder()
