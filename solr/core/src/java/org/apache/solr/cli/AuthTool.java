@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -208,26 +209,6 @@ public class AuthTool extends ToolBase {
         .addOption(SolrCLI.OPTION_ZKHOST)
         .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
         .addOption(SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
-  public List<Option> getOptions() {
-    return List.of(
-        TYPE_OPTION,
-        PROMPT_OPTION,
-        CONFIG_OPTION,
-        BLOCK_UNKNOWN_OPTION_NEW,
-        BLOCK_UNKNOWN_OPTION_DEP,
-        SOLR_INCLUDE_FILE_OPTION_NEW,
-        SOLR_INCLUDE_FILE_OPTION_DEP,
-        UPDATE_INCLUDE_FILE_OPTION_NEW,
-        UPDATE_INCLUDE_FILE_OPTION_DEP,
-        AUTH_CONF_DIR_OPTION,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {

@@ -387,21 +387,4 @@ public class PackageTool extends ToolBase {
         .addOption(SolrCLI.OPTION_ZKHOST_DEPRECATED)
         .addOption(SolrCLI.OPTION_CREDENTIALS);
   }
-
-  @Override
-  public List<Option> getOptions() {
-    return List.of(
-        COLLECTIONS_OPTION,
-        CLUSTER_OPTION,
-        PARAM_OPTION_NEW,
-        PARAM_OPTION_DEP,
-        UPDATE_OPTION,
-        COLLECTION_OPTION,
-        NO_PROMPT_OPTION,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
 }

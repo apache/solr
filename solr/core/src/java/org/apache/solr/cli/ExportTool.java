@@ -151,19 +151,6 @@ public class ExportTool extends ToolBase {
         .addOption(SolrCLI.OPTION_CREDENTIALS);
   }
 
-  @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SOLR_URL_OPTION,
-        OUTPUT_OPTION,
-        FORMAT_OPTION,
-        COMPRESS_OPTION,
-        LIMIT_OPTION,
-        QUERY_OPTION,
-        FIELDS_OPTION,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
   public abstract static class Info {
     String baseurl;
     String credentials;

@@ -87,14 +87,6 @@ public class PostLogsTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SOLR_URL_OPTION,
-        ROOT_DIR_OPTION,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue(SOLR_URL_OPTION);
     String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);

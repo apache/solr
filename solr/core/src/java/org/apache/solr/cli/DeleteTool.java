@@ -141,21 +141,6 @@ public class DeleteTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        COLLECTION_NAME_OPTION,
-        DELETE_CONFIG_OPTION_NEW,
-        DELETE_CONFIG_OPTION_DEP,
-        FORCE_DELETE_CONFIG_OPTION_NEW,
-        FORCE_DELETE_CONFIG_OPTION_DEP,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 

@@ -169,24 +169,6 @@ public class AssertTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        IS_ROOT_OPTION,
-        IS_NOT_ROOT_OPTION,
-        IS_NOT_RUNNING_ON_OPTION,
-        IS_RUNNING_ON_OPTION,
-        SAME_USER_OPTION,
-        DIRECTORY_EXISTS_OPTION,
-        DIRECTORY_NOT_EXISTS_OPTION,
-        IS_CLOUD_OPTION,
-        IS_NOT_CLOUD_OPTION,
-        MESSAGE_OPTION,
-        TIMEOUT_OPTION,
-        EXIT_CODE_OPTION,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public int runTool(CommandLine cli) throws Exception {
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE);
 

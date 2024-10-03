@@ -185,20 +185,6 @@ public class CreateTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        COLLECTION_NAME_OPTION,
-        SHARDS_OPTION,
-        REPLICATION_FACTOR_OPTION_NEW,
-        REPLICATION_FACTOR_OPTION_DEP,
-        CONF_DIR_OPTION_NEW,
-        CONF_DIR_OPTION_DEP,
-        CONF_NAME_OPTION_NEW,
-        CONF_NAME_OPTION_DEP,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 

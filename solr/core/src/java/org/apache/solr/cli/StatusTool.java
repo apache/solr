@@ -85,13 +85,6 @@ public class StatusTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SOLR_URL_OPTION,
-        MAX_WAIT_SECS_OPTION);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     // Override the default help behaviour to put out a customized message that only list user
     // settable Options.

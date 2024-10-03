@@ -121,21 +121,6 @@ public class ConfigTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        COLLECTION_NAME_OPTION,
-        ACTION_OPTION,
-        PROPERTY_OPTION_NEW,
-        PROPERTY_OPTION_DEP,
-        VALUE_OPTION,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String action = cli.getOptionValue(ACTION_OPTION, "set-property");

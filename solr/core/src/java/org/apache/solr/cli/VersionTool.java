@@ -37,11 +37,6 @@ public class VersionTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return Collections.emptyList();
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     CLIO.out("Solr version is: " + SolrVersion.LATEST);
   }

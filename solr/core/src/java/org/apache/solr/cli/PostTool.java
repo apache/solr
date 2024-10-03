@@ -317,27 +317,6 @@ public class PostTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SOLR_URL_OPTION,
-        COLLECTION_NAME_OPTION,
-        SKIP_COMMIT_OPTION_NEW,
-        SKIP_COMMIT_OPTION_DEP,
-        OPTIMIZE_OPTION,
-        MODE_OPTION,
-        RECURSIVE_OPTION,
-        DELAY_OPTION,
-        TYPE_OPTION,
-        FILE_TYPES_OPTION,
-        PARAMS_OPTION_NEW,
-        PARAMS_OPTION_DEP,
-        OUTPUT_OPTION,
-        FORMAT_OPTION,
-        DRY_RUN_OPTION,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 

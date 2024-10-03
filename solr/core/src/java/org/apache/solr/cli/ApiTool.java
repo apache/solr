@@ -107,14 +107,6 @@ public class ApiTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SOLR_URL_OPTION_DEP,
-        SOLR_GET_OPTION,
-        SolrCLI.OPTION_CREDENTIALS);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     String response = null;
     String getUrl = cli.getOptionValue(SOLR_URL_OPTION);

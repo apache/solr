@@ -61,11 +61,6 @@ public class UpdateACLTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(SolrCLI.OPTION_ZKHOST, SolrCLI.OPTION_ZKHOST_DEPRECATED);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
 
     String zkHost = SolrCLI.getZkHost(cli);

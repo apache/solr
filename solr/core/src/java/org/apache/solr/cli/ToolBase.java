@@ -18,8 +18,10 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 
@@ -44,6 +46,11 @@ public abstract class ToolBase implements Tool {
 
   protected void echo(final String msg) {
     stdout.println(msg);
+  }
+
+  @Override
+  public List<Option> getOptions() {
+    return new ArrayList<>(getAllOptions().getOptions());
   }
 
   @Override

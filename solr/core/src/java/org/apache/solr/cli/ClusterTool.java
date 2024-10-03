@@ -76,15 +76,6 @@ public class ClusterTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        PROPERTY_OPTION,
-        VALUE_OPTION,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
 
     String propertyName = cli.getOptionValue(PROPERTY_OPTION);

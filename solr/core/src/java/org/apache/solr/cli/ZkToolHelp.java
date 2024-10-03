@@ -55,13 +55,6 @@ public class ZkToolHelp extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        PRINT_ZK_SUBCOMMAND_OPTION,
-        PRINT_LONG_ZK_USAGE_OPTION);
-  }
-
-  @Override
   public String getName() {
     return "zk-tool-help";
   }

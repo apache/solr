@@ -237,27 +237,6 @@ public class RunExampleTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        NO_PROMPT_OPTION_NEW,
-        NO_PROMPT_OPTION_DEP,
-        EXAMPLE_OPTION,
-        SCRIPT_OPTION,
-        SERVER_DIR_OPTION,
-        FORCE_OPTION,
-        EXAMPLE_DIR_OPTION,
-        URL_SCHEME_OPTION,
-        PORT_OPTION,
-        HOST_OPTION,
-        CLOUD_OPTION,
-        MEMORY_OPTION,
-        JVM_OPTS_OPTION_NEW,
-        ADDITIONAL_OPTS_OPTION,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
-  }
-
-  @Override
   public void runImpl(CommandLine cli) throws Exception {
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
 
