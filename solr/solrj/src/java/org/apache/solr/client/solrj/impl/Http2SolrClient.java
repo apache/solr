@@ -132,6 +132,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
+      if (this.executor == null) {
+        this.executor = builder.executor;
+      }
       this.closeClient = false;
     } else {
       this.httpClient = createHttpClient(builder);
@@ -1128,6 +1131,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.listenerFactory == null) {
         this.listenerFactory = new ArrayList<HttpListenerFactory>();
         http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
+      }
+      if (this.executor == null) {
+        this.executor = http2SolrClient.executor;
       }
       return this;
     }

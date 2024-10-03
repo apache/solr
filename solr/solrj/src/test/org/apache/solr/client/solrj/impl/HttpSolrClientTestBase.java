@@ -608,13 +608,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testQueryAsync(boolean useDeprecatedApi) throws Exception {
-    ResponseParser rp = new XMLResponseParser();
+  protected void testQueryAsync(HttpSolrClientBuilderBase<?, ?> builder, boolean useDeprecatedApi)
+      throws Exception {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b =
-        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
 
     CountDownLatch latch = new CountDownLatch(limit); // Deprecated API use
@@ -623,7 +620,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
     List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
-    try (HttpSolrClientBase client = b.build()) {
+    try (HttpSolrClientBase client = builder.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
             ("id=KEY-" + i),

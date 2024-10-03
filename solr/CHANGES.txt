@@ -61,6 +61,8 @@ Bug Fixes
 
 * SOLR-6962: bin/solr stop/start/restart should complain about missing value for options that expect a value. (Eric Pugh, Rahul Goswami)
 
+* SOLR-17464: Fixed Http2SolrClient bug in that 'requestAsync' triggered NPE when using a shared Jetty client (Jason Gerlowski, James Dyer)
+
 Dependency Upgrades
 ---------------------
 (No changes)

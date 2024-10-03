@@ -200,17 +200,37 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testDeprecatedAsyncGet() throws Exception {
-    super.testQueryAsync(true);
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withResponseParser(new XMLResponseParser());
+    super.testQueryAsync(b, true);
   }
 
   @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync(false);
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withResponseParser(new XMLResponseParser());
+    super.testQueryAsync(b, false);
   }
 
   @Test
   public void testDeprecatedAsyncPost() throws Exception {
     super.testUpdateAsync(true);
+
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withResponseParser(new XMLResponseParser());
+    super.testQueryAsync(b, true);
   }
 
   @Test

@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -265,17 +266,37 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testDeprecatedAsyncGet() throws Exception {
-    super.testQueryAsync(true);
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withResponseParser(new XMLResponseParser());
+    super.testQueryAsync(b, true);
   }
 
   @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync(false);
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withResponseParser(new XMLResponseParser());
+    super.testQueryAsync(b, false);
   }
 
   @Test
   public void testDeprecatedAsyncPost() throws Exception {
     super.testUpdateAsync(true);
+
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withResponseParser(new XMLResponseParser());
+    super.testQueryAsync(b, true);
   }
 
   @Test
@@ -293,6 +314,21 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     super.testAsyncExceptionBase(false);
   }
 
+  @Test
+  public void testAsyncQueryWithSharedClient() throws Exception {
+    DebugServlet.clear();
+    final var url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    ResponseParser rp = new XMLResponseParser();
+    final var queryParams = new MapSolrParams(Collections.singletonMap("q", "*:*"));
+    final var builder =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).withResponseParser(rp);
+    try (Http2SolrClient originalClient = builder.build()) {
+      final var derivedBuilder = builder.withHttpClient(originalClient);
+      super.testQueryAsync(derivedBuilder, false);
+    }
+  }
+
+  @Test
   public void testFollowRedirect() throws Exception {
     final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (Http2SolrClient client =
