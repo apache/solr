@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -66,8 +65,8 @@ public class ZkCpTool extends ToolBase {
     return super.getAllOptions()
         .addOption(SOLR_HOME_OPTION)
         .addOption(CommonCLIOptions.RECURSE_OPTION)
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 

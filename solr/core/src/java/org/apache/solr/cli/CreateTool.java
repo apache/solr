@@ -21,7 +21,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -199,9 +198,7 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl = cli.getOptionValue(
-        CommonCLIOptions.SOLR_URL_OPTION_GROUP,
-        SolrCLI.getDefaultSolrUrl());
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName = cli.getOptionValue(CONF_DIR_OPTION, SolrCLI.DEFAULT_CONFIG_SET);
@@ -300,7 +297,7 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION_GROUP);
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
     if (solrUrl == null) {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
@@ -412,7 +409,7 @@ public class CreateTool extends ToolBase {
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-      final String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION_GROUP, SolrCLI.getDefaultSolrUrl());
+      final String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, SolrCLI.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,

@@ -66,8 +66,8 @@ public class HealthcheckTool extends ToolBase {
   public Options getAllOptions() {
     return super.getAllOptions()
         .addOption(COLLECTION_NAME_OPTION)
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 

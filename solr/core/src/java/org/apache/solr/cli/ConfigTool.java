@@ -19,11 +19,9 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
-import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
@@ -113,8 +111,8 @@ public class ConfigTool extends ToolBase {
         .addOption(ACTION_OPTION)
         .addOptionGroup(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 

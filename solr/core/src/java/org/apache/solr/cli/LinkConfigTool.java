@@ -18,7 +18,6 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -69,7 +68,7 @@ public class LinkConfigTool extends ToolBase {
     return super.getAllOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(CONF_NAME_OPTION)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override

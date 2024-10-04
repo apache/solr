@@ -21,10 +21,8 @@ import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
@@ -45,8 +43,8 @@ public class ZkMvTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
         .addOption(CommonCLIOptions.VERBOSE_OPTION);
   }

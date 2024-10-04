@@ -20,7 +20,6 @@ import org.apache.commons.cli.Options;
 import static org.apache.solr.cli.SolrCLI.print;
 
 import java.io.PrintStream;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 

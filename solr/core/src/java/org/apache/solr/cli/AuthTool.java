@@ -29,7 +29,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -204,8 +203,8 @@ public class AuthTool extends ToolBase {
         .addOptionGroup(SOLR_INCLUDE_FILE_OPTION)
         .addOptionGroup(UPDATE_INCLUDE_FILE_OPTION)
         .addOption(AUTH_CONF_DIR_OPTION)
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
@@ -380,7 +379,7 @@ public class AuthTool extends ToolBase {
           try {
             zkHost = SolrCLI.getZkHost(cli);
           } catch (Exception ex) {
-            if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION_GROUP)) {
+            if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION)) {
               CLIO.out(
                   "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zk-host has been passed in.");
             } else {
@@ -390,7 +389,7 @@ public class AuthTool extends ToolBase {
             SolrCLI.exit(1);
           }
           if (zkHost == null) {
-            if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION_GROUP)) {
+            if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION)) {
               CLIO.out(
                   "Couldn't get ZooKeeper host. Please make sure that ZooKeeper is running and the correct zk-host has been passed in.");
             } else {

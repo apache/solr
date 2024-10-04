@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -71,7 +70,7 @@ public class ClusterTool extends ToolBase {
     return super.getAllOptions()
         .addOption(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override

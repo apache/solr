@@ -18,11 +18,9 @@ package org.apache.solr.cli;
 
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -133,8 +131,8 @@ public class DeleteTool extends ToolBase {
         .addOption(COLLECTION_NAME_OPTION)
         .addOptionGroup(DELETE_CONFIG_OPTION)
         .addOptionGroup(FORCE_DELETE_CONFIG_OPTION)
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 

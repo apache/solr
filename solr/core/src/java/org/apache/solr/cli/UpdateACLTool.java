@@ -18,10 +18,8 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
@@ -56,7 +54,7 @@ public class UpdateACLTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override

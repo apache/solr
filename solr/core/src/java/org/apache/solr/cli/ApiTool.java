@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;

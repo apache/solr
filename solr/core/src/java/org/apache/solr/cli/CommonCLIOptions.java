@@ -18,9 +18,7 @@
 package org.apache.solr.cli;
 
 import java.util.Locale;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.solr.common.util.EnvUtils;
 
 public final class CommonCLIOptions {
@@ -39,28 +37,6 @@ public final class CommonCLIOptions {
       .desc("Print this message.")
       .build();
 
-  /**
-   * @deprecated Use {@link CommonCLIOptions#ZK_HOST_OPTION} instead.
-   */
-  @Deprecated(since = "9.7")
-  private static final Option ZK_HOST_OPTION_DEP =
-      Option.builder("zkHost")
-          .longOpt("zkHost")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --zk-host instead")
-                  .get())
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + DefaultValues.ZK_HOST
-                  + '.')
-          .build();
-
   public static final Option ZK_HOST_OPTION = Option.builder("z")
       .longOpt("zk-host")
       .argName("HOST")
@@ -71,54 +47,6 @@ public final class CommonCLIOptions {
               + DefaultValues.ZK_HOST
               + '.')
       .build();
-
-  /**
-   * Zookeeper host option group that supports the deprecated and the new option of zk-host.
-   *
-   * @deprecated Use {@link CommonCLIOptions#ZK_HOST_OPTION} instead.
-   */
-  @Deprecated(since = "9.7")
-  public static final OptionGroup ZK_HOST_OPTION_GROUP = new OptionGroup()
-      .addOption(ZK_HOST_OPTION_DEP)
-      .addOption(ZK_HOST_OPTION);
-
-  /**
-   * @deprecated Use {@link CommonCLIOptions#SOLR_URL_OPTION} instead.
-   */
-  @Deprecated(since = "9.7", forRemoval = true)
-  private static final Option SOLR_URL_OPTION_DEP =
-      Option.builder("solrUrl")
-          .longOpt("solrUrl")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --solr-url instead")
-                  .get())
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + DefaultValues.getDefaultSolrUrl()
-                  + '.')
-          .build();
-
-  /**
-   * @deprecated Use {@link CommonCLIOptions#SOLR_URL_OPTION} instead.
-   */
-  @Deprecated(since = "9.7", forRemoval = true)
-  private static final Option SOLR_URL_OPTION_DEP2 =
-      Option.builder("url")
-          .longOpt("solr-url")
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + DefaultValues.getDefaultSolrUrl()
-                  + '.')
-          .build();
 
   public static final Option SOLR_URL_OPTION =
       Option.builder("s")
@@ -131,16 +59,6 @@ public final class CommonCLIOptions {
                   + DefaultValues.getDefaultSolrUrl()
                   + '.')
           .build();
-
-  /**
-   * Solr URL option group that supports deprecated and none options for providing the Solr URL.
-   *
-   * @deprecated Use {@link CommonCLIOptions#SOLR_URL_OPTION} instead.
-   */
-  @Deprecated(since = "9.8")
-  public static final OptionGroup SOLR_URL_OPTION_GROUP = new OptionGroup()
-      .addOption(SOLR_URL_OPTION_DEP)
-      .addOption(SOLR_URL_OPTION_DEP2);
 
   public static final Option RECURSE_OPTION =
       Option.builder("r")

@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -232,7 +231,7 @@ public class RunExampleTool extends ToolBase {
         .addOption(CLOUD_OPTION)
         .addOption(MEMORY_OPTION)
         .addOptionGroup(JVM_OPTS_OPTION)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override
@@ -307,7 +306,7 @@ public class RunExampleTool extends ToolBase {
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
     boolean isCloudMode = cli.hasOption(CLOUD_OPTION);
-    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
+    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
     int port =
         Integer.parseInt(
             cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
@@ -558,7 +557,7 @@ public class RunExampleTool extends ToolBase {
     }
 
     // deal with extra args passed to the script to run the example
-    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
+    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =

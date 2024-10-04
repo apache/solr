@@ -26,7 +26,6 @@ import static org.apache.solr.packagemanager.PackageUtils.formatGreen;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
@@ -381,8 +380,8 @@ public class PackageTool extends ToolBase {
         .addOption(UPDATE_OPTION)
         .addOption(COLLECTION_OPTION)
         .addOption(NO_PROMPT_OPTION)
-        .addOptionGroup(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
-        .addOptionGroup(CommonCLIOptions.ZK_HOST_OPTION_GROUP)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 }
