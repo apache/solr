@@ -75,8 +75,8 @@ public class LinkConfigTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
-    String collection = cli.getOptionValue("name");
-    String confName = cli.getOptionValue("conf-name");
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+    String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String zkHost = SolrCLI.getZkHost(cli);
 
     try (SolrZkClient zkClient =

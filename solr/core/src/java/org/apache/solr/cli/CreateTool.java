@@ -285,7 +285,7 @@ public class CreateTool extends ToolBase {
   protected void createCollection(CloudSolrClient cloudSolrClient, CommandLine cli)
       throws Exception {
 
-    String collectionName = cli.getOptionValue("name");
+    String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     final String solrInstallDir = System.getProperty("solr.install.dir");
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION, SolrCLI.DEFAULT_CONFIG_SET);

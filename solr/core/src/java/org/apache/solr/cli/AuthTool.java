@@ -326,7 +326,7 @@ public class AuthTool extends ToolBase {
       case "disable":
         clearSecurityJson(cli, updateIncludeFileOnly);
 
-        solrIncludeFilename = cli.getOptionValue("solr-include-file");
+        solrIncludeFilename = cli.getOptionValue(SOLR_INCLUDE_FILE_OPTION);
         includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(

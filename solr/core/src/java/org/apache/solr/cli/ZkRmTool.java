@@ -66,7 +66,7 @@ public class ZkRmTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     String target = cli.getArgs()[0];
-    boolean recurse = cli.hasOption("recurse");
+    boolean recurse = cli.hasOption(CommonCLIOptions.RECURSE_OPTION);
 
     String znode = target;
     if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {

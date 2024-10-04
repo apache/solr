@@ -462,7 +462,7 @@ public class SolrCLI implements CLIO {
       }
     }
 
-    if (cli.hasOption("help")) {
+    if (cli.hasOption(CommonCLIOptions.HELP_OPTION)) {
       printToolHelp(tool);
       exit(0);
     }
@@ -716,11 +716,9 @@ public class SolrCLI implements CLIO {
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl =
-        cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION_GROUP);
     if (solrUrl == null) {
-      String zkHost =
-          cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+      String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.err(
@@ -751,8 +749,7 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost =
-        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION_GROUP);
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
@@ -788,7 +785,7 @@ public class SolrCLI implements CLIO {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("solrUrl")
+              + cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION_GROUP)
               + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
     }
     return new SolrZkClient.Builder()
