@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -80,7 +81,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
                 .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
     }
   }
@@ -141,7 +142,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       client.query(q, method);
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+    } catch (SolrClient.RemoteSolrException ignored) {
     }
   }
 
@@ -221,7 +222,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.deleteById("id");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
@@ -241,7 +242,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
             .build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
@@ -298,7 +299,11 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync();
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    ResponseParser rp = new XMLResponseParser();
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    super.testQueryAsync(b);
   }
 
   @Test
@@ -309,6 +314,20 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testAsyncException() throws Exception {
     super.testAsyncExceptionBase();
+  }
+
+  @Test
+  public void testAsyncQueryWithSharedClient() throws Exception {
+    DebugServlet.clear();
+    final var url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    ResponseParser rp = new XMLResponseParser();
+    final var queryParams = new MapSolrParams(Collections.singletonMap("q", "*:*"));
+    final var builder =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).withResponseParser(rp);
+    try (Http2SolrClient originalClient = builder.build()) {
+      final var derivedBuilder = builder.withHttpClient(originalClient);
+      super.testQueryAsync(derivedBuilder);
+    }
   }
 
   @Test

@@ -95,7 +95,7 @@ public class HealthcheckTool extends ToolBase {
       System.exit(1);
     }
     try (CloudHttp2SolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
       cloudSolrClient.connect();
       runCloudTool(cloudSolrClient, cli);
     }
