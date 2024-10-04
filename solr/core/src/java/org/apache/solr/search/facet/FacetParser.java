@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -33,7 +34,7 @@ import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 
-abstract class FacetParser<T extends FacetRequest> {
+public abstract class FacetParser<T extends FacetRequest> {
   protected T facet;
   protected FacetParser<?> parent;
   protected String key;
@@ -138,21 +139,30 @@ abstract class FacetParser<T extends FacetRequest> {
     return parseFacetOrStat(key, type, args);
   }
 
-  public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
-    // TODO: a place to register all these facet types?
+  public interface ParseHandler {
+    Object doParse(FacetParser<?> parent, String key, Object args) throws SyntaxError;
+  }
 
-    switch (type) {
-      case "field":
-      case "terms":
-        return new FacetFieldParser(this, key).parse(args);
-      case "query":
-        return new FacetQueryParser(this, key).parse(args);
-      case "range":
-        return new FacetRangeParser(this, key).parse(args);
-      case "heatmap":
-        return new FacetHeatmap.Parser(this, key).parse(args);
-      case "func":
-        return parseStat(key, args);
+  private static final Map<String, ParseHandler> REGISTERED_TYPES = new ConcurrentHashMap<>();
+
+  static {
+    ParseHandler fieldParser = (p, k, a) -> new FacetFieldParser(p, k).parse(a);
+    REGISTERED_TYPES.put("field", fieldParser);
+    REGISTERED_TYPES.put("terms", fieldParser);
+    REGISTERED_TYPES.put("query", (p, k, a) -> new FacetQueryParser(p, k).parse(a));
+    REGISTERED_TYPES.put("range", (p, k, a) -> new FacetRangeParser(p, k).parse(a));
+    REGISTERED_TYPES.put("heatmap", (p, k, a) -> new FacetHeatmap.Parser(p, k).parse(a));
+    REGISTERED_TYPES.put("func", (p, k, a) -> p.parseStat(k, a));
+  }
+
+  public static void registerParseHandler(String type, ParseHandler parseHandler) {
+    REGISTERED_TYPES.put(type, parseHandler);
+  }
+
+  public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
+    ParseHandler parseHandler = REGISTERED_TYPES.get(type);
+    if (parseHandler != null) {
+      return parseHandler.doParse(this, key, args);
     }
 
     throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);

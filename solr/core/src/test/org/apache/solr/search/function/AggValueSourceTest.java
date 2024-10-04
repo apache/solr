@@ -23,6 +23,7 @@ import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.search.facet.FacetContext;
 import org.apache.solr.search.facet.FacetMerger;
+import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.search.facet.SimpleAggValueSource;
 import org.apache.solr.search.facet.SlotAcc;
 import org.junit.Test;
@@ -76,22 +77,22 @@ public class AggValueSourceTest extends SolrTestCase {
 
     @Override
     public FacetMerger createFacetMerger(Object prototype) {
-      return new FacetMerger() {
-        double total = 0.0D;
+      // check these inner classes can be referenced by name
+      FacetModule.FacetSortableMerger merger =
+          new FacetModule.FacetDoubleMerger() {
+            double total = 0.0D;
 
-        @Override
-        public void merge(Object facetResult, Context mcontext) {
-          total += (Double) facetResult;
-        }
+            @Override
+            public void merge(Object facetResult, Context mcontext) {
+              total += (Double) facetResult;
+            }
 
-        @Override
-        public void finish(Context mcontext) {}
-
-        @Override
-        public Object getMergedResult() {
-          return total;
-        }
-      };
+            @Override
+            public double getDouble() {
+              return total;
+            }
+          };
+      return merger;
     }
 
     @Override
