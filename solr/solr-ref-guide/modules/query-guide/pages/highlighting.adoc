@@ -516,7 +516,7 @@ If either `hl.usePhraseHighlighter` or `hl.multiTermQuery` are set to `false`, t
 |Optional |Default: `startOffset`
 |===
 +
-The UH uses the score to select the candidates for the number of snippets defined by `hl.snippets`,
+The UH calculates a score for each passage, and it uses it to pick the best snippets defined by `hl.snippets`,
 but the final sorting of these selected candidates is determined by this option.
 The available choices are: `startOffset`, `endOffset`, and `score`.
 +
