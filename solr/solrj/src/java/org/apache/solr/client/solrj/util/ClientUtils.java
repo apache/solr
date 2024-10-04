@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -85,11 +84,7 @@ public class ClientUtils {
     String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
-      if (solrRequest instanceof V2Request && System.getProperty("solr.v2RealPath") != null) {
-        basePath = serverRootUrl + "/____v2";
-      } else {
-        basePath = addNormalV2ApiRoot(basePath);
-      }
+      basePath = addNormalV2ApiRoot(basePath);
     }
 
     if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
