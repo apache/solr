@@ -2563,21 +2563,15 @@ public class CoreContainer {
   }
 
   /**
-   * Creates a general-purpose HTTP/2 Solr client, re-using the existing client from {@link
+   * Provides the existing general-purpose HTTP/2 Solr client from {@link HttpSolrClientProvider}.
+   *
+   * <p>The caller does not need to close the client, as its lifecycle is managed by {@link
    * HttpSolrClientProvider}.
    *
-   * <p>The base path is set at the client level as {@link
-   * org.apache.solr.client.solrj.SolrRequest#setBasePath(String)} is deprecated. This method is
-   * experimental, and the caller is responsible for managing the client lifecycle (e.g., using
-   * try-with-resources).
-   *
-   * @param basePath the base URL for the Solr client.
-   * @return a new {@link Http2SolrClient} using the provided base path.
+   * @return the existing {@link Http2SolrClient}
    */
-  public Http2SolrClient getDefaultHttpSolrClient(String basePath) {
-    return new Http2SolrClient.Builder(basePath)
-        .withHttpClient(solrClientProvider.getSolrClient())
-        .build();
+  public Http2SolrClient getDefaultHttpSolrClient() {
+    return solrClientProvider.getSolrClient();
   }
 
   /**
