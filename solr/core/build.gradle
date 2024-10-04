@@ -23,178 +23,177 @@ dependencies {
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
-  compileOnly 'com.github.spotbugs:spotbugs-annotations'
-  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
-  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+  compileOnly libs.spotbugs.annotations
+  testCompileOnly libs.spotbugs.annotations
+  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
-  implementation 'io.swagger.core.v3:swagger-annotations-jakarta'
+  implementation libs.swagger3.annotations.jakarta
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
   // These Lucene modules are the most significant to Solr
-  api "org.apache.lucene:lucene-core"
-  api "org.apache.lucene:lucene-analysis-common"
-  api "org.apache.lucene:lucene-queries"
+  api libs.apache.lucene.core
+  api libs.apache.lucene.analysis.common
+  api libs.apache.lucene.queries
 
   // We export logging api with dependencies, which is useful for all modules
-  api 'org.slf4j:slf4j-api'
+  api libs.slf4j.api
 
   api project(':solr:api')
   api project(':solr:solrj')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 
-
-  api 'io.dropwizard.metrics:metrics-core'
-  implementation ('io.dropwizard.metrics:metrics-graphite', {
+  api libs.dropwizard.metrics.core
+  implementation (libs.dropwizard.metrics.graphite, {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  implementation 'io.dropwizard.metrics:metrics-jmx'
-  implementation 'io.dropwizard.metrics:metrics-jvm'
+  implementation libs.dropwizard.metrics.jmx
+  implementation libs.dropwizard.metrics.jvm
 
-  implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
+  implementation(libs.jersey.containers.jettyhttp, {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
     exclude group: "org.glassfish.hk2.external", module: "jakarta.inject"
   })
-  permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
-  implementation 'org.glassfish.jersey.inject:jersey-hk2'
-  permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
-  implementation ('org.glassfish.jersey.media:jersey-media-json-jackson', {
+  permitUnusedDeclared libs.jersey.containers.jettyhttp
+  implementation libs.jersey.inject.hk2
+  permitUnusedDeclared libs.jersey.inject.hk2
+  implementation (libs.jersey.media.jsonjackson, {
     exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
   })
-  permitUnusedDeclared 'org.glassfish.jersey.media:jersey-media-json-jackson'
-  implementation 'org.glassfish.jersey.core:jersey-common'
-  implementation 'org.glassfish.jersey.core:jersey-server'
-  implementation 'org.glassfish.hk2:hk2-api'
-  implementation 'jakarta.inject:jakarta.inject-api'
-  implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-  implementation 'jakarta.annotation:jakarta.annotation-api'
+  permitUnusedDeclared libs.jersey.media.jsonjackson
+  implementation libs.jersey.core.common
+  implementation libs.jersey.core.server
+  implementation libs.hk2.api
+  implementation libs.jakarta.inject.api
+  implementation libs.jakarta.ws.rsapi
+  implementation libs.jakarta.annotation.api
 
   // Non-API below; although there are exceptions
 
-  runtimeOnly "org.apache.lucene:lucene-analysis-kuromoji"
-  runtimeOnly "org.apache.lucene:lucene-analysis-nori"
-  runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
-  runtimeOnly "org.apache.lucene:lucene-backward-codecs"
-  implementation "org.apache.lucene:lucene-codecs"
-  implementation "org.apache.lucene:lucene-backward-codecs"
-  permitUnusedDeclared "org.apache.lucene:lucene-backward-codecs"
-  implementation "org.apache.lucene:lucene-classification"
-  implementation "org.apache.lucene:lucene-expressions"
-  implementation "org.apache.lucene:lucene-grouping"
-  implementation "org.apache.lucene:lucene-highlighter"
-  implementation "org.apache.lucene:lucene-join"
-  implementation "org.apache.lucene:lucene-misc"
-  implementation "org.apache.lucene:lucene-queryparser"
-  implementation "org.apache.lucene:lucene-spatial-extras"
-  implementation "org.apache.lucene:lucene-suggest"
+  runtimeOnly libs.apache.lucene.analysis.kuromoji
+  runtimeOnly libs.apache.lucene.analysis.nori
+  runtimeOnly libs.apache.lucene.analysis.phonetic
+  runtimeOnly libs.apache.lucene.backward.codecs
+  implementation libs.apache.lucene.codecs
+  implementation libs.apache.lucene.backward.codecs
+  permitUnusedDeclared libs.apache.lucene.backward.codecs
+  implementation libs.apache.lucene.classification
+  implementation libs.apache.lucene.expressions
+  implementation libs.apache.lucene.grouping
+  implementation libs.apache.lucene.highlighter
+  implementation libs.apache.lucene.join
+  implementation libs.apache.lucene.misc
+  implementation libs.apache.lucene.queryparser
+  implementation libs.apache.lucene.spatialextras
+  implementation libs.apache.lucene.suggest
 
 
   // Collections & lang utilities
-  implementation 'com.google.guava:guava'
-  implementation 'org.apache.commons:commons-lang3'
-  implementation 'org.apache.commons:commons-math3'
-  implementation 'commons-io:commons-io'
-  implementation 'com.carrotsearch:hppc'
+  implementation libs.google.guava
+  implementation libs.apache.commons.lang3
+  implementation libs.apache.commons.math3
+  implementation libs.commonsio.commonsio
+  implementation libs.carrotsearch.hppc
 
-  implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
+  implementation(libs.benmanes.caffeine) { transitive = false }
 
-  implementation 'commons-codec:commons-codec'
+  implementation libs.commonscodec.commonscodec
 
-  implementation 'commons-cli:commons-cli'
+  implementation libs.commonscli.commonscli
 
-  implementation 'org.locationtech.spatial4j:spatial4j'
+  implementation libs.locationtech.spatial4j
 
-  implementation 'com.fasterxml.jackson.core:jackson-annotations'
-  implementation 'com.fasterxml.jackson.core:jackson-core'
-  implementation 'com.fasterxml.jackson.core:jackson-databind'
-  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
-  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
+  implementation libs.fasterxml.jackson.core.annotations
+  implementation libs.fasterxml.jackson.core.core
+  implementation libs.fasterxml.jackson.core.databind
+  implementation libs.fasterxml.jackson.dataformat.smile
+  implementation libs.fasterxml.jackson.dataformat.cbor
 
-  implementation 'org.apache.httpcomponents:httpclient'
-  implementation 'org.apache.httpcomponents:httpcore'
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
 
-  implementation 'org.eclipse.jetty:jetty-client'
-  implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
+  implementation libs.eclipse.jetty.io
+  implementation libs.eclipse.jetty.toolchain.servletapi
 
   // ZooKeeper
-  implementation('org.apache.zookeeper:zookeeper', {
+  implementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  implementation('org.apache.zookeeper:zookeeper-jute') {
+  implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
-  testImplementation 'org.apache.zookeeper:zookeeper::tests'
+  testImplementation variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }
 
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
-  runtimeOnly ('org.xerial.snappy:snappy-java')
+  runtimeOnly libs.xerial.snappy.java
 
-  implementation('com.jayway.jsonpath:json-path', {
+  implementation(libs.jayway.jsonpath, {
     exclude group: "net.minidev", module: "json-smart"
   })
 
   // StatsComponents percentiles
-  implementation 'com.tdunning:t-digest'
+  implementation libs.tdunning.tdigest
 
   // Distributed Tracing
-  api 'io.opentelemetry:opentelemetry-api' // Tracer is exposed on some methods
-  implementation 'io.opentelemetry:opentelemetry-context'
+  api libs.opentelemetry.api // Tracer is exposed on some methods
+  implementation libs.opentelemetry.context
 
-  implementation 'org.apache.commons:commons-exec'
+  implementation libs.apache.commons.exec
 
-  implementation 'org.apache.logging.log4j:log4j-api'
-  implementation 'org.apache.logging.log4j:log4j-core'
-  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
+  implementation libs.apache.log4j.api
+  implementation libs.apache.log4j.core
+  runtimeOnly libs.apache.log4j.slf4j2impl
 
   // For the PrometheusResponseWriter
-  implementation 'io.prometheus:prometheus-metrics-model:1.1.0'
-  implementation('io.prometheus:prometheus-metrics-exposition-formats:1.1.0', {
+  implementation libs.prometheus.metrics.model
+  implementation(libs.prometheus.metrics.expositionformats, {
     exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
     exclude group: "io.prometheus", module: "prometheus-metrics-config"
   })
 
   // For faster XML processing than the JDK
-  implementation 'org.codehaus.woodstox:stax2-api'
-  implementation 'com.fasterxml.woodstox:woodstox-core'
+  implementation libs.codehaus.woodstox.stax2api
+  implementation libs.fasterxml.woodstox.core
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
-  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
-  compileOnly 'org.osgi:osgi.annotation'
+  compileOnly libs.aqute.bnd.annotation
+  compileOnly libs.osgi.annotation
 
-  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+  compileOnly libs.stephenc.jcip.annotations
 
-  implementation 'com.j256.simplemagic:simplemagic'
+  implementation libs.j256.simplemagic
 
   // -- Test Dependencies
 
-  testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
+  testRuntimeOnly libs.slf4j.jcloverslf4j
 
-  testRuntimeOnly "org.apache.lucene:lucene-analysis-icu"
+  testRuntimeOnly libs.apache.lucene.analysis.icu
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
 
   testImplementation project(':solr:core')
   testImplementation project(':solr:test-framework')
 
-  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation libs.apache.lucene.testframework
 
-  testImplementation 'org.eclipse.jetty:jetty-server'
-  testImplementation 'org.eclipse.jetty:jetty-servlet'
+  testImplementation libs.eclipse.jetty.server
+  testImplementation libs.eclipse.jetty.servlet
 
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
-  testImplementation('org.mockito:mockito-core', {
+  testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testRuntimeOnly('org.mockito:mockito-subclass', {
+  testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 }

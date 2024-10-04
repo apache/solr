@@ -23,22 +23,22 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation 'org.apache.lucene:lucene-core'
-  implementation 'org.slf4j:slf4j-api'
+  implementation libs.apache.lucene.core
+  implementation libs.slf4j.api
 
-  implementation 'org.apache.poi:poi'
-  implementation 'org.apache.poi:poi-ooxml'
-  implementation 'org.apache.tika:tika-core'
-  implementation ('org.apache.tika:tika-parsers', {
+  implementation libs.apache.poi.poi
+  implementation libs.apache.poi.ooxml
+  implementation libs.apache.tika.core
+  implementation (libs.apache.tika.parsers, {
     exclude group: 'org.apache.cxf', module: 'cxf-rt-rs-client'
     exclude group: 'org.quartz-scheduler', module: 'quartz'
     exclude group: 'xml-apis', module: 'xml-apis'
   })
-  implementation ('xerces:xercesImpl', {
+  implementation (libs.xerces.impl, {
     exclude group: 'xml-apis', module: 'xml-apis'
   })
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'junit:junit'
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
 }

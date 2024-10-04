@@ -124,7 +124,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     doc.addField("desc", "one");
     // imagine someone adds a custom Bean that implements Iterable
     // but is not a Collection
-    doc.addField("iter", (Iterable<String>) values::iterator);
+    doc.addField("iter", values.iterator());
     doc.addField("desc", "1");
     updateRequest.add(doc);
 

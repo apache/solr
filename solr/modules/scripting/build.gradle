@@ -23,13 +23,13 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation 'org.apache.lucene:lucene-core'
+  implementation libs.apache.lucene.core
 
-  implementation 'org.slf4j:slf4j-api'
-  implementation 'commons-io:commons-io'
-  implementation 'com.google.guava:guava'
+  implementation libs.slf4j.api
+  implementation libs.commonsio.commonsio
+  implementation libs.google.guava
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'junit:junit'
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
 }

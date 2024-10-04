@@ -23,8 +23,8 @@ dependencies {
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
-  testCompileOnly 'com.github.spotbugs:spotbugs-annotations'
-  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+  testCompileOnly libs.spotbugs.annotations
+  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -34,60 +34,60 @@ dependencies {
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
 
-  implementation 'org.slf4j:slf4j-api'
+  implementation libs.slf4j.api
 
-  api 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  api libs.eclipse.jetty.toolchain.servletapi
 
-  implementation 'com.fasterxml.jackson.core:jackson-core'
-  implementation 'com.google.guava:guava'
-  implementation 'io.dropwizard.metrics:metrics-core'
-  implementation 'org.apache.httpcomponents:httpclient'
-  implementation 'org.apache.httpcomponents:httpcore'
+  implementation libs.fasterxml.jackson.core.core
+  implementation libs.google.guava
+  implementation libs.dropwizard.metrics.core
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
 
-  implementation 'org.eclipse.jetty:jetty-client'
+  implementation libs.eclipse.jetty.client
 
   // ZooKeeper & Curator
-  implementation('org.apache.zookeeper:zookeeper', {
+  implementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
+  implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
-  runtimeOnly 'org.xerial.snappy:snappy-java'
-  implementation 'org.apache.curator:curator-client'
-  implementation 'org.apache.curator:curator-framework'
-  runtimeOnly 'org.apache.curator:curator-recipes'
+  runtimeOnly libs.xerial.snappy.java
+  implementation libs.apache.curator.client
+  implementation libs.apache.curator.framework
+  runtimeOnly libs.apache.curator.recipes
 
   // Hadoop auth framework
-  implementation 'org.apache.hadoop:hadoop-annotations'
-  permitUnusedDeclared 'org.apache.hadoop:hadoop-annotations'
-  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
-  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  implementation libs.apache.hadoop.annotations
+  permitUnusedDeclared libs.apache.hadoop.annotations
+  implementation(libs.apache.hadoop.auth) { transitive = false }
+  implementation(libs.apache.hadoop.common) { transitive = false }
   // transitive of hadoop-common; used by Kerberos auth
-  runtimeOnly 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
-  runtimeOnly 'commons-collections:commons-collections'
-  runtimeOnly 'com.google.re2j:re2j'
-  runtimeOnly 'org.apache.commons:commons-configuration2'
-  runtimeOnly 'org.apache.kerby:kerb-core'
-  runtimeOnly 'org.apache.kerby:kerb-util'
+  runtimeOnly libs.apache.hadoop.thirdparty.shadedguava
+  runtimeOnly libs.commonscollections.commonscollections
+  runtimeOnly libs.google.re2j
+  runtimeOnly libs.apache.commons.configuration2
+  runtimeOnly libs.apache.kerby.core
+  runtimeOnly libs.apache.kerby.util
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
-  testImplementation('org.mockito:mockito-core', {
+  testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-  testRuntimeOnly('org.mockito:mockito-subclass', {
+  testRuntimeOnly(libs.mockito.subclass, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 
-  testImplementation 'commons-io:commons-io'
+  testImplementation libs.commonsio.commonsio
 
-  testImplementation 'org.apache.lucene:lucene-core'
+  testImplementation libs.apache.lucene.core
 
   testImplementation project(':solr:solrj')
 
@@ -95,18 +95,18 @@ dependencies {
   testRuntimeOnly project(':solr:modules:analysis-extras')
 
   // Hadoop MiniKdc Dependencies (for Kerberos auth tests)
-  testImplementation ('org.apache.hadoop:hadoop-minikdc', {
+  testImplementation(libs.apache.hadoop.minikdc, {
     exclude group:'org.apache.kerby', module:'kerby-xdr'
     exclude group:'org.apache.kerby', module:'token-provider'
     exclude group:'org.slf4j', module:'slf4j-reload4j'
   })
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
-  testImplementation('org.apache.zookeeper:zookeeper', {
+  testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
   // required for instantiating a Zookeeper server in tests or embedded
-  testRuntimeOnly ('org.xerial.snappy:snappy-java')
+  testRuntimeOnly(libs.xerial.snappy.java)
 }
 
 

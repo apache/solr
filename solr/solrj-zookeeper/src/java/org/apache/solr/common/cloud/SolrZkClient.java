@@ -85,7 +85,7 @@ public class SolrZkClient implements Closeable {
   private int minStateByteLenForCompression;
 
   public MapWriter getMetrics() {
-    return metrics::writeMap;
+    return metrics;
   }
 
   private final ExecutorService zkCallbackExecutor =

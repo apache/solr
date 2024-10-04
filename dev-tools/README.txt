@@ -5,7 +5,6 @@ as to the usefulness of the tools.
 
 Description of dev-tools/ contents:
 
-./missing-doclet -- JavaDoc validation doclet subproject
 ./doap/       -- Lucene and Solr project descriptors in DOAP RDF format.
 ./scripts/    -- Odds and ends for building releases, etc.
 ./test-patch/ -- Scripts for automatically validating patches

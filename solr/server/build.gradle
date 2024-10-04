@@ -37,60 +37,60 @@ configurations {
 }
 
 dependencies {
-  serverLib('org.eclipse.jetty:jetty-deploy', {
+  serverLib(libs.eclipse.jetty.deploy, {
     exclude group: "org.awaitility", module: "awaitility"
   })
-  serverLib 'org.eclipse.jetty:jetty-http'
-  serverLib 'org.eclipse.jetty:jetty-io'
-  serverLib 'org.eclipse.jetty:jetty-jmx'
-  serverLib 'org.eclipse.jetty:jetty-rewrite'
-  serverLib 'org.eclipse.jetty:jetty-security'
-  serverLib 'org.eclipse.jetty:jetty-server'
-  serverLib 'org.eclipse.jetty:jetty-servlet'
-  serverLib 'org.eclipse.jetty:jetty-servlets'
-  serverLib 'org.eclipse.jetty:jetty-util'
-  serverLib 'org.eclipse.jetty:jetty-webapp'
-  serverLib 'org.eclipse.jetty:jetty-xml'
-  serverLib 'org.eclipse.jetty:jetty-alpn-server'
-  serverLib('org.eclipse.jetty:jetty-alpn-java-server', {
+  serverLib libs.eclipse.jetty.http
+  serverLib libs.eclipse.jetty.io
+  serverLib libs.eclipse.jetty.jmx
+  serverLib libs.eclipse.jetty.rewrite
+  serverLib libs.eclipse.jetty.security
+  serverLib libs.eclipse.jetty.server
+  serverLib libs.eclipse.jetty.servlet
+  serverLib libs.eclipse.jetty.servlets
+  serverLib libs.eclipse.jetty.util
+  serverLib libs.eclipse.jetty.webapp
+  serverLib libs.eclipse.jetty.xml
+  serverLib libs.eclipse.jetty.alpnserver
+  serverLib(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
 
-  serverLib 'org.eclipse.jetty.http2:http2-server'
-  serverLib 'org.eclipse.jetty.http2:http2-common'
-  serverLib 'org.eclipse.jetty.http2:http2-hpack'
+  serverLib libs.eclipse.jetty.http2.server
+  serverLib libs.eclipse.jetty.http2.common
+  serverLib libs.eclipse.jetty.http2.hpack
 
-  serverLib 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  serverLib libs.eclipse.jetty.toolchain.servletapi
 
-  libExt 'com.lmax:disruptor'
-  libExt 'org.slf4j:jcl-over-slf4j'
-  libExt 'org.slf4j:jul-to-slf4j'
-  libExt 'org.slf4j:slf4j-api'
-  libExt 'org.apache.logging.log4j:log4j-1.2-api'
-  libExt 'org.apache.logging.log4j:log4j-api'
-  libExt 'org.apache.logging.log4j:log4j-core'
-  libExt 'org.apache.logging.log4j:log4j-jul'
-  libExt 'org.apache.logging.log4j:log4j-layout-template-json'
-  libExt 'org.apache.logging.log4j:log4j-slf4j2-impl'
-  libExt 'org.apache.logging.log4j:log4j-web'
+  libExt libs.lmax.disruptor
+  libExt libs.slf4j.jcloverslf4j
+  libExt libs.slf4j.jultoslf4j
+  libExt libs.slf4j.api
+  libExt libs.apache.log4j1.api
+  libExt libs.apache.log4j.api
+  libExt libs.apache.log4j.core
+  libExt libs.apache.log4j.jul
+  libExt libs.apache.log4j.layout.templatejson
+  libExt libs.apache.log4j.slf4j2impl
+  libExt libs.apache.log4j.web
 
-  libExt('io.dropwizard.metrics:metrics-core', {
+  libExt(libs.dropwizard.metrics.core, {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt('io.dropwizard.metrics:metrics-graphite', {
+  libExt(libs.dropwizard.metrics.graphite, {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  libExt('io.dropwizard.metrics:metrics-jetty10', {
+  libExt(libs.dropwizard.metrics.jetty10, {
     exclude group: "org.eclipse.jetty", module: "*"
     exclude group: "org.eclipse.jetty.http2", module: "*"
     exclude group: "org.eclipse.jetty.toolchain", module: "*"
   })
-  libExt 'io.dropwizard.metrics:metrics-jvm'
-  libExt 'io.dropwizard.metrics:metrics-jmx'
+  libExt libs.dropwizard.metrics.jvm
+  libExt libs.dropwizard.metrics.jmx
 
   webapp project(path: ":solr:webapp", configuration: "war")
 
-  startJar('org.eclipse.jetty:jetty-start::shaded', {
+  startJar(variantOf(libs.eclipse.jetty.start) { classifier 'shaded' }, {
     transitive false
   })
 

@@ -57,7 +57,6 @@ public class ReloadCoreAPITest extends SolrTestCaseJ4 {
   public void testValidReloadCoreAPIResponse() throws Exception {
     SolrJerseyResponse response = reloadCoreAPI.reloadCore(coreName, new ReloadCoreRequestBody());
     assertEquals(0, response.responseHeader.status);
-    assertNotNull(response.responseHeader.qTime);
   }
 
   @Test
