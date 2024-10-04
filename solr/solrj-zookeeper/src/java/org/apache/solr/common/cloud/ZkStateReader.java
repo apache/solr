@@ -790,7 +790,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
         newLiveNodes = new TreeSet<>(nodeList);
-      } catch (KeeperException.NoNodeException e) {
+      } catch (KeeperException.NoNodeException | AlreadyClosedException e) {
         newLiveNodes = emptySortedSet();
       }
       lastFetchedLiveNodes.set(newLiveNodes);
@@ -1865,7 +1865,7 @@ public class ZkStateReader implements SolrCloseable {
       return;
     }
     try {
-      notifications.submit(new Notification(collection, collectionState));
+      notifications.execute(new Notification(collection, collectionState));
     } catch (RejectedExecutionException e) {
       if (closed == false) {
         log.error("Couldn't run collection notifications for {}", collection, e);

@@ -54,8 +54,7 @@ public class SnapshotListTool extends ToolBase {
             .required(true)
             .desc("Name of collection to list snapshots for.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
