@@ -77,10 +77,25 @@ import org.slf4j.LoggerFactory;
 /** Command-line utility for working with Solr. */
 public class SolrCLI implements CLIO {
 
+  /**
+   * @deprecated Use {@link CLIUtils#RED} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String RED = "\u001B[31m";
+
+  /**
+   * @deprecated Use {@link CLIUtils#GREEN} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String GREEN = "\u001B[32m";
+
+  /**
+   * @deprecated Use {@link CLIUtils#YELLOW} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String YELLOW = "\u001B[33m";
 
+  @Deprecated(since  = "9.8", forRemoval = true)
   private static final long MAX_WAIT_FOR_CORE_LOAD_NANOS =
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
@@ -283,6 +298,10 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getDefaultSolrUrl()} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String getDefaultSolrUrl() {
     // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
     String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
@@ -529,12 +548,19 @@ public class SolrCLI implements CLIO {
   /**
    * Determine if a request to Solr failed due to a communication error, which is generally
    * retry-able.
+   *
+   * @deprecated Use {@link CLIUtils#checkCommunicationError(Exception)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static boolean checkCommunicationError(Exception exc) {
     Throwable rootCause = SolrException.getRootCause(exc);
     return (rootCause instanceof SolrServerException || rootCause instanceof SocketException);
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#checkCodeForAuthError(int)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static void checkCodeForAuthError(int code) {
     if (code == UNAUTHORIZED.code || code == FORBIDDEN.code) {
       throw new SolrException(
@@ -544,11 +570,19 @@ public class SolrCLI implements CLIO {
     }
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#exceptionIsAuthRelated(Exception)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static boolean exceptionIsAuthRelated(Exception exc) {
     return (exc instanceof SolrException
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getSolrClient(String, String, boolean)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static SolrClient getSolrClient(String solrUrl, String credentials, boolean barePath) {
     // today we require all urls to end in /solr, however in the future we will need to support the
     // /api url end point instead.   Eventually we want to have this method always
@@ -573,17 +607,27 @@ public class SolrCLI implements CLIO {
    * @param solrUrl The solr url that you want the client for
    * @param credentials The username:password for basic auth.
    * @return The SolrClient
+   * @deprecated Use {@link CLIUtils#getSolrClient(String, String)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static SolrClient getSolrClient(String solrUrl, String credentials) {
     return getSolrClient(solrUrl, credentials, false);
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getSolrClient(CommandLine, boolean)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
     return getSolrClient(solrUrl, credentials, barePath);
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getSolrClient(CommandLine)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
@@ -667,7 +711,9 @@ public class SolrCLI implements CLIO {
    *
    * @param solrUrl The user supplied url to Solr.
    * @return the solrUrl in the format that Solr expects to see internally.
+   * @deprecated Use {@link CLIUtils#normalizeSolrUrl(String)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String normalizeSolrUrl(String solrUrl) {
     return normalizeSolrUrl(solrUrl, true);
   }
@@ -679,7 +725,9 @@ public class SolrCLI implements CLIO {
    * @param solrUrl The user supplied url to Solr.
    * @param logUrlFormatWarning If a warning message should be logged about the url format
    * @return the solrUrl in the format that Solr expects to see internally.
+   * @deprecated Use {@link CLIUtils#normalizeSolrUrl(String, boolean)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
     if (solrUrl != null) {
       URI uri = URI.create(solrUrl);
@@ -707,7 +755,10 @@ public class SolrCLI implements CLIO {
   /**
    * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * ZooKeeper.
+   *
+   * @deprecated Use {@link CLIUtils#normalizeSolrUrl(CommandLine)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl =
         cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
@@ -741,7 +792,10 @@ public class SolrCLI implements CLIO {
   /**
    * Get the ZooKeeper connection string from either the zk-host command-line option or by looking
    * it up from a running Solr instance based on the solr-url option.
+   *
+   * @deprecated Use {@link CLIUtils#getZkHost(CommandLine)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static String getZkHost(CommandLine cli) throws Exception {
 
     String zkHost =
@@ -773,10 +827,18 @@ public class SolrCLI implements CLIO {
     return zkHost;
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getSolrZkClient(CommandLine)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static SolrZkClient getSolrZkClient(CommandLine cli) throws Exception {
     return getSolrZkClient(cli, getZkHost(cli));
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getSolrZkClient(CommandLine, String)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
     if (zkHost == null) {
       throw new IllegalStateException(
@@ -790,10 +852,18 @@ public class SolrCLI implements CLIO {
         .build();
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getCloudHttp2SolrClient(String)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
     return getCloudHttp2SolrClient(zkHost, null);
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getCloudHttp2SolrClient(String, Http2SolrClient.Builder)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static CloudHttp2SolrClient getCloudHttp2SolrClient(
       String zkHost, Http2SolrClient.Builder builder) {
     return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
@@ -801,10 +871,14 @@ public class SolrCLI implements CLIO {
         .build();
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#safeCheckCollectionExists(String, String, String)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static boolean safeCheckCollectionExists(
       String solrUrl, String collection, String credentials) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
@@ -815,10 +889,14 @@ public class SolrCLI implements CLIO {
     return exists;
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#safeCheckCoreExists(String, String, String)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   @SuppressWarnings("unchecked")
   public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {
@@ -843,12 +921,20 @@ public class SolrCLI implements CLIO {
     return exists;
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#isCloudMode(SolrClient)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
     NamedList<Object> systemInfo =
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
   }
 
+  /**
+   * @deprecated Use {@link CLIUtils#getConfigSetsDir(Path)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static Path getConfigSetsDir(Path solrInstallDir) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath);
@@ -860,12 +946,12 @@ public class SolrCLI implements CLIO {
 
   /** Console print using green color */
   public static void printGreen(Object message) {
-    print(GREEN, message);
+    print(CLIUtils.GREEN, message);
   }
 
   /** Console print using red color */
   public static void printRed(Object message) {
-    print(RED, message);
+    print(CLIUtils.RED, message);
   }
 
   public static void print(String color, Object message) {
