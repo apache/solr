@@ -27,6 +27,10 @@ Improvements
 
 * SOLR-17442: Resolve -v flag conflict (version, value, verbose) in bin/solr. (Eric Pugh, Christos Malliaridis)
 
+* SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
+  override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski,
+  Sanjay Dutt, David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
