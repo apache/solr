@@ -44,7 +44,6 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -352,8 +351,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       solrParams.add("wt", "json");
       solrParams.add("omitHeader", "true");
 
-      final var request =
-          new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
+      final var request = new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
 
       log.debug("Fetching fresh public key from: {}", url);
 

@@ -48,7 +48,6 @@ import java.util.function.Predicate;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
@@ -60,7 +59,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.filestore.FileStoreAPI.MetaData;
-import org.apache.solr.handler.ReplicationHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -190,12 +188,13 @@ public class DistribFileStore implements FileStore {
 
       InputStream is = null;
 
-      try (var solrClient = new Http2SolrClient.Builder(baseUrl).withHttpClient(coreContainer.getDefaultHttpSolrClient()).build()) {
-        GenericSolrRequest request =
-            new GenericSolrRequest(GET, "/node/files" + getMetaPath());
+      try (var solrClient =
+          new Http2SolrClient.Builder(baseUrl)
+              .withHttpClient(coreContainer.getDefaultHttpSolrClient())
+              .build()) {
+        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + getMetaPath());
 
-        request.setResponseParser(
-            new InputStreamResponseParser(null));
+        request.setResponseParser(new InputStreamResponseParser(null));
         var response = solrClient.request(request);
 
         is = (InputStream) response.get("stream");
@@ -207,8 +206,7 @@ public class DistribFileStore implements FileStore {
 
       } catch (SolrServerException | IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
-      }
-      finally {
+      } finally {
         try {
           IOUtils.close(is);
         } catch (IOException e) {
@@ -216,11 +214,12 @@ public class DistribFileStore implements FileStore {
         }
       }
 
-      try (var solrClient = new Http2SolrClient.Builder(baseUrl).withHttpClient(coreContainer.getDefaultHttpSolrClient()).build()){
-        GenericSolrRequest solrRequest =
-            new GenericSolrRequest(GET, "/node/files" + path);
-        solrRequest.setResponseParser(
-            new InputStreamResponseParser(null));
+      try (var solrClient =
+          new Http2SolrClient.Builder(baseUrl)
+              .withHttpClient(coreContainer.getDefaultHttpSolrClient())
+              .build()) {
+        GenericSolrRequest solrRequest = new GenericSolrRequest(GET, "/node/files" + path);
+        solrRequest.setResponseParser(new InputStreamResponseParser(null));
         var response = solrClient.request(solrRequest);
 
         is = (InputStream) response.get("stream");
@@ -261,8 +260,7 @@ public class DistribFileStore implements FileStore {
           solrParams.add("meta", "true");
           solrParams.add("omitHeader", "true");
 
-          final var request =
-              new GenericSolrRequest(GET, "/node/files" + path, solrParams);
+          final var request = new GenericSolrRequest(GET, "/node/files" + path, solrParams);
           boolean nodeHasBlob = false;
 
           try (var solrClient =
@@ -420,8 +418,7 @@ public class DistribFileStore implements FileStore {
           var solrParams = new ModifiableSolrParams();
           solrParams.set("getFrom", getFrom);
 
-          var solrRequest =
-              new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
+          var solrRequest = new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
           // fire and forget
           solrClient.request(solrRequest);
         } catch (Exception e) {
@@ -539,8 +536,7 @@ public class DistribFileStore implements FileStore {
 
     final var solrParams = new ModifiableSolrParams();
     solrParams.add("localDelete", "true");
-    final var solrRequest =
-        new GenericSolrRequest(DELETE, "/cluster/files" + path, solrParams);
+    final var solrRequest = new GenericSolrRequest(DELETE, "/cluster/files" + path, solrParams);
 
     for (String node : nodes) {
       String baseUrl =
