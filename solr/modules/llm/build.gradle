@@ -25,8 +25,10 @@ dependencies {
 
   implementation 'org.apache.lucene:lucene-core'
 
+  implementation 'dev.langchain4j:langchain4j-open-ai:0.35.0'
   implementation 'dev.langchain4j:langchain4j-cohere:0.35.0'
   implementation 'dev.langchain4j:langchain4j:0.35.0'
+  
   implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')

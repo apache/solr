@@ -51,7 +51,6 @@ public class EmbeddingModel implements Accountable {
                         builder.getClass().getMethod(paramName, String.class).invoke(builder, params.get(paramName));
                 }
             }
-
             embedder = (DimensionAwareEmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
             return new EmbeddingModel(name, embedder, params);
         } catch (final Exception e) {
