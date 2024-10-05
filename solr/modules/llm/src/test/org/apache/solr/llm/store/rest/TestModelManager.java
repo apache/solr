@@ -68,38 +68,36 @@ public class TestModelManager extends TestLlmBase {
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==400");
     // success
     model =
-        "{ \"name\":\"testModel2\", \"class\":\""
-            + cohereModelClassName
-            + "\",\"params\":{\"baseUrl\":\"cohereUrl2\"," +
-                "\"apiKey\":\"cohereApiKey2\"," +
-                "\"modelName\":\"cohereName2\"," +
-                "\"inputType\":1.0," +
-                "\"logRequests\":1.0," +
-                "\"logResponses\":1.0," +
-                "\"maxSegmentsPerBatch\":1.0" +
+        "{ name:\"testModel2\", class:\""
+            + cohereModelClassName + "\"," +
+                "params:{" +
+                "baseUrl:\"https://api.cohere.ai/v1/\"," +
+                "apiKey:\"cohereApiKey2\"," +
+                "modelName:\"embed-english-light-v3.0\"," +
+                "inputType:\"search_document\"," +
+                "logRequests:true," +
+                "logResponses:false" +
                 "}}";
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==0");
     // success
     final String multipleModels =
-        "[{ \"name\":\"testModel3\", \"class\":\""
-            + cohereModelClassName
-            + "\"params\":{\"baseUrl\":\"cohereUrl3\"," +
-            "\"apiKey\":\"cohereApiKey3\"," +
-            "\"modelName\":\"cohereName3\"," +
-            "\"inputType\":1.0," +
-            "\"logRequests\":1.0," +
-            "\"logResponses\":1.0," +
-            "\"maxSegmentsPerBatch\":1.0" +
+        "[{ name:\"testModel3\", class:\""
+            + cohereModelClassName+"\"," +
+            "params:{baseUrl:\"https://api.cohere.ai/v1/\"," +
+            "apiKey:\"cohereApiKey3\"," +
+            "modelName:\"embed-english-light-v3.0\"," +
+                "inputType:\"search_document\"," +
+                "logRequests:true," +
+                "logResponses:false" +
             "}}\n"
-            + ",{ \"name\":\"testModel4\", \"class\":\""
-            + cohereModelClassName
-                + "\"params\":{\"baseUrl\":\"cohereUrl4\"," +
-                "\"apiKey\":\"cohereApiKey4\"," +
-                "\"modelName\":\"cohereName4\"," +
-                "\"inputType\":1.0," +
-                "\"logRequests\":1.0," +
-                "\"logResponses\":1.0," +
-                "\"maxSegmentsPerBatch\":1.0" +
+            + ",{ name:\"testModel4\", class:\""
+            + cohereModelClassName+"\"," +
+                "params:{baseUrl:\"https://api.cohere.ai/v1/\"," +
+                "apiKey:\"cohereApiKey4\"," +
+                "modelName:\"embed-english-light-v3.0\"," +
+                "inputType:\"search_document\"," +
+                "logRequests:true," +
+                "logResponses:false" +
                 "}}]";
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
     final String qryResult = JQ(ManagedEmbeddingModelStore.REST_END_POINT);
@@ -121,11 +119,18 @@ public class TestModelManager extends TestLlmBase {
   }
 
   @Test
-  public void testEndpointsFromFile() throws Exception {
+  public void loadModel_Cohere_shouldLoadModelConfig() throws Exception {
     loadModels("cohere-model.json");
 
-    final String modelName = "6029760550880411648";
+    final String modelName = "cohere-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='embed-english-light-v3.0'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }

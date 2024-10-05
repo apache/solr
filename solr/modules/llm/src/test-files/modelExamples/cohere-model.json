@@ -1,14 +1,12 @@
 {
   "class": "dev.langchain4j.model.cohere.CohereEmbeddingModel",
-  "name": "cohere",
+  "name": "cohere-1",
   "params": {
-      "baseUrl": "cohereUrl",
-      "apiKey": "cohereApiKey",
-      "modelName": "cohereName",
-      "inputType": "cohereInputType",
-      "timeout": 10,
+      "baseUrl": "https://api.cohere.ai/v1/",
+      "apiKey": "apiKey",//xhQtF4zYtDq9zs2WlTPMDRStUlhZGNlxSOPEbhAl
+      "modelName": "embed-english-light-v3.0",
+      "inputType": "search_document",
+      "timeout": 60,
       "logRequests": true,
-      "logResponses": false,
-      "maxSegmentsPerBatch": 55
-  }
+      "logResponses": true}
 }

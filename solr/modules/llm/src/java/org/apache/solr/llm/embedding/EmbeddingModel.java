@@ -7,7 +7,8 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.store.EmbeddingModelException;
-import org.apache.solr.util.SolrPluginUtils;
+
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,34 +28,35 @@ public class EmbeddingModel implements Accountable {
             String name,
             Map<String, Object> params)
             throws EmbeddingModelException {
-        final DimensionAwareEmbeddingModel embedder;
         try {
-//            // create an instance of the model
-//            embedder =
-//                    solrResourceLoader.newInstance(
-//                            className,
-//                            DimensionAwareEmbeddingModel.class,
-//                            new String[0], // no sub packages
-//                            new Class<?>[] {
-//                                    String.class, Map.class
-//                            },
-//                            new Object[] {name, params});
-//            if (params != null) {
-//                SolrPluginUtils.invokeSetters(embedder, params.entrySet());
-//            }
-            
-            //how to instantiate embedder?
-            embedder = CohereEmbeddingModel.builder()
-                    .baseUrl(System.getenv("OPENAI_BASE_URL"))
-                    .apiKey(System.getenv("OPENAI_API_KEY"))
-                    .modelName("")
-                    .logRequests(true)
-                    .logResponses(true)
-                    .build(); //this need to happen through inversion of control, where for each json param a method of the builder is called with the parameter the json value
+            DimensionAwareEmbeddingModel embedder;
+            Class<?> modelClass = Class.forName(className);
+            var builder = modelClass.getMethod("builder").invoke(null);
+            for (String paramName : params.keySet()) {
+                switch (paramName) {
+                    case "timeout":
+                        Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
+                        builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
+                        break;
+                    case "logRequests":
+                        builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
+                        break;
+                    case "logResponses":
+                        builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
+                        break;
+                    case "maxSegmentsPerBatch":
+                        builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long)params.get(paramName)).intValue());
+                        break;
+                    default:
+                        builder.getClass().getMethod(paramName, String.class).invoke(builder, params.get(paramName));
+                }
+            }
+
+            embedder = (DimensionAwareEmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
+            return new EmbeddingModel(name, embedder, params);
         } catch (final Exception e) {
-            throw new EmbeddingModelException("Model loading failed for " + className, e);
+             throw new EmbeddingModelException("Model loading failed for " + className, e);
         }
-        return new EmbeddingModel(name, embedder, params);
     }
     
     public EmbeddingModel(String name, DimensionAwareEmbeddingModel embedder, Map<String, Object> params) {
