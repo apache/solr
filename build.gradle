@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter
 
 plugins {
   id 'base'
+  id 'solr.build-infra'
   id 'com.palantir.consistent-versions' version '2.16.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
   id 'ca.cutterslade.analyze' version '1.10.0'
@@ -30,9 +31,11 @@ plugins {
   id 'com.github.node-gradle.node' version '7.0.1' apply false
 }
 
+apply from: file('build-tools/scriptDepVersions.gradle')
+
 // Declare default Java versions for the entire project and for SolrJ separately
-rootProject.ext.minJavaVersionDefault = JavaVersion.VERSION_11
-rootProject.ext.minJavaVersionSolrJ = JavaVersion.VERSION_11
+rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(scriptDepVersions['min-java-version'])
+rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(scriptDepVersions['min-java-version'])
 
 apply from: file('gradle/globals.gradle')
 
@@ -108,14 +111,13 @@ ext {
   }
 }
 
-apply from: file('buildSrc/scriptDepVersions.gradle')
-
 // Include smaller chunks configuring dedicated build areas.
 // Some of these intersect or add additional functionality.
 // The order of inclusion of these files shouldn't matter (but may
 // if the build file is incorrectly written and evaluates something
 // eagerly).
 
+apply from: file('gradle/conventions.gradle')
 apply from: file('gradle/generation/local-settings.gradle')
 
 // Ant-compatibility layer: apply folder layout early so that
@@ -161,6 +163,14 @@ apply from: file('gradle/validation/check-broken-links.gradle')
 apply from: file('gradle/validation/solr.config-file-sanity.gradle')
 
 apply from: file('gradle/validation/spotless.gradle')
+
+// Wire up included builds to some validation tasks.
+rootProject.tasks.named("tidy").configure {
+  dependsOn gradle.includedBuilds*.task(":tidy")
+}
+rootProject.tasks.named("clean").configure {
+  dependsOn gradle.includedBuilds*.task(":clean")
+}
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/regenerate.gradle')
