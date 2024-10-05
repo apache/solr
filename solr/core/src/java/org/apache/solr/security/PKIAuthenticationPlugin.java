@@ -352,22 +352,17 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       solrParams.add("omitHeader", "true");
 
       final var request = new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
-
       log.debug("Fetching fresh public key from: {}", url);
+      var solrClient = cores.getDefaultHttpSolrClient();
+      NamedList<Object> resp =
+          solrClient.requestWithBaseUrl(url, client -> client.request(request));
 
-      String key;
-      try (var solrClient =
-          new Http2SolrClient.Builder(url)
-              .withHttpClient(cores.getDefaultHttpSolrClient())
-              .build()) {
-        NamedList<Object> resp = solrClient.request(request, null);
-        key = (String) resp.get("key");
-        if (key == null) {
-          log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
-          return null;
-        } else {
-          log.info("New key obtained from node={}, key={}", nodename, key);
-        }
+      String key = (String) resp.get("key");
+      if (key == null) {
+        log.error("No key available from {}{}", url, PublicKeyHandler.PATH);
+        return null;
+      } else {
+        log.info("New key obtained from node={}, key={}", nodename, key);
       }
 
       PublicKey pubKey = CryptoKeys.deserializeX509PublicKey(key);

@@ -187,23 +187,16 @@ public class DistribFileStore implements FileStore {
       Map<?, ?> m = null;
 
       InputStream is = null;
+      var solrClient = coreContainer.getDefaultHttpSolrClient();
 
-      try (var solrClient =
-          new Http2SolrClient.Builder(baseUrl)
-              .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-              .build()) {
+      try {
         GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + getMetaPath());
-
         request.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.request(request);
-
+        var response = solrClient.requestWithBaseUrl(baseUrl, client -> client.request(request));
         is = (InputStream) response.get("stream");
-
         metadata =
             Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
-
         m = (Map<?, ?>) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
-
       } catch (SolrServerException | IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       } finally {
@@ -214,19 +207,13 @@ public class DistribFileStore implements FileStore {
         }
       }
 
-      try (var solrClient =
-          new Http2SolrClient.Builder(baseUrl)
-              .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-              .build()) {
-        GenericSolrRequest solrRequest = new GenericSolrRequest(GET, "/node/files" + path);
-        solrRequest.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.request(solrRequest);
-
+      try {
+        GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + path);
+        request.setResponseParser(new InputStreamResponseParser(null));
+        var response = solrClient.requestWithBaseUrl(baseUrl, client -> client.request(request));
         is = (InputStream) response.get("stream");
-
         ByteBuffer filedata =
             Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
-
         filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");

@@ -450,11 +450,9 @@ public class PackageAPI {
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
-      try (var solrClient =
-          new Http2SolrClient.Builder(baseUrl)
-              .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-              .build()) {
-        solrClient.request(solrRequest);
+      try {
+        var solrClient = coreContainer.getDefaultHttpSolrClient();
+        solrClient.requestWithBaseUrl(baseUrl, client -> client.request(solrRequest));
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

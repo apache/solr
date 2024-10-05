@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -862,19 +861,18 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
   private NamedList<Object> executeDaemonAction(
       String action, String daemonName, Replica daemonReplica) throws Exception {
-    try (var solrClient =
-        new Http2SolrClient.Builder(daemonReplica.getBaseUrl())
-            .withHttpClient(ccc.getCoreContainer().getDefaultHttpSolrClient())
-            .build()) {
-      final var q = new ModifiableSolrParams();
-      q.set(CommonParams.QT, "/stream");
-      q.set("action", action);
-      q.set(CommonParams.ID, daemonName);
-      q.set(CommonParams.DISTRIB, false);
+    final var solrClient = ccc.getCoreContainer().getDefaultHttpSolrClient();
 
-      final var req = new QueryRequest(q);
-      return solrClient.request(req, daemonReplica.getCoreName());
-    }
+    final var solrParams = new ModifiableSolrParams();
+    solrParams.set(CommonParams.QT, "/stream");
+    solrParams.set("action", action);
+    solrParams.set(CommonParams.ID, daemonName);
+    solrParams.set(CommonParams.DISTRIB, false);
+
+    final var req = new QueryRequest(solrParams);
+    final var solrResponse =
+        solrClient.requestWithBaseUrl(daemonReplica.getBaseUrl(), daemonReplica.getCoreName(), req);
+    return solrResponse.getResponse();
   }
 
   private void cleanup(
