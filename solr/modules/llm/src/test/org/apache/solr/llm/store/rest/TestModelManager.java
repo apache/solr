@@ -119,18 +119,31 @@ public class TestModelManager extends TestLlmBase {
   }
 
   @Test
-  public void loadModel_Cohere_shouldLoadModelConfig() throws Exception {
+  public void loadModel_cohere_shouldLoadModelConfig() throws Exception {
     loadModels("cohere-model.json");
 
     final String modelName = "cohere-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+
+    restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
+  }
+
+  @Test
+  public void loadModel_openAi_shouldLoadModelConfig() throws Exception {
+    loadModels("openai-model.json");
+
+    final String modelName = "openai-1";
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='text-embedding-3-small'");
 
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }
