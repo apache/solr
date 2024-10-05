@@ -1,7 +1,6 @@
 package org.apache.solr.llm.embedding;
 
 import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.model.cohere.CohereEmbeddingModel;
 import dev.langchain4j.model.embedding.DimensionAwareEmbeddingModel;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -16,14 +15,18 @@ import java.util.Objects;
 public class EmbeddingModel implements Accountable {
     private static final long BASE_RAM_BYTES =
             RamUsageEstimator.shallowSizeOfInstance(EmbeddingModel.class);
-    
+    public static final String TIMEOUT_PARAM = "timeout";
+    public static final String LOG_REQUESTS_PARAM = "logRequests";
+    public static final String LOG_RESPONSES_PARAM = "logResponses";
+    public static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
+    public static final String MAX_RETRIES_PARAM = "maxRetries";
+
     protected final String name;
     private final Map<String, Object> params;
     private DimensionAwareEmbeddingModel embedder;
     private Integer hashCode;
 
     public static EmbeddingModel getInstance(
-            SolrResourceLoader solrResourceLoader,
             String className,
             String name,
             Map<String, Object> params)
@@ -34,17 +37,20 @@ public class EmbeddingModel implements Accountable {
             var builder = modelClass.getMethod("builder").invoke(null);
             for (String paramName : params.keySet()) {
                 switch (paramName) {
-                    case "timeout":
+                    case TIMEOUT_PARAM:
                         Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
                         builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
                         break;
-                    case "logRequests":
+                    case LOG_REQUESTS_PARAM:
                         builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
                         break;
-                    case "logResponses":
+                    case LOG_RESPONSES_PARAM:
                         builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
                         break;
-                    case "maxSegmentsPerBatch":
+                    case MAX_SEGMENTS_PER_BATCH_PARAM:
+                        builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long)params.get(paramName)).intValue());
+                        break;
+                    case MAX_RETRIES_PARAM:
                         builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long)params.get(paramName)).intValue());
                         break;
                     default:
