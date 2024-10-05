@@ -988,11 +988,11 @@ If the configuration directory is being used by another collection, then it will
 +
 *Example*: `bin/solr delete --delete-config false`
 
-`--force-delete-config`::
+`-f` or `--force`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: _see description_
+|Optional |Default: none
 |===
 +
 Skip safety checks when deleting the configuration directory used by a collection.

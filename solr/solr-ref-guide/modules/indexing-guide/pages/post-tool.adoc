@@ -55,7 +55,7 @@ usage: post
                                                   without actually sending
                                                   documents to Solr.  Only
                                                   works with files mode.
- -f,--format                                      sends application/json
+    --format                                      sends application/json
                                                   content as Solr commands
                                                   to /update instead of
                                                   /update/json/docs.
