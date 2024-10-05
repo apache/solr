@@ -114,8 +114,8 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
-      final EmbeddingModel algo = fromEmbeddingModelMap(solrResourceLoader,modelMap);
-      addModel(algo);
+      final EmbeddingModel embedder = fromEmbeddingModelMap(solrResourceLoader,modelMap);
+      addModel(embedder);
     } catch (final EmbeddingModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
@@ -169,8 +169,6 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   }
 
   public EmbeddingModel getModel(String modelName) {
-    // this function replicates getModelStore().getModel(modelName), but
-    // it simplifies the testing (we can avoid to mock also a ModelStore).
     return store.getModel(modelName);
   }
 

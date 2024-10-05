@@ -60,6 +60,8 @@ grant {
 
   // needed by randomizedtesting runner to identify test methods.
   permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.langchain4j.model.cohere";
+  permission java.net.SocketPermission "api.cohere.ai", "accept,listen,connect,resolve";
   permission java.lang.RuntimePermission "accessDeclaredMembers";
   // needed by certain tests to redirect sysout/syserr:
   permission java.lang.RuntimePermission "setIO";
@@ -108,7 +110,6 @@ grant {
   permission java.lang.RuntimePermission "getProtectionDomain";
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
-
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
