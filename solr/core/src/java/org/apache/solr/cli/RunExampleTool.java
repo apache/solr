@@ -119,7 +119,7 @@ public class RunExampleTool extends ToolBase {
             .required(true)
             .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
             .build(),
-        Option.builder("s")
+        Option.builder()
             .longOpt("script")
             .hasArg()
             .argName("PATH")
