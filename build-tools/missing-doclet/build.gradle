@@ -17,16 +17,34 @@
 
 plugins {
   id 'java-library'
+  id 'com.diffplug.spotless' version '6.5.2' apply false
+}
+
+repositories {
+  mavenCentral()
 }
 
 version = "1.0.0-SNAPSHOT"
 group = "org.apache.solr.tools"
 description = 'Doclet-based javadoc validation'
 
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
+// Make sure the build environment is consistent.
+apply from: file('../../gradle/conventions.gradle')
+apply from: file('../../gradle/validation/check-environment.gradle')
 
-tasks.withType(JavaCompile) {
+// Add spotless/ tidy.
+tasks.register("checkJdkInternalsExportedToGradle") {}
+apply from: file('../../gradle/validation/spotless.gradle')
+
+// Load common script dependencies.
+apply from: file("../scriptDepVersions.gradle")
+
+java {
+  sourceCompatibility = scriptDepVersions['min-java-version']
+  targetCompatibility = scriptDepVersions['min-java-version']
+}
+
+tasks.withType(JavaCompile).configureEach {
   options.compilerArgs += ["--release", targetCompatibility.toString()]
   options.encoding = "UTF-8"
 }

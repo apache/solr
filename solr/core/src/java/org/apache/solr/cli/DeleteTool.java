@@ -65,7 +65,7 @@ public class DeleteTool extends ToolBase {
     return "Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
         + " mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
         + " delete the configuration directory from Zookeeper so long as it is not being used by another collection.\n"
-        + " You can override this behavior by passing -deleteConfig false when running this command.\n"
+        + " You can override this behavior by passing --delete-config false when running this command.\n"
         + "\n"
         + "List of options:";
   }
@@ -102,8 +102,14 @@ public class DeleteTool extends ToolBase {
             .desc(
                 "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
             .build(),
-        Option.builder("f")
+        Option.builder()
             .longOpt("force-delete-config")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --force instead")
+                    .get())
             .required(false)
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
@@ -114,8 +120,14 @@ public class DeleteTool extends ToolBase {
                 DeprecatedAttributes.builder()
                     .setForRemoval(true)
                     .setSince("9.7")
-                    .setDescription("Use --force-delete-config instead")
+                    .setDescription("Use --force instead")
                     .get())
+            .required(false)
+            .desc(
+                "Skip safety checks when deleting the configuration directory used by a collection.")
+            .build(),
+        Option.builder("f")
+            .longOpt("force")
             .required(false)
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
@@ -180,7 +192,9 @@ public class DeleteTool extends ToolBase {
     }
 
     if (deleteConfig && configName != null) {
-      if (cli.hasOption("force-delete-config") || cli.hasOption("forceDeleteConfig")) {
+      if (cli.hasOption("force")
+          || cli.hasOption("force-delete-config")
+          || cli.hasOption("forceDeleteConfig")) {
         log.warn(
             "Skipping safety checks, configuration directory {} will be deleted with impunity.",
             configName);

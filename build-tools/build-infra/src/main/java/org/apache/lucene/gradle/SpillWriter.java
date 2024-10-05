@@ -24,9 +24,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
+import org.jetbrains.annotations.NotNull;
 
 public class SpillWriter extends Writer {
-  private final static int MAX_BUFFERED = 2 * 1024;
+  private static final int MAX_BUFFERED = 2 * 1024;
   private final StringWriter buffer = new StringWriter(MAX_BUFFERED);
 
   private final Supplier<Path> spillPathSupplier;
@@ -38,7 +39,7 @@ public class SpillWriter extends Writer {
   }
 
   @Override
-  public void write(char[] cbuf, int off, int len) throws IOException {
+  public void write(char @NotNull [] cbuf, int off, int len) throws IOException {
     getSink(len).write(cbuf, off, len);
   }
 
@@ -58,7 +59,7 @@ public class SpillWriter extends Writer {
   }
 
   @Override
-  public void write(String str, int off, int len) throws IOException {
+  public void write(@NotNull String str, int off, int len) throws IOException {
     getSink(len).write(str, off, len);
   }
 

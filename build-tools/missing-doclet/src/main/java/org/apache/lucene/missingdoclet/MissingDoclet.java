@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.missingdoclet;
 
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.ParamTree;
+import com.sun.source.util.DocTrees;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,7 +27,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -35,24 +37,19 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
-
-import com.sun.source.doctree.DocCommentTree;
-import com.sun.source.doctree.ParamTree;
-import com.sun.source.util.DocTrees;
-
 import jdk.javadoc.doclet.Doclet;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 import jdk.javadoc.doclet.StandardDoclet;
 
 /**
- * Checks for missing javadocs, where missing also means "only whitespace" or "license header".
- * Has option --missing-level (package, class, method, parameter) so that we can improve over time.
- * Has option --missing-ignore to ignore individual elements (such as split packages). 
- *   It isn't recursive, just ignores exactly the elements you tell it.
- *   This should be removed when packaging is fixed to no longer be split across JARs.
- * Has option --missing-method to apply "method" level to selected packages (fix one at a time).
- *   Matches package names exactly: so you'll need to list subpackages separately.
+ * Checks for missing javadocs, where missing also means "only whitespace" or "license header". Has
+ * option --missing-level (package, class, method, parameter) so that we can improve over time. Has
+ * option --missing-ignore to ignore individual elements (such as split packages). It isn't
+ * recursive, just ignores exactly the elements you tell it. This should be removed when packaging
+ * is fixed to no longer be split across JARs. Has option --missing-method to apply "method" level
+ * to selected packages (fix one at a time). Matches package names exactly: so you'll need to list
+ * subpackages separately.
  */
 public class MissingDoclet extends StandardDoclet {
   // checks that modules and packages have documentation
@@ -70,121 +67,124 @@ public class MissingDoclet extends StandardDoclet {
   Elements elementUtils;
   Set<String> ignored = Collections.emptySet();
   Set<String> methodPackages = Collections.emptySet();
-  
+
   @Override
   public Set<Doclet.Option> getSupportedOptions() {
     Set<Doclet.Option> options = new HashSet<>();
     options.addAll(super.getSupportedOptions());
-    options.add(new Doclet.Option() {
-      @Override
-      public int getArgumentCount() {
-        return 1;
-      }
+    options.add(
+        new Doclet.Option() {
+          @Override
+          public int getArgumentCount() {
+            return 1;
+          }
 
-      @Override
-      public String getDescription() {
-        return "level to enforce for missing javadocs: [package, class, method, parameter]";
-      }
+          @Override
+          public String getDescription() {
+            return "level to enforce for missing javadocs: [package, class, method, parameter]";
+          }
 
-      @Override
-      public Kind getKind() {
-        return Option.Kind.STANDARD;
-      }
+          @Override
+          public Kind getKind() {
+            return Option.Kind.STANDARD;
+          }
 
-      @Override
-      public List<String> getNames() {
-        return Collections.singletonList("--missing-level");
-      }
+          @Override
+          public List<String> getNames() {
+            return Collections.singletonList("--missing-level");
+          }
 
-      @Override
-      public String getParameters() {
-        return "level";
-      }
+          @Override
+          public String getParameters() {
+            return "level";
+          }
 
-      @Override
-      public boolean process(String option, List<String> arguments) {
-        switch (arguments.get(0)) {
-          case "package":
-            level = PACKAGE;
+          @Override
+          public boolean process(String option, List<String> arguments) {
+            switch (arguments.get(0)) {
+              case "package":
+                level = PACKAGE;
+                return true;
+              case "class":
+                level = CLASS;
+                return true;
+              case "method":
+                level = METHOD;
+                return true;
+              case "parameter":
+                level = PARAMETER;
+                return true;
+              default:
+                return false;
+            }
+          }
+        });
+    options.add(
+        new Doclet.Option() {
+          @Override
+          public int getArgumentCount() {
+            return 1;
+          }
+
+          @Override
+          public String getDescription() {
+            return "comma separated list of element names to ignore (e.g. as a workaround for split packages)";
+          }
+
+          @Override
+          public Kind getKind() {
+            return Option.Kind.STANDARD;
+          }
+
+          @Override
+          public List<String> getNames() {
+            return Collections.singletonList("--missing-ignore");
+          }
+
+          @Override
+          public String getParameters() {
+            return "ignoredNames";
+          }
+
+          @Override
+          public boolean process(String option, List<String> arguments) {
+            ignored = new HashSet<>(Arrays.asList(arguments.get(0).split(",")));
             return true;
-          case "class":
-            level = CLASS;
+          }
+        });
+    options.add(
+        new Doclet.Option() {
+          @Override
+          public int getArgumentCount() {
+            return 1;
+          }
+
+          @Override
+          public String getDescription() {
+            return "comma separated list of packages to check at 'method' level";
+          }
+
+          @Override
+          public Kind getKind() {
+            return Option.Kind.STANDARD;
+          }
+
+          @Override
+          public List<String> getNames() {
+            return Collections.singletonList("--missing-method");
+          }
+
+          @Override
+          public String getParameters() {
+            return "packages";
+          }
+
+          @Override
+          public boolean process(String option, List<String> arguments) {
+            methodPackages = new HashSet<>(Arrays.asList(arguments.get(0).split(",")));
             return true;
-          case "method":
-            level = METHOD;
-            return true;
-          case "parameter":
-            level = PARAMETER;
-            return true;
-          default:
-            return false;
-        }
-      }
-    });
-    options.add(new Doclet.Option() {
-      @Override
-      public int getArgumentCount() {
-        return 1;
-      }
-
-      @Override
-      public String getDescription() {
-        return "comma separated list of element names to ignore (e.g. as a workaround for split packages)";
-      }
-
-      @Override
-      public Kind getKind() {
-        return Option.Kind.STANDARD;
-      }
-
-      @Override
-      public List<String> getNames() {
-        return Collections.singletonList("--missing-ignore");
-      }
-
-      @Override
-      public String getParameters() {
-        return "ignoredNames";
-      }
-
-      @Override
-      public boolean process(String option, List<String> arguments) {
-        ignored = new HashSet<>(Arrays.asList(arguments.get(0).split(",")));
-        return true;
-      }
-    });
-    options.add(new Doclet.Option() {
-      @Override
-      public int getArgumentCount() {
-        return 1;
-      }
-
-      @Override
-      public String getDescription() {
-        return "comma separated list of packages to check at 'method' level";
-      }
-
-      @Override
-      public Kind getKind() {
-        return Option.Kind.STANDARD;
-      }
-
-      @Override
-      public List<String> getNames() {
-        return Collections.singletonList("--missing-method");
-      }
-
-      @Override
-      public String getParameters() {
-        return "packages";
-      }
-
-      @Override
-      public boolean process(String option, List<String> arguments) {
-        methodPackages = new HashSet<>(Arrays.asList(arguments.get(0).split(",")));
-        return true;
-      }
-    });
+          }
+        });
     return options;
   }
 
@@ -205,10 +205,8 @@ public class MissingDoclet extends StandardDoclet {
 
     return super.run(docEnv);
   }
-  
-  /**
-   * Returns effective check level for this element
-   */
+
+  /** Returns effective check level for this element */
   private int level(Element element) {
     String pkg = elementUtils.getPackageOf(element).getQualifiedName().toString();
     if (methodPackages.contains(pkg)) {
@@ -217,24 +215,24 @@ public class MissingDoclet extends StandardDoclet {
       return level;
     }
   }
-  
-  /** 
-   * Check an individual element.
-   * This checks packages and types from the doctrees.
-   * It will recursively check methods/fields from encountered types when the level is "method"
+
+  /**
+   * Check an individual element. This checks packages and types from the doctrees. It will
+   * recursively check methods/fields from encountered types when the level is "method"
    */
   private void check(Element element) {
-    switch(element.getKind()) {
+    switch (element.getKind()) {
       case MODULE:
         // don't check the unnamed module, it won't have javadocs
-        if (!((ModuleElement)element).isUnnamed()) {
+        if (!((ModuleElement) element).isUnnamed()) {
           checkComment(element);
         }
         break;
       case PACKAGE:
         checkComment(element);
         break;
-      // class-like elements, check them, then recursively check their children (fields and methods)
+        // class-like elements, check them, then recursively check their children (fields and
+        // methods)
       case CLASS:
       case INTERFACE:
       case ENUM:
@@ -242,17 +240,18 @@ public class MissingDoclet extends StandardDoclet {
         if (level(element) >= CLASS) {
           checkComment(element);
           for (var subElement : element.getEnclosedElements()) {
-            // don't recurse into enclosed types, otherwise we'll double-check since they are already in the included docTree
-            if (subElement.getKind() == ElementKind.METHOD || 
-                subElement.getKind() == ElementKind.CONSTRUCTOR || 
-                subElement.getKind() == ElementKind.FIELD || 
-                subElement.getKind() == ElementKind.ENUM_CONSTANT) {
+            // don't recurse into enclosed types, otherwise we'll double-check since they are
+            // already in the included docTree
+            if (subElement.getKind() == ElementKind.METHOD
+                || subElement.getKind() == ElementKind.CONSTRUCTOR
+                || subElement.getKind() == ElementKind.FIELD
+                || subElement.getKind() == ElementKind.ENUM_CONSTANT) {
               check(subElement);
             }
           }
         }
         break;
-      // method-like elements, check them if we are configured to do so
+        // method-like elements, check them if we are configured to do so
       case METHOD:
       case CONSTRUCTOR:
       case FIELD:
@@ -267,9 +266,9 @@ public class MissingDoclet extends StandardDoclet {
   }
 
   /**
-   * Return true if the method is synthetic enum method (values/valueOf).
-   * According to the doctree documentation, the "included" set never includes synthetic elements.
-   * UweSays: It should not happen but it happens!
+   * Return true if the method is synthetic enum method (values/valueOf). According to the doctree
+   * documentation, the "included" set never includes synthetic elements. UweSays: It should not
+   * happen but it happens!
    */
   private boolean isSyntheticEnumMethod(Element element) {
     String simpleName = element.getSimpleName().toString();
@@ -280,20 +279,23 @@ public class MissingDoclet extends StandardDoclet {
     }
     return false;
   }
-  
+
   /**
-   * Checks that an element doesn't have missing javadocs.
-   * In addition to truly "missing", check that comments aren't solely whitespace (generated by some IDEs),
-   * that they aren't a license header masquerading as a javadoc comment.
+   * Checks that an element doesn't have missing javadocs. In addition to truly "missing", check
+   * that comments aren't solely whitespace (generated by some IDEs), that they aren't a license
+   * header masquerading as a javadoc comment.
    */
   private void checkComment(Element element) {
     // sanity check that the element is really "included", because we do some recursion into types
     if (!docEnv.isIncluded(element)) {
       return;
     }
-    // check that this element isn't on our ignore list. This is only used as a workaround for "split packages".
-    // ignoring a package isn't recursive (on purpose), we still check all the classes, etc. inside it.
-    // we just need to cope with the fact package-info.java isn't there because it is split across multiple jars.
+    // check that this element isn't on our ignore list. This is only used as a workaround for
+    // "split packages".
+    // ignoring a package isn't recursive (on purpose), we still check all the classes, etc. inside
+    // it.
+    // we just need to cope with the fact package-info.java isn't there because it is split across
+    // multiple jars.
     if (ignored.contains(element.toString())) {
       return;
     }
@@ -306,14 +308,17 @@ public class MissingDoclet extends StandardDoclet {
         error(element, "javadocs are missing");
       }
     } else {
-      var normalized = tree.getFirstSentence().get(0).toString()
-                       .replace('\u00A0', ' ')
-                       .trim()
-                       .toLowerCase(Locale.ROOT);
+      var normalized =
+          tree.getFirstSentence()
+              .get(0)
+              .toString()
+              .replace('\u00A0', ' ')
+              .trim()
+              .toLowerCase(Locale.ROOT);
       if (normalized.isEmpty()) {
         error(element, "blank javadoc comment");
-      } else if (normalized.startsWith("licensed to the apache software foundation") ||
-                 normalized.startsWith("copyright 2004 the apache software foundation")) {
+      } else if (normalized.startsWith("licensed to the apache software foundation")
+          || normalized.startsWith("copyright 2004 the apache software foundation")) {
         error(element, "comment is really a license");
       }
     }
@@ -323,13 +328,15 @@ public class MissingDoclet extends StandardDoclet {
   }
 
   private boolean hasInheritedJavadocs(Element element) {
-    boolean hasOverrides = element.getAnnotationMirrors().stream()
-        .anyMatch(ann -> ann.getAnnotationType().toString().equals(Override.class.getName()));
+    boolean hasOverrides =
+        element.getAnnotationMirrors().stream()
+            .anyMatch(ann -> ann.getAnnotationType().toString().equals(Override.class.getName()));
 
     if (hasOverrides) {
       // If an element has explicit @Overrides annotation, assume it does
       // have inherited javadocs somewhere.
-      reporter.print(Diagnostic.Kind.NOTE, element, "javadoc empty but @Override declared, skipping.");
+      reporter.print(
+          Diagnostic.Kind.NOTE, element, "javadoc empty but @Override declared, skipping.");
       return true;
     }
 
@@ -346,7 +353,10 @@ public class MissingDoclet extends StandardDoclet {
             // We could check supMethod for non-empty javadoc here. Don't know if this makes
             // sense though as all methods will be verified in the end so it'd fail on the
             // top of the hierarchy (if empty) anyway.
-            reporter.print(Diagnostic.Kind.NOTE, element, "javadoc empty but method overrides another, skipping.");
+            reporter.print(
+                Diagnostic.Kind.NOTE,
+                element,
+                "javadoc empty but method overrides another, skipping.");
             return true;
           }
         }
@@ -356,15 +366,14 @@ public class MissingDoclet extends StandardDoclet {
     return false;
   }
 
-
   /* Find types from which methods in type may inherit javadoc, in the proper order.*/
   private Stream<Element> superTypeForInheritDoc(Element type) {
     TypeElement clazz = (TypeElement) type;
-    List<Element> interfaces = clazz.getInterfaces()
-        .stream()
-        .filter(tm -> tm.getKind() == TypeKind.DECLARED)
-        .map(tm -> ((DeclaredType) tm).asElement())
-        .collect(Collectors.toList());
+    List<Element> interfaces =
+        clazz.getInterfaces().stream()
+            .filter(tm -> tm.getKind() == TypeKind.DECLARED)
+            .map(tm -> ((DeclaredType) tm).asElement())
+            .collect(Collectors.toList());
 
     Stream<Element> result = interfaces.stream();
     result = Stream.concat(result, interfaces.stream().flatMap(this::superTypeForInheritDoc));
@@ -386,13 +395,13 @@ public class MissingDoclet extends StandardDoclet {
       if (tree != null) {
         for (var tag : tree.getBlockTags()) {
           if (tag instanceof ParamTree) {
-            var name = ((ParamTree)tag).getName().getName().toString();
+            var name = ((ParamTree) tag).getName().getName().toString();
             seenParameters.add(name);
           }
         }
       }
       // now compare the method's formal parameter list against it
-      for (var param : ((ExecutableElement)element).getParameters()) {
+      for (var param : ((ExecutableElement) element).getParameters()) {
         var name = param.getSimpleName().toString();
         if (!seenParameters.contains(name)) {
           error(element, "missing javadoc @param for parameter '" + name + "'");
@@ -400,7 +409,7 @@ public class MissingDoclet extends StandardDoclet {
       }
     }
   }
-  
+
   /** logs a new error for the particular element */
   private void error(Element element, String message) {
     var fullMessage = new StringBuilder();

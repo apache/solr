@@ -20,6 +20,8 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    includeBuild("build-tools/build-infra")
 }
 
 plugins {
@@ -31,7 +33,7 @@ apply from: file('gradle/develocity.gradle')
 
 rootProject.name = "solr-root"
 
-includeBuild("dev-tools/solr-missing-doclet")
+includeBuild("build-tools/missing-doclet")
 
 include "solr:api"
 include "solr:solrj"

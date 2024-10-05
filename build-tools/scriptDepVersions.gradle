@@ -21,6 +21,7 @@
 
 ext {
   scriptDepVersions = [
+      "min-java-version": "11",
       "apache-rat": "0.15",
       "commons-codec": "1.16.0",
       "ecj": "3.33.0",
