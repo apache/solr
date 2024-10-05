@@ -1,0 +1,8 @@
+{
+  "class": "dev.langchain4j.model.mistralai.MistralAiEmbeddingModel",
+  "name": "mistralai-1",
+  "params": {
+    "apiKey": "apiKey-mistralAI",
+    "modelName": "mistral-embed"
+  }
+}
