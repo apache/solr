@@ -64,6 +64,7 @@ grant {
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.dev.ai4j.openai4j";
   permission java.net.SocketPermission "api.cohere.ai", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "api.openai.com", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "api.mistral.ai", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "langchain4j.dev", "accept,listen,connect,resolve";
 
   permission java.lang.RuntimePermission "accessDeclaredMembers";

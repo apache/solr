@@ -147,4 +147,15 @@ public class TestModelManager extends TestLlmBase {
 
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }
+
+  @Test
+  public void loadModel_mistralAi_shouldLoadModelConfig() throws Exception {
+    loadModels("mistralai-model.json");
+
+    final String modelName = "mistralai-1";
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='mistral-embed'");
+    restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
+  }
 }
