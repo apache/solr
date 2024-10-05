@@ -177,8 +177,7 @@ public class TestLlmBase extends RestTestBase {
     final ManagedEmbeddingModelStore ms = getManagedModelStore();
 
     final EmbeddingModel model =
-        ManagedEmbeddingModelStore.fromEmbeddingModelMap(
-            solrResourceLoader, mapFromJson(modelJson));
+        ManagedEmbeddingModelStore.fromEmbeddingModelMap(mapFromJson(modelJson));
     ms.addModel(model);
     return model;
   }

@@ -37,7 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Menaged resource for storing a model */
+/** Managed resource for storing a model */
 public class ManagedEmbeddingModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
 
@@ -54,20 +54,15 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/embedding-model-store";
-
   /** Managed model store: the name of the attribute containing all the models of a model store */
   private static final String MODELS_JSON_FIELD = "models";
-
   /** name of the attribute containing a class */
   static final String CLASS_KEY = "class";
-
   /** name of the attribute containing a name */
   static final String NAME_KEY = "name";
-
   /** name of the attribute containing parameters */
   static final String PARAMS_KEY = "params";
-
-
+  
   private final EmbeddingModelStore store;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -85,7 +80,6 @@ public class ManagedEmbeddingModelStore extends ManagedResource
     return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
   }
   
-
   private Object managedData;
 
   @Override
@@ -114,7 +108,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
-      final EmbeddingModel embedder = fromEmbeddingModelMap(solrResourceLoader,modelMap);
+      final EmbeddingModel embedder = fromEmbeddingModelMap(modelMap);
       addModel(embedder);
     } catch (final EmbeddingModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -194,12 +188,10 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   @SuppressWarnings("unchecked")
   public static EmbeddingModel fromEmbeddingModelMap(
-      SolrResourceLoader solrResourceLoader,
       Map<String, Object> modelMap) {
 
     final EmbeddingModel embedder =
             EmbeddingModel.getInstance(
-            solrResourceLoader,
             (String) modelMap.get(CLASS_KEY), // modelClassName
             (String) modelMap.get(NAME_KEY), // modelName
             (Map<String, Object>) modelMap.get(PARAMS_KEY));
@@ -212,7 +204,6 @@ public class ManagedEmbeddingModelStore extends ManagedResource
     modelMap.put(NAME_KEY, model.getName());
     modelMap.put(CLASS_KEY, model.getClass().getName());
     modelMap.put(PARAMS_KEY, model.getParams());
-
     return modelMap;
   }
 }
