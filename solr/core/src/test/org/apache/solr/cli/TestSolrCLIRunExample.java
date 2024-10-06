@@ -330,7 +330,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
-  //@LuceneTestCase.Nightly
+  @LuceneTestCase.Nightly
   public void testFilmsExample() throws Exception {
     testExample("films");
   }
