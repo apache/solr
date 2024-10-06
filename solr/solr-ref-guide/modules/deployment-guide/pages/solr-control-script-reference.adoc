@@ -548,7 +548,7 @@ Name of the collection to run a healthcheck against.
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
-`--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -729,7 +729,7 @@ It is possible to override this warning with the --force parameter.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -848,7 +848,7 @@ Skip safety checks when deleting the configuration directory used by a collectio
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1094,7 +1094,7 @@ Set the property to this value; accepts JSON objects and strings.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-u <url>` or --solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1205,7 +1205,7 @@ Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1277,7 +1277,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1361,7 +1361,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1444,7 +1444,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1506,7 +1506,7 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1557,7 +1557,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1606,7 +1606,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1786,7 +1786,7 @@ If you have configured basicAuth or TLS with your Solr you may find this easier 
 
 The `bin/solr api` command takes the following parameters:
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or --solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
