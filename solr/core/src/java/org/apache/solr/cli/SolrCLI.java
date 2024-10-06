@@ -485,6 +485,10 @@ public class SolrCLI implements CLIO {
     return solrClient.request(req);
   }
 
+  /**
+   * @deprecated Use {@link CommonCLIOptions.DefaultValues#DEFAULT_CONFIG_SET} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static final String DEFAULT_CONFIG_SET = "_default";
 
   private static final long MS_IN_MIN = 60 * 1000L;
