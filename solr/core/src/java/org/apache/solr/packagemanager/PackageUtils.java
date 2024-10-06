@@ -16,6 +16,7 @@
  */
 package org.apache.solr.packagemanager;
 
+import org.apache.solr.cli.CLIUtils;
 import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validateCollectionName;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -236,7 +237,7 @@ public class PackageUtils {
 
   /** Console print using green color */
   public static void formatGreen(StringBuilder sb, Object message) {
-    format(sb, SolrCLI.GREEN, message);
+    format(sb, CLIUtils.GREEN, message);
   }
 
   public static void format(StringBuilder sb, Object message) {

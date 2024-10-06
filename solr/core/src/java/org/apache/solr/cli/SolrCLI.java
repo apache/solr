@@ -146,7 +146,7 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + getDefaultSolrUrl()
+                  + CLIUtils.getDefaultSolrUrl()
                   + '.')
           .build();
   public static final Option OPTION_SOLRURL =
@@ -157,7 +157,7 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + getDefaultSolrUrl()
+                  + CLIUtils.getDefaultSolrUrl()
                   + '.')
           .build();
 

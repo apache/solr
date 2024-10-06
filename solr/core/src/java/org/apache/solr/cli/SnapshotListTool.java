@@ -62,7 +62,7 @@ public class SnapshotListTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     String collectionName = cli.getOptionValue("name");
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       listSnapshots(solrClient, collectionName);
     }
   }

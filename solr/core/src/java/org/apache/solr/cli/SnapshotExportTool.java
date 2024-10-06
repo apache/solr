@@ -97,7 +97,7 @@ public class SnapshotExportTool extends ToolBase {
     Optional<String> backupRepo = Optional.ofNullable(cli.getOptionValue("backup-repo-name"));
     Optional<String> asyncReqId = Optional.ofNullable(cli.getOptionValue("async-id"));
 
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       exportSnapshot(solrClient, collectionName, snapshotName, destDir, backupRepo, asyncReqId);
     }
   }

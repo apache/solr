@@ -287,7 +287,7 @@ public final class CLIUtils {
   public static boolean safeCheckCollectionExists(
       String solrUrl, String collection, String credentials) {
     boolean exists = false;
-    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
@@ -301,7 +301,7 @@ public final class CLIUtils {
   @SuppressWarnings("unchecked")
   public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
     boolean exists = false;
-    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {

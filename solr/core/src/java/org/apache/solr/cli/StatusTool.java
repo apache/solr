@@ -95,7 +95,7 @@ public class StatusTool extends ToolBase {
     }
 
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = new URI(solrUrl).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
@@ -117,10 +117,10 @@ public class StatusTool extends ToolBase {
             .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
         echo(arr.toString());
       } catch (Exception exc) {
-        if (SolrCLI.exceptionIsAuthRelated(exc)) {
+        if (CLIUtils.exceptionIsAuthRelated(exc)) {
           throw exc;
         }
-        if (SolrCLI.checkCommunicationError(exc)) {
+        if (CLIUtils.checkCommunicationError(exc)) {
           // this is not actually an error from the tool as it's ok if Solr is not online.
           CLIO.err("Solr at " + solrUrl + " not online.");
         } else {
@@ -139,7 +139,7 @@ public class StatusTool extends ToolBase {
       try {
         return getStatus(solrUrl, credentials);
       } catch (Exception exc) {
-        if (SolrCLI.exceptionIsAuthRelated(exc)) {
+        if (CLIUtils.exceptionIsAuthRelated(exc)) {
           throw exc;
         }
         try {
@@ -158,7 +158,7 @@ public class StatusTool extends ToolBase {
   }
 
   public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       return getStatus(solrClient);
     }
   }
