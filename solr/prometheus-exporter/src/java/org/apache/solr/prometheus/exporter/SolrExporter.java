@@ -145,6 +145,7 @@ public class SolrExporter {
     Options mainOptions = new Options();
     Options deprecatedOptions = new Options();
 
+    // Change to -s and --solr-url in main once -s for --scrape-interval removed.
     Option baseUrlOption =
         Option.builder("b")
             .longOpt("base-url")
