@@ -250,7 +250,7 @@ public class AssertTool extends ToolBase {
       ret +=
           assertSolrNotRunningInCloudMode(
               SolrCLI.normalizeSolrUrl(cli.getOptionValue(IS_NOT_CLOUD_OPTION)),
-              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION.getLongOpt()));
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     return ret;
   }

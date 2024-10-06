@@ -464,13 +464,13 @@ public class SolrCLI implements CLIO {
 
   public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION.getLongOpt());
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     return getSolrClient(solrUrl, credentials, barePath);
   }
 
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION.getLongOpt());
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     return getSolrClient(solrUrl, credentials, false);
   }
 
