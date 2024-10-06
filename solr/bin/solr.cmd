@@ -307,7 +307,7 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--s solr.solr.home] [-t solr.data.home] [--jvm-opts "jvm-opts"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [-t solr.data.home] [--jvm-opts "jvm-opts"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
