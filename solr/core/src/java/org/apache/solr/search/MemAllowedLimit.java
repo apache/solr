@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * Enforces a memory-based limit on a given SolrQueryRequest, as specified by the {@code memAllowed}
  * query parameter.
  *
- * <p>This class tracks per-thread memory allocations using its own ThreadLocal. It records the
+ * <p>This class tracks per-thread memory allocations during a request using its own ThreadLocal. It records the
  * current thread allocation when the instance was created (typically at the start of
  * SolrQueryRequest processing) as a starting point, and then on every call to {@link #shouldExit()}
  * it accumulates the amount of reported allocated memory since the previous call, and compares the
@@ -93,8 +93,8 @@ public class MemAllowedLimit implements QueryLimit {
           "Check for limit with hasMemLimit(req) before creating a MemAllowedLimit!");
     }
     limitBytes = Math.round(reqMemLimit * MEBI);
-    // init the tread-local
-    initAndGetCurrentAllocatedBytes();
+    // init the thread-local
+    init();
   }
 
   @VisibleForTesting
@@ -104,12 +104,12 @@ public class MemAllowedLimit implements QueryLimit {
           "Per-thread memory allocation monitoring not available in this JVM.");
     }
     limitBytes = Math.round(memLimit * MEBI);
-    // init the tread-local
-    initAndGetCurrentAllocatedBytes();
+    // init the thread-local
+    init();
   }
 
-  private long initAndGetCurrentAllocatedBytes() {
-    long currentAllocatedBytes = 0;
+  private void init() {
+    long currentAllocatedBytes;
     try {
       currentAllocatedBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
     } catch (Exception e) {
@@ -117,7 +117,14 @@ public class MemAllowedLimit implements QueryLimit {
     }
     AtomicLong threadMem = threadLocalMem.get();
     threadMem.compareAndSet(-1L, currentAllocatedBytes);
-    return currentAllocatedBytes;
+  }
+
+  private long getCurrentAllocatedBytes() {
+    try {
+      return (Long) GET_BYTES_METHOD.invoke(threadBean);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Unexpected error checking thread allocation!", e);
+    }
   }
 
   @VisibleForTesting
@@ -136,7 +143,7 @@ public class MemAllowedLimit implements QueryLimit {
     }
 
     try {
-      long currentAllocatedBytes = initAndGetCurrentAllocatedBytes();
+      long currentAllocatedBytes = getCurrentAllocatedBytes();
       AtomicLong threadMem = threadLocalMem.get();
       long lastAllocatedBytes = threadMem.get();
       accumulatedMem.addAndGet(currentAllocatedBytes - lastAllocatedBytes);
