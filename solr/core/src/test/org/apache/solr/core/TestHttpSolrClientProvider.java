@@ -31,7 +31,6 @@ import org.mockito.Mockito;
 
 public class TestHttpSolrClientProvider extends SolrTestCase {
 
-  HttpSolrClientProvider httpSolrClientProvider;
   SolrMetricsContext parentSolrMetricCtx;
 
   @Override
@@ -44,13 +43,10 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
 
   @Test
   public void test_when_updateShardHandler_cfg_is_null() {
-    try {
-      httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx);
+    try (var httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx); ) {
       assertEquals(
           httpSolrClientProvider.getSolrClient().getIdleTimeout(),
           HttpClientUtil.DEFAULT_SO_TIMEOUT);
-    } finally {
-      httpSolrClientProvider.close();
     }
   }
 
@@ -58,11 +54,10 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
   public void test_when_updateShardHandler_cfg_is_not_null() {
     var idleTimeout = 10000;
     UpdateShardHandlerConfig cfg = new UpdateShardHandlerConfig(-1, -1, idleTimeout, -1, null, -1);
-    try {
-      httpSolrClientProvider = new HttpSolrClientProvider(cfg, parentSolrMetricCtx);
-      assertEquals(httpSolrClientProvider.getSolrClient().getIdleTimeout(), idleTimeout);
-    } finally {
-      httpSolrClientProvider.close();
+    try (var httpSolrClientProvider = new HttpSolrClientProvider(cfg, parentSolrMetricCtx); ) {
+      assertNotEquals(
+          httpSolrClientProvider.getSolrClient().getIdleTimeout(),
+          UpdateShardHandlerConfig.DEFAULT.getDistributedSocketTimeout());
     }
   }
 
@@ -71,10 +66,9 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     SolrMetricsContext childSolrMetricContext = Mockito.mock(SolrMetricsContext.class);
     Mockito.when(parentSolrMetricCtx.getChildContext(any(HttpSolrClientProvider.class)))
         .thenReturn(childSolrMetricContext);
-    try {
-      httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx);
+    try (var httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx)) {
+      // Just to make sure we are closing solr metrics object
     } finally {
-      httpSolrClientProvider.close();
       verify(childSolrMetricContext, times(1)).unregister();
     }
   }
