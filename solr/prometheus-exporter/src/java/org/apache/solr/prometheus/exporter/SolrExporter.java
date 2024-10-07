@@ -213,7 +213,7 @@ public class SolrExporter {
     mainOptions.addOption(clusterIdOption);
 
     Option numThreadsOption =
-        Option.builder("n")
+        Option.builder()
             .longOpt("num-threads")
             .hasArg()
             .argName("NUM_THREADS")
@@ -224,6 +224,23 @@ public class SolrExporter {
                     + ".")
             .build();
     mainOptions.addOption(numThreadsOption);
+    Option numThreadsOptionDeprecated =
+        Option.builder("n")
+            .hasArg()
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --num-threads instead")
+                    .get())
+            .argName("NUM_THREADS")
+            .type(Integer.class)
+            .desc(
+                "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
+                    + DEFAULT_NUM_THREADS
+                    + ".")
+            .build();
+    mainOptions.addOption(numThreadsOptionDeprecated);
 
     Option portOption =
         Option.builder("p")
@@ -347,11 +364,17 @@ public class SolrExporter {
       } else if (commandLine.hasOption(configOption)) {
         configFile = commandLine.getOptionValue(configOption);
       }
+      int numberOfThreads = DEFAULT_NUM_THREADS;
+      if (commandLine.hasOption("num-threads")) {
+        numberOfThreads = commandLine.getParsedOptionValue("num-threads");
+      } else if (commandLine.hasOption("n")) {
+        numberOfThreads = commandLine.getParsedOptionValue("n");
+      }
 
       SolrExporter solrExporter =
           new SolrExporter(
               port,
-              commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS),
+              numberOfThreads,
               commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL),
               scrapeConfiguration,
               loadMetricsConfiguration(configFile),
