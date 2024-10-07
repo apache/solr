@@ -53,11 +53,10 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
   @Test
   public void test_when_updateShardHandler_cfg_is_not_null() {
     var idleTimeout = 10000;
+    assertNotEquals(idleTimeout, UpdateShardHandlerConfig.DEFAULT.getDistributedSocketTimeout());
     UpdateShardHandlerConfig cfg = new UpdateShardHandlerConfig(-1, -1, idleTimeout, -1, null, -1);
     try (var httpSolrClientProvider = new HttpSolrClientProvider(cfg, parentSolrMetricCtx); ) {
-      assertNotEquals(
-          httpSolrClientProvider.getSolrClient().getIdleTimeout(),
-          UpdateShardHandlerConfig.DEFAULT.getDistributedSocketTimeout());
+      assertEquals(httpSolrClientProvider.getSolrClient().getIdleTimeout(), idleTimeout);
     }
   }
 
