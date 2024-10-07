@@ -18,14 +18,11 @@
 package org.apache.solr.util.circuitbreaker;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages all registered circuit breaker instances. Responsible for a holistic view of whether a
@@ -42,18 +39,13 @@ import org.slf4j.LoggerFactory;
  * term solution. There will be a follow up with a SIP for a schema API design.
  */
 public class CircuitBreakerManager implements PluginInfoInitialized {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
   private final boolean enableCircuitBreakerManager;
 
-  private final boolean debugMode;
-
   private final List<CircuitBreaker> circuitBreakerList = new ArrayList<>();
 
-  public CircuitBreakerManager(final boolean enableCircuitBreakerManager, final boolean debugMode) {
+  public CircuitBreakerManager(final boolean enableCircuitBreakerManager) {
     this.enableCircuitBreakerManager = enableCircuitBreakerManager;
-    this.debugMode = debugMode;
   }
 
   @Override
@@ -86,20 +78,11 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
     if (enableCircuitBreakerManager) {
       for (CircuitBreaker circuitBreaker : circuitBreakerList) {
         if (circuitBreaker.isEnabled() && circuitBreaker.isTripped()) {
-          if (debugMode) {
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Circuit tripped for {} with debug info {}",
-                  circuitBreaker.getClass().getName(),
-                  circuitBreaker.getDebugInfo());
-            }
-          } else {
-            if (triggeredCircuitBreakers == null) {
-              triggeredCircuitBreakers = new ArrayList<>();
-            }
-
-            triggeredCircuitBreakers.add(circuitBreaker);
+          if (triggeredCircuitBreakers == null) {
+            triggeredCircuitBreakers = new ArrayList<>();
           }
+
+          triggeredCircuitBreakers.add(circuitBreaker);
         }
       }
     }
@@ -117,16 +100,7 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
     if (enableCircuitBreakerManager) {
       for (CircuitBreaker circuitBreaker : circuitBreakerList) {
         if (circuitBreaker.isEnabled() && circuitBreaker.isTripped()) {
-          if (debugMode) {
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Circuit tripped for {} with debug info {}",
-                  circuitBreaker.getClass().getName(),
-                  circuitBreaker.getDebugInfo());
-            }
-          } else {
-            return true;
-          }
+          return true;
         }
       }
     }
@@ -162,11 +136,7 @@ public class CircuitBreakerManager implements PluginInfoInitialized {
         pluginInfo == null
             ? false
             : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
-    boolean debugMode =
-        pluginInfo == null
-            ? false
-            : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("debugMode", "false"));
-    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled, debugMode);
+    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
 
     circuitBreakerManager.init(pluginInfo);
 
