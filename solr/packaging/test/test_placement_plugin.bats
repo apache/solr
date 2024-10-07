@@ -40,7 +40,7 @@ teardown() {
 @test "Random placement plugin using ENV" {
   export SOLR_PLACEMENTPLUGIN_DEFAULT=random
   run solr start -c
-  solr assert --cloud http://localhost:${SOLR_PORT} -t 3000
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 3000
   run solr create -c COLL_NAME
   collection_exists COLL_NAME
   assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to random'
