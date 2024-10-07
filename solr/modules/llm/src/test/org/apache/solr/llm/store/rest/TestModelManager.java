@@ -168,4 +168,16 @@ public class TestModelManager extends TestLlmBase {
     
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }
+
+  @Test
+  public void loadModel_huggingface_shouldLoadModelConfig() throws Exception {
+    loadModels("huggingface-model.json");
+
+    final String modelName = "huggingface-1";
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/accessToken=='apiKey-huggingface'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelId=='sentence-transformers/all-MiniLM-L6-v2'");
+
+    restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
+  }
 }
