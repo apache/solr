@@ -105,7 +105,7 @@ Other Changes
 ==================  9.8.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
 
 Improvements
 ---------------------
