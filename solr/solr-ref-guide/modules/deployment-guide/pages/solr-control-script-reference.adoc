@@ -223,19 +223,19 @@ If passed relative dir, validation with current dir will be done, before trying 
 Sets the `solr.data.home` system property, where Solr will store index data in <instance_dir>/data subdirectories.
 If not set, Solr uses solr.solr.home for config and data.
 
-`-v`::
+`--verbose`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Be more verbose.
-This changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
+This does two things.  It provides additional debugging information on how the script is configured to start Solr.
+It also changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
 +
-*Example*: `bin/solr start -f -v`
+*Example*: `bin/solr start -f --verbose`
 
-`-q`::
+`-q` or `--quiet`::
 +
 [%autowidth,frame=none]
 |===
@@ -247,17 +247,6 @@ This changes the logging level of Log4j in Solr from `INFO` to `WARN`, having th
 This can be useful in a production setting where you want to limit logging to warnings and errors.
 +
 *Example*: `bin/solr start -f -q`
-
-`-V` or `--verbose`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Verbose messages from this script.
-+
-*Example*: `bin/solr start -V`
 
 `-z <zkHost>` or `--zk-host <zkHost>`::
 +
@@ -426,7 +415,7 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
-`-V` or `--verbose`::
+`-d` or `--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -435,17 +424,17 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 Stop Solr with verbose messages from this script.
 +
-*Example*: `bin/solr stop -V`
+*Example*: `bin/solr stop --verbose`
 
 == System Information
 
 === Version
 
-The `version` command simply returns the version of Solr currently installed and immediately exists.
+The `--version` command simply returns the version of Solr currently installed and immediately exists.
 
 [source,bash]
 ----
-$ bin/solr version
+$ bin/solr --version
 X.Y.0
 ----
 
@@ -519,7 +508,6 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                should be for root Solr path.
  -e,--exitcode                 Return an exit code instead of printing
                                error message on assert fail.
- -h,--help                     Print this message.
  -m,--message <message>        Exception message to be used in place of
                                the default error message.
  -R,--not-root                 Asserts that we are NOT the root user.
@@ -532,7 +520,6 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                timeout.
  -u,--same-user <directory>    Asserts that we run as same user that owns
                                <directory>.
- -v,--verbose                  Enable more verbose command output.
  -x,--exists <directory>       Asserts that directory <directory> exists.
  -X,--not-exists <directory>   Asserts that directory <directory> does NOT
                                exist.

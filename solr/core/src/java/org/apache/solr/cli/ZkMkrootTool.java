@@ -52,8 +52,7 @@ public class ZkMkrootTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -84,7 +83,7 @@ public class ZkMkrootTool extends ToolBase {
     boolean failOnExists = cli.hasOption("fail-on-exists");
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
       echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
       zkClient.makePath(znode, failOnExists, true);
