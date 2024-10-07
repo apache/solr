@@ -222,12 +222,12 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
     verifyZkLocalPathsMatch(srcPathCheck, "/cp4");
 
-    // try with recurse not specified, and therefore not happening
+    // try with recursive not specified, and therefore not happening
     args =
         new String[] {"--zk-host", zkAddr, "file:" + srcPathCheck.toAbsolutePath(), "zk:/cp5Fail"};
 
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(cpTool, args));
-    assertTrue("Copy should NOT have succeeded, recurse not specified.", 0 != res);
+    assertTrue("Copy should NOT have succeeded, recursive not specified.", 0 != res);
 
     // NOTE: really can't test copying to '.' because the test framework doesn't allow altering the
     // source tree and at least IntelliJ's CWD is in the source tree.
@@ -566,7 +566,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
 
-    // Should fail if recurse not set.
+    // Should fail if recursive not set.
     String[] args = new String[] {"--zk-host", zkAddr, "/configs/rm1"};
 
     ZkRmTool tool = new ZkRmTool();
