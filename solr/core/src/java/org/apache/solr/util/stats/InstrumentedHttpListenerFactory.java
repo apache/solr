@@ -136,8 +136,7 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   }
 
   public static NameStrategy getNameStrategy(String name) {
-    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
-        KNOWN_METRIC_NAME_STRATEGIES.get(name);
+    var nameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(name);
     if (nameStrategy == null) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
