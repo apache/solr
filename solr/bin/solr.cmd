@@ -410,6 +410,7 @@ IF "%1"=="-s" goto set_solr_home_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
 IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="--solr-data" goto set_solr_data_dir
+IF "%1"=="--data-home" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host
