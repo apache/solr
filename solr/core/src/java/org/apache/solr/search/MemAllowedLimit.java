@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
  * Enforces a memory-based limit on a given SolrQueryRequest, as specified by the {@code memAllowed}
  * query parameter.
  *
- * <p>This class tracks per-thread memory allocations during a request using its own ThreadLocal. It records the
- * current thread allocation when the instance was created (typically at the start of
+ * <p>This class tracks per-thread memory allocations during a request using its own ThreadLocal. It
+ * records the current thread allocation when the instance was created (typically at the start of
  * SolrQueryRequest processing) as a starting point, and then on every call to {@link #shouldExit()}
  * it accumulates the amount of reported allocated memory since the previous call, and compares the
  * accumulated amount to the configured threshold, expressed in mebi-bytes.
@@ -108,7 +108,7 @@ public class MemAllowedLimit implements QueryLimit {
     init();
   }
 
-  private void init() {
+  private final void init() {
     long currentAllocatedBytes;
     try {
       currentAllocatedBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
