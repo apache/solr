@@ -1301,7 +1301,7 @@ This command will copy from the local drive to ZooKeeper, from ZooKeeper to the 
 
 ==== ZK Copy Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1401,7 +1401,7 @@ Use the `zk rm` command to remove a znode (and optionally all child nodes) from 
 
 ==== ZK Remove Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1522,7 +1522,7 @@ Use the `zk ls` command to see the children of a znode.
 
 ==== ZK List Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===

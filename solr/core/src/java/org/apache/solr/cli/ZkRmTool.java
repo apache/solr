@@ -42,7 +42,8 @@ public class ZkRmTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_RECURSE,
+        SolrCLI.OPTION_RECURSE_DEPRECATED,
+        SolrCLI.OPTION_RECURSIVE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
@@ -66,7 +67,7 @@ public class ZkRmTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     String target = cli.getArgs()[0];
-    boolean recurse = cli.hasOption("recurse");
+    boolean recursive = cli.hasOption("recursive") || cli.hasOption("recurse");
 
     String znode = target;
     if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {
@@ -77,17 +78,17 @@ public class ZkRmTool extends ToolBase {
     }
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
+      if (!recursive && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(
-            "ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
+            "ZooKeeper node " + znode + " has children and recursive has NOT been specified.");
       }
       echo(
           "Removing ZooKeeper node "
               + znode
               + " from ZooKeeper at "
               + zkHost
-              + " recurse: "
-              + recurse);
+              + " recursive: "
+              + recursive);
       zkClient.clean(znode);
     } catch (Exception e) {
       log.error("Could not complete rm operation for reason: ", e);

@@ -156,9 +156,22 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
-  public static final Option OPTION_RECURSE =
-      Option.builder("r")
+  public static final Option OPTION_RECURSE_DEPRECATED =
+      Option.builder()
           .longOpt("recurse")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.8")
+                  .setDescription("Use --recursive instead")
+                  .get())
+          .required(false)
+          .desc("Apply the command recursively.")
+          .build();
+
+  public static final Option OPTION_RECURSIVE =
+      Option.builder("r")
+          .longOpt("recursive")
           .required(false)
           .desc("Apply the command recursively.")
           .build();
