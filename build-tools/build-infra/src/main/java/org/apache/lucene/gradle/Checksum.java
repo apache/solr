@@ -27,6 +27,11 @@
 
 package org.apache.lucene.gradle;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Locale;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -39,16 +44,10 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.Incremental;
 import org.gradle.work.InputChanges;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.Locale;
-
 public class Checksum extends DefaultTask {
   private FileCollection files;
   private File outputDir;
-  private Algorithm algorithm;
+  private Algorithm algorithm = Checksum.Algorithm.SHA512;
 
   public enum Algorithm {
     MD5(new DigestUtils(DigestUtils.getMd5Digest())),

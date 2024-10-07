@@ -14,25 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj;
 
-repositories {
-  mavenCentral()
-}
+import java.io.IOException;
 
-ext {
-  // Minimum Java version required to compile buildSrc.
-  minJavaVersion = JavaVersion.VERSION_11
-}
-
-// Make sure the build environment is consistent.
-apply from: file('../gradle/validation/check-environment.gradle')
-
-// Load common buildSrc and script deps.
-apply from: file("scriptDepVersions.gradle")
-
-dependencies {
-  implementation gradleApi()
-  implementation localGroovy()
-
-  implementation "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+/** A lambda intended for invoking SolrClient operations */
+@FunctionalInterface
+public interface SolrClientFunction<C extends SolrClient, R> {
+  R apply(C c) throws IOException, SolrServerException;
 }
