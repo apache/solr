@@ -66,7 +66,7 @@ public class TestHttpSolrClientProvider extends SolrTestCase {
     Mockito.when(parentSolrMetricCtx.getChildContext(any(HttpSolrClientProvider.class)))
         .thenReturn(childSolrMetricContext);
     try (var httpSolrClientProvider = new HttpSolrClientProvider(null, parentSolrMetricCtx)) {
-      // Just to make sure we are closing solr metrics object
+      assertNotNull(httpSolrClientProvider.getSolrClient());
     } finally {
       verify(childSolrMetricContext, times(1)).unregister();
     }
