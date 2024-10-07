@@ -1,0 +1,8 @@
+{
+  "class": "dev.langchain4j.model.huggingface.HuggingFaceEmbeddingModel",
+  "name": "huggingface-1",
+  "params": {
+    "accessToken": "apiKey-huggingface",
+    "modelId": "sentence-transformers/all-MiniLM-L6-v2"
+  }
+}
