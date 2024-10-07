@@ -68,7 +68,7 @@ public class SnapshotCreateTool extends ToolBase {
 
     String snapshotName = cli.getOptionValue("snapshot-name");
     String collectionName = cli.getOptionValue("name");
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       createSnapshot(solrClient, collectionName, snapshotName);
     }
   }

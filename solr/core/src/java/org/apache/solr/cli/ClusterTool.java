@@ -75,7 +75,7 @@ public class ClusterTool extends ToolBase {
 
     String propertyName = cli.getOptionValue("property");
     String propertyValue = cli.getOptionValue("value");
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(

@@ -167,8 +167,8 @@ public class CreateTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
-      if (SolrCLI.isCloudMode(solrClient)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
+      if (CLIUtils.isCloudMode(solrClient)) {
         createCollection(cli);
       } else {
         createCore(cli, solrClient);
@@ -178,7 +178,7 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue("name");
-    String solrUrl = cli.getOptionValue("solr-url", SolrCLI.getDefaultSolrUrl());
+    String solrUrl = cli.getOptionValue("solr-url", CLIUtils.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName =
@@ -205,7 +205,7 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(
+    if (CLIUtils.safeCheckCoreExists(
         solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalArgumentException(
           "\nCore '"
@@ -254,9 +254,9 @@ public class CreateTool extends ToolBase {
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
+    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost, builder)) {
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -319,7 +319,7 @@ public class CreateTool extends ToolBase {
       }
 
       // TODO: This should be done using the configSet API
-      final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
+      final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
       ConfigSetService configSetService =
           new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
@@ -336,7 +336,7 @@ public class CreateTool extends ToolBase {
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
-    if (SolrCLI.safeCheckCollectionExists(
+    if (CLIUtils.safeCheckCollectionExists(
         solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalStateException(
           "\nCollection '"
@@ -381,7 +381,7 @@ public class CreateTool extends ToolBase {
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
-    return SolrCLI.getConfigSetsDir(solrInstallDir).resolve(confDirName);
+    return CLIUtils.getConfigSetsDir(solrInstallDir).resolve(confDirName);
   }
 
   private void ensureConfDirExists(Path solrInstallDir, Path confDirName) {
@@ -405,7 +405,7 @@ public class CreateTool extends ToolBase {
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue("name");
-      final String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+      final String solrUrl = cli.getOptionValue("solrUrl", CLIUtils.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,

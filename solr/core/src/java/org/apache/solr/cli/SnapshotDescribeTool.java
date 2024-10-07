@@ -81,7 +81,7 @@ public class SnapshotDescribeTool extends ToolBase {
 
     String snapshotName = cli.getOptionValue("snapshot-name");
     String collectionName = cli.getOptionValue("name");
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
       describeSnapshot(solrClient, collectionName, snapshotName);
     }
   }
