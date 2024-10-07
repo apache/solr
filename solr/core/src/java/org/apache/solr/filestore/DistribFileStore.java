@@ -192,7 +192,7 @@ public class DistribFileStore implements FileStore {
       try {
         GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + getMetaPath());
         request.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.requestWithBaseUrl(baseUrl, client -> client.request(request));
+        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
         is = (InputStream) response.get("stream");
         metadata =
             Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
@@ -210,7 +210,7 @@ public class DistribFileStore implements FileStore {
       try {
         GenericSolrRequest request = new GenericSolrRequest(GET, "/node/files" + path);
         request.setResponseParser(new InputStreamResponseParser(null));
-        var response = solrClient.requestWithBaseUrl(baseUrl, client -> client.request(request));
+        var response = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
         is = (InputStream) response.get("stream");
         ByteBuffer filedata =
             Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept((InputStream) response.get("stream"));
@@ -249,18 +249,12 @@ public class DistribFileStore implements FileStore {
 
           final var request = new GenericSolrRequest(GET, "/node/files" + path, solrParams);
           boolean nodeHasBlob = false;
+          var solrClient = coreContainer.getDefaultHttpSolrClient();
+          var resp = solrClient.requestWithBaseUrl(baseUrl, request::process).getResponse();
 
-          try (var solrClient =
-              new Http2SolrClient.Builder(baseUrl)
-                  .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-                  .build()) {
-            var resp = solrClient.request(request);
-
-            if (Utils.getObjectByPath(resp, false, Arrays.asList("files", path)) != null) {
-              nodeHasBlob = true;
-            }
+          if (Utils.getObjectByPath(resp, false, Arrays.asList("files", path)) != null) {
+            nodeHasBlob = true;
           }
-
           if (nodeHasBlob) {
             boolean success = fetchFileFromNodeAndPersist(liveNode);
             if (success) return true;
@@ -398,16 +392,14 @@ public class DistribFileStore implements FileStore {
           // almost FETCHFROM_SRC other nodes may have it
           getFrom += "*";
         }
-        try (var solrClient =
-            new Http2SolrClient.Builder(baseUrl)
-                .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-                .build()) {
+        try {
+          var solrClient = coreContainer.getDefaultHttpSolrClient();
           var solrParams = new ModifiableSolrParams();
           solrParams.set("getFrom", getFrom);
 
-          var solrRequest = new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
+          var request = new GenericSolrRequest(GET, "/node/files" + info.path, solrParams);
           // fire and forget
-          solrClient.request(solrRequest);
+          solrClient.requestWithBaseUrl(baseUrl, request::process);
         } catch (Exception e) {
           log.info("Node: {} failed to respond for file fetch notification", node, e);
           // ignore the exception

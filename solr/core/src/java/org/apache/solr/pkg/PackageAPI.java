@@ -37,7 +37,6 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
@@ -260,18 +259,16 @@ public class PackageAPI {
       solrParams.add("omitHeader", "true");
       solrParams.add("refreshPackage", p);
 
-      final var solrRequest =
+      final var request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
-      solrRequest.setResponseParser(new BinaryResponseParser());
+      request.setResponseParser(new BinaryResponseParser());
 
       for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
         final var baseUrl =
             coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
-        try (var solrClient =
-            new Http2SolrClient.Builder(baseUrl)
-                .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-                .build()) {
-          solrClient.request(solrRequest);
+        try {
+          var solrClient = coreContainer.getDefaultHttpSolrClient();
+          solrClient.requestWithBaseUrl(baseUrl, request::process);
         } catch (SolrServerException | IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -444,15 +441,15 @@ public class PackageAPI {
     solrParams.add("omitHeader", "true");
     solrParams.add("expectedVersion", String.valueOf(expected));
 
-    final var solrRequest =
+    final var request =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/cluster/package", solrParams);
-    solrRequest.setResponseParser(new BinaryResponseParser());
+    request.setResponseParser(new BinaryResponseParser());
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
-        solrClient.requestWithBaseUrl(baseUrl, client -> client.request(solrRequest));
+        solrClient.requestWithBaseUrl(baseUrl, request::process);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
