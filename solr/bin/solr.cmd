@@ -307,7 +307,7 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts "jvm-opts"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
@@ -341,7 +341,7 @@ goto done
 @echo                   on which example is run. The default value is server/solr. If passed a relative dir
 @echo                   validation with the current dir will be done before trying the default server/^<dir^>
 @echo.
-@echo   -t dir        Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
+@echo   --data-hone dir Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
 @echo   -e example    Name of the example to run; available examples:
