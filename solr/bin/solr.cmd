@@ -1594,7 +1594,7 @@ IF "%1"=="-upconfig" (
 ) ELSE IF "%1"=="-n" (
   goto set_config_name
 ) ELSE IF "%1"=="-r" (
-  goto set_zk_recurse
+  goto set_zk_recursive
 ) ELSE IF "%1"=="-configname" (
   goto set_config_name
 ) ELSE IF "%1"=="-d" (
@@ -1669,8 +1669,8 @@ set ZK_DST=%~1
 SHIFT
 goto parse_zk_args
 
-:set_zk_recurse
-set ZK_RECURSE="true"
+:set_zk_recursive
+set ZK_RECURSIVE="true"
 SHIFT
 goto parse_zk_args
 
@@ -1762,7 +1762,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mv" (
   IF "%ZK_SRC%"=="" (
     set ERROR_MSG="<src> must be specified for 'mv' command"
@@ -1784,7 +1784,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="ls" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
@@ -1793,7 +1793,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mkroot" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"
