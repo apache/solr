@@ -196,7 +196,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         new Http2SolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.requestWithBaseUrl(urlToUse, (c) -> c.query(queryParams));
-      } catch (BaseHttpSolrClient.RemoteSolrException rse) {
+      } catch (SolrClient.RemoteSolrException rse) {
       }
 
       assertEquals(urlToUse + "/select", DebugServlet.url);
@@ -207,7 +207,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         new Http2SolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.requestWithBaseUrl(urlToUse, null, new QueryRequest(queryParams));
-      } catch (BaseHttpSolrClient.RemoteSolrException rse) {
+      } catch (SolrClient.RemoteSolrException rse) {
       }
 
       assertEquals(urlToUse + "/select", DebugServlet.url);

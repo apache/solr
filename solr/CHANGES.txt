@@ -111,6 +111,8 @@ New Features
   It will now be released as a fully supported Solr feature.
   This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
+* SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
+
 Improvements
 ---------------------
 * SOLR-17158: Users using query limits (timeAllowed, cpuTimeAllowed) for whom partial results are uninteresting
