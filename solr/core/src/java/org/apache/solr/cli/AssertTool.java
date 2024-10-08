@@ -26,8 +26,8 @@ import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.DeprecatedAttributes;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -234,15 +234,12 @@ public class AssertTool extends ToolBase {
     }
     if (cli.hasOption("s") || cli.hasOption("started")) {
       ret +=
-          assertSolrRunning(
-              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "started", "s", null),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+          assertSolrRunning(SolrCLI.getOptionWithDeprecatedAndDefault(cli, "started", "s", null));
     }
     if (cli.hasOption("S") || cli.hasOption("not-started")) {
       ret +=
           assertSolrNotRunning(
-              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "not-started", "S", null),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "not-started", "S", null));
     }
     if (cli.hasOption("c")) {
       ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));

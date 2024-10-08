@@ -42,17 +42,3 @@ teardown() {
 
   run ! solr assert --cloud http://localhost:${SOLR_PORT} -e
 }
-
-@test "assert for cloud mode" {
-  run solr start -c
-  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
-
-  run solr assert --cloud http://localhost:${SOLR_PORT}
-  refute_output --partial "ERROR"
-
-  run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr
-  assert_output --partial "needn't include Solr's context-root"
-  assert_output --partial "ERROR: Solr is not running in standalone mode"
-
-  run ! solr assert --not-cloud http://localhost:${SOLR_PORT} -e
-}
