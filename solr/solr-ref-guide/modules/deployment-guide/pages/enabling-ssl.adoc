@@ -225,7 +225,7 @@ This section assumes you have created and started an external ZooKeeper.
 See xref:zookeeper-ensemble.adoc[] for more information.
 
 The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
-The examples below use the `zkcli` tool that comes with Solr to do this.
+The examples below use the `bin/solr` tool that comes with Solr to do this.
 
 [tabs#zkclusterprops]
 ======
