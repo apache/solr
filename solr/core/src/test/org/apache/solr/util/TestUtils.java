@@ -302,11 +302,11 @@ public class TestUtils extends SolrTestCaseJ4 {
 
     assertEquals(
         "{\n"
-            + "  \"k2\":\"v2\",\n"
-            + "  \"k1\":{\n"
-            + "    \"a\":\"b\",\n"
-            + "    \"p\":\"r\",\n"
-            + "    \"k21\":{\"xx\":\"yy\"}}}",
+            + "\"k2\":\"v2\",\n"
+            + "\"k1\":{\n"
+            + "\"a\":\"b\",\n"
+            + "\"p\":\"r\",\n"
+            + "\"k21\":{\"xx\":\"yy\"}}}",
         new String(Utils.toJSON(object), UTF_8));
   }
 

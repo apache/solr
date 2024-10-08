@@ -305,7 +305,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
     String initialMaxBooleanClauses = System.getProperty("solr.max.booleanClauses");
     System.setProperty("solr.max.booleanClauses", String.valueOf(1));
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 

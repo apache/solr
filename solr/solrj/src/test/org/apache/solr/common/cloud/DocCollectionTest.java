@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.cloud;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,8 +57,8 @@ public class DocCollectionTest extends SolrTestCaseJ4 {
     prsStates.add(prsState);
     final PerReplicaStates prs = new PerReplicaStates(collName, 1, prsStates);
     propMap.put(DocCollection.CollectionStateProps.PER_REPLICA_STATE, Boolean.TRUE);
-    docCollection = DocCollection.create(collName, sliceMap, propMap, docRouter, 1, () -> prs);
-    docCollection2 = DocCollection.create(collName, sliceMap, propMap, docRouter, 1, () -> prs);
+    docCollection = DocCollection.create(collName, sliceMap, propMap, docRouter, 1, Instant.now(), () -> prs);
+    docCollection2 = DocCollection.create(collName, sliceMap, propMap, docRouter, 1, Instant.now(), () -> prs);
     prsState = "replicacore:1:D:L";
     prsStates = new ArrayList<>();
     prsStates.add(prsState);

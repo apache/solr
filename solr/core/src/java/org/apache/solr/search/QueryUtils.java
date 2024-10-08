@@ -37,6 +37,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.query.DynamicComplementPrefixQuery;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** */
@@ -104,7 +105,7 @@ public class QueryUtils {
    */
   public static void ensurePrefixQueryObeysMinimumPrefixLength(
       QParser parser, Query query, String prefix) {
-    if (!(query instanceof PrefixQuery)) {
+    if (!(query instanceof PrefixQuery || query instanceof DynamicComplementPrefixQuery)) {
       return;
     }
 

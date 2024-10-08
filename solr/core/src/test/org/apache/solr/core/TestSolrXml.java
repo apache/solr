@@ -186,9 +186,9 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     NodeConfig cfg =
         SolrXmlConfig.fromString(createTempDir(), TestThinCache.SOLR_NODE_LEVEL_CACHE_XML);
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
-    SolrCache<?, ?> nodeLevelCache = cachesConfig.get("myNodeLevelCache").newInstance();
+    SolrCache<?, ?> nodeLevelCache = cachesConfig.get("myNodeLevelCache").newInstance(null);
     assertTrue(nodeLevelCache instanceof CaffeineCache);
-    SolrCache<?, ?> nodeLevelCacheThin = cachesConfig.get("myNodeLevelCacheThin").newInstance();
+    SolrCache<?, ?> nodeLevelCacheThin = cachesConfig.get("myNodeLevelCacheThin").newInstance(null);
     assertTrue(nodeLevelCacheThin instanceof ThinCache.NodeLevelCache);
   }
 

@@ -39,6 +39,7 @@ import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.query.DynamicComplementPrefixQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 public class StrField extends PrimitiveFieldType {
@@ -100,6 +101,7 @@ public class StrField extends PrimitiveFieldType {
       query = new PrefixQuery(term);
     }
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
 

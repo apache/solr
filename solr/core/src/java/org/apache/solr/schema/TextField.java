@@ -42,6 +42,7 @@ import org.apache.solr.query.DynamicComplementPrefixQuery;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
@@ -196,6 +197,7 @@ public class TextField extends FieldType {
       query = new PrefixQuery(term);
     }
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
 
