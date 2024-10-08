@@ -21,8 +21,9 @@ description = 'Open Telemetry (OTEL) tracer'
 
 dependencies {
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
 
-  implementation platform('io.opentelemetry:opentelemetry-bom-alpha')
+  implementation platform('io.opentelemetry:opentelemetry-bom')
 
   implementation 'io.opentracing:opentracing-api'
   implementation 'org.slf4j:slf4j-api'
@@ -31,7 +32,6 @@ dependencies {
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   implementation 'io.opentelemetry:opentelemetry-opentracing-shim'
-  runtimeOnly 'io.opentelemetry:opentelemetry-semconv'
   runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 

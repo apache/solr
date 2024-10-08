@@ -49,6 +49,7 @@ fi
 # test that Java exists and is executable on this server
 "$JAVA" -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool! Please install Java 8 or greater before running this script."; exit 1; }
 
+echo "The bin/post script is deprecated in favour of the bin/solr post command. Please update your scripts."
 
 # ===== post specific code
 

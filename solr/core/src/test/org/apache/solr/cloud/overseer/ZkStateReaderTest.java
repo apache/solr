@@ -707,8 +707,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     String collectionPath = ZkStateReader.getCollectionPath(collectionName);
 
     // now create the replica, take note that this has to be done after DocCollection creation with
-    // empty slice,
-    // otherwise the DocCollection ctor would fetch the PRS entries and throw exceptions
+    // empty slice, otherwise the DocCollection ctor would fetch the PRS entries and throw
+    // exceptions
     String replicaBaseUrl = Utils.getBaseUrlForNodeName(nodeName, "http");
 
     String replicaName = "replica1";
@@ -741,11 +741,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             reader.getCollectionLive(collectionName).getSlice(sliceName).getReplica(replicaName)
                 != null);
 
-    try {
+    try (CommonTestInjection.BreakpointSetter breakpointSetter =
+        new CommonTestInjection.BreakpointSetter()) {
       // set breakpoint such that after state.json fetch and before PRS entry fetch, we can delete
-      // the state.json and
-      // PRS entries to trigger the race condition
-      CommonTestInjection.setBreakpoint(
+      // the state.json and PRS entries to trigger the race condition
+      breakpointSetter.setImplementation(
           PerReplicaStatesOps.class.getName() + "/beforePrsFetch",
           (args) -> {
             try {
@@ -762,10 +762,10 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           });
 
       // set breakpoint to verify the expected PrsZkNodeNotFoundException is indeed thrown within
-      // the execution flow,
-      // such exception is caught within the logic and not thrown to the caller
+      // the execution flow, such exception is caught within the logic and not thrown to the
+      // caller
       AtomicBoolean prsZkNodeNotFoundExceptionThrown = new AtomicBoolean(false);
-      CommonTestInjection.setBreakpoint(
+      breakpointSetter.setImplementation(
           ZkStateReader.class.getName() + "/exercised",
           (args) -> {
             if (args[0] instanceof PerReplicaStatesOps.PrsZkNodeNotFoundException) {
@@ -777,17 +777,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           "Timeout waiting for collection state to become null",
           () -> {
             // this should not throw exception even if the PRS entry read is delayed artificially
-            // (by previous command)
-            // and deleted after the following getCollectionLive call
+            // (by previous command) and deleted after the following getCollectionLive call
             return reader.getCollectionLive(collectionName) == null;
           });
 
       assertTrue(prsZkNodeNotFoundExceptionThrown.get());
-    } finally {
-      // clear breakpoints
-      CommonTestInjection.setBreakpoint(
-          PerReplicaStatesOps.class.getName() + "/beforePrsFetch", null);
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/exercised", null);
     }
   }
 }

@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -78,15 +77,6 @@ public class BinaryRequestWriter extends RequestWriter {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
       new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
-    }
-  }
-
-  /*
-   * A hack to get access to the protected internal buffer and avoid an additional copy
-   */
-  public static class BAOS extends ByteArrayOutputStream {
-    public byte[] getbuf() {
-      return super.buf;
     }
   }
 }

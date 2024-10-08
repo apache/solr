@@ -33,13 +33,13 @@ public abstract class ReductionDataArrayReader<A> extends ReductionDataReader<A>
     this.signal = signal;
   }
 
-  @Override
   /**
    * Read an array of data from the input stream and feed it to the applier, first signaling the
    * size of the array.
    *
    * @throws IOException if an exception occurs while reading from the input stream
    */
+  @Override
   public void read() throws IOException {
     int size = inputStream.readInt();
     signal.accept(size);

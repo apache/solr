@@ -25,6 +25,15 @@ A sampled distributed tracing query request displayed in Jaeger UI looks like th
 .Tracing of a Solr query
 image::distributed-tracing/query-request-tracing.png[]
 
+== Always-on Trace Id generation
+
+Solr includes an always-on trace id generator. This will inject trace id headers for every Solr request, propagating the client supplied value or generating a new id as needed and replaces the existing `rid` mechanism.
+
+The header name it uses for propagation is `X-Trace-Id`, this can be changed by updating the system property `solr.traceIdHeader`.
+
+This plugin will not be enabled if another Tracing mechanism is setup via Solr config.
+This plugin can be disabled by setting the `solr.alwaysOnTraceId` system property to `false`.
+
 == Modules and Configuration
 
 The `TracerConfigurator` is a class used to provide an instance of `io.opentracing.Tracer` based on configuration in `solr.xml`.
@@ -54,6 +63,8 @@ This module brings support for the industry standard https://opentelemetry.io[Op
 ----
 <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator"/>
 ----
+
+As an alternative to changing the `solr.xml` file, the `OTEL` tracer will be enabled if the system property `otel.service.name` or environment variable `OTEL_SERVICE_NAME` is present. The `opentelemetry` module still needs to be enabled for the tracer to work.
 
 Enable the module with either system property `-Dsolr.modules=opentelemetry` or environment variable `SOLR_MODULES=opentelemetry`.
 

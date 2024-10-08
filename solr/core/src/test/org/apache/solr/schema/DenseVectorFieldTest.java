@@ -461,7 +461,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void indexing_highDimensionalityVectorDocument_shouldBeIndexed() throws Exception {
     try {
-      initCore("solrconfig-basic.xml", "schema-densevector-high-dimensionality.xml");
+      initCore("solrconfig_codec.xml", "schema-densevector-high-dimensionality.xml");
 
       List<Float> highDimensionalityVector = new ArrayList<>();
       for (float i = 0; i < 2048f; i++) {
@@ -605,6 +605,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void denseVectorField_shouldBePresentAfterAtomicUpdate() throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("enable.update.log")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();
@@ -641,6 +644,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void denseVectorFieldOnAtomicUpdate_shouldBeUpdatedCorrectly() throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("enable.update.log")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();

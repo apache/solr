@@ -39,7 +39,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   @Before
   public void prepareIndex() throws Exception {
     /* vectorDimension="4" similarityFunction="cosine" */
-    initCore("solrconfig-basic.xml", "schema-densevector.xml");
+    initCore("solrconfig_codec.xml", "schema-densevector.xml");
 
     List<SolrInputDocument> docsToIndex = this.prepareDocs();
     for (SolrInputDocument doc : docsToIndex) {

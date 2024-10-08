@@ -82,7 +82,7 @@ public class ConfigSet {
   /**
    * Provide a Schema object on demand We want IndexSchema Objects to be lazily instantiated because
    * when a configset is created the {@link SolrResourceLoader} associated with it is not associated
-   * with a core So, we may not be able to update the core if we the schema classes are updated
+   * with a core So, we may not be able to update the core if the schema classes are updated
    */
   interface SchemaSupplier {
     IndexSchema get(boolean forceFetch);

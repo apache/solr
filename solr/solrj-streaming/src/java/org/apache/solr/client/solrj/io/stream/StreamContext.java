@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -33,7 +32,7 @@ import org.apache.solr.common.params.SolrParams;
  * <p>Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for
  * reuse across multiple TupleStreams.
  */
-public class StreamContext implements Serializable {
+public class StreamContext {
 
   private Map<String, Object> entries = new HashMap<>();
   private Map<String, String> tupleContext = new HashMap<>();

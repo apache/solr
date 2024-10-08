@@ -44,7 +44,7 @@ public class LetStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
   private TupleStream stream;
-  private StreamContext streamContext;
+  private transient StreamContext streamContext;
   private Map<String, Object> letParams = new LinkedHashMap<>();
 
   public LetStream(StreamExpression expression, StreamFactory factory) throws IOException {

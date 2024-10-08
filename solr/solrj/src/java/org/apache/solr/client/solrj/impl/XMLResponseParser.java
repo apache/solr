@@ -284,7 +284,7 @@ public class XMLResponseParser extends ResponseParser {
             }
           }
 
-          /**
+          /*
            * The name in a NamedList can actually be null if( name == null ) { throw new
            * XMLStreamException( "requires 'name' attribute: "+parser.getLocalName(),
            * parser.getLocation() ); }

@@ -26,6 +26,7 @@ rootProject.name = "solr-root"
 
 includeBuild("dev-tools/solr-missing-doclet")
 
+include "solr:api"
 include "solr:solrj"
 include "solr:solrj-zookeeper"
 include "solr:solrj-streaming"

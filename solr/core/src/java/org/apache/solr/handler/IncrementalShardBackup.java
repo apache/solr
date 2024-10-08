@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
@@ -27,10 +29,9 @@ import java.util.UUID;
 import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -80,7 +81,7 @@ public class IncrementalShardBackup {
     this.commitNameOption = commitNameOption;
   }
 
-  public NamedList<Object> backup() throws Exception {
+  public IncrementalShardSnapshotResponse backup() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
       return backup(indexCommit);
@@ -134,14 +135,14 @@ public class IncrementalShardBackup {
   }
 
   // note: remember to reserve the indexCommit first so it won't get deleted concurrently
-  protected NamedList<Object> backup(final IndexCommit indexCommit) throws Exception {
+  protected IncrementalShardSnapshotResponse backup(final IndexCommit indexCommit)
+      throws Exception {
     assert indexCommit != null;
     URI backupLocation = incBackupFiles.getBackupLocation();
     log.info(
         "Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupId);
-    NamedList<Object> details = new SimpleOrderedMap<>();
-    ;
-    details.add("startTime", Instant.now().toString());
+    IncrementalShardSnapshotResponse details = new IncrementalShardSnapshotResponse();
+    details.startTime = Instant.now().toString();
 
     Collection<String> files = indexCommit.getFileNames();
     Directory dir =
@@ -153,21 +154,21 @@ public class IncrementalShardBackup {
                 solrCore.getSolrConfig().indexConfig.lockType);
     try {
       BackupStats stats = incrementalCopy(files, dir);
-      details.add("indexFileCount", stats.fileCount);
-      details.add("uploadedIndexFileCount", stats.uploadedFileCount);
-      details.add("indexSizeMB", stats.getIndexSizeMB());
-      details.add("uploadedIndexFileMB", stats.getTotalUploadedMB());
+      details.indexFileCount = stats.fileCount;
+      details.uploadedIndexFileCount = stats.uploadedFileCount;
+      details.indexSizeMB = stats.getIndexSizeMB();
+      details.uploadedIndexFileMB = stats.getTotalUploadedMB();
     } finally {
       solrCore.getDirectoryFactory().release(dir);
     }
 
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
     if (cd != null) {
-      details.add("shard", cd.getShardId());
+      details.shard = cd.getShardId();
     }
 
-    details.add("endTime", Instant.now().toString());
-    details.add("shardBackupId", shardBackupId.getIdAsString());
+    details.endTime = Instant.now().toString();
+    details.shardBackupId = shardBackupId.getIdAsString();
     log.info(
         "Done creating backup snapshot at {} shardBackupMetadataFile:{}",
         backupLocation,
@@ -240,5 +241,39 @@ public class IncrementalShardBackup {
     public double getTotalUploadedMB() {
       return Precision.round(totalUploadedBytes / (1024.0 * 1024), 3);
     }
+  }
+
+  public static class IncrementalShardSnapshotResponse extends SolrJerseyResponse {
+    @Schema(description = "The time at which backup snapshot started at.")
+    @JsonProperty("startTime")
+    public String startTime;
+
+    @Schema(description = "The count of index files in the snapshot.")
+    @JsonProperty("indexFileCount")
+    public int indexFileCount;
+
+    @Schema(description = "The count of uploaded index files.")
+    @JsonProperty("uploadedIndexFileCount")
+    public int uploadedIndexFileCount;
+
+    @Schema(description = "The size of index in MB.")
+    @JsonProperty("indexSizeMB")
+    public double indexSizeMB;
+
+    @Schema(description = "The size of uploaded index in MB.")
+    @JsonProperty("uploadedIndexFileMB")
+    public double uploadedIndexFileMB;
+
+    @Schema(description = "Shard Id.")
+    @JsonProperty("shard")
+    public String shard;
+
+    @Schema(description = "The time at which backup snapshot completed at.")
+    @JsonProperty("endTime")
+    public String endTime;
+
+    @Schema(description = "ShardId of shard to which core belongs to.")
+    @JsonProperty("shardBackupId")
+    public String shardBackupId;
   }
 }

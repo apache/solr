@@ -66,14 +66,14 @@ Postive amounts increment the field's value, and negative decrement.
 
 === Field Storage
 
-The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"`.
+The core functionality of atomically updating a document requires that all fields in your schema must be configured as stored (`stored="true"`) or docValues (`docValues="true"`) except for fields which are `<copyField/>` destinations, which must be configured as `stored="false"` and either `docValues="false"` or `useDocValuesAsStored="false"`.
 Atomic updates are applied to the document represented by the existing stored field values.
 All data in copyField destinations fields must originate from ONLY copyField sources.
 
 If `<copyField/>` destinations are configured as stored, then Solr will attempt to index both the current value of the field as well as an additional copy from any source fields.
 If such fields contain some information that comes from the indexing program and some information that comes from copyField, then the information which originally came from the indexing program will be lost when an atomic update is made.
 
-There are other kinds of derived fields that must also be set so they aren't stored.
+There are other kinds of derived fields that must also be set so they aren't stored, just as mentioned above for `<copyField/>` destinations.
 Some spatial field types, such as BBoxField and LatLonSpatialFieldType, use derived fields.
 CurrencyFieldType also uses derived fields.
 These types create additional fields which are normally specified by a dynamic field definition.

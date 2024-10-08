@@ -20,13 +20,14 @@ import static org.mockito.Mockito.mock;
 
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.DeleteNodeRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link DeleteNodeAPI} */
+/** Unit tests for {@link DeleteNode} */
 public class DeleteNodeAPITest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -36,22 +37,22 @@ public class DeleteNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testV1InvocationThrowsErrorsIfRequiredParametersMissing() {
-    final var api = mock(DeleteNodeAPI.class);
+    final var api = mock(DeleteNode.class);
     final SolrException e =
         expectThrows(
             SolrException.class,
             () -> {
-              DeleteNodeAPI.invokeUsingV1Inputs(api, new ModifiableSolrParams());
+              DeleteNode.invokeUsingV1Inputs(api, new ModifiableSolrParams());
             });
     assertEquals("Missing required parameter: node", e.getMessage());
   }
 
   @Test
   public void testValidOverseerMessageIsCreated() {
-    DeleteNodeAPI.DeleteNodeRequestBody requestBody =
-        new DeleteNodeAPI.DeleteNodeRequestBody("async");
+    final var requestBody = new DeleteNodeRequestBody();
+    requestBody.async = "async";
     final ZkNodeProps createdMessage =
-        DeleteNodeAPI.createRemoteMessage("nodeNameToDelete", requestBody);
+        DeleteNode.createRemoteMessage("nodeNameToDelete", requestBody);
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
     assertEquals(3, createdMessageProps.size());
     assertEquals("nodeNameToDelete", createdMessageProps.get("node"));
@@ -61,7 +62,7 @@ public class DeleteNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestBodyCanBeOmitted() throws Exception {
-    final ZkNodeProps createdMessage = DeleteNodeAPI.createRemoteMessage("nodeNameToDelete", null);
+    final ZkNodeProps createdMessage = DeleteNode.createRemoteMessage("nodeNameToDelete", null);
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
     assertEquals(2, createdMessageProps.size());
     assertEquals("nodeNameToDelete", createdMessageProps.get("node"));

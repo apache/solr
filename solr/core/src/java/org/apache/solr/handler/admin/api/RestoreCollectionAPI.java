@@ -46,6 +46,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
@@ -56,8 +58,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -108,8 +108,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     }
 
     final String collectionName = requestBody.collection;
-    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
     SolrIdentifierValidator.validateCollectionName(collectionName);
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
     if (coreContainer.getAliases().hasAlias(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

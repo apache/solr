@@ -743,7 +743,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory.toPath(), "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    return createCoreContainer(config, new CorePropertiesLocator(config));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the

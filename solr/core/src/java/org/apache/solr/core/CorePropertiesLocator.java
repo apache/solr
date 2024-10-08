@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,6 +54,11 @@ public class CorePropertiesLocator implements CoresLocator {
 
   private final Set<Path> ignoredDirectories;
 
+  public CorePropertiesLocator(NodeConfig nodeConfig) {
+    this(nodeConfig.getCoreRootDirectory(), nodeConfig.getCoreRootIgnoredDirectories());
+  }
+
+  @VisibleForTesting
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
     this(coreDiscoveryRoot, null);
   }
@@ -211,6 +217,11 @@ public class CorePropertiesLocator implements CoresLocator {
       }
     }
     return cds;
+  }
+
+  @Override
+  public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+    return buildCoreDescriptor(cd.getInstanceDir().resolve(PROPERTIES_FILENAME), cc);
   }
 
   protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {

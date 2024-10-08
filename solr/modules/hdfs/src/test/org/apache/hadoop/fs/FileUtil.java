@@ -1899,8 +1899,6 @@ public class FileUtil {
     return write(fileContext, path, charseq, StandardCharsets.UTF_8);
   }
 
-  @InterfaceAudience.LimitedPrivate({"ViewDistributedFileSystem"})
-  @InterfaceStability.Unstable
   /**
    * Used in ViewDistributedFileSystem rename API to get access to the protected
    * API of FileSystem interface. Even though Rename with options API
@@ -1909,6 +1907,8 @@ public class FileUtil {
    * out casting to the specific filesystem. This util method is proposed to get
    * the access to FileSystem#rename with options.
    */
+  @InterfaceAudience.LimitedPrivate({"ViewDistributedFileSystem"})
+  @InterfaceStability.Unstable
   @SuppressWarnings("deprecation")
   public static void rename(FileSystem srcFs, Path src, Path dst,
       final Options.Rename... options) throws IOException {

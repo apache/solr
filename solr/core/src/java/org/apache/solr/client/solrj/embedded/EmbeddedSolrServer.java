@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter.BAOS;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrDocument;
@@ -48,6 +47,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -294,7 +294,7 @@ public class EmbeddedSolrServer extends SolrClient {
     final RequestWriter.ContentWriter contentWriter = request.getContentWriter(null);
 
     String cType;
-    final BAOS baos = new BAOS();
+    final Utils.BAOS baos = new Utils.BAOS();
     if (contentWriter != null) {
       contentWriter.write(baos);
       cType = contentWriter.getContentType();

@@ -38,6 +38,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -100,7 +101,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
         response.responseHeader.qTime);
 
     /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
-    if (log.isWarnEnabled()
+    if (slowCoreRequestLogger.isWarnEnabled()
         && solrConfig != null
         && solrConfig.slowQueryThresholdMillis >= 0
         && response.responseHeader.qTime >= solrConfig.slowQueryThresholdMillis) {

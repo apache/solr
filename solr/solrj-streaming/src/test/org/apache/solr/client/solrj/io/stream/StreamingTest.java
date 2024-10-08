@@ -627,7 +627,6 @@ public class StreamingTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore
   public void testExceptionStream() throws Exception {
 
     helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
@@ -635,8 +634,8 @@ public class StreamingTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-    // Test an error that comes originates from the /select handler
     try {
+      // Test an error that originates from the /select handler
       SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
       CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
       ExceptionStream estream = new ExceptionStream(stream);
@@ -646,16 +645,45 @@ public class StreamingTest extends SolrCloudTestCase {
       assertTrue(t.EXCEPTION);
       assertTrue(t.getException().contains("sort param field can't be found: blah"));
 
-      // Test an error that comes originates from the /export handler
-      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt", "/export");
+      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "wt", "javabin");
       stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
       estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       t = getTuple(estream);
       assertTrue(t.EOF);
       assertTrue(t.EXCEPTION);
-      // The /export handler will pass through a real exception.
-      assertTrue(t.getException().contains("undefined field:"));
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
+
+      // Test an error that originates from the /export handler
+      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "qt", "/export");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      estream = new ExceptionStream(stream);
+      estream.setStreamContext(streamContext);
+      t = getTuple(estream);
+      assertTrue(t.EOF);
+      assertTrue(t.EXCEPTION);
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
+
+      // Test an error that originates from the /export handler
+      sParamsA =
+          params(
+              "q",
+              "*:*",
+              "fl",
+              "a_s,a_i,a_f,blah",
+              "sort",
+              "blah asc",
+              "qt",
+              "/export",
+              "wt",
+              "javabin");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      estream = new ExceptionStream(stream);
+      estream.setStreamContext(streamContext);
+      t = getTuple(estream);
+      assertTrue(t.EOF);
+      assertTrue(t.EXCEPTION);
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
     } finally {
       solrClientCache.close();
     }

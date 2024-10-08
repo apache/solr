@@ -35,6 +35,7 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -85,6 +86,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
@@ -113,7 +115,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -141,7 +142,9 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -365,7 +368,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
-      ObjectReleaseTracker.clear();
       TestInjection.reset();
       initCoreDataDir = null;
       System.clearProperty("solr.v2RealPath");
@@ -2322,6 +2324,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
+  /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
+  @Deprecated // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2347,6 +2351,41 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
     Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
+  }
+
+  /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
+  @Deprecated // Instead use a basic config + whatever is needed or default config
+  public static String legacyExampleCollection1SolrHome() {
+    String sourceHome = ExternalPaths.SOURCE_HOME;
+    if (sourceHome == null)
+      throw new IllegalStateException(
+          "No source home! Cannot create the legacy example solr home directory.");
+
+    try {
+      Path tempSolrHome = LuceneTestCase.createTempDir();
+      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
+      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
+
+      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
+      Path collection1Dir = tempSolrHome.resolve("collection1");
+
+      DirectoryUtil.copyDirectoryContents(
+          sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
+
+      Properties props = new Properties();
+      props.setProperty("name", "collection1");
+      try (Writer writer =
+          new OutputStreamWriter(
+              Files.newOutputStream(collection1Dir.resolve("core.properties")),
+              StandardCharsets.UTF_8)) {
+        props.store(writer, null);
+      }
+      return tempSolrHome.toString();
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {
@@ -2629,7 +2668,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /** This method creates a HttpClient from a URL. */
+  /**
+   * This method creates a HttpClient from a URL.
+   *
+   * <p><b>WARNING:</b> if you use this method, the <code>HttpClient</code> returned is tracked by
+   * <code>ObjectReleaseTracker</code>. Your test will fail if you do not pass the <code>HttpClient
+   * </code> to {@link HttpClientUtil#close(HttpClient)} when you are done with it.
+   */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
     return new HttpSolrClient.Builder(url).build().getHttpClient();

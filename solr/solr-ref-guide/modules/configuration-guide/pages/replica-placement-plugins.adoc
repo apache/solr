@@ -147,7 +147,7 @@ This plugin supports the following configuration parameters:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `20` Gigabytes
+|Optional |Default: `5` Gigabytes
 |===
 +
 If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.

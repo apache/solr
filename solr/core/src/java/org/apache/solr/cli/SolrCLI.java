@@ -23,7 +23,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -73,7 +72,7 @@ public class SolrCLI implements CLIO {
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
+
   public static final String ZK_HOST = "localhost:9983";
 
   public static final Option OPTION_ZKHOST =
@@ -91,7 +90,7 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + DEFAULT_SOLR_URL)
+                  + getDefaultSolrUrl())
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
@@ -189,6 +188,22 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
+  public static String getDefaultSolrUrl() {
+    String scheme = System.getenv("SOLR_URL_SCHEME");
+    if (scheme == null) {
+      scheme = "http";
+    }
+    String host = System.getenv("SOLR_TOOL_HOST");
+    if (host == null) {
+      host = "localhost";
+    }
+    String port = System.getenv("SOLR_PORT");
+    if (port == null) {
+      port = "8983";
+    }
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+  }
+
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
     String sysProp = "javax.net.ssl." + key;
     String keyStore = System.getProperty(sysProp);
@@ -240,7 +255,9 @@ public class SolrCLI implements CLIO {
     else if ("auth".equals(toolType)) return new AuthTool();
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
+    else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
+    else if ("post".equals(toolType)) return new PostTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -321,6 +338,7 @@ public class SolrCLI implements CLIO {
     try {
       cli = (new GnuParser()).parse(options, args);
     } catch (ParseException exp) {
+      // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
@@ -332,10 +350,12 @@ public class SolrCLI implements CLIO {
       }
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
+        exit(1);
+      } else {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(toolName, options);
+        exit(0);
       }
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(toolName, options);
-      exit(1);
     }
 
     if (cli.hasOption("help")) {
@@ -400,11 +420,7 @@ public class SolrCLI implements CLIO {
    */
   public static boolean checkCommunicationError(Exception exc) {
     Throwable rootCause = SolrException.getRootCause(exc);
-    boolean wasCommError =
-        (rootCause instanceof ConnectException
-            || rootCause instanceof SolrServerException
-            || rootCause instanceof SocketException);
-    return wasCommError;
+    return (rootCause instanceof SolrServerException || rootCause instanceof SocketException);
   }
 
   public static void checkCodeForAuthError(int code) {
@@ -516,21 +532,26 @@ public class SolrCLI implements CLIO {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
-      if (zkHost == null)
-        throw new IllegalStateException(
-            "Must provide either the '-solrUrl' or '-zkHost' parameters!");
+      if (zkHost == null) {
+        solrUrl = SolrCLI.getDefaultSolrUrl();
+        CLIO.getOutStream()
+            .println(
+                "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                    + solrUrl
+                    + ".");
+      } else {
+        try (CloudSolrClient cloudSolrClient =
+            new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+                .build()) {
+          cloudSolrClient.connect();
+          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+          if (liveNodes.isEmpty())
+            throw new IllegalStateException(
+                "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
 
-      try (CloudSolrClient cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-              .build()) {
-        cloudSolrClient.connect();
-        Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-        if (liveNodes.isEmpty())
-          throw new IllegalStateException(
-              "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
-
-        String firstLiveNode = liveNodes.iterator().next();
-        solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+          String firstLiveNode = liveNodes.iterator().next();
+          solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        }
       }
     }
     return solrUrl;
@@ -546,11 +567,14 @@ public class SolrCLI implements CLIO {
 
     // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null)
-      throw new IllegalStateException(
-          "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
-
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
+    if (solrUrl == null) {
+      solrUrl = getDefaultSolrUrl();
+      CLIO.getOutStream()
+          .println(
+              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                  + solrUrl
+                  + ".");
+    }
 
     try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
@@ -601,8 +625,8 @@ public class SolrCLI implements CLIO {
         }
         NamedList<Object> existsCheckResult =
             CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
-        NamedList<Object> status = (NamedList) existsCheckResult.get("status");
-        NamedList<Object> coreStatus = (NamedList) status.get(coreName);
+        NamedList<Object> status = (NamedList<Object>) existsCheckResult.get("status");
+        NamedList<Object> coreStatus = (NamedList<Object>) status.get(coreName);
         Map<String, Object> failureStatus =
             (Map<String, Object>) existsCheckResult.get("initFailures");
         String errorMsg = (String) failureStatus.get(coreName);

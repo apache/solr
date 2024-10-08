@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
@@ -62,7 +61,7 @@ public class StatusTool extends ToolBase {
             .required(false)
             .desc(
                 "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
+                    + SolrCLI.getDefaultSolrUrl()
                     + '.')
             .build(),
         Option.builder("maxWaitSecs")
@@ -76,7 +75,7 @@ public class StatusTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
+    String solrUrl = cli.getOptionValue("solr", SolrCLI.getDefaultSolrUrl());
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
@@ -113,8 +112,6 @@ public class StatusTool extends ToolBase {
     while (System.nanoTime() < timeout) {
       try {
         return getStatus(solrUrl);
-      } catch (SSLPeerUnverifiedException exc) {
-        throw exc;
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
           throw exc;
@@ -189,7 +186,7 @@ public class StatusTool extends ToolBase {
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     Map<String, Object> collections =
-        ((NamedList) json.findRecursive("cluster", "collections")).asMap();
+        ((NamedList<Object>) json.findRecursive("cluster", "collections")).asMap();
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

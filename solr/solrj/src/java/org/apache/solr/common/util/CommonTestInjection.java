@@ -17,8 +17,12 @@
 
 package org.apache.solr.common.util;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
@@ -78,31 +82,9 @@ public class CommonTestInjection {
   }
 
   /**
-   * This is usually set by the test cases.
-   *
-   * <p>If defined, code execution would break at certain code execution point at the invocation of
-   * injectBreakpoint with matching key until the provided method in the {@link Breakpoint}
-   * implementation is executed.
-   *
-   * <p>Setting the breakpoint to null would remove the breakpoint
-   *
-   * @see CommonTestInjection#injectBreakpoint(String, Object...)
-   * @param key could simply be the fully qualified class name or more granular like class name +
-   *     other id (such as method name). This should batch the key used in injectBreakpoint
-   * @param breakpoint The Breakpoint implementation, null to remove the breakpoint
-   */
-  public static void setBreakpoint(String key, Breakpoint breakpoint) {
-    if (breakpoint != null) {
-      breakpoints.put(key, breakpoint);
-    } else {
-      breakpoints.remove(key);
-    }
-  }
-
-  /**
    * Injects a breakpoint that pauses the existing code execution, executes the code defined in the
-   * breakpoint implementation and then resumes afterwards. The breakpoint implementation is looked
-   * up by the corresponding key used in {@link CommonTestInjection#setBreakpoint(String,
+   * breakpoint implementation and then resumes afterward. The breakpoint implementation is looked
+   * up by the corresponding key used in {@link BreakpointSetter#setImplementation(String,
    * Breakpoint)}
    *
    * <p>An example usages :
@@ -117,7 +99,7 @@ public class CommonTestInjection {
    * <p>This should always be a part of an assert statement (ie assert injectBreakpoint(key)) such
    * that it will be skipped for normal code execution
    *
-   * @see CommonTestInjection#setBreakpoint(String, Breakpoint)
+   * @see BreakpointSetter#setImplementation(String, Breakpoint)
    * @param key could simply be the fully qualified class name or more granular like class name +
    *     other id (such as method name). This should only be set by corresponding unit test cases
    *     with CommonTestInjection#setBreakpoint
@@ -126,7 +108,13 @@ public class CommonTestInjection {
   public static boolean injectBreakpoint(String key, Object... args) {
     Breakpoint breakpoint = breakpoints.get(key);
     if (breakpoint != null) {
+      log.info("Breakpoint with key {} is triggered", key);
       breakpoint.executeAndResume(args);
+      log.info("Breakpoint with key {} was executed and normal code execution resumes", key);
+    } else {
+      log.debug(
+          "Breakpoint with key {} is triggered but there's no implementation set. Skipping...",
+          key);
     }
     return true;
   }
@@ -134,8 +122,51 @@ public class CommonTestInjection {
   public interface Breakpoint {
     /**
      * Code execution should break at where the breakpoint was injected, then it would execute this
-     * method and resumes the execution afterwards.
+     * method and resumes the execution afterward.
      */
     void executeAndResume(Object... args);
+  }
+
+  /**
+   * Breakpoints should be set via this {@link BreakpointSetter} within the test case and close
+   * should be invoked as cleanup. Since this is closeable, it should usually be used in the
+   * try-with-resource syntax, such as:
+   *
+   * <pre>{@code
+   * try (BreakpointSetter breakpointSetter = new BreakpointSetter() {
+   *     //... test code here that calls breakpointSetter.setImplementation(...)
+   * }
+   * }</pre>
+   */
+  public static class BreakpointSetter implements Closeable {
+    private Set<String> keys = new HashSet<>();
+    /**
+     * This is usually set by the test cases.
+     *
+     * <p>If a breakpoint implementation is set by this method, then code execution would break at
+     * the code execution point marked by CommonTestInjection#injectBreakpoint with matching key,
+     * executes the provided implementation in the {@link Breakpoint}, then resumes the normal code
+     * execution.
+     *
+     * @see CommonTestInjection#injectBreakpoint(String, Object...)
+     * @param key could simply be the fully qualified class name or more granular like class name +
+     *     other id (such as method name). This should batch the key used in injectBreakpoint
+     * @param implementation The Breakpoint implementation
+     */
+    public void setImplementation(String key, Breakpoint implementation) {
+      if (breakpoints.containsKey(key)) {
+        throw new IllegalArgumentException(
+            "Cannot redefine Breakpoint implementation with key " + key);
+      }
+      breakpoints.put(key, implementation);
+      keys.add(key);
+    }
+
+    @Override
+    public void close() throws IOException {
+      for (String key : keys) {
+        breakpoints.remove(key);
+      }
+    }
   }
 }

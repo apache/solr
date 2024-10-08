@@ -26,7 +26,6 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -41,6 +40,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -96,6 +96,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -138,6 +139,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -274,6 +277,8 @@ public class CoreContainer {
 
   private volatile SolrClientCache solrClientCache;
 
+  private volatile Map<String, SolrCache<?, ?>> caches;
+
   private final ObjectCache objectCache = new ObjectCache();
 
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
@@ -307,7 +312,7 @@ public class CoreContainer {
       ExecutorUtil.newMDCAwareCachedThreadPool("Core Container Async Task");
 
   /**
-   * Non empty if the Collection API is executed in a distributed way and not on Overseer, once the
+   * Non-empty if the Collection API is executed in a distributed way and not on Overseer, once the
    * CoreContainer has been initialized properly, i.e. method {@link #load()} called. Until then it
    * is null, and it is not expected to be read.
    */
@@ -373,25 +378,24 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(NodeConfig config) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    this(config, CoresLocator.instantiate(config));
   }
 
   public CoreContainer(NodeConfig config, boolean asyncSolrCoreLoad) {
-    this(
-        config,
-        new CorePropertiesLocator(
-            config.getCoreRootDirectory(), config.getCoreRootIgnoredDirectories()),
-        asyncSolrCoreLoad);
+    this(config, CoresLocator.instantiate(config), asyncSolrCoreLoad);
   }
 
   /**
-   * Create a new CoreContainer using the given configuration and locator. The container's cores are
-   * not loaded.
+   * Create a new CoreContainer using the given configuration and locator.
+   *
+   * <p>The container's cores are not loaded. This constructor should be used only in tests, as it
+   * overrides {@link CoresLocator}'s instantiation process.
    *
    * @param config a ConfigSolr representation of this container's configuration
    * @param locator a CoresLocator
    * @see #load()
    */
+  @VisibleForTesting
   public CoreContainer(NodeConfig config, CoresLocator locator) {
     this(config, locator, false);
   }
@@ -583,15 +587,15 @@ public class CoreContainer {
       SolrHttpClientBuilder builder =
           builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
 
-      // this caused plugins like KerberosPlugin to register it's intercepts, but this intercept
-      // logic is also handled by the pki authentication code when it decideds to let the plugin
-      // handle auth via it's intercept - so you would end up with two intercepts
+      // this caused plugins like KerberosPlugin to register its intercepts, but this intercept
+      // logic is also handled by the pki authentication code when it decides to let the plugin
+      // handle auth via its intercept - so you would end up with two intercepts
       // -->
       //  shardHandlerFactory.setSecurityBuilder(builderPlugin); // calls setup for the authcPlugin
       //  updateShardHandler.setSecurityBuilder(builderPlugin);
       // <--
 
-      // This should not happen here at all - it's only currently required due to its affect on
+      // This should not happen here at all - it's only currently required due to its effect on
       // http1 clients in a test or two incorrectly counting on it for their configuration.
       // -->
 
@@ -716,6 +720,10 @@ public class CoreContainer {
     return packageStoreAPI;
   }
 
+  public SolrCache<?, ?> getCache(String name) {
+    return caches.get(name);
+  }
+
   public SolrClientCache getSolrClientCache() {
     return solrClientCache;
   }
@@ -801,6 +809,20 @@ public class CoreContainer {
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
 
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
+    if (cachesConfig.isEmpty()) {
+      this.caches = Collections.emptyMap();
+    } else {
+      Map<String, SolrCache<?, ?>> m = CollectionUtil.newHashMap(cachesConfig.size());
+      for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
+        SolrCache<?, ?> c = e.getValue().newInstance(null);
+        String cacheName = e.getKey();
+        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName);
+        m.put(cacheName, c);
+      }
+      this.caches = Collections.unmodifiableMap(m);
+    }
 
     StartupLoggingUtils.checkRequestLogging();
 
@@ -1275,6 +1297,19 @@ public class CoreContainer {
         log.warn("error closing ObjectCache", ex);
       }
 
+      final Map<String, SolrCache<?, ?>> closeCaches = caches;
+      if (closeCaches != null) {
+        for (Map.Entry<String, SolrCache<?, ?>> e : caches.entrySet()) {
+          try {
+            e.getValue().close();
+          } catch (Exception ex) {
+            log.warn("error closing node-level cache: {}", e.getKey(), ex);
+          }
+        }
+      }
+
+      objectCache.clear();
+
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
       // up if so. Since all the pending operations queues have been drained, there should be
       // nothing to do.
@@ -1408,8 +1443,8 @@ public class CoreContainer {
    * preserve consistency.
    *
    * <p>Jetty already allows a grace period for in-flight requests to complete and our solr cores,
-   * searchers etc are reference counted to allow for graceful shutdown. So we don't worry about any
-   * other kind of requests.
+   * searchers, etc., are reference counted to allow for graceful shutdown. So we don't worry about
+   * any other kind of requests.
    *
    * <p>We do not need to unpause ever because the node is being shut down.
    */
@@ -1522,14 +1557,14 @@ public class CoreContainer {
       assertPathAllowed(cd.getInstanceDir());
       assertPathAllowed(Paths.get(cd.getDataDir()));
 
-      boolean preExisitingZkEntry = false;
+      boolean preExistingZkEntry = false;
       try {
         if (getZkController() != null) {
           if (cd.getCloudDescriptor().getCoreNodeName() == null) {
             throw new SolrException(
                 ErrorCode.SERVER_ERROR, "coreNodeName missing " + parameters.toString());
           }
-          preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
+          preExistingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
         }
 
         // Much of the logic in core handling pre-supposes that the core.properties file already
@@ -1552,7 +1587,7 @@ public class CoreContainer {
         // First clean up any core descriptor, there should never be an existing core.properties
         // file for any core that failed to be created on-the-fly.
         coresLocator.delete(this, cd);
-        if (isZooKeeperAware() && !preExisitingZkEntry) {
+        if (isZooKeeperAware() && !preExistingZkEntry) {
           try {
             getZkController().unregister(coreName, cd);
           } catch (InterruptedException e) {
@@ -1805,7 +1840,7 @@ public class CoreContainer {
     }
   }
 
-  /** Write a new index directory for the a SolrCore, but do so without loading it. */
+  /** Write a new index directory for the SolrCore, but do so without loading it. */
   private void resetIndexDirectory(CoreDescriptor dcore, ConfigSet coreConfig) {
     SolrConfig config = coreConfig.getSolrConfig();
 
@@ -1922,9 +1957,7 @@ public class CoreContainer {
       return null;
     }
 
-    CorePropertiesLocator cpl = new CorePropertiesLocator(null);
-    CoreDescriptor ret =
-        cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
+    CoreDescriptor ret = getCoresLocator().reload(oldDesc, this);
 
     // Ok, this little jewel is all because we still create core descriptors on the fly from lists
     // of properties in tests particularly. Theoretically, there should be _no_ way to create a
@@ -2095,7 +2128,7 @@ public class CoreContainer {
       // check for core-init errors first
       CoreLoadFailure loadFailure = coreInitFailures.remove(name);
       if (loadFailure != null) {
-        // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
+        // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc.,
         // which we may not be able to do because of the init error.  So we just go with what we
         // can glean from the CoreDescriptor - datadir and instancedir
         SolrCore.deleteUnloadedCore(loadFailure.cd, deleteDataDir, deleteInstanceDir);
@@ -2244,7 +2277,7 @@ public class CoreContainer {
     // load failure (use reload to cure that). But for
     // TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the
     // core if the core is null and there was an error. If you change this, be sure to run both
-    // TestConfiSetsAPI and TestLazyCores
+    // TestConfigSetsAPI and TestLazyCores
     if (desc == null || zkSys.getZkController() != null) return null;
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
@@ -2420,6 +2453,10 @@ public class CoreContainer {
     return status;
   }
 
+  public boolean hideStackTrace() {
+    return cfg.hideStackTraces();
+  }
+
   /**
    * Retrieve the aliases from zookeeper. This is typically cached and does not hit zookeeper after
    * the first use.
@@ -2490,13 +2527,13 @@ public class CoreContainer {
   }
 
   /**
-   * Run an arbitrary task in it's own thread. This is an expert option and is a method you should
+   * Run an arbitrary task in its own thread. This is an expert option and is a method you should
    * use with great care. It would be bad to run something that never stopped or run something that
    * took a very long time. Typically this is intended for actions that take a few seconds, and
    * therefore would be bad to wait for within a request, or actions that need to happen when a core
-   * has zero references, but but would not pose a significant hindrance to server shut down times.
-   * It is not intended for long running tasks and if you are using a Runnable with a loop in it,
-   * you are almost certainly doing it wrong.
+   * has zero references, but would not pose a significant hindrance to server shut down times. It
+   * is not intended for long-running tasks and if you are using a Runnable with a loop in it, you
+   * are almost certainly doing it wrong.
    *
    * <p><br>
    * WARNING: Solr wil not be able to shut down gracefully until this task completes!
@@ -2561,7 +2598,7 @@ class CloserThread extends Thread {
   }
 
   // It's important that this be the _only_ thread removing things from pendingDynamicCloses!
-  // This is single-threaded, but I tried a multi-threaded approach and didn't see any performance
+  // This is single-threaded, but I tried a multithreaded approach and didn't see any performance
   // gains, so there's no good justification for the complexity. I suspect that the locking on
   // things like DefaultSolrCoreState essentially create a single-threaded process anyway.
   @Override

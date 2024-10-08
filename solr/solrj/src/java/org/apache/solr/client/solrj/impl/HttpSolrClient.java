@@ -652,6 +652,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
         rsp.add("closeableResponse", response);
+        rsp.add("responseStatus", response.getStatusLine().getStatusCode());
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;

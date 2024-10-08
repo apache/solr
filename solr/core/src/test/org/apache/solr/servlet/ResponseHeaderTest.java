@@ -58,7 +58,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
 
   @Test
   public void testHttpResponse() throws IOException {
-    URI uri = URI.create(jetty.getBaseUrl() + "/collection1/withHeaders?q=*:*");
+    URI uri = URI.create(getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
     HttpResponse response = getHttpClient().execute(httpGet);
     Header[] headers = response.getAllHeaders();

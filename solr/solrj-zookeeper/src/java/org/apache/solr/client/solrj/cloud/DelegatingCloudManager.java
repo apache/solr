@@ -50,11 +50,6 @@ public class DelegatingCloudManager implements SolrCloudManager {
   }
 
   @Override
-  public DistributedQueueFactory getDistributedQueueFactory() {
-    return delegate.getDistributedQueueFactory();
-  }
-
-  @Override
   public ObjectCache getObjectCache() {
     return delegate == null ? objectCache : delegate.getObjectCache();
   }

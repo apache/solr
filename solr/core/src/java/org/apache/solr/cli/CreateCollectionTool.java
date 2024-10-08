@@ -31,6 +31,7 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -153,6 +154,10 @@ public class CreateCollectionTool extends ToolBase {
 
     NamedList<Object> response;
     try {
+      var req =
+          CollectionAdminRequest.createCollection(
+              collectionName, confname, numShards, replicationFactor);
+      req.setResponseParser(new JsonMapResponseParser());
       response =
           cloudSolrClient.request(
               CollectionAdminRequest.createCollection(
@@ -163,9 +168,11 @@ public class CreateCollectionTool extends ToolBase {
     }
 
     if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
       echo(arr.toString());
+      echo("\n");
     } else {
       String endMessage =
           String.format(

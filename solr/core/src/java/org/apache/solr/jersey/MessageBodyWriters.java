@@ -54,7 +54,7 @@ public class MessageBodyWriters {
 
   @Produces(MediaType.APPLICATION_XML)
   public static class XmlMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new XMLResponseWriter();
@@ -68,7 +68,7 @@ public class MessageBodyWriters {
 
   @Produces(BINARY_CONTENT_TYPE_V2)
   public static class JavabinMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new BinaryResponseWriter();
@@ -82,7 +82,7 @@ public class MessageBodyWriters {
 
   @Produces(RawResponseWriter.CONTENT_TYPE)
   public static class RawMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new RawResponseWriter();
@@ -96,7 +96,7 @@ public class MessageBodyWriters {
 
   @Produces(CONTENT_TYPE_TEXT_UTF8)
   public static class CsvMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+      implements MessageBodyWriter<Object> {
     @Override
     public QueryResponseWriter createResponseWriter() {
       return new CSVResponseWriter();
@@ -108,8 +108,7 @@ public class MessageBodyWriters {
     }
   }
 
-  public abstract static class BaseMessageBodyWriter
-      implements MessageBodyWriter<JacksonReflectMapWriter> {
+  public abstract static class BaseMessageBodyWriter implements MessageBodyWriter<Object> {
 
     @Context protected ResourceContext resourceContext;
     private final QueryResponseWriter responseWriter = createResponseWriter();
@@ -126,7 +125,7 @@ public class MessageBodyWriters {
 
     @Override
     public void writeTo(
-        JacksonReflectMapWriter reflectMapWriter,
+        Object toWrite,
         Class<?> type,
         Type genericType,
         Annotation[] annotations,
@@ -141,7 +140,7 @@ public class MessageBodyWriters {
       final SolrQueryResponse solrQueryResponse =
           (SolrQueryResponse) requestContext.getProperty(SOLR_QUERY_RESPONSE);
 
-      V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, reflectMapWriter);
+      V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, toWrite);
       QueryResponseWriterUtil.writeQueryResponse(
           entityStream, responseWriter, solrQueryRequest, solrQueryResponse, mediaType.toString());
     }

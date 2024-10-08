@@ -25,12 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.ByteVectorValues;
-import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -194,24 +193,24 @@ public class DenseVectorField extends FloatPointField {
 
     switch (vectorEncoding) {
       case FLOAT32:
-        if (dimension > FloatVectorValues.MAX_DIMENSIONS) {
+        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
                 "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
-                FloatVectorValues.MAX_DIMENSIONS);
+                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
           }
         }
         break;
       case BYTE:
-        if (dimension > ByteVectorValues.MAX_DIMENSIONS) {
+        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
                 "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
-                ByteVectorValues.MAX_DIMENSIONS);
+                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
           }
         }
         break;

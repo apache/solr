@@ -310,8 +310,8 @@ knnSearch(collection1,
 
 == model
 
-The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
-The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
+The `api` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
+The `api` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
 After the model is retrieved it can be used by the xref:stream-decorator-reference.adoc#classify[classify function] to classify documents.
 
 A single model tuple is fetched and returned based on the *id* parameter.
@@ -320,14 +320,14 @@ If more then one iteration of the named model is stored in the index, the highes
 
 === Caching with model
 
-The `model` function has an internal LRU (least-recently-used) cache so models do not have to be retrieved with each invocation of the `model` function.
+The `api` function has an internal LRU (least-recently-used) cache so models do not have to be retrieved with each invocation of the `api` function.
 The time to cache for each model ID can be passed as a parameter to the function call.
 Retrieving a cached model does not reset the time for expiring the model ID in the cache.
 
 === Model Storage
 
 The storage format of the models in Solr is below.
-The `train` function outputs the format below so you only need to know schema details if you plan to use the `model` function with logistic regression models trained outside of Solr.
+The `train` function outputs the format below so you only need to know schema details if you plan to use the `api` function with logistic regression models trained outside of Solr.
 
 * `name_s` (Single value, String, Stored): The name of the model.
 * `iteration_i` (Single value, Integer, Stored): The iteration number of the model.

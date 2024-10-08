@@ -1,6 +1,6 @@
 @echo off
 REM You can override pass the following parameters to this script:
-REM 
+REM
 
 set JVM=java
 
@@ -8,6 +8,8 @@ REM  Find location of this script
 
 set SDIR=%~dp0
 if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
+set SOLR_INSTALL_DIR=%SDIR%\..\..\..
+set SOLR_HOME=%SOLR_INSTALL_DIR%\server\solr
 
 set "LOG4J_CONFIG=file:///%SDIR%\..\..\resources\log4j2-console.xml"
 
@@ -21,5 +23,5 @@ REM optionally, you can use using a a Java properties file 'zkDigestCredentialsF
 REM ...
 REM   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
 REM ...
-"%JVM%" %SOLR_ZK_CREDS_AND_ACLS% %ZKCLI_JVM_FLAGS% -Dlog4j.configurationFile="%LOG4J_CONFIG%" ^
+"%JVM%" %SOLR_ZK_CREDS_AND_ACLS% %ZKCLI_JVM_FLAGS% -Dlog4j.configurationFile="%LOG4J_CONFIG%" -Dsolr.home=%SOLR_HOME% ^
 -classpath "%SDIR%\..\..\solr-webapp\webapp\WEB-INF\lib\*;%SDIR%\..\..\lib\ext\*;%SDIR%\..\..\lib\*" org.apache.solr.cloud.ZkCLI %*

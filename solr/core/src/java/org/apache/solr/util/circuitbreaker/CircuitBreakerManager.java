@@ -17,163 +17,102 @@
 
 package org.apache.solr.util.circuitbreaker;
 
-import com.google.common.annotations.VisibleForTesting;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Manages all registered circuit breaker instances. Responsible for a holistic view of whether a
- * circuit breaker has tripped or not.
+ * Single CircuitBreaker that registers both a Memory and a LoadAverage CircuitBreaker. This is only
+ * for backward compatibility with the 9.x versions prior to 9.4.
  *
- * <p>There are two typical ways of using this class's instance: 1. Check if any circuit breaker has
- * triggered -- and know which circuit breaker has triggered. 2. Get an instance of a specific
- * circuit breaker and perform checks.
- *
- * <p>It is a good practice to register new circuit breakers here if you want them checked for every
- * request.
- *
- * <p>NOTE: The current way of registering new default circuit breakers is minimal and not a long
- * term solution. There will be a follow up with a SIP for a schema API design.
+ * @deprecated Use individual Circuit Breakers instead
  */
-public class CircuitBreakerManager implements PluginInfoInitialized {
-  // Class private to potentially allow "family" of circuit breakers to be enabled or disabled
-  private final boolean enableCircuitBreakerManager;
+@Deprecated(since = "9.4")
+public class CircuitBreakerManager extends CircuitBreaker {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private boolean cpuEnabled;
+  private boolean memEnabled;
+  private int memThreshold = 100;
+  private int cpuThreshold = 100;
+  private MemoryCircuitBreaker memCB;
+  private LoadAverageCircuitBreaker cpuCB;
 
-  private final List<CircuitBreaker> circuitBreakerList = new ArrayList<>();
-
-  public CircuitBreakerManager(final boolean enableCircuitBreakerManager) {
-    this.enableCircuitBreakerManager = enableCircuitBreakerManager;
+  public CircuitBreakerManager() {
+    super();
   }
 
   @Override
-  public void init(PluginInfo pluginInfo) {
-    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = buildCBConfig(pluginInfo);
-
-    // Install the default circuit breakers
-    CircuitBreaker memoryCircuitBreaker = new MemoryCircuitBreaker(circuitBreakerConfig);
-    CircuitBreaker cpuCircuitBreaker = new CPUCircuitBreaker(circuitBreakerConfig);
-
-    register(memoryCircuitBreaker);
-    register(cpuCircuitBreaker);
+  public boolean isTripped() {
+    return (memEnabled && memCB.isTripped()) || (cpuEnabled && cpuCB.isTripped());
   }
 
-  public void register(CircuitBreaker circuitBreaker) {
-    circuitBreakerList.add(circuitBreaker);
-  }
-
-  public void deregisterAll() {
-    circuitBreakerList.clear();
-  }
-  /**
-   * Check and return circuit breakers that have triggered
-   *
-   * @return CircuitBreakers which have triggered, null otherwise.
-   */
-  public List<CircuitBreaker> checkTripped() {
-    List<CircuitBreaker> triggeredCircuitBreakers = null;
-
-    if (enableCircuitBreakerManager) {
-      for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isEnabled() && circuitBreaker.isTripped()) {
-          if (triggeredCircuitBreakers == null) {
-            triggeredCircuitBreakers = new ArrayList<>();
-          }
-
-          triggeredCircuitBreakers.add(circuitBreaker);
-        }
-      }
-    }
-
-    return triggeredCircuitBreakers;
-  }
-
-  /**
-   * Returns true if *any* circuit breaker has triggered, false if none have triggered.
-   *
-   * <p>NOTE: This method short circuits the checking of circuit breakers -- the method will return
-   * as soon as it finds a circuit breaker that is enabled and has triggered.
-   */
-  public boolean checkAnyTripped() {
-    if (enableCircuitBreakerManager) {
-      for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-        if (circuitBreaker.isEnabled() && circuitBreaker.isTripped()) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Construct the final error message to be printed when circuit breakers trip.
-   *
-   * @param circuitBreakerList Input list for circuit breakers.
-   * @return Constructed error message.
-   */
-  public static String toErrorMessage(List<CircuitBreaker> circuitBreakerList) {
+  @Override
+  public String getErrorMessage() {
     StringBuilder sb = new StringBuilder();
-
-    for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-      sb.append(circuitBreaker.getErrorMessage());
+    if (memEnabled) {
+      sb.append(memCB.getErrorMessage());
+    }
+    if (memEnabled && cpuEnabled) {
       sb.append("\n");
     }
-
+    if (cpuEnabled) {
+      sb.append(cpuCB.getErrorMessage());
+    }
     return sb.toString();
   }
 
-  /**
-   * Register default circuit breakers and return a constructed CircuitBreakerManager instance which
-   * serves the given circuit breakers.
-   *
-   * <p>Any default circuit breakers should be registered here.
-   */
-  public static CircuitBreakerManager build(PluginInfo pluginInfo) {
-    boolean enabled =
-        pluginInfo == null
-            ? false
-            : Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
-    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(enabled);
-
-    circuitBreakerManager.init(pluginInfo);
-
-    return circuitBreakerManager;
+  @Override
+  public void init(NamedList<?> args) {
+    super.init(args);
+    log.warn("CircuitBreakerManager is deprecated. Use individual Circuit Breakers instead");
+    if (memEnabled) {
+      memCB = new MemoryCircuitBreaker();
+      memCB.setThreshold(memThreshold);
+    }
+    if (cpuEnabled) {
+      // In SOLR-15056 CPUCircuitBreaker was renamed to LoadAverageCircuitBreaker, need back-compat
+      cpuCB = new LoadAverageCircuitBreaker();
+      cpuCB.setThreshold(cpuThreshold);
+    }
   }
 
-  @VisibleForTesting
-  public static CircuitBreaker.CircuitBreakerConfig buildCBConfig(PluginInfo pluginInfo) {
-    boolean enabled = false;
-    boolean cpuCBEnabled = false;
-    boolean memCBEnabled = false;
-    int memCBThreshold = 100;
-    int cpuCBThreshold = 100;
-
-    if (pluginInfo != null) {
-      NamedList<?> args = pluginInfo.initArgs;
-
-      enabled = Boolean.parseBoolean(pluginInfo.attributes.getOrDefault("enabled", "false"));
-
-      if (args != null) {
-        cpuCBEnabled = Boolean.parseBoolean(args._getStr("cpuEnabled", "false"));
-        memCBEnabled = Boolean.parseBoolean(args._getStr("memEnabled", "false"));
-        memCBThreshold = Integer.parseInt(args._getStr("memThreshold", "100"));
-        cpuCBThreshold = Integer.parseInt(args._getStr("cpuThreshold", "100"));
+  @Override
+  public void close() throws IOException {
+    try {
+      if (memEnabled) {
+        memCB.close();
+      }
+    } finally {
+      if (cpuEnabled) {
+        cpuCB.close();
       }
     }
-
-    return new CircuitBreaker.CircuitBreakerConfig(
-        enabled, memCBEnabled, memCBThreshold, cpuCBEnabled, cpuCBThreshold);
   }
 
-  public boolean isEnabled() {
-    return enableCircuitBreakerManager;
+  // The methods below will be called by super class during init
+  public void setMemEnabled(String enabled) {
+    this.memEnabled = Boolean.getBoolean(enabled);
   }
 
-  @VisibleForTesting
-  public List<CircuitBreaker> getRegisteredCircuitBreakers() {
-    return circuitBreakerList;
+  public void setMemThreshold(int threshold) {
+    this.memThreshold = threshold;
+  }
+
+  public void setMemThreshold(String threshold) {
+    this.memThreshold = Integer.parseInt(threshold);
+  }
+
+  public void setCpuEnabled(String enabled) {
+    this.cpuEnabled = Boolean.getBoolean(enabled);
+  }
+
+  public void setCpuThreshold(int threshold) {
+    this.cpuThreshold = threshold;
+  }
+
+  public void setCpuThreshold(String threshold) {
+    this.cpuThreshold = Integer.parseInt(threshold);
   }
 }

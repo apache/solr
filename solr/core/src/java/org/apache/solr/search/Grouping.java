@@ -370,7 +370,7 @@ public class Grouping {
       searchWithTimeLimiter(filterQuery, allCollectors);
 
       if (allCollectors instanceof DelegatingCollector) {
-        ((DelegatingCollector) allCollectors).finish();
+        ((DelegatingCollector) allCollectors).complete();
       }
     }
 
@@ -411,7 +411,7 @@ public class Grouping {
           searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
         }
         if (secondPhaseCollectors instanceof DelegatingCollector) {
-          ((DelegatingCollector) secondPhaseCollectors).finish();
+          ((DelegatingCollector) secondPhaseCollectors).complete();
         }
       }
     }

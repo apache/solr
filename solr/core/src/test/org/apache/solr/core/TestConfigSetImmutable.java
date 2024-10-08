@@ -50,7 +50,7 @@ public class TestConfigSetImmutable extends RestTestBase {
     // make the ConfigSet immutable
     Files.writeString(
         tmpConfDir.resolve("configsetprops.json"),
-        new StringBuilder("{\"immutable\":\"true\"}"),
+        "{\"immutable\":\"true\"}",
         StandardCharsets.UTF_8);
 
     System.setProperty("managed.schema.mutable", "true");
@@ -66,11 +66,8 @@ public class TestConfigSetImmutable extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    client = null;
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }

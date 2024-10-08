@@ -90,5 +90,13 @@ setup() {
 }
 
 @test "assert help flag prints help" {
-  skip "Currently the assert -help flag doesn't return nice help text!"
+  run solr assert -help
+  assert_output --partial 'usage: assert'
+  refute_output --partial 'ERROR'
+}
+
+@test "post help flag prints help" {
+  run solr post -help
+  assert_output --partial 'usage: post'
+  refute_output --partial 'ERROR'
 }

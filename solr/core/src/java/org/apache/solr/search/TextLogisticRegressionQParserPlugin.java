@@ -168,7 +168,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public void finish() throws IOException {
+    public void complete() throws IOException {
 
       Map<Integer, double[]> docVectors = new HashMap<>();
       Terms terms =
@@ -230,7 +230,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       analytics.add("feature", trainingParams.feature);
       analytics.add("positiveLabel", trainingParams.positiveLabel);
       if (this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) this.delegate).finish();
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
 

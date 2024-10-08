@@ -248,7 +248,9 @@ public class RunExampleTool extends ToolBase {
 
     boolean isCloudMode = cli.hasOption('c');
     String zkHost = cli.getOptionValue('z');
-    int port = Integer.parseInt(cli.getOptionValue('p', "8983"));
+    int port =
+        Integer.parseInt(
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
         startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
@@ -315,11 +317,19 @@ public class RunExampleTool extends ToolBase {
 
         String currentPropVal = System.getProperty("url");
         System.setProperty("url", updateUrl);
+        String currentTypeVal = System.getProperty("type");
+        // We assume that example docs are always in XML.
+        System.setProperty("type", "application/xml");
         SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath() + "/*.xml"});
         if (currentPropVal != null) {
           System.setProperty("url", currentPropVal); // reset
         } else {
           System.clearProperty("url");
+        }
+        if (currentTypeVal != null) {
+          System.setProperty("type", currentTypeVal); // reset
+        } else {
+          System.clearProperty("type");
         }
       } else {
         echo(
@@ -398,6 +408,7 @@ public class RunExampleTool extends ToolBase {
         } else {
           System.clearProperty("url");
         }
+
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
       }
@@ -416,6 +427,13 @@ public class RunExampleTool extends ToolBase {
     boolean prompt = !cli.hasOption("noprompt");
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
+    int defaultPort =
+        Integer.parseInt(
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
+    if (defaultPort != 8983) {
+      // Override the old default port numbers if user has started the example overriding SOLR_PORT
+      cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
+    }
     File cloudDir = new File(exampleDir, "cloud");
     if (!cloudDir.isDirectory()) cloudDir.mkdir();
 

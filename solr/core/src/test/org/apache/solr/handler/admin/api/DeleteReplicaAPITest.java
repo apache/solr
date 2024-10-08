@@ -33,7 +33,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/** Unit tests for {@link DeleteReplicaAPI} */
+/** Unit tests for {@link DeleteReplica} */
 public class DeleteReplicaAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
@@ -41,7 +41,7 @@ public class DeleteReplicaAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteReplicaAPI(null, null, null);
+              final var api = new DeleteReplica(null, null, null);
               api.deleteReplicaByName(
                   null, "someShard", "someReplica", null, null, null, null, null, null);
             });
@@ -56,7 +56,7 @@ public class DeleteReplicaAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteReplicaAPI(null, null, null);
+              final var api = new DeleteReplica(null, null, null);
               api.deleteReplicaByName(
                   "someCollection", null, "someReplica", null, null, null, null, null, null);
             });
@@ -71,7 +71,7 @@ public class DeleteReplicaAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteReplicaAPI(null, null, null);
+              final var api = new DeleteReplica(null, null, null);
               api.deleteReplicaByName(
                   "someCollection", "someShard", null, null, null, null, null, null, null);
             });
@@ -83,7 +83,7 @@ public class DeleteReplicaAPITest extends SolrTestCaseJ4 {
   @Test
   public void testCreateRemoteMessageAllProperties() {
     final var remoteMessage =
-        DeleteReplicaAPI.createRemoteMessage(
+        DeleteReplica.createRemoteMessage(
                 "someCollName",
                 "someShardName",
                 "someReplicaName",
@@ -113,7 +113,7 @@ public class DeleteReplicaAPITest extends SolrTestCaseJ4 {
   @Test
   public void testMissingValuesExcludedFromRemoteMessage() {
     final var remoteMessage =
-        DeleteReplicaAPI.createRemoteMessage(
+        DeleteReplica.createRemoteMessage(
                 "someCollName",
                 "someShardName",
                 "someReplicaName",

@@ -170,8 +170,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/features/[1]/name=='description'");
 
     // check persistence after restart
-    jetty.stop();
-    jetty.start();
+    getJetty().stop();
+    getJetty().start();
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
@@ -197,8 +197,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/error/msg=='Missing feature store: " + FeatureStore.DEFAULT_FEATURE_STORE_NAME + "'");
 
     // check persistence after restart
-    jetty.stop();
-    jetty.start();
+    getJetty().stop();
+    getJetty().start();
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
@@ -269,8 +269,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
     doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // check persistence after restart
-    jetty.stop();
-    jetty.start();
+    getJetty().stop();
+    getJetty().start();
     doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // delete test settings

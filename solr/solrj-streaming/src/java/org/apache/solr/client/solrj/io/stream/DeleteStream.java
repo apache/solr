@@ -79,7 +79,8 @@ public final class DeleteStream extends UpdateStream implements Expressible {
         final Long version = getVersion(doc);
         req.deleteById(id, version);
       }
-      req.process(getCloudSolrClient(), getCollectionName());
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+      req.process(cloudSolrClient, getCollectionName());
     } catch (SolrServerException | NumberFormatException | IOException e) {
       log.warn("Unable to delete documents from collection due to unexpected error.", e);
       String className = e.getClass().getName();

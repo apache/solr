@@ -2450,7 +2450,7 @@ For all terms except those in `protectedTerms.txt`, synonyms are added, terms ar
           ignoreCase="true" protected="protectedTerms.txt"
           wrappedFilters="SynonymGraph-fwd,ReverseString,SynonymGraph-rev"
           synonymgraph-FWD.synonyms="fwd-syns.txt"
-          synonymgraph-FWD.synonyms="rev-syns.txt"/>
+          synonymgraph-REV.synonyms="rev-syns.txt"/>
 </analyzer>
 ----
 

@@ -218,7 +218,7 @@ public class LTRRescorer extends Rescorer {
       LTRScoringQuery.ModelWeight.ModelScorer scorer,
       ScoreDoc[] reranked)
       throws IOException {
-    /**
+    /*
      * Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to call
      * score even if no feature scorers match, since a model might use that info to return a
      * non-zero score. Same applies for the case of advancing a

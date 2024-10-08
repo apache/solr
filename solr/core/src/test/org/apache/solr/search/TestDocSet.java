@@ -44,7 +44,7 @@ import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
@@ -383,17 +383,12 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public TopDocs searchNearestVectors(
-          String field, float[] target, int k, Bits acceptDocs, int visitedLimit)
-          throws IOException {
-        return null;
-      }
+      public void searchNearestVectors(
+          String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) {}
 
       @Override
-      public TopDocs searchNearestVectors(
-          String field, byte[] target, int k, Bits acceptDoc, int visitedLimits) {
-        return null;
-      }
+      public void searchNearestVectors(
+          String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) {}
 
       @Override
       protected void doClose() {}

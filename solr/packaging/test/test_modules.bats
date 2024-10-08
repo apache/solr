@@ -32,7 +32,7 @@ teardown() {
 @test "SQL Module" {
   run solr start -c -Dsolr.modules=sql
   run solr create_collection -c COLL_NAME
-  run solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
+  run solr api -get http://localhost:${SOLR_PORT}/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
   assert_output --partial '"docs":'
   assert_output --partial '"EOF":true'
   assert_output --partial '"RESPONSE_TIME":'
@@ -52,7 +52,7 @@ teardown() {
     -Dsolr.kerberos.cookie.domain=test
 
   # Upload the custom security.json and wait for Solr to try to load it
-  solr zk cp "${security_json}" zk:security.json -z localhost:9983
+  solr zk cp "${security_json}" zk:security.json -z localhost:${ZK_PORT}
   sleep 1
 
   run cat "${SOLR_LOGS_DIR}/solr.log"

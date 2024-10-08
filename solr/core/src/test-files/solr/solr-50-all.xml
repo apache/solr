@@ -29,6 +29,7 @@
   <int name="transientCacheSize">66</int>
   <int name="replayUpdatesThreads">100</int>
   <int name="maxBooleanClauses">42</int>
+  <bool name="hideStackTrace">true</bool>
 
   <coreAdminHandlerActions>
     <str name="action1">testCoreAdminHandlerAction1</str>

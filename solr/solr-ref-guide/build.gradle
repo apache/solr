@@ -59,9 +59,9 @@ dependencies {
 }
 
 ext {
-    antoraVersion = "3.0.1"
+    antoraVersion = "3.1.4"
     antoraLunrExtensionVersion = "1.0.0-alpha.8"
-    asciidoctorMathjaxVersion = "0.0.8"
+    asciidoctorMathjaxVersion = "0.0.9"
     linkCheckerVersion = "1.4.2"
     gulpCliVersion = "2.3.0"
     // Most recent commit as of 2022-06-24, this repo does not have tags

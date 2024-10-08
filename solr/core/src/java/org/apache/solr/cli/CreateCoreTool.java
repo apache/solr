@@ -80,7 +80,7 @@ public class CreateCoreTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
+    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
     if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     File configsetsDir = new File(cli.getOptionValue("configsetsDir"));

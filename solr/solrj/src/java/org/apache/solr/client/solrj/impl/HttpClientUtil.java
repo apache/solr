@@ -162,10 +162,10 @@ public class HttpClientUtil {
       log.debug("Using {}", socketFactoryRegistryProviderClassName);
       try {
         socketFactoryRegistryProvider =
-            (SocketFactoryRegistryProvider)
-                Class.forName(socketFactoryRegistryProviderClassName)
-                    .getConstructor()
-                    .newInstance();
+            Class.forName(socketFactoryRegistryProviderClassName)
+                .asSubclass(SocketFactoryRegistryProvider.class)
+                .getDeclaredConstructor()
+                .newInstance();
       } catch (InstantiationException
           | IllegalAccessException
           | ClassNotFoundException
@@ -181,8 +181,10 @@ public class HttpClientUtil {
       log.debug("Using {}", factoryClassName);
       try {
         HttpClientBuilderFactory factory =
-            (HttpClientBuilderFactory)
-                Class.forName(factoryClassName).getConstructor().newInstance();
+            Class.forName(factoryClassName)
+                .asSubclass(HttpClientBuilderFactory.class)
+                .getDeclaredConstructor()
+                .newInstance();
         httpClientBuilder = factory.getHttpClientBuilder(SolrHttpClientBuilder.create());
       } catch (InstantiationException
           | IllegalAccessException

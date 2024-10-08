@@ -215,12 +215,6 @@ public class HttpSolrCall {
     return queryParams;
   }
 
-  protected Aliases getAliases() {
-    return cores.isZooKeeperAware()
-        ? cores.getZkController().getZkStateReader().getAliases()
-        : Aliases.EMPTY;
-  }
-
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
     return collectionsList != null ? collectionsList : Collections.emptyList();
@@ -410,7 +404,7 @@ public class HttpSolrCall {
     }
     List<String> result = null;
     LinkedHashSet<String> uniqueList = null;
-    Aliases aliases = getAliases();
+    Aliases aliases = cores.getAliases();
     List<String> inputCollections = StrUtils.splitSmart(collectionStr, ",", true);
     if (inputCollections.size() > 1) {
       uniqueList = new LinkedHashSet<>();
@@ -649,10 +643,7 @@ public class HttpSolrCall {
   // called after init().
   protected void populateTracingSpan(Span span) {
     // Set db.instance
-    String coreOrColName = HttpSolrCall.this.origCorename;
-    if (coreOrColName == null && getCore() != null) {
-      coreOrColName = getCore().getName();
-    }
+    String coreOrColName = getCoreOrColName();
     if (coreOrColName != null) {
       span.setTag(Tags.DB_INSTANCE, coreOrColName);
     }
@@ -670,6 +661,14 @@ public class HttpSolrCall {
     String verb =
         getQueryParams().get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
     span.setOperationName(verb + ":" + path);
+  }
+
+  protected String getCoreOrColName() {
+    String coreOrColName = HttpSolrCall.this.origCorename;
+    if (coreOrColName == null && getCore() != null) {
+      coreOrColName = getCore().getName();
+    }
+    return coreOrColName;
   }
 
   public boolean shouldAudit() {
@@ -851,7 +850,12 @@ public class HttpSolrCall {
       try {
         if (exp != null) {
           SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          int code =
+              ResponseUtils.getErrorInfo(
+                  ex,
+                  info,
+                  log,
+                  localCore != null && localCore.getCoreContainer().hideStackTrace());
           sendError(code, info.toString());
         }
       } finally {
@@ -985,7 +989,12 @@ public class HttpSolrCall {
 
       if (solrRsp.getException() != null) {
         NamedList<Object> info = new SimpleOrderedMap<>();
-        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
+        int code =
+            ResponseUtils.getErrorInfo(
+                solrRsp.getException(),
+                info,
+                log,
+                core != null && core.getCoreContainer().hideStackTrace());
         solrRsp.add("error", info);
         response.setStatus(code);
       }

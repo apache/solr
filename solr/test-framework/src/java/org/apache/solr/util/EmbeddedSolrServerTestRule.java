@@ -100,8 +100,8 @@ public class EmbeddedSolrServerTestRule extends SolrClientTestRule {
   }
 
   @Override
-  public EmbeddedSolrServer getSolrClient(String name) {
-    return new EmbeddedSolrServer(getCoreContainer(), name);
+  public EmbeddedSolrServer getSolrClient(String collection) {
+    return new EmbeddedSolrServer(getCoreContainer(), collection);
   }
 
   public CoreContainer getCoreContainer() {

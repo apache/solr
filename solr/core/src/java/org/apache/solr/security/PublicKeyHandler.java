@@ -50,7 +50,7 @@ public class PublicKeyHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-        rsp, new PublicKeyAPI(nodeKeyPair).getPublicKey());
+        rsp, new GetPublicKey(nodeKeyPair).getPublicKey());
   }
 
   @Override
@@ -80,6 +80,6 @@ public class PublicKeyHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(PublicKeyAPI.class);
+    return List.of(GetPublicKey.class);
   }
 }

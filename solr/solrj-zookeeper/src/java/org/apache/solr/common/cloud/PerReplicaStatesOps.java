@@ -84,6 +84,12 @@ public class PerReplicaStatesOps {
     }
   }
 
+  public static class PrsZkNodeNotFoundException extends SolrException {
+    private PrsZkNodeNotFoundException(ErrorCode code, String msg, Throwable cause) {
+      super(code, msg, cause);
+    }
+  }
+
   public static DocCollection.PrsSupplier getZkClientPrsSupplier(
       SolrZkClient zkClient, String collectionPath) {
     return () -> fetch(collectionPath, zkClient, null);

@@ -39,6 +39,8 @@
 
     <!-- needed for splitByPrefix -->
   <field name="id_prefix" type="composite_id_prefix" indexed="true" stored="false"/>
+  <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <copyField source="id" dest="id_prefix"/>
   <fieldtype name="composite_id_prefix" class="solr.TextField">
     <analyzer>

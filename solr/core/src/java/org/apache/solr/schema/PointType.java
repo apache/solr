@@ -123,8 +123,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     return null;
   }
 
-  @Override
   /** Care should be taken in calling this with higher order dimensions for performance reasons. */
+  @Override
   protected Query getSpecializedRangeQuery(
       QParser parser,
       SchemaField field,

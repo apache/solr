@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -40,14 +41,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Retrieves cluster state from Zookeeper */
-public class ZkClientClusterStateProvider implements ClusterStateProvider {
+public class ZkClientClusterStateProvider
+    implements ClusterStateProvider, SolrZkClientTimeoutAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
-  private int zkConnectTimeout = 15000;
-  private int zkClientTimeout = 45000;
+  private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
+  private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
 
   private volatile boolean isClosed = false;
 
@@ -306,6 +308,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   /** Set the connect timeout to the zookeeper ensemble in ms */
+  @Override
   public void setZkConnectTimeout(int zkConnectTimeout) {
     this.zkConnectTimeout = zkConnectTimeout;
   }
@@ -315,6 +318,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   /** Set the timeout to the zookeeper ensemble in ms */
+  @Override
   public void setZkClientTimeout(int zkClientTimeout) {
     this.zkClientTimeout = zkClientTimeout;
   }

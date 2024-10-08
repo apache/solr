@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -394,12 +395,11 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       zkClient.clean("/");
 
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(30000);
       expectThrows(
           KeeperException.NoNodeException.class,
           "We should not be able to create this path",
           () ->
-              zkCmdExecutor.ensureExists(
+              ZkMaintenanceUtils.ensureExists(
                   "/collection/collection/leader",
                   (byte[]) null,
                   CreateMode.PERSISTENT,
@@ -412,7 +412,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
           KeeperException.NoNodeException.class,
           "We should not be able to create this path",
           () ->
-              zkCmdExecutor.ensureExists(
+              ZkMaintenanceUtils.ensureExists(
                   "/collections/collection/leader",
                   (byte[]) null,
                   CreateMode.PERSISTENT,
@@ -421,7 +421,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       zkClient.makePath("/collection/collection", true);
 
       byte[] bytes = new byte[10];
-      zkCmdExecutor.ensureExists(
+      ZkMaintenanceUtils.ensureExists(
           "/collection/collection", bytes, CreateMode.PERSISTENT, zkClient, 2);
 
       byte[] returnedBytes = zkClient.getData("/collection/collection", null, null, true);
@@ -430,7 +430,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
       zkClient.makePath("/collection/collection/leader", true);
 
-      zkCmdExecutor.ensureExists(
+      ZkMaintenanceUtils.ensureExists(
           "/collection/collection/leader", (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
     }
   }

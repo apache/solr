@@ -28,7 +28,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 /** Configuration bean for {@link AffinityPlacementFactory}. */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
 
-  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
+  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 5L;
   public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;
 
   public static final AffinityPlacementConfig DEFAULT =

@@ -36,6 +36,7 @@ Because this API has a large number of commands and options, we've grouped the c
 
 Since some collection API calls can be long running tasks (such as SPLITSHARD), you can optionally have the calls run asynchronously.
 Specifying `async=<request-id>` enables you to make an asynchronous call, the status of which can be requested using the <<requeststatus,REQUESTSTATUS>> call at any time.
+The ID provided can be any string so long as it doesn't have a `/` in it.
 
 As of now, REQUESTSTATUS does not automatically clean up the tracking data structures, meaning the status of completed or failed tasks stays stored in ZooKeeper unless cleared manually.
 DELETESTATUS can be used to clear the stored statuses.

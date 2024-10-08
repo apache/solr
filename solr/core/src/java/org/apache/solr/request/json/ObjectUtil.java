@@ -60,7 +60,6 @@ public class ObjectUtil {
 
       // if we aren't handling as a list, and we aren't handling as a map, then just overwrite (i.e.
       // nothing else to do)
-      return;
     }
 
     // merges srcMap onto targetMap (i.e. changes targetMap but not srcMap)

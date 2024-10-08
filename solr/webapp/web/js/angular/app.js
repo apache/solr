@@ -592,6 +592,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.http401 = sessionStorage.getItem("http401");
   };
 
+  $scope.showHideMenu = function() {
+    $scope.http401 = sessionStorage.getItem("http401");
+  };
+
   $scope.isMultiDestAlias = function(selectedColl) {
     return selectedColl && selectedColl.type === 'alias' && selectedColl.collections.includes(',');
   };

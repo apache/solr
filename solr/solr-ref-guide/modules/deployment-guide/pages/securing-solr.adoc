@@ -115,4 +115,17 @@ This can be done by setting a `SOLR_JETTY_HOST` value in your environment's "inc
  ----
  SOLR_JETTY_HOST="0.0.0.0"
  ----
+
+The same setting is also available as the `-Dsolr.jetty.host` System Property.
+
+The same is true for the embedded Zookeeper, if it is run with Solr.
+By default, the embedded Zookeeper only listens on the loopback interface ("127.0.0.1")
+The bind host is controlled via the `SOLR_ZK_EMBEDDED_HOST` value in your environment's "include script" (`solr.in.sh` or `solr.in.cmd`):
+
+[source,bash]
+ ----
+ SOLR_ZK_EMBEDDED_HOST="0.0.0.0"
+ ----
+
+The same setting is also available as the `-Dsolr.zk.embedded.host` System Property.
 // end::security-network-binding-1[]

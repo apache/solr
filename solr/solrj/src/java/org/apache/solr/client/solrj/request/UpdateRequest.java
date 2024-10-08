@@ -271,6 +271,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setPath(getPath());
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           updateRequest.setResponseParser(getResponseParser());
+          updateRequest.addHeaders(getHeaders());
           request = reqSupplier.get(updateRequest, urls);
           routes.put(leaderUrl, request);
         }

@@ -86,6 +86,8 @@ public class MiniClusterState {
     /** The Nodes. */
     public List<String> nodes;
 
+    public String zkHost;
+
     /** The Cluster. */
     MiniSolrCloudCluster cluster;
 
@@ -277,6 +279,7 @@ public class MiniClusterState {
       for (JettySolrRunner runner : jetties) {
         nodes.add(runner.getBaseUrl().toString());
       }
+      zkHost = cluster.getZkServer().getZkAddress();
 
       client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
 

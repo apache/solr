@@ -18,7 +18,6 @@ package org.apache.solr.search.facet;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.SolrParams;
@@ -87,7 +86,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
 
     assertEquals("This indexing code assumes exactly 3 shards/clients", 3, clients.size());
 
-    final AtomicInteger docNum = new AtomicInteger();
+    int docNum = 0;
     final SolrClient shard0 = clients.get(0);
     final SolrClient shard1 = clients.get(1);
     final SolrClient shard2 = clients.get(2);
@@ -95,9 +94,9 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     // the 5 top foo_s terms have 100 docs each on every shard
     for (int i = 0; i < 100; i++) {
       for (int j = 0; j < 5; j++) {
-        shard0.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "aaa" + j, statField, j * 13 - i));
-        shard1.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "aaa" + j, statField, j * 3 + i));
-        shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "aaa" + j, statField, i * 7 + j));
+        shard0.add(sdoc("id", docNum++, "foo_s", "aaa" + j, statField, j * 13 - i));
+        shard1.add(sdoc("id", docNum++, "foo_s", "aaa" + j, statField, j * 3 + i));
+        shard2.add(sdoc("id", docNum++, "foo_s", "aaa" + j, statField, i * 7 + j));
       }
     }
 
@@ -105,14 +104,14 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     // on both shard0 & shard1 ("bbb_")
     for (int i = 0; i < 50; i++) {
       for (int j = 0; j < 20; j++) {
-        shard0.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "bbb" + j, statField, 0));
-        shard1.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "bbb" + j, statField, 1));
+        shard0.add(sdoc("id", docNum++, "foo_s", "bbb" + j, statField, 0));
+        shard1.add(sdoc("id", docNum++, "foo_s", "bbb" + j, statField, 1));
       }
       // distracting term appears on only on shard2 50 times
-      shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "junkA"));
+      shard2.add(sdoc("id", docNum++, "foo_s", "junkA"));
     }
     // put "bbb0" on shard2 exactly once to sanity check refinement
-    shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "bbb0", statField, -2));
+    shard2.add(sdoc("id", docNum++, "foo_s", "bbb0", statField, -2));
 
     // long 'tail' foo_s term appears in 45 docs on every shard
     // foo_s:tail is the only term with bar_s sub-pivot terms
@@ -122,23 +121,21 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       // but the top 5 terms are ccc(0-4) -- 7 on each shard
       // (4 docs each have junk terms)
       String sub_term = (i < 35) ? "ccc" + (i % 5) : ((i < 41) ? "tailB" : "junkA");
-      shard0.add(
-          sdoc("id", docNum.incrementAndGet(), "foo_s", "tail", "bar_s", sub_term, statField, i));
-      shard1.add(
-          sdoc("id", docNum.incrementAndGet(), "foo_s", "tail", "bar_s", sub_term, statField, i));
+      shard0.add(sdoc("id", docNum++, "foo_s", "tail", "bar_s", sub_term, statField, i));
+      shard1.add(sdoc("id", docNum++, "foo_s", "tail", "bar_s", sub_term, statField, i));
 
       // shard2's top 5 sub-pivot terms are junk only it has with 8 docs each
       // and 5 docs that use "tailB"
       // NOTE: none of these get statField ! !
       sub_term = (i < 40) ? "junkB" + (i % 5) : "tailB";
-      shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "tail", "bar_s", sub_term));
+      shard2.add(sdoc("id", docNum++, "foo_s", "tail", "bar_s", sub_term));
     }
 
     // really long tail uncommon foo_s terms on shard2
     for (int i = 0; i < 30; i++) {
       // NOTE: using "Z" here so these sort before bbb0 when they tie for '1' instance each on
       // shard2
-      shard2.add(sdoc("id", docNum.incrementAndGet(), "foo_s", "ZZZ" + i));
+      shard2.add(sdoc("id", docNum++, "foo_s", "ZZZ" + i));
     }
   }
 
