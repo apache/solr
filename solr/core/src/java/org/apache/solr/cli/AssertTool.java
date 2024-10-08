@@ -98,18 +98,7 @@ public class AssertTool extends ToolBase {
             .hasArg(true)
             .argName("url")
             .build(),
-        Option.builder("S")
-            .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --not-started instead")
-                    .get())
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder()
+        Option.builder("s")
             .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
             .deprecated(
                 DeprecatedAttributes.builder()
@@ -123,17 +112,6 @@ public class AssertTool extends ToolBase {
         Option.builder()
             .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
             .longOpt("started")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("s")
-            .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --started instead")
-                    .get())
             .hasArg(true)
             .argName("url")
             .build(),
@@ -354,11 +332,10 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("same-user")) {
       ret += sameUser(cli.getOptionValue("same-user"));
     }
-    if (cli.hasOption("s") || cli.hasOption("started")) {
+    if (cli.hasOption("s")) {
       ret +=
           assertSolrRunning(
-              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "started", "s", null),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              cli.getOptionValue("s"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (cli.hasOption("started")) {
       ret +=
