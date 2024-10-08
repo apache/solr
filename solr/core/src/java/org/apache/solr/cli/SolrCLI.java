@@ -135,11 +135,27 @@ public class SolrCLI implements CLIO {
                   + '.')
           .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("url")
+      Option.builder("s")
           .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
           .required(false)
+          .desc(
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
+                  + getDefaultSolrUrl()
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRURL_DEPRECATED_SHORT =
+      Option.builder("url")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.7")
+                  .setDescription("Use -s instead")
+                  .get())
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + getDefaultSolrUrl()
@@ -419,7 +435,7 @@ public class SolrCLI implements CLIO {
     return val == null ? def : val;
   }
 
-  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
   private static void deprecatedHandlerStdErr(Option o) {
     if (o.isDeprecated()) {
@@ -735,8 +751,15 @@ public class SolrCLI implements CLIO {
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl =
-        cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
+    String solrUrl = null;
+    if (cli.hasOption("solr-url")) {
+      solrUrl = cli.getOptionValue("solr-url");
+    } else if (cli.hasOption("solrUrl")) {
+      solrUrl = cli.getOptionValue("solrUrl");
+    } else if (cli.hasOption("url")) {
+      solrUrl = cli.getOptionValue("url");
+    }
+
     if (solrUrl == null) {
       String zkHost =
           cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");

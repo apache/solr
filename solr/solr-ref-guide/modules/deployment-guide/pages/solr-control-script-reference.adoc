@@ -105,7 +105,7 @@ For more details, see the section <<SolrCloud Mode>> below.
 +
 Define a server directory, defaults to `server` (as in, `$SOLR_TIP/server`).
 It is uncommon to override this option.
-When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `-s` option.
+When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `--solr-home` option.
 +
 *Example*: `bin/solr start -d newServerDir`
 
@@ -194,7 +194,7 @@ If this is not specified, `8983` will be used.
 +
 *Example*: `bin/solr start -p 8655`
 
-`-s <dir>`::
+`--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -211,7 +211,7 @@ This parameter is ignored when running examples (`-e`), as the `solr.solr.home` 
 The default value is `server/solr`.
 If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
 +
-*Example*: `bin/solr start -s newHome`
+*Example*: `bin/solr start --solr-home newHome`
 
 `-t <dir>` or `--data-home <dir>`::
 +
@@ -278,7 +278,7 @@ To emphasize how the default settings work take a moment to understand that the 
 
 `bin/solr start`
 
-`bin/solr start --host localhost -p 8983 -d server -s solr -m 512m`
+`bin/solr start --host localhost -p 8983 -d server --solr-home solr -m 512m`
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
@@ -498,7 +498,7 @@ The basic usage of `bin/solr assert` is:
 [source, plain]
 ----
 $ bin/solr assert -h
-usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
+usage: bin/solr assert [-m <message>] [-e] [-rR] [--started <url>] [-not-started <url>] [-c
                 <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]
  -c,---cloud <url>             Asserts that Solr is running in cloud mode.
                                Also fails if Solr not running.  URL should
@@ -548,7 +548,7 @@ Name of the collection to run a healthcheck against.
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -688,7 +688,7 @@ This option is useful if you are running multiple Solr instances on the same hos
 +
 *Example*: `bin/solr create -p 8983`
 
-`-s <shards>` or `-shards <shards>`::
+`-sh <shards>` or `-shards <shards>`::
 +
 [%autowidth,frame=none]
 |===
@@ -734,7 +734,7 @@ It is possible to override this warning with the --force parameter.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1004,7 +1004,7 @@ This option is useful if you are running multiple Solr instances on the same hos
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1150,7 +1150,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 Defines the Solr server directory, by default `$SOLR_TIP/server`.
 It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
-`-s <dir>` or `--solr-home <dir>`::
+`--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1250,7 +1250,7 @@ Set the property to this value; accepts JSON objects and strings.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-u <url>` or --solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1341,7 +1341,7 @@ Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1413,7 +1413,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1497,7 +1497,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1580,7 +1580,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1642,7 +1642,7 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1693,7 +1693,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1742,7 +1742,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1911,7 +1911,7 @@ The `api` command will allow you to send an arbitrary HTTP request to a Solr API
 
 The `bin/solr api` command takes the following parameters:
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
