@@ -401,7 +401,7 @@ public class SolrExporter {
           new SolrExporter(
               port,
               numberOfThreads,
-              scrapeInterval),
+              scrapeInterval,
               scrapeConfiguration,
               loadMetricsConfiguration(configFile),
               clusterId);
