@@ -106,7 +106,7 @@ teardown() {
   touch myfile2.txt
   run solr zk cp myfile2.txt zk:myfile2.txt -z localhost:${ZK_PORT}
   sleep 1
-  run solr zk ls / -z localhost:${ZK_PORT} -v
+  run solr zk ls / -z localhost:${ZK_PORT} --verbose
   assert_output --partial "myfile2.txt"
 
   touch myfile3.txt
@@ -147,7 +147,7 @@ teardown() {
 
 @test "zkcli.sh gets 'solrhome' from 'solr.home' system property" {
   sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v
+  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" --verbose
   local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
   # remove 'solrhome='
   local path_value=${extracted_solrhome#*=}
@@ -156,7 +156,7 @@ teardown() {
 
 @test "zkcli.sh gets 'solrhome' from 'solrhome' command line option" {
   sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v -s /path/to/solr/home
+  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" --verbose -s /path/to/solr/home
   local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
   # remove 'solrhome='
   local path_value=${extracted_solrhome#*=}
