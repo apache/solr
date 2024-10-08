@@ -367,7 +367,7 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [-t solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
     echo ""
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
@@ -401,7 +401,7 @@ function print_usage() {
     echo "                          on which example is run. The default value is server/solr. If passed relative dir,"
     echo "                          validation with current dir will be done, before trying default server/<dir>"
     echo ""
-    echo "  -t/--data-home <dir>  Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
+    echo "  --data-home <dir>     Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
     echo "                          If not set, Solr uses solr.solr.home for config and data."
     echo ""
     echo "  -e <example>          Name of the example to run; available examples:"

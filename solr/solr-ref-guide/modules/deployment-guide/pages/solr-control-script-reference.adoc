@@ -213,7 +213,7 @@ If passed relative dir, validation with current dir will be done, before trying 
 +
 *Example*: `bin/solr start --solr-home newHome`
 
-`-t <dir>` or `--data-home <dir>`::
+`--data-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
