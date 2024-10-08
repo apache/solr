@@ -98,7 +98,18 @@ public class AssertTool extends ToolBase {
             .hasArg(true)
             .argName("url")
             .build(),
-        Option.builder("s")
+        Option.builder("S")
+            .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --not-started instead")
+                    .get())
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder()
             .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
             .deprecated(
                 DeprecatedAttributes.builder()
@@ -112,6 +123,17 @@ public class AssertTool extends ToolBase {
         Option.builder()
             .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
             .longOpt("started")
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder("s")
+            .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --started instead")
+                    .get())
             .hasArg(true)
             .argName("url")
             .build(),
@@ -332,10 +354,11 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("same-user")) {
       ret += sameUser(cli.getOptionValue("same-user"));
     }
-    if (cli.hasOption("s")) {
+    if (cli.hasOption("s") || cli.hasOption("started")) {
       ret +=
           assertSolrRunning(
-              cli.getOptionValue("s"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "started", "s", null),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (cli.hasOption("started")) {
       ret +=
@@ -346,7 +369,8 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("S")) {
       ret +=
           assertSolrNotRunning(
-              cli.getOptionValue("S"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "not-started", "S", null),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (cli.hasOption("not-started")) {
       ret +=
