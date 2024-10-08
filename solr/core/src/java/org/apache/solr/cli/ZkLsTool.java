@@ -75,7 +75,7 @@ public class ZkLsTool extends ToolBase {
               + " from ZooKeeper at "
               + zkHost
               + " recursive: "
-              + recursive);
+              + recursive, cli);
       stdout.print(zkClient.listZnode(znode, recursive));
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
