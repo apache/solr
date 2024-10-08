@@ -26,6 +26,7 @@ import io.opentracing.util.GlobalTracer;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -135,5 +136,18 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  public static NameStrategy getNameStrategy(String name) {
+    var nameStrategy = KNOWN_METRIC_NAME_STRATEGIES.get(name);
+    if (nameStrategy == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Unknown metricNameStrategy: "
+              + name
+              + " found. Must be one of: "
+              + KNOWN_METRIC_NAME_STRATEGIES.keySet());
+    }
+    return nameStrategy;
   }
 }
