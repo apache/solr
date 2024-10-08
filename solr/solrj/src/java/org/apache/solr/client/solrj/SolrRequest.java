@@ -88,13 +88,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   /**
    * If set to true, every request that implements {@link V2RequestSupport} will be converted to a
    * V2 API call
+   *
+   * @deprecated use v2-native {@link SolrRequest} implementations directly instead
    */
+  @Deprecated
   public SolrRequest<T> setUseV2(boolean flag) {
     this.usev2 = flag;
     return this;
   }
 
-  /** If set to true use javabin instead of json (default) */
+  /**
+   * If set to true use javabin instead of json (default)
+   *
+   * @deprecated use v2-native {@link SolrRequest} implementations directly instead
+   */
+  @Deprecated
   public SolrRequest<T> setUseBinaryV2(boolean flag) {
     this.useBinaryV2 = flag;
     return this;
@@ -194,6 +202,19 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public abstract SolrParams getParams();
 
   /**
+   * Determines whether this request should use or ignore any specified collections (esp. {@link
+   * SolrClient#defaultCollection})
+   *
+   * <p>Many Solr requests target a particular core or collection. But not all of them - many Solr
+   * APIs (e.g. security or other admin APIs) are agnostic of collections entirely. This method
+   * gives these requests a way to opt out of using {@link SolrClient#defaultCollection} or other
+   * specified collections.
+   */
+  public boolean requiresCollection() {
+    return false;
+  }
+
+  /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
    */
   @Deprecated
@@ -253,12 +274,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return getParams() == null ? null : getParams().get("collection");
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public void setBasePath(String path) {
     if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
 
     this.basePath = path;
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public String getBasePath() {
     return basePath;
   }

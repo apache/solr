@@ -19,6 +19,9 @@ package org.apache.solr.handler.admin.api;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCoreSnapshotResponse;
+import org.apache.solr.client.api.model.DeleteSnapshotResponse;
+import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -31,7 +34,7 @@ import org.junit.Test;
 
 public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
 
-  private CoreSnapshotAPI coreSnapshotAPI;
+  private CoreSnapshot coreSnapshotAPI;
 
   @BeforeClass
   public static void initializeCoreAndRequestFactory() throws Exception {
@@ -52,8 +55,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
         new CoreAdminHandler.CoreAdminAsyncTracker();
 
     coreSnapshotAPI =
-        new CoreSnapshotAPI(
-            solrQueryRequest, solrQueryResponse, coreContainer, coreAdminAsyncTracker);
+        new CoreSnapshot(solrQueryRequest, solrQueryResponse, coreContainer, coreAdminAsyncTracker);
   }
 
   private List<String> snapshotsToCleanup = new ArrayList<>();
@@ -71,7 +73,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
   public void testCreateSnapshotReturnsValidResponse() throws Exception {
     final String snapshotName = "my-new-snapshot";
 
-    final CoreSnapshotAPI.CreateSnapshotResponse response =
+    final CreateCoreSnapshotResponse response =
         coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
     snapshotsToCleanup.add(snapshotName);
 
@@ -108,7 +110,7 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
       snapshotsToCleanup.add(snapshotName);
     }
 
-    final CoreSnapshotAPI.ListSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
+    final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
     assertEquals(5, response.snapshots.size());
   }
@@ -135,13 +137,13 @@ public class CoreSnapshotAPITest extends SolrTestCaseJ4 {
 
     coreSnapshotAPI.createSnapshot(coreName, snapshotName, null);
 
-    final CoreSnapshotAPI.DeleteSnapshotResponse deleteResponse =
+    final DeleteSnapshotResponse deleteResponse =
         coreSnapshotAPI.deleteSnapshot(coreName, snapshotName, null);
 
     assertEquals(coreName, deleteResponse.coreName);
     assertEquals(snapshotName, deleteResponse.commitName);
 
-    final CoreSnapshotAPI.ListSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
+    final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
     assertEquals(0, response.snapshots.size());
   }

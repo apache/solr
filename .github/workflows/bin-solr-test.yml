@@ -4,16 +4,22 @@ on:
   pull_request:
     branches:
       - 'main'
+      - 'branch_*'
     paths:
       - '.github/workflows/bin-solr-test.yml'
       - 'solr/bin/**'
       - 'solr/packaging/**'
+      - 'solr/core/src/java/org/apache/solr/cli/**'
+      - 'solr/prometheus-exporter/**'
 
 jobs:
   test:
     name: Run Solr Script Tests
 
     runs-on: ubuntu-latest
+
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
     steps:
     # Setup
@@ -42,4 +48,3 @@ jobs:
       with:
         name: logs
         path: solr/packaging/build/test-output
-

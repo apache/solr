@@ -37,7 +37,7 @@ include::indexing-guide:page$indexing-nested-documents.adoc[tag=sample-indexing-
 By default, documents that match a query do not include any of their nested children in the response.
 The `[child]` Doc Transformer Can be used enrich query results with the documents' descendants.
 
-For a detailed explanation of this transformer, and specifics on it's syntax & limitations, please refer to the section xref:document-transformers.adoc#child-childdoctransformerfactory[[child] - ChildDocTransformerFactory].
+For a detailed explanation of this transformer, and specifics on its syntax & limitations, please refer to the section xref:document-transformers.adoc#child-childdoctransformerfactory[[child] - ChildDocTransformerFactory].
 
 A simple query matching all documents with a description that includes "staplers":
 
@@ -174,7 +174,7 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 * One level of `\` escaping is necessary to prevent the `/` from being interpreted as a {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html#Regexp_Searches[Regex Query]
 * An additional level of "escaping the escape character" is necessary because the `of` local parameter is a quoted string; so we need a second `\` to ensure the first `\` is preserved and passed as is to the query parser.
 
-(You can see that only a single level of of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param).
+(You can see that only a single level of `\` escaping is needed in the body of the query string -- to prevent the Regex syntax --  because it's not a quoted string local param).
 
 You may find it more convenient to use xref:local-params.adoc#parameter-dereferencing[parameter references] in conjunction with xref:other-parsers.adoc[other parsers] that do not treat `/` as a special character to express the same query in a more verbose form:
 

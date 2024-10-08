@@ -73,9 +73,9 @@ public class ResponseBuilder {
 
   private boolean isCancellation;
   private String cancellationUUID;
-
   private String taskStatusCheckUUID;
   private boolean isTaskListRequest;
+  private boolean isDistribStatsDisabled;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -448,9 +448,7 @@ public class ResponseBuilder {
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
-      rsp.getResponseHeader()
-          .asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      rsp.setPartialResults();
       if (getResults() != null && getResults().docList == null) {
         getResults().docList =
             new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
@@ -546,5 +544,13 @@ public class ResponseBuilder {
 
   public String getTaskStatusCheckUUID() {
     return taskStatusCheckUUID;
+  }
+
+  public void setDistribStatsDisabled(boolean isEnableDistribStats) {
+    this.isDistribStatsDisabled = isEnableDistribStats;
+  }
+
+  public boolean isDistribStatsDisabled() {
+    return isDistribStatsDisabled;
   }
 }

@@ -60,6 +60,7 @@ public interface SolrCache<K, V> extends SolrInfoBean {
    * item in the new cache from an entry in the old cache.
    */
   public Object init(Map<String, String> args, Object persistence, CacheRegenerator regenerator);
+
   // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
@@ -149,6 +150,7 @@ public interface SolrCache<K, V> extends SolrInfoBean {
    * <code>this</code> and <code>old</code> will have the same concrete type.
    */
   void warm(SolrIndexSearcher searcher, SolrCache<K, V> old);
+
   // Q: an alternative to passing the searcher here would be to pass it in
   // init and have the cache implementation save it.
 

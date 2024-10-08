@@ -32,9 +32,11 @@ This document contains an overview of those APIs.
 == Classloaders
 
 At the heart of the system, we have classloader isolation.
-To achieve this, the system is simplified into two layered classloaders: the root classloader which has all the jars from Solr classpath.
-This requires Solr node restart to change anything.
-A set of named classloaders that inherit from the root classloader.
+To achieve this, the system is simplified into two layered classloaders:
+
+* The root classloader which has all the jars from Solr classpath. This requires Solr node restart to change anything.
+
+* A set of named classloaders that inherit from the root classloader.
 The life cycles of the named classloaders are tied to the package configuration in ZooKeeper.
 As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
 
@@ -46,7 +48,7 @@ Start all your nodes with the system property `-Denable.packages=true` to use th
 [source,bash]
 ----
 
-bin/solr -c -Denable.packages=true
+bin/solr start -c -Denable.packages=true
 ----
 
 === Upload Your Keys
@@ -95,7 +97,7 @@ The end points are:
 
 Use the following steps to upload a jar signed with your public key:
 
-. If you don't have a jar file with plugins, download a sample from github:
+. If you don't have a jar file with plugins, download a sample from GitHub:
 +
 [source, bash,subs="attributes"]
 ----
@@ -144,12 +146,18 @@ A Package has the following attributes:
 For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance.
 This is a child of the `CoreContainer` resource loader.
 
+NOTE: Solr does not require that the version string follows any particular format -
+it can be an arbitrary string or even an empty string.
+
 === packages.json
 
 The package configurations live in a file called `packages.json` in ZooKeeper.
 At any given moment we can have multiple versions of a given package in the package configuration.
 The system will always use the latest version.
-Versions are sorted by their numeric value and the highest is the latest.
+Versions are sorted by their values in lexicographic order, and the largest string is considered to be the latest.
+
+CAUTION: Lexicographic order for version strings means that for a package with versions *1.2.0*, *1.9.0*, *1.11.0*,
+Solr would pick *1.9.0* as the latest version.
 
 For example:
 
@@ -187,7 +195,7 @@ Use the `delete` command to delete the highest version and choose the next highe
 === Using Multiple Versions in Parallel
 
 We use `params.json` in the collection config to store a version of a package it uses.
-By default it is the `$LATEST`.
+By default, it is the `$LATEST`.
 
 [source, json]
 ----
@@ -202,6 +210,15 @@ By default it is the `$LATEST`.
 <2> For `pkg2`, use the latest.
 This is optional.
 The default is `$LATEST`.
+
+[NOTE]
+====
+The package version in `params.json` actually instructs Solr to pick the package with the
+largest version that is not greater than the provided value.
+
+So in the example above, if the only available versions for `mypkg` are *0.01* and *0.2*,
+the version *0.01* will be used.
+====
 
 === Workflow
 
@@ -263,7 +280,7 @@ curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:applicati
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
 
-. Verify that the component is created and it is using the correct version of the package to load classes from:
+. Verify that the component is created, and it is using the correct version of the package to load classes from:
 +
 [source,bash]
 ----
@@ -394,7 +411,9 @@ Note that the `Version` value is `"2"`, which means the plugin is updated.
 === How to Avoid Automatic Upgrade
 
 The default version used in any collection is always the latest.
-However, setting a per-collection property in `params.json` ensures that the versions are always fixed irrespective of the new versions added.
+However, setting a per-collection property in `params.json` ensures that the collection uses the same
+package version (i.e., version *2.0*), irrespective of any versions later than *2.0* that may be added to Solr
+at a later point.
 
 [source,bash]
 ----

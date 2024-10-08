@@ -1683,7 +1683,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
               "true",
               "stats.field",
               "{!key=k " + exclude + stat + "=" + expect.input + "}a_i"),
-          testXpaths.toArray(new String[testXpaths.size()]));
+          testXpaths.toArray(new String[0]));
     }
 
     // test all the possible combinations (of all possible sizes) of stats params
@@ -1714,7 +1714,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
         assertQ(
             "ask for and get only: " + combo,
             req("q", "*:*", "stats", "true", "stats.field", paras.toString()),
-            testXpaths.toArray(new String[testXpaths.size()]));
+            testXpaths.toArray(new String[0]));
       }
     }
   }
@@ -2342,7 +2342,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     public StatSetCombinations(int comboSize, EnumSet<Stat> universe) {
       // NOTE: should not need to sort, EnumSet uses natural ordering
-      all = universe.toArray(new Stat[universe.size()]);
+      all = universe.toArray(new Stat[0]);
       intCombos = new Combinations(all.length, comboSize);
     }
 

@@ -115,6 +115,7 @@ public class LambdaFunction {
       return new BooleanStreamInBooleanStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued boolean expression and returns a single-valued
    * boolean expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -130,6 +131,7 @@ public class LambdaFunction {
       String name, TwoBoolInBoolOutLambda lambda, BooleanValueStream param) {
     return new BooleanStreamInBooleanValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two booleans to a single boolean. This can take the following
    * shapes:
@@ -171,6 +173,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createBooleanLambdaFunction(String,
    * TwoBoolInBoolOutLambda, BooleanValue[], boolean)}, using {@value #defaultMultiExistsMethod} for
@@ -186,6 +189,7 @@ public class LambdaFunction {
       String name, TwoBoolInBoolOutLambda lambda, BooleanValue[] params) {
     return createBooleanLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value
    * boolean expressions into a single-value boolean expression for each document. <br>
@@ -232,6 +236,7 @@ public class LambdaFunction {
       return new IntStreamInIntStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued integer expression and returns a single-valued
    * integer expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -247,6 +252,7 @@ public class LambdaFunction {
       String name, TwoIntInIntOutLambda lambda, IntValueStream param) {
     return new IntStreamInIntValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two integers to a single integer. This can take the following
    * shapes:
@@ -283,6 +289,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createIntLambdaFunction(String,
    * TwoIntInIntOutLambda, IntValue[], boolean)}, using {@value #defaultMultiExistsMethod} for the
@@ -298,6 +305,7 @@ public class LambdaFunction {
       String name, TwoIntInIntOutLambda lambda, IntValue[] params) {
     return createIntLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value
    * integer expressions into a single-value integer expression for each document. <br>
@@ -344,6 +352,7 @@ public class LambdaFunction {
       return new LongStreamInLongStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued long expression and returns a single-valued
    * long expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -359,6 +368,7 @@ public class LambdaFunction {
       String name, TwoLongInLongOutLambda lambda, LongValueStream param) {
     return new LongStreamInLongValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two longs to a single long. This can take the following shapes:
    *
@@ -396,6 +406,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createLongLambdaFunction(String,
    * TwoLongInLongOutLambda, LongValue[], boolean)}, using {@value #defaultMultiExistsMethod} for
@@ -411,6 +422,7 @@ public class LambdaFunction {
       String name, TwoLongInLongOutLambda lambda, LongValue[] params) {
     return createLongLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value long
    * expressions into a single-value long expression for each document. <br>
@@ -456,6 +468,7 @@ public class LambdaFunction {
       return new FloatStreamInFloatStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued float expression and returns a single-valued
    * float expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -471,6 +484,7 @@ public class LambdaFunction {
       String name, TwoFloatInFloatOutLambda lambda, FloatValueStream param) {
     return new FloatStreamInFloatValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two floats to a single float. This can take the following shapes:
    *
@@ -511,6 +525,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createFloatLambdaFunction(String,
    * TwoFloatInFloatOutLambda, FloatValue[], boolean)}, using {@value #defaultMultiExistsMethod} for
@@ -526,6 +541,7 @@ public class LambdaFunction {
       String name, TwoFloatInFloatOutLambda lambda, FloatValue[] params) {
     return createFloatLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value float
    * expressions into a single-value float expression for each document. <br>
@@ -572,6 +588,7 @@ public class LambdaFunction {
       return new DoubleStreamInDoubleStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued double expression and returns a single-valued
    * double expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -587,6 +604,7 @@ public class LambdaFunction {
       String name, TwoDoubleInDoubleOutLambda lambda, DoubleValueStream param) {
     return new DoubleStreamInDoubleValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two doubles to a single double. This can take the following
    * shapes:
@@ -628,6 +646,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createDoubleLambdaFunction(String,
    * TwoDoubleInDoubleOutLambda, DoubleValue[], boolean)}, using {@value #defaultMultiExistsMethod}
@@ -643,6 +662,7 @@ public class LambdaFunction {
       String name, TwoDoubleInDoubleOutLambda lambda, DoubleValue[] params) {
     return createDoubleLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value
    * double expressions into a single-value double expression for each document. <br>
@@ -691,6 +711,7 @@ public class LambdaFunction {
       return new DateStreamInDateStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued date expression and returns a single-valued
    * date expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -707,6 +728,7 @@ public class LambdaFunction {
       String name, TwoLongInLongOutLambda lambda, DateValueStream param) {
     return new DateStreamInDateValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two dates to a single date. This can take the following shapes:
    *
@@ -746,6 +768,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createDateLambdaFunction(String,
    * TwoLongInLongOutLambda, DateValue[], boolean)}, using {@value #defaultMultiExistsMethod} for
@@ -761,6 +784,7 @@ public class LambdaFunction {
       String name, TwoLongInLongOutLambda lambda, DateValue[] params) {
     return createDateLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value date
    * expressions into a single-value date expression for each document. <br>
@@ -808,6 +832,7 @@ public class LambdaFunction {
       return new StringStreamInStringStreamOutFunction(name, lambda, param);
     }
   }
+
   /**
    * Creates a function that takes in a multi-valued string expression and returns a single-valued
    * string expression. The given lambda is used to associatively (order not guaranteed) reduce all
@@ -823,6 +848,7 @@ public class LambdaFunction {
       String name, TwoStringInStringOutLambda lambda, StringValueStream param) {
     return new StringStreamInStringValueOutFunction(name, lambda, param);
   }
+
   /**
    * Creates a function that maps two strings to a single string. This can take the following
    * shapes:
@@ -864,6 +890,7 @@ public class LambdaFunction {
           "The " + name + " function requires at least 1 single-valued parameter.");
     }
   }
+
   /**
    * Forwards the creation of the function to {@link #createStringLambdaFunction(String,
    * TwoStringInStringOutLambda, StringValue[], boolean)}, using {@value #defaultMultiExistsMethod}
@@ -879,6 +906,7 @@ public class LambdaFunction {
       String name, TwoStringInStringOutLambda lambda, StringValue[] params) {
     return createStringLambdaFunction(name, lambda, params, defaultMultiExistsMethod);
   }
+
   /**
    * Creates a function that associatively (order is guaranteed) reduces multiple single-value
    * string expressions into a single-value string expression for each document. <br>
@@ -935,6 +963,7 @@ public class LambdaFunction {
   public static interface StringInBoolOutLambda {
     boolean apply(double a);
   }
+
   // Int Out
   @FunctionalInterface
   public static interface BoolInIntOutLambda {
@@ -965,6 +994,7 @@ public class LambdaFunction {
   public static interface StringInIntOutLambda {
     int apply(double a);
   }
+
   // Long Out
   @FunctionalInterface
   public static interface BoolInLongOutLambda {
@@ -995,6 +1025,7 @@ public class LambdaFunction {
   public static interface StringInLongOutLambda {
     long apply(double a);
   }
+
   // Float Out
   @FunctionalInterface
   public static interface BoolInFloatOutLambda {
@@ -1025,6 +1056,7 @@ public class LambdaFunction {
   public static interface StringInFloatOutLambda {
     float apply(String a);
   }
+
   // Double Out
   @FunctionalInterface
   public static interface BoolInDoubleOutLambda {
@@ -1055,6 +1087,7 @@ public class LambdaFunction {
   public static interface StringInDoubleOutLambda {
     double apply(String a);
   }
+
   // String Out
   @FunctionalInterface
   public static interface BoolInStringOutLambda {
@@ -1119,6 +1152,7 @@ public class LambdaFunction {
   public static interface TwoStringInBoolOutLambda {
     boolean apply(double a, double b);
   }
+
   // Int Out
   @FunctionalInterface
   public static interface TwoBoolInIntOutLambda {
@@ -1149,6 +1183,7 @@ public class LambdaFunction {
   public static interface TwoStringInIntOutLambda {
     int apply(double a, double b);
   }
+
   // Long Out
   @FunctionalInterface
   public static interface TwoBoolInLongOutLambda {
@@ -1179,6 +1214,7 @@ public class LambdaFunction {
   public static interface TwoStringInLongOutLambda {
     long apply(double a, double b);
   }
+
   // Float Out
   @FunctionalInterface
   public static interface TwoBoolInFloatOutLambda {
@@ -1209,6 +1245,7 @@ public class LambdaFunction {
   public static interface TwoStringInFloatOutLambda {
     float apply(String a, String b);
   }
+
   // Double Out
   @FunctionalInterface
   public static interface TwoBoolInDoubleOutLambda {
@@ -1239,6 +1276,7 @@ public class LambdaFunction {
   public static interface TwoStringInDoubleOutLambda {
     double apply(String a, String b);
   }
+
   // String Out
   @FunctionalInterface
   public static interface TwoBoolInStringOutLambda {

@@ -196,7 +196,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
             params.add("terms.maxcount");
             params.add(random().nextInt(4) - 1);
           }
-          q = params.toArray(new Object[params.size()]);
+          q = params.toArray(new Object[0]);
           break;
         }
       }

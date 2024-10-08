@@ -119,6 +119,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
     public int getLimit() {
       return limit;
     }
+
     /**
      * Set the maximum number of buckets to be returned.
      *

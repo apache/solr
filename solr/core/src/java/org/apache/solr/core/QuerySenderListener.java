@@ -30,6 +30,7 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,13 +81,19 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           NamedList<?> values = rsp.getValues();
           for (int i = 0; i < values.size(); i++) {
             Object o = values.getVal(i);
+            SolrDocumentFetcher docFetcher = null;
             if (o instanceof ResultContext) {
-              o = ((ResultContext) o).getDocList();
+              ResultContext ctx = (ResultContext) o;
+              o = ctx.getDocList();
+              docFetcher = ctx.getDocFetcher();
             }
             if (o instanceof DocList) {
               DocList docs = (DocList) o;
+              if (docFetcher == null) {
+                docFetcher = newSearcher.getDocFetcher();
+              }
               for (DocIterator iter = docs.iterator(); iter.hasNext(); ) {
-                newSearcher.doc(iter.nextDoc());
+                docFetcher.doc(iter.nextDoc());
               }
             }
           }

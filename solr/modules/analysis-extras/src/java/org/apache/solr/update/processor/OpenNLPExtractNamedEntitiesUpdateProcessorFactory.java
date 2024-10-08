@@ -200,6 +200,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */
@@ -665,7 +666,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
           List<Integer> startOffsets,
           List<Integer> endOffsets,
           List<Pair<String, String>> entitiesWithType) {
-        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[terms.size()]))) {
+        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[0]))) {
           String text =
               fullText.substring(
                   startOffsets.get(span.getStart()), endOffsets.get(span.getEnd() - 1));

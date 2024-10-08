@@ -44,6 +44,7 @@ import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.QueryCommand;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
@@ -233,12 +234,13 @@ public class TopGroupsResultTransformer
         groupResult.add("maxScore", searchGroup.maxScore);
       }
 
+      SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
       List<NamedList<Object>> documents = new ArrayList<>();
       for (int i = 0; i < searchGroup.scoreDocs.length; i++) {
         NamedList<Object> document = new NamedList<>();
         documents.add(document);
 
-        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
+        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc, docFetcher);
         document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
         if (!Float.isNaN(searchGroup.scoreDocs[i].score)) {
           document.add("score", searchGroup.scoreDocs[i].score);
@@ -294,13 +296,14 @@ public class TopGroupsResultTransformer
     List<NamedList<?>> documents = new ArrayList<>();
     queryResult.add("documents", documents);
 
+    SolrDocumentFetcher docFetcher = rb.req.getSearcher().getDocFetcher();
     final IndexSchema schema = rb.req.getSearcher().getSchema();
     SchemaField uniqueField = schema.getUniqueKeyField();
     for (ScoreDoc scoreDoc : result.getTopDocs().scoreDocs) {
       NamedList<Object> document = new NamedList<>();
       documents.add(document);
 
-      Document doc = retrieveDocument(uniqueField, scoreDoc.doc);
+      Document doc = retrieveDocument(uniqueField, scoreDoc.doc, docFetcher);
       document.add(ID, uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
       if (!Float.isNaN(scoreDoc.score)) {
         document.add("score", scoreDoc.score);
@@ -326,7 +329,8 @@ public class TopGroupsResultTransformer
     return queryResult;
   }
 
-  private Document retrieveDocument(final SchemaField uniqueField, int doc) throws IOException {
-    return rb.req.getSearcher().doc(doc, Collections.singleton(uniqueField.getName()));
+  private Document retrieveDocument(
+      final SchemaField uniqueField, int doc, SolrDocumentFetcher docFetcher) throws IOException {
+    return docFetcher.doc(doc, Collections.singleton(uniqueField.getName()));
   }
 }

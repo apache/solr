@@ -134,7 +134,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (SolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient collectionClient = getHttpSolrClient(replica)) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals(

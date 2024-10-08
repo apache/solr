@@ -253,12 +253,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   public void illegalAdminPathError() throws Exception {
     setupCluster(false, null, false);
-    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseURLV2().toString();
     expectThrows(
         FileNotFoundException.class,
         () -> {
-          try (InputStream is =
-              new URL(baseUrl.replace("/solr", "") + "/api/node/foo").openStream()) {
+          try (InputStream is = new URL(baseUrl + "/node/foo").openStream()) {
             new String(is.readAllBytes(), StandardCharsets.UTF_8);
           }
         });

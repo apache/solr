@@ -1,4 +1,5 @@
 = ZooKeeper Ensemble Configuration
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -304,7 +305,7 @@ This file will need to exist on each server of the ensemble.
 ZOO_LOG_DIR="/path/for/log/files"
 ZOO_LOG4J_PROP="INFO,ROLLINGFILE"
 
-SERVER_JVMFLAGS="-Xms2048m -Xmx2048m -verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime -Xloggc:$ZOO_LOG_DIR/zookeeper_gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M"
+SERVER_JVMFLAGS="-Xms2048m -Xmx2048m -Xlog:gc*:file=$ZOO_LOG_DIR/zookeeper_gc.log:time,uptime:filecount=9,filesize=20M"
 ----
 +
 The property `ZOO_LOG_DIR` defines the location on the server where ZooKeeper will print its logs.
@@ -412,12 +413,12 @@ ZK_CREATE_CHROOT=true bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
 If you update Solr include files (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
 
 
-[.dynamic-tabs]
---
-[example.tab-pane#linux1]
+[tabs]
+======
+Linux::
++
 ====
-[.tab-label]*Linux: solr.in.sh*
-
+.solr.in.sh
 The section to look for will be commented out:
 
 [source,properties]
@@ -439,10 +440,10 @@ ZK_HOST="zk1:2181,zk2:2181,zk3:2181/solr"
 ----
 ====
 
-[example.tab-pane#zkwindows]
+Windows::
++
 ====
-[.tab-label]*Windows: solr.in.cmd*
-
+.solr.in.cmd
 The section to look for will be commented out:
 
 [source,bat]
@@ -463,7 +464,7 @@ REM Leave empty if not using SolrCloud
 set ZK_HOST=zk1:2181,zk2:2181,zk3:2181/solr
 ----
 ====
---
+======
 
 Now you will not have to enter the connection string when starting Solr.
 
@@ -502,12 +503,12 @@ When you use Solr's bundled ZooKeeper server instead of setting up an external Z
 
 Add the setting to the `SOLR_OPTS` environment variable in Solr's include file (`bin/solr.in.sh` or `solr.in.cmd`):
 
-[.dynamic-tabs]
---
-[example.tab-pane#linux2]
+[tabs]
+======
+Linux::
++
 ====
-[.tab-label]*Linux: solr.in.sh*
-
+.solr.in.sh
 The section to look for will start:
 
 [source,properties]
@@ -523,10 +524,10 @@ Add the following line to increase the file size limit to 2MB:
 SOLR_OPTS="$SOLR_OPTS -Djute.maxbuffer=0x200000"
 ====
 
-[example.tab-pane#zkwindows2]
+Windows::
++
 ====
-[.tab-label]*Windows: solr.in.cmd*
-
+.solr.in.cmd
 The section to look for will start:
 
 [source,bat]
@@ -543,7 +544,7 @@ Add the following line to increase the file size limit to 2MB:
 set SOLR_OPTS=%SOLR_OPTS% -Djute.maxbuffer=0x200000
 ----
 ====
---
+======
 
 == Securing the ZooKeeper Connection
 

@@ -132,7 +132,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     fieldNameSet.remove("id");
     assertTrue("WTF, bogus field exists?", fieldNameSet.add("bogus_not_in_any_doc_s"));
 
-    final String[] fieldNames = fieldNameSet.toArray(new String[fieldNameSet.size()]);
+    final String[] fieldNames = fieldNameSet.toArray(new String[0]);
     Arrays.sort(fieldNames); // need determinism when picking random fields
 
     for (int i = 0; i < 5; i++) {
@@ -176,7 +176,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       if (random().nextBoolean()) {
         pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
       }
-      pivotP.set(FACET_PIVOT, pivotParamValues.toArray(new String[pivotParamValues.size()]));
+      pivotP.set(FACET_PIVOT, pivotParamValues.toArray(new String[0]));
 
       // keep limit low - lots of unique values, and lots of depth in pivots
       pivotP.add(FACET_LIMIT, "" + TestUtil.nextInt(random(), 1, 17));

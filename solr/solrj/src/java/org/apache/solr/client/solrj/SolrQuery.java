@@ -1198,6 +1198,29 @@ public class SolrQuery extends ModifiableSolrParams {
     return this.getInt(CommonParams.TIME_ALLOWED);
   }
 
+  /**
+   * Set the maximum CPU time allowed for this query. If the thread that executes the query takes
+   * more CPU time than the specified milliseconds, a timeout occurs and partial (or no) results may
+   * be returned.
+   *
+   * <p>If given Integer is null, then this parameter is removed from the request
+   *
+   * @param milliseconds the CPU time in milliseconds allowed for this query
+   */
+  public SolrQuery setCpuAllowed(Integer milliseconds) {
+    if (milliseconds == null) {
+      this.remove(CommonParams.CPU_ALLOWED);
+    } else {
+      this.set(CommonParams.CPU_ALLOWED, milliseconds);
+    }
+    return this;
+  }
+
+  /** Get the maximum time allowed for this query. */
+  public Integer getCpuAllowed() {
+    return this.getInt(CommonParams.CPU_ALLOWED);
+  }
+
   ///////////////////////
   //  Utility functions
   ///////////////////////

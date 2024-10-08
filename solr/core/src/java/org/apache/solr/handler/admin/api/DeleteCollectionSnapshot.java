@@ -23,9 +23,9 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
 import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -51,7 +51,7 @@ public class DeleteCollectionSnapshot extends AdminAPIBase implements DeleteColl
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public DeleteCollectionSnapshotResponse deleteSnapshot(
+  public DeleteCollectionSnapshotResponse deleteCollectionSnapshot(
       String collName, String snapshotName, boolean followAliases, String asyncId)
       throws Exception {
     final var response = instantiateJerseyResponse(DeleteCollectionSnapshotResponse.class);

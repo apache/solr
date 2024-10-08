@@ -155,7 +155,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.isFirstNodeForHost = function(node) {
     var hostName = node.split(":")[0]; 
     var nodesInHost = $scope.filteredNodes.filter(function (node) {
-      return node.startsWith(hostName);
+      return node.split(":")[0] === hostName;
     });
     return nodesInHost[0] === node;
   };
@@ -164,7 +164,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.firstLiveNodeForHost = function(key) {
     var hostName = key.split(":")[0]; 
     var liveNodesInHost = $scope.filteredNodes.filter(function (key) {
-      return key.startsWith(hostName);
+      return key.split(":")[0] === hostName;
     }).filter(function (key) {
       return $scope.live_nodes.includes(key);
     });
@@ -329,7 +329,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       hostsToShow.push(hostName);
       if (isFiltered) { // Only show the nodes per host matching active filter
         nodesToShow = nodesToShow.concat(filteredNodes.filter(function (node) {
-          return node.startsWith(hostName);
+          return node.split(":")[0] === hostName;
         }));
       } else {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
@@ -929,18 +929,21 @@ solrAdminApp.directive('graph', function(Constants) {
                 return name;
             };
 
-            scope.$watch("data", function(newValue, oldValue) {
+            var drawGraph = function(newValue, oldValue) {
                 if (newValue) {
-                    flatGraph(element, scope.data, scope.leafCount);
+                  flatGraph(element, scope.data, scope.leafCount);
                 }
 
                 $('text').tooltip({
-                    content: function() {
-                        return $(this).attr('title');
-                    }
+                  content: function() {
+                    return $(this).attr('title');
+                  }
                 });
-            });
+              };
 
+            scope.$watch("data", drawGraph);
+
+            window.onresize = drawGraph;
 
             function setNodeNavigationBehavior(node, view){
                 node
@@ -971,7 +974,10 @@ solrAdminApp.directive('graph', function(Constants) {
                 var w = element.width(),
                     h = leafCount * 20;
 
-                var tree = d3.layout.tree().size([h, w - 400]);
+                // Calculate roughly the width of host name to align the graph
+                var hostnameWidth = graphData.children.length > 0 ?
+                  graphData.children[0].children[0].children[0].name.length * 5.5 : 400;
+                var tree = d3.layout.tree().size([h, Math.max(w - 140 - hostnameWidth, 100)]);
 
                 var diagonal = d3.svg.diagonal().projection(function (d) {
                     return [d.y, d.x];
@@ -982,7 +988,7 @@ solrAdminApp.directive('graph', function(Constants) {
                     .attr('width', w)
                     .attr('height', h)
                     .append('g')
-                    .attr('transform', 'translate(100, 0)');
+                    .attr('transform', 'translate(10, 0)');
 
                 var nodes = tree.nodes(graphData);
 

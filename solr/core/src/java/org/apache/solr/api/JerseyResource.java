@@ -19,9 +19,9 @@ package org.apache.solr.api;
 
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
 import java.util.function.Supplier;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.jersey.CatchAllExceptionMapper;

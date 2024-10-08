@@ -349,6 +349,7 @@ class ExclusiveSliceProperty {
     }
     return replica;
   }
+
   // Main entry point for carrying out the action. Returns "true" if we have actually moved
   // properties around.
 

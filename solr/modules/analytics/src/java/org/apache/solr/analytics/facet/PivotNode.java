@@ -70,6 +70,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
       importPivotValue(input, input.readUTF());
     }
   }
+
   /**
    * Import the next pivot value's set of {@link ReductionData} and children's {@link ReductionData}
    * if they exist.
@@ -95,6 +96,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
       exportPivotValue(output, entry.getValue());
     }
   }
+
   /**
    * Export the given pivot data, containing {@link ReductionData} and pivot children if they exist.
    *

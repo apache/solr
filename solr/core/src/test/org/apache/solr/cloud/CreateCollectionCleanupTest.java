@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,8 +76,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   public void testCreateCollectionCleanup() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo";
-    MatcherAssert.assertThat(
-        CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
+    assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
     // Create a collection that would fail
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
@@ -96,7 +94,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
         });
 
     // Confirm using LIST that the collection does not exist
-    MatcherAssert.assertThat(
+    assertThat(
         "Failed collection is still in the clusterstate: "
             + cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName),
         CollectionAdminRequest.listCollections(cloudClient),
@@ -107,8 +105,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   public void testAsyncCreateCollectionCleanup() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo2";
-    MatcherAssert.assertThat(
-        CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
+    assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
 
     // Create a collection that would fail
     CollectionAdminRequest.Create create =
@@ -126,10 +123,10 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     RequestStatusState state =
         AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(
             "testAsyncCreateCollectionCleanup", 30, cloudClient);
-    MatcherAssert.assertThat(state.getKey(), is("failed"));
+    assertThat(state.getKey(), is("failed"));
 
     // Confirm using LIST that the collection does not exist
-    MatcherAssert.assertThat(
+    assertThat(
         "Failed collection is still in the clusterstate: "
             + cluster.getSolrClient().getClusterState().getCollectionOrNull(collectionName),
         CollectionAdminRequest.listCollections(cloudClient),

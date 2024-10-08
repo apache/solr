@@ -214,6 +214,7 @@ public class AnalyticsRequestManager {
   /** Class to encapsulate all necessary data for collecting {@link StreamingFacet}s. */
   public static class StreamingInfo {
     Collection<StreamingFacet> streamingFacets = new ArrayList<>();
+
     /** Manages the collection of all expressions needed for streaming facets */
     ReductionCollectionManager streamingCollectionManager;
   }

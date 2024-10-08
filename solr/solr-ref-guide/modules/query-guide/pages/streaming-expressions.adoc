@@ -26,7 +26,7 @@
 Streaming expressions exposes the capabilities of SolrCloud as composable functions.
 These functions provide a system for searching, transforming, analyzing, and visualizing data stored in SolrCloud collections.
 
-At a high level there a four main capabilities that will be explored in the documentation:
+At a high level there are four main capabilities that will be explored in the documentation:
 
 * *Searching*, sampling and aggregating results from Solr.
 
@@ -121,11 +121,11 @@ A full reference to all available decorator expressions is available in xref:str
 Math expressions are a vector and matrix math library that can be combined with streaming expressions to perform analysis and build mathematical models
 of the result sets.
 From a language standpoint math expressions are a sub-language of streaming expressions that don't return streams of tuples.
-Instead they operate on and return numbers, vectors, matrices and mathematical models.
+Instead, they operate on and return numbers, vectors, matrices and mathematical models.
 The documentation will show how to combine streaming expressions and math
 expressions.
 
-The math expressions user guide is available in <<>>
+The math expressions user guide is available in xref:math-expressions.adoc[].
 
 From a language standpoint math expressions are referred to as *stream evaluators*.
 

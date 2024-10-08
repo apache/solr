@@ -57,7 +57,7 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|NestPathField | Specialized field type storing ehanced information, when xref:indexing-nested-documents.adoc#schema-configuration[working with nested documents].
+|NestPathField | Specialized field type storing enhanced information, when xref:indexing-nested-documents.adoc#schema-configuration[working with nested documents].
 
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See xref:query-guide:spatial-search.adoc[] for more information.
 
@@ -75,7 +75,7 @@ Configuration and usage of PreAnalyzedField is documented in the section  xref:e
 
 |SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See xref:query-guide:spatial-search.adoc[] for more information.
 
-|StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
+|StrField |String (UTF-8 encoded string or Unicode). Indexed `indexed="true"` strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K. Non-indexed `indexed="false"` and non-DocValues `docValues="false"` strings are suitable for storing large strings. 
 
 |TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an xref:analyzers.adoc[analyzer].
 

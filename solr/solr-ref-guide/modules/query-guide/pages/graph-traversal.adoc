@@ -117,7 +117,7 @@ The `node` field contains the node IDs gathered by the function.
 The `collection`, `field`, and `level` of the traversal are also included in the output.
 
 Notice that the level is "1" for each tuple in the example.
-The root nodes are level 0 (in the example above, the root nodes are "johndoe@apache.org, janesmith@apache.org") By default the `nodes` function emits only the _*leaf nodes*_ of the traversal, which is the outer-most node set.
+The root nodes are level 0 (in the example above, the root nodes are "johndoe@apache.org, janesmith@apache.org") By default the `nodes` function emits only the _*leaf nodes*_ of the traversal, which is the outermost node set.
 To emit the root nodes you can specify the `scatter` parameter:
 
 [source,plain]
@@ -129,7 +129,7 @@ nodes(emails,
 ----
 
 The `scatter` parameter controls whether to emit the _branches_ with the _leaves_.
-The root nodes are considered "branches" because they are not the outer-most level of the traversal.
+The root nodes are considered "branches" because they are not the outermost level of the traversal.
 
 When scattering both branches and leaves the output would like this:
 
@@ -321,7 +321,7 @@ The sample code below shows steps 1 and 2 of the recommendation:
 In the example above, the inner search expression searches the `logs` collection and returning all the articles viewed by "user1".
 The outer `nodes` expression takes all the articles emitted from the inner search expression and finds all the records in the logs collection for those articles.
 It then gathers and aggregates the users that have read the articles.
-The `maxDocFreq` parameter limits the articles returned to those that appear in no more then 10,000 log records (per shard).
+The `maxDocFreq` parameter limits the articles returned to those that appear in no more than 10,000 log records (per shard).
 This guards against returning articles that have been viewed by millions of users.
 
 == Tracking the Traversal
@@ -351,7 +351,7 @@ nodes(emails,
 == Cross-Collection Traversals
 
 Nested `nodes` functions can operate on different SolrCloud collections.
-This allow traversals to "walk" from one collection to another to gather nodes.
+This allows traversals to "walk" from one collection to another to gather nodes.
 Cycle detection does not cross collection boundaries, so nodes collected in one collection will be traversed in a different collection.
 This was done deliberately to support cross-collection traversals.
 Note that the output from a cross-collection traversal will likely contain duplicate nodes with different collection attributes.

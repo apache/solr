@@ -41,7 +41,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -109,7 +108,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
     params.set("queryUUID", "foobar");
 
     GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params);
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/cancel", params)
+            .setRequiresCollection(true);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     assertEquals("Query with queryID foobar not found", queryResponse.get("status"));
@@ -170,9 +170,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
       presentQueryIDs.add(Integer.parseInt(entry.getKey()));
     }
 
-    MatcherAssert.assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
+    assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
     for (int value : presentQueryIDs) {
-      MatcherAssert.assertThat(value, betweenInclusive(0, 49));
+      assertThat(value, betweenInclusive(0, 49));
     }
   }
 
@@ -185,7 +185,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
     NamedList<Object> response =
         cluster
             .getSolrClient(COLLECTION_NAME)
-            .request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list"));
+            .request(
+                new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list")
+                    .setRequiresCollection(true));
     return (NamedList<String>) response.get("taskList");
   }
 
@@ -195,7 +197,8 @@ public class TestTaskManagement extends SolrCloudTestCase {
     params.set("taskUUID", "25");
 
     GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params);
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", params)
+            .setRequiresCollection(true);
     NamedList<Object> queryResponse = cluster.getSolrClient(COLLECTION_NAME).request(request);
 
     String result = (String) queryResponse.get("taskStatus");

@@ -104,6 +104,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
   private static final ReplicaListTransformerFactory NOOP_RLTF =
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) ->
           NOOP_RLT;
+
   /**
    * For compatibility with tests, which expect this constructor to have no effect on the *base*
    * order.

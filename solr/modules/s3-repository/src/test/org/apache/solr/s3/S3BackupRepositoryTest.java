@@ -297,6 +297,11 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   }
 
   @Override
+  protected Class<? extends BackupRepository> getRepositoryClass() {
+    return S3BackupRepository.class;
+  }
+
+  @Override
   protected S3BackupRepository getRepository() {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");

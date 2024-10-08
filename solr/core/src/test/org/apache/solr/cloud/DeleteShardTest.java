@@ -18,17 +18,12 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -82,40 +77,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
         "Expected 'shard2' to be removed", collection, (n, c) -> c.getSlice("shard2") == null);
   }
 
-  protected void setSliceState(String collection, String slice, State state) throws Exception {
-
-    // TODO can this be encapsulated better somewhere?
-    MapWriter m =
-        ew ->
-            ew.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower())
-                .put(slice, state.toString())
-                .put(ZkStateReader.COLLECTION_PROP, collection);
-    final Overseer overseer = cluster.getOpenOverseer();
-    if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      overseer
-          .getDistributedClusterStateUpdater()
-          .doSingleStateUpdate(
-              DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState,
-              new ZkNodeProps(m),
-              cluster.getOpenOverseer().getSolrCloudManager(),
-              cluster.getOpenOverseer().getZkStateReader());
-    } else {
-      DistributedQueue inQueue =
-          cluster
-              .getJettySolrRunner(0)
-              .getCoreContainer()
-              .getZkController()
-              .getOverseer()
-              .getStateUpdateQueue();
-      inQueue.offer(m);
-    }
-
-    waitForState(
-        "Expected shard " + slice + " to be in state " + state,
-        collection,
-        (n, c) -> c.getSlice(slice).getState() == state);
-  }
-
   @Test
   public void testDirectoryCleanupAfterDeleteShard() throws IOException, SolrServerException {
 
@@ -161,5 +122,14 @@ public class DeleteShardTest extends SolrCloudTestCase {
     assertTrue(
         "Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
     assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+  }
+
+  private void setSliceState(String collectionName, String shardId, Slice.State state)
+      throws Exception {
+    ShardTestUtil.setSliceState(cluster, collectionName, shardId, state);
+    waitForState(
+        "Expected shard " + shardId + " to be in state " + state,
+        collectionName,
+        (n, c) -> c.getSlice(shardId).getState() == state);
   }
 }

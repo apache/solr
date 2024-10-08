@@ -83,14 +83,19 @@ public class TaggerRequestHandler extends RequestHandlerBase {
 
   /** Request parameter. */
   public static final String OVERLAPS = "overlaps";
+
   /** Request parameter. */
   public static final String TAGS_LIMIT = "tagsLimit";
+
   /** Request parameter. */
   public static final String MATCH_TEXT = "matchText";
+
   /** Request parameter. */
   public static final String SKIP_ALT_TOKENS = "skipAltTokens";
+
   /** Request parameter. */
   public static final String IGNORE_STOPWORDS = "ignoreStopwords";
+
   /** Request parameter. */
   public static final String XML_OFFSET_ADJUST = "xmlOffsetAdjust";
 

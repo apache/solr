@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.request.json;
 import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** Unit tests for {@link RangeFacetMap} */
@@ -33,7 +32,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new RangeFacetMap(null, 1, 2, 3, false);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -44,8 +43,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new RangeFacetMap("ANY_FIELD_NAME", 1, -1, 3, false);
             });
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("'end' must be greater than parameter 'start'"));
+    assertThat(thrown.getMessage(), containsString("'end' must be greater than parameter 'start'"));
   }
 
   @Test
@@ -56,7 +54,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new RangeFacetMap("ANY_FIELD_NAME", 1, 2, -1, false);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be a positive integer"));
+    assertThat(thrown.getMessage(), containsString("must be a positive integer"));
   }
 
   @Test
@@ -83,7 +81,7 @@ public class RangeFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               new RangeFacetMap("ANY_FIELD_NAME", 1, 2, 3, false).setOtherBuckets(null);
             });
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
+    assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test

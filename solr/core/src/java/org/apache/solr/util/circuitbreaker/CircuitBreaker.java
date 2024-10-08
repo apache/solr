@@ -46,12 +46,16 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
   // Only query requests are checked by default
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
+  private boolean warnOnly;
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
 
   @Override
   public void init(NamedList<?> args) {
     SolrPluginUtils.invokeSetters(this, args);
+    if (args.getBooleanArg("warnOnly") != null) {
+      setWarnOnly(args.getBooleanArg("warnOnly"));
+    }
   }
 
   public CircuitBreaker() {}
@@ -89,6 +93,14 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
                   }
                 })
             .collect(Collectors.toSet());
+  }
+
+  public void setWarnOnly(boolean warnOnly) {
+    this.warnOnly = warnOnly;
+  }
+
+  public boolean isWarnOnly() {
+    return warnOnly;
   }
 
   public Set<SolrRequestType> getRequestTypes() {

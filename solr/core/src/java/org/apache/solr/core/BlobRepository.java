@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,19 +61,7 @@ public class BlobRepository {
   private static final long MAX_JAR_SIZE =
       Long.parseLong(System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
-    } else {
-      RANDOM = new Random(seed.hashCode());
-    }
-  }
 
   private final CoreContainer coreContainer;
 
@@ -257,12 +244,12 @@ public class BlobRepository {
       throw new SolrException(
           SERVICE_UNAVAILABLE,
           "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
-    Collections.shuffle(slices, RANDOM); // do load balancing
+    Collections.shuffle(slices, Utils.RANDOM); // do load balancing
 
     Replica replica = null;
     for (Slice slice : slices) {
       List<Replica> replicas = new ArrayList<>(slice.getReplicasMap().values());
-      Collections.shuffle(replicas, RANDOM);
+      Collections.shuffle(replicas, Utils.RANDOM);
       for (Replica r : replicas) {
         if (r.getState() == Replica.State.ACTIVE) {
           if (zkStateReader

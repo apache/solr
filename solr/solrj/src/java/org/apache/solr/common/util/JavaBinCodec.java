@@ -537,6 +537,7 @@ public class JavaBinCodec implements PushWriter {
     dis.readFully(arr);
     return arr;
   }
+
   // use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable = false;

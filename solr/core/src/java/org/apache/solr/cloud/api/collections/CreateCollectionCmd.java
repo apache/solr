@@ -509,7 +509,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         Assign.getLiveOrLiveAndCreateNodeSetList(
             clusterState.getLiveNodes(),
             message,
-            CollectionHandlingUtils.RANDOM,
+            Utils.RANDOM,
             cloudManager.getDistribStateManager());
     if (nodeList.isEmpty()) {
       log.warn("It is unusual to create a collection ({}) without cores.", collectionName);
@@ -541,6 +541,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     return replicaPositions;
   }
+
   // the cloud manager should reflect the latest internal cluster state
   private static SolrCloudManager wrapCloudManager(
       ClusterState clusterState, SolrCloudManager solrCloudManager) {

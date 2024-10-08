@@ -48,10 +48,10 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     createAndStartJetty(legacyExampleCollection1SolrHome());
-    fooUrl = getBaseUrl() + "/" + "collection1";
+    fooUrl = getBaseUrl();
 
     secondJetty.startSolr(Path.of(legacyExampleCollection1SolrHome()));
-    barUrl = secondJetty.getBaseUrl() + "/" + "collection1";
+    barUrl = secondJetty.getBaseUrl();
   }
 
   public void testPoolSize() throws SolrServerException, IOException {
@@ -61,9 +61,15 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
         HttpClientUtil.createClient(
             new ModifiableSolrParams(), pool, false /* let client shutdown it*/);
     final HttpSolrClient clientFoo =
-        new HttpSolrClient.Builder(fooUrl).withHttpClient(httpClient).build();
+        new HttpSolrClient.Builder(fooUrl)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .withHttpClient(httpClient)
+            .build();
     final HttpSolrClient clientBar =
-        new HttpSolrClient.Builder(barUrl).withHttpClient(httpClient).build();
+        new HttpSolrClient.Builder(barUrl)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
+            .withHttpClient(httpClient)
+            .build();
 
     clientFoo.deleteByQuery("*:*");
     clientBar.deleteByQuery("*:*");
@@ -118,18 +124,21 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
           new LBHttpSolrClient.Builder()
               .withBaseSolrUrl(fooUrl)
               .withBaseSolrUrl(barUrl)
+              .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
               .withHttpClient(httpClient)
               .build();
 
       List<ConcurrentUpdateSolrClient> concurrentClients =
           Arrays.asList(
               new ConcurrentUpdateSolrClient.Builder(fooUrl)
+                  .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
                   .withHttpClient(httpClient)
                   .withThreadCount(threadCount)
                   .withQueueSize(10)
                   .withExecutorService(threads)
                   .build(),
               new ConcurrentUpdateSolrClient.Builder(barUrl)
+                  .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
                   .withHttpClient(httpClient)
                   .withThreadCount(threadCount)
                   .withQueueSize(10)

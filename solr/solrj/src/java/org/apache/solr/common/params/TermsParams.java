@@ -54,6 +54,7 @@ public interface TermsParams {
    * @see #TERMS_UPPER_INCLUSIVE
    */
   public static final String TERMS_UPPER = TERMS_PREFIX + "upper";
+
   /** Optional. If true, include the upper bound term in the results. False by default. */
   public static final String TERMS_UPPER_INCLUSIVE = TERMS_PREFIX + "upper.incl";
 

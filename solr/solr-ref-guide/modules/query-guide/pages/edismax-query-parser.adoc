@@ -134,7 +134,7 @@ All of the sample URLs in this section assume you are running Solr's "techproduc
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 Boost the result of the query term "hello" based on the document's popularity:

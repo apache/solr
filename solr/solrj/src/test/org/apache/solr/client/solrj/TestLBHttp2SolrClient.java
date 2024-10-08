@@ -102,7 +102,8 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       docs.add(doc);
     }
     SolrResponseBase resp;
-    try (SolrClient client = getHttpSolrClient(solrInstance.getUrl())) {
+    try (SolrClient client =
+        getHttpSolrClient(solrInstance.getBaseUrl(), solrInstance.getDefaultCollection())) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
@@ -274,6 +275,14 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       return buildUrl(port, "/solr/collection1");
     }
 
+    public String getBaseUrl() {
+      return buildUrl(port, "/solr");
+    }
+
+    public String getDefaultCollection() {
+      return "collection1";
+    }
+
     public String getSchemaFile() {
       return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
@@ -320,8 +329,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       props.setProperty("solrconfig", "bad_solrconfig.xml");
       props.setProperty("solr.data.dir", getDataDir());
 
-      JettyConfig jettyConfig =
-          JettyConfig.builder(buildJettyConfig("/solr")).setPort(port).build();
+      JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
 
       jetty = new JettySolrRunner(getHomeDir(), props, jettyConfig);
       jetty.start();

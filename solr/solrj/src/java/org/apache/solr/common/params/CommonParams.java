@@ -86,6 +86,7 @@ public interface CommonParams {
 
   /** "ping" value for SolrPing action */
   String PING = "ping";
+
   // SOLR-4228 end
 
   /** stylesheet to apply to XML results */
@@ -112,19 +113,23 @@ public interface CommonParams {
 
   /** {@link #DEBUG} value indicating an interest in debug output related to timing */
   String TIMING = "timing";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
    */
   String RESULTS = "results";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing,
    * etc.)
    */
   String QUERY = "query";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
    */
   String TRACK = "track";
+
   /**
    * boolean indicating whether score explanations should structured (true), or plain text (false)
    */
@@ -153,8 +158,20 @@ public interface CommonParams {
 
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
-  /** Timeout value in milliseconds. If not set, or the value is &gt; 0, there is no timeout. */
+  /**
+   * If true then allow returning partial results. If false and full results can't be produced
+   * return no results / error.
+   */
+  String PARTIAL_RESULTS = "partialResults";
+
+  /** Timeout value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
+
+  /**
+   * Maximum query CPU usage value in milliseconds. If not set, or the value is &lt; 0, there is no
+   * timeout.
+   */
+  String CPU_ALLOWED = "cpuAllowed";
 
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
@@ -283,6 +300,15 @@ public interface CommonParams {
    */
   @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
+
+  /**
+   * Parameter to control the distributed term statistics request for current query when distributed
+   * IDF is enabled in solrconfig
+   *
+   * <p>Defaults to 'true' if not specified. Distributed stats request will be disabled by setting
+   * to 'false'
+   */
+  String DISTRIB_STATS_CACHE = "distrib.statsCache";
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";

@@ -25,10 +25,11 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.BalanceShardUniqueRequestBody;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/** Unit tests for {@link BalanceShardUniqueAPI} */
+/** Unit tests for {@link BalanceShardUnique} */
 public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
 
   @Test
@@ -37,7 +38,7 @@ public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new BalanceShardUniqueAPI(null, null, null);
+              final var api = new BalanceShardUnique(null, null, null);
               api.balanceShardUnique("someCollectionName", null);
             });
 
@@ -47,13 +48,13 @@ public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
-    final var requestBody = new BalanceShardUniqueAPI.BalanceShardUniqueRequestBody();
+    final var requestBody = new BalanceShardUniqueRequestBody();
     requestBody.property = "preferredLeader";
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new BalanceShardUniqueAPI(null, null, null);
+              final var api = new BalanceShardUnique(null, null, null);
               api.balanceShardUnique(null, requestBody);
             });
 
@@ -64,12 +65,12 @@ public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfPropertyToBalanceIsMissing() {
     // Note, 'property' param on reqBody not set
-    final var requestBody = new BalanceShardUniqueAPI.BalanceShardUniqueRequestBody();
+    final var requestBody = new BalanceShardUniqueRequestBody();
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new BalanceShardUniqueAPI(null, null, null);
+              final var api = new BalanceShardUnique(null, null, null);
               api.balanceShardUnique("someCollName", requestBody);
             });
 
@@ -79,13 +80,13 @@ public class BalanceShardUniqueAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateRemoteMessageAllProperties() {
-    final var requestBody = new BalanceShardUniqueAPI.BalanceShardUniqueRequestBody();
+    final var requestBody = new BalanceShardUniqueRequestBody();
     requestBody.property = "someProperty";
     requestBody.shardUnique = Boolean.TRUE;
     requestBody.onlyActiveNodes = Boolean.TRUE;
-    requestBody.asyncId = "someAsyncId";
+    requestBody.async = "someAsyncId";
     final var remoteMessage =
-        BalanceShardUniqueAPI.createRemoteMessage("someCollName", requestBody).getProperties();
+        BalanceShardUnique.createRemoteMessage("someCollName", requestBody).getProperties();
 
     assertEquals(6, remoteMessage.size());
     assertEquals("balanceshardunique", remoteMessage.get(QUEUE_OPERATION));

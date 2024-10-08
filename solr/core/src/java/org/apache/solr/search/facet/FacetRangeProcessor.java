@@ -80,6 +80,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> rangeList;
+
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> otherList;
 
@@ -1081,6 +1082,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
             e);
       }
     }
+
     /**
      * Adds the String gap param to a low Range endpoint value to determine the corresponding high
      * Range endpoint value. Can throw a low level format exception as needed.

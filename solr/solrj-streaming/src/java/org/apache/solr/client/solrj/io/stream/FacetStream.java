@@ -480,7 +480,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       sorts.add(buff.toString());
     }
 
-    return sorts.toArray(new String[sorts.size()]);
+    return sorts.toArray(new String[0]);
   }
 
   private void init(

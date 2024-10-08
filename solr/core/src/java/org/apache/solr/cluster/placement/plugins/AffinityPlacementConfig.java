@@ -106,6 +106,7 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * acceptable node types).
    */
   @JsonProperty public Map<String, String> collectionNodeType;
+
   /**
    * Same as {@link AffinityPlacementConfig#withCollection} but ensures shard to shard
    * correspondence. should be disjoint with {@link AffinityPlacementConfig#withCollection}.

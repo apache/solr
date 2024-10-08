@@ -72,6 +72,7 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
@@ -203,7 +204,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           Assign.getLiveOrLiveAndCreateNodeSetList(
               zkStateReader.getClusterState().getLiveNodes(),
               message,
-              CollectionHandlingUtils.RANDOM,
+              Utils.RANDOM,
               container.getZkController().getSolrCloudManager().getDistribStateManager());
     }
 
@@ -300,7 +301,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           rc.repo,
           rc.shardHandler,
           rc.asyncId);
-      requestReplicasToApplyBufferUpdates(restoreCollection, rc.asyncId, rc.shardHandler);
       markAllShardsAsActive(restoreCollection);
       addReplicasToShards(results, clusterState, restoreCollection, replicaPositions, rc.asyncId);
       restoringAlias(rc.backupProperties);
@@ -524,37 +524,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       boolean allIsDone = countDownLatch.await(1, TimeUnit.HOURS);
       if (!allIsDone) {
         throw new TimeoutException("Initial replicas were not created within 1 hour. Timing out.");
-      }
-    }
-
-    private void requestReplicasToApplyBufferUpdates(
-        DocCollection restoreCollection, String asyncId, ShardHandler shardHandler) {
-      ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-
-      for (Slice s : restoreCollection.getSlices()) {
-        for (Replica r : s.getReplicas()) {
-          String nodeName = r.getNodeName();
-          String coreNodeName = r.getCoreName();
-          Replica.State stateRep = r.getState();
-
-          log.debug(
-              "Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}",
-              nodeName,
-              coreNodeName,
-              stateRep);
-
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(
-              CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-          params.set(CoreAdminParams.NAME, coreNodeName);
-
-          shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
-        }
-
-        shardRequestTracker.processResponses(
-            new NamedList<>(), shardHandler, true, "REQUESTAPPLYUPDATES calls did not succeed");
       }
     }
 

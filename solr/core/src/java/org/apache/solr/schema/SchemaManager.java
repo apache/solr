@@ -68,8 +68,7 @@ public class SchemaManager {
     this.req = req;
 
     // The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
-    int defaultUpdateTimeOut = 600;
-
+    int defaultUpdateTimeOut = Integer.getInteger("solr.schemaUpdateTimeoutSeconds", 600);
     updateTimeOut =
         req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, defaultUpdateTimeOut);
 

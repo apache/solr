@@ -73,7 +73,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
   void index(Object... olst) {
     ArrayList<String> lst = new ArrayList<>();
     for (Object o : olst) lst.add(o.toString());
-    assertU(adoc(lst.toArray(new String[lst.size()])));
+    assertU(adoc(lst.toArray(new String[0])));
   }
 
   void makeIndex() {

@@ -17,7 +17,7 @@
   limitations under the License.
   -->
 
-<schema name="example" version="1.6">
+<schema name="example" version="1.7">
   <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
 

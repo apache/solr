@@ -129,6 +129,7 @@ public abstract class SolrParams
   public Stream<Map.Entry<String, String[]>> stream() {
     return StreamSupport.stream(spliterator(), false);
   }
+
   // Do we add Map.forEach equivalent too?  But it eager-fetches the value, and Iterable<Map.Entry>
   // allows the user to only get the value when needed.
 
@@ -568,9 +569,9 @@ public abstract class SolrParams
   }
 
   /**
-   * Generates a local-params string of the form
-   *
-   * <pre>{! name=value name2=value2}</pre>
+   * Generates a local-params string of the form <code>{! name=value name2=value2}</code>,
+   * Protecting (with out any quoting or escaping) any values that start with <code>$</code> (param
+   * references).
    */
   public String toLocalParamsString() {
     final StringBuilder sb = new StringBuilder(128);
@@ -582,7 +583,12 @@ public abstract class SolrParams
         sb.append(' '); // do so even the first time; why not.
         sb.append(name); // no escaping for name; it must follow "Java Identifier" rules.
         sb.append('=');
-        sb.append(ClientUtils.encodeLocalParamVal(val));
+        if (val.startsWith("$")) {
+          // maintain literal param ref...
+          sb.append(val);
+        } else {
+          sb.append(ClientUtils.encodeLocalParamVal(val));
+        }
       }
     }
     sb.append('}');

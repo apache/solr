@@ -121,6 +121,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(String dataDirectory, SolrConfig solrConfig, String schemaFile) {
     this(dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   }
+
   /**
    * @param dataDirectory path for index data, will not be cleaned up
    * @param solrConfig solrconfig instance
@@ -382,11 +383,16 @@ public class TestHarness extends BaseTestHarness {
         SolrCore core = getCoreInc()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
       SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(
+          new SolrRequestInfo(
+              req, rsp)); // needed for limits to be valid. Normally invoked by HttpSolrCall
       core.execute(core.getRequestHandler(handler), req, rsp);
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
       return rsp;
+    } finally {
+      SolrRequestInfo.clearRequestInfo();
     }
   }
 
@@ -434,6 +440,7 @@ public class TestHarness extends BaseTestHarness {
     public Map<String, String> args = new HashMap<>();
 
     public LocalRequestFactory() {}
+
     /**
      * Creates a LocalSolrQueryRequest based on variable args; for historical reasons, this method
      * has some peculiar behavior:

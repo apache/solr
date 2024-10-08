@@ -56,6 +56,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private int lastDocId = 0;
   private static CloudSolrClient solrClient;
   private int numDocsDeletedOrFailed = 0;
+
   // uncomment to create pause for attaching profiler.
   //  static {
   //    JOptionPane.showMessageDialog(null,"Ready?");

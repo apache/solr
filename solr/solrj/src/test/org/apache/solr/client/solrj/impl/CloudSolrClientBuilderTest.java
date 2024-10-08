@@ -101,4 +101,14 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
       assertNotNull(createdClient);
     }
   }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (CloudSolrClient createdClient =
+        new Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withDefaultCollection("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
+    }
+  }
 }

@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -47,9 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-/**
- * @lucene.experimental
- */
+/** A Solr client using {@link Http2SolrClient} to send concurrent updates to Solr. */
 public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -149,6 +148,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
+    this.defaultCollection = builder.defaultCollection;
     this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
@@ -367,6 +367,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
       return client.request(request, collection);
@@ -721,6 +723,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   public static class Builder {
     protected Http2SolrClient client;
     protected String baseSolrUrl;
+    protected String defaultCollection;
     protected int queueSize = 10;
     protected int threadCount;
     protected ExecutorService executorService;
@@ -728,10 +731,72 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected boolean closeHttp2Client;
     private long pollQueueTimeMillis;
 
+    /**
+     * Create a Builder object, based on the provided SolrClient and Solr URL.
+     *
+     * <p>Two different paths can be specified as a part of this URL:
+     *
+     * <p>1) A path pointing directly at a particular core
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder(client, "http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the base URL, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
+     *
+     * <p>2) The path of the root Solr path ("/solr")
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
+    /**
+     * Create a Builder object, based on the provided SolrClient and Solr URL.
+     *
+     * <p>Two different paths can be specified as a part of this URL:
+     *
+     * <p>1) A path pointing directly at a particular core
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder(client, "http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the base URL, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
+     *
+     * <p>2) The path of the root Solr path ("/solr")
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttp2Client) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
@@ -808,6 +873,17 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      */
     public Builder neverStreamDeletes() {
       this.streamDeletes = false;
+      return this;
+    }
+
+    /**
+     * Sets a default for core or collection based requests.
+     *
+     * <p>This method should not be used if the client is provided a Solr URL which already contains
+     * a core or collection name.
+     */
+    public Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 

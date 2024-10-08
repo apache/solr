@@ -43,10 +43,12 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
 
+  @Test
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4).addConfig("conf", configset("cloud-dynamic")).configure();

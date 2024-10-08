@@ -19,6 +19,9 @@ package org.apache.solr.client.api.model;
 
 public class Constants {
 
+  // TODO Most of these constants are also defined in various constant files in 'solrj' - we should
+  // move those into the 'api' module and eliminate this file.
+
   private Constants() {
     /* Private ctor prevents instantiation */
   }
@@ -51,4 +54,8 @@ public class Constants {
 
   /** The name of the config set to be used for a collection */
   public static final String COLL_CONF = "collection.configName";
+
+  public static final String SNAPSHOT_GENERATION_NUM = "generation";
+
+  public static final String SNAPSHOT_NAME = "snapshotName";
 }

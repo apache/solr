@@ -44,7 +44,6 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -76,7 +75,8 @@ public class AnalyticsHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    SolrQueryTimeoutImpl.set(req);
+    // TODO: consider following suite with QueryLimits in SolrRequestInfo
+    //  see: b06495c2798b96604b19346eaa8b2b17caed0a9b
     BloomStrField.init(req);
     try {
       DocSet docs;
@@ -102,8 +102,6 @@ public class AnalyticsHandler extends RequestHandlerBase
       rsp.addResponse(new AnalyticsResponse(e));
     } catch (ExitableDirectoryReader.ExitingReaderException e) {
       rsp.addResponse(new AnalyticsResponse(new TimeExceededStubException(e)));
-    } finally {
-      SolrQueryTimeoutImpl.reset();
     }
   }
 

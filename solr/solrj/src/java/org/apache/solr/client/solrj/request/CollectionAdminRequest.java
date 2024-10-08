@@ -1111,6 +1111,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected boolean incremental = true;
     protected Optional<Integer> maxNumBackupPoints = Optional.empty();
     protected boolean backupConfigset = true;
+    protected Properties extraProperties;
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1205,9 +1206,17 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    public Backup setExtraProperties(Properties extraProperties) {
+      this.extraProperties = extraProperties;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      if (extraProperties != null) {
+        addProperties(params, extraProperties);
+      }
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.NAME, name);
       params.set(CoreAdminParams.BACKUP_LOCATION, location); // note: optional
@@ -2161,6 +2170,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL);
     }
   }
+
   /**
    * Returns a SolrRequest to create a category routed alias.
    *

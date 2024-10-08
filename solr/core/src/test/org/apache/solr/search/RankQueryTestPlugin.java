@@ -34,6 +34,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
@@ -139,7 +140,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @Override
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+    public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
         int len, QueryCommand cmd, IndexSearcher searcher) {
       if (collector == 0) return new TestCollector(null);
       else return new TestCollector1(null);
@@ -447,7 +448,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             }
 
             if (comparator == null) {
-              comparator = sortField.getComparator(1, true);
+              comparator = sortField.getComparator(1, Pruning.NONE);
               leafComparator = comparator.getLeafComparator(currentLeaf);
             }
 
@@ -757,7 +758,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
               }
             }
           });
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 
@@ -824,7 +825,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
               }
             }
           });
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 

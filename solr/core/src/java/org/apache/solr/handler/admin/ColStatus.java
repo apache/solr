@@ -103,6 +103,7 @@ public class ColStatus {
       }
       SimpleOrderedMap<Object> colMap = new SimpleOrderedMap<>();
       colMap.add("znodeVersion", coll.getZNodeVersion());
+      colMap.add("creationTimeMillis", coll.getCreationTime().toEpochMilli());
       Map<String, Object> props = new TreeMap<>(coll.getProperties());
       props.remove("shards");
       colMap.add("properties", props);

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.ReloadCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -30,7 +31,7 @@ import org.junit.Test;
 
 public class ReloadCoreAPITest extends SolrTestCaseJ4 {
 
-  private ReloadCoreAPI reloadCoreAPI;
+  private ReloadCore reloadCoreAPI;
   private static final String NON_EXISTENT_CORE = "non_existent_core";
 
   @BeforeClass
@@ -49,14 +50,12 @@ public class ReloadCoreAPITest extends SolrTestCaseJ4 {
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
         new CoreAdminHandler.CoreAdminAsyncTracker();
     reloadCoreAPI =
-        new ReloadCoreAPI(
-            solrQueryRequest, solrQueryResponse, coreContainer, coreAdminAsyncTracker);
+        new ReloadCore(solrQueryRequest, solrQueryResponse, coreContainer, coreAdminAsyncTracker);
   }
 
   @Test
   public void testValidReloadCoreAPIResponse() throws Exception {
-    SolrJerseyResponse response =
-        reloadCoreAPI.reloadCore(coreName, new ReloadCoreAPI.ReloadCoreRequestBody());
+    SolrJerseyResponse response = reloadCoreAPI.reloadCore(coreName, new ReloadCoreRequestBody());
     assertEquals(0, response.responseHeader.status);
     assertNotNull(response.responseHeader.qTime);
   }
@@ -67,8 +66,7 @@ public class ReloadCoreAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              reloadCoreAPI.reloadCore(
-                  NON_EXISTENT_CORE, new ReloadCoreAPI.ReloadCoreRequestBody());
+              reloadCoreAPI.reloadCore(NON_EXISTENT_CORE, new ReloadCoreRequestBody());
             });
     assertEquals(400, solrException.code());
     assertTrue(solrException.getMessage().contains("No such core: " + NON_EXISTENT_CORE));

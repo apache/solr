@@ -362,6 +362,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       return docs.iterator(ctx);
     }
   }
+
   // adapted from MultiTermQueryConstantScoreWrapper
   class ConstWeight extends ConstantScoreWeight {
 

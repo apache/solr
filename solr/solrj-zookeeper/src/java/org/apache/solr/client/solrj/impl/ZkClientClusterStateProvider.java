@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +49,7 @@ public class ZkClientClusterStateProvider
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
+  private final boolean canUseZkACLs;
   private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
   private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
 
@@ -65,14 +67,22 @@ public class ZkClientClusterStateProvider
     this.zkStateReader = zkStateReader;
     this.closeZkStateReader = false;
     this.zkHost = null;
+    this.canUseZkACLs = true;
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
+    this(zkHosts, chroot, true);
+  }
+
+  public ZkClientClusterStateProvider(
+      Collection<String> zkHosts, String chroot, boolean canUseZkACLs) {
     zkHost = buildZkHostString(zkHosts, chroot);
+    this.canUseZkACLs = canUseZkACLs;
   }
 
   public ZkClientClusterStateProvider(String zkHost) {
     this.zkHost = zkHost;
+    this.canUseZkACLs = true;
   }
 
   /**
@@ -84,12 +94,18 @@ public class ZkClientClusterStateProvider
    * @param liveNodes list of live nodes
    * @param coll collection name
    * @param zkClient ZK client
+   * @param createTime creation time of the data/bytes
    * @return the ClusterState
    */
   @SuppressWarnings({"unchecked"})
   @Deprecated
   public static ClusterState createFromJsonSupportingLegacyConfigName(
-      int version, byte[] bytes, Set<String> liveNodes, String coll, SolrZkClient zkClient) {
+      int version,
+      byte[] bytes,
+      Set<String> liveNodes,
+      String coll,
+      SolrZkClient zkClient,
+      Instant createTime) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.emptyMap());
     }
@@ -120,6 +136,7 @@ public class ZkClientClusterStateProvider
         version,
         stateMap,
         liveNodes,
+        createTime,
         PerReplicaStatesOps.getZkClientPrsSupplier(
             zkClient, DocCollection.getCollectionPath(coll)));
   }
@@ -212,7 +229,7 @@ public class ZkClientClusterStateProvider
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
-            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout, canUseZkACLs);
             zk.createClusterStateWatchersAndUpdate();
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;

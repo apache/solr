@@ -26,6 +26,16 @@ Note that rate limiting works at an instance (JVM) level, not at a core or colle
 Consider that when planning capacity.
 There is future work planned to have finer grained execution here (https://issues.apache.org/jira/browse/SOLR-14710[SOLR-14710]).
 
+The rate-limiting bucket of a request is determined by the value of the unique `Solr-Request-Type` HTTP header of
+that request. Requests with no `Solr-Request-Type` header will be accepted and processed with no rate-limiting.
+`"Slot borrowing" and "guaranteed slots" are defined with respect to the specified rate-limiting bucket.
+
+NOTE: currently there is only one `Solr-Request-Type` value recognized for rate-limiting: the literal
+string value `QUERY`. So only requests that specify header `Solr-Request-Type: QUERY` will be rate-limited (and
+until more than one request type is respected, other `Solr-Request-Type` specifications are not rate-limited at all,
+and the concepts of "slot borrowing" and "guaranteed slots", which only hold meaning across multiple request types,
+have no practical effect).
+
 == When To Use Rate Limiters
 Rate limiters should be used when the user wishes to allocate a guaranteed capacity of the request threadpool to a specific request type.
 Indexing and search requests are mostly competing with each other for CPU resources.

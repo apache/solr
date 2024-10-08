@@ -109,7 +109,10 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+        SolrClient leaderClient =
+            new Http2SolrClient.Builder(replica.getBaseUrl())
+                .withDefaultCollection(replica.getCoreName())
+                .build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
       // Create another snapshot referring to the same index commit to verify the
@@ -200,7 +203,10 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient leaderClient = new Http2SolrClient.Builder(replica.getCoreUrl()).build()) {
+        SolrClient leaderClient =
+            new Http2SolrClient.Builder(replica.getBaseUrl())
+                .withDefaultCollection(replica.getCoreName())
+                .build()) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
 

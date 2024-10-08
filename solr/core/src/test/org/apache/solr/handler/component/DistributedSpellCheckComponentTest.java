@@ -431,6 +431,6 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     if (addlParams != null) {
       params.addAll(Arrays.asList(addlParams));
     }
-    return params.toArray(new Object[params.size()]);
+    return params.toArray(new Object[0]);
   }
 }

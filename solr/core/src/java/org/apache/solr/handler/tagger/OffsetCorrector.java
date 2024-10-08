@@ -53,6 +53,7 @@ public abstract class OffsetCorrector {
 
   /** offsets of parent tag id change (ascending order) */
   protected final IntArrayList parentChangeOffsets;
+
   /** tag id; parallel array to parentChangeOffsets */
   protected final IntArrayList parentChangeIds;
 

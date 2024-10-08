@@ -29,11 +29,12 @@ def isDistSlim = {String dist -> dist.toLowerCase(Locale.ROOT) == "slim"}
 def isImageSlim = { -> isDistSlim(dockerImageSolrDist) }
 def distToSuffix = {String dist -> isDistSlim(dist) ? "-slim" : ""}
 def dockerImageDistSuffix = "${ -> distToSuffix(dockerImageSolrDist)}"
+def dockerImageTagSuffix = "${ -> propertyOrEnvOrDefault("solr.docker.imageTagSuffix", "SOLR_DOCKER_IMAGE_TAG_SUFFIX", '')}"
 def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
 def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
-def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}") }"
+def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}${dockerImageTagSuffix}") }"
 def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-jammy') }"
-def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}") }" }
+def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}${dockerImageTagSuffix}") }" }
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
 
@@ -182,7 +183,7 @@ task dockerBuild() {
     project.logger.lifecycle("\tID: \t${ -> dockerImageId }")
     project.logger.lifecycle("\tBase Image: \t${ -> baseDockerImage }")
     project.logger.lifecycle("\tSolr Version: \t${ -> project.version }")
-    project.logger.lifecycle("\tSolr Distribution: \t${dockerImageDistSuffix.isEmpty() ? "Full" : "Slim"}")
+    project.logger.lifecycle("\tSolr Distribution: \t${isImageSlim() ? "Slim" : "Full"}")
   }
 
   outputs.files(imageIdFile)
@@ -225,7 +226,8 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
   var excludeCases = new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
   if (isImageSlim()) {
     // The slim image does not contain the prometheus-exporter.
-    excludeCases.add("prometheus-exporter")
+    excludeCases.add("prometheus-exporter-standalone")
+    excludeCases.add("prometheus-exporter-cloud")
   }
   testCasesExclude.value(excludeCases)
 }
@@ -547,7 +549,7 @@ task testDockerfileOfficialSlim(type: TestDockerImageTask, dependsOn: configurat
   // This test does not respect the include/exclude properties that `testDocker` does.
   // All docker tests will be run, no matter the properties specified.
   testCasesInclude.empty()
-  testCasesExclude = ['prometheus-exporter']
+  testCasesExclude = ['prometheus-exporter-cloud', 'prometheus-exporter-standalone']
 }
 
 task testDockerfileOfficial {

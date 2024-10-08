@@ -883,7 +883,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       }
     }
 
-    return adjustedSorts.toArray(new FieldComparator[adjustedSorts.size()]);
+    return adjustedSorts.toArray(new FieldComparator[0]);
   }
 
   private TupleStream handleStats(

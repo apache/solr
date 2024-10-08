@@ -133,17 +133,23 @@ public abstract class SolrScraper implements Closeable {
     QueryRequest queryRequest = new QueryRequest(query.getParameters());
     queryRequest.setPath(query.getPath());
 
-    NamedList<Object> queryResponse = null;
+    NamedList<Object> queryResponse;
     try {
-      if (!query.getCollection().isPresent() && !query.getCore().isPresent()) {
+      if (query.getCollection().isEmpty() && query.getCore().isEmpty()) {
         queryResponse = client.request(queryRequest);
       } else if (query.getCore().isPresent()) {
         queryResponse = client.request(queryRequest, query.getCore().get());
       } else if (query.getCollection().isPresent()) {
         queryResponse = client.request(queryRequest, query.getCollection().get());
+      } else {
+        throw new AssertionError("Invalid configuration");
+      }
+      if (queryResponse == null) { // ideally we'd make this impossible
+        throw new RuntimeException("no response from server");
       }
     } catch (SolrServerException | IOException e) {
       log.error("failed to request: {}", queryRequest.getPath(), e);
+      return samples;
     }
 
     JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));

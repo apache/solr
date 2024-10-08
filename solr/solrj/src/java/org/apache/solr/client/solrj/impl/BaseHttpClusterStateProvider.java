@@ -21,6 +21,7 @@ import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrExc
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,6 +81,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
+  /** Create a SolrClient implementation that uses the specified Solr node URL */
   protected abstract SolrClient getSolrClient(String baseUrl);
 
   @Override
@@ -154,7 +156,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
       @SuppressWarnings("rawtypes")
       Map m = (Map) e.getValue();
-      cs = cs.copyWith(e.getKey(), fillPrs(znodeVersion, e, m));
+      Long creationTimeMillisFromClusterStatus = (Long) m.get("creationTimeMillis");
+      Instant creationTime =
+          creationTimeMillisFromClusterStatus == null
+              ? Instant.EPOCH
+              : Instant.ofEpochMilli(creationTimeMillisFromClusterStatus);
+      cs = cs.copyWith(e.getKey(), fillPrs(znodeVersion, e, creationTime, m));
     }
 
     if (clusterProperties != null) {
@@ -167,7 +174,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private DocCollection fillPrs(int znodeVersion, Map.Entry<String, Object> e, Map m) {
+  private DocCollection fillPrs(
+      int znodeVersion, Map.Entry<String, Object> e, Instant creationTime, Map m) {
     DocCollection.PrsSupplier prsSupplier = null;
     if (m.containsKey("PRS")) {
       Map prs = (Map) m.remove("PRS");
@@ -179,7 +187,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
                   (List<String>) prs.get("states"));
     }
 
-    return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion, prsSupplier);
+    return ClusterState.collectionFromObjects(
+        e.getKey(), m, znodeVersion, creationTime, prsSupplier);
   }
 
   @Override

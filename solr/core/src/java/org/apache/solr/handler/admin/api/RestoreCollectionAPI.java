@@ -38,14 +38,15 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -121,8 +122,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
 
     final var createRequestBody = requestBody.createCollectionParams;
     if (createRequestBody != null) {
-      CreateCollectionAPI.populateDefaultsIfNecessary(coreContainer, createRequestBody);
-      createRequestBody.validate();
+      CreateCollection.populateDefaultsIfNecessary(coreContainer, createRequestBody);
+      CreateCollection.validateRequestBody(createRequestBody);
       if (Boolean.FALSE.equals(createRequestBody.createReplicas)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -143,10 +144,14 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       throw remoteResponse.getException();
     }
 
+    if (requestBody.async != null) {
+      response.requestId = requestBody.async;
+      return response;
+    }
+
     // Values fetched from remoteResponse may be null
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-
     return response;
   }
 
@@ -160,7 +165,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       // RESTORE only supports a subset of collection-creation params, so filter by those when
       // constructing the remote message
       remoteMessage.remove("create-collection");
-      CreateCollectionAPI.createRemoteMessage(createReqBody).getProperties().entrySet().stream()
+      CreateCollection.createRemoteMessage(createReqBody).getProperties().entrySet().stream()
           .filter(
               e ->
                   CREATE_PARAM_ALLOWLIST.contains(e.getKey())
@@ -204,7 +209,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     @JsonProperty public Integer backupId;
 
     @JsonProperty(CREATE_COLLECTION_KEY)
-    public CreateCollectionAPI.CreateCollectionRequestBody createCollectionParams;
+    public CreateCollectionRequestBody createCollectionParams;
 
     @JsonProperty public String async;
 
@@ -217,7 +222,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       restoreBody.async = solrParams.get(ASYNC);
 
       restoreBody.createCollectionParams =
-          CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(solrParams, false);
+          CreateCollection.createRequestBodyFromV1Params(solrParams, false);
 
       return restoreBody;
     }

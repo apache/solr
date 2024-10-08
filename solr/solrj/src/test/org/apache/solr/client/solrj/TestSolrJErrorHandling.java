@@ -102,8 +102,10 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl()).withRequestWriter(new RequestWriter()).build()) {
-
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new RequestWriter())
+            .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -112,7 +114,8 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getCoreUrl())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new BinaryRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!

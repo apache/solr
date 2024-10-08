@@ -41,8 +41,10 @@ public @interface RandomizeSSL {
 
   // we don't choose ssl that often by default because of SOLR-5776
   public static final double DEFAULT_ODDS = 0.2D;
+
   /** Comment to inlcude when logging details of SSL randomization */
   public String reason() default "";
+
   /**
    * Odds (as ratio relative to 1) that SSL should be selected in a typical run. Must either be
    * betwen 0.0 and 1.0 (inclusively) or NaN in which case a sensible should be used. Actual Odds
@@ -54,6 +56,7 @@ public @interface RandomizeSSL {
    * @see LuceneTestCase#RANDOM_MULTIPLIER
    */
   public double ssl() default Double.NaN;
+
   /**
    * Odds (as ratio relative to 1) that SSL should be selected in a typical run. Must either be
    * betwen 0.0 and 1.0 (inclusively) or NaN in which case the effective value of {@link #ssl}
@@ -69,6 +72,7 @@ public @interface RandomizeSSL {
    * @see LuceneTestCase#RANDOM_MULTIPLIER
    */
   public double clientAuth() default Double.NaN;
+
   /**
    * A shorthand option for controlling both {@link #ssl} and {@link #clientAuth} with a single
    * numeric value, For example: <code>@RandomizeSSL(0.5)</code>.
@@ -85,6 +89,7 @@ public @interface RandomizeSSL {
     public final double ssl;
     public final double clientAuth;
     public final String debug;
+
     /**
      * @lucene.internal
      */

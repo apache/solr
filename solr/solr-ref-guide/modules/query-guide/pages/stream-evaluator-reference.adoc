@@ -18,9 +18,9 @@
 // under the License.
 
 
-Stream evaluators are different then stream sources or stream decorators.
+Stream evaluators are different from stream sources or stream decorators.
 Both stream sources and stream decorators return streams of tuples.
-Stream evaluators are more like a traditional function that evaluates its parameters and returns an result.
+Stream evaluators are more like a traditional function that evaluates its parameters and returns a result.
 That result can be a single value, array, map or other structure.
 
 Stream evaluators can be nested so that the output of an evaluator becomes the input for another evaluator.
@@ -513,7 +513,7 @@ number | matrix: Either the covariance or covariance matrix.
 == cumulativeProbability
 
 The `cumulativeProbability` function returns the cumulative probability of a random variable within a probability distribution.
-The cumulative probability is the total probability of all random variables less then or equal to a random variable.
+The cumulative probability is the total probability of all random variables less than or equal to a random variable.
 
 === cumulativeProbability Parameters
 
@@ -814,7 +814,7 @@ eor(eq(fieldA,fieldB),eq(fieldC,fieldD)) // true iff either fieldA == fieldB or 
 The `eq` function will return whether all the parameters are equal, as per Java's standard `equals(...)` function.
 The function accepts parameters of any type, but will fail to execute if all the parameters are not of the same type.
 That is, all are Boolean, all are String, or all are Numeric.
-If any any parameters are null and there is at least one parameter that is not null then false will be returned.
+If any parameters are null and there is at least one parameter that is not null then false will be returned.
 Returns a boolean value.
 
 === eq Parameters
@@ -1085,7 +1085,7 @@ number: the sum of all the values in the matrix.
 The `gt` function will return whether the first parameter is greater than the second parameter.
 The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type.
 That is, all are String or all are Numeric.
-If any any parameters are null then an error will be raised.
+If any parameters are null then an error will be raised.
 Returns a boolean value.
 
 === gt Parameters
@@ -1110,7 +1110,7 @@ gt(add(fieldA,fieldB),6) // fieldA + fieldB > 6
 The `gteq` function will return whether the first parameter is greater than or equal to the second parameter.
 The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type.
 That is, all are String or all are Numeric.
-If any any parameters are null then an error will be raised.
+If any parameters are null then an error will be raised.
 Returns a boolean value.
 
 === gteq Parameters
@@ -1338,7 +1338,7 @@ kolmogorovSmirnov(normalDistribution(10, 2), sampleSet)
 The `lt` function will return whether the first parameter is less than the second parameter.
 The function accepts numeric or string parameters, but will fail to execute if all the parameters are not of the same type.
 That is, all are String or all are Numeric.
-If any any parameters are null then an error will be raised.
+If any parameters are null then an error will be raised.
 Returns a boolean value.
 
 === lt Parameters
@@ -1363,7 +1363,7 @@ lt(add(fieldA,fieldB),6) // fieldA + fieldB < 6
 The `lteq` function will return whether the first parameter is less than or equal to the second parameter.
 The function accepts numeric and string parameters, but will fail to execute if all the parameters are not of the same type.
 That is, all are String or all are Numeric.
-If any any parameters are null then an error will be raised.
+If any parameters are null then an error will be raised.
 Returns a boolean value.
 
 === lteq Parameters

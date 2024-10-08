@@ -16,9 +16,6 @@
  */
 package org.apache.solr.update;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +49,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
-import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,13 +309,6 @@ public class SolrCmdDistributor implements Closeable {
     // authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
-    }
-
-    Tracer tracer = req.cmd.getTracer();
-    Span parentSpan = tracer.activeSpan();
-    if (parentSpan != null) {
-      tracer.inject(
-          parentSpan.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req.uReq));
     }
 
     if (req.synchronous) {

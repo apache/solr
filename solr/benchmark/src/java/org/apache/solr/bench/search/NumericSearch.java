@@ -21,13 +21,11 @@ import static org.apache.solr.bench.generators.SourceDSL.integers;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.solr.bench.CircularIterator;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.generators.SolrGen;
@@ -176,31 +174,6 @@ public class NumericSearch {
                   "{!terms cache=false f='" + field + "'}" + queries.next()));
       q.setBasePath(basePath);
       return q;
-    }
-
-    private static class CircularIterator<T> implements Iterator<T> {
-
-      private final Object[] collection;
-      private final AtomicInteger idx;
-
-      CircularIterator(Collection<T> collection) {
-        this.collection = Objects.requireNonNull(collection).toArray();
-        if (this.collection.length == 0) {
-          throw new IllegalArgumentException("This iterator doesn't support empty collections");
-        }
-        this.idx = new AtomicInteger();
-      }
-
-      @Override
-      public boolean hasNext() {
-        return true;
-      }
-
-      @SuppressWarnings("unchecked")
-      @Override
-      public T next() {
-        return (T) collection[idx.incrementAndGet() % collection.length];
-      }
     }
   }
 

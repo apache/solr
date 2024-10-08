@@ -59,6 +59,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
@@ -238,6 +239,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * for MIN/MAX, a sort string for SORT, "score" for SCORE). Will never be null.
      */
     public final String selectorText;
+
     /** The type for this selector, will never be null */
     public final GroupHeadSelectorType type;
 
@@ -545,7 +547,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           newInfos.add(fieldInfo);
         }
       }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
+      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[0]));
       this.fieldInfos = infos;
     }
 
@@ -1560,6 +1562,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         delegateCollect();
       }
     }
+
     /** Immediately delegate the collection of the current doc */
     protected void delegateCollect() throws IOException {
       // ensure we have the 'correct' scorer
@@ -1781,6 +1784,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -2010,6 +2014,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -3540,12 +3545,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void setScorer(Scorable s) throws IOException {
       inner.setScorer(s);
     }
+
     /**
      * @see SortFieldsCompare#setGroupValues
      */
     public void setGroupValues(int contextDoc) throws IOException {
       inner.setNullGroupValues(contextDoc);
     }
+
     /**
      * @see SortFieldsCompare#testAndSetGroupValues
      */
@@ -3587,7 +3594,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       for (int clause = 0; clause < numClauses; clause++) {
         SortField sf = sorts[clause];
         // we only need one slot for every comparator
-        fieldComparators[clause] = sf.getComparator(1, clause == 0);
+        fieldComparators[clause] =
+            sf.getComparator(
+                1,
+                clause == 0
+                    ? (numClauses > 1 ? Pruning.GREATER_THAN : Pruning.GREATER_THAN_OR_EQUAL_TO)
+                    : Pruning.NONE);
+
         reverseMul[clause] = sf.getReverse() ? -1 : 1;
       }
       groupHeadValues = new Object[initNumGroups][];

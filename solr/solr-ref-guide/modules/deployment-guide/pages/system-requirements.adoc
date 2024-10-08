@@ -48,19 +48,20 @@ To be sure, check the page https://cwiki.apache.org/confluence/display/LUCENE/Ja
 === Sources for Java
 
 Java is available from a number of providers.
-The official Docker image for Solr uses the Temurin distribution of OpenJDK from the https://adoptium.net/[Adoptium project].
+The official Docker image for Solr uses the Temurin distribution of OpenJDK 17 from the https://adoptium.net/[Adoptium project].
 Solr regularly test with https://adoptium.net/temurin/releases[Temurin], https://jdk.java.net/[OpenJDK] and Oracle versions of Java.
 Some distributions are free, others have a cost, some provide security patches and support, others do not.
 We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
 
 The Solr project does not endorse any particular provider of Java.
 
-NOTE: While we reference the Java Development (JDK) on this page, any Java Runtime Environment (JRE) associated with the referenced JDKs is acceptable.
+NOTE: While we reference the Java Development Kit (JDK) on this page, any Java Runtime Environment (JRE) associated with the referenced JDKs is acceptable.
 
 == Java and Solr Combinations
 
-Each Solr release has an extensively tested minimum Java version.
-For instance the minimum Java version for Solr 9 is Java 11.
+The minimum Java version for Solr 9.x is Java 11. This applies both to the Solr server and the SolrJ client libraries.
+The recommended Java version is JRE 17.
+
 This section provides guidance when running Solr with a more recent Java version than the minimum specified.
 
 * OpenJDK and Oracle Java distributions are tested extensively and will continue to be tested going forward.
@@ -68,7 +69,7 @@ This section provides guidance when running Solr with a more recent Java version
 ** For the purposes of Solr, Oracle's Java and OpenJDK are identical.
 * Upgrading Java is not required with the understanding that no Java bugs will be addressed unless you are using a version of Java that provides LTS.
 * Java 11 has been extensively tested by both automated tests and users through Solr 9.
-Long Term Support (LTS) for Java 11 is provided from several sources.
+Long Term Support (LTS) for Java is provided from several sources.
 * The project's testing infrastructure continuously tests with the minimum and greater versions of Java for each development branch.
 * Java 12, 13, 14, 15 and 16 have no LTS.
 For this reason, Java 17 is preferred when upgrading Java.
@@ -81,15 +82,6 @@ In addition, some organizations also maintain their own test infrastructure and 
 Our continuous testing is against the two code lines under active development, Solr 9x and the future Solr 10.0:
 
 * Solr 9.x is the current stable release line and will have "point releases", i.e., 9.1, 9.2, etc., until Solr 10.0 is released.
-** Solr 9.x is currently tested against Java 11, 17 and 18-prerelease.
+** Solr 9.x is continuously tested against Java 11, 17, 21 and also newer versions.
 * There is also development and testing with the future Solr 10.x release line.
-* /Solr 8.x and earlier release lines are not tested on a continuous basis.
-
-=== Released Solr and Java Versions
-The success rate in our automated tests is similar with all the Java versions tested with the following caveats.
-
-==== Solr 8.x
-
-* Requires Java 8 or higher.
-* This version did have continuous testing with Java 9, 10, 11, 12 and the pre-release version of Java 13.
-* There were known issues with Kerberos with Java 9+ prior to Solr 8.1.
+* Solr 8.x and earlier release lines are not tested on a continuous basis.

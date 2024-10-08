@@ -41,9 +41,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
-import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
-import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -579,40 +576,6 @@ public class Assign {
     // placement plugin)
     PlacementPlugin placementPlugin =
         coreContainer.getPlacementPluginFactory().createPluginInstance();
-    if (placementPlugin == null) {
-      // Otherwise use the default
-      String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
-      if (defaultPluginId != null) {
-        switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
-          case "simple":
-            placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
-            break;
-          case "affinity":
-            placementPlugin = (new AffinityPlacementFactory()).createPluginInstance();
-            break;
-          case "minimizecores":
-            placementPlugin = (new MinimizeCoresPlacementFactory()).createPluginInstance();
-            break;
-          case "random":
-            placementPlugin = (new RandomPlacementFactory()).createPluginInstance();
-            break;
-          default:
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Invalid value for system property '"
-                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
-                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
-        }
-        log.info(
-            "Default replica placement plugin set in {} to {}",
-            PLACEMENTPLUGIN_DEFAULT_SYSPROP,
-            defaultPluginId);
-      } else {
-        // TODO: Consider making the ootb default AffinityPlacementFactory, see
-        // https://issues.apache.org/jira/browse/SOLR-16492
-        placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
-      }
-    }
     return new PlacementPluginAssignStrategy(placementPlugin);
   }
 }

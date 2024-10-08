@@ -379,10 +379,4 @@ public class PerReplicaStatesOps {
   public String toString() {
     return ops.toString();
   }
-
-  public static class PrsZkNodeNotFoundException extends SolrException {
-    private PrsZkNodeNotFoundException(ErrorCode code, String msg, Throwable cause) {
-      super(code, msg, cause);
-    }
-  }
 }

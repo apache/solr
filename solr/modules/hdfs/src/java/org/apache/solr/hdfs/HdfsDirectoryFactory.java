@@ -17,6 +17,7 @@
 package org.apache.solr.hdfs;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+import static org.apache.solr.cloud.ZkController.trimLeadingAndTrailingSlashes;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -47,11 +48,11 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -187,7 +188,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       initKerberos();
     }
     if (StrUtils.isNullOrEmpty(
-        System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+        EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
@@ -294,7 +295,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   boolean getConfig(String name, boolean defaultValue) {
     Boolean value = params.getBool(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Boolean.valueOf(sysValue);
       }
@@ -305,7 +306,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   int getConfig(String name, int defaultValue) {
     Integer value = params.getInt(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Integer.parseInt(sysValue);
       }
@@ -316,7 +317,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   String getConfig(String name, String defaultValue) {
     String value = params.get(name);
     if (value == null) {
-      value = System.getProperty(name);
+      value = EnvUtils.getProperty(name);
     }
     return value == null ? defaultValue : value;
   }
@@ -462,6 +463,14 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
               + " for relative dataDir paths to work");
     }
 
+    String scopePath = scopePath(cd);
+
+    return normalize(
+        SolrPaths.normalizeDir(
+            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + scopePath + "/" + cd.getDataDir()));
+  }
+
+  public static String scopePath(CoreDescriptor cd) {
     // by default, we go off the instance directory
     String path;
     if (cd.getCloudDescriptor() != null) {
@@ -473,14 +482,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     } else {
       path = cd.getName();
     }
-
-    return normalize(
-        SolrPaths.normalizeDir(
-            ZkController.trimLeadingAndTrailingSlashes(hdfsDataDir)
-                + "/"
-                + path
-                + "/"
-                + cd.getDataDir()));
+    return path;
   }
 
   /**

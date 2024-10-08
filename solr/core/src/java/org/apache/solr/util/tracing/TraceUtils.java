@@ -17,12 +17,18 @@
 package org.apache.solr.util.tracing;
 
 import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.noop.NoopSpan;
+import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import io.opentracing.util.GlobalTracer;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.eclipse.jetty.client.api.Request;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
@@ -48,10 +54,37 @@ public class TraceUtils {
     }
   }
 
+  public static void injectTraceContext(Request req, Span span) {
+    Tracer tracer = GlobalTracer.get();
+    if (span != null) {
+      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrJettyRequestCarrier(req));
+    }
+  }
+
+  public static void injectTraceContext(HttpRequest req) {
+    Tracer tracer = GlobalTracer.get();
+    Span span = tracer.activeSpan();
+    if (span != null) {
+      tracer.inject(
+          span.context(), Format.Builtin.HTTP_HEADERS, new SolrApacheHttpRequestCarrier(req));
+    }
+  }
+
   public static void setOperations(SolrQueryRequest req, String clazz, List<String> ops) {
     if (!ops.isEmpty()) {
       req.getSpan().setTag("ops", String.join(",", ops));
       req.getSpan().setTag("class", clazz);
     }
+  }
+
+  public static Span startCollectionApiCommandSpan(
+      Tracer tracer, String name, String collection, boolean isAsync) {
+    SpanBuilder spanBuilder =
+        tracer
+            .buildSpan(name)
+            .asChildOf(tracer.activeSpan())
+            .withTag(Tags.SPAN_KIND, isAsync ? Tags.SPAN_KIND_PRODUCER : Tags.SPAN_KIND_CLIENT)
+            .withTag(Tags.DB_INSTANCE, collection);
+    return spanBuilder.start();
   }
 }

@@ -131,8 +131,10 @@ public class ExpressionFactory {
 
   /** Used to denote a variable length parameter. */
   public static final String variableLengthParamSuffix = "..";
+
   /** The character used to denote the start of a for each lambda expression */
   public static final char variableForEachSep = ':';
+
   /** The character used to denote the looped parameter in the for each lambda expression */
   public static final char variableForEachParam = '_';
 
@@ -1023,6 +1025,7 @@ public class ExpressionFactory {
   public static interface CreatorFunction {
     AnalyticsValueStream apply(AnalyticsValueStream[] t) throws SolrException;
   }
+
   /** Used to initialize analytics constants. */
   @FunctionalInterface
   public static interface ConstantFunction {

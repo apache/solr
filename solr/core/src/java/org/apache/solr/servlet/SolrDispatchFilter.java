@@ -57,7 +57,6 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.servlet.CoreContainerProvider.ServiceHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,10 +75,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public static final String ATTR_TRACING_SPAN = Span.class.getName();
   public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
 
-  // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees
-  // ContextListeners run before filter init, but JettySolrRunner that we use for tests is
-  // complicated)
-  private ServiceHolder coreService;
+  private CoreContainerProvider containerProvider;
 
   protected final CountDownLatch init = new CountDownLatch(1);
 
@@ -98,7 +94,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   public HttpClient getHttpClient() {
     try {
-      return coreService.getService().getHttpClient();
+      return containerProvider.getHttpClient();
     } catch (UnavailableException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
@@ -140,14 +136,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   @Override
   public void init(FilterConfig config) throws ServletException {
     try {
-      coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
+      containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
-          NodeRoles.MODE_ON.equals(
-              coreService
-                  .getService()
-                  .getCoreContainer()
-                  .nodeRoles
-                  .getRoleMode(NodeRoles.Role.COORDINATOR));
+          NodeRoles.MODE_ON.equals(getCores().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory =
           isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
@@ -155,9 +146,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       }
 
       configExcludes(this, config.getInitParameter("excludePatterns"));
-    } catch (InterruptedException e) {
-      throw new ServletException("Interrupted while fetching core service");
-
     } catch (Throwable t) {
       // catch this so our filter still works
       log.error("Could not start Dispatch Filter.", t);
@@ -170,8 +158,9 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     }
   }
 
+  /** The CoreContainer. It's ready for use, albeit could shut down whenever. Never null. */
   public CoreContainer getCores() throws UnavailableException {
-    return coreService.getService().getCoreContainer();
+    return containerProvider.getCoreContainer();
   }
 
   @Override
@@ -208,7 +197,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     }
     Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
     request.setAttribute(ATTR_TRACING_TRACER, t);
-    RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
+    RateLimitManager rateLimitManager = containerProvider.getRateLimitManager();
     try {
       ServletUtils.rateLimitRequest(
           rateLimitManager,
@@ -412,7 +401,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   @VisibleForTesting
   void replaceRateLimitManager(RateLimitManager rateLimitManager) {
-    coreService.getService().setRateLimitManager(rateLimitManager);
+    containerProvider.setRateLimitManager(rateLimitManager);
   }
 
   /** internal API */

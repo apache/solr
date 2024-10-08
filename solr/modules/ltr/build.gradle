@@ -19,6 +19,15 @@ apply plugin: 'java-library'
 
 description = 'Learning to Rank Package'
 
+ext {
+  pythonClientCopyDir = layout.projectDirectory.dir("example/solrclient")
+}
+
+configurations {
+  generatedPythonClient
+  localPythonClientCopy
+}
+
 dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
@@ -26,6 +35,12 @@ dependencies {
   implementation 'org.apache.lucene:lucene-core'
 
   implementation 'org.slf4j:slf4j-api'
+
+  // Used by example scripts
+  generatedPythonClient project(path: ":solr:api", configuration: "pythonClient")
+  localPythonClientCopy files(pythonClientCopyDir) {
+    builtBy "copyPythonClientToExample"
+  }
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
@@ -41,4 +56,10 @@ dependencies {
   testImplementation 'org.hamcrest:hamcrest'
 
   testImplementation 'commons-io:commons-io'
+}
+
+task copyPythonClientToExample(type: Sync) {
+  group = "Solr Python Client"
+  from configurations.generatedPythonClient
+  into project.pythonClientCopyDir
 }

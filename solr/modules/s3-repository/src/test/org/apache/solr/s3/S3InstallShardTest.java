@@ -21,6 +21,7 @@ import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import software.amazon.awssdk.regions.Region;
@@ -29,7 +30,7 @@ import software.amazon.awssdk.regions.Region;
  * Tests validating that the 'Install Shard API' works when used with {@link S3BackupRepository}
  *
  * @see org.apache.solr.cloud.api.collections.AbstractInstallShardTest
- * @see org.apache.solr.handler.admin.api.InstallShardDataAPI
+ * @see InstallShardData
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})

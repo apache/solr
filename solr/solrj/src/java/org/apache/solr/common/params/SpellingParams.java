@@ -109,11 +109,13 @@ public interface SpellingParams {
 
   /** Take the top suggestion for each token and create a new query from it */
   public static final String SPELLCHECK_COLLATE = SPELLCHECK_PREFIX + "collate";
+
   /**
    * The maximum number of collations to return. Default=1. Ignored if "spellcheck.collate" is
    * false.
    */
   public static final String SPELLCHECK_MAX_COLLATIONS = SPELLCHECK_PREFIX + "maxCollations";
+
   /**
    * The maximum number of collations to test by querying against the index. When testing, the
    * collation is substituted for the original query's "q" param. Any "qf"s are retained. If this is
@@ -122,6 +124,7 @@ public interface SpellingParams {
    */
   public static final String SPELLCHECK_MAX_COLLATION_TRIES =
       SPELLCHECK_PREFIX + "maxCollationTries";
+
   /**
    * The maximum number of word correction combinations to rank and evaluate prior to deciding which
    * collation candidates to test against the index. This is a performance safety-net in cases a
@@ -129,6 +132,7 @@ public interface SpellingParams {
    */
   public static final String SPELLCHECK_MAX_COLLATION_EVALUATIONS =
       SPELLCHECK_PREFIX + "maxCollationEvaluations";
+
   /**
    * For use with {@link SpellingParams#SPELLCHECK_MAX_COLLATION_TRIES} and {@link
    * SpellingParams#SPELLCHECK_COLLATE_EXTENDED_RESULTS}. A performance optimization in cases where
@@ -144,6 +148,7 @@ public interface SpellingParams {
    */
   public static final String SPELLCHECK_COLLATE_MAX_COLLECT_DOCS =
       SPELLCHECK_PREFIX + "collateMaxCollectDocs";
+
   /**
    * Whether to use the Extended Results Format for collations. Includes "before&gt;after" pairs to
    * easily allow clients to generate messages like "no results for PORK. did you mean POLK?" Also
@@ -164,6 +169,7 @@ public interface SpellingParams {
    */
   public static final String SPELLCHECK_COLLATE_PARAM_OVERRIDE =
       SPELLCHECK_PREFIX + "collateParam.";
+
   /** Certain spelling implementations may allow for an accuracy setting. */
   public static final String SPELLCHECK_ACCURACY = SPELLCHECK_PREFIX + "accuracy";
 }

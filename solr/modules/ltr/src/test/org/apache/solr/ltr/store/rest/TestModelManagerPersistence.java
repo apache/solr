@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.store.rest;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -135,6 +137,24 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/error/msg=='Missing feature store: test1'");
     assertJQ(ManagedFeatureStore.REST_END_POINT, "/featureStores==['test']");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
+  }
+
+  @Test
+  public void testFeaturesAndModelAreStoredCompact() throws Exception {
+    loadFeature("feature", ValueFeature.class.getName(), "test", "{\"value\":2}");
+    loadModel(
+        "test-model",
+        LinearModel.class.getName(),
+        new String[] {"feature"},
+        "test",
+        "{\"weights\":{\"feature\":1.0}}");
+
+    final String fstorecontent = Files.readString(fstorefile, StandardCharsets.UTF_8);
+    final String mstorecontent = Files.readString(mstorefile, StandardCharsets.UTF_8);
+    Object fStoreObject = Utils.fromJSONString(fstorecontent);
+    Object mStoreObject = Utils.fromJSONString(mstorecontent);
+    assertEquals(new String(Utils.toJSON(fStoreObject, -1), UTF_8), fstorecontent);
+    assertEquals(new String(Utils.toJSON(mStoreObject, -1), UTF_8), mstorecontent);
   }
 
   @Test

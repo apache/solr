@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
@@ -48,10 +49,24 @@ public class ApiTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("get")
+        Option.builder()
+            .longOpt("solr-url")
             .argName("URL")
             .hasArg()
-            .required(true)
+            .required(false) // swap back to required when we eliminate deprecated option
+            .desc("Send a GET request to a Solr API endpoint.")
+            .build(),
+        Option.builder("get")
+            .longOpt("get")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --solr-url instead")
+                    .get())
+            .argName("URL")
+            .hasArg()
+            .required(false)
             .desc("Send a GET request to a Solr API endpoint.")
             .build());
   }
@@ -59,7 +74,8 @@ public class ApiTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String response = null;
-    String getUrl = cli.getOptionValue("get");
+    String getUrl =
+        cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("get");
     if (getUrl != null) {
       response = callGet(getUrl);
     }

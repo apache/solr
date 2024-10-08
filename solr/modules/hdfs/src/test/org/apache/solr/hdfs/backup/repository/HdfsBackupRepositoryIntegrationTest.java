@@ -101,6 +101,11 @@ public class HdfsBackupRepositoryIntegrationTest extends AbstractBackupRepositor
   }
 
   @Override
+  protected Class<? extends BackupRepository> getRepositoryClass() {
+    return HdfsBackupRepository.class;
+  }
+
+  @Override
   protected BackupRepository getRepository() {
     HdfsBackupRepository repository = new HdfsBackupRepository();
     repository.init(getBaseBackupRepositoryConfiguration());

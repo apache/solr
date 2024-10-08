@@ -104,6 +104,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.internalHttpClient = (builder.httpClient == null);
     this.client =
         new HttpSolrClient.Builder(builder.baseSolrUrl)
+            .withDefaultCollection(builder.defaultCollection)
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -119,6 +120,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.defaultCollection = builder.defaultCollection;
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
@@ -328,7 +330,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
           String basePath = client.getBaseURL();
-          if (update.getCollection() != null) basePath += "/" + update.getCollection();
+          if (update.getCollection() != null) {
+            basePath += "/" + update.getCollection();
+          } else if (client.getDefaultCollection() != null) {
+            basePath += "/" + client.getDefaultCollection();
+          }
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 
@@ -451,6 +457,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   static class Update {
     UpdateRequest request;
     String collection;
+
     /**
      * @param request the update request.
      * @param collection The collection, can be null.
@@ -459,6 +466,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.request = request;
       this.collection = collection;
     }
+
     /**
      * @return the update request.
      */
@@ -469,6 +477,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     public void setRequest(UpdateRequest request) {
       this.request = request;
     }
+
     /**
      * @return the collection, can be null.
      */
@@ -484,6 +493,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);
     }
@@ -877,7 +888,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
      *
      * Note that when a core is provided in the base URL, queries and other requests can be made
      * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
      *
      * <p>2) The path of the root Solr path ("/solr")
      *
@@ -886,8 +901,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
      *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
      * </pre>
      *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core be specified on all requests.
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;

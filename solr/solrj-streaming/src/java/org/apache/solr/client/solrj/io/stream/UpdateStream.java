@@ -51,6 +51,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   private String collection;
   protected String zkHost;
   private int updateBatchSize;
+
   /**
    * Indicates if the {@link CommonParams#VERSION_FIELD} should be removed from tuples when
    * converting to Solr Documents. May be set per expression using the <code>"pruneVersionField"

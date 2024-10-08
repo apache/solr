@@ -56,6 +56,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.PointRangeQuery;
@@ -3108,12 +3109,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     if (!Boolean.getBoolean("enable.update.log")) {
       return;
     }
-    List<String> datesList =
+    String[] dates =
         getRandomLongs(3, false, MAX_DATE_EPOCH_MILLIS).stream()
             .map(Instant::ofEpochMilli)
             .map(Object::toString)
-            .collect(Collectors.toList());
-    String[] dates = datesList.toArray(new String[datesList.size()]);
+            .toArray(String[]::new);
     doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_mv", "date", dates);
     doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_ni_mv_dv", "date", dates);
     doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_dv_ns_mv", "date", dates);
@@ -4762,6 +4762,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       throws Exception {
     doTestFloatPointFieldExactQuery(field, true, testDouble);
   }
+
   /**
    * @param field the field to use for indexing and searching against
    * @param searchable set to true if searches against "field" should succeed, false if field is
@@ -5811,8 +5812,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
               }
               for (LeafReaderContext leave : ir.leaves()) {
                 LeafReader reader = leave.reader();
+                StoredFields storedFields = reader.storedFields();
                 for (int i = 0; i < reader.numDocs(); i++) {
-                  Document doc = reader.document(i);
+                  Document doc = storedFields.document(i);
                   if (sf.stored()) {
                     assertNotNull("Field " + field + " not found. Doc: " + doc, doc.get(field));
                   } else {

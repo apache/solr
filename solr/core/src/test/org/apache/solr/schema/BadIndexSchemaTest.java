@@ -122,7 +122,10 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
   }
 
   public void testPerFieldtypePostingsFormatButNoSchemaCodecFactory() throws Exception {
-    doTest("bad-schema-codec-global-vs-ft-mismatch.xml", "codec does not support");
+    assertConfigs(
+        "solrconfig-lucene-codec.xml",
+        "bad-schema-codec-global-vs-ft-mismatch.xml",
+        "codec does not support");
   }
 
   public void testDocValuesUnsupported() throws Exception {

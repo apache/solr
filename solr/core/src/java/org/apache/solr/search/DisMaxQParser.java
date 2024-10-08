@@ -277,7 +277,7 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public String[] getDefaultHighlightFields() {
-    return queryFields.keySet().toArray(new String[queryFields.keySet().size()]);
+    return queryFields.keySet().toArray(new String[0]);
   }
 
   @Override

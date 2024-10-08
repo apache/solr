@@ -183,6 +183,8 @@ public class ClusterStatus {
       collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
 
       collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
+      collectionStatus.put(
+          "creationTimeMillis", clusterStateCollection.getCreationTime().toEpochMilli());
 
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));

@@ -61,9 +61,9 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
             container.solrHome,
             container.getResourceLoader().classLoader) {
 
-          @Override
-          public CoreContainer getCoreContainer() {
-            return container;
+          // instance initializer block
+          {
+            setCoreContainer(container);
           }
 
           @Override

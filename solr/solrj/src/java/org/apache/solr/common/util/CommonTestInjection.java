@@ -140,6 +140,7 @@ public class CommonTestInjection {
    */
   public static class BreakpointSetter implements Closeable {
     private Set<String> keys = new HashSet<>();
+
     /**
      * This is usually set by the test cases.
      *

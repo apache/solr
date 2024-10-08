@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -90,6 +91,19 @@ import org.slf4j.LoggerFactory;
 public class Utils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final Random RANDOM;
+
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random
+    // instance based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
 
   @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map<?, ?> map, int maxDepth) {
@@ -232,6 +246,25 @@ public class Utils {
     CharArr out = new CharArr();
     new JSONWriter(out, 0).write(o); // indentation by default
     return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static byte[] toJSON(Object o, int indentSize) {
+    if (o == null) return new byte[0];
+    CharArr out = new CharArr();
+    new JSONWriter(out, indentSize).write(o);
+    return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static String toJSONString(Object o, int indentSize) {
+    return new String(toJSON(o, indentSize), StandardCharsets.UTF_8);
   }
 
   public static String toJSONString(Object o) {
@@ -710,10 +743,30 @@ public class Utils {
     return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
   }
 
+  /**
+   * Construct a V1 base url for the Solr node, given its name (e.g., 'app-node-1:8983_solr') and a
+   * URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @return url that looks like {@code https://app-node-1:8983/solr}
+   * @throws IllegalArgumentException if the provided node name is malformed
+   */
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
     return getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
+  /**
+   * Construct a V1 or a V2 base url for the Solr node, given its name (e.g.,
+   * 'app-node-1:8983_solr') and a URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @param isV2 whether a V2 url should be constructed
+   * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
+   *     https://app-node-1:8983/solr} (V1)
+   * @throws IllegalArgumentException if the provided node name is malformed
+   */
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
     final int colonAt = nodeName.indexOf(':');
@@ -1026,6 +1079,16 @@ public class Utils {
         // No-op - if the object has no 'unknownProperties' method, then nothing needs to be done.
       }
     }
+  }
+
+  /**
+   * Produce a Map representation of the provided object using reflection to identify annotated
+   * fields.
+   *
+   * <p>The provided object is not required to be a {@link MapWriter}.
+   */
+  public static Map<String, Object> reflectToMap(Object toReflect) {
+    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

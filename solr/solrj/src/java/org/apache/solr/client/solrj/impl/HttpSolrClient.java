@@ -25,9 +25,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -80,6 +78,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -96,7 +95,7 @@ import org.slf4j.MDC;
 /**
  * A SolrClient implementation that talks directly to a Solr server via Apache HTTP client
  *
- * @deprecated Please use {@link Http2SolrClient}
+ * @deprecated Please use {@link Http2SolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
 public class HttpSolrClient extends BaseHttpSolrClient {
@@ -190,6 +189,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   /**
@@ -252,6 +252,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public NamedList<Object> request(
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {
@@ -303,7 +305,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final SolrRequest<?> request, final ResponseParser processor)
       throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
-    final HttpRequestBase method = createMethod(request, null);
+    final HttpRequestBase method = createMethod(request, defaultCollection);
     ExecutorService pool =
         ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
@@ -340,12 +342,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return queryModParams;
   }
 
-  static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
-  }
-
   protected HttpRequestBase createMethod(SolrRequest<?> request, String collection)
       throws IOException, SolrServerException {
     if (request instanceof V2RequestSupport) {
@@ -355,10 +351,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(request);
     Collection<ContentStream> streams =
         contentWriter == null ? requestWriter.getContentStreams(request) : null;
-    String path = requestWriter.getPath(request);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
-    }
+
+    final String requestUrlBeforeParams =
+        ClientUtils.buildRequestUrl(request, requestWriter, baseUrl, collection);
 
     ResponseParser parser = request.getResponseParser();
     if (parser == null) {
@@ -378,36 +373,24 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       wparams.add(invariantParams);
     }
 
-    String basePath = baseUrl;
-    if (collection != null) basePath += "/" + collection;
-
-    if (request instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
-        basePath = baseUrl.replace("/solr", "/api");
-      } else {
-        basePath = baseUrl + "/____v2";
-      }
-    }
-
     if (SolrRequest.METHOD.GET == request.getMethod()) {
       if (streams != null || contentWriter != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
-      HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
+      HttpGet result = new HttpGet(requestUrlBeforeParams + wparams.toQueryString());
 
       populateHeaders(result, contextHeaders);
       return result;
     }
 
     if (SolrRequest.METHOD.DELETE == request.getMethod()) {
-      return new HttpDelete(basePath + path + wparams.toQueryString());
+      return new HttpDelete(requestUrlBeforeParams + wparams.toQueryString());
     }
 
     if (SolrRequest.METHOD.POST == request.getMethod()
         || SolrRequest.METHOD.PUT == request.getMethod()) {
 
-      String url = basePath + path;
       boolean hasNullStreamName = false;
       if (streams != null) {
         for (ContentStream cs : streams) {
@@ -425,7 +408,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       List<NameValuePair> postOrPutParams = new ArrayList<>();
 
       if (contentWriter != null) {
-        String fullQueryUrl = url + wparams.toQueryString();
+        String fullQueryUrl = requestUrlBeforeParams + wparams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
             SolrRequest.METHOD.POST == request.getMethod()
                 ? new HttpPost(fullQueryUrl)
@@ -452,7 +435,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
-        String fullQueryUrl = url + queryParams.toQueryString();
+        String fullQueryUrl = requestUrlBeforeParams + queryParams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
             fillContentStream(
                 request, streams, wparams, isMultipart, postOrPutParams, fullQueryUrl);
@@ -460,7 +443,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       }
       // It is has one stream, it is the post body, put the params in the URL
       else {
-        String fullQueryUrl = url + wparams.toQueryString();
+        String fullQueryUrl = requestUrlBeforeParams + wparams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
             SolrRequest.METHOD.POST == request.getMethod()
                 ? new HttpPost(fullQueryUrl)
@@ -810,6 +793,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return invariantParams;
   }
 
+  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
   public String getBaseURL() {
     return baseUrl;
   }
@@ -952,7 +936,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
      *
      * Note that when a core is provided in the base URL, queries and other requests can be made
      * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
      *
      * <p>2) The path of the root Solr path ("/solr")
      *
@@ -983,7 +971,11 @@ public class HttpSolrClient extends BaseHttpSolrClient {
      *
      * Note that when a core is provided in the base URL, queries and other requests can be made
      * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
      *
      * <p>2) The path of the root Solr path ("/solr")
      *
@@ -992,8 +984,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
      *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
      * </pre>
      *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core be specified on all requests.
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
      *
      * <p>By default, compression is not enabled on created HttpSolrClient objects. By default,
      * redirects are not followed in created HttpSolrClient objects. By default, {@link

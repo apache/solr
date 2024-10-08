@@ -42,10 +42,7 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 /**
  * HttpClientConfigurer implementation providing support for preemptive Http Basic authentication
  * scheme.
- *
- * @deprecated Please look into using Solr's new Http2 clients
  */
-@Deprecated(since = "9.0")
 public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilderFactory {
   /**
    * A system property used to specify a properties file containing default parameters used for

@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - 'main'
+      - 'branch_*'
     paths:
       - '.github/workflows/solrj-test.yml'
       - 'solr/solrj/**'
@@ -13,6 +14,9 @@ jobs:
     name: Run SolrJ Tests
 
     runs-on: ubuntu-latest
+
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
     steps:
     # Setup

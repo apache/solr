@@ -511,7 +511,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                 .setContext(context)
                 .withFilters(getExtraRequestFilters())
                 .withServlets(getExtraServlets())
-                .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build());
 
     return jetty;
@@ -534,20 +533,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    return getHttpSolrClient(getServerUrl(port));
+    return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
   }
 
-  protected String getServerUrl(int port) {
-    String baseUrl = buildUrl(port);
-    if (baseUrl.endsWith("/")) {
-      return baseUrl + DEFAULT_TEST_CORENAME;
-    } else {
-      return baseUrl + "/" + DEFAULT_TEST_CORENAME;
-    }
-  }
-
-  protected String buildUrl(int port) {
-    return buildUrl(port, context);
+  @Deprecated // override static method; doesn't exist in Solr 10
+  protected static String buildUrl(int port) {
+    return buildUrl(port, getHostContextSuitableForServletContext());
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {

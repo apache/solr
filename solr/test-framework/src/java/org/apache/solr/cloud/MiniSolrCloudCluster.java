@@ -131,6 +131,7 @@ public class MiniSolrCloudCluster {
           + "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
+          + "    <str name=\"zkCredentialsInjector\">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str> \n"
           + "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n"
           + "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n"
           + "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:"
@@ -303,6 +304,7 @@ public class MiniSolrCloudCluster {
         false,
         formatZkServer);
   }
+
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
    * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
@@ -1123,11 +1125,7 @@ public class MiniSolrCloudCluster {
       this.nodeCount = nodeCount;
       this.baseDir = baseDir;
 
-      jettyConfigBuilder = JettyConfig.builder().setContext("/solr");
-      if (SolrTestCaseJ4.sslConfig != null) {
-        jettyConfigBuilder =
-            jettyConfigBuilder.withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig());
-      }
+      jettyConfigBuilder = JettyConfig.builder();
     }
 
     /** Use a JettyConfig.Builder to configure the cluster's jetty servers */
@@ -1381,8 +1379,13 @@ public class MiniSolrCloudCluster {
    * mechanics.
    */
   private static void injectRandomRecordingFlag() {
-    boolean isRecording = LuceneTestCase.rarely();
-    TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    try {
+      boolean isRecording = LuceneTestCase.rarely();
+      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    } catch (IllegalStateException e) {
+      // This can happen in benchmarks or other places that aren't in a randomized test
+      log.warn("Unable to inject random recording flag due to outside randomized context", e);
+    }
   }
 
   private static void resetRecordingFlag() {

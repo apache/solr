@@ -52,6 +52,7 @@ public class ZkMaintenanceUtils {
   public static final String CONFIGS_ZKNODE = "/configs";
 
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+
   /** files matching this pattern will not be uploaded to ZkNode /configs */
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN =
       Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
@@ -136,7 +137,7 @@ public class ZkMaintenanceUtils {
       throw new SolrServerException("One or both of source or destination must specify ZK nodes.");
     }
 
-    // Make sure -recurse is specified if the source has children.
+    // Make sure --recurse is specified if the source has children.
     if (recurse == false) {
       if (srcIsZk) {
         if (zkClient.getChildren(src, null, true).size() != 0) {
@@ -178,7 +179,9 @@ public class ZkMaintenanceUtils {
 
     // Single file ZK -> local copy where ZK is a leaf node
     if (Files.isDirectory(Paths.get(dst))) {
-      if (dst.endsWith(File.separator) == false) dst += File.separator;
+      if (dst.endsWith(File.separator) == false) {
+        dst += File.separator;
+      }
       dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
     byte[] data = zkClient.getData(src, null, null, true);
@@ -322,7 +325,9 @@ public class ZkMaintenanceUtils {
 
     final Path rootPath = Paths.get(path);
 
-    if (!Files.exists(rootPath)) throw new IOException("Path " + rootPath + " does not exist");
+    if (!Files.exists(rootPath)) {
+      throw new IOException("Path " + rootPath + " does not exist");
+    }
 
     int partsOffset =
         Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
@@ -347,6 +352,7 @@ public class ZkMaintenanceUtils {
                   USE_FORBIDDEN_FILE_TYPES);
               return FileVisitResult.CONTINUE;
             }
+            // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
             String zkNode = createZkNodeName(zkPath, rootPath, file);
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
@@ -355,7 +361,11 @@ public class ZkMaintenanceUtils {
                 zkClient.setData(zkNode, file, true);
               } else if (file == rootPath) {
                 // We are only uploading a single file, preVisitDirectory was never called
-                zkClient.makePath(zkNode, file, false, true);
+                if (zkClient.exists(zkPath, true)) {
+                  zkClient.setData(zkPath, file, true);
+                } else {
+                  zkClient.makePath(zkPath, Files.readAllBytes(file), false, true);
+                }
               } else {
                 // Skip path parts here because they should have been created during
                 // preVisitDirectory
@@ -369,6 +379,7 @@ public class ZkMaintenanceUtils {
                     true,
                     pathParts);
               }
+
             } catch (KeeperException | InterruptedException e) {
               throw new IOException(
                   "Error uploading file " + file + " to zookeeper path " + zkNode,
@@ -436,6 +447,7 @@ public class ZkMaintenanceUtils {
         if (isFileForbiddenInConfigSets(zkPath)) {
           log.warn("Skipping download of file from ZK, as it is a forbidden type: {}", zkPath);
         } else {
+          // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
           if (copyDataDown(zkClient, zkPath, file) == 0) {
             Files.createFile(file);
           }

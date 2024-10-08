@@ -81,6 +81,7 @@ public abstract class FacetRequest {
 
     /** Commonly Re-used "count desc" (default) */
     public static final FacetSort COUNT_DESC = new FacetSort("count", SortDirection.desc);
+
     /** Commonly Re-used "index asc" (index order / streaming) */
     public static final FacetSort INDEX_ASC = new FacetSort("index", SortDirection.asc);
   }
@@ -121,6 +122,7 @@ public abstract class FacetRequest {
   public static enum RefineMethod {
     NONE,
     SIMPLE;
+
     // NONE is distinct from null since we may want to know if refinement was explicitly turned off.
     public static FacetRequest.RefineMethod fromObj(Object method) {
       if (method == null) return null;
@@ -150,6 +152,7 @@ public abstract class FacetRequest {
      * format. Mutually exclusive to {@link #excludeTags}
      */
     public List<Object> explicitQueries; // list of symbolic filters (JSON query format)
+
     /**
      * Specifies query/filter tags that should be excluded to re-compute the domain from the parent
      * context. Mutually exclusive to {@link #explicitQueries}

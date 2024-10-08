@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -63,16 +64,16 @@ public class PostLogsTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .longOpt("url")
-            .argName("ADDRESS")
+            .longOpt("solr-collection-url")
             .hasArg()
+            .argName("ADDRESS")
             .required(true)
             .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
             .build(),
         Option.builder("rootdir")
             .longOpt("rootdir")
-            .argName("DIRECTORY")
             .hasArg()
+            .argName("DIRECTORY")
             .required(true)
             .desc("All files found at or below the root directory will be indexed.")
             .build());
@@ -86,8 +87,8 @@ public class PostLogsTool extends ToolBase {
   }
 
   public void runCommand(String baseUrl, String root) throws IOException {
-
-    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(baseUrl).withKeyStoreReloadInterval(-1, TimeUnit.SECONDS);
     try (SolrClient client = builder.build()) {
       int rec = 0;
       UpdateRequest request = new UpdateRequest();

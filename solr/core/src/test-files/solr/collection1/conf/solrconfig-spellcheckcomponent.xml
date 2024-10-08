@@ -83,7 +83,7 @@
       <str name="field">lowerfilt</str>
       <str name="combineWords">true</str>
       <str name="breakWords">true</str>
-      <str name="breakSugestionTieBreaker">MAX_FREQ</str>
+      <str name="breakSuggestionTieBreaker">MAX_FREQ</str>
       <int name="maxChanges">10</int>
     </lst>
     <lst name="spellchecker">
@@ -122,13 +122,14 @@
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
       <str name="spellcheckIndexDir">spellchecker3</str>
+      <float name="accuracy">0.5</float>
     </lst>
     <!-- Comparator -->
     <lst name="spellchecker">
       <str name="name">freq</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellcheckerFreq</str>
-      <!-- comparatorClass be one of:
+      <!-- comparatorClass can be one of:
         1. score (default)
         2. freq (Frequency first, then score)
         3. A fully qualified class name
