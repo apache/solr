@@ -26,6 +26,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,6 +38,8 @@ public class AssertToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("removal")
+  @SuppressForbidden(reason = "Deprecated, for removal in future Java version")
   public void raisesExitCode100OnError() throws Exception {
     assumeTrue(
         "This test only works with security manager, as it raises an error accessing /tmp",
