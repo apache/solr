@@ -172,7 +172,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
 
     // Now copy it somewhere else on ZK.
-    String[] args = new String[] {"--recurse", "--zk-host", zkAddr, "zk:/configs/cp1", "zk:/cp2"};
+    String[] args = new String[] {"--recursive", "--zk-host", zkAddr, "zk:/configs/cp1", "zk:/cp2"};
 
     ZkCpTool cpTool = new ZkCpTool();
 
