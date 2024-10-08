@@ -148,11 +148,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       log.info("Initializing UBIComponent");
       if (coreContainer.isZooKeeperAware()) {
         String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();
-        String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
+        String ubiQueryProcessingExpression = initArgs.get("ubiQueryProcessingExpression");
 
-        if (streamQueriesExpressionFile == null) {
+        String expr = null;
+        if (ubiQueryProcessingExpression == null) {
           log.info(
-              "You must provide a streamQueriesExpressionFile to enable recording UBI information.");
+              "You should provide a ubiQueryProcessingExpression to control how UBI query information is persisted.");
+          log.info("Writing out UBI query information to local log file ubi_queries.log instead.");
+
         } else {
 
           LineNumberReader bufferedReader;
@@ -161,27 +164,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
             bufferedReader =
                 new LineNumberReader(
                     new InputStreamReader(
-                        core.getResourceLoader().openResource(streamQueriesExpressionFile),
+                        core.getResourceLoader().openResource(ubiQueryProcessingExpression),
                         StandardCharsets.UTF_8));
 
             String[] args = {}; // maybe we have variables?
-            String expr = readExpression(bufferedReader, args);
+            expr = readExpression(bufferedReader, args);
 
             bufferedReader.close();
-
-            StreamContext streamContext = new StreamContext();
-
-            streamContext.setSolrClientCache(solrClientCache);
-
-            StreamExpression streamExpression = StreamExpressionParser.parse(expr);
-            StreamFactory streamFactory = new StreamFactory();
-
-            streamFactory.withDefaultZkHost(defaultZkHost);
-
-            Lang.register(streamFactory);
-
-            stream = constructStream(streamFactory, streamExpression);
-            stream.setStreamContext(streamContext);
 
             // not sure if I need this?  Except maybe, we assume let?
             // Map params = validateLetAndGetParams(stream, expr);
@@ -189,10 +178,28 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           } catch (IOException ioe) {
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
-                "Error reading file " + streamQueriesExpressionFile,
+                "Error reading file " + ubiQueryProcessingExpression,
                 ioe);
           }
         }
+        StreamContext streamContext = new StreamContext();
+
+        streamContext.setSolrClientCache(solrClientCache);
+
+        StreamExpression streamExpression = StreamExpressionParser.parse(expr);
+        StreamFactory streamFactory = new StreamFactory();
+
+        streamFactory.withDefaultZkHost(defaultZkHost);
+
+        Lang.register(streamFactory);
+
+        try {
+          stream = constructStream(streamFactory, streamExpression);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        stream.setStreamContext(streamContext);
+
       } else {
         log.info("UBI query data collection is only available in SolrCloud mode.");
       }
