@@ -159,7 +159,7 @@ The number of threads.
 The `solr-exporter` creates thread pools for requests to Solr.
 Request latency can be improved by increasing the number of threads.
 
-`-s`, `--scrape-interval`, `$SCRAPE_INTERVAL`::
+`--scrape-interval`, `$SCRAPE_INTERVAL`::
 +
 [%autowidth,frame=none]
 |===
