@@ -84,8 +84,7 @@ public class SnapshotExportTool extends ToolBase {
             .desc(
                 "Specifies the async request identifier to be used during snapshot export preparation.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

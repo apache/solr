@@ -17,8 +17,8 @@
 package org.apache.solr.security.hadoop;
 
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientUtils;
@@ -94,10 +94,9 @@ public class TestRuleBasedAuthorizationWithKerberos extends SolrCloudTestCase {
       try (Http2SolrClient client = new Http2SolrClient.Builder(baseUrl).build()) {
         Krb5HttpClientUtils.setup(client, "solr_alt");
         assertEquals(0, client.query(authorizedColl, q).getStatus());
-        BaseHttpSolrClient.RemoteSolrException e =
+        SolrClient.RemoteSolrException e =
             assertThrows(
-                BaseHttpSolrClient.RemoteSolrException.class,
-                () -> client.query(collectionName, q));
+                SolrClient.RemoteSolrException.class, () -> client.query(collectionName, q));
         assertEquals(403, e.code());
       }
     }

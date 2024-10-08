@@ -52,6 +52,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum ApiVersion {
+    V1("/solr"),
+    V2("/api");
+
+    private final String apiPrefix;
+
+    ApiVersion(String apiPrefix) {
+      this.apiPrefix = apiPrefix;
+    }
+
+    public String getApiPrefix() {
+      return apiPrefix;
+    }
+  }
+
   public enum SolrRequestType {
     QUERY,
     UPDATE,
@@ -186,6 +201,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
    */
   public boolean requiresCollection() {
     return false;
+  }
+
+  /**
+   * Indicates which API version this request will make
+   *
+   * <p>Defaults implementation returns 'V1'.
+   */
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V1;
   }
 
   /**

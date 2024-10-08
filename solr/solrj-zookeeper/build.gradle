@@ -37,7 +37,7 @@ dependencies {
     implementation 'org.apache.httpcomponents:httpclient'
     implementation 'org.apache.httpcomponents:httpcore'
 
-    implementation('org.apache.zookeeper:zookeeper', {
+    api('org.apache.zookeeper:zookeeper', {
         exclude group: "org.apache.yetus", module: "audience-annotations"
     })
     implementation ('org.apache.zookeeper:zookeeper-jute') {

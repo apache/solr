@@ -113,25 +113,25 @@ public class RunExampleTool extends ToolBase {
                 "Don't prompt for input; accept all defaults when running examples that accept user input.")
             .build(),
         Option.builder("e")
-            .argName("NAME")
+            .longOpt("example")
             .hasArg()
+            .argName("NAME")
             .required(true)
             .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
-            .longOpt("example")
             .build(),
         Option.builder("s")
             .longOpt("script")
-            .argName("PATH")
             .hasArg()
+            .argName("PATH")
             .required(false)
             .desc("Path to the bin/solr script.")
             .build(),
         Option.builder("d")
-            .argName("DIR")
+            .longOpt("server-dir")
             .hasArg()
+            .argName("DIR")
             .required(true)
             .desc("Path to the Solr server directory.")
-            .longOpt("server-dir")
             .build(),
         Option.builder("f")
             .longOpt("force")
@@ -140,54 +140,54 @@ public class RunExampleTool extends ToolBase {
             .build(),
         Option.builder()
             .longOpt("example-dir")
-            .argName("DIR")
             .hasArg()
+            .argName("DIR")
             .required(false)
             .desc(
                 "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
             .build(),
         Option.builder()
             .longOpt("url-scheme")
-            .argName("SCHEME")
             .hasArg()
+            .argName("SCHEME")
             .required(false)
             .desc("Solr URL scheme: http or https, defaults to http if not specified.")
             .build(),
         Option.builder("p")
-            .argName("PORT")
+            .longOpt("port")
             .hasArg()
+            .argName("PORT")
             .required(false)
             .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
-            .longOpt("port")
             .build(),
         Option.builder()
-            .argName("HOSTNAME")
+            .longOpt("host")
             .hasArg()
+            .argName("HOSTNAME")
             .required(false)
             .desc("Specify the hostname for this Solr instance.")
-            .longOpt("host")
             .build(),
         Option.builder("c")
+            .longOpt("cloud")
             .required(false)
             .desc(
                 "Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983.")
-            .longOpt("cloud")
             .build(),
         Option.builder("m")
-            .argName("MEM")
+            .longOpt("memory")
             .hasArg()
+            .argName("MEM")
             .required(false)
             .desc(
                 "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
-            .longOpt("memory")
             .build(),
-        Option.builder("a")
-            .argName("OPTS")
+        Option.builder()
+            .longOpt("jvm-opts")
             .hasArg()
+            .argName("OPTS")
             .required(false)
             .desc(
                 "Additional options to be passed to the JVM when starting example Solr server(s).")
-            .longOpt("addlopts")
             .build(),
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED);
@@ -240,8 +240,7 @@ public class RunExampleTool extends ToolBase {
             + ",\nexampleDir="
             + exampleDir.getAbsolutePath()
             + "\nscript="
-            + script,
-        cli);
+            + script);
 
     String exampleType = cli.getOptionValue("example");
     if ("cloud".equals(exampleType)) {
@@ -497,7 +496,7 @@ public class RunExampleTool extends ToolBase {
         }
 
         cloudPorts[n] = port;
-        echoIfVerbose("Using port " + port + " for node " + (n + 1), cli);
+        echoIfVerbose("Using port " + port + " for node " + (n + 1));
       }
     } else {
       echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");
@@ -617,8 +616,9 @@ public class RunExampleTool extends ToolBase {
     String forceArg = cli.hasOption("force") ? " --force" : "";
     String verboseArg = verbose ? "-V" : "";
 
-    String addlOpts = cli.getOptionValue('a');
-    String addlOptsArg = (addlOpts != null) ? " -a \"" + addlOpts + "\"" : "";
+    String jvmOpts =
+        cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');
+    String jvmOptsArg = (jvmOpts != null) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
 
     File cwd = new File(System.getProperty("user.dir"));
     File binDir = (new File(script)).getParentFile();
@@ -647,7 +647,7 @@ public class RunExampleTool extends ToolBase {
             forceArg,
             verboseArg,
             extraArgs,
-            addlOptsArg);
+            jvmOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
@@ -889,7 +889,7 @@ public class RunExampleTool extends ToolBase {
   protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
       throws Exception {
     StatusTool statusTool = new StatusTool();
-    if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
+    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...");
 
     URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
@@ -898,14 +898,9 @@ public class RunExampleTool extends ToolBase {
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);
     String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
-    if (verbose)
-      echo(
-          "\nSolr is running on "
-              + solrURI.getPort()
-              + " in "
-              + mode
-              + " mode with status:\n"
-              + arr);
+
+    echoIfVerbose(
+        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr);
 
     return nodeStatus;
   }

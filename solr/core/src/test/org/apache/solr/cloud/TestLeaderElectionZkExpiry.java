@@ -65,7 +65,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
         try (ZkController zkController =
             new ZkController(
                 cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
-          threadExecutor.submit(
+          threadExecutor.execute(
               () -> {
                 TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
                 while (!timeout.hasTimedOut()) {

@@ -515,7 +515,7 @@ The section to look for will start:
 ----
 # Anything you add to the SOLR_OPTS variable will be included in the java
 # start command line as-is, in ADDITION to other options. If you specify the
-# -a option on start script, those options will be appended as well. Examples:
+# --jvm-opts option on start script, those options will be appended as well. Examples:
 ----
 
 Add the following line to increase the file size limit to 2MB:
@@ -534,7 +534,7 @@ The section to look for will start:
 ----
 REM Anything you add to the SOLR_OPTS variable will be included in the java
 REM start command line as-is, in ADDITION to other options. If you specify the
-REM -a option on start script, those options will be appended as well. Examples:
+REM --jvm-opts option on start script, those options will be appended as well. Examples:
 ----
 
 Add the following line to increase the file size limit to 2MB:

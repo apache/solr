@@ -34,6 +34,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 public class DebugServlet extends HttpServlet {
   public static void clear() {
     lastMethod = null;
+    url = null;
     headers = null;
     parameters = null;
     errorCode = null;
@@ -45,6 +46,7 @@ public class DebugServlet extends HttpServlet {
 
   public static Integer errorCode = null;
   public static String lastMethod = null;
+  public static String url = null;
   public static HashMap<String, String> headers = null;
   public static Map<String, String[]> parameters = null;
   public static String queryString = null;
@@ -123,6 +125,7 @@ public class DebugServlet extends HttpServlet {
   }
 
   private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
+    url = req.getRequestURL().toString();
     setHeaders(req);
     setParameters(req);
     setQueryString(req);

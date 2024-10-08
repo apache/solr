@@ -466,7 +466,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       CountDownLatch done = new CountDownLatch(nThreads);
       AtomicReference<Exception> exception = new AtomicReference<>();
       for (int i = 0; i < nThreads; i++) {
-        svc.submit(
+        svc.execute(
             () -> {
               int index = idx.getAndIncrement();
               latch.countDown();

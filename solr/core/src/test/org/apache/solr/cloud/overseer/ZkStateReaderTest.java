@@ -627,7 +627,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       // start another thread to constantly updating the state
       final AtomicReference<Exception> updateException = new AtomicReference<>();
-      executorService.submit(
+      executorService.execute(
           () -> {
             try {
               ClusterState clusterState = reader.getClusterState();
@@ -655,7 +655,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             } catch (Exception e) {
               updateException.set(e);
             }
-            return null;
           });
       executorService.shutdown();
 

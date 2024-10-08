@@ -37,7 +37,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -216,7 +215,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   void doSingle(SolrClient client, int threadNum) {
     try {
       client.add(manyDocs(threadNum * 1000000, 1000));
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
     } catch (Throwable e) {

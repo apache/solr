@@ -47,8 +47,7 @@ public class ZkRmTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -76,7 +75,7 @@ public class ZkRmTool extends ToolBase {
     if (znode.equals("/")) {
       throw new SolrServerException("You may not remove the root ZK node ('/')!");
     }
-    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(

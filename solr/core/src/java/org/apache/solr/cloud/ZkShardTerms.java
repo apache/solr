@@ -412,7 +412,7 @@ public class ZkShardTerms implements AutoCloseable {
     }
   }
 
-  /** Register a watcher to the correspond ZK term node */
+  /** Register a watcher to the corresponding ZK term node */
   private void registerWatcher() throws KeeperException {
     Watcher watcher =
         event -> {
@@ -421,6 +421,10 @@ public class ZkShardTerms implements AutoCloseable {
             return;
           }
           retryRegisterWatcher();
+          // if term node is deleted, refresh cannot possibly succeed
+          if (Watcher.Event.EventType.NodeDeleted == event.getType()) {
+            return;
+          }
           // Some events may be missed during register a watcher, so it is safer to refresh terms
           // after registering watcher
           refreshTerms();

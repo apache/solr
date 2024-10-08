@@ -17,6 +17,7 @@
 package org.apache.solr.search.facet;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -37,7 +38,6 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryContext;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -300,10 +300,8 @@ public class FacetModule extends SearchComponent {
       if (facet == null) {
         SimpleOrderedMap<?> shardResponseHeader =
             (SimpleOrderedMap<?>) rsp.getResponse().get("responseHeader");
-        if (Boolean.TRUE.equals(
-            shardResponseHeader.getBooleanArg(
-                SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          rb.rsp.setPartialResults();
+        if (!haveCompleteResults(shardResponseHeader)) {
+          rb.rsp.setPartialResults(rb.req);
         }
         continue;
       }

@@ -103,14 +103,14 @@ Execute the following command to delete a specific document:
 
 [,console]
 ----
-$ bin/solr post -c localDocs -d "<delete><id>SP2514N</id></delete>"
+$ bin/solr post -c localDocs --mode args "{delete: {id:'SP2514N'}}"
 ----
 
 To delete all documents, you can use "delete-by-query" command like:
 
 [,console]
 ----
-$ bin/solr post -c localDocs -d "<delete><query>*:*</query></delete>"
+$ bin/solr post -c localDocs --mode args "{delete: {query:'*:*'}}"
 ----
 
 You can also modify the above to only delete documents that match a specific query.

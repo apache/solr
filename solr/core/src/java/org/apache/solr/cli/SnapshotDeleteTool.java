@@ -59,8 +59,7 @@ public class SnapshotDeleteTool extends ToolBase {
             .required(true)
             .desc("Name of the snapshot to delete")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

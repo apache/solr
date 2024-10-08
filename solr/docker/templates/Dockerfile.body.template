@@ -27,7 +27,7 @@
 #-#
 
 LABEL org.opencontainers.image.title="Apache Solr"
-LABEL org.opencontainers.image.description="Apache Solr is the popular, blazing-fast, open source search platform built on Apache Lucene."
+LABEL org.opencontainers.image.description="Solr is the blazing-fast, open source, multi-modal search platform built on Apache Lucene. It powers full-text, vector, and geospatial search at many of the world's largest organizations."
 LABEL org.opencontainers.image.authors="The Apache Solr Project"
 LABEL org.opencontainers.image.url="https://solr.apache.org"
 LABEL org.opencontainers.image.source="https://github.com/apache/solr"
@@ -39,7 +39,7 @@ ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
     SOLR_GROUP="solr" \
     SOLR_GID="8983" \
-    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/prometheus-exporter/bin:$PATH" \
+    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/prometheus-exporter/bin:/opt/solr/cross-dc-manager/bin:$PATH" \
     SOLR_INCLUDE=/etc/default/solr.in.sh \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \

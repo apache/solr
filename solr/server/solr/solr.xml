@@ -55,8 +55,7 @@
 
   </solrcloud>
 
-  <shardHandlerFactory name="shardHandlerFactory"
-    class="HttpShardHandlerFactory">
+  <shardHandlerFactory name="shardHandlerFactory" class="${defaultShardHandlerFactory:HttpShardHandlerFactory}">
     <int name="socketTimeout">${socketTimeout:600000}</int>
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>

@@ -243,12 +243,24 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("default: " + DEFAULT_FILE_TYPES)
             .build(),
-        Option.builder("p")
+        Option.builder()
             .longOpt("params")
             .hasArg()
             .argName("<key>=<value>[&<key>=<value>...]")
             .required(false)
-            .desc("values must be URL-encoded; these pass through to Solr update request.")
+            .desc("Values must be URL-encoded; these pass through to Solr update request.")
+            .build(),
+        Option.builder("p")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --params instead")
+                    .get())
+            .hasArg()
+            .argName("<key>=<value>[&<key>=<value>...]")
+            .required(false)
+            .desc("Values must be URL-encoded; these pass through to Solr update request.")
             .build(),
         Option.builder()
             .longOpt("out")
@@ -256,6 +268,17 @@ public class PostTool extends ToolBase {
             .desc("sends Solr response outputs to console.")
             .build(),
         Option.builder("f")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --format instead")
+                    .get())
+            .required(false)
+            .desc(
+                "sends application/json content as Solr commands to /update instead of /update/json/docs.")
+            .build(),
+        Option.builder()
             .longOpt("format")
             .required(false)
             .desc(
@@ -295,7 +318,10 @@ public class PostTool extends ToolBase {
       // Turn off automatically looking up the mimetype in favour of what is passed in.
       auto = false;
     }
-    format = cli.hasOption("format") ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
+    format =
+        cli.hasOption("format") || cli.hasOption("f")
+            ? FORMAT_SOLR
+            : ""; // i.e not solr formatted json commands
 
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
@@ -313,7 +339,7 @@ public class PostTool extends ToolBase {
 
     args = cli.getArgs();
 
-    params = cli.getOptionValue("params", "");
+    params = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "params", "p", "");
 
     execute(mode);
   }

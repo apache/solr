@@ -284,7 +284,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "1");
 
-    System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
     System.setProperty("solr.zookeeper.connectionStrategy", TestConnectionStrategy.class.getName());
@@ -335,7 +334,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
@@ -2158,7 +2156,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return file;
     }
     throw new RuntimeException(
-        "Cannot find resource in classpath or in file-system (relative to CWD): " + name);
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + new File(name).getAbsolutePath());
   }
 
   public static String TEST_HOME() {

@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -237,7 +238,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> result =
           solrClient.request(
-              new GenericSolrRequest(
+              new GenericV2SolrRequest(
                       SolrRequest.METHOD.GET,
                       PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS")
                   .setRequiresCollection(
@@ -278,7 +279,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> response =
           solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
+              new GenericV2SolrRequest(SolrRequest.METHOD.GET, PackageUtils.CLUSTERPROPS_PATH));
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       if (statusCode == null || statusCode == ErrorCode.NOT_FOUND.code) {
         // Cluster props doesn't exist, that means there are no cluster level plugins installed.
@@ -421,7 +422,7 @@ public class PackageManager implements Closeable {
         boolean packageParamsExist =
             solrClient
                 .request(
-                    new GenericSolrRequest(
+                    new GenericV2SolrRequest(
                             SolrRequest.METHOD.GET,
                             PackageUtils.getCollectionParamsPath(collection) + "/packages")
                         .setRequiresCollection(
@@ -723,7 +724,7 @@ public class PackageManager implements Closeable {
     try {
       NamedList<Object> response =
           solrClient.request(
-              new GenericSolrRequest(
+              new GenericV2SolrRequest(
                       SolrRequest.METHOD.GET,
                       PackageUtils.getCollectionParamsPath(collection) + "/packages")
                   .setRequiresCollection(

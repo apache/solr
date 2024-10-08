@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
@@ -74,9 +74,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .withPayload(payload)
             .build();
     v2Request.setResponseParser(responseParser);
-    BaseHttpSolrClient.RemoteSolrException ex =
+    SolrClient.RemoteSolrException ex =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               v2Request.process(cluster.getSolrClient());
             });

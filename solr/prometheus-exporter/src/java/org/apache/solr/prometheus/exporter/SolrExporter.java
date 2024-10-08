@@ -174,14 +174,28 @@ public class SolrExporter {
     deprecatedOptions.addOption(baseUrlDepOption);
 
     Option configOption =
-        Option.builder("f")
+        Option.builder()
             .longOpt("config-file")
             .hasArg()
             .argName("CONFIG")
             .type(String.class)
             .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
             .build();
+    Option configOptionDeprecated =
+        Option.builder("f")
+            .hasArg()
+            .argName("CONFIG")
+            .type(String.class)
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --config-file instead")
+                    .get())
+            .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
+            .build();
     mainOptions.addOption(configOption);
+    mainOptions.addOption(configOptionDeprecated);
 
     Option helpOption =
         Option.builder("h").longOpt("help").desc("Prints this help message.").build();
@@ -327,13 +341,20 @@ public class SolrExporter {
             getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 
+      String configFile = DEFAULT_CONFIG;
+      if (commandLine.hasOption(configOptionDeprecated)) {
+        configFile = commandLine.getOptionValue(configOptionDeprecated);
+      } else if (commandLine.hasOption(configOption)) {
+        configFile = commandLine.getOptionValue(configOption);
+      }
+
       SolrExporter solrExporter =
           new SolrExporter(
               port,
               commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS),
               commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL),
               scrapeConfiguration,
-              loadMetricsConfiguration(commandLine.getOptionValue(configOption, DEFAULT_CONFIG)),
+              loadMetricsConfiguration(configFile),
               clusterId);
 
       log.info("Starting Solr Prometheus Exporting on port {}", port);

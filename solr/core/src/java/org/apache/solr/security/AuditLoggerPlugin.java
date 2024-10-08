@@ -134,7 +134,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       queue = new ArrayBlockingQueue<>(blockingQueueSize);
       executorService =
           ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("audit"));
-      executorService.submit(this);
+      executorService.execute(this);
     }
     pluginConfig.remove("class");
     log.debug(

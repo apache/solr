@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -82,14 +81,12 @@ public class ClientUtils {
       String serverRootUrl,
       String collection)
       throws MalformedURLException {
+
+    // TODO remove getBasePath support here prior to closing SOLR-17256
     String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = serverRootUrl + "/____v2";
-      }
+    if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
+      basePath = addNormalV2ApiRoot(basePath);
     }
 
     if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
@@ -102,10 +99,18 @@ public class ClientUtils {
     return basePath + path;
   }
 
-  private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URI oldURI = URI.create(basePath);
-    String newPath = oldURI.getPath().replaceFirst("/solr", "/api");
-    return oldURI.resolve(newPath).toString();
+  private static String addNormalV2ApiRoot(String basePath) throws MalformedURLException {
+    final var oldURI = URI.create(basePath);
+    final var revisedPath = buildReplacementV2Path(oldURI.getPath());
+    return oldURI.resolve(revisedPath).toString();
+  }
+
+  private static String buildReplacementV2Path(String existingPath) {
+    if (existingPath.contains("/solr")) {
+      return existingPath.replaceFirst("/solr", "/api");
+    } else {
+      return existingPath + "/api";
+    }
   }
 
   // ------------------------------------------------------------------------

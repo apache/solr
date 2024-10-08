@@ -85,8 +85,6 @@ public class MultiThreadedSearcher {
     }
     if (needDocSet) {
       int maxDoc = searcher.getRawReader().maxDoc();
-      log.error("raw read max={}", searcher.getRawReader().maxDoc());
-
       collectors.add(new DocSetCM(maxDoc));
     }
 

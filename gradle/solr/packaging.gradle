@@ -36,11 +36,11 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path.startsWith(":solr:prometheus-exporter") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:prometheus-exporter" || project.path == ":solr:cross-dc-manager" }) {
   plugins.withType(JavaPlugin) {
     ext {
       packagingDir = file("${buildDir}/packaging")
-      if (project.path.startsWith(":solr:prometheus-exporter")) {
+      if (project.path.startsWith(":solr:prometheus-exporter") || project.path.startsWith(":solr:cross-dc-manager")) {
         deps = packagingDir
       } else {
         deps = file("${packagingDir}/${project.name}")
@@ -62,6 +62,12 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
       solrPlatformLibs project(":solr:solrj-zookeeper")
       // libExt has logging libs, which we don't want.  Lets users decide what they want.
       solrPlatformLibs project(path: ":solr:server", configuration: 'libExt')
+
+      // The cross-dc-manager uses the cross-dc Solr module libraries as well as the Jetty server jars
+      if (project.path == ":solr:cross-dc-manager") {
+        solrPlatformLibs project(":solr:modules:cross-dc")
+        solrPlatformLibs project(path: ":solr:server", configuration: 'serverLib')
+      }
     }
 
     // An aggregate that configures lib and test-lib in a temporary location.

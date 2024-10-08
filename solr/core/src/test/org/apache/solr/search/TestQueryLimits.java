@@ -20,7 +20,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
@@ -39,8 +38,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
     create.process(solrClient);
-    CloudUtil.waitForState(
-        cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(3, 6));
+    waitForState("active", COLLECTION, clusterShape(3, 6));
     for (int j = 0; j < 100; j++) {
       solrClient.add(
           COLLECTION,
