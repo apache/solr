@@ -100,7 +100,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
       /* CHECK */
       String listZnode = zkClient.listZnode(path, false);
-      // list of node must not contain file1, file2 or some_longer_file2 because they where deleted
+      // list of nodes must not contain file1, file2 or some_longer_file2 because they were deleted
       assertFalse(listZnode.contains("file1"));
       assertFalse(listZnode.contains("file2"));
       assertFalse(listZnode.contains("some_longer_file2"));
@@ -148,7 +148,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
               "/testTraverseZkTree/1/1",
               "/testTraverseZkTree/1/2",
               "/testTraverseZkTree/2"),
-          getTraverseedZNodes(
+          getTraversedZNodes(
               zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE));
       assertEquals(
           Arrays.asList(
@@ -157,7 +157,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
               "/testTraverseZkTree/1",
               "/testTraverseZkTree/2",
               "/testTraverseZkTree"),
-          getTraverseedZNodes(
+          getTraversedZNodes(
               zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST));
     }
   }
@@ -185,7 +185,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
     }
   }
 
-  private List<String> getTraverseedZNodes(
+  private List<String> getTraversedZNodes(
       SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder)
       throws KeeperException, InterruptedException {
     List<String> result = new ArrayList<>();
@@ -196,7 +196,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
         new ZkMaintenanceUtils.ZkVisitor() {
 
           @Override
-          public void visit(String path) throws InterruptedException, KeeperException {
+          public void visit(String path) {
             result.add(path);
           }
         });
