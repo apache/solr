@@ -45,18 +45,18 @@ public class TestModelManagerPersistence extends TestLlmBase {
     loadModel(
         "cohere1",
             CohereEmbeddingModel.class.getName(),
-        "{\"baseUrl\":\"cohereUrl1\"," +
-                "\"apiKey\":\"cohereApiKey1\"," +
-                "\"modelName\":\"cohereName1\"," +
-                "\"inputType\":1.0," +
-                "\"logRequests\":1.0," +
-                "\"logResponses\":1.0," +
-                "\"maxSegmentsPerBatch\":1.0" +
+        "{" +
+                "baseUrl:\"https://api.cohere.ai/v1/\"," +
+                "apiKey:\"cohereApiKey2\"," +
+                "modelName:\"embed-english-light-v3.0\"," +
+                "inputType:\"search_document\"," +
+                "logRequests:true," +
+                "logResponses:false" +
                 "}");
 
-    final String mstorecontent = Files.readString(mstorefile, StandardCharsets.UTF_8);
-    Object mStoreObject = Utils.fromJSONString(mstorecontent);
-    assertEquals(new String(Utils.toJSON(mStoreObject, -1), UTF_8), mstorecontent);
+    final String embeddingModelStoreContent = Files.readString(embeddingModelStoreFile, StandardCharsets.UTF_8);
+    Object embeddingModelStoreObject = Utils.fromJSONString(embeddingModelStoreContent);
+    assertEquals(new String(Utils.toJSON(embeddingModelStoreObject, -1), UTF_8), embeddingModelStoreContent);
   }
 
   @Test
@@ -67,18 +67,38 @@ public class TestModelManagerPersistence extends TestLlmBase {
     // load models and features from files
     loadModels("cohere-model.json");
 
-    // check loaded models and features
-    final String modelName = "6029760550880411648";
+    final String modelName = "cohere-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='embed-english-light-v3.0'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // check persistence after reload
     restTestHarness.reload();
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='embed-english-light-v3.0'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // check persistence after restart
     getJetty().stop();
     getJetty().start();
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='embed-english-light-v3.0'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // delete loaded models and features
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);

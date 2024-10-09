@@ -20,7 +20,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.embedding.EmbeddingModel;
+import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import org.apache.solr.llm.store.EmbeddingModelException;
 import org.apache.solr.llm.store.EmbeddingModelStore;
 import org.apache.solr.response.SolrQueryResponse;
@@ -86,11 +86,6 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)
       throws SolrException {
     store.clear();
-    // the managed models on the disk or on zookeeper will be loaded in a lazy
-    // way, since we need to set the managed features first (unfortunately
-    // managed resources do not
-    // decouple the creation of a managed resource with the reading of the data
-    // from the storage)
     this.managedData = managedData;
   }
 
@@ -99,23 +94,23 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
     if ((managedData != null) && (managedData instanceof List)) {
       @SuppressWarnings({"unchecked"})
-      final List<Map<String, Object>> up = (List<Map<String, Object>>) managedData;
-      for (final Map<String, Object> u : up) {
-        addModelFromMap(u);
+      final List<Map<String, Object>> embeddingModels = (List<Map<String, Object>>) managedData;
+      for (final Map<String, Object> embeddingModel : embeddingModels) {
+        addModelFromMap(embeddingModel);
       }
     }
   }
 
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
-      final EmbeddingModel embedder = fromEmbeddingModelMap(modelMap);
+      final SolrEmbeddingModel embedder = fromEmbeddingModelMap(modelMap);
       addModel(embedder);
     } catch (final EmbeddingModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
 
-  public synchronized void addModel(EmbeddingModel model) throws EmbeddingModelException {
+  public synchronized void addModel(SolrEmbeddingModel model) throws EmbeddingModelException {
     try {
       if (log.isInfoEnabled()) {
         log.info("adding model {}", model.getName());
@@ -129,11 +124,10 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   @SuppressWarnings("unchecked")
   @Override
   protected Object applyUpdatesToManagedData(Object updates) {
-
     if (updates instanceof List) {
-      final List<Map<String, Object>> up = (List<Map<String, Object>>) updates;
-      for (final Map<String, Object> u : up) {
-        addModelFromMap(u);
+      final List<Map<String, Object>> embeddingModels = (List<Map<String, Object>>) updates;
+      for (final Map<String, Object> embeddingModel : embeddingModels) {
+        addModelFromMap(embeddingModel);
       }
     }
 
@@ -162,7 +156,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
     response.add(MODELS_JSON_FIELD, modelsAsManagedResources(store.getModels()));
   }
 
-  public EmbeddingModel getModel(String modelName) {
+  public SolrEmbeddingModel getModel(String modelName) {
     return store.getModel(modelName);
   }
 
@@ -178,31 +172,29 @@ public class ManagedEmbeddingModelStore extends ManagedResource
    *
    * @return the available models as a list of Maps objects
    */
-  private static List<Object> modelsAsManagedResources(List<EmbeddingModel> models) {
+  private static List<Object> modelsAsManagedResources(List<SolrEmbeddingModel> models) {
     final List<Object> list = new ArrayList<>(models.size());
-    for (final EmbeddingModel model : models) {
+    for (final SolrEmbeddingModel model : models) {
       list.add(toEmbeddingModelMap(model));
     }
     return list;
   }
 
   @SuppressWarnings("unchecked")
-  public static EmbeddingModel fromEmbeddingModelMap(
-      Map<String, Object> modelMap) {
-
-    final EmbeddingModel embedder =
-            EmbeddingModel.getInstance(
-            (String) modelMap.get(CLASS_KEY), // modelClassName
-            (String) modelMap.get(NAME_KEY), // modelName
-            (Map<String, Object>) modelMap.get(PARAMS_KEY));
+  public static SolrEmbeddingModel fromEmbeddingModelMap(
+      Map<String, Object> embeddingModel) {
+    final SolrEmbeddingModel embedder =
+            SolrEmbeddingModel.getInstance(
+            (String) embeddingModel.get(CLASS_KEY), // modelClassName
+            (String) embeddingModel.get(NAME_KEY), // modelName
+            (Map<String, Object>) embeddingModel.get(PARAMS_KEY));
     return embedder;
   }
 
-  private static LinkedHashMap<String, Object> toEmbeddingModelMap(EmbeddingModel model) {
+  private static LinkedHashMap<String, Object> toEmbeddingModelMap(SolrEmbeddingModel model) {
     final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
-
     modelMap.put(NAME_KEY, model.getName());
-    modelMap.put(CLASS_KEY, model.getClass().getName());
+    modelMap.put(CLASS_KEY, model.getEmbedder().getClass().getName());
     modelMap.put(PARAMS_KEY, model.getParams());
     return modelMap;
   }

@@ -19,7 +19,7 @@ package org.apache.solr.llm.store;
 
 
 
-import org.apache.solr.llm.embedding.EmbeddingModel;
+import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,13 +28,13 @@ import java.util.Map;
 
 public class EmbeddingModelStore {
 
-  private final Map<String, EmbeddingModel> availableModels;
+  private final Map<String, SolrEmbeddingModel> availableModels;
 
   public EmbeddingModelStore() {
     availableModels = new LinkedHashMap<>();
   }
 
-  public synchronized EmbeddingModel getModel(String name) {
+  public synchronized SolrEmbeddingModel getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -42,9 +42,9 @@ public class EmbeddingModelStore {
     availableModels.clear();
   }
 
-  public List<EmbeddingModel> getModels() {
-    final List<EmbeddingModel> availableModelsValues =
-        new ArrayList<EmbeddingModel>(availableModels.values());
+  public List<SolrEmbeddingModel> getModels() {
+    final List<SolrEmbeddingModel> availableModelsValues =
+        new ArrayList<SolrEmbeddingModel>(availableModels.values());
     return Collections.unmodifiableList(availableModelsValues);
   }
 
@@ -53,11 +53,11 @@ public class EmbeddingModelStore {
     return "ModelStore [availableModels=" + availableModels.keySet() + "]";
   }
 
-  public EmbeddingModel delete(String modelName) {
+  public SolrEmbeddingModel delete(String modelName) {
     return availableModels.remove(modelName);
   }
 
-  public synchronized void addModel(EmbeddingModel modeldata) throws EmbeddingModelException {
+  public synchronized void addModel(SolrEmbeddingModel modeldata) throws EmbeddingModelException {
     final String name = modeldata.getName();
     if (availableModels.containsKey(name)) {
       throw new EmbeddingModelException("model '" + name + "' already exists. Please use a different name");
