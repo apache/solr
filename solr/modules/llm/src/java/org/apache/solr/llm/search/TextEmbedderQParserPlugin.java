@@ -24,7 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.embedding.EmbeddingModel;
+import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
@@ -86,7 +86,7 @@ public class TextEmbedderQParserPlugin extends QParserPlugin
     @Override
     public Query parse() throws SyntaxError {
       final String embeddingModelName = localParams.get(EMBEDDING_MODEL);
-      EmbeddingModel embedder = modelStore.getModel(embeddingModelName);
+      SolrEmbeddingModel embedder = modelStore.getModel(embeddingModelName);
 
       final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
       final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);

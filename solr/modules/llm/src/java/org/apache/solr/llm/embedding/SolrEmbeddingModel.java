@@ -2,9 +2,9 @@ package org.apache.solr.llm.embedding;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.DimensionAwareEmbeddingModel;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.store.EmbeddingModelException;
 
 import java.time.Duration;
@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.Objects;
 
 
-public class EmbeddingModel implements Accountable {
+public class SolrEmbeddingModel implements Accountable {
     private static final long BASE_RAM_BYTES =
-            RamUsageEstimator.shallowSizeOfInstance(EmbeddingModel.class);
+            RamUsageEstimator.shallowSizeOfInstance(SolrEmbeddingModel.class);
     public static final String TIMEOUT_PARAM = "timeout";
     public static final String LOG_REQUESTS_PARAM = "logRequests";
     public static final String LOG_RESPONSES_PARAM = "logResponses";
@@ -23,16 +23,16 @@ public class EmbeddingModel implements Accountable {
 
     protected final String name;
     private final Map<String, Object> params;
-    private DimensionAwareEmbeddingModel embedder;
+    private EmbeddingModel embedder;
     private Integer hashCode;
 
-    public static EmbeddingModel getInstance(
+    public static SolrEmbeddingModel getInstance(
             String className,
             String name,
             Map<String, Object> params)
             throws EmbeddingModelException {
         try {
-            DimensionAwareEmbeddingModel embedder;
+            EmbeddingModel embedder;
             Class<?> modelClass = Class.forName(className);
             var builder = modelClass.getMethod("builder").invoke(null);
             for (String paramName : params.keySet()) {
@@ -57,14 +57,14 @@ public class EmbeddingModel implements Accountable {
                         builder.getClass().getMethod(paramName, String.class).invoke(builder, params.get(paramName));
                 }
             }
-            embedder = (DimensionAwareEmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
-            return new EmbeddingModel(name, embedder, params);
+            embedder = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
+            return new SolrEmbeddingModel(name, embedder, params);
         } catch (final Exception e) {
              throw new EmbeddingModelException("Model loading failed for " + className, e);
         }
     }
     
-    public EmbeddingModel(String name, DimensionAwareEmbeddingModel embedder, Map<String, Object> params) {
+    public SolrEmbeddingModel(String name, EmbeddingModel embedder, Map<String, Object> params) {
         this.name = name;
         this.embedder = embedder;
         this.params = params;
@@ -109,8 +109,8 @@ public class EmbeddingModel implements Accountable {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof EmbeddingModel)) return false;
-        final EmbeddingModel other = (EmbeddingModel) obj;
+        if (!(obj instanceof SolrEmbeddingModel)) return false;
+        final SolrEmbeddingModel other = (SolrEmbeddingModel) obj;
         return Objects.equals(embedder, other.embedder)
                 && Objects.equals(name, other.name);
     }
@@ -119,7 +119,7 @@ public class EmbeddingModel implements Accountable {
         return name;
     }
 
-    public DimensionAwareEmbeddingModel getEmbedder() {
+    public EmbeddingModel getEmbedder() {
         return embedder;
     }
 

@@ -20,7 +20,7 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.embedding.EmbeddingModel;
+import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import org.apache.solr.llm.store.EmbeddingModelException;
 import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
 import org.apache.solr.util.RestTestBase;
@@ -48,7 +48,7 @@ public class TestLlmBase extends RestTestBase {
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
-  protected static Path mstorefile = null;
+  protected static Path embeddingModelStoreFile = null;
 
 
   protected static void setuptest(boolean bulkIndex) throws Exception {
@@ -77,7 +77,7 @@ public class TestLlmBase extends RestTestBase {
     final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
 
     if (isPersistent) {
-      mstorefile = mstore;
+      embeddingModelStoreFile = mstore;
     }
     
     if (Files.exists(mstore)) {
@@ -163,20 +163,20 @@ public class TestLlmBase extends RestTestBase {
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
-  public static EmbeddingModel createModelFromFiles(String modelFileName, String featureFileName)
+  public static SolrEmbeddingModel createModelFromFiles(String modelFileName, String featureFileName)
       throws EmbeddingModelException, Exception {
     return createModelFromFiles(
         modelFileName, featureFileName);
   }
 
-  public static EmbeddingModel createModelFromFiles(
+  public static SolrEmbeddingModel createModelFromFiles(
       String modelFileName)
       throws Exception {
     URL url = TestLlmBase.class.getResource("/modelExamples/" + modelFileName);
     final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
     final ManagedEmbeddingModelStore ms = getManagedModelStore();
 
-    final EmbeddingModel model =
+    final SolrEmbeddingModel model =
         ManagedEmbeddingModelStore.fromEmbeddingModelMap(mapFromJson(modelJson));
     ms.addModel(model);
     return model;
