@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.similarities;
 
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.Independence;
 import org.apache.lucene.search.similarities.IndependenceChiSquared;
@@ -39,8 +41,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link
- *       org.apache.lucene.search.similarities.SimilarityBase#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -59,9 +60,18 @@ public class DFISimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    DFISimilarity sim = new DFISimilarity(independenceMeasure);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new DFISimilarity(independenceMeasure) {
+      private final Similarity computeNormProxySimilarity = new ClassicSimilarity(discountOverlaps);
+
+      @Override
+      public long computeNorm(FieldInvertState state) {
+        return computeNormProxySimilarity.computeNorm(state);
+      }
+    };
+
+    // TODO: when available, use a constructor with 'discountOverlaps' parameter and remove above
+    // TODO: hack
+    // return new DFISimilarity(independenceMeasure, discountOverlaps)
   }
 
   private Independence parseIndependenceMeasure(String expr) {
