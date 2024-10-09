@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.output.CloseShieldOutputStream;
@@ -36,7 +37,7 @@ import org.apache.solr.core.SolrCore;
  *
  * @since solr 4.0
  */
-public final class LoadAdminUiServlet extends BaseSolrServlet {
+public final class LoadAdminUiServlet extends HttpServlet {
 
   // check system properties for whether or not admin UI is disabled, default is false
   private static final boolean disabled =
