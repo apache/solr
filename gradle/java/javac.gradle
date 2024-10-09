@@ -19,14 +19,18 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    sourceCompatibility = project.minJavaVersion
-    targetCompatibility = project.minJavaVersion
+      sourceCompatibility = project.minJavaVersion
+      targetCompatibility = project.minJavaVersion
 
-    // Use 'release' flag instead of 'source' and 'target'
-    tasks.withType(JavaCompile) {
-      options.compilerArgs += ["--release", project.minJavaVersion.toString()]
-    }
-
+      // Use 'release' flag instead of 'source' and 'target'
+      tasks.withType(JavaCompile) {
+        compileTestJava {
+          options.compilerArgs += ["--release", JavaVersion.toVersion(scriptDepVersions['min-java-version']).toString()]
+        }
+        compileJava {
+          options.compilerArgs += ["--release", project.minJavaVersion.toString()]
+        }
+      }
     // Configure warnings.
     tasks.withType(JavaCompile) {
       options.encoding = "UTF-8"
