@@ -29,6 +29,7 @@ public class FacetBucket {
 
   @SuppressWarnings({"rawtypes"})
   final Comparable bucketValue;
+
   // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1,
   // across all field buckets)
   // bucketNumber is only supplied for buckets that could be part of a refinement chain, otherwise

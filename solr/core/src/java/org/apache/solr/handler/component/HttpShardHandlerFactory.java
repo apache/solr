@@ -29,7 +29,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -203,31 +202,31 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   private static final long DELAY_WARN_THRESHOLD =
       TimeUnit.NANOSECONDS.convert(200, TimeUnit.MILLISECONDS);
 
-  private final HttpListenerFactory delayedReqLogger = new HttpListenerFactory() {
-    @Override
-    public RequestResponseListener get() {
-      long start = System.nanoTime();
-      return new RequestResponseListener() {
+  private final HttpListenerFactory delayedReqLogger =
+      new HttpListenerFactory() {
         @Override
-        public void onBegin(Request request) {
-          // There should be negligible delay between request submission and actually sending
-          // the request. Here we add extra logging to notify us if this assumption is
-          // violated. See: SOLR-16099, SOLR-16129,
-          // https://github.com/fullstorydev/lucene-solr/commit/445508adb4a
-          long delayNanos = System.nanoTime() - start;
-          if (delayNanos > DELAY_WARN_THRESHOLD) {
-            long millis = TimeUnit.MILLISECONDS.convert(delayNanos, TimeUnit.NANOSECONDS);
-            log.info("Remote shard request delayed by {} milliseconds", millis);
-            if (delayedRequests != null) {
-              delayedRequests.update(millis);
+        public RequestResponseListener get() {
+          long start = System.nanoTime();
+          return new RequestResponseListener() {
+            @Override
+            public void onBegin(Request request) {
+              // There should be negligible delay between request submission and actually sending
+              // the request. Here we add extra logging to notify us if this assumption is
+              // violated. See: SOLR-16099, SOLR-16129,
+              // https://github.com/fullstorydev/lucene-solr/commit/445508adb4a
+              long delayNanos = System.nanoTime() - start;
+              if (delayNanos > DELAY_WARN_THRESHOLD) {
+                long millis = TimeUnit.MILLISECONDS.convert(delayNanos, TimeUnit.NANOSECONDS);
+                log.info("Remote shard request delayed by {} milliseconds", millis);
+                if (delayedRequests != null) {
+                  delayedRequests.update(millis);
+                }
+              }
+              super.onBegin(request); // no-op
             }
-          }
-          super.onBegin(request); // no-op
+          };
         }
       };
-    }
-  };
-
 
   @Override
   public void init(PluginInfo info) {
