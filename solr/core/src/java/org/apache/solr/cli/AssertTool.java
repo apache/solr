@@ -341,15 +341,10 @@ public class AssertTool extends ToolBase {
       ret += sameUser(cli.getOptionValue("same-user"));
     }
     if (cli.hasOption("s")) {
-      ret +=
-          assertSolrRunning(
-              cli.getOptionValue("s"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+      ret += assertSolrRunning(cli.getOptionValue("s"));
     }
     if (cli.hasOption("started")) {
-      ret +=
-          assertSolrRunning(
-              cli.getOptionValue("started"),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+      ret += assertSolrRunning(cli.getOptionValue("started"));
     }
     if (cli.hasOption("S")) {
       ret +=
@@ -357,28 +352,19 @@ public class AssertTool extends ToolBase {
               SolrCLI.getOptionWithDeprecatedAndDefault(cli, "not-started", "S", null));
     }
     if (cli.hasOption("not-started")) {
-      ret +=
-          assertSolrNotRunning(
-              cli.getOptionValue("not-started"),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+      ret += assertSolrNotRunning(cli.getOptionValue("not-started"));
     }
     if (cli.hasOption("c")) {
       ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
     }
     if (cli.hasOption("cloud")) {
-      ret +=
-          assertSolrRunningInCloudMode(
-              SolrCLI.normalizeSolrUrl(cli.getOptionValue("cloud")),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+      ret += assertSolrRunningInCloudMode(cli.getOptionValue("cloud"));
     }
     if (cli.hasOption("C")) {
       ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
     }
     if (cli.hasOption("not-cloud")) {
-      ret +=
-          assertSolrNotRunningInCloudMode(
-              SolrCLI.normalizeSolrUrl(cli.getOptionValue("not-cloud")),
-              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("not-cloud"));
     }
     return ret;
   }
