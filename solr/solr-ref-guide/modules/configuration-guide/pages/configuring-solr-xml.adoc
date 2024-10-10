@@ -281,7 +281,7 @@ Comma-separated list of Solr hosts to allow.
 +
 The HTTP/HTTPS protocol may be omitted, and only the host and port are checked, i.e., `10.0.0.1:8983/solr,10.0.0.1:8984/solr`.
 +
-When running Solr in standalone mode and using the `shards` parameter, a list of hosts needs to be specifically configured as allowed or Solr will forbid the request.
+When running Solr as a user-managed cluster and using the `shards` parameter, a list of hosts needs to be specifically configured as allowed or Solr will forbid the request.
 +
 In SolrCloud mode, the allow-list is automatically configured to include all live nodes in the cluster.
 +

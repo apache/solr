@@ -20,7 +20,7 @@ The Collections screen provides some basic functionality for managing your Colle
 
 [NOTE]
 ====
-If you are running a standalone installation, you will not see a Collections option in the left nav menu of the Admin UI.
+If you are running a user-managed cluster or a single-node installation, you will not see a Collections option in the left nav menu of the Admin UI.
 
 You will instead see a "Core Admin" screen that supports some comparable Core level information & manipulation via the xref:configuration-guide:coreadmin-api.adoc[] instead.
 ====

@@ -134,7 +134,7 @@ When you start Solr, the `bin/solr` script includes these settings and will pass
 
 If you are using SolrCloud, you need to <<Configure ZooKeeper>> before starting Solr.
 
-If you are running Solr in a standalone installation, you can skip to <<Start Standalone Solr>>.
+If you are running Solr in a user-managed cluster or single-node installation, you can skip to <<Start User-Managed Cluster or Single-Node Solr>>.
 
 
 
@@ -301,7 +301,7 @@ C:\> bin\solr.cmd --cloud -s cloud\node1 -z server1:2181,server2:2181,server3:21
 ====
 ======
 
-=== Start Standalone Solr
+=== Start User-Managed Cluster or Single-Node Solr
 
 Start Solr using the Solr control script as shown in the examples below.
 Customize the values for the parameters shown as needed and add any used in your system.

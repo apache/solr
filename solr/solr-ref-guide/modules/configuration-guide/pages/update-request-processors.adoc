@@ -130,7 +130,7 @@ Once the above has been specified in `solrconfig.xml`, we can be refer to them i
 
 == Update Processors in SolrCloud
 
-In a standalone installation, each update is run through all the update processors in a chain exactly once.
+In a user-managed cluster or a single-node installation, each update is run through all the update processors in a chain exactly once.
 In SolrCloud, however, the behavior of update request processors deserves special consideration.
 
 A critical SolrCloud functionality is the routing and distributing of requests.

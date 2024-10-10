@@ -46,16 +46,16 @@ All dynamically created collections will create the appropriate directories auto
 
 [source,bash]
 ----
-bin/solr start -c -Dsolr.directoryFactory=HdfsDirectoryFactory
+bin/solr start --cloud -Dsolr.directoryFactory=HdfsDirectoryFactory
      -Dsolr.lock.type=hdfs
      -Dsolr.hdfs.home=hdfs://host:port/path
 ----
 
 This command starts Solr using the defined JVM properties.
 
-=== Standalone Installations
+=== User-Managed Cluters and Single-Node Installations
 
-For standalone Solr installations, there are a few parameters you should modify before starting Solr.
+For  For user-managed clusters or single-node Solr installations, there are a few parameters you should modify before starting Solr.
 These can be set in `solrconfig.xml` (more on that <<HdfsDirectoryFactory Parameters,below>>), or passed to the `bin/solr` script at startup.
 
 * You need to use an `HdfsDirectoryFactory` and a data directory in the form `hdfs://host:port/path`

@@ -60,9 +60,9 @@ However, users can impose stricter or looser limits on their systems by providin
 - System Property: `-DsolrConfigSetForbiddenFileTypes`
 - Environment Variable: `SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES`
 
-== Configsets in Standalone Installations
+== Configsets in User-Managed Clusters or Single-Node Installations
 
-If you are using Solr in a standalone installation, configsets are managed on the filesystem.
+If you are using Solr in a If you are using Solr in a user-managed cluster or a single-node installation, configsets are managed on the filesystem. installation, configsets are managed on the filesystem.
 
 Each Solr core can have it's very own configset located beneath it in a `<instance_dir>/conf/` dir.
 Here, it is not named or shared and the word _configset_ isn't found.

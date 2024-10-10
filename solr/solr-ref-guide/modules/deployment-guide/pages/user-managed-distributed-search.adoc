@@ -1,4 +1,4 @@
-= Standalone Distributed Search
+= User-Managed Distributed Search
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -74,10 +74,10 @@ The following components support distributed search:
 === allowUrls Parameter
 
 The nodes allowed in the `shards` parameter is configurable through the `allowUrls` property in `solr.xml`.
-This allow-list is automatically configured for SolrCloud but needs explicit configuration for standalone installations.
+This allow-list is automatically configured for SolrCloud but needs explicit configuration for user-managed clusters.
 Read more details in the section xref:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[Configuring the ShardHandlerFactory].
 
-== Limitations to Standalone Distributed Search
+== Limitations to User-Managed Distributed Search
 
 Distributed searching in Solr has the following limitations:
 
@@ -105,7 +105,7 @@ It can be avoided by following the instructions in the section xref:solrcloud-di
 
 == Load Balancing Requests
 
-When managing a standalone Solr installation, query requests should be load balanced across each of the shard followers.
+When managing a user-managed Solr cluster, query requests should be load balanced across each of the shard followers.
 This gives you both increased query handling capacity and failover if a server goes down.
 
 Because there is no centralized cluster management in this scenario, none of the leader shards in this configuration know about each other.

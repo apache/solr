@@ -652,7 +652,7 @@ The `bin/solr` script can also help you create new collections or cores, or dele
 
 === Create a Collection or Core
 
-The `create` command creates a Collection or Core depending on whether Solr is running in SolrCloud (collection) or standalone mode (core).
+The `create` command creates a Collection or Core depending on whether Solr is running in SolrCloud (collection) or user-managed mode (core).
 
 `bin/solr create [options]`
 
@@ -805,7 +805,7 @@ See also the section <<Set or Unset Configuration Properties>>.
 
 === Delete Collection or Core
 
-The `delete` command detects the mode that Solr is running in and then deletes the specified collection (SolrCloud) or core (standalone) as appropriate.
+The `delete` command detects the mode that Solr is running in and then deletes the specified collection (SolrCloud) or core (user-managed or single-node) as appropriate.
 
 `bin/solr delete [options]`
 

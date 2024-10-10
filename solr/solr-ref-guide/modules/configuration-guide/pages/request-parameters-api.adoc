@@ -24,7 +24,7 @@ It is really another endpoint of the xref:config-api.adoc[] instead of a separat
 It does not replace or modify any sections of `solrconfig.xml`, but instead provides another approach to handling parameters used in requests.
 It behaves in the same way as the Config API, by storing parameters in another file that will be used at runtime.
 In this case, the parameters are stored in a file named `params.json`.
-This file is kept in ZooKeeper when running SolrCloud or in the `conf` directory of a standalone installation.
+This file is kept in ZooKeeper when running SolrCloud or in the `conf` directory of a user-managed cluster or single-node installation.
 
 The settings stored in `params.json` are used at query time to override settings defined in `solrconfig.xml` in some cases as described below.
 

@@ -27,11 +27,11 @@ When you first install Solr, your home directory is `server/solr`.
 However, some examples may change this location (such as, if you run `bin/solr start -e cloud`, your home directory will be `example/cloud`).
 
 The home directory contains important configuration information and is the place where Solr will store its index.
-The layout of the home directory will look a little different when you are running Solr in a standalone mode vs. when you are running a SolrCloud cluster.
+The layout of the home directory will look a little different when you are running Solr in a user-managed cluster or single-node installation vs. when you are running a SolrCloud cluster.
 
 The crucial parts of the Solr home directory are shown in these examples:
 
-.Standalone Mode
+.User-Managed Cluster or Single-Node
 [source,plain]
 ----
 <solr-home-directory>/
@@ -97,7 +97,7 @@ The Files screen in the Admin UI lets you browse & view configuration files (suc
 image::configuration-files/files-screen.png[Files screen,height=400]
 
 If you are using xref:deployment-guide:cluster-types.adoc#solrcloud-mode[SolrCloud], the files displayed are the configuration files for this collection stored in ZooKeeper.
-In standalone mode, all files in the `conf` directory are displayed.
+In user-managed clusters or single-node installations, all files in the `conf` directory are displayed.
 
 The configuration files shown may or may not be used by the collection as use of the file depends on how they are referenced in either `solrconfig.xml` or your schema.
 

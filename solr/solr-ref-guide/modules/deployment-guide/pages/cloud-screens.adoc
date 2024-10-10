@@ -22,7 +22,7 @@ This screen provides status information about each collection & node in your clu
 [NOTE]
 ====
 The "Cloud" menu option is only available when Solr is running xref:cluster-types.adoc#solrcloud-mode[SolrCloud].
-Standalone installations will not display this option.
+User-managed clusters or single-node installations will not display this option.
 ====
 
 Click on the "Cloud" option in the left-hand navigation, and a small sub-menu appears with options called "Nodes", "Tree", "ZK Status" and "Graph".

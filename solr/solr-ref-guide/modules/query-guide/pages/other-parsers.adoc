@@ -458,7 +458,7 @@ Boolean that indicates if Automatons should be compiled for each iteration of th
 
 === Graph Query Limitations
 
-The `graph` parser only works in standalone Solr installations, or with SolrCloud that use exactly 1 shard.
+The `graph` parser only works in single-node Solr installations, or with SolrCloud and user-managed clusters that use exactly 1 shard.
 
 === Graph Query Examples
 

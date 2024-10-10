@@ -19,9 +19,9 @@
 A Solr cluster is a group of servers (_nodes_) that each run Solr.
 
 There are two general modes of operating a cluster of Solr nodes.
-One mode provides central coordination of the Solr nodes (<<SolrCloud Mode>>), while the other allows you to operate a cluster without this central coordination (<<Standalone Mode>>).
+One mode provides central coordination of the Solr nodes (<<SolrCloud Mode>>), while the other allows you to operate a cluster without this central coordination (<<User-Managed Mode>>).
 
-TIP: Standalone mode has also been called "User Managed" and "Single Node" in the past.
+TIP: "User Managed" and "Single Node" are sometimes referred to as "Standalone", especially in source code.
 
 Both modes share general concepts, but ultimately differ in how those concepts are reflected in functionality and features.
 
@@ -88,9 +88,9 @@ This means another core can become the leader, and from that point forward it is
 
 As long as one replica of each relevant shard is available, a user query or indexing request can still be satisfied when running in SolrCloud mode.
 
-== Standalone Mode
+== User-Managed Mode
 
-Solr's standalone mode requires that cluster coordination activities that SolrCloud normally uses ZooKeeper for are performed manually or with local scripts.
+Solr's user-managed mode requires that cluster coordination activities that SolrCloud normally uses ZooKeeper for tp be performed manually or with local scripts.
 
 If the corpus of documents is too large for a single-sharded index, the logic to create shards is entirely left to the user.
 There are no automated or programmatic ways for Solr to create shards during indexing.
@@ -98,7 +98,7 @@ There are no automated or programmatic ways for Solr to create shards during ind
 Routing documents to shards are handled manually, either with a simple hashing system or a simple round-robin list of shards that sends each document to a different shard.
 Document updates must be sent to the right shard or duplicate documents could result.
 
-In standalone mode, the concept of leader and follower becomes critical.
+In user-managed mode, the concept of leader and follower becomes critical.
 Identifying which node will host the leader replica and which host(s) will be replicas dictate how each node is configured.
 In this mode, all index updates are sent to the leader only.
 Once the leader has completed indexing, the replica will request the index updates and copy them from the leader.
@@ -109,5 +109,5 @@ If the leader goes down, there is no built-in failover mechanism.
 A replica could continue to serve queries if the queries were specifically directed to it.
 Changing a replica to serve as the leader would require changing `solrconfig.xml` configurations on all replicas and reloading each core.
 
-Standalone mode has no concept of a collection, so for all intents and purposes each Solr node is distinct from other nodes.
+User-managed mode has no concept of a collection, so for all intents and purposes each Solr node is distinct from other nodes.
 Only some configuration parameters keep each node from behaving as independent entities.

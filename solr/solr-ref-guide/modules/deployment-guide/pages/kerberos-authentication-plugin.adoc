@@ -21,7 +21,7 @@ If you are using Kerberos to secure your network environment, the Kerberos authe
 This allows Solr to use a Kerberos service principal and keytab file to authenticate with ZooKeeper and between nodes of the Solr cluster (if applicable).
 Users of the Admin UI and all clients (such as xref:solrj.adoc[]) would also need to have a valid ticket before being able to use the UI or send requests to Solr.
 
-Support for Kerberos authentication is available in SolrCloud or standalone installations.
+Support for Kerberos authentication is available in SolrCloud, user-managed, or single-node installations.
 
 [TIP]
 ====

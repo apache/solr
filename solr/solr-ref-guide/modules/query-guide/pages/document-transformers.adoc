@@ -378,7 +378,7 @@ To log substituted subquery request parameters, add the corresponding parameter 
 ==== Cores and Collections in SolrCloud
 
 Use `foo:[subquery fromIndex=departments]` to invoke subquery on another core on the same node.
-This is what `{!join}` does in a standalone installation.
+This is what `{!join}` does in a user-managed cluster.
 With SolrCloud, only specify its native parameters like `collection, shards` for subquery, for example:
 
 [source,plain,subs="quotes"]
