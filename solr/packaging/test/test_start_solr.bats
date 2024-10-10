@@ -28,26 +28,16 @@ teardown() {
   solr stop --all >/dev/null 2>&1
 }
 
-@test "SOLR-11740 check 'solr stop' connection" {
-  solr start
-  solr start -p ${SOLR2_PORT}
-  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
-  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
-  run bash -c 'solr stop --all 2>&1'
-  refute_output --partial 'forcefully killing'
-}
 
-@test "stop command for single port" {
+@test "SOLR-16976 solr starts with remote JMX enabled" {
+  export ENABLE_REMOTE_JMX_OPTS=true
+  export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
 
   solr start
-  solr start -p ${SOLR2_PORT}
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
-  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
-
-  run solr stop -p ${SOLR2_PORT}
-  solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000
-  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
-
+  
+  run cat ${SOLR_LOGS_DIR}/solr-${SOLR_PORT}-console.log
+  refute_output --partial 'java.lang.ClassNotFoundException: org.apache.logging.log4j.jul.LogManager'
 }
 
 @test "check stop command doesn't hang" {

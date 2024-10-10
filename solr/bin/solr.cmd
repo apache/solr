@@ -1127,7 +1127,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
 set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
-set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED% -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
+set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
