@@ -126,7 +126,7 @@ public class RunExampleTool extends ToolBase {
             .required(false)
             .desc("Path to the bin/solr script.")
             .build(),
-        Option.builder("d")
+        Option.builder()
             .longOpt("server-dir")
             .hasArg()
             .argName("DIR")
