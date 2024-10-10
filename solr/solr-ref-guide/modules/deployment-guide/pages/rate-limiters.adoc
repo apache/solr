@@ -22,7 +22,7 @@ The default rate limiting is implemented for updates and searches.
 
 If a request exceeds the request quota, further incoming requests are rejected with HTTP error code 429 (Too Many Requests).
 
-Note that rate limiting works at an instance (JVM) level, not at a core or collection level.
+Note that rate limiting works at an instance (JVM) level, not at a collection or core level.
 Consider that when planning capacity.
 There is future work planned to have finer grained execution here (https://issues.apache.org/jira/browse/SOLR-14710[SOLR-14710]).
 

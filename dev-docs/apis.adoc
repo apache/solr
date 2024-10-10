@@ -13,7 +13,7 @@ But in the interim, this document can help guide developers who need to understa
 
 APIs in Solr (regardless of whether v1 or v2) can typically be classified as either "per-core" or "cluster" APIs.
 
-Per-core APIs, as the name suggests, typically affect only a single core or collection, usually used to search or analyze that core's contents in some way.
+Per-core APIs, as the name suggests, typically affect only a single collection or core, usually used to search or analyze that core's contents in some way.
 Implementation-wise, they're registered on the `SolrCore` object itself.
 They are configured in solrconfig.xml, which also means they can differ from one core to another based on the configset being used.
 
@@ -81,4 +81,3 @@ A good example for each of these steps can be seen in Solr's v2 "add-replica-pro
 While we've settled on JAX-RS as our framework for defining v2 APIs going forward, Solr still retains many v2 APIs that were written using an older homegrown framework.
 This framework defines APIs using annotations (e.g. `@EndPoint`) similar to those used by JAX-RS, but lacks the full range of features and 3rd-party tooling.
 We're in the process of migrating these API definitions to JAX-RS and hope to remove all support for this legacy framework in a future release.
-
