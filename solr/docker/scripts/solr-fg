@@ -36,9 +36,9 @@ if [[ -z "${TINI:-}" ]]; then
   fi
 fi
 if [[ "$TINI" == yes ]]; then
-  exec tini -- solr start -f "$@"
+  exec tini -- solr start --user-managed -f "$@"
 elif [[ "$TINI" == no ]]; then
-  exec solr start -f "$@"
+  exec solr start --user-managed -f "$@"
 else
   echo "invalid value TINI=$TINI"
   exit 1
