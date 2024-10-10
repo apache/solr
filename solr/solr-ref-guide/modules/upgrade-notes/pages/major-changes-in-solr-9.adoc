@@ -666,7 +666,7 @@ Corresponding
 This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
 +
 However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
-Comparing your configuration to the updated configuration examples in xref:deployment-guide:standalone-index-replication.adoc[] will show examples of what needs to change, but here are the main changes:
+Comparing your configuration to the updated configuration examples in xref:deployment-guide:user-managed-index-replication.adoc[] will show examples of what needs to change, but here are the main changes:
 +
 . On the replication leader, in the definition of the `/replication` request handler:
 .. Replace "master" with "leader".
