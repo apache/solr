@@ -340,8 +340,13 @@ public class PostTool extends ToolBase {
       fileTypes = cli.getOptionValue("filetypes");
     }
 
-    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = Integer.parseInt(cli.getOptionValue("delay", String.valueOf(defaultDelay)));
+    delay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
+    if (cli.hasOption("delay")) {
+      delay = Integer.parseInt(cli.getOptionValue("delay"));
+    } else if (cli.hasOption("d")) {
+      delay = Integer.parseInt(cli.getOptionValue("d"));
+    }
+
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
