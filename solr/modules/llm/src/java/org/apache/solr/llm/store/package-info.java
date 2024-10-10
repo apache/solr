@@ -16,4 +16,4 @@
  */
 
 /** Contains feature and model store related classes. */
-package java.org.apache.solr.llm.store;
+package org.apache.solr.llm.store;
