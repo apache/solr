@@ -27,6 +27,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -34,6 +35,10 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
 /**
@@ -43,10 +48,89 @@ import org.apache.solr.core.DirectoryFactory;
  */
 public class LocalFileSystemRepository extends AbstractBackupRepository {
 
+  private NamedList<?> config = null;
+
+  private Path baseLocation;
+
+  @Override
+  public void init(NamedList<?> args) {
+    this.config = args;
+    baseLocation =
+        Optional.<String>ofNullable(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))
+            .map(Path::of)
+            .or(
+                () -> Optional.ofNullable(EnvUtils.getProperty("solr.backups.path")).map(Path::of)
+            )
+            .orElseThrow(
+                () ->
+                    new SolrException(
+                        SolrException.ErrorCode.SERVER_ERROR,
+                        "Required init param "
+                            + CoreAdminParams.BACKUP_LOCATION
+                            + " was not provided."));
+    if (!baseLocation.isAbsolute()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Default backup location is not absolute: "
+              + baseLocation);
+    }
+  }
+
   @SuppressWarnings("unchecked")
   @Override
   public <T> T getConfigProperty(String name) {
     return (T) this.config.get(name);
+  }
+
+  /**
+   * This method returns the location where the backup should be stored (or restored from). An error
+   * will be thrown if the given directory is outside of the repository's base location.
+   *
+   * <ul>
+   *   <li>If the given <code>override</code> is not <code>null</code>:
+   *   <ul>
+   *     <li>If the given <code>override</code> is a relative path, then the <code>backupLocation</code> will be the <code>override</code> path relative to the repository's {@link #baseLocation}.
+   *     <li>If the given <code>override</code> is an absolute path, then the <code>backupLocation</code> will be the <code>override</code> path.
+   *   </ul>
+   *   <li>If the given <code>override</code> is <code>null</code>, then the <code>backupLocation</code> will be the repository's {@link #baseLocation}.
+   * </ul>
+   *
+   * The resulting <code>backupLocation</code> must be a subdirectory of the repository's {@link #baseLocation} or the directory itself, for security purposes.
+   *
+   * @param override The location parameter supplied by the user. This can be a path or a URI.
+   * @return the calculated <code>backupLocation</code>
+   * @throws SolrException if the given path cannot be resolved as a subdirectory of the
+   *     repository's {@link #baseLocation}
+   */
+  @Override
+  public String getBackupLocation(String override) {
+    if (override == null) {
+      return baseLocation.toString();
+    }
+    String overridePathString = override;
+    try {
+      URI overrideUri = new URI(override);
+      // If no exception was thrown, then that means a URI was passed in.
+      // Use the path from the URI instead of the URI string itself.
+      // URI Paths must be absolute.
+      overridePathString = overrideUri.getPath();
+    } catch (URISyntaxException ex) {
+      // Just ignore this, the override is not a URI
+    }
+    Path overridePath = Path.of(overridePathString);
+    if (!overridePath.isAbsolute()) {
+      overridePath = baseLocation.resolve(overridePath);
+    }
+    overridePath = overridePath.normalize();
+    if (!overridePath.startsWith(baseLocation)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Path "
+              + override
+              + " cannot be used to store backups, since it is not contained within the configured base backup location: "
+              + baseLocation);
+    }
+    return overridePath.toString();
   }
 
   @Override

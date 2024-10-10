@@ -18,7 +18,11 @@ package org.apache.solr.core.backup.repository;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+
 import org.apache.solr.cloud.api.collections.AbstractBackupRepositoryTest;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 
 /** {@link LocalFileSystemRepository} test. */
@@ -28,7 +32,7 @@ public class LocalFileSystemRepositoryTest extends AbstractBackupRepositoryTest 
 
   @BeforeClass
   public static void setupBaseDir() {
-    baseUri = createTempDir().toUri();
+    baseUri = createTempDir().toAbsolutePath().toUri();
   }
 
   @Override

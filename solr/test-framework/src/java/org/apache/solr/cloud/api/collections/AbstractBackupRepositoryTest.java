@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
@@ -69,7 +71,11 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
    * implementations.
    */
   protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
-    return new NamedList<>();
+    NamedList<Object> config = new NamedList<>();
+    try {
+      config.add(CoreAdminParams.BACKUP_LOCATION, Path.of(getBaseUri()).toString());
+    } catch (URISyntaxException ignored) {}
+    return config;
   }
 
   @Test
@@ -77,7 +83,6 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
     config.add("configKey1", "configVal1");
     config.add("configKey2", "configVal2");
-    config.add("location", "foo");
     try (BackupRepository repo = getRepository()) {
       repo.init(config);
       assertEquals("configVal1", repo.getConfigProperty("configKey1"));
@@ -90,14 +95,31 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     final NamedList<Object> config = getBaseBackupRepositoryConfiguration();
     int locationIndex = config.indexOf(CoreAdminParams.BACKUP_LOCATION, 0);
     if (locationIndex == -1) {
-      config.add(CoreAdminParams.BACKUP_LOCATION, "someLocation");
+      config.add(CoreAdminParams.BACKUP_LOCATION, "/someLocation");
     } else {
-      config.setVal(locationIndex, "someLocation");
+      config.setVal(locationIndex, "/someLocation");
     }
     try (BackupRepository repo = getRepository()) {
       repo.init(config);
-      assertEquals("someLocation", repo.getBackupLocation(null));
-      assertEquals("someOverridingLocation", repo.getBackupLocation("someOverridingLocation"));
+      assertEquals("/someLocation", repo.getBackupLocation(null));
+      assertEquals("/someLocation", repo.getBackupLocation(""));
+      assertEquals("/someLocation/someOverridingLocation", repo.getBackupLocation("someOverridingLocation"));
+      assertEquals("/someLocation/someLocation/someOverridingLocation", repo.getBackupLocation("someLocation/someOverridingLocation"));
+      assertEquals("/someLocation/someOverridingLocation", repo.getBackupLocation("/someLocation/someOverridingLocation"));
+      assertEquals("/someLocation/someOverridingLocation", repo.getBackupLocation("file:/someLocation/someOverridingLocation"));
+      assertEquals("/someLocation/someOverridingLocation", repo.getBackupLocation("file:///someLocation/someOverridingLocation"));
+      expectThrows(
+          SolrException.class,
+          () -> repo.getBackupLocation("/anotherLocation/someOverridingLocation"));
+      expectThrows(
+          SolrException.class,
+          () -> repo.getBackupLocation("file:/anotherLocation/someOverridingLocation"));
+      expectThrows(
+          SolrException.class,
+          () -> repo.getBackupLocation("file:///anotherLocation/someOverridingLocation"));
+      expectThrows(
+          SolrException.class,
+          () -> repo.getBackupLocation("../someOverridingLocation"));
     }
   }
 

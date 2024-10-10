@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -40,14 +41,20 @@ import org.junit.Test;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
+
+  private static Path backupLocation;
+
   @Before // unique core per test
   public void coreInit() throws Exception {
+    backupLocation = createTempDir().toAbsolutePath();
+    System.setProperty("solr.backups.path", backupLocation.toString());
     initCore("solrconfig.xml", "schema.xml");
   }
 
   @After // unique core per test
   public void coreDestroy() {
     deleteCore();
+    System.setProperty("solr.backups.path", "");
   }
 
   @Test
@@ -437,8 +444,10 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     }
   }
 
-  private Path createBackupLocation() {
-    return createTempDir().toAbsolutePath();
+  private static Path createBackupLocation() throws IOException {
+    Path locationPath = backupLocation.resolve(random().nextLong() + "");
+    Files.createDirectory(locationPath);
+    return locationPath;
   }
 
   private URI bootstrapBackupLocation(Path locationPath) throws IOException {
