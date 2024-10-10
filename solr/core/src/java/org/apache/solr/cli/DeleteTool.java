@@ -81,6 +81,19 @@ public class DeleteTool extends ToolBase {
             .desc("Name of the core / collection to delete.")
             .build(),
         Option.builder("d")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --delete-config instead")
+                    .get())
+            .hasArg()
+            .argName("true|false")
+            .required(false)
+            .desc(
+                "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+            .build(),
+        Option.builder()
             .longOpt("delete-config")
             .hasArg()
             .argName("true|false")
@@ -188,6 +201,8 @@ public class DeleteTool extends ToolBase {
     boolean deleteConfig = true;
     if (cli.hasOption("delete-config")) {
       deleteConfig = "true".equals(cli.getOptionValue("delete-config"));
+    } else if (cli.hasOption("d")) {
+      deleteConfig = "true".equals(cli.getOptionValue("d"));
     } else if (cli.hasOption("deleteConfig")) {
       deleteConfig = "true".equals(cli.getOptionValue("deleteConfig"));
     }
