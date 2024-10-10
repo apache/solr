@@ -367,7 +367,7 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
+    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
     echo ""
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
@@ -383,7 +383,7 @@ function print_usage() {
     echo "                          STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
     echo "                          For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
     echo ""
-    echo "  -d <dir>              Specify the Solr server directory; defaults to server"
+    echo "  --server-dir <dir>   Specify the Solr server directory; defaults to server"
     echo ""
     echo "  -z/--zk-host <zkHost> Zookeeper connection string; only used when running in SolrCloud mode using -c"
     echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
@@ -395,7 +395,7 @@ function print_usage() {
     echo ""
     echo "  --solr-home <dir>     Sets the solr.solr.home system property; Solr will create core directories under"
     echo "                          this directory. This allows you to run multiple Solr instances on the same host"
-    echo "                          while reusing the same server directory set using the -d parameter. If set, the"
+    echo "                          while reusing the same server directory set using the --server-dir parameter. If set, the"
     echo "                          specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
     echo "                          This parameter is ignored when running examples (-e), as the solr.solr.home depends"
     echo "                          on which example is run. The default value is server/solr. If passed relative dir,"
@@ -742,7 +742,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-c")
             shift
         ;;
-        -d|--dir|-dir)
+        -d|--dir|-dir|--server-dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
               exit 1
