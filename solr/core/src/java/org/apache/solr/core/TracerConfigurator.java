@@ -17,9 +17,12 @@
 
 package org.apache.solr.core;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.context.propagation.ContextPropagators;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
@@ -38,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
-      Boolean.parseBoolean(EnvUtils.getProperty("solr.alwaysOnTraceId", "true"));
+      EnvUtils.getPropertyAsBool("solr.alwaysOnTraceId", true);
 
   private static final String DEFAULT_CLASS_NAME =
       EnvUtils.getProperty(
@@ -46,25 +49,45 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static Tracer loadTracer(SolrResourceLoader loader, PluginInfo info) {
-    if (info != null && info.isEnabled()) {
-      TracerConfigurator configurator =
-          loader.newInstance(info.className, TracerConfigurator.class);
-      configurator.init(info.initArgs);
-      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-      return configurator.getTracer();
+  /** Initializes {@link io.opentelemetry.api.GlobalOpenTelemetry} and returns a Tracer. */
+  public static synchronized Tracer loadTracer(SolrResourceLoader loader, PluginInfo info) {
+    // synchronized to avoid races in tests starting Solr concurrently setting GlobalOpenTelemetry
+    if (TraceUtils.OTEL_AGENT_PRESENT) {
+      log.info("OpenTelemetry Java agent was already installed; skipping OTEL initialization");
+    } else {
+      OpenTelemetry otel = null;
+      if (info != null && info.isEnabled()) {
+        var configurator = loader.newInstance(info.className, TracerConfigurator.class);
+        configurator.init(info.initArgs);
+        otel = configurator.createOtel();
+      } else if (shouldAutoConfigOTEL()) {
+        otel = autoConfigOTEL(loader); // could return null if failed to load
+        if (otel != null) {
+          log.info("OpenTelemetry loaded via auto configuration.");
+        }
+      }
+      if (otel == null && TRACE_ID_GEN_ENABLED) {
+        otel = OpenTelemetry.propagating(ContextPropagators.create(SimplePropagator.getInstance()));
+        log.info("OpenTelemetry loaded with simple propagation only.");
+      }
+      if (otel == null) {
+        otel = OpenTelemetry.noop();
+      }
+
+      try {
+        GlobalOpenTelemetry.set(otel); // throws IllegalStateException if already set
+        // skips needless ExecutorUtil.addThreadLocalProvider below
+        if (otel == OpenTelemetry.noop()) return otel.getTracer("solr");
+      } catch (IllegalStateException e) {
+        log.info("GlobalOpenTelemetry was already initialized (a Java agent?); using that");
+      }
     }
-    if (shouldAutoConfigOTEL()) {
-      return autoConfigOTEL(loader);
-    }
-    if (TRACE_ID_GEN_ENABLED) {
-      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-      return SimplePropagator.load();
-    }
-    return TraceUtils.getGlobalTracer();
+
+    ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
+    return TraceUtils.getGlobalTracer(); // GlobalOpenTelemetry.get...
   }
 
-  protected abstract Tracer getTracer();
+  protected abstract OpenTelemetry createOtel();
 
   private static class ContextThreadLocalProvider
       implements ExecutorUtil.InheritableThreadLocalProvider {
@@ -88,20 +111,19 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
     }
   }
 
-  private static Tracer autoConfigOTEL(SolrResourceLoader loader) {
+  private static OpenTelemetry autoConfigOTEL(SolrResourceLoader loader) {
     try {
       TracerConfigurator configurator =
           loader.newInstance(DEFAULT_CLASS_NAME, TracerConfigurator.class);
       configurator.init(new NamedList<>());
-      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
-      return configurator.getTracer();
+      return configurator.createOtel();
     } catch (SolrException e) {
       log.error(
           "Unable to auto-config OpenTelemetry with class {}. Make sure you have enabled the 'opentelemetry' module",
           DEFAULT_CLASS_NAME,
           e);
+      return null;
     }
-    return TraceUtils.getGlobalTracer();
   }
 
   /**
