@@ -17,6 +17,7 @@
 package org.apache.solr.llm;
 
 import org.apache.commons.io.file.PathUtils;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -32,6 +33,9 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class TestLlmBase extends RestTestBase {
@@ -50,7 +54,11 @@ public class TestLlmBase extends RestTestBase {
 
   protected static Path embeddingModelStoreFile = null;
 
-
+  protected static String IDField = "id";
+  protected static String vectorField = "vector";
+  protected static String vectorField2 = "vector2";
+  protected static String vectorFieldByteEncoding = "vector_byte_encoding";
+  
   protected static void setuptest(boolean bulkIndex) throws Exception {
     setuptest("solrconfig-llm.xml", "schema.xml");
     if (bulkIndex) prepareIndex();
@@ -195,46 +203,69 @@ public class TestLlmBase extends RestTestBase {
 
 
   protected static void prepareIndex() throws Exception {
-    assertU(
-        adoc(
-            "title",
-            "bloomberg different bla",
-            "description",
-            "bloomberg",
-            "id",
-            "6",
-            "popularity",
-            "1"));
-    assertU(
-        adoc(
-            "title",
-            "bloomberg bloomberg ",
-            "description",
-            "bloomberg",
-            "id",
-            "7",
-            "popularity",
-            "2"));
-    assertU(
-        adoc(
-            "title",
-            "bloomberg bloomberg bloomberg",
-            "description",
-            "bloomberg",
-            "id",
-            "8",
-            "popularity",
-            "3"));
-    assertU(
-        adoc(
-            "title",
-            "bloomberg bloomberg bloomberg bloomberg",
-            "description",
-            "bloomberg",
-            "id",
-            "9",
-            "popularity",
-            "5"));
+    List<SolrInputDocument> docsToIndex = prepareDocs();
+    for (SolrInputDocument doc : docsToIndex) {
+      assertU(adoc(doc));
+    }
+
     assertU(commit());
+  }
+
+  private static List<SolrInputDocument> prepareDocs() {
+    int docsCount = 13;
+    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+    for (int i = 1; i < docsCount + 1; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(IDField, i);
+      docs.add(doc);
+    }
+
+    docs.get(0)
+            .addField(vectorField, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector1= 1.0
+    docs.get(1)
+            .addField(
+                    vectorField, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector1= 0.998
+    docs.get(2)
+            .addField(
+                    vectorField,
+                    Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f)); // cosine distance vector1= 0.992
+    docs.get(3)
+            .addField(
+                    vectorField, Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f)); // cosine distance vector1= 0.999
+    docs.get(4)
+            .addField(vectorField, Arrays.asList(30f, 22f, 35f, 20f)); // cosine distance vector1= 0.862
+    docs.get(5)
+            .addField(vectorField, Arrays.asList(40f, 1f, 1f, 200f)); // cosine distance vector1= 0.756
+    docs.get(6)
+            .addField(vectorField, Arrays.asList(5f, 10f, 20f, 40f)); // cosine distance vector1= 0.970
+    docs.get(7)
+            .addField(
+                    vectorField, Arrays.asList(120f, 60f, 30f, 15f)); // cosine distance vector1= 0.515
+    docs.get(8)
+            .addField(
+                    vectorField, Arrays.asList(200f, 50f, 100f, 25f)); // cosine distance vector1= 0.554
+    docs.get(9)
+            .addField(
+                    vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f)); // cosine distance vector1= 0.997
+    docs.get(10)
+            .addField(vectorField2, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector2= 1
+    docs.get(11)
+            .addField(
+                    vectorField2,
+                    Arrays.asList(7.5f, 15.5f, 17.5f, 22.5f)); // cosine distance vector2= 0.992
+    docs.get(12)
+            .addField(
+                    vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
+
+    docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 3, 4));
+    docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2, 2, 1, 4));
+    docs.get(2).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 1, 2));
+    docs.get(3).addField(vectorFieldByteEncoding, Arrays.asList(7, 2, 1, 3));
+    docs.get(4).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
+    docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
+    docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18, 2, 4, 4));
+    docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8, 3, 2, 4));
+
+    return docs;
   }
 }

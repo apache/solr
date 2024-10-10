@@ -29,7 +29,7 @@
   <filterCache class="solr.CaffeineCache" size="4096"
    initialSize="2048" autowarmCount="0" />
  </query>
-
+ <requestHandler name="/select" class="solr.SearchHandler" />
 
  <updateHandler class="solr.DirectUpdateHandler2">
   <autoCommit>

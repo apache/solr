@@ -35,26 +35,28 @@ public class SolrEmbeddingModel implements Accountable {
             EmbeddingModel embedder;
             Class<?> modelClass = Class.forName(className);
             var builder = modelClass.getMethod("builder").invoke(null);
-            for (String paramName : params.keySet()) {
-                switch (paramName) {
-                    case TIMEOUT_PARAM:
-                        Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
-                        builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
-                        break;
-                    case LOG_REQUESTS_PARAM:
-                        builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
-                        break;
-                    case LOG_RESPONSES_PARAM:
-                        builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
-                        break;
-                    case MAX_SEGMENTS_PER_BATCH_PARAM:
-                        builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long)params.get(paramName)).intValue());
-                        break;
-                    case MAX_RETRIES_PARAM:
-                        builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long)params.get(paramName)).intValue());
-                        break;
-                    default:
-                        builder.getClass().getMethod(paramName, String.class).invoke(builder, params.get(paramName));
+            if (params != null) {
+                for (String paramName : params.keySet()) {
+                    switch (paramName) {
+                        case TIMEOUT_PARAM:
+                            Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
+                            builder.getClass().getMethod(paramName, Duration.class).invoke(builder, timeOut);
+                            break;
+                        case LOG_REQUESTS_PARAM:
+                            builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
+                            break;
+                        case LOG_RESPONSES_PARAM:
+                            builder.getClass().getMethod(paramName, Boolean.class).invoke(builder, params.get(paramName));
+                            break;
+                        case MAX_SEGMENTS_PER_BATCH_PARAM:
+                            builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long) params.get(paramName)).intValue());
+                            break;
+                        case MAX_RETRIES_PARAM:
+                            builder.getClass().getMethod(paramName, Integer.class).invoke(builder, ((Long) params.get(paramName)).intValue());
+                            break;
+                        default:
+                            builder.getClass().getMethod(paramName, String.class).invoke(builder, params.get(paramName));
+                    }
                 }
             }
             embedder = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
@@ -70,13 +72,9 @@ public class SolrEmbeddingModel implements Accountable {
         this.params = params;
     }
 
-    public float[] floatVectorise(String text){
+    public float[] vectorise(String text){
         Embedding vector = embedder.embed(text).content();
         return vector.vector();
-    }
-
-    public byte[] byteVectorise(String text){
-        return new byte[0];
     }
 
     @Override
