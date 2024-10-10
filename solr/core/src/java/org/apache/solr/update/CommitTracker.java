@@ -267,6 +267,7 @@ public final class CommitTracker implements Runnable {
       command.openSearcher = openSearcher;
       command.waitSearcher = WAIT_SEARCHER;
       command.softCommit = softCommit;
+      command.autoCommit = true;
       if (core.getCoreDescriptor().getCloudDescriptor() != null
           && core.getCoreDescriptor().getCloudDescriptor().isLeader()
           && !softCommit) {

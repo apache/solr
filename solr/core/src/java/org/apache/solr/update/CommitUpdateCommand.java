@@ -27,6 +27,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
+  boolean autoCommit = false;
 
   /**
    * User provided commit data. Can be let to null if there is none. It is possible to commit this

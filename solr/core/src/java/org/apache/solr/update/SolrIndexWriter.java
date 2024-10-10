@@ -41,6 +41,9 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
@@ -155,7 +158,18 @@ public class SolrIndexWriter extends IndexWriter {
     infoStream = getConfig().getInfoStream();
     this.directory = directory;
     numOpens.incrementAndGet();
-    solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+    SolrMetricsContext ctx = core.getSolrMetricsContext();
+    if (config.aggregateNodeLevelMetricsEnabled) {
+      solrMetricsContext =
+          new SolrDelegateRegistryMetricsContext(
+              ctx.getMetricManager(),
+              ctx.getRegistryName(),
+              SolrMetricProducer.getUniqueMetricTag(this, ctx.getTag()),
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+    }
+
     if (config.metricsInfo != null && config.metricsInfo.initArgs != null) {
       Object v = config.metricsInfo.initArgs.get("majorMergeDocs");
       if (v != null) {

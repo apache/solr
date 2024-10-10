@@ -96,6 +96,8 @@ public class DirectUpdateHandler2 extends UpdateHandler
   Meter splitCommands;
   Meter optimizeCommands;
   Meter rollbackCommands;
+  Meter hardAutoCommitCounts;
+  Meter softAutoCommitCounts;
   LongAdder numDocsPending = new LongAdder();
   LongAdder numErrors = new LongAdder();
   Meter numErrorsCumulative;
@@ -217,14 +219,10 @@ public class DirectUpdateHandler2 extends UpdateHandler
       this.solrMetricsContext = parentContext.getChildContext(this);
     }
     commitCommands = solrMetricsContext.meter("commits", getCategory().toString(), scope);
-    solrMetricsContext.gauge(
-        () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
-    solrMetricsContext.gauge(
-        () -> softCommitTracker.getCommitCount(),
-        true,
-        "softAutoCommits",
-        getCategory().toString(),
-        scope);
+    hardAutoCommitCounts = solrMetricsContext.meter("autoCommits", getCategory().toString(), scope);
+    softAutoCommitCounts =
+        solrMetricsContext.meter("softAutoCommits", getCategory().toString(), scope);
+
     if (commitTracker.getDocsUpperBound() > 0) {
       solrMetricsContext.gauge(
           () -> commitTracker.getDocsUpperBound(),
@@ -708,6 +706,14 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } else {
       commitCommands.mark();
       if (cmd.expungeDeletes) expungeDeleteCommands.mark();
+    }
+
+    if (cmd.autoCommit) {
+      if (cmd.softCommit) {
+        softAutoCommitCounts.mark();
+      } else {
+        hardAutoCommitCounts.mark();
+      }
     }
 
     @SuppressWarnings("unchecked")
