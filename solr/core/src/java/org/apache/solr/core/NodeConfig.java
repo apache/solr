@@ -629,7 +629,6 @@ public class NodeConfig {
 
     public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS =
         Runtime.getRuntime().availableProcessors();
-    ;
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";
