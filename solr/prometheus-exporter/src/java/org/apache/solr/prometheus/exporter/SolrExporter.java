@@ -145,6 +145,7 @@ public class SolrExporter {
     Options mainOptions = new Options();
     Options deprecatedOptions = new Options();
 
+    // Change to -s and --solr-url in main once -s for --scrape-interval removed.
     Option baseUrlOption =
         Option.builder("b")
             .longOpt("base-url")
@@ -174,14 +175,28 @@ public class SolrExporter {
     deprecatedOptions.addOption(baseUrlDepOption);
 
     Option configOption =
-        Option.builder("f")
+        Option.builder()
             .longOpt("config-file")
             .hasArg()
             .argName("CONFIG")
             .type(String.class)
             .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
             .build();
+    Option configOptionDeprecated =
+        Option.builder("f")
+            .hasArg()
+            .argName("CONFIG")
+            .type(String.class)
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --config-file instead")
+                    .get())
+            .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
+            .build();
     mainOptions.addOption(configOption);
+    mainOptions.addOption(configOptionDeprecated);
 
     Option helpOption =
         Option.builder("h").longOpt("help").desc("Prints this help message.").build();
@@ -222,7 +237,7 @@ public class SolrExporter {
     mainOptions.addOption(portOption);
 
     Option scrapeIntervalOption =
-        Option.builder("s")
+        Option.builder()
             .longOpt("scrape-interval")
             .hasArg()
             .argName("SCRAPE_INTERVAL")
@@ -233,6 +248,24 @@ public class SolrExporter {
                     + " seconds.")
             .build();
     mainOptions.addOption(scrapeIntervalOption);
+
+    Option scrapeIntervalOptionDeprecated =
+        Option.builder("s")
+            .hasArg()
+            .argName("SCRAPE_INTERVAL")
+            .type(Integer.class)
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --scrape-interval instead")
+                    .get())
+            .desc(
+                "Specify the delay between scraping Solr metrics; the default is "
+                    + DEFAULT_SCRAPE_INTERVAL
+                    + " seconds.")
+            .build();
+    mainOptions.addOption(scrapeIntervalOptionDeprecated);
 
     Option sslOption =
         Option.builder("ssl")
@@ -327,13 +360,27 @@ public class SolrExporter {
             getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 
+      String configFile = DEFAULT_CONFIG;
+      if (commandLine.hasOption(configOptionDeprecated)) {
+        configFile = commandLine.getOptionValue(configOptionDeprecated);
+      } else if (commandLine.hasOption(configOption)) {
+        configFile = commandLine.getOptionValue(configOption);
+      }
+
+      int scrapeInterval = DEFAULT_SCRAPE_INTERVAL;
+      if (commandLine.hasOption("s")) {
+        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOptionDeprecated);
+      } else if (commandLine.hasOption("scrape-interval")) {
+        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOption);
+      }
+
       SolrExporter solrExporter =
           new SolrExporter(
               port,
               commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS),
-              commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL),
+              scrapeInterval,
               scrapeConfiguration,
-              loadMetricsConfiguration(commandLine.getOptionValue(configOption, DEFAULT_CONFIG)),
+              loadMetricsConfiguration(configFile),
               clusterId);
 
       log.info("Starting Solr Prometheus Exporting on port {}", port);

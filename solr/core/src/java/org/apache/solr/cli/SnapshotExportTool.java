@@ -46,6 +46,7 @@ public class SnapshotExportTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -84,8 +85,7 @@ public class SnapshotExportTool extends ToolBase {
             .desc(
                 "Specifies the async request identifier to be used during snapshot export preparation.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

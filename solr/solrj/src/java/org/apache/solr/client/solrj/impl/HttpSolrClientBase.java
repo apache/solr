@@ -204,7 +204,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
           break;
         default:
           if (processor == null || mimeType == null) {
-            throw new BaseHttpSolrClient.RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 urlExceptionMessage,
                 httpStatus,
                 "non ok status: " + httpStatus + ", message:" + responseReason,
@@ -228,7 +228,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
-        throw new BaseHttpSolrClient.RemoteSolrException(
+        throw new SolrClient.RemoteSolrException(
             urlExceptionMessage, httpStatus, e.getMessage(), e);
       }
 
@@ -277,9 +277,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
           }
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
-        BaseHttpSolrClient.RemoteSolrException rss =
-            new BaseHttpSolrClient.RemoteSolrException(
-                urlExceptionMessage, httpStatus, reason, null);
+        SolrClient.RemoteSolrException rss =
+            new SolrClient.RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
@@ -335,10 +334,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
-          throw new BaseHttpSolrClient.RemoteSolrException(
+          throw new SolrClient.RemoteSolrException(
               urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
         } catch (IOException e) {
-          throw new BaseHttpSolrClient.RemoteSolrException(
+          throw new SolrClient.RemoteSolrException(
               urlExceptionMessage,
               httpStatus,
               "Could not parse response with encoding " + exceptionEncoding,

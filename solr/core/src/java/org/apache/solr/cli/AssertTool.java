@@ -26,6 +26,7 @@ import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -65,15 +66,37 @@ public class AssertTool extends ToolBase {
             .longOpt("not-root")
             .build(),
         Option.builder("r").desc("Asserts that we are the root user.").longOpt("root").build(),
-        Option.builder("S")
+        Option.builder()
             .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
             .longOpt("not-started")
             .hasArg(true)
             .argName("url")
             .build(),
-        Option.builder("s")
+        Option.builder("S")
+            .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --not-started instead")
+                    .get())
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder()
             .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
             .longOpt("started")
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder("s")
+            .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --started instead")
+                    .get())
             .hasArg(true)
             .argName("url")
             .build(),
@@ -129,9 +152,18 @@ public class AssertTool extends ToolBase {
         SolrCLI.OPTION_CREDENTIALS);
   }
 
+  /**
+   * Returns 100 error code for a true "error", otherwise returns the number of tests that failed.
+   * Otherwise, very similar to the parent runTool method.
+   *
+   * @param cli the command line object
+   * @return 0 on success, or a number corresponding to number of tests that failed, or 100 for a
+   *     Error
+   * @throws Exception if a tool failed, e.g. authentication failure
+   */
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt());
 
     int toolExitStatus;
     try {
@@ -192,15 +224,17 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("same-user")) {
       ret += sameUser(cli.getOptionValue("same-user"));
     }
-    if (cli.hasOption("s")) {
+    if (cli.hasOption("s") || cli.hasOption("started")) {
       ret +=
           assertSolrRunning(
-              cli.getOptionValue("s"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "started", "s", null),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
-    if (cli.hasOption("S")) {
+    if (cli.hasOption("S") || cli.hasOption("not-started")) {
       ret +=
           assertSolrNotRunning(
-              cli.getOptionValue("S"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "not-started", "S", null),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (cli.hasOption("c")) {
       ret +=

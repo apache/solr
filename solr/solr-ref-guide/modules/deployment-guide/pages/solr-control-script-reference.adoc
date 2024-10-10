@@ -105,7 +105,7 @@ For more details, see the section <<SolrCloud Mode>> below.
 +
 Define a server directory, defaults to `server` (as in, `$SOLR_TIP/server`).
 It is uncommon to override this option.
-When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `-s` option.
+When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `--solr-home` option.
 +
 *Example*: `bin/solr start -d newServerDir`
 
@@ -194,7 +194,7 @@ If this is not specified, `8983` will be used.
 +
 *Example*: `bin/solr start -p 8655`
 
-`-s <dir>`::
+`--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -211,9 +211,9 @@ This parameter is ignored when running examples (`-e`), as the `solr.solr.home` 
 The default value is `server/solr`.
 If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
 +
-*Example*: `bin/solr start -s newHome`
+*Example*: `bin/solr start --solr-home newHome`
 
-`-t <dir>` or `--data-home <dir>`::
+`--data-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -223,19 +223,19 @@ If passed relative dir, validation with current dir will be done, before trying 
 Sets the `solr.data.home` system property, where Solr will store index data in <instance_dir>/data subdirectories.
 If not set, Solr uses solr.solr.home for config and data.
 
-`-v`::
+`--verbose`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Be more verbose.
-This changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
+This does two things.  It provides additional debugging information on how the script is configured to start Solr.
+It also changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
 +
-*Example*: `bin/solr start -f -v`
+*Example*: `bin/solr start -f --verbose`
 
-`-q`::
+`-q` or `--quiet`::
 +
 [%autowidth,frame=none]
 |===
@@ -247,17 +247,6 @@ This changes the logging level of Log4j in Solr from `INFO` to `WARN`, having th
 This can be useful in a production setting where you want to limit logging to warnings and errors.
 +
 *Example*: `bin/solr start -f -q`
-
-`-V` or `--verbose`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Verbose messages from this script.
-+
-*Example*: `bin/solr start -V`
 
 `-z <zkHost>` or `--zk-host <zkHost>`::
 +
@@ -289,7 +278,7 @@ To emphasize how the default settings work take a moment to understand that the 
 
 `bin/solr start`
 
-`bin/solr start --host localhost -p 8983 -d server -s solr -m 512m`
+`bin/solr start --host localhost -p 8983 -d server --solr-home solr -m 512m`
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
@@ -426,7 +415,7 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
-`-V` or `--verbose`::
+`-d` or `--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -435,17 +424,17 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 Stop Solr with verbose messages from this script.
 +
-*Example*: `bin/solr stop -V`
+*Example*: `bin/solr stop --verbose`
 
 == System Information
 
 === Version
 
-The `version` command simply returns the version of Solr currently installed and immediately exists.
+The `--version` command simply returns the version of Solr currently installed and immediately exists.
 
 [source,bash]
 ----
-$ bin/solr version
+$ bin/solr --version
 X.Y.0
 ----
 
@@ -509,7 +498,7 @@ The basic usage of `bin/solr assert` is:
 [source, plain]
 ----
 $ bin/solr assert -h
-usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
+usage: bin/solr assert [-m <message>] [-e] [-rR] [--started <url>] [-not-started <url>] [-c
                 <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]
  -c,---cloud <url>             Asserts that Solr is running in cloud mode.
                                Also fails if Solr not running.  URL should
@@ -519,7 +508,6 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                should be for root Solr path.
  -e,--exitcode                 Return an exit code instead of printing
                                error message on assert fail.
- -h,--help                     Print this message.
  -m,--message <message>        Exception message to be used in place of
                                the default error message.
  -R,--not-root                 Asserts that we are NOT the root user.
@@ -532,7 +520,6 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                timeout.
  -u,--same-user <directory>    Asserts that we run as same user that owns
                                <directory>.
- -v,--verbose                  Enable more verbose command output.
  -x,--exists <directory>       Asserts that directory <directory> exists.
  -X,--not-exists <directory>   Asserts that directory <directory> does NOT
                                exist.
@@ -561,7 +548,7 @@ Name of the collection to run a healthcheck against.
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -696,7 +683,7 @@ This defaults to the same name as the core or collection.
 +
 *Example*: `bin/solr create -n basic`
 
-`-s <shards>` or `-shards <shards>`::
+`-sh <shards>` or `-shards <shards>`::
 +
 [%autowidth,frame=none]
 |===
@@ -742,7 +729,7 @@ It is possible to override this warning with the --force parameter.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -842,11 +829,11 @@ If the configuration directory is being used by another collection, then it will
 +
 *Example*: `bin/solr delete --delete-config false`
 
-`--force-delete-config`::
+`-f` or `--force`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: none
 |===
 +
 Skip safety checks when deleting the configuration directory used by a collection.
@@ -861,7 +848,7 @@ Skip safety checks when deleting the configuration directory used by a collectio
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1007,7 +994,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 Defines the Solr server directory, by default `$SOLR_TIP/server`.
 It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
-`-s <dir>` or `--solr-home <dir>`::
+`--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1107,7 +1094,7 @@ Set the property to this value; accepts JSON objects and strings.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-u <url>` or --solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1218,7 +1205,7 @@ Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1290,7 +1277,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1314,7 +1301,7 @@ This command will copy from the local drive to ZooKeeper, from ZooKeeper to the 
 
 ==== ZK Copy Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1374,7 +1361,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1414,7 +1401,7 @@ Use the `zk rm` command to remove a znode (and optionally all child nodes) from 
 
 ==== ZK Remove Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1457,7 +1444,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1519,7 +1506,7 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1535,7 +1522,7 @@ Use the `zk ls` command to see the children of a znode.
 
 ==== ZK List Parameters
 
-`-r`::
+`-r` or `--recursive`::
 +
 [%autowidth,frame=none]
 |===
@@ -1570,7 +1557,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1619,7 +1606,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1799,7 +1786,7 @@ If you have configured basicAuth or TLS with your Solr you may find this easier 
 
 The `bin/solr api` command takes the following parameters:
 
-`-url <url>` or `--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===

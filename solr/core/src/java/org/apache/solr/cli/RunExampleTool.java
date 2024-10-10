@@ -119,7 +119,7 @@ public class RunExampleTool extends ToolBase {
             .required(true)
             .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
             .build(),
-        Option.builder("s")
+        Option.builder()
             .longOpt("script")
             .hasArg()
             .argName("PATH")
@@ -239,8 +239,7 @@ public class RunExampleTool extends ToolBase {
             + ",\nexampleDir="
             + exampleDir.getAbsolutePath()
             + "\nscript="
-            + script,
-        cli);
+            + script);
 
     String exampleType = cli.getOptionValue("example");
     if ("cloud".equals(exampleType)) {
@@ -496,7 +495,7 @@ public class RunExampleTool extends ToolBase {
         }
 
         cloudPorts[n] = port;
-        echoIfVerbose("Using port " + port + " for node " + (n + 1), cli);
+        echoIfVerbose("Using port " + port + " for node " + (n + 1));
       }
     } else {
       echo("Starting up " + numNodes + " Solr nodes for your example SolrCloud cluster.\n");
@@ -636,7 +635,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s",
             callScript,
             standaloneModeArg,
             port,
@@ -889,7 +888,7 @@ public class RunExampleTool extends ToolBase {
   protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
       throws Exception {
     StatusTool statusTool = new StatusTool();
-    if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
+    echoIfVerbose("\nChecking status of Solr at " + solrUrl + " ...");
 
     URI solrURI = new URI(solrUrl);
     Map<String, Object> nodeStatus =
@@ -898,14 +897,9 @@ public class RunExampleTool extends ToolBase {
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);
     String mode = (nodeStatus.get("cloud") != null) ? "cloud" : "standalone";
-    if (verbose)
-      echo(
-          "\nSolr is running on "
-              + solrURI.getPort()
-              + " in "
-              + mode
-              + " mode with status:\n"
-              + arr);
+
+    echoIfVerbose(
+        "\nSolr is running on " + solrURI.getPort() + " in " + mode + " mode with status:\n" + arr);
 
     return nodeStatus;
   }
