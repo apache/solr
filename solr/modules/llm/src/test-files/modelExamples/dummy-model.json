@@ -1,0 +1,4 @@
+{
+  "class": "org.apache.solr.llm.embedding.DummyEmbeddingModel",
+  "name": "dummy-1"
+}

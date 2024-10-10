@@ -35,82 +35,100 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.neural.KnnQParser;
-
 import java.io.IOException;
 
-
 /**
- * A neural query parser to run K-nearest neighbors search on Dense Vector fields. See Wiki page
+ * A neural query parser that embed the query and then run K-nearest neighbors search on Dense Vector fields. See Wiki page
  * https://solr.apache.org/guide/solr/latest/query-guide/dense-vector-search.html
  */
 public class TextEmbedderQParserPlugin extends QParserPlugin
         implements ResourceLoaderAware, ManagedResourceObserver {
-  public static final String NAME = "embed";
-  /** query parser plugin: the name of the attribute for setting the model */
-  public static final String EMBEDDING_MODEL = "model";
-  
-  private ManagedEmbeddingModelStore modelStore = null;
+    public static final String EMBEDDING_MODEL_PARAM = "model";
+    private ManagedEmbeddingModelStore modelStore = null;
 
-  
-  @Override
-  public QParser createParser(
-      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new TextEmbedderQParser(qstr, localParams, params, req);
-  }
 
-  @Override
-  public void inform(ResourceLoader loader) throws IOException {
-    final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
-    ManagedEmbeddingModelStore.registerManagedEmbeddingModelStore(solrResourceLoader, this);
-  }
-
-  @Override
-  public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
-          throws SolrException {
-    if (res instanceof ManagedEmbeddingModelStore) {
-      modelStore = (ManagedEmbeddingModelStore) res;
-    }
-    if (modelStore != null) {
-      // now we can safely load the models
-      modelStore.loadStoredModels();
-    }
-  }
-
-  public class TextEmbedderQParser extends KnnQParser {
-
-    public TextEmbedderQParser(
+    @Override
+    public QParser createParser(
             String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-      super(qstr, localParams, params, req);
+        return new TextEmbedderQParser(qstr, localParams, params, req);
     }
 
     @Override
-    public Query parse() throws SyntaxError {
-      final String embeddingModelName = localParams.get(EMBEDDING_MODEL);
-      SolrEmbeddingModel embedder = modelStore.getModel(embeddingModelName);
-
-      final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
-      final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
-      VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
-      final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
-
-      switch (vectorEncoding) {
-        case FLOAT32: {
-          float[] vectorToSearch = embedder.floatVectorise(qstr);
-          return denseVectorType.getKnnVectorQuery(
-                  schemaField.getName(), vectorToSearch, topK, getFilterQuery());
-        }
-        case BYTE: {
-          byte[] vectorToSearch = embedder.byteVectorise(qstr);
-          return denseVectorType.getKnnVectorQuery(
-                  schemaField.getName(), vectorToSearch, topK, getFilterQuery());
-        }
-        default:
-          throw new SolrException(
-                  SolrException.ErrorCode.SERVER_ERROR,
-                  "Unexpected state. Vector Encoding: " + vectorEncoding);
-      }
-
-
+    public void inform(ResourceLoader loader) throws IOException {
+        final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
+        ManagedEmbeddingModelStore.registerManagedEmbeddingModelStore(solrResourceLoader, this);
     }
-  }
+
+    @Override
+    public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
+            throws SolrException {
+        if (res instanceof ManagedEmbeddingModelStore) {
+            modelStore = (ManagedEmbeddingModelStore) res;
+        }
+        if (modelStore != null) {
+            // now we can safely load the models
+            modelStore.loadStoredModels();
+        }
+    }
+
+    public class TextEmbedderQParser extends KnnQParser {
+
+        public TextEmbedderQParser(
+                String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+            super(qstr, localParams, params, req);
+        }
+
+        @Override
+        public Query parse() throws SyntaxError {
+            checkParam(qstr, "Query string is empty, nothing to embed");
+            final String embeddingModelName = localParams.get(EMBEDDING_MODEL_PARAM);
+            checkParam(embeddingModelName, "The 'model' parameter is missing");
+            SolrEmbeddingModel embedder = modelStore.getModel(embeddingModelName);
+
+            if (embedder != null) {
+                final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
+                final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
+                int fieldDimensions = denseVectorType.getDimension();
+                VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
+                final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+
+                switch (vectorEncoding) {
+                    case FLOAT32: {
+                        float[] vectorToSearch = embedder.vectorise(qstr);
+                        checkVectorDimension(vectorToSearch.length, fieldDimensions);
+                        return denseVectorType.getKnnVectorQuery(
+                                schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+                    }
+                    default:
+                        throw new SolrException(
+                                SolrException.ErrorCode.SERVER_ERROR,
+                                "Vector Encoding not supported in automatic text embedding: " + vectorEncoding);
+                }
+            } else {
+                throw new SolrException(
+                        SolrException.ErrorCode.BAD_REQUEST,
+                        "The model requested '" + embeddingModelName + "' can't be found in the store: " + ManagedEmbeddingModelStore.REST_END_POINT);
+            }
+        }
+    }
+
+    private void checkVectorDimension(int inputVectorDimension, int fieldVectorDimension) {
+        if (inputVectorDimension != fieldVectorDimension) {
+            throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "incorrect vector dimension."
+                            + " The vector value has size "
+                            + inputVectorDimension
+                            + " while it is expected a vector with size "
+                            + fieldVectorDimension);
+        }
+    }
+
+    private void checkParam(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    message);
+        }
+    }
 }

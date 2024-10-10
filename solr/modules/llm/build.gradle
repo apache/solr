@@ -36,6 +36,5 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
-
   testImplementation 'commons-io:commons-io'
 }
