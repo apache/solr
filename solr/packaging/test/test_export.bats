@@ -45,9 +45,8 @@ teardown() {
   assert [ -e techproducts.javabin ]
   rm techproducts.javabin
 
-  # old pattern of putting a suffix on the out that controlled the format no longer supported ;-).
   run solr export -url "http://localhost:${SOLR_PORT}/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output.javabin"
-  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin.json ]
+  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin ]
 
   run solr export -url "http://localhost:${SOLR_PORT}/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}"
   assert [ -e ${BATS_TEST_TMPDIR}/techproducts.json ]

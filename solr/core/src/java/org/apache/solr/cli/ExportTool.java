@@ -187,10 +187,18 @@ public class ExportTool extends ToolBase {
       } else if (Files.isDirectory(Path.of(this.out))) {
         this.out = this.out + "/" + coll;
       }
-      this.out = this.out + '.' + this.format;
-      if (compress) {
+      if (!hasExtension(this.out)) {
+        this.out = this.out + '.' + this.format;
+      }
+      if (compress & !this.out.endsWith(".gz")) {
         this.out = this.out + ".gz";
       }
+    }
+
+    public static boolean hasExtension(String filename) {
+      return filename.contains(".json")
+          || filename.contains(".jsonl")
+          || filename.contains(".javabin");
     }
 
     DocsSink getSink() {
