@@ -367,12 +367,13 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [--standalone] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
+    echo "Usage: solr $CMD [-f] [--class] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
     echo ""
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  --standalone          Start Solr in Standalone mode"
+    echo "  --user-managed        Start Solr in User Managed mode"
+    echo "                          See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html"
     echo ""
     echo "  --host <host>         Specify the hostname for this Solr instance"
     echo ""
@@ -383,7 +384,7 @@ function print_usage() {
     echo ""
     echo "  -d <dir>              Specify the Solr server directory; defaults to server"
     echo ""
-    echo "  -z/--zk-host <zkHost> Zookeeper connection string; ignored when running in Standalone (--standalone) mode."
+    echo "  -z/--zk-host <zkHost> Zookeeper connection string; ignored when running in User Managed (--user-managed) mode."
     echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                          an embedded ZooKeeper instance will be launched."
     echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
@@ -736,9 +737,9 @@ SOLR_MODE="solrcloud"
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
-        --standalone)
-            SOLR_MODE="standalone"
-            PASS_TO_RUN_EXAMPLE+=("--standalone")
+        --user-managed)
+            SOLR_MODE="user-managed"
+            PASS_TO_RUN_EXAMPLE+=("--user-managed")
             shift
         ;;
         -d|--dir|-dir)

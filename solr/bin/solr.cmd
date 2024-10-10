@@ -307,12 +307,13 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [--standalone] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [--user-managed] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   --standalone  Start Solr in Standalone mode"
+@echo   --user-managed Start Solr in User Managed mode"
+@echo                   See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html
 @echo.
 @echo   --host host   Specify the hostname for this Solr instance
 @echo.
@@ -399,7 +400,7 @@ IF "%1"=="--verbose" goto set_verbose
 IF "%1"=="-v" goto set_verbose
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn
-IF "%1"=="--standalone" goto set_standalone_mode
+IF "%1"=="--user-managed" goto set_user_managed_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="-s" goto set_solr_home_dir
@@ -457,8 +458,8 @@ set SOLR_LOG_LEVEL=WARN
 SHIFT
 goto parse_args
 
-:set_standalone_mode
-set SOLR_MODE=standalone
+:set_user_managed_mode
+set SOLR_MODE=user-managed
 SHIFT
 goto parse_args
 
@@ -938,8 +939,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
-  REM change Cloud mode to Standalone mode with flag
-  set "CLOUD_MODE_OPTS=--standalone"
+  REM change Cloud mode to User Managed mode with flag
+  set "CLOUD_MODE_OPTS=--user-managed"
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
     IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
       set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"

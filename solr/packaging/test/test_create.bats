@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "create for non cloud mode" {
-  run solr start --standalone
+  run solr start --user-managed
   run solr create -c COLL_NAME
   assert_output --partial "Created new core 'COLL_NAME'"
 }

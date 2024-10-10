@@ -30,7 +30,7 @@ teardown() {
 
 @test "SOLR-11740 check 'solr stop' connection" {
   solr start
-  solr start --standalone -p ${SOLR2_PORT}
+  solr start --user-managed -p ${SOLR2_PORT}
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
   solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000

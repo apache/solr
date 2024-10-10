@@ -30,7 +30,7 @@ teardown() {
 
 @test "assert for non cloud mode" {
   solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000
-  run solr start --standalone
+  run solr start --user-managed
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
   run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr

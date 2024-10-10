@@ -168,9 +168,9 @@ public class RunExampleTool extends ToolBase {
             .desc("Specify the hostname for this Solr instance.")
             .build(),
         Option.builder()
-            .longOpt("standalone")
+            .longOpt("user-managed")
             .required(false)
-            .desc("Start Solr in Standalone mode.")
+            .desc("Start Solr in User Managed mode.")
             .build(),
         Option.builder("m")
             .longOpt("memory")
@@ -262,13 +262,13 @@ public class RunExampleTool extends ToolBase {
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isStandalone = cli.hasOption("standalone");
+    boolean isCloudMode = !cli.hasOption("user-managed");
     String zkHost = cli.getOptionValue('z');
     int port =
         Integer.parseInt(
             cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
-        startSolr(new File(exDir, "solr"), isStandalone, cli, port, zkHost, 30);
+        startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
@@ -518,7 +518,7 @@ public class RunExampleTool extends ToolBase {
 
     // start the first node (most likely with embedded ZK)
     Map<String, Object> nodeStatus =
-        startSolr(new File(node1Dir, "solr"), false, cli, cloudPorts[0], zkHost, 30);
+        startSolr(new File(node1Dir, "solr"), true, cli, cloudPorts[0], zkHost, 30);
 
     if (zkHost == null) {
       @SuppressWarnings("unchecked")
@@ -596,7 +596,7 @@ public class RunExampleTool extends ToolBase {
 
   protected Map<String, Object> startSolr(
       File solrHomeDir,
-      boolean standaloneMode,
+      boolean cloudMode,
       CommandLine cli,
       int port,
       String zkHost,
@@ -611,7 +611,7 @@ public class RunExampleTool extends ToolBase {
     String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
-    String standaloneModeArg = standaloneMode ? "--standalone" : "";
+    String cloudModeArg = cloudMode ? "" : "--user-managed";
     String forceArg = cli.hasOption("force") ? " --force" : "";
     String verboseArg = verbose ? "--verbose" : "";
 
@@ -637,7 +637,7 @@ public class RunExampleTool extends ToolBase {
             Locale.ROOT,
             "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s",
             callScript,
-            standaloneModeArg,
+            cloudModeArg,
             port,
             solrHome,
             hostArg,

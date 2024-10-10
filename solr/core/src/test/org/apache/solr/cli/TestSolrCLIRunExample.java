@@ -115,7 +115,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       if (exe.endsWith("solr")) {
         String[] args = cmd.getArguments();
         if ("start".equals(args[0])) {
-          if (hasFlag("--standalone", args)) {
+          if (hasFlag("--user-managed", args)) {
             return startStandaloneSolr(args);
           }
 
@@ -336,8 +336,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   protected void testExample(String exampleName) throws Exception {
-    // Occasionally we want to test in Standalone mode, not the default SolrCloud mode.
-    String testStandaloneMode = LuceneTestCase.rarely() ? "--standalone" : "";
+    // Occasionally we want to test in User Managed mode, not the default SolrCloud mode.
+    String testStandaloneMode = LuceneTestCase.rarely() ? "--user-managed" : "";
     File solrHomeDir = new File(ExternalPaths.SERVER_HOME);
     if (!solrHomeDir.isDirectory()) {
       fail(solrHomeDir.getAbsolutePath() + " not found and is required to run this test!");
