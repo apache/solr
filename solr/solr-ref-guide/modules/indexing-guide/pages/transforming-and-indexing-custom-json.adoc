@@ -818,7 +818,7 @@ curl 'http://localhost:8983/solr/techproducts/update/json/docs' -H 'Content-type
 ----
 ====
 
-V2 API Standalone Solr::
+V2 API User-Managed / Single-Node Solr::
 +
 ====
 [source,bash]
