@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** APIs and classes for implementing Neural (Dense Retrieval) QueryParsers. */
-package java.org.apache.solr.llm.update.processor;
+/** APIs and classes for implementing embedding update processors. */
+package org.apache.solr.llm.update.processor;
