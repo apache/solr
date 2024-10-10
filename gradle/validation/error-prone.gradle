@@ -323,7 +323,7 @@ allprojects { prj ->
             //'-Xep:Finally:OFF', // todo there are problems that should be fixed
             '-Xep:FloatCast:WARN',
             '-Xep:FloatingPointAssertionWithinEpsilon:WARN',
-            '-Xep:FloatingPointLiteralPrecision:WARN',
+            // '-Xep:FloatingPointLiteralPrecision:OFF', // practically only ever causes errors in tests
             // '-Xep:FloggerArgumentToString:OFF', // we don't use flogger
             // '-Xep:FloggerStringConcatenation:OFF', // we don't use flogger
             // '-Xep:FragmentInjection:OFF', // we don't use android
