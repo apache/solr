@@ -312,7 +312,7 @@ goto done
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   --user-managed Start Solr in User Managed mode"
+@echo   --user-managed Start Solr in user managed aka standalone mode"
 @echo                   See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html
 @echo.
 @echo   --host host   Specify the hostname for this Solr instance
