@@ -35,7 +35,7 @@ teardown() {
   # Disable security manager to allow extraction
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
   
   
   solr create -c gettingstarted -d _default
@@ -60,7 +60,7 @@ teardown() {
   # Disable security manager to allow extraction
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
   
   solr create -c content_extraction -d _default
   
@@ -87,7 +87,7 @@ teardown() {
   # Disable security manager to allow extraction
   # This appears to be a bug.
   export SOLR_SECURITY_MANAGER_ENABLED=false
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
   
   solr create -c website_extraction -d _default
   

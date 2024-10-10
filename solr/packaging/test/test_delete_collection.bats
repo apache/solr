@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start
 }
 
 teardown_file() {

@@ -36,7 +36,7 @@ setup() {
 }
 
 @test "auth enable/disable lifecycle" {
-  solr start -c
+  solr start
   solr auth enable --type basicAuth --credentials name:password
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 

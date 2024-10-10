@@ -21,7 +21,7 @@ setup() {
   common_clean_setup
   
   echo "Starting Solr"
-  solr start -c -Denable.packages=true
+  solr start -Denable.packages=true
   
   # The auth command exports some system variables that are injected as basic auth username and password, 
   # however that defeats our test so fake that out via --solr-include-file param specifing a bogus path.
