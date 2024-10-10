@@ -116,7 +116,7 @@ if [[ -n "$SCRAPE_INTERVAL" ]]; then
 fi
 
 if [[ -n "$NUM_THREADS" ]]; then
-  EXPORTER_ARGS+=(-n "$NUM_THREADS")
+  EXPORTER_ARGS+=(--num-threads "$NUM_THREADS")
 fi
 
 if [[ -n "$ZK_HOST" ]]; then
