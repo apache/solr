@@ -222,6 +222,19 @@ public class PostTool extends ToolBase {
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
         Option.builder("d")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --delay instead")
+                    .get())
+            .hasArg()
+            .argName("delay")
+            .required(false)
+            .desc(
+                "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
+            .build(),
+        Option.builder()
             .longOpt("delay")
             .hasArg()
             .argName("delay")
