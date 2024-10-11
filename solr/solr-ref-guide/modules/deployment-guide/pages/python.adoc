@@ -18,7 +18,7 @@
 
 == Python
 
-JSON is the preferred format for Python users, and Python has support for it in its standard library since version 2.6.
+JSON is the preferred interchange format for Python users, and Python has support for it in its standard library since version 2.6.
 
 [source,python]
 ----
