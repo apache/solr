@@ -47,7 +47,7 @@ usage: bin/solr post [-c <NAME>] [-d <delay>] [--dry-run] [--format] [-ft <<type
 
 List of options:
  -c,--name <NAME>                                 Name of the collection.
- -d,--delay <delay>                               If recursive then delay will be the wait time between posts.  default:
+    --delay <delay>                               If recursive then delay will be the wait time between posts.  default:
                                                   10 for web, 0 for files
     --dry-run                                     Performs a dry run of the posting process without actually sending
                                                   documents to Solr.  Only works with files mode.
