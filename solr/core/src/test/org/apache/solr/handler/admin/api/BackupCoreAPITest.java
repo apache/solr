@@ -22,6 +22,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -38,7 +39,7 @@ import org.junit.Test;
 
 public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
-  private BackupCoreAPI backupCoreAPI;
+  private CreateCoreBackup backupCoreAPI;
   private static final String backupName = "my-new-backup";
 
   @BeforeClass
@@ -58,13 +59,13 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
         new CoreAdminHandler.CoreAdminAsyncTracker();
     backupCoreAPI =
-        new BackupCoreAPI(
+        new CreateCoreBackup(
             coreContainer, solrQueryRequest, solrQueryResponse, coreAdminAsyncTracker);
   }
 
   @Test
   public void testCreateNonIncrementalBackupReturnsValidResponse() throws Exception {
-    BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
+    CreateCoreBackupRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = false;
     backupCoreRequestBody.backupName = backupName;
     SnapShooter.CoreSnapshotResponse response =
@@ -79,7 +80,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testMissingLocationParameter() throws Exception {
-    BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
+    CreateCoreBackupRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
     backupCoreRequestBody.backupName = backupName;
@@ -99,7 +100,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testMissingCoreNameParameter() throws Exception {
-    BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
+    CreateCoreBackupRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
     backupCoreRequestBody.backupName = backupName;
@@ -118,7 +119,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testNonIncrementalBackupForNonExistentCore() throws Exception {
-    BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
+    CreateCoreBackupRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
     backupCoreRequestBody.backupName = backupName;
@@ -133,7 +134,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateIncrementalBackupReturnsValidResponse() throws Exception {
-    BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
+    CreateCoreBackupRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = true;
     backupCoreRequestBody.shardBackupId = "md_shard1_0";
     IncrementalShardBackup.IncrementalShardSnapshotResponse response =
@@ -165,13 +166,12 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     }
   }
 
-  private BackupCoreAPI.BackupCoreRequestBody createBackupCoreRequestBody() throws Exception {
+  private CreateCoreBackupRequestBody createBackupCoreRequestBody() throws Exception {
     final Path locationPath = createBackupLocation();
     final URI locationUri = bootstrapBackupLocation(locationPath);
     final CoreContainer cores = h.getCoreContainer();
     cores.getAllowPaths().add(Paths.get(locationUri));
-    final BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody =
-        new BackupCoreAPI.BackupCoreRequestBody();
+    final CreateCoreBackupRequestBody backupCoreRequestBody = new CreateCoreBackupRequestBody();
     backupCoreRequestBody.location = locationPath.toString();
     return backupCoreRequestBody;
   }

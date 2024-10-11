@@ -56,6 +56,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
     return buildIndexSchema(resourceName, config, null);
   }
+
   /** Instantiates the configured schema factory, then calls create on it. */
   public static IndexSchema buildIndexSchema(
       String resourceName, SolrConfig config, ConfigSetService configSetService) {

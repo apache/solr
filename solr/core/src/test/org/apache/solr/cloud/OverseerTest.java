@@ -393,27 +393,27 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     for (ZkController zkController : zkControllers) {
-      customThreadPool.submit(zkController::close);
+      customThreadPool.execute(zkController::close);
     }
 
     for (HttpShardHandlerFactory httpShardHandlerFactory : httpShardHandlerFactorys) {
-      customThreadPool.submit(httpShardHandlerFactory::close);
+      customThreadPool.execute(httpShardHandlerFactory::close);
     }
 
     for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
-      customThreadPool.submit(updateShardHandler::close);
+      customThreadPool.execute(updateShardHandler::close);
     }
 
     for (SolrClient solrClient : solrClients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(solrClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(solrClient));
     }
 
     for (ZkStateReader reader : readers) {
-      customThreadPool.submit(reader::close);
+      customThreadPool.execute(reader::close);
     }
 
     for (SolrZkClient solrZkClient : zkClients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(solrZkClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(solrZkClient));
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
@@ -422,7 +422,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     for (Overseer overseer : overseers) {
-      customThreadPool.submit(overseer::close);
+      customThreadPool.execute(overseer::close);
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
@@ -1831,7 +1831,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private SolrZkClient electNewOverseer(String address)
-      throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
+      throws InterruptedException,
+          KeeperException,
+          NoSuchFieldException,
+          SecurityException,
           IllegalAccessException {
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -1876,7 +1879,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private ZkController createMockZkController(
       String zkAddress, SolrZkClient zkClient, ZkStateReader reader)
-      throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException,
+      throws InterruptedException,
+          NoSuchFieldException,
+          SecurityException,
+          SessionExpiredException,
           IllegalAccessException {
     ZkController zkController = mock(ZkController.class);
 

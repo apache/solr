@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -66,9 +65,6 @@ public class ApiToolTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-    String tmpFileLoc =
-        new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
-
     UpdateRequest ur = new UpdateRequest();
     ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
 
@@ -90,7 +86,8 @@ public class ApiToolTest extends SolrCloudTestCase {
             cluster.getJettySolrRunner(0).getBaseUrl()
                 + "/"
                 + COLLECTION_NAME
-                + "/select?q=*:*&rows=1&fl=id&sort=id+asc");
+                + "/select?q=*:*&rows=1&fl=id&sort=id+asc",
+            null);
     // Fields that could be missed because of serialization
     assertFindInJson(response, "\"numFound\":1000,");
     // Correct formatting
@@ -101,5 +98,21 @@ public class ApiToolTest extends SolrCloudTestCase {
     assertTrue(
         String.format(Locale.ROOT, "Could not find string %s in response: \n%s", find, json),
         json.contains(find));
+  }
+
+  @Test
+  public void testSolrUrlParsing() throws Exception {
+    assertEquals(
+        "https://test-host.solr:8983/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr:8983/solr")));
+    assertEquals(
+        "https://test-host.solr:8983/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr:8983/solr/test/api")));
+    assertEquals(
+        "https://test-host.solr/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr/solr/test/api")));
+    assertEquals(
+        "http://test-host.solr/solr",
+        ApiTool.getSolrUrlFromUri(URI.create("http://test-host.solr/solr/test/api")));
   }
 }

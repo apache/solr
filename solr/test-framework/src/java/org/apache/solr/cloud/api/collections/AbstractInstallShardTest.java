@@ -36,9 +36,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -48,6 +48,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -62,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * repository. This base-class will populate that backup repository all data necessary for these
  * tests.
  *
- * @see org.apache.solr.handler.admin.api.InstallShardDataAPI
+ * @see InstallShardData
  */
 public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
 
@@ -100,6 +101,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   private static int replicasPerShard = -1;
   private static int multiShardNumDocs = -1;
   private static URI singleShard1Uri = null;
+  private static URI nonExistentLocationUri = null;
   private static URI[] multiShardUris = null;
 
   private List<String> collectionsToDelete;
@@ -123,6 +125,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         createBackupRepoDirectoryForShardData(
             baseRepositoryLocation, singleShardCollName, "shard1");
     copyShardDataToBackupRepository(singleShardCollName, "shard1", singleShard1Uri);
+    // Based off the single-shard location and used for error-case testing
+    nonExistentLocationUri = createUriForNonexistentSubDir(singleShard1Uri, "nonexistent");
+
     // Upload shard data to BackupRepository - multi-shard collection
     for (int i = 0; i < multiShardUris.length; i++) {
       final String shardName = "shard" + (i + 1);
@@ -143,9 +148,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
-    final BaseHttpSolrClient.RemoteSolrException rse =
+    final SolrClient.RemoteSolrException rse =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               CollectionAdminRequest.installDataToShard(
                       collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
@@ -169,8 +174,38 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
             collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
         .process(cluster.getSolrClient());
 
-    // Shard-install has failed so collection should still be empty.
     assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
+  }
+
+  @Test
+  public void testInstallReportsErrorsAppropriately() throws Exception {
+    final String collectionName = createAndAwaitEmptyCollection(1, replicasPerShard);
+    deleteAfterTest(collectionName);
+    enableReadOnly(collectionName);
+    final String nonExistentLocation = nonExistentLocationUri.toString();
+
+    { // Test synchronous request error reporting
+      final var expectedException =
+          expectThrows(
+              SolrClient.RemoteSolrException.class,
+              () -> {
+                CollectionAdminRequest.installDataToShard(
+                        collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
+                    .process(cluster.getSolrClient());
+              });
+      assertTrue(expectedException.getMessage().contains("Could not install data to collection"));
+      assertCollectionHasNumDocs(collectionName, 0);
+    }
+
+    { // Test asynchronous request error reporting
+      final var requestStatusState =
+          CollectionAdminRequest.installDataToShard(
+                  collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 15);
+
+      assertEquals(RequestStatusState.FAILED, requestStatusState);
+      assertCollectionHasNumDocs(collectionName, 0);
+    }
   }
 
   @Test
@@ -291,6 +326,14 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
       final URI shardLocation = backupRepository.resolve(collectionLocation, shardName);
       backupRepository.createDirectory(shardLocation);
       return shardLocation;
+    }
+  }
+
+  private static URI createUriForNonexistentSubDir(URI baseUri, String subDirName)
+      throws Exception {
+    final CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
+    try (final BackupRepository backupRepository = cc.newBackupRepository(BACKUP_REPO_NAME)) {
+      return backupRepository.resolve(baseUri, subDirName);
     }
   }
 

@@ -37,6 +37,7 @@ public class SplitIndexCommand extends UpdateCommand {
   public final String routeFieldName;
   public final String splitKey;
   public final SolrIndexSplitter.SplitMethod splitMethod;
+
   /**
    * User provided commit data. Can be let to null if there is none. This commit data is used when
    * the split command commits.

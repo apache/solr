@@ -19,10 +19,8 @@ package org.apache.solr.cli;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,15 +40,14 @@ public class ZkLsTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("path")
-            .argName("path")
-            .hasArg()
-            .required(true)
-            .desc("Path to list.")
-            .build(),
-        SolrCLI.OPTION_RECURSE,
+        SolrCLI.OPTION_RECURSE_DEPRECATED,
+        SolrCLI.OPTION_RECURSIVE,
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -59,35 +56,29 @@ public class ZkLsTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    // very brittle.  Maybe add a getArgsUsage to append the "path"?
+    return "bin/solr zk ls [-r ] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
+    String znode = cli.getArgs()[0];
 
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("zkHost")
-              + " is running in standalone server mode, 'zk ls' can only be used when running in SolrCloud mode.\n");
-    }
+    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-
-      String znode = cli.getOptionValue("path");
-      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+      boolean recursive = cli.hasOption("recursive") || cli.hasOption("recurse");
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode
               + " from ZooKeeper at "
               + zkHost
-              + " recurse: "
-              + recurse,
-          cli);
-      stdout.print(zkClient.listZnode(znode, recurse));
+              + " recursive: "
+              + recursive);
+      stdout.print(zkClient.listZnode(znode, recursive));
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
       throw (e);

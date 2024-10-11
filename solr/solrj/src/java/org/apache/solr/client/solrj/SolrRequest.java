@@ -52,6 +52,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum ApiVersion {
+    V1("/solr"),
+    V2("/api");
+
+    private final String apiPrefix;
+
+    ApiVersion(String apiPrefix) {
+      this.apiPrefix = apiPrefix;
+    }
+
+    public String getApiPrefix() {
+      return apiPrefix;
+    }
+  }
+
   public enum SolrRequestType {
     QUERY,
     UPDATE,
@@ -81,24 +96,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
-
-  protected boolean usev2;
-  protected boolean useBinaryV2;
-
-  /**
-   * If set to true, every request that implements {@link V2RequestSupport} will be converted to a
-   * V2 API call
-   */
-  public SolrRequest<T> setUseV2(boolean flag) {
-    this.usev2 = flag;
-    return this;
-  }
-
-  /** If set to true use javabin instead of json (default) */
-  public SolrRequest<T> setUseBinaryV2(boolean flag) {
-    this.useBinaryV2 = flag;
-    return this;
-  }
 
   public SolrRequest<T> setPreferredNodes(List<String> nodes) {
     this.preferredNodes = nodes;
@@ -194,6 +191,28 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public abstract SolrParams getParams();
 
   /**
+   * Determines whether this request should use or ignore any specified collections (esp. {@link
+   * SolrClient#defaultCollection})
+   *
+   * <p>Many Solr requests target a particular core or collection. But not all of them - many Solr
+   * APIs (e.g. security or other admin APIs) are agnostic of collections entirely. This method
+   * gives these requests a way to opt out of using {@link SolrClient#defaultCollection} or other
+   * specified collections.
+   */
+  public boolean requiresCollection() {
+    return false;
+  }
+
+  /**
+   * Indicates which API version this request will make
+   *
+   * <p>Defaults implementation returns 'V1'.
+   */
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V1;
+  }
+
+  /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
    */
   @Deprecated
@@ -253,12 +272,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return getParams() == null ? null : getParams().get("collection");
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public void setBasePath(String path) {
     if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
 
     this.basePath = path;
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public String getBasePath() {
     return basePath;
   }
@@ -268,6 +289,16 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       headers = new HashMap<>();
     }
     headers.put(key, value);
+  }
+
+  public void addHeaders(Map<String, String> headers) {
+    if (headers == null) {
+      return;
+    }
+    if (this.headers == null) {
+      this.headers = new HashMap<>();
+    }
+    this.headers.putAll(headers);
   }
 
   public Map<String, String> getHeaders() {

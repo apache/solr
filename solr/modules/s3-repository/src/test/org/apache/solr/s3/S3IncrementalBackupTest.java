@@ -94,7 +94,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
     AbstractS3ClientTest.setS3ConfFile();
 
-    configureCluster(NUM_SHARDS) // nodes
+    configureCluster(NUM_NODES) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
         .withSolrXml(
             SOLR_XML

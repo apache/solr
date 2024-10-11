@@ -76,6 +76,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -141,7 +142,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       assertNotNull("Cluster contains null jetty?", jetty);
       final URL baseUrl = jetty.getBaseUrl();
       assertNotNull("Jetty has null baseUrl: " + jetty, baseUrl);
-      CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(baseUrl.toString(), COLLECTION_NAME));
     }
 
     // sanity check no one broke the assumptions we make about our schema

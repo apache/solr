@@ -45,6 +45,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StandardDirectoryReader;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -384,11 +386,12 @@ public class IndexSizeEstimator {
     for (LeafReaderContext leafReaderContext : reader.leaves()) {
       LeafReader leafReader = leafReaderContext.reader();
       Bits liveDocs = leafReader.getLiveDocs();
+      TermVectors leafTermVectors = leafReader.termVectors();
       for (int docId = 0; docId < leafReader.maxDoc(); docId += samplingStep) {
         if (liveDocs != null && !liveDocs.get(docId)) {
           continue;
         }
-        Fields termVectors = leafReader.getTermVectors(docId);
+        Fields termVectors = leafTermVectors.get(docId);
         if (termVectors == null) {
           continue;
         }
@@ -608,11 +611,12 @@ public class IndexSizeEstimator {
           mergeInstance.close();
         }
       } else {
+        StoredFields storedFields = leafReader.storedFields();
         for (int docId = 0; docId < leafReader.maxDoc(); docId += samplingStep) {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          leafReader.document(docId, visitor);
+          storedFields.document(docId, visitor);
         }
       }
     }

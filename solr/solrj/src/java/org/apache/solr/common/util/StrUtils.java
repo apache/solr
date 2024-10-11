@@ -74,7 +74,7 @@ public class StrUtils {
       } else if (inString != 0 && ch == inString) {
         inString = 0;
       } else if (ch == '\'' || ch == '"') {
-        // If char is directly preceeded by a number or letter
+        // If char is directly preceded by a number or letter
         // then don't treat it as the start of a string.
         // Examples: 50" TV, or can't
         if (!Character.isLetterOrDigit(prevChar)) {
@@ -164,7 +164,7 @@ public class StrUtils {
    * by backslash '\'
    *
    * @param fileNames the string containing file names
-   * @return a list of file names with the escaping backslashed removed
+   * @return a list of file names with the escaping backslashes removed
    */
   public static List<String> splitFileNames(String fileNames) {
     if (fileNames == null) return Collections.<String>emptyList();
@@ -267,10 +267,11 @@ public class StrUtils {
    */
   public static boolean parseBool(String s) {
     if (s != null) {
-      if (s.startsWith("true") || s.startsWith("on") || s.startsWith("yes")) {
+      String lowerS = s.toLowerCase(Locale.ROOT);
+      if (lowerS.startsWith("true") || lowerS.startsWith("on") || lowerS.startsWith("yes")) {
         return true;
       }
-      if (s.startsWith("false") || s.startsWith("off") || s.equals("no")) {
+      if (lowerS.startsWith("false") || lowerS.startsWith("off") || lowerS.equals("no")) {
         return false;
       }
     }
@@ -285,10 +286,11 @@ public class StrUtils {
    */
   public static boolean parseBool(String s, boolean def) {
     if (s != null) {
-      if (s.startsWith("true") || s.startsWith("on") || s.startsWith("yes")) {
+      String lowerS = s.toLowerCase(Locale.ROOT);
+      if (lowerS.startsWith("true") || lowerS.startsWith("on") || lowerS.startsWith("yes")) {
         return true;
       }
-      if (s.startsWith("false") || s.startsWith("off") || s.equals("no")) {
+      if (lowerS.startsWith("false") || lowerS.startsWith("off") || lowerS.equals("no")) {
         return false;
       }
     }
@@ -385,5 +387,20 @@ public class StrUtils {
       reader.transferTo(stringWriter);
       return stringWriter.toString();
     }
+  }
+
+  @SuppressWarnings("ReferenceEquality")
+  public static boolean equalsIgnoreCase(String left, String right) {
+    if (left == right) {
+      return true;
+    }
+    if (left == null || right == null) {
+      return false;
+    }
+    if (left.length() != right.length()) {
+      return false;
+    }
+
+    return left.equalsIgnoreCase(right);
   }
 }

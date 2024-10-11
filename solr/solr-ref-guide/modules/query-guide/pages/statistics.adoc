@@ -166,7 +166,7 @@ The list of tuples with the counts is then stored in variable *a*.
 
 Then an `array` of labels is created and set to variable *l*.
 
-Finally the `zplot` function is used to plot the labels vector and the `count(*)` column.
+Finally, the `zplot` function is used to plot the labels vector and the `count(*)` column.
 Notice the `col` function is used inside of the `zplot` function to extract the counts from the `stats` results.
 
 image::math-expressions/custom-hist.png[]
@@ -176,7 +176,7 @@ image::math-expressions/custom-hist.png[]
 
 The `freqTable` function returns a frequency distribution for a discrete data set.
 The `freqTable` function doesn't create bins like the histogram.
-Instead it counts the occurrence of each discrete data value and returns a list of tuples with the frequency statistics for each value.
+Instead, it counts the occurrence of each discrete data value and returns a list of tuples with the frequency statistics for each value.
 
 Below is an example of a frequency table built from a result set of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
 
@@ -193,7 +193,7 @@ This will provide an array of price differences for each day which will show dai
 Then the `round` function is used to round the price differences to the nearest integer to create a vector of discrete values.
 The `round` function in this example is effectively *binning* continuous data at integer boundaries.
 
-Finally the `freqTable` function is run on the discrete values to calculate the frequency table.
+Finally, the `freqTable` function is run on the discrete values to calculate the frequency table.
 
 [source,text]
 ----
@@ -388,7 +388,7 @@ The `corr` function is then used correlate the *columns* of the matrix.
 This produces a correlation matrix that shows how complaint types are correlated based on the zip codes they appear in.
 Another way to look at this is it shows how the different complaint types tend to co-occur across zip codes.
 
-Finally the `zplot` function is used to plot the correlation matrix as a heat map.
+Finally, the `zplot` function is used to plot the correlation matrix as a heat map.
 
 image::math-expressions/corrmatrix.png[]
 
@@ -524,7 +524,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Transformations
 
-In statistical analysis its often useful to transform data sets before performing statistical calculations.
+In statistical analysis it's often useful to transform data sets before performing statistical calculations.
 The statistical function library includes the following commonly used transformations:
 
 * `rank`: Returns a numeric array with the rank-transformed value of each element of the original array.

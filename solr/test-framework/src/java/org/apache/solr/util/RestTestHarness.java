@@ -183,6 +183,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
       throw new RuntimeException("?!? static xpath has bug?", e);
     }
   }
+
   /** Reloads the first core listed in the response to the core admin handler STATUS command */
   @Override
   public void reload() throws Exception {

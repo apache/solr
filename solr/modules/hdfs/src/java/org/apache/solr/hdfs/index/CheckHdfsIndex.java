@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
 import org.apache.solr.hdfs.store.HdfsDirectory;
 import org.apache.solr.hdfs.util.HdfsUtil;
@@ -74,7 +75,7 @@ public class CheckHdfsIndex {
 
   private static Configuration getConf(Path path) {
     Configuration conf = new Configuration();
-    String confDir = System.getProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
+    String confDir = EnvUtils.getProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
     HdfsUtil.addHdfsResources(conf, confDir);
 
     String fsScheme = path.toUri().getScheme();

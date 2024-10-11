@@ -4,5 +4,5 @@ PyYAML~=6.0
 holidays~=0.16
 ics~=0.7.2
 console-menu~=0.7.1
-PyGithub~=1.56
+PyGithub~=2.1.1
 jira~=3.4.1

@@ -114,6 +114,7 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
 
     return solrJerseyResponse;
   }
+
   /**
    * Helper RuntimeException to allow passing checked exceptions to the caller of the handle method.
    */

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
@@ -40,13 +41,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for {@link ReplaceNodeAPI} */
+/** Unit tests for {@link ReplaceNode} */
 public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
   private CoreContainer mockCoreContainer;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
-  private MigrateReplicasAPI migrateReplicasAPI;
+  private MigrateReplicas migrateReplicasAPI;
   private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
   private ArgumentCaptor<ZkNodeProps> messageCapturer;
 
@@ -68,7 +69,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);
     queryResponse = new SolrQueryResponse();
-    migrateReplicasAPI = new MigrateReplicasAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    migrateReplicasAPI = new MigrateReplicas(mockCoreContainer, mockQueryRequest, queryResponse);
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
 
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
@@ -76,8 +77,8 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
-    MigrateReplicasAPI.MigrateReplicasRequestBody requestBody =
-        new MigrateReplicasAPI.MigrateReplicasRequestBody(
+    MigrateReplicasRequestBody requestBody =
+        new MigrateReplicasRequestBody(
             Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
     migrateReplicasAPI.migrateReplicas(requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
@@ -94,9 +95,8 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoTargetNodes() throws Exception {
-    MigrateReplicasAPI.MigrateReplicasRequestBody requestBody =
-        new MigrateReplicasAPI.MigrateReplicasRequestBody(
-            Set.of("demoSourceNode"), null, null, null);
+    MigrateReplicasRequestBody requestBody =
+        new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
     migrateReplicasAPI.migrateReplicas(requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
@@ -109,13 +109,12 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoSourceNodesThrowsError() throws Exception {
-    MigrateReplicasAPI.MigrateReplicasRequestBody requestBody1 =
-        new MigrateReplicasAPI.MigrateReplicasRequestBody(
+    MigrateReplicasRequestBody requestBody1 =
+        new MigrateReplicasRequestBody(
             Collections.emptySet(), Set.of("demoTargetNode"), null, null);
     assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody1));
-    MigrateReplicasAPI.MigrateReplicasRequestBody requestBody2 =
-        new MigrateReplicasAPI.MigrateReplicasRequestBody(
-            null, Set.of("demoTargetNode"), null, null);
+    MigrateReplicasRequestBody requestBody2 =
+        new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null, null);
     assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody2));
   }
 }

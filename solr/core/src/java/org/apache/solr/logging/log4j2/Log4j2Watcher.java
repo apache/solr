@@ -261,7 +261,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
   public void registerListener(ListenerConfig cfg) {
     if (history != null) throw new IllegalStateException("History already registered");
 
-    history = new CircularList<LogEvent>(cfg.size);
+    history = new CircularList<>(cfg.size);
 
     Level threshold = (cfg.threshold != null) ? Level.toLevel(cfg.threshold) : Level.WARN;
     ThresholdFilter filter =
@@ -279,11 +279,6 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
     config.addAppender(appender, threshold, filter);
     ctx.updateLoggers();
-  }
-
-  @Override
-  public long getTimestamp(LogEvent event) {
-    return event.getTimeMillis();
   }
 
   @Override

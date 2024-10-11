@@ -18,9 +18,9 @@
 package org.apache.solr.jersey;
 
 import com.codahale.metrics.Timer;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.container.ContainerRequestContext;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -35,7 +35,7 @@ import org.apache.solr.security.AuthorizationContext;
  * Keys used to store and retrieve values from the Jersey request context.
  *
  * <p>Properties are generally set in V2HttpCall's 'invokeJerseyRequest' and retrieved in individual
- * {@link javax.ws.rs.container.ContainerRequestFilter}s using {@link
+ * {@link jakarta.ws.rs.container.ContainerRequestFilter}s using {@link
  * ContainerRequestContext#getProperty(String)}
  */
 public interface RequestContextKeys {

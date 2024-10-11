@@ -162,6 +162,7 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
         req("fl", "id", "q", "sort_ar:[\u062F TO \u0698]", "sort", "id asc"),
         "//*[@numFound='0']");
   }
+
   /**
    * Test canonical decomposition with turkish primary strength. With this sort order, İ is the
    * uppercase form of i, and I is the uppercase form of ı. We index a decomposed form of İ.

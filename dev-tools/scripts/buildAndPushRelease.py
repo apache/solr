@@ -128,7 +128,7 @@ def prepare(root, version, pause_before_sign, mf_username, gpg_key_id, gpg_passw
   if dev_mode:
     cmd += ' -Pvalidation.git.failOnModified=false'
   if gpg_key_id is None:
-    cmd += ' -Psign=false -x signJarsPublication'  # Disable signing if no key provided to script
+    cmd += ' -Psign=false'  # Disable signing if no key provided to script
   else:
     cmd += ' -Psign --max-workers 2'
     if sign_gradle:

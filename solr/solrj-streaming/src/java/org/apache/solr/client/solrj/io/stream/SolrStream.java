@@ -41,6 +41,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -187,11 +188,10 @@ public class SolrStream extends TupleStream {
   /** Closes the Stream to a single Solr Instance */
   @Override
   public void close() throws IOException {
-    if (closeableHttpResponse != null) {
-      closeableHttpResponse.close();
-    }
+    IOUtils.closeQuietly(tupleStreamParser);
+    IOUtils.closeQuietly(closeableHttpResponse);
     if (doCloseCache) {
-      clientCache.close();
+      IOUtils.closeQuietly(clientCache);
     }
   }
 

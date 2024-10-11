@@ -47,7 +47,10 @@ public class ZookeeperStatusHandlerFailureTest extends SolrCloudTestCase {
   */
   @Test
   public void monitorZookeeperAfterZkShutdown()
-      throws IOException, SolrServerException, InterruptedException, ExecutionException,
+      throws IOException,
+          SolrServerException,
+          InterruptedException,
+          ExecutionException,
           TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();

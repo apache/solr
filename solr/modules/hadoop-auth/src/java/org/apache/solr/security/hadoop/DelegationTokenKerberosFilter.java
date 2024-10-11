@@ -16,10 +16,15 @@
  */
 package org.apache.solr.security.hadoop;
 
+import static org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecretManager.ZK_DTSM_ZNODE_WORKING_PATH;
+import static org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecretManager.ZK_DTSM_ZNODE_WORKING_PATH_DEAFULT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -41,6 +46,8 @@ import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
@@ -51,6 +58,7 @@ import org.apache.zookeeper.data.ACL;
  * reuse the authentication of an end-user or another application.
  */
 public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
+  private ExecutorService curatorSafeServiceExecutor;
   private CuratorFramework curatorFramework;
 
   @Override
@@ -62,7 +70,8 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       try {
         conf.getServletContext()
             .setAttribute(
-                "signer.secret.provider.zookeeper.curator.client", getCuratorClient(zkClient));
+                "signer.secret.provider.zookeeper.curator.client",
+                getCuratorClientInternal(conf, zkClient));
       } catch (InterruptedException | KeeperException e) {
         throw new ServletException(e);
       }
@@ -123,8 +132,14 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   @Override
   public void destroy() {
     super.destroy();
-    if (curatorFramework != null) curatorFramework.close();
-    curatorFramework = null;
+    if (curatorFramework != null) {
+      curatorFramework.close();
+      curatorFramework = null;
+    }
+    if (curatorSafeServiceExecutor != null) {
+      ExecutorUtil.shutdownNowAndAwaitTermination(curatorSafeServiceExecutor);
+      curatorSafeServiceExecutor = null;
+    }
   }
 
   @Override
@@ -139,6 +154,31 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     RequestContinuesRecorderAuthenticationHandler newAuthHandler =
         (RequestContinuesRecorderAuthenticationHandler) getAuthenticationHandler();
     newAuthHandler.setAuthHandler(authHandler);
+  }
+
+  private CuratorFramework getCuratorClientInternal(FilterConfig conf, SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    // There is a race condition where the znodeWorking path used by ZKDelegationTokenSecretManager
+    // can be created by multiple nodes, but Hadoop doesn't handle this well. This explicitly
+    // creates it up front and handles if the znode already exists. This relates to HADOOP-18452
+    // but didn't solve the underlying issue of the race condition.
+
+    // If namespace parents are implicitly created, they won't have ACLs.
+    // So, let's explicitly create them.
+    CuratorFramework curatorFramework = getCuratorClient(zkClient);
+    CuratorFramework nullNsFw = curatorFramework.usingNamespace(null);
+    try {
+      String znodeWorkingPath =
+          '/'
+              + Objects.requireNonNullElse(
+                  conf.getInitParameter(ZK_DTSM_ZNODE_WORKING_PATH),
+                  ZK_DTSM_ZNODE_WORKING_PATH_DEAFULT)
+              + "/ZKDTSMRoot";
+      nullNsFw.create().creatingParentContainersIfNeeded().forPath(znodeWorkingPath);
+    } catch (Exception ignore) {
+    }
+
+    return curatorFramework;
   }
 
   protected CuratorFramework getCuratorClient(SolrZkClient zkClient)
@@ -163,10 +203,12 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     try {
       zkClient.makePath(
           SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT, true);
-    } catch (KeeperException.NodeExistsException ex) {
-      // ignore?
+    } catch (KeeperException.NodeExistsException ignore) {
     }
 
+    curatorSafeServiceExecutor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("delegationtokenkerberosfilter-curator-safeService"));
     curatorFramework =
         CuratorFrameworkFactory.builder()
             .namespace(zkNamespace)
@@ -176,8 +218,10 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
             .authorization(curatorToSolrZk.getAuthInfos())
             .sessionTimeoutMs(zkClient.getZkClientTimeout())
             .connectionTimeoutMs(connectionTimeoutMs)
+            .runSafeService(curatorSafeServiceExecutor)
             .build();
     curatorFramework.start();
+
     return curatorFramework;
   }
 

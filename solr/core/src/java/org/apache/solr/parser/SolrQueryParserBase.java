@@ -126,6 +126,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   // the nested class:
   /** Alternative form of QueryParser.Operator.AND */
   public static final Operator AND_OPERATOR = Operator.AND;
+
   /** Alternative form of QueryParser.Operator.OR */
   public static final Operator OR_OPERATOR = Operator.OR;
 
@@ -230,6 +231,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected SolrQueryParserBase() {
     super(null);
   }
+
   // the generated parser will create these in QueryParser
   public abstract void ReInit(CharStream stream);
 
@@ -288,6 +290,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   protected String explicitField;
+
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
@@ -1254,6 +1257,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     SchemaField sf = schema.getField(field);
     return sf.getType().getRangeQuery(parser, sf, part1, part2, startInclusive, endInclusive);
   }
+
   // called from parser
   protected Query getPrefixQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
@@ -1264,6 +1268,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // scoring by default.
     return newPrefixQuery(new Term(field, termStr));
   }
+
   // called from parser
   protected Query getExistenceQuery(String field) {
     checkNullField(field);

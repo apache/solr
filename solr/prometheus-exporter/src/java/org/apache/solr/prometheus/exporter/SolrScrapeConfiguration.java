@@ -17,6 +17,7 @@
 
 package org.apache.solr.prometheus.exporter;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class SolrScrapeConfiguration {
@@ -26,9 +27,33 @@ public class SolrScrapeConfiguration {
     STANDALONE
   }
 
+  public static class SslConfiguration {
+
+    public final Path keystorePath;
+    public final String keystorePassword;
+    public final Path trustStorePath;
+    public final String trustStorePassword;
+
+    public SslConfiguration(
+        Path keystorePath,
+        String keystorePassword,
+        Path trustStorePath,
+        String trustStorePassword) {
+      this.keystorePath = keystorePath;
+      this.keystorePassword = keystorePassword;
+      this.trustStorePath = trustStorePath;
+      this.trustStorePassword = trustStorePassword;
+    }
+  }
+
   private final ConnectionType type;
   private final String zookeeperConnectionString;
   private final String solrHost;
+  private String basicAuthUser;
+  private String basicAuthPwd;
+
+  private boolean sslEnabled = false;
+  private SslConfiguration sslConfiguration;
 
   private SolrScrapeConfiguration(
       ConnectionType type, String zookeeperConnectionString, String solrHost) {
@@ -55,6 +80,36 @@ public class SolrScrapeConfiguration {
 
   public static SolrScrapeConfiguration standalone(String solrHost) {
     return new SolrScrapeConfiguration(ConnectionType.STANDALONE, null, solrHost);
+  }
+
+  public SolrScrapeConfiguration withBasicAuthCredentials(String user, String password) {
+    this.basicAuthUser = user;
+    this.basicAuthPwd = password;
+    return this;
+  }
+
+  public String getBasicAuthUser() {
+    return basicAuthUser;
+  }
+
+  public String getBasicAuthPwd() {
+    return basicAuthPwd;
+  }
+
+  public SolrScrapeConfiguration withSslConfiguration(
+      Path keystorePath, String keystorePassword, Path trustStorePath, String trustStorePassword) {
+    this.sslEnabled = true;
+    this.sslConfiguration =
+        new SslConfiguration(keystorePath, keystorePassword, trustStorePath, trustStorePassword);
+    return this;
+  }
+
+  public boolean isSSLEnabled() {
+    return this.sslEnabled;
+  }
+
+  public SslConfiguration getSslConfiguration() {
+    return sslConfiguration;
   }
 
   @Override

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -64,8 +65,20 @@ public final class ReplicationTestHelper {
     return jetty;
   }
 
+  /**
+   * @param baseUrl the root URL for a Solr node
+   */
   public static SolrClient createNewSolrClient(String baseUrl) {
+    return createNewSolrClient(baseUrl, null);
+  }
+
+  /**
+   * @param baseUrl the root URL for a Solr node
+   * @param collectionOrCore an optional default collection/core for the created client
+   */
+  public static SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
     return new HttpSolrClient.Builder(baseUrl)
+        .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .build();
@@ -91,7 +104,8 @@ public final class ReplicationTestHelper {
         if (null != port) {
           line = line.replace("TEST_PORT", port.toString());
         }
-        line = line.replace("COMPRESSION", internalCompression ? "internal" : "false");
+        String externalCompression = LuceneTestCase.random().nextBoolean() ? "external" : "false";
+        line = line.replace("COMPRESSION", internalCompression ? "internal" : externalCompression);
         out.write(line);
       }
     }
@@ -143,7 +157,7 @@ public final class ReplicationTestHelper {
     // String leaderUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME +
     // ReplicationHandler.PATH+"?command=" + pCommand;
     String url = baseUrl + ReplicationHandler.PATH + "?command=" + pCommand;
-    URL u = new URL(url);
+    URL u = URI.create(url).toURL();
     InputStream stream = u.openStream();
     stream.close();
   }
@@ -214,7 +228,7 @@ public final class ReplicationTestHelper {
             + "?wait=true&command=fetchindex&leaderUrl="
             + srcUrl
             + ReplicationHandler.PATH;
-    url = new URL(leaderUrl);
+    url = URI.create(leaderUrl).toURL();
     stream = url.openStream();
     stream.close();
   }

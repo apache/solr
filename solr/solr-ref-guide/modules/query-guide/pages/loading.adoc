@@ -174,7 +174,7 @@ data to a SolrCloud collection for indexing.
 The `update` function adds documents to Solr in batches and returns a tuple for each batch with summary information about the batch and load.
 
 In the example below the `update` expression is run using Zeppelin-Solr because the data set is small.
-For larger loads it's best to run the load from a curl command where the output of the `update` function can be spooled to disk.
+For larger loads, it's best to run the load from a curl command where the output of the `update` function can be spooled to disk.
 
 image::math-expressions/update.png[]
 
@@ -378,7 +378,7 @@ image::math-expressions/havingId.png[]
 ==== Skipping
 
 The `gt` (greater than) function can be used on the `recNum` field to filter the result set to
-records with a recNum greater then a specific value:
+records with a recNum greater than a specific value:
 
 image::math-expressions/skipping.png[]
 

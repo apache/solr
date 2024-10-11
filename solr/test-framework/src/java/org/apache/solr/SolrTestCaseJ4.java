@@ -100,6 +100,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -109,7 +110,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -120,7 +120,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -150,7 +149,6 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -225,7 +223,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
+        assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }
@@ -286,7 +284,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "1");
 
-    System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
     System.setProperty("solr.zookeeper.connectionStrategy", TestConnectionStrategy.class.getName());
@@ -335,10 +332,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
-      ObjectReleaseTracker.clear();
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
@@ -369,17 +364,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_1 = "[::1]:4";
+  public static final String DEAD_HOST_1 = "127.0.0.1:4";
+
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_2 = "[::1]:6";
+  public static final String DEAD_HOST_2 = "127.0.0.1:6";
+
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_3 = "[::1]:8";
+  public static final String DEAD_HOST_3 = "127.0.0.1:8";
 
   /**
    * Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if
@@ -437,6 +434,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean changedFactory = false;
   private static String savedFactory;
+
   /** Use a different directory factory. Passing "null" sets to an FS-based factory */
   public static void useFactory(String factory) throws Exception {
     // allow calling more than once so a subclass can override a base class
@@ -488,10 +486,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           sslRandomizer.debug);
     }
     return result;
-  }
-
-  protected static JettyConfig buildJettyConfig() {
-    return JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
 
   protected static String buildUrl(final int port) {
@@ -601,6 +595,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     return dataDir;
   }
+
   /**
    * Counter for ensuring we don't ask {@link #createTempDir} to try and re-create the same dir
    * prefix over and over.
@@ -772,10 +767,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     log.info("####initCore");
 
     ignoreException("ignore_exception");
-    factoryProp = System.getProperty("solr.directoryFactory");
-    if (factoryProp == null) {
-      System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-    }
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -1026,6 +1017,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static String assertJQ(SolrQueryRequest req, String... tests) throws Exception {
     return assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
   }
+
   /**
    * Validates a query matches some JSON test expressions and closes the query. The text expression
    * is of the form path:JSON. The Noggit JSON parser used accepts single quoted strings and bare
@@ -1124,6 +1116,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       unIgnoreException(".");
     }
   }
+
   /**
    * Makes sure a query throws a SolrException with the listed response code and expected message
    *
@@ -1164,6 +1157,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static String optimize(String... args) {
     return TestHarness.optimize(args);
   }
+
   /**
    * @see TestHarness#commit
    */
@@ -1246,6 +1240,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static String delI(String id) {
     return TestHarness.deleteById(id);
   }
+
   /**
    * Generates a &lt;delete&gt;... XML string for an query
    *
@@ -2161,7 +2156,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return file;
     }
     throw new RuntimeException(
-        "Cannot find resource in classpath or in file-system (relative to CWD): " + name);
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + new File(name).getAbsolutePath());
   }
 
   public static String TEST_HOME() {
@@ -2286,6 +2282,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.createDirectories(dstRoot.toPath());
     Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
   }
+
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
@@ -2633,7 +2630,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /** This method creates a HttpClient from a URL. */
+  /**
+   * This method creates a HttpClient from a URL.
+   *
+   * <p><b>WARNING:</b> if you use this method, the <code>HttpClient</code> returned is tracked by
+   * <code>ObjectReleaseTracker</code>. Your test will fail if you do not pass the <code>HttpClient
+   * </code> to {@link HttpClientUtil#close(HttpClient)} when you are done with it.
+   */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
     return new HttpSolrClient.Builder(url).build().getHttpClient();
@@ -2642,9 +2645,28 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   *
+   * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new HttpSolrClient.Builder(url).build();
+  }
+
+  /** Create a basic HttpSolrClient pointed at the specified replica */
+  public static HttpSolrClient getHttpSolrClient(Replica replica) {
+    return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
+  }
+
+  /**
+   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
+   * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   *
+   * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
+   * @param defaultCoreName the name of a core that the created client should default to when making
+   *     core-aware requests
+   */
+  public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
+    return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**

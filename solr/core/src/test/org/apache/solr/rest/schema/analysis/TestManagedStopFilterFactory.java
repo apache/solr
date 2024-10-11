@@ -191,6 +191,18 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
     // should fail with 404 as foo doesn't exist
     assertJDelete(endpoint + "/foo", "/error/code==404");
+
+    // test for SOLR-6853 - should be able to delete stopwords with slash
+    assertJPut(
+        endpoint,
+        Utils.toJSONString(Arrays.asList("cheerful/joyful", "sleepy/tired")),
+        "/responseHeader/status==0");
+
+    // verify delete works
+    assertJDelete(endpoint + "/cheerful/joyful", "/responseHeader/status==0");
+
+    // should fail with 404 as some/thing doesn't exist
+    assertJDelete(endpoint + "/cheerful/joyful", "/error/code==404");
   }
 
   /** Can we add and remove stopwords with umlauts */

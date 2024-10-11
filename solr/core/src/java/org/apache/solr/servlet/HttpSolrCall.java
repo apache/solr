@@ -37,8 +37,8 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,9 +49,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
@@ -139,19 +141,6 @@ public class HttpSolrCall {
 
   public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
 
-  public static final Random random;
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      random = new Random();
-    } else {
-      random = new Random(seed.hashCode());
-    }
-  }
-
   protected final SolrDispatchFilter solrDispatchFilter;
   protected final CoreContainer cores;
   protected final HttpServletRequest req;
@@ -229,13 +218,6 @@ public class HttpSolrCall {
 
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
 
-    // unused feature ?
-    int idx = path.indexOf(':');
-    if (idx > 0) {
-      // save the portion after the ':' for a 'handler' path parameter
-      path = path.substring(0, idx);
-    }
-
     // Check for container handlers
     handler = cores.getRequestHandler(path);
     if (handler != null) {
@@ -247,7 +229,7 @@ public class HttpSolrCall {
     }
 
     // Parse a core or collection name from the path and attempt to see if it's a core name
-    idx = path.indexOf('/', 1);
+    int idx = path.indexOf('/', 1);
     if (idx > 1) {
       origCorename = path.substring(1, idx);
 
@@ -342,6 +324,40 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
+  }
+
+  /**
+   * Resolves the specified collection name to a {@link DocCollection} object. If Solr is not in
+   * cloud mode, a {@link SolrException} is thrown. Returns null if the collection name is null or
+   * empty. Retrieves the {@link DocCollection} using the {@link ZkStateReader} from {@link
+   * CoreContainer}. If the collection is null, updates the state by refreshing aliases and forcing
+   * a collection update.
+   */
+  protected DocCollection resolveDocCollection(String collectionName) {
+    if (!cores.isZooKeeperAware()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
+    }
+    if (collectionName == null || collectionName.trim().isEmpty()) {
+      return null;
+    }
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+    Supplier<DocCollection> logic =
+        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+
+    DocCollection docCollection = logic.get();
+    if (docCollection != null) {
+      return docCollection;
+    }
+    // ensure our view is up to date before trying again
+    try {
+      zkStateReader.aliasesManager.update();
+      zkStateReader.forceUpdateCollection(collectionName);
+    } catch (Exception e) {
+      log.error("Error trying to update state while resolving collection.", e);
+      // don't propagate exception on purpose
+    }
+    return logic.get();
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
@@ -449,7 +465,7 @@ public class HttpSolrCall {
   }
 
   protected void extractRemotePath(String collectionName, String origCorename)
-      throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException {
+      throws KeeperException, InterruptedException, SolrException {
     assert core == null;
     coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
@@ -460,7 +476,7 @@ public class HttpSolrCall {
         // it does not make sense to send the request to a remote node
         throw new SolrException(
             SolrException.ErrorCode.INVALID_STATE,
-            new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
+            new String(Utils.toJSON(invalidStates), StandardCharsets.UTF_8));
       }
       action = REMOTEQUERY;
     } else {
@@ -637,10 +653,7 @@ public class HttpSolrCall {
   // called after init().
   protected void populateTracingSpan(Span span) {
     // Set db.instance
-    String coreOrColName = HttpSolrCall.this.origCorename;
-    if (coreOrColName == null && getCore() != null) {
-      coreOrColName = getCore().getName();
-    }
+    String coreOrColName = getCoreOrColName();
     TraceUtils.setDbInstance(span, coreOrColName);
 
     // Set operation name.
@@ -656,6 +669,14 @@ public class HttpSolrCall {
     String verb =
         getQueryParams().get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
     span.updateName(verb + ":" + path);
+  }
+
+  protected String getCoreOrColName() {
+    String coreOrColName = HttpSolrCall.this.origCorename;
+    if (coreOrColName == null && getCore() != null) {
+      coreOrColName = getCore().getName();
+    }
+    return coreOrColName;
   }
 
   public boolean shouldAudit() {
@@ -837,7 +858,12 @@ public class HttpSolrCall {
       try {
         if (exp != null) {
           SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          int code =
+              ResponseUtils.getErrorInfo(
+                  ex,
+                  info,
+                  log,
+                  localCore != null && localCore.getCoreContainer().hideStackTrace());
           sendError(code, info.toString());
         }
       } finally {
@@ -971,7 +997,12 @@ public class HttpSolrCall {
 
       if (solrRsp.getException() != null) {
         NamedList<Object> info = new SimpleOrderedMap<>();
-        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
+        int code =
+            ResponseUtils.getErrorInfo(
+                solrRsp.getException(),
+                info,
+                log,
+                core != null && core.getCoreContainer().hideStackTrace());
         solrRsp.add("error", info);
         response.setStatus(code);
       }
@@ -1014,15 +1045,21 @@ public class HttpSolrCall {
     return result;
   }
 
+  /**
+   * Retrieves a SolrCore instance associated with the specified collection name, with an option to
+   * prefer leader replicas. Makes a call to {@link #resolveDocCollection} which make an attempt to
+   * force update collection if it is not found in local cluster state
+   */
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-
     ClusterState clusterState = zkStateReader.getClusterState();
-    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
+    DocCollection collection = resolveDocCollection(collectionName);
+    // the usage of getCoreByCollection assumes that if null is returned, collection is found, but
+    // replicas might not
+    // have been created. Hence returning null here would be misleading...
     if (collection == null) {
       return null;
     }
-
     Set<String> liveNodes = clusterState.getLiveNodes();
 
     if (isPreferLeader) {
@@ -1038,7 +1075,7 @@ public class HttpSolrCall {
 
   private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas) {
     if (replicas != null) {
-      RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
+      RandomIterator<Replica> it = new RandomIterator<>(Utils.RANDOM, replicas);
       while (it.hasNext()) {
         Replica replica = it.next();
         if (liveNodes.contains(replica.getNodeName())
@@ -1143,22 +1180,22 @@ public class HttpSolrCall {
       boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    Collections.shuffle(slices, random);
+    Collections.shuffle(slices, Utils.RANDOM);
 
     for (Slice slice : slices) {
       List<Replica> randomizedReplicas = new ArrayList<>(slice.getReplicas());
-      Collections.shuffle(randomizedReplicas, random);
+      Collections.shuffle(randomizedReplicas, Utils.RANDOM);
 
       for (Replica replica : randomizedReplicas) {
         if (!activeReplicas
             || (liveNodes.contains(replica.getNodeName())
                 && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && !Objects.equals(origCorename, replica.getStr(CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
+          if (Objects.equals(replica.getBaseUrl(), cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }

@@ -47,12 +47,17 @@ Docker Image Repository:
    Gradle Property: -Psolr.docker.imageRepo
 
 Docker Image Tag:
-   Default: the Solr version, e.g. "9.0.0-SNAPSHOT"
+   Default: the Solr version and distribution (if applicable), e.g. "9.0.0-SNAPSHOT" or "9.5.0-SNAPSHOT-slim"
    EnvVar: SOLR_DOCKER_IMAGE_TAG
    Gradle Property: -Psolr.docker.imageTag
 
+Docker Image Tag Suffix:
+   Default: None. Example: "-java21"
+   EnvVar: SOLR_DOCKER_IMAGE_TAG_SUFFIX
+   Gradle Property: -Psolr.docker.imageTagSuffix
+
 Docker Image Name: (Use this to explicitly set a whole image name. If given, the image repo and image version options above are ignored.)
-   Default: {image_repo}/{image_tag} (both options provided above, with defaults)
+   Default: {image_repo}/{image_tag}{image_tag_suffix} (all options provided above, with defaults)
    EnvVar: SOLR_DOCKER_IMAGE_NAME
    Gradle Property: -Psolr.docker.imageName
 

@@ -26,14 +26,17 @@ public class SpellingOptions {
 
   /** The tokens to spell check */
   public Collection<Token> tokens;
+
   /** An optional {@link org.apache.lucene.index.IndexReader} */
   public IndexReader reader;
+
   /** The number of suggestions to return, if there are any. Defaults to 1. */
   public int count = 1;
 
   public int alternativeTermCount = 0;
 
   public SuggestMode suggestMode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
+
   /** Provide additional, per implementation, information about the results */
   public boolean extendedResults;
 

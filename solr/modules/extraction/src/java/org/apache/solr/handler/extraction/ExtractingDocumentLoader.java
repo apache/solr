@@ -65,8 +65,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   /** Extract Only supported format */
   public static final String TEXT_FORMAT = "text";
+
   /** Extract Only supported format. Default */
   public static final String XML_FORMAT = "xml";
+
   /** XHTML XPath parser. */
   private static final XPathParser PARSER = new XPathParser("xhtml", XHTMLContentHandler.XHTML);
 
@@ -215,14 +217,17 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           }
           parser.parse(inputStream, parsingHandler, metadata, context);
         } catch (TikaException e) {
-          if (ignoreTikaException)
-            log.warn(
-                new StringBuilder("skip extracting text due to ")
-                    .append(e.getLocalizedMessage())
-                    .append(". metadata=")
-                    .append(metadata.toString())
-                    .toString()); // nowarn
-          else throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          if (ignoreTikaException) {
+            if (log.isWarnEnabled()) {
+              log.warn(
+                  "skip extracting text due to {}. metadata={}",
+                  e.getLocalizedMessage(),
+                  metadata,
+                  e);
+            }
+          } else {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
         }
         if (extractOnly == false) {
           addDoc(handler);

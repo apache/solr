@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -65,7 +66,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    cluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig());
+    cluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
 
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + CHECKPOINT_COLL;
 
@@ -222,6 +223,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
             + daemonName
             + "' did not become RUNNABLE, WAITING or TIMED_WAITING in 10 seconds");
   }
+
   // There can be some delay while threads stabilize, so we need to loop. Eventually, the status of
   // a
   // stopped thread should be "TERMINATED"

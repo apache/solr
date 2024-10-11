@@ -22,10 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,17 +56,7 @@ public class ModuleUtils {
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
-    // Fall back to sysprop and env.var if nothing configured through solr.xml
-    Set<String> mods = new HashSet<>();
-    String modulesFromProps = System.getProperty("solr.modules");
-    if (StrUtils.isNotNullOrEmpty(modulesFromProps)) {
-      mods.addAll(StrUtils.splitSmart(modulesFromProps, ',', true));
-    }
-    String modulesFromEnv = System.getenv("SOLR_MODULES");
-    if (StrUtils.isNotNullOrEmpty(modulesFromEnv)) {
-      mods.addAll(StrUtils.splitSmart(modulesFromEnv, ',', true));
-    }
-    return mods.stream().map(String::trim).collect(Collectors.toSet());
+    return Set.copyOf(EnvUtils.getPropertyAsList("solr.modules", Collections.emptyList()));
   }
 
   /** Returns true if a module name is valid and exists in the system */

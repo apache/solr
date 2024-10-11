@@ -47,7 +47,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ModuleUtils;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -288,7 +287,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               () -> {
                 cores.unload("non_existent_core");
               });
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getMessage(),
           containsString("Cannot unload non-existent core [non_existent_core]"));
 
@@ -299,8 +298,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               () -> {
                 cores.unload(null);
               });
-      MatcherAssert.assertThat(
-          thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
+      assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
     } finally {
       cores.shutdown();
     }
@@ -334,16 +332,16 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     try {
       cc.load();
-      MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(1));
-      MatcherAssert.assertThat(
+      assertThat(cc.getCoreInitFailures().size(), is(1));
+      assertThat(
           cc.getCoreInitFailures().get("badcore").exception.getMessage(),
           containsString("nosuchconfigset"));
       cc.unload("badcore", true, true, true);
-      MatcherAssert.assertThat(cc.getCoreInitFailures().size(), is(0));
+      assertThat(cc.getCoreInitFailures().size(), is(0));
 
       // can we create the core now with a good config?
       SolrCore core = cc.create("badcore", Map.of("configSet", "minimal"));
-      MatcherAssert.assertThat(core, not(nullValue()));
+      assertThat(core, not(nullValue()));
 
     } finally {
       cc.shutdown();
@@ -570,14 +568,14 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public void copyConfig(String fromConfig, String toConfig) {}
 
     @Override
-    public void uploadConfig(String configName, Path dir) {}
+    protected void uploadConfig(String configName, Path dir) {}
 
     @Override
     public void uploadFileToConfig(
         String configName, String fileName, byte[] data, boolean overwriteOnExists) {}
 
     @Override
-    public void setConfigMetadata(String configName, Map<String, Object> data) {}
+    protected void setConfigMetadata(String configName, Map<String, Object> data) {}
 
     @Override
     public Map<String, Object> getConfigMetadata(String configName) {
@@ -749,11 +747,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     CoreContainer cc = init(CUSTOM_HANDLERS_SOLR_XML);
     try {
-      MatcherAssert.assertThat(
-          cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
-      MatcherAssert.assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
-      MatcherAssert.assertThat(
-          cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
+      assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
+      assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
+      assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
     } finally {
       cc.shutdown();
     }
@@ -763,10 +759,48 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testCustomConfigSetService() throws Exception {
     CoreContainer cc = init(CUSTOM_CONFIG_SET_SERVICE_SOLR_XML);
     try {
-      MatcherAssert.assertThat(
-          cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
+      assertThat(cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
     } finally {
       cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testDefaultCoresLocator() throws Exception {
+    String solrXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><solr></solr>";
+    CoreContainer cc = init(solrXml);
+    try {
+      assertTrue(cc.getCoresLocator() instanceof CorePropertiesLocator);
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testCustomCoresLocator() throws Exception {
+    String solrXml =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+            + "<solr>\n"
+            + "<str name=\"coresLocator\">org.apache.solr.core.TestCoreContainer$CustomCoresLocator</str>\n"
+            + "</solr>";
+    CoreContainer cc = init(solrXml);
+    try {
+      assertTrue(cc.getCoresLocator() instanceof CustomCoresLocator);
+      assertSame(cc.getNodeConfig(), ((CustomCoresLocator) cc.getCoresLocator()).getNodeConfig());
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  public static class CustomCoresLocator extends MockCoresLocator {
+    private final NodeConfig nodeConfig;
+
+    public CustomCoresLocator(NodeConfig nodeConfig) {
+      this.nodeConfig = nodeConfig;
+    }
+
+    public NodeConfig getNodeConfig() {
+      return nodeConfig;
     }
   }
 
@@ -798,6 +832,29 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
       return cores;
+    }
+
+    @Override
+    public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+      return cd;
+    }
+  }
+
+  @Test
+  public void testCustomCoreSorter() throws Exception {
+    String solrXml =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+            + "<solr>\n"
+            + "<str name=\"coreSorter\">org.apache.solr.core.TestCoreContainer$CustomCoreSorter</str>\n"
+            + "</solr>";
+    CoreContainer cc = init(solrXml);
+    assertTrue(cc.getCoreSorter() instanceof CustomCoreSorter);
+    cc.shutdown();
+  }
+
+  public static class CustomCoreSorter extends CoreSorter {
+    public CustomCoreSorter(CoreContainer cc) {
+      super(cc);
     }
   }
 

@@ -415,7 +415,7 @@ public class SolrMetricManager {
     for (String pattern : patterns) {
       compiled.add(Pattern.compile(pattern));
     }
-    return registryNames(compiled.toArray(new Pattern[compiled.size()]));
+    return registryNames(compiled.toArray(new Pattern[0]));
   }
 
   public Set<String> registryNames(Pattern... patterns) {
@@ -897,7 +897,7 @@ public class SolrMetricManager {
     if (name.startsWith(REGISTRY_NAME_PREFIX)) {
       return name;
     } else {
-      return new StringBuilder(REGISTRY_NAME_PREFIX).append(name).toString();
+      return REGISTRY_NAME_PREFIX + name;
     }
   }
 
@@ -912,8 +912,7 @@ public class SolrMetricManager {
    */
   public static String getRegistryName(SolrInfoBean.Group group, String... names) {
     String fullName;
-    String prefix =
-        new StringBuilder(REGISTRY_NAME_PREFIX).append(group.name()).append('.').toString();
+    String prefix = REGISTRY_NAME_PREFIX + group.name() + '.';
     // check for existing prefix and group
     if (names != null && names.length > 0 && names[0] != null && names[0].startsWith(prefix)) {
       // assume the first segment already was expanded

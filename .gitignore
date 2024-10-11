@@ -11,8 +11,6 @@ build/
 **/*.ipr
 **/*.iws
 out/
-#    IntelliJ creates this folder, ignore.
-/dev-tools/missing-doclet/out/
 
 # Eclipse
 **/.project
@@ -24,9 +22,6 @@ out/
 
 .editorconfig
 
-# syncthing
-.stignore
-
 # macOS
 .DS_Store
 
@@ -34,12 +29,13 @@ out/
 .pydevproject
 __pycache__
 
-# Emacs backup
-*~
-
 # Ignore lucene included build
 /lucene
 
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar
 .gradletasknamecache
+
+# WANT TO ADD MORE?  You can tell Git without adding to this file:
+# See https://git-scm.com/docs/gitignore
+# In particular, if you have tools you use, add to $GIT_DIR/info/exclude or use core.excludesFile

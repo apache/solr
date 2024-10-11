@@ -23,25 +23,22 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
 /**
  * LBHttp2SolrClient or "LoadBalanced LBHttp2SolrClient" is a load balancing wrapper around {@link
- * Http2SolrClient}. This is useful when you have multiple Solr servers and the requests need to be
+ * Http2SolrClient}. This is useful when you have multiple Solr endpoints and requests need to be
  * Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
@@ -54,24 +51,40 @@ import org.slf4j.MDC;
  * <p>It offers automatic failover when a server goes down, and it detects when the server comes
  * back up.
  *
- * <p>Load balancing is done using a simple round-robin on the list of servers.
- *
- * <p>If a request to a server fails by an IOException due to a connection timeout or read timeout
- * then the host is taken off the list of live servers and moved to a 'dead server list' and the
- * request is resent to the next live server. This process is continued till it tries all the live
- * servers. If at least one server is alive, the request succeeds, and if not it fails.
+ * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
+ * expected to point to the Solr "root" path (i.e. "/solr").
  *
  * <blockquote>
  *
  * <pre>
- * SolrClient lbHttp2SolrClient = new LBHttp2SolrClient(http2SolrClient, "http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
+ *     .build();
  * </pre>
  *
  * </blockquote>
  *
- * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link
- * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one
+ * Users who wish to balance traffic across a specific set of replicas or cores may specify each
+ * endpoint as a root-URL and core-name pair. For example:
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
+ *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
+ * and the request is resent to the next live endpoint. This process is continued till it tries all
+ * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
+ *
+ * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@link
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)}. The default is set to one
  * minute.
  *
  * <p><b>When to use this?</b><br>
@@ -80,19 +93,20 @@ import org.slf4j.MDC;
  * httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
  *
- * @lucene.experimental
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient solrClient;
 
-  private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
-    super(baseSolrUrls);
-    this.solrClient = solrClient;
+  private LBHttp2SolrClient(Builder builder) {
+    super(Arrays.asList(builder.solrEndpoints));
+    this.solrClient = builder.http2SolrClient;
+    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   @Override
-  protected SolrClient getClient(String baseUrl) {
+  protected SolrClient getClient(Endpoint endpoint) {
     return solrClient;
   }
 
@@ -110,71 +124,74 @@ public class LBHttp2SolrClient extends LBSolrClient {
     return solrClient.getUrlParamNames();
   }
 
-  public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
+  /**
+   * Execute an asynchronous request against one or more hosts for a given collection. The passed-in
+   * Req object includes a List of Endpoints. This method always begins with the first Endpoint in
+   * the list and if unsuccessful tries each in turn until the request is successful. Consequently,
+   * this method does not actually Load Balance. It is up to the caller to shuffle the List of
+   * Endpoints if Load Balancing is desired.
+   *
+   * @param req the wrapped request to perform
+   * @return a {@link CompletableFuture} that tracks the progress of the async request.
+   */
+  public CompletableFuture<Rsp> requestAsync(Req req) {
+    CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
     Rsp rsp = new Rsp();
     boolean isNonRetryable =
         req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    ServerIterator it = new ServerIterator(req, zombieServers);
-    asyncListener.onStart();
-    final AtomicBoolean cancelled = new AtomicBoolean(false);
-    AtomicReference<Cancellable> currentCancellable = new AtomicReference<>();
+    EndpointIterator it = new EndpointIterator(req, zombieServers);
+    AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     RetryListener retryListener =
         new RetryListener() {
 
           @Override
           public void onSuccess(Rsp rsp) {
-            asyncListener.onSuccess(rsp);
+            apiFuture.complete(rsp);
           }
 
           @Override
           public void onFailure(Exception e, boolean retryReq) {
             if (retryReq) {
-              String url;
+              Endpoint url;
               try {
                 url = it.nextOrError(e);
               } catch (SolrServerException ex) {
-                asyncListener.onFailure(e);
+                apiFuture.completeExceptionally(e);
                 return;
               }
-              try {
-                MDC.put("LBSolrClient.url", url);
-                synchronized (cancelled) {
-                  if (cancelled.get()) {
-                    return;
-                  }
-                  Cancellable cancellable =
-                      doRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
-                  currentCancellable.set(cancellable);
-                }
-              } finally {
-                MDC.remove("LBSolrClient.url");
+              MDC.put("LBSolrClient.url", url.toString());
+              if (!apiFuture.isCancelled()) {
+                CompletableFuture<NamedList<Object>> future =
+                    doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+                currentFuture.set(future);
               }
             } else {
-              asyncListener.onFailure(e);
+              apiFuture.completeExceptionally(e);
             }
           }
         };
     try {
-      Cancellable cancellable =
-          doRequest(
+      CompletableFuture<NamedList<Object>> future =
+          doAsyncRequest(
               it.nextOrError(),
               req,
               rsp,
               isNonRetryable,
               it.isServingZombieServer(),
               retryListener);
-      currentCancellable.set(cancellable);
+      currentFuture.set(future);
     } catch (SolrServerException e) {
-      asyncListener.onFailure(e);
+      apiFuture.completeExceptionally(e);
+      return apiFuture;
     }
-    return () -> {
-      synchronized (cancelled) {
-        cancelled.set(true);
-        if (currentCancellable.get() != null) {
-          currentCancellable.get().cancel();
-        }
-      }
-    };
+    apiFuture.exceptionally(
+        (error) -> {
+          if (apiFuture.isCancelled()) {
+            currentFuture.get().cancel(true);
+          }
+          return null;
+        });
+    return apiFuture;
   }
 
   private interface RetryListener {
@@ -183,85 +200,101 @@ public class LBHttp2SolrClient extends LBSolrClient {
     void onFailure(Exception e, boolean retryReq);
   }
 
-  private Cancellable doRequest(
-      String baseUrl,
+  private CompletableFuture<NamedList<Object>> doAsyncRequest(
+      Endpoint endpoint,
       Req req,
       Rsp rsp,
       boolean isNonRetryable,
       boolean isZombie,
       RetryListener listener) {
+    String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    return ((Http2SolrClient) getClient(baseUrl))
-        .asyncRequest(
-            req.getRequest(),
-            null,
-            new AsyncListener<>() {
-              @Override
-              public void onSuccess(NamedList<Object> result) {
-                rsp.rsp = result;
-                if (isZombie) {
-                  zombieServers.remove(baseUrl);
-                }
-                listener.onSuccess(rsp);
-              }
+    CompletableFuture<NamedList<Object>> future =
+        ((Http2SolrClient) getClient(endpoint)).requestAsync(req.getRequest());
+    future.whenComplete(
+        (result, throwable) -> {
+          if (!future.isCompletedExceptionally()) {
+            onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
+          } else if (!future.isCancelled()) {
+            onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
+          }
+        });
+    return future;
+  }
 
-              @Override
-              public void onFailure(Throwable oe) {
-                try {
-                  throw (Exception) oe;
-                } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-                  listener.onFailure(e, false);
-                } catch (SolrException e) {
-                  // we retry on 404 or 403 or 503 or 500
-                  // unless it's an update - then we only retry on connect exception
-                  if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-                  } else {
-                    // Server is alive but the request was likely malformed or invalid
-                    if (isZombie) {
-                      zombieServers.remove(baseUrl);
-                    }
-                    listener.onFailure(e, false);
-                  }
-                } catch (SocketException e) {
-                  if (!isNonRetryable || e instanceof ConnectException) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-                  } else {
-                    listener.onFailure(e, false);
-                  }
-                } catch (SocketTimeoutException e) {
-                  if (!isNonRetryable) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-                  } else {
-                    listener.onFailure(e, false);
-                  }
-                } catch (SolrServerException e) {
-                  Throwable rootCause = e.getRootCause();
-                  if (!isNonRetryable && rootCause instanceof IOException) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-                  } else if (isNonRetryable && rootCause instanceof ConnectException) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-                  } else {
-                    listener.onFailure(e, false);
-                  }
-                } catch (Exception e) {
-                  listener.onFailure(new SolrServerException(e), false);
-                }
-              }
-            });
+  private void onSuccessfulRequest(
+      NamedList<Object> result,
+      Endpoint endpoint,
+      Rsp rsp,
+      boolean isZombie,
+      RetryListener listener) {
+    rsp.rsp = result;
+    if (isZombie) {
+      zombieServers.remove(endpoint.toString());
+    }
+    listener.onSuccess(rsp);
+  }
+
+  private void onFailedRequest(
+      Throwable oe,
+      Endpoint endpoint,
+      boolean isNonRetryable,
+      boolean isZombie,
+      RetryListener listener) {
+    try {
+      throw (Exception) oe;
+    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+      listener.onFailure(e, false);
+    } catch (SolrException e) {
+      // we retry on 404 or 403 or 503 or 500
+      // unless it's an update - then we only retry on connect exception
+      if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        // Server is alive but the request was likely malformed or invalid
+        if (isZombie) {
+          zombieServers.remove(endpoint.toString());
+        }
+        listener.onFailure(e, false);
+      }
+    } catch (SocketException e) {
+      if (!isNonRetryable || e instanceof ConnectException) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (SocketTimeoutException e) {
+      if (!isNonRetryable) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (SolrServerException e) {
+      Throwable rootCause = e.getRootCause();
+      if (!isNonRetryable && rootCause instanceof IOException) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else if (isNonRetryable && rootCause instanceof ConnectException) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (Exception e) {
+      listener.onFailure(new SolrServerException(e), false);
+    }
   }
 
   public static class Builder {
 
     private final Http2SolrClient http2SolrClient;
-    private final String[] baseSolrUrls;
+    private final Endpoint[] solrEndpoints;
     private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+    protected String defaultCollection;
 
-    public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
+    public Builder(Http2SolrClient http2Client, Endpoint... endpoints) {
       this.http2SolrClient = http2Client;
-      this.baseSolrUrls = baseSolrUrls;
+      this.solrEndpoints = endpoints;
     }
 
     /**
@@ -279,11 +312,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
+    /** Sets a default for core or collection based requests. */
+    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return this;
+    }
+
     public LBHttp2SolrClient build() {
-      LBHttp2SolrClient solrClient =
-          new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
-      solrClient.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
-      return solrClient;
+      return new LBHttp2SolrClient(this);
     }
   }
 }

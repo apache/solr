@@ -99,11 +99,13 @@ public final class LegacyNumericTokenStream extends TokenStream {
   public interface LegacyNumericTermAttribute extends Attribute {
     /** Returns current shift value, undefined before first token */
     int getShift();
+
     /**
      * Returns current token's raw value as {@code long} with all {@link #getShift} applied,
      * undefined before first token
      */
     long getRawValue();
+
     /**
      * Returns value size in bits (32 for {@code float}, {@code int}; 64 for {@code double}, {@code
      * long})

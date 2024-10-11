@@ -666,6 +666,7 @@ public abstract class SlotAcc implements Closeable {
       this.isBase = t.isBase;
       this.countAcc = t.countAcc;
     }
+
     /**
      * Because sweep collection offloads "collect" methods to count accumulation code, it is helpful
      * to provide a read-only view over the backing {@link CountSlotAcc}
@@ -814,6 +815,7 @@ public abstract class SlotAcc implements Closeable {
       }
       return new SweepCountAccStruct(processor.fcontext.base, true, processor.countAcc);
     }
+
     /**
      * Helper method for code that wants to operating in a sweeping manner even if the current
      * processor is not using sweeping

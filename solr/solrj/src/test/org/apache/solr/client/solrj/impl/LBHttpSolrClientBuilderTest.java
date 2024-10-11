@@ -35,7 +35,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   @Test
   public void providesHttpClientToClient() {
     try (LBHttpSolrClient createdClient =
-        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
+        new Builder().withBaseEndpoint(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
       assertEquals(createdClient.getHttpClient(), ANY_HTTP_CLIENT);
     }
   }
@@ -44,7 +44,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   public void providesResponseParserToClient() {
     try (LBHttpSolrClient createdClient =
         new Builder()
-            .withBaseSolrUrl(ANY_BASE_SOLR_URL)
+            .withBaseEndpoint(ANY_BASE_SOLR_URL)
             .withResponseParser(ANY_RESPONSE_PARSER)
             .build()) {
       assertEquals(createdClient.getParser(), ANY_RESPONSE_PARSER);
@@ -54,7 +54,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testDefaultsToBinaryResponseParserWhenNoneProvided() {
     try (LBHttpSolrClient createdClient =
-        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).build()) {
+        new Builder().withBaseEndpoint(ANY_BASE_SOLR_URL).build()) {
       final ResponseParser usedParser = createdClient.getParser();
 
       assertTrue(usedParser instanceof BinaryResponseParser);
@@ -70,11 +70,22 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
     HttpClient httpClient = HttpClientUtil.createClient(clientParams);
 
     try (LBHttpSolrClient createdClient =
-        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(httpClient).build()) {
+        new Builder().withBaseEndpoint(ANY_BASE_SOLR_URL).withHttpClient(httpClient).build()) {
       assertEquals(createdClient.getHttpClient(), httpClient);
       assertEquals(67890, createdClient.connectionTimeoutMillis);
       assertEquals(12345, createdClient.soTimeoutMillis);
     }
     HttpClientUtil.close(httpClient);
+  }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (LBHttpSolrClient createdClient =
+        new LBHttpSolrClient.Builder()
+            .withBaseEndpoint(ANY_BASE_SOLR_URL)
+            .withDefaultCollection("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
+    }
   }
 }

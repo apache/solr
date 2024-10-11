@@ -114,6 +114,7 @@ public class IntegersDSL {
   private static class IntegerMaxCardinalitySolrGen extends SolrGen<Integer> {
     private final int maxCardinality;
     private final Gen<Integer> integers;
+
     /** The Cardinality start. */
     Integer cardinalityStart;
 

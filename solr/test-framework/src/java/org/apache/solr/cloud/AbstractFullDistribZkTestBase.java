@@ -159,7 +159,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     public JettySolrRunner jetty;
     public String nodeName;
     public String coreNodeName;
+
+    /** Core or Collection URL */
     public String url;
+
     public CloudSolrServerClient client;
     public ZkNodeProps info;
 
@@ -356,7 +359,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     controlClient =
-        new HttpSolrClient.Builder(controlJetty.getBaseUrl() + "/control_collection").build();
+        new HttpSolrClient.Builder(controlJetty.getBaseUrl().toString())
+            .withDefaultCollection("control_collection")
+            .build();
     if (sliceCount <= 0) {
       // for now, just create the cloud client for the control if we don't
       // create the normal cloud client.
@@ -470,7 +475,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 Replica.Type.TLOG,
                 ((currentI % sliceCount) + 1)); // nowarn
           }
-          customThreadPool.submit(
+          customThreadPool.execute(
               () -> {
                 try {
                   JettySolrRunner j =
@@ -512,7 +517,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 ((currentI % sliceCount) + 1)); // nowarn
           }
 
-          customThreadPool.submit(
+          customThreadPool.execute(
               () -> {
                 try {
                   JettySolrRunner j =
@@ -549,7 +554,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             jettyDir,
             Replica.Type.PULL,
             ((currentI % sliceCount) + 1)); // nowarn
-        customThreadPool.submit(
+        customThreadPool.execute(
             () -> {
               try {
                 JettySolrRunner j =
@@ -587,7 +592,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             new SolrNamedThreadFactory("createReplicaRequests"));
 
     for (CollectionAdminRequest<CollectionAdminResponse> r : createReplicaRequests) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             CollectionAdminResponse response;
             try {
@@ -607,7 +612,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory("createPullReplicaRequests"));
     for (CollectionAdminRequest<CollectionAdminResponse> r : createPullReplicaRequests) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             CollectionAdminResponse response;
             try {
@@ -732,7 +737,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -777,7 +781,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -815,7 +818,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -1979,29 +1981,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(commonCloudSolrClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(commonCloudSolrClient));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(
-        () ->
-            coreClients.parallelStream()
-                .forEach(
-                    c -> {
-                      IOUtils.closeQuietly(c);
-                    }));
+    for (SolrClient client : coreClients) {
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
+    }
 
-    customThreadPool.submit(
-        () ->
-            solrClientByCollection.values().parallelStream()
-                .forEach(
-                    c -> {
-                      IOUtils.closeQuietly(c);
-                    }));
+    for (SolrClient client : solrClientByCollection.values()) {
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
+    }
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClientCloud));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(cloudClient));
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
@@ -2204,15 +2198,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected SolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
-    String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-    return new HttpSolrClient.Builder(url)
+    return new HttpSolrClient.Builder(baseUrl)
+        .withDefaultCollection(coreName)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
   }
 
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    return getHttpSolrClient(baseUrl + "/" + collection);
+    return getHttpSolrClient(baseUrl, collection);
   }
 
   protected String getBaseUrl(JettySolrRunner jetty) {
@@ -2343,7 +2337,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         });
   }
 
-  public static String getUrlFromZk(ClusterState clusterState, String collection) {
+  /**
+   * Returns the base URL of a live Solr node hosting the specified collection
+   *
+   * <p>Note that the returned URL does not contain the collection name itself.
+   *
+   * @param clusterState used to identify which live nodes host the collection
+   * @param collection the name of the collection to search for
+   */
+  public static String getBaseUrlFromZk(ClusterState clusterState, String collection) {
     Map<String, Slice> slices = clusterState.getCollection(collection).getSlicesMap();
 
     if (slices == null) {
@@ -2359,7 +2361,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         final ZkNodeProps node = shardEntry.getValue();
         final String nodeName = node.getStr(ZkStateReader.NODE_NAME_PROP);
         if (clusterState.liveNodesContain(nodeName)) {
-          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection);
+          return node.getStr(ZkStateReader.BASE_URL_PROP);
         }
       }
     }
@@ -2755,7 +2757,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected long getIndexVersion(Replica replica) throws IOException {
-    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
@@ -2802,7 +2807,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
-    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);

@@ -52,7 +52,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -136,7 +135,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                 addAndAssertVersion(
                     version1, "id", "1", "inplace_updatable_float", map("set", "NOT_NUMBER")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+    assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // invalid value with inc operation
     e =
@@ -146,7 +145,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                 addAndAssertVersion(
                     version1, "id", "1", "inplace_updatable_float", map("inc", "NOT_NUMBER")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+    assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // inc op with null value
     e =
@@ -156,7 +155,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                 addAndAssertVersion(
                     version1, "id", "1", "inplace_updatable_float", map("inc", null)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(), containsString("Invalid input 'null' for field inplace_updatable_float"));
 
     e =
@@ -170,7 +169,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                     "inplace_updatable_float",
                     map("inc", new ArrayList<>(Collections.singletonList(123)))));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(), containsString("Invalid input '[123]' for field inplace_updatable_float"));
 
     // regular atomic update should fail if user says they only want in-place atomic updates...
@@ -182,7 +181,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                     sdoc("id", "1", "regular_l", map("inc", 1)),
                     params(UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE, "true")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("Unable to update doc in-place: 1"));
+    assertThat(e.getMessage(), containsString("Unable to update doc in-place: 1"));
   }
 
   @Test
@@ -334,8 +333,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                   null);
             });
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
-    MatcherAssert.assertThat(exception.getMessage(), containsString("expected=-1"));
-    MatcherAssert.assertThat(exception.getMessage(), containsString("actual=" + v20));
+    assertThat(exception.getMessage(), containsString("expected=-1"));
+    assertThat(exception.getMessage(), containsString("actual=" + v20));
 
     long oldV20 = v20;
     v20 =
@@ -350,8 +349,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                   null);
             });
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
-    MatcherAssert.assertThat(exception.getMessage(), containsString("expected=" + oldV20));
-    MatcherAssert.assertThat(exception.getMessage(), containsString("actual=" + v20));
+    assertThat(exception.getMessage(), containsString("expected=" + oldV20));
+    assertThat(exception.getMessage(), containsString("actual=" + v20));
 
     v20 =
         addAndAssertVersion(
@@ -457,7 +456,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
             SolrException.class,
             () -> addAndGetVersion(sdoc("id", "1", "regular_l", map("inc", 1)), require_inplace));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("Unable to update doc in-place: 1"));
+    assertThat(e.getMessage(), containsString("Unable to update doc in-place: 1"));
 
     // data in solr should be unchanged after failed attempt at non-inplace atomic update...
     assertU(commit("softCommit", "false"));
@@ -1184,6 +1183,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
           return "SOFTCOMMIT";
         }
       };
+
   /** sentinel object for {@link #checkReplay} */
   public Object HARDCOMMIT =
       new Object() {
@@ -1605,6 +1605,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertQ(req("q", "title_s:first1"), "//*[@numFound='0']"); // but the old value does not exist
     assertQ(req("q", "title_s:third"), "//*[@numFound='0']"); // doc3 does not exist
   }
+
   /**
    * Helper method that sets up a req/cmd to run {@link
    * AtomicUpdateDocumentMerger#computeInPlaceUpdatableFields} on the specified solr input document.

@@ -210,6 +210,23 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));
   }
 
+  public void testDisableDistribStats() {
+    int[] nums = smallArrayOfRandomNumbers();
+    final Query base = new FlatHashTermQuery("base");
+    assertKeyEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, Integer.MAX_VALUE, false),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));
+    assertKeyEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10, false),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10));
+    assertKeyNotEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, Integer.MAX_VALUE, true),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));
+    assertKeyNotEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 20, true),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 20));
+  }
+
   /** does bi-directional equality check as well as verifying hashCode */
   public void assertKeyEquals(QueryResultKey key1, QueryResultKey key2) {
     assertNotNull(key1);

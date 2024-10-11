@@ -25,9 +25,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.zookeeper.KeeperException;
 
 public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
@@ -135,5 +137,33 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
   @Override
   protected DistributedMap createMap(SolrZkClient zkClient, String path) {
     return new SizeLimitedDistributedMap(zkClient, path, Overseer.NUM_RESPONSES_TO_STORE, null);
+  }
+
+  public void testCleanupForKeysWithSlashes() throws InterruptedException, KeeperException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
+      int maxEntries = 10;
+      String path = getAndMakeInitialPath(zkClient);
+
+      // Add a "legacy" / malformed key
+      zkClient.makePath(path + "/" + DistributedMap.PREFIX + "slash/test/0", new byte[0], true);
+
+      AtomicInteger overFlowCounter = new AtomicInteger();
+      DistributedMap map =
+          new SizeLimitedDistributedMap(
+              zkClient, path, maxEntries, (element) -> overFlowCounter.incrementAndGet());
+
+      // Now add regular keys until we reach the size limit of the map.
+      // Once we hit the limit, the oldest item (the one we added above with slashes) is deleted,
+      // but that fails.
+      for (int i = 1; i <= maxEntries; ++i) {
+        map.put(String.valueOf(i), new byte[0]);
+      }
+      assertTrue(map.size() <= maxEntries);
+      assertEquals(1, overFlowCounter.get());
+    }
   }
 }

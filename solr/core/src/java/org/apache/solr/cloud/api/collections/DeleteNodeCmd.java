@@ -68,14 +68,14 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
         // can't delete the only replica in existence
         res.add(coll + "/" + shard + "/" + replicaName + ", type=" + sourceReplica.getType());
       } else { // check replica types
-        int otherNonPullReplicas = 0;
+        int otherLeaderEligibleReplicas = 0;
         for (Replica r : slice.getReplicas()) {
-          if (!r.getName().equals(replicaName) && !r.getType().equals(Replica.Type.PULL)) {
-            otherNonPullReplicas++;
+          if (!r.getName().equals(replicaName) && r.getType().leaderEligible) {
+            otherLeaderEligibleReplicas++;
           }
         }
-        // can't delete - there are no other non-pull replicas
-        if (otherNonPullReplicas == 0) {
+        // can't delete - there are no other replicas that can be leader
+        if (otherLeaderEligibleReplicas == 0) {
           res.add(coll + "/" + shard + "/" + replicaName + ", type=" + sourceReplica.getType());
         }
       }

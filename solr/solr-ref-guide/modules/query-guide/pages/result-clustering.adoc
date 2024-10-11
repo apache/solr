@@ -80,7 +80,7 @@ Once attached, as in the example above, the clustering will be performed automat
 on all documents matching the search handler's query.
 The clustering extension will take into
 account all text fields listed in `clustering.fields` parameter of the engine and will
-product a section of the response called `clusters` containing the discovered structure of
+produce a section of the response called `clusters` containing the discovered structure of
 groups, for example (JSON response for brevity):
 
 [source,json]

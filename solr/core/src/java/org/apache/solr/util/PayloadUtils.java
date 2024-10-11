@@ -142,9 +142,9 @@ public class PayloadUtils {
     } else if (terms.size() == 1) {
       query = terms.get(0);
     } else if (operator != null && operator.equalsIgnoreCase("or")) {
-      query = new SpanOrQuery(terms.toArray(new SpanTermQuery[terms.size()]));
+      query = new SpanOrQuery(terms.toArray(new SpanTermQuery[0]));
     } else {
-      query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
+      query = new SpanNearQuery(terms.toArray(new SpanTermQuery[0]), 0, true);
     }
     return query;
   }

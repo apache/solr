@@ -1,0 +1,76 @@
+== HTTP Paths
+
+Where possible, each v2 API is given an HTTP path that reflects the resource type and/or name most relevant to its functionality.
+Resource types are typically plural nouns such as "aliases", "collections", and "shards".
+Resource names are (typically user-provided) identifiers such as "myAlias", "techproducts", and "shard1".
+For example, `/api/collections` is the HTTP path used for all APIs concerned with collections generally, but that don't involve any one specific collection (e.g. listing all collections).
+APIs that concern themselves with a specific collection use the HTTP path `/api/collections/someCollectionName`.
+
+
+Resource types and names are arranged in the HTTP path such that each path segment is more specific, or "narrower", than the segment that came before.
+This "narrowing" also extends to resources that have an "is part of" or "contains" relationship to one another.
+In these cases all relevant resources and their types are included in the path, with the "contained" or "child" resource following its "parent".
+For example, since replicas always belong to a shard, and shards always belong to a collection, most v2 APIs pertaining to a specific replica use the HTTP path: `/api/collections/specificCollectionName/shards/specificShardName/replicas/specificReplicaName`.
+
+Following these guidelines has given us the following (non-exhaustive) list of v2 API paths, provided here to give a good sense of the paths currently in use and the logic underlying them.
+* `/api/aliases`
+* `/api/aliases/specificAliasName`
+* `/api/aliases/specificAliasName/properties`
+* `/api/aliases/specificAliasName/properties/specificPropertyName`
+* `/api/backups/specificBackupName`
+* `/api/backups/specificBackupName/versions`
+* `/api/backups/specificBackupName/versions/specificVersion`
+* `/api/cluster/nodes/specificNodeName/roles`
+* `/api/cluster/nodes/specificNodeName/roles/specificRoleName`
+* `/api/cluster/properties`
+* `/api/cluster/properties/specificPropertyName`
+* `/api/collections`
+* `/api/collections/specificCollName`
+* `/api/collections/specificCollName/properties`
+* `/api/collections/specificCollName/properties/specificPropertyName`
+* `/api/collections/specificcollName/shards`
+* `/api/collections/specificCollName/shards/specificShardName`
+* `/api/collections/specificCollName/shards/specificShardName/replicas`
+* `/api/collections/specificCollName/shards/specificShardName/replicas/specificReplicaName`
+* `/api/collections/specificCollName/shards/specificShardName/replicas/specificReplicaName/properties`
+* `/api/collections/specificCollName/shards/specificShardName/replicas/specificReplicaName/properties/specificPropertyName`
+* `/api/configsets`
+* `/api/configsets/specificConfigsetName`
+* `/api/cores`
+* `/api/cores/specificCoreName`
+* `/api/node`
+
+=== Unproxied APIs
+
+The last entry on the list above, `/api/node`, exhibits a bit of a special case.
+SolrCloud handles most requests as a distributed system, i.e. any request can be made to any node in the cluster and Solr will proxy or route the request internally in order to serve a response.
+But not all APIs work this way- some functionality is designed to only return data from the receiving node, such as `/api/node/key` which returns a cryptographic key specific to the receiving node.
+Solr will not proxy these requests.
+To represent this distinction the API design uses the idiosyncratic path `/api/node`, to help distinguish these from other node-related APIs.
+
+== HTTP Methods 
+
+Where possible, HTTP methods (colloquially called 'verbs') are used semantically to distinguish between APIs available at the same path.
+For example, the API to delete a collection uses the `DELETE` HTTP method, as in `DELETE /api/collections/specificCollectionName`.
+The API to modify the collection uses the `PUT` HTTP method, as in `PUT /api/collections/specificCollectionName`.
+
+While the best effort is made to use HTTP methods semantically, the v2 API currently restricts itself to the better known HTTP methods: `GET`, `POST`, `PUT`, and `DELETE`.
+In some situations this leads us to eschew a more semantically appropriate verb due to its relative obscurity.
+The most significant example of this is the HTTP method `PATCH`, which according to the HTTP spec is used to indicate a partial update (i.e. a resource modification request which only provides the part to-be-modified).
+Solr's "modify collection" functionality uses partial update semantics, but the v2 API uses `PUT` instead of `PATCH` due to the relative obscurity of the latter.
+
+For use within the v2 API, the four "popular" HTTP methods have the following semantics and implications:
+
+* `GET` - used for non-mutating (i.e. "read only") requests. Most often used to list elements of a particular resource type, or fetch information about about a specific named resource.
+* `POST` - used for non-idempotent resource modifications.
+* `PUT` - used for idempotent resource modifications.
+* `DELETE` - Used to delete or cleanup resource
+
+== Exceptional Cases - "Command" APIs
+
+The pairing of semantic HTTP verbs and "resource"-based paths gives Solr an intuitive pattern for representing many operations, but not all.
+Many Solr APIs cover complex operations that don't map cleanly to an HTTP verb.
+Often these operations were initially conceived of as procedural "commands" and as such are hard to fit into the v2 APIs resource-first model.
+
+Solr's v2 API currently accommodates these "command" APIs by appending the command name (often a verb like "unload", "reload", or "split") onto the otherwise "resource"-based path.
+For example: Solr's core "unload" command uses the API `POST /api/cores/specificCoreName/unload`.

@@ -18,7 +18,7 @@
 
 <!-- Test schema file for DenseVectorField -->
 
-<schema name="schema-densevector-codec-hyperparameter" version="1.0">
+<schema name="schema-densevector-codec-hyperparameter" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="knn_vector_default" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswMaxConnections="10" hnswBeamWidth="40"/>

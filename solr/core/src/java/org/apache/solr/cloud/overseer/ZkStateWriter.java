@@ -20,6 +20,7 @@ import static java.util.Collections.singletonMap;
 
 import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -222,6 +223,7 @@ public class ZkStateWriter {
   public ClusterState writePendingUpdates() throws KeeperException, InterruptedException {
     return writePendingUpdates(updates, true);
   }
+
   /**
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *
@@ -302,11 +304,13 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       stat.getVersion(),
+                      Instant.ofEpochMilli(stat.getCtime()),
                       PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+              Stat stat = new Stat();
+              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true, stat);
               DocCollection newCollection =
                   DocCollection.create(
                       name,
@@ -314,6 +318,7 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       0,
+                      Instant.ofEpochMilli(stat.getCtime()),
                       PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }

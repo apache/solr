@@ -102,7 +102,7 @@ If you want to upgrade Lucene to a newer build proceed like the following:
   prefixed by '#')
 - Edit ./versions.props and change Lucene's version to '9.0.0-prereleaseX',
   with 'X' is the jenkins build number
-- Edit ./gradle/defaults.gradle and change jenkins build number, too
+- Edit ./gradle/globals.gradle and change jenkins build number, too
   (this directs the repository to the one created by latest build):
     def lucenePrereleaseBuild = 'X'
 - Run: gradlew --write-locks (as described before)
@@ -134,7 +134,7 @@ Local Maven repository Lucene artifacts (for use with the
 "-Plucene.dev.version" project property) may be created by running the
 following command from within a local Lucene project:
 
-  gradlew mavenToLocalRepo
+  gradlew mavenToLocal
 
 As is the case with project properties generally, the relevant properties
 can be invoked on the command line, or configured via the gradle.properties

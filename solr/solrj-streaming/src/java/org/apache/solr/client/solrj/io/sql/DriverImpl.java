@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.sql;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -31,7 +32,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * Get a Connection with with a url and properties.
+ * Get a Connection with an url and properties.
  *
  * <p>jdbc:solr://zkhost:port?collection=collection&amp;aggregationMode=map_reduce
  */
@@ -124,7 +125,7 @@ public class DriverImpl implements Driver {
   }
 
   private void loadParams(URI uri, Properties props) throws SQLException {
-    List<NameValuePair> parsedParams = URLEncodedUtils.parse(uri, "UTF-8");
+    List<NameValuePair> parsedParams = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
     for (NameValuePair pair : parsedParams) {
       if (pair.getValue() != null) {
         props.put(pair.getName(), pair.getValue());

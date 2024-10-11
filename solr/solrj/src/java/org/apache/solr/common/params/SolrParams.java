@@ -22,12 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -129,6 +124,7 @@ public abstract class SolrParams
   public Stream<Map.Entry<String, String[]>> stream() {
     return StreamSupport.stream(spliterator(), false);
   }
+
   // Do we add Map.forEach equivalent too?  But it eager-fetches the value, and Iterable<Map.Entry>
   // allows the user to only get the value when needed.
 
@@ -239,9 +235,7 @@ public abstract class SolrParams
     }
   }
 
-  /**
-   * Returns int value of the the param or default value for int - zero (<code>0</code>) if not set.
-   */
+  /** Returns int value of the param or default value for int - zero (<code>0</code>) if not set. */
   public int getPrimitiveInt(String param) {
     return getInt(param, 0);
   }
@@ -436,66 +430,6 @@ public abstract class SolrParams
     return AppendedSolrParams.wrapAppended(params, defaults);
   }
 
-  /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
-  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
-  public static Map<String, String> toMap(NamedList<?> params) {
-    HashMap<String, String> map = new HashMap<>();
-    for (int i = 0; i < params.size(); i++) {
-      map.put(params.getName(i), params.getVal(i).toString());
-    }
-    return map;
-  }
-
-  /** Create a Map&lt;String,String[]&gt; from a NamedList */
-  @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
-  public static Map<String, String[]> toMultiMap(NamedList<?> params) {
-    HashMap<String, String[]> map = new HashMap<>();
-    for (int i = 0; i < params.size(); i++) {
-      String name = params.getName(i);
-      Object val = params.getVal(i);
-      if (val instanceof String[]) {
-        MultiMapSolrParams.addParam(name, (String[]) val, map);
-      } else if (val instanceof List) {
-        List<?> l = (List<?>) val;
-        String[] s = new String[l.size()];
-        for (int j = 0; j < l.size(); j++) {
-          s[j] = l.get(j) == null ? null : String.valueOf(l.get(j));
-        }
-        MultiMapSolrParams.addParam(name, s, map);
-      } else {
-        MultiMapSolrParams.addParam(name, val.toString(), map);
-      }
-    }
-    return map;
-  }
-
-  /**
-   * Create SolrParams from NamedList.
-   *
-   * @deprecated Use {@link NamedList#toSolrParams()}.
-   */
-  @Deprecated // move to NamedList to allow easier flow
-  public static SolrParams toSolrParams(NamedList<?> params) {
-    return params.toSolrParams();
-  }
-
-  @Deprecated
-  public SolrParams toFilteredSolrParams(List<String> names) {
-    // TODO do this better somehow via a view that filters?  See SolrCore.preDecorateResponse.
-    //   ... and/or add some optional predicates to iterator()?
-    NamedList<String> nl = new NamedList<>();
-    for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
-      final String name = it.next();
-      if (names.contains(name)) {
-        final String[] values = getParams(name);
-        for (String value : values) {
-          nl.add(name, value);
-        }
-      }
-    }
-    return nl.toSolrParams();
-  }
-
   /**
    * Convert this to a NamedList of unique keys with either String or String[] values depending on
    * how many values there are for the parameter.
@@ -509,40 +443,15 @@ public abstract class SolrParams
       if (values.length == 1) {
         result.add(name, values[0]);
       } else {
-        // currently no reason not to use the same array
+        // currently, no reason not to use the same array
         result.add(name, values);
       }
     }
     return result;
   }
 
-  // Deprecated because there isn't a universal way to deal with multi-values (always
-  //  String[] or only for > 1 or always 1st value).  And what to do with nulls or empty string.
-  //  And SolrParams now implements MapWriter.toMap(Map) (a default method).  So what do we do?
-  @Deprecated
-  public Map<String, Object> getAll(Map<String, Object> sink, Collection<String> params) {
-    if (sink == null) sink = new LinkedHashMap<>();
-    for (String param : params) {
-      String[] v = getParams(param);
-      if (v != null && v.length > 0) {
-        if (v.length == 1) {
-          sink.put(param, v[0]);
-        } else {
-          sink.put(param, v);
-        }
-      }
-    }
-    return sink;
-  }
-
-  /** Copy all params to the given map or if the given map is null create a new one */
-  @Deprecated
-  public Map<String, Object> getAll(Map<String, Object> sink, String... params) {
-    return getAll(sink, params == null ? Collections.emptyList() : Arrays.asList(params));
-  }
-
   /**
-   * Returns this SolrParams as a properly URL encoded string, starting with {@code "?"}, if not
+   * Returns this SolrParams as a proper URL encoded string, starting with {@code "?"}, if not
    * empty.
    */
   public String toQueryString() {
@@ -568,9 +477,9 @@ public abstract class SolrParams
   }
 
   /**
-   * Generates a local-params string of the form
-   *
-   * <pre>{! name=value name2=value2}</pre>
+   * Generates a local-params string of the form <code>{! name=value name2=value2}</code>,
+   * Protecting (without any quoting or escaping) any values that start with <code>$</code> (param
+   * references).
    */
   public String toLocalParamsString() {
     final StringBuilder sb = new StringBuilder(128);
@@ -582,7 +491,12 @@ public abstract class SolrParams
         sb.append(' '); // do so even the first time; why not.
         sb.append(name); // no escaping for name; it must follow "Java Identifier" rules.
         sb.append('=');
-        sb.append(ClientUtils.encodeLocalParamVal(val));
+        if (val.startsWith("$")) {
+          // maintain literal param ref...
+          sb.append(val);
+        } else {
+          sb.append(ClientUtils.encodeLocalParamVal(val));
+        }
       }
     }
     sb.append('}');

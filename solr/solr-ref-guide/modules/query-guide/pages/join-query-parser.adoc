@@ -43,7 +43,7 @@ WHERE id IN (
 
 The join operation is done on a term basis, so the `from` and `to` fields must use compatible field types.
 For example: joining between a `StrField` and a `IntPointField` will not work.
-Likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
+Likewise, joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
 
 == Parameters
 
@@ -183,7 +183,7 @@ node 4: movie_directors_shard1_replica4
 At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join.
 If a local replica is not available or active, then the query will fail.
 At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection.
-Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
+Moreover, if you add a replica to the "to" collection, then you also need to add a replica for the "from" collection.
 
 For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/post/solr-and-joins/[Solr and Joins].
 
@@ -315,7 +315,7 @@ If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster wil
 |===
 +
 The URL of the external Solr node to be queried.
-Must be a character-for-character exact match of a allow-listed URL that is listed in the `allowSolrUrls` parameter in `solrconfig.xml`.
+Must be a character-for-character exact match of an allow-listed URL that is listed in the `allowSolrUrls` parameter in `solrconfig.xml`.
 If the URL does not match, this parameter will be effectively disabled.
 
 `from`::

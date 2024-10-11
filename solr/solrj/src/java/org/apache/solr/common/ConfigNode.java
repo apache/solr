@@ -52,8 +52,8 @@ public interface ConfigNode {
   }
 
   /**
-   * Child by name or return an empty node if null if there are multiple values , it returns the
-   * first elem This never returns a null
+   * Child by name or return an empty node if null. If there are multiple values, it returns the
+   * first element. This never returns a null.
    */
   default ConfigNode get(String name) {
     ConfigNode child = child(null, name);
@@ -117,6 +117,7 @@ public interface ConfigNode {
   default double doubleVal(double def) {
     return _double(txt(), def);
   }
+
   /** Iterate through child nodes with the name and return the first child that matches */
   default ConfigNode child(Predicate<ConfigNode> test, String name) {
     ConfigNode[] result = new ConfigNode[1];

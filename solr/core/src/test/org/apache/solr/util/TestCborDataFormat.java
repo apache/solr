@@ -139,26 +139,18 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       request.setResponseParser(new InputStreamResponseParser(wt));
     }
     result = client.request(request, testCollection);
-    byte[] b = copyStream((InputStream) result.get("stream"));
+    InputStream inputStream = (InputStream) result.get("stream");
+    byte[] b = inputStream.readAllBytes();
     System.out.println(wt + "_time : " + timer.getTime());
     System.out.println(wt + "_size : " + b.length);
     return b;
-  }
-
-  private static byte[] copyStream(InputStream inputStream) throws IOException {
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    byte[] buffer = new byte[4096];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(buffer)) != -1) {
-      outputStream.write(buffer, 0, bytesRead);
-    }
-    return outputStream.toByteArray();
   }
 
   private void modifySchema(String testCollection, CloudSolrClient client)
       throws SolrServerException, IOException {
     GenericSolrRequest req =
         new GenericSolrRequest(SolrRequest.METHOD.POST, "/schema")
+            .setRequiresCollection(true)
             .setContentWriter(
                 new RequestWriter.StringPayloadContentWriter(
                     "{\n"
@@ -180,6 +172,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
             SolrRequest.METHOD.POST,
             "/update/json/docs",
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(b, "application/json");
   }
 
@@ -191,13 +184,15 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(baos.toByteArray(), "application/javabin");
+        .withContent(baos.toByteArray(), "application/javabin")
+        .setRequiresCollection(true);
   }
 
   private GenericSolrRequest createCborReq(byte[] b) throws IOException {
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update/cbor", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(serializeToCbor(b), "application/cbor");
+        .withContent(serializeToCbor(b), "application/cbor")
+        .setRequiresCollection(true);
   }
 
   @SuppressWarnings("unchecked")

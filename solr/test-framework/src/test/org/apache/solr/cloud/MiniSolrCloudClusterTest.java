@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -56,10 +58,10 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       cluster =
           new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
             @Override
-            public JettySolrRunner startJettySolrRunner(String name, JettyConfig config)
-                throws Exception {
+            public JettySolrRunner startJettySolrRunner(
+                String name, JettyConfig config, String solrXml) throws Exception {
               if (jettyIndex.incrementAndGet() != 2)
-                return super.startJettySolrRunner(name, config);
+                return super.startJettySolrRunner(name, config, solrXml);
               throw new IOException("Fake exception on startup!");
             }
           };
@@ -199,14 +201,18 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       final MiniSolrCloudCluster x =
           new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
             @Override
-            public JettySolrRunner startJettySolrRunner(String name, JettyConfig config)
-                throws Exception {
+            public JettySolrRunner startJettySolrRunner(
+                String name, JettyConfig config, String solrXml) throws Exception {
               System.setProperty("zkHost", getZkServer().getZkAddress());
 
               final Properties nodeProps = new Properties();
               nodeProps.setProperty("test-from-sysprop", "yup");
 
               Path runnerPath = createTempDir(name);
+              if (solrXml == null) {
+                solrXml = DEFAULT_CLOUD_SOLR_XML;
+              }
+              Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
               JettyConfig newConfig = JettyConfig.builder(config).build();
               JettySolrRunner jetty =
                   new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);

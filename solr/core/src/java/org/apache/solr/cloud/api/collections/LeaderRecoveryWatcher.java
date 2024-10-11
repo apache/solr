@@ -73,7 +73,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
       // as long as it's active and can become a leader, in which case we don't have to wait
       // for recovery of specifically the one that we've just added
       if (!replica.getName().equals(replicaId)) {
-        if (replica.getType().equals(Replica.Type.PULL)) { // not eligible for leader election
+        if (!replica.getType().leaderEligible) {
           continue;
         }
         // check its state

@@ -433,9 +433,9 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
     filterLoader.load(loader, tokenFilterNodes);
 
     return new TokenizerChain(
-        charFilters.toArray(new CharFilterFactory[charFilters.size()]),
+        charFilters.toArray(new CharFilterFactory[0]),
         tokenizers.get(0),
-        filters.toArray(new TokenFilterFactory[filters.size()]));
+        filters.toArray(new TokenFilterFactory[0]));
   }
 
   private Version parseConfiguredVersion(String configuredVersion, String pluginClassName) {

@@ -49,6 +49,8 @@ public interface CollectionAdminParams {
 
   String REPLICATION_FACTOR = "replicationFactor";
 
+  String REPLICA_TYPE = "type";
+
   /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain
    * #CREATE_NODE_SET_PARAM}) should be shuffled before being used.
@@ -107,6 +109,7 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+
   /**
    * When AddReplica is called with this set to true, then we do not try to find node assignments
    * for the add replica API. If set to true, a valid "node" should be specified.

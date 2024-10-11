@@ -58,6 +58,7 @@ dependencies {
   permitUnusedDeclared 'commons-cli:commons-cli'
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
+  implementation 'io.opentelemetry:opentelemetry-api'
 
   implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation 'org.eclipse.jetty:jetty-server'

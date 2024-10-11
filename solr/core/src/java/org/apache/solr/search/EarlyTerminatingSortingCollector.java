@@ -68,6 +68,7 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /** Sort used to sort the search results */
   private final Sort sort;
+
   /** Number of documents to collect in each segment */
   private final int numDocsToCollect;
 

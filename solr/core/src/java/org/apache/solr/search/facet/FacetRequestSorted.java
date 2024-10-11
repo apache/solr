@@ -21,11 +21,13 @@ package org.apache.solr.search.facet;
 abstract class FacetRequestSorted extends FacetRequest {
   long offset;
   long limit;
+
   /**
    * Number of buckets to request beyond the limit to do internally during initial distributed
    * search. -1 means default heuristic.
    */
   int overrequest = -1;
+
   /**
    * Number of buckets to fill in beyond the limit to do internally during refinement of distributed
    * search. -1 means default heuristic.
@@ -33,12 +35,14 @@ abstract class FacetRequestSorted extends FacetRequest {
   int overrefine = -1;
 
   long mincount;
+
   /**
    * The basic sorting to do on buckets, defaults to {@link FacetRequest.FacetSort#COUNT_DESC}
    *
    * @see #prelim_sort
    */
   FacetSort sort;
+
   /**
    * An optional "Pre-Sort" that defaults to null. If specified, then the <code>prelim_sort</code>
    * is used as an optimization in place of {@link #sort} during collection, and the full {@link

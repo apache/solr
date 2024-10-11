@@ -76,11 +76,11 @@ public class ReplicaListTransformerTest extends SolrTestCase {
 
     final ReplicaListTransformer transformer;
     if (random().nextBoolean()) {
-      log.info("Using ToyMatching Transfomer");
+      log.info("Using ToyMatching Transformer");
       transformer = new ToyMatchingReplicaListTransformer(regex);
 
     } else {
-      log.info("Using conditional Transfomer");
+      log.info("Using conditional Transformer");
       transformer =
           new HttpShardHandlerFactory() {
 

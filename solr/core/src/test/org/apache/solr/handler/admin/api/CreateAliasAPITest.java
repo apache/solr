@@ -24,9 +24,9 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateAliasAPI} */
@@ -53,9 +53,9 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     requestBody.collections = List.of("validColl1", "validColl2");
 
     final var thrown = expectThrows(SolrException.class, () -> requestBody.validate());
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("Invalid alias"));
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("some@invalid$alias"));
-    MatcherAssert.assertThat(
+    assertThat(thrown.getMessage(), containsString("Invalid alias"));
+    assertThat(thrown.getMessage(), containsString("some@invalid$alias"));
+    assertThat(
         thrown.getMessage(),
         containsString(
             "alias names must consist entirely of periods, underscores, hyphens, and alphanumerics"));
@@ -95,13 +95,13 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     final var categoryRouter = new CreateAliasAPI.CategoryRoutedAliasProperties();
     categoryRouter.field = "someField";
     requestBody.routers = List.of(categoryRouter);
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     requestBody.collCreationParameters = createParams;
 
     final var thrown = expectThrows(SolrException.class, () -> requestBody.validate());
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Routed alias creation requires a configset name"));
   }
 
@@ -112,7 +112,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     final var categoryRouter = new CreateAliasAPI.CategoryRoutedAliasProperties();
     categoryRouter.field = "someField";
     requestBody.routers = List.of(categoryRouter);
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     createParams.config = "someConfig";
     // Not allowed since routed-aliases-created collections have semantically meaningful names
@@ -123,14 +123,14 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     final var thrown = expectThrows(SolrException.class, () -> requestBody.validate());
 
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("cannot specify the name"));
+    assertThat(thrown.getMessage(), containsString("cannot specify the name"));
   }
 
   @Test
   public void testReportsErrorIfCategoryRoutedAliasDoesntSpecifyAllRequiredParameters() {
     final var requestBody = new CreateAliasAPI.CreateAliasRequestBody();
     requestBody.name = "validName";
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
@@ -212,7 +212,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     final var categoryRouter = new CreateAliasAPI.CategoryRoutedAliasProperties();
     categoryRouter.field = "someField";
     requestBody.routers = List.of(categoryRouter);
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
@@ -239,7 +239,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     timeRouter.interval = "+1MONTH";
     timeRouter.maxFutureMs = 123456L;
     requestBody.routers = List.of(timeRouter);
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
@@ -271,7 +271,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     final var categoryRouter = new CreateAliasAPI.CategoryRoutedAliasProperties();
     categoryRouter.field = "someField";
     requestBody.routers = List.of(timeRouter, categoryRouter);
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
@@ -297,7 +297,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
       CreateAliasAPI.RoutedAliasProperties router) {
     final var requestBody = new CreateAliasAPI.CreateAliasRequestBody();
     requestBody.name = "validName";
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     createParams.numShards = 3;
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;

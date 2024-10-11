@@ -84,9 +84,13 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
 
     ur.commit(client, collName);
 
+    final int numSubShards = 2;
     CollectionAdminRequest.SplitShard splitShard =
-        CollectionAdminRequest.splitShard(collName).setShardName("shard1");
+        CollectionAdminRequest.splitShard(collName)
+            .setShardName("shard1")
+            .setNumSubShards(numSubShards);
     splitShard.process(cluster.getSolrClient());
+    int totalShards = shard + (numSubShards - 1);
     waitForState(
         "Timed out waiting for sub shards to be active. Number of active shards="
             + cluster
@@ -96,6 +100,6 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
                 .getActiveSlices()
                 .size(),
         collName,
-        activeClusterShape(shard + 1, 3 * (nrtReplica + pullReplica)));
+        activeClusterShape(totalShards, totalShards * (nrtReplica + pullReplica)));
   }
 }

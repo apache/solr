@@ -107,6 +107,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
       delegate.close();
     }
   }
+
   /**
    * Create a SLF4J reporter for metrics managed in a named registry.
    *

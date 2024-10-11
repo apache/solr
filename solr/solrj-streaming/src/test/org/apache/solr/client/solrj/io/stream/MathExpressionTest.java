@@ -80,8 +80,6 @@ public class MathExpressionTest extends SolrCloudTestCase {
     }
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
@@ -1814,8 +1812,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
     // there are times when tuples are discarded because
     // they contain values with NaN values. This will occur
     // only on the very end of the tails of the normal distribution or other
-    // real distributions and doesn't effect the visual quality of the curve very much.
-    // But it does effect the reliability of tests.
+    // real distributions and doesn't affect the visual quality of the curve very much.
+    // But it does affect the reliability of tests.
     // For this reason the loop below is in place to run the test N times looking
     // for the correct number of tuples before asserting the mean.
 

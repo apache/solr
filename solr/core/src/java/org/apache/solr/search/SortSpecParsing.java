@@ -217,7 +217,7 @@ public class SortSpecParsing {
       return newEmptySortSpec();
     }
 
-    Sort s = new Sort(sorts.toArray(new SortField[sorts.size()]));
+    Sort s = new Sort(sorts.toArray(new SortField[0]));
     return new SortSpec(s, fields);
   }
 

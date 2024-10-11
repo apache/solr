@@ -79,6 +79,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** We have a map of clients using specific writerTypes, keyed by pair of baseurl and wt */
   private static final Map<Pair<String, String>, SolrClient> CLIENTS = new ConcurrentHashMap<>();
 
@@ -434,7 +435,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** Helper to convert from wt string parameter to actual SolrClient. */
   private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
     HttpSolrClient.Builder builder =
-        new HttpSolrClient.Builder(jettyBaseUrl + "/" + COLLECTION_NAME + "/");
+        new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME);
     switch (wt) {
       case "xml":
         builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
@@ -641,6 +642,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     int writerTypeIdx = TestUtil.nextInt(rand, 0, writerTypes.size() - 1);
     return getRandomClient(rand, writerTypes.get(writerTypeIdx));
   }
+
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
    * in our cluster. We have different CLIENTS created for each node based on their wt setting.
@@ -1167,6 +1169,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.resultKey = resultKey;
       this.fieldName = fieldName;
     }
+
     /** always returns true */
     @Override
     public boolean requiresRealtimeSearcherReOpen() {
@@ -1273,12 +1276,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** Trivial validator of a GeoTransformer */
   private static class GeoTransformerValidator implements FlValidator, SuppressRealFields {
     private static final String NAME = "geo";
+
     /**
      * we're not worried about testing the actual geo parsing/formatting of values, just that the
      * transformer gets called with the expected field value. so have a small set of fixed input
      * values we use when indexing docs, and the expected output for each
      */
     private static final Map<String, String> VALUES = new HashMap<>();
+
     /**
      * The set of legal field values this validator is willing to test as a list, so we can reliably
      * index into it with random ints
@@ -1291,6 +1296,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       }
       ALLOWED_FIELD_VALUES = List.copyOf(VALUES.keySet());
     }
+
     /**
      * returns a random field value usable when indexing a document that this validator will be able
      * to handle.

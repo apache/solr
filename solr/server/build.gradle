@@ -37,7 +37,9 @@ configurations {
 }
 
 dependencies {
-  serverLib 'org.eclipse.jetty:jetty-deploy'
+  serverLib('org.eclipse.jetty:jetty-deploy', {
+    exclude group: "org.awaitility", module: "awaitility"
+  })
   serverLib 'org.eclipse.jetty:jetty-http'
   serverLib 'org.eclipse.jetty:jetty-io'
   serverLib 'org.eclipse.jetty:jetty-jmx'

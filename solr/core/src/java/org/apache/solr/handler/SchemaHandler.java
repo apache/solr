@@ -41,9 +41,8 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.api.GetSchemaAPI;
+import org.apache.solr.handler.admin.api.GetSchema;
 import org.apache.solr.handler.admin.api.GetSchemaFieldAPI;
-import org.apache.solr.handler.admin.api.GetSchemaZkVersionAPI;
 import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -122,38 +121,42 @@ public class SchemaHandler extends RequestHandlerBase
         case "/schema":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaInfo());
+                rsp, new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaInfo());
             break;
           }
         case "/schema/version":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaVersion());
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaVersion());
             break;
           }
         case "/schema/uniquekey":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaUniqueKey());
             break;
           }
         case "/schema/similarity":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema())
+                    .getSchemaSimilarity());
             break;
           }
         case "/schema/name":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaName());
+                rsp, new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaName());
             break;
           }
         case "/schema/zkversion":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 rsp,
-                new GetSchemaZkVersionAPI(req.getCore())
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema())
                     .getSchemaZkVersion(req.getParams().getInt("refreshIfBelowVersion", -1)));
             break;
           }
@@ -291,7 +294,7 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(GetSchemaAPI.class, GetSchemaFieldAPI.class, GetSchemaZkVersionAPI.class);
+    return List.of(GetSchema.class, GetSchemaFieldAPI.class);
   }
 
   @Override

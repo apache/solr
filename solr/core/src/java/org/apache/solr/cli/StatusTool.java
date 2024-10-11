@@ -18,7 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.net.URL;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +56,9 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  public static final Option OPTION_MAXWAITSECS =
-      Option.builder("maxWaitSecs")
+  private static final Option OPTION_MAXWAITSECS =
+      Option.builder()
+          .longOpt("max-wait-secs")
           .argName("SECS")
           .hasArg()
           .required(false)
@@ -67,10 +68,12 @@ public class StatusTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        // The solrUrl option is not exposed to the end user, and is
-        // created by the bin/solr script and passed into this too.
-        Option.builder("solrUrl")
+        // The solr-url option is not exposed to the end user, and is
+        // created by the bin/solr script and passed into this command directly,
+        // therefore we don't use the SolrCLI.OPTION_SOLRURL.
+        Option.builder()
             .argName("URL")
+            .longOpt("solr-url")
             .hasArg()
             .required(false)
             .desc("Property set by calling scripts, not meant for user configuration.")
@@ -91,13 +94,17 @@ public class StatusTool extends ToolBase {
       return;
     }
 
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
-      int solrPort = (new URL(solrUrl)).getPort();
+      int solrPort = new URI(solrUrl).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
       try {
-        waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
+        waitToSeeSolrUp(
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+            maxWaitSecs,
+            TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
       } catch (TimeoutException timeout) {
         throw new Exception(
@@ -106,7 +113,8 @@ public class StatusTool extends ToolBase {
     } else {
       try {
         CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(getStatus(solrUrl));
+        new JSONWriter(arr, 2)
+            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
         echo(arr.toString());
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
@@ -123,12 +131,13 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public Map<String, Object> waitToSeeSolrUp(String solrUrl, long maxWait, TimeUnit unit)
-      throws Exception {
+  public Map<String, Object> waitToSeeSolrUp(
+      String solrUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);
     while (System.nanoTime() < timeout) {
+
       try {
-        return getStatus(solrUrl);
+        return getStatus(solrUrl, credentials);
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
           throw exc;
@@ -148,16 +157,20 @@ public class StatusTool extends ToolBase {
             + " seconds!");
   }
 
-  public Map<String, Object> getStatus(String solrUrl) throws Exception {
+  public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+      return getStatus(solrClient);
+    }
+  }
+
+  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
     Map<String, Object> status;
 
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
-      NamedList<Object> systemInfo =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-      // convert raw JSON into user-friendly output
-      status = reportStatus(systemInfo, solrClient);
-    }
+    NamedList<Object> systemInfo =
+        solrClient.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+    // convert raw JSON into user-friendly output
+    status = reportStatus(systemInfo, solrClient);
 
     return status;
   }

@@ -27,6 +27,7 @@ public interface GroupParams {
 
   /** the limit for the number of documents in each group */
   public static final String GROUP_LIMIT = GROUP + ".limit";
+
   /** the offset for the doclist of each group */
   public static final String GROUP_OFFSET = GROUP + ".offset";
 
@@ -46,8 +47,8 @@ public interface GroupParams {
   // Note: Since you can supply multiple fields to group on, but only have a facets for the whole
   // result. It only makes sense to me to support these parameters for the first group.
   /**
-   * Whether the docSet (for example for faceting) should be based on plain documents (a.k.a
-   * UNGROUPED) or on the groups (a.k.a GROUPED). The docSet will only the most relevant documents
+   * Whether the docSet (for example for faceting) should be based on plain documents (a.k.a.
+   * UNGROUPED) or on the groups (a.k.a. GROUPED). The docSet will only the most relevant documents
    * per group. It is if you query for everything with group.limit=1
    */
   public static final String GROUP_TRUNCATE = GROUP + ".truncate";

@@ -26,8 +26,10 @@ import static org.mockito.Mockito.when;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -143,6 +145,25 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
     assertEquals(SolrException.class, normalized.getClass());
     final SolrException normalizedSolrException = (SolrException) normalized;
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, normalizedSolrException.code());
+  }
+
+  @Test
+  public void testIsInternalShardRequest() {
+    final SolrQueryRequest solrQueryRequest =
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
+          @Override
+          public CoreContainer getCoreContainer() {
+            return coreContainer;
+          }
+        };
+
+    assertFalse(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
+
+    solrQueryRequest.setParams(new MapSolrParams(Map.of("isShard", "true")));
+    assertTrue(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
+
+    solrQueryRequest.setParams(new MapSolrParams(Map.of("distrib.from", "http://foo:1234/solr")));
+    assertTrue(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
   }
 
   // Ideally we wouldn't need to use mocks here, but HandlerMetrics requires a SolrMetricsContext,

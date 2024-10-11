@@ -20,12 +20,10 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
@@ -449,7 +447,6 @@ class RebalanceLeaders {
     final CollectionParams.CollectionAction rebalanceleaders = REBALANCELEADERS;
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(COLLECTION_PROP, collectionName);
-    propMap.put(SHARD_ID_PROP, slice.getName());
     propMap.put(QUEUE_OPERATION, rebalanceleaders.toLower());
     propMap.put(CORE_NAME_PROP, core);
     propMap.put(CORE_NODE_NAME_PROP, replica.getName());
@@ -462,7 +459,6 @@ class RebalanceLeaders {
             .getBaseUrlForNodeName(replica.getNodeName()));
     propMap.put(
         REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
-    propMap.put(ELECTION_NODE_PROP, electionNode);
     String asyncId = rebalanceleaders.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
     propMap.put(ASYNC, asyncId);
     asyncRequests.add(asyncId);

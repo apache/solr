@@ -767,8 +767,8 @@ public class PeerSync implements SolrMetricProducer {
       return handleVersionsWithRanges(otherVersions, completeList, ourUpdates, ourLowThreshold);
     }
 
-    @VisibleForTesting
     /** Implementation assumes the passed in lists are sorted and contain no duplicates. */
+    @VisibleForTesting
     static MissedUpdatesRequest handleVersionsWithRanges(
         List<Long> otherVersions,
         boolean completeList,

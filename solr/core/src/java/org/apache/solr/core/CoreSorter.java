@@ -38,7 +38,7 @@ import org.apache.solr.common.cloud.Slice;
  * replicas in the current node. This helps in avoiding leaderVote timeouts happening in other nodes
  * of the cluster
  */
-public final class CoreSorter implements Comparator<CoreDescriptor> {
+public class CoreSorter {
 
   private static final CountsForEachShard zero = new CountsForEachShard(0, 0, 0);
 
@@ -79,21 +79,35 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
         return 0;
       };
 
-  /** Primary entry-point to sort the cores. */
-  public static List<CoreDescriptor> sortCores(
-      CoreContainer coreContainer, List<CoreDescriptor> descriptors) {
-    // sort the cores if it is in SolrCloud. In standalone mode the order does not matter
-    if (coreContainer.isZooKeeperAware()) {
-      return descriptors.stream()
-          .sorted(new CoreSorter().init(coreContainer, descriptors))
-          .collect(toList()); // new list
-    }
-    return descriptors;
+  private final CoreContainer cc;
+
+  public CoreSorter(CoreContainer cc) {
+    this.cc = cc;
   }
 
-  private final Map<String, CountsForEachShard> shardsVsReplicaCounts = new HashMap<>();
+  public List<CoreDescriptor> sort(List<CoreDescriptor> cds) {
+    // sort the cores if it is in SolrCloud. In standalone mode the order does not matter
+    if (cc.isZooKeeperAware()) {
+      Map<String, CountsForEachShard> shardsVsReplicaCounts = computeShardsVsReplicaCounts(cds);
+      return cds.stream()
+          .sorted(
+              (cd1, cd2) -> {
+                String s1 = getShardName(cd1.getCloudDescriptor());
+                String s2 = getShardName(cd2.getCloudDescriptor());
+                if (s1 == null || s2 == null) return cd1.getName().compareTo(cd2.getName());
+                CountsForEachShard c1 = shardsVsReplicaCounts.get(s1);
+                CountsForEachShard c2 = shardsVsReplicaCounts.get(s2);
+                int result = countsComparator.compare(c1, c2);
+                return result == 0 ? s1.compareTo(s2) : result;
+              })
+          .collect(toList()); // new list
+    }
+    return cds;
+  }
 
-  CoreSorter init(CoreContainer cc, Collection<CoreDescriptor> coreDescriptors) {
+  private Map<String, CountsForEachShard> computeShardsVsReplicaCounts(
+      Collection<CoreDescriptor> coreDescriptors) {
+    Map<String, CountsForEachShard> shardsVsReplicaCounts = new HashMap<>();
     String myNodeName = cc.getNodeConfig().getNodeName();
     ClusterState state = cc.getZkController().getClusterState();
     for (CoreDescriptor coreDescriptor : coreDescriptors) {
@@ -116,19 +130,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
       }
       shardsVsReplicaCounts.put(sliceName, c);
     }
-
-    return this;
-  }
-
-  @Override
-  public int compare(CoreDescriptor cd1, CoreDescriptor cd2) {
-    String s1 = getShardName(cd1.getCloudDescriptor());
-    String s2 = getShardName(cd2.getCloudDescriptor());
-    if (s1 == null || s2 == null) return cd1.getName().compareTo(cd2.getName());
-    CountsForEachShard c1 = shardsVsReplicaCounts.get(s1);
-    CountsForEachShard c2 = shardsVsReplicaCounts.get(s2);
-    int result = countsComparator.compare(c1, c2);
-    return result == 0 ? s1.compareTo(s2) : result;
+    return shardsVsReplicaCounts;
   }
 
   static class CountsForEachShard {
@@ -168,7 +170,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     }
   }
 
-  static String getShardName(CloudDescriptor cd) {
+  private static String getShardName(CloudDescriptor cd) {
     return cd == null ? null : cd.getCollectionName() + "_" + cd.getShardId();
   }
 

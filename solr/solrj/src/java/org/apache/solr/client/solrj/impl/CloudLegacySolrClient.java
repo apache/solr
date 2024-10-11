@@ -167,12 +167,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
-    protected String defaultCollection;
     protected long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    private boolean canUseZkACLs = true;
 
     /** Constructor for use by subclasses. This constructor was public prior to version 9.0 */
     protected Builder() {}
@@ -232,6 +232,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
+    /** Whether to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
+    }
+
     /** Provides a {@link HttpClient} for the builder to use when creating clients. */
     public Builder withLBHttpSolrClientBuilder(LBHttpSolrClient.Builder lbHttpSolrClientBuilder) {
       this.lbClientBuilder = lbHttpSolrClientBuilder;
@@ -282,7 +288,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     /**
      * This method has no effect.
      *
-     * <p>In older versions of Solr, this method was an incorrectly named equivilent to {@link
+     * <p>In older versions of Solr, this method was an incorrectly named equivalent to {@link
      * #sendUpdatesToAnyReplica}, which had no effect because that setting was ignored in the
      * created clients. When the underlying {@link CloudSolrClient} behavior was fixed, this method
      * was modified to be an explicit No-Op, since the implied behavior of sending updates to
@@ -317,7 +323,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      * Tells {@link Builder} that created clients can send updates to any shard replica (shard
      * leaders and non-leaders).
      *
-     * <p>Shard leaders are still preferred, but the created clients will fallback to using other
+     * <p>Shard leaders are still preferred, but the created clients will fall back to using other
      * replicas if a leader cannot be found.
      *
      * @see #sendDirectUpdatesToShardLeadersOnly
@@ -340,12 +346,6 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
-      return this;
-    }
-
-    /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String collection) {
-      this.defaultCollection = collection;
       return this;
     }
 
@@ -378,7 +378,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
           throw new IllegalArgumentException(
               "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
         } else if (!zkHosts.isEmpty()) {
-          this.stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
+          this.stateProvider =
+              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
           if (stateProvider instanceof SolrZkClientTimeoutAware) {
             var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
             timeoutAware.setZkClientTimeout(zkClientTimeout);

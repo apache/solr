@@ -149,9 +149,17 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
     // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
     if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
+      if (!coreContainer.isStatusLoadComplete()) {
+        rsp.add(STATUS, FAILURE);
+        rsp.setException(
+            new SolrException(
+                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                "Host Unavailable: Core Loading not complete"));
+        return;
+      }
       Collection<CloudDescriptor> coreDescriptors =
-          coreContainer.getCores().stream()
-              .map(c -> c.getCoreDescriptor().getCloudDescriptor())
+          coreContainer.getCoreDescriptors().stream()
+              .map(cd -> cd.getCloudDescriptor())
               .collect(Collectors.toList());
       long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {

@@ -30,7 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/** Unit tests for {@link DeleteShardAPI} */
+/** Unit tests for {@link DeleteShard} */
 public class DeleteShardAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
@@ -38,7 +38,7 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteShardAPI(null, null, null);
+              final var api = new DeleteShard(null, null, null);
               api.deleteShard(null, "someShard", null, null, null, null, null);
             });
 
@@ -52,7 +52,7 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteShardAPI(null, null, null);
+              final var api = new DeleteShard(null, null, null);
               api.deleteShard("someCollection", null, null, null, null, null, null);
             });
 
@@ -63,7 +63,7 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
   @Test
   public void testCreateRemoteMessageAllProperties() {
     final var remoteMessage =
-        DeleteShardAPI.createRemoteMessage(
+        DeleteShard.createRemoteMessage(
                 "someCollName", "someShardName", true, false, true, false, "someAsyncId")
             .getProperties();
 
@@ -81,7 +81,7 @@ public class DeleteShardAPITest extends SolrTestCaseJ4 {
   @Test
   public void testMissingValuesExcludedFromRemoteMessage() {
     final var remoteMessage =
-        DeleteShardAPI.createRemoteMessage(
+        DeleteShard.createRemoteMessage(
                 "someCollName", "someShardName", null, null, null, null, null)
             .getProperties();
 

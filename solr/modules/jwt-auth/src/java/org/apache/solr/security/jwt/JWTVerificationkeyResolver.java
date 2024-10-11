@@ -59,9 +59,9 @@ import org.slf4j.LoggerFactory;
 public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
+  private final VerificationJwkSelector verificationJwkSelector = new VerificationJwkSelector();
 
-  private Map<String, JWTIssuerConfig> issuerConfigs = new HashMap<>();
+  private final Map<String, JWTIssuerConfig> issuerConfigs = new HashMap<>();
   private final boolean requireIssuer;
 
   /**
@@ -73,10 +73,7 @@ public class JWTVerificationkeyResolver implements VerificationKeyResolver {
   public JWTVerificationkeyResolver(
       Collection<JWTIssuerConfig> issuerConfigs, boolean requireIssuer) {
     this.requireIssuer = requireIssuer;
-    issuerConfigs.forEach(
-        ic -> {
-          this.issuerConfigs.put(ic.getIss(), ic);
-        });
+    issuerConfigs.forEach(ic -> this.issuerConfigs.put(ic.getIss(), ic));
   }
 
   @Override

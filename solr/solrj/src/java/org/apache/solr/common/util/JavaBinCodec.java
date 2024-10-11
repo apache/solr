@@ -95,7 +95,7 @@ public class JavaBinCodec implements PushWriter {
       SOLRDOCLST = 12,
       BYTEARR = 13,
       ITERATOR = 14,
-      /** this is a special tag signals an end. No value is associated with it */
+      /* this is a special tag signals an end. No value is associated with it */
       END = 15,
       SOLRINPUTDOC = 16,
       MAP_ENTRY_ITER = 17,
@@ -537,6 +537,7 @@ public class JavaBinCodec implements PushWriter {
     dis.readFully(arr);
     return arr;
   }
+
   // use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable = false;
@@ -1249,7 +1250,7 @@ public class JavaBinCodec implements PushWriter {
      * Examine and attempt to serialize the given object, using a {@link JavaBinCodec} to write it
      * to a stream.
      *
-     * @param o the object that the caller wants serialized.
+     * @param o the object that the caller wants to be serialized.
      * @param codec used to actually serialize {@code o}.
      * @return the object {@code o} itself if it could not be serialized, or {@code null} if the
      *     whole object was successfully serialized.

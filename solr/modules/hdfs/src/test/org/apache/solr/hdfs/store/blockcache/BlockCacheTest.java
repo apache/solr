@@ -43,8 +43,8 @@ public class BlockCacheTest extends SolrTestCase {
     byte[] buffer = new byte[1024];
     Random random = random();
     byte[] newData = new byte[blockSize];
-    AtomicLong hitsInCache = new AtomicLong();
-    AtomicLong missesInCache = new AtomicLong();
+    long hitsInCache = 0L;
+    long missesInCache = 0L;
     long storeTime = 0;
     long fetchTime = 0;
     int passes = 10000;
@@ -59,9 +59,9 @@ public class BlockCacheTest extends SolrTestCase {
       blockCacheKey.setPath("/");
 
       if (blockCache.fetch(blockCacheKey, buffer)) {
-        hitsInCache.incrementAndGet();
+        hitsInCache += 1;
       } else {
-        missesInCache.incrementAndGet();
+        missesInCache += 1;
       }
 
       byte[] testData = testData(random, blockSize, newData);
@@ -77,8 +77,8 @@ public class BlockCacheTest extends SolrTestCase {
         assertArrayEquals("buffer content differs", testData, buffer);
       }
     }
-    System.out.println("Cache Hits    = " + hitsInCache.get());
-    System.out.println("Cache Misses  = " + missesInCache.get());
+    System.out.println("Cache Hits    = " + hitsInCache);
+    System.out.println("Cache Misses  = " + missesInCache);
     System.out.println("Store         = " + (storeTime / (double) passes) / 1000000.0);
     System.out.println("Fetch         = " + (fetchTime / (double) passes) / 1000000.0);
     System.out.println("# of Elements = " + blockCache.getSize());

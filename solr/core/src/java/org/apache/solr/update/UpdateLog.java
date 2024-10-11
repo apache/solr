@@ -19,14 +19,16 @@ package org.apache.solr.update;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,9 +53,11 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
@@ -62,14 +66,17 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.core.SolrPaths;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -80,9 +87,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -219,15 +224,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected final int numDeletesByQueryToKeep = 100;
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
-  // This should only be used to initialize VersionInfo... the actual number of buckets may be
-  // rounded up to a power of two.
-  protected int numVersionBuckets;
-  protected Long maxVersionFromIndex = null;
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes =
       new OldDeletesLinkedHashMap(this.numDeletesToKeep);
+
+  private UpdateLocks updateLocks;
 
   /** Holds the query and the version for a DeleteByQuery command */
   public static class DBQ {
@@ -246,10 +249,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   // Needs to be String because hdfs.Path is incompatible with nio.Path
   protected String[] tlogFiles;
   protected Path tlogDir;
+  protected Closeable releaseTlogDir;
   protected Collection<String> globalStrings;
 
   protected String dataDir;
-  protected String lastDataDir;
 
   protected VersionInfo versionInfo;
 
@@ -328,6 +331,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return versionInfo;
   }
 
+  public UpdateLocks getLocks() {
+    return updateLocks;
+  }
+
   public int getNumRecordsToKeep() {
     return numRecordsToKeep;
   }
@@ -336,14 +343,35 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return maxNumLogsToKeep;
   }
 
-  public int getNumVersionBuckets() {
-    return numVersionBuckets;
-  }
-
   protected static int objToInt(Object obj, int def) {
     if (obj != null) {
       return Integer.parseInt(obj.toString());
     } else return def;
+  }
+
+  public static Path ulogToTlogDir(
+      String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
+    boolean unscopedDataDir =
+        !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataDir);
+
+    // if the ulog dataDir is unscoped (neither under core instanceDir, nor core dataDir),
+    // then we must scope it to the core; otherwise, scope to purpose (TLOG_NAME).
+    if (unscopedDataDir) {
+      Path tlog = ulogDirPath.resolve(coreName);
+      if (tlog.equals(instancePath)) {
+        throw new IllegalArgumentException(
+            "tlog path " + tlog + " conflicts with instance path " + instancePath);
+      } else if (SolrPaths.normalizeDir(tlog.toString()).equals(coreDataDir)) {
+        // NOTE: use string comparison above because `coreDataDir` might not be parseable
+        // as a valid Path (e.g., it might be an hdfs Path).
+        throw new IllegalArgumentException(
+            "tlog path " + tlog + " conflicts with core data dir " + coreDataDir);
+      }
+      return tlog;
+    } else {
+      // the simple case
+      return ulogDirPath.resolve(TLOG_NAME);
+    }
   }
 
   @Override
@@ -353,47 +381,199 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
-    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 65536);
-    if (numVersionBuckets <= 0)
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Number of version buckets must be greater than 0!");
+    if (info.initArgs.get("numVersionBuckets") != null) {
+      log.warn("numVersionBuckets is obsolete");
+    }
+
+    if (info.initArgs.get("versionBucketLockTimeoutMs") != null) {
+      log.warn("versionBucketLockTimeoutMs is mostly replaced by docLockTimeoutMs");
+    }
+    int timeoutMs =
+        objToInt(
+            info.initArgs.get("docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
+            EnvUtils.getPropertyAsLong("solr.update.docLockTimeoutMs", 0L).intValue());
+    updateLocks = new UpdateLocks(timeoutMs);
 
     log.info(
-        "Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
+        "Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={}",
         dataDir,
         defaultSyncLevel,
         numRecordsToKeep,
-        maxNumLogsToKeep,
-        numVersionBuckets);
+        maxNumLogsToKeep);
   }
 
-  /* Note, when this is called, uhandler is not completely constructed.
-   * This must be called when a new log is created, or
-   * for an existing log whenever the core or update handler changes.
+  private final AtomicBoolean initialized = new AtomicBoolean();
+
+  private String resolveDataDir(SolrCore core) {
+    // we need to initialize with existing `this.dataDir`, because it may have been
+    // set in `init(PluginInfo)` to the ulogDir specified in `<updateLog>` element
+    // of `solrconfig.xml`
+    String dataDir = this.dataDir;
+
+    // ulogDir from CoreDescriptor overrides
+    String ulogDir = core.getCoreDescriptor().getUlogDir();
+
+    if (ulogDir != null) {
+      dataDir = ulogDir;
+    }
+
+    if (dataDir == null || dataDir.length() == 0) {
+      // NOTE: this method is called from within `UpdateHandler` ctor, and this method is called
+      // _after_ `init(PluginInfo)`; so if ulogDir is specified in `<updateLog>` element of
+      // `solrconfig.xml`, `dataDir` will _not_ be null here.
+      dataDir = core.getDataDir();
+    }
+
+    return resolveDataDir(core, dataDir);
+  }
+
+  /**
+   * This must be called when a new log is created, or for an existing log whenever the core or
+   * update handler changes. It is called from the ctor of the specified {@link UpdateHandler}, so
+   * the specified uhandler will not yet be completely constructed.
+   *
+   * <p>This method must be called <i>after</i> {@link #init(PluginInfo)} is called.
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
-    dataDir = core.getUlogDir();
-
     this.uhandler = uhandler;
 
-    usableForChildDocs = core.getLatestSchema().isUsableForChildDocs();
-
-    if (dataDir.equals(lastDataDir)) {
-      versionInfo.reload();
+    // on a reopen, return early; less work to do.
+    if (!initialized.compareAndSet(false, true)) {
+      // NOTE: we may not strictly _need_ fancy concurrency constructs here, since it looks like
+      // `init(UpdateHandler, SolrCore` is never actually called concurrently in application code
+      // (`TestHdfsUpdateLog.testFSThreadSafety()`, introduced by SOLR-7113, seems to be the only
+      // place that requires true thread safety from this method?).
+      if (debug) {
+        log.debug(
+            "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
+            getTlogDir(),
+            id);
+      }
       core.getCoreMetricManager()
           .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
 
-      if (debug) {
-        log.debug(
-            "UpdateHandler init: tlogDir={}, next id={} this is a reopen...nothing else to do",
-            tlogDir,
-            id);
+      String reResolved = resolveDataDir(core);
+      if (dataDir == null || !dataDir.equals(reResolved)) {
+        // dataDir should already be initialized, and should not change. We recompute every time
+        // in order to fail on attempted config changes, rather than simply silently ignore them.
+        throw new IllegalStateException(
+            "dataDir should not change on reload! computed " + reResolved + ", found " + dataDir);
       }
       return;
     }
-    lastDataDir = dataDir;
-    tlogDir = Path.of(dataDir, TLOG_NAME);
+
+    dataDir = resolveDataDir(core);
+
+    initTlogDir(core);
+
+    usableForChildDocs = core.getLatestSchema().isUsableForChildDocs();
+
+    try {
+      versionInfo = new VersionInfo(this);
+    } catch (SolrException e) {
+      log.error("Unable to use updateLog: ", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
+    }
+
+    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
+    try (RecentUpdates startingUpdates = getRecentUpdates()) {
+      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+
+      // populate recent deletes list (since we can't get that info from the index)
+      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
+        DeleteUpdate du = startingUpdates.deleteList.get(i);
+        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
+      }
+
+      // populate recent deleteByQuery commands
+      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
+        Update update = startingUpdates.deleteByQueryList.get(i);
+        @SuppressWarnings({"unchecked"})
+        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
+        long version = (Long) dbq.get(1);
+        String q = (String) dbq.get(2);
+        trackDeleteByQuery(q, version);
+      }
+    }
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+  }
+
+  protected final void maybeClearLog(SolrCore core) {
+    if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
+      clearLog();
+    }
+  }
+
+  /**
+   * Resolves any relative path wrt the highest core-scoped level (whatever that means for a
+   * particular implementation). For most filesystems, this will be the core instanceDir, but there
+   * are other cases; e.g., HdfsUpdateLog will resolve paths relative to the core dataDir.
+   *
+   * <p>If the input path is already absolute, it will be returned unmodified.
+   *
+   * <p>This method should return the final, absolute, normalized path that defines the location of
+   * the ulog dataDir. It should <i>not</i> bother to resolve the tlog dir, nor do any work
+   * associated with initializing the tlog dir or its contents. Tlog dir initialization takes place
+   * later (if necessary) in {@link #initTlogDir(SolrCore)}.
+   */
+  protected String resolveDataDir(SolrCore core, String path) {
+    if (Path.of(path).isAbsolute()) {
+      return path;
+    }
+    Path instancePath = core.getInstancePath();
+    Path absolute = instancePath.resolve(path);
+    if (!absolute.normalize().startsWith(instancePath.normalize())) {
+      // relative path spec should not be able to escape core-scoped instanceDir
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Illegal relative ulog dir spec: " + path);
+    }
+    return absolute.toString();
+  }
+
+  /**
+   * Based on {@link #dataDir} (whose initialization must be complete before this method is called),
+   * this method is responsible for, in order:
+   *
+   * <ol>
+   *   <li>resolving the tlog dir (in an implementation-dependent way)
+   *   <li>clearing any existing entries (if applicable) by calling {@link #maybeClearLog(SolrCore)}
+   *   <li>actually creating tlog files (and handling any existing tlog files, if necessary)
+   * </ol>
+   *
+   * <p>Note: implementations of this method <i>must</i> call {@link #maybeClearLog(SolrCore)} after
+   * resolving the tlog dir, and before creating any (or handling any existing) tlog files.
+   */
+  protected void initTlogDir(SolrCore core) {
+    Path instancePath = core.getInstancePath();
+
+    Path dataDirPath = Path.of(dataDir);
+
+    // intentionally use assert side-effect assignment here. `Path.startsWith()` fails if the
+    // argument is a different class, which is the case for `SolrCore.getInstancePath()`,
+    // strictly in tests (lucene test-framework `FilterPath`).
+    assert (instancePath = Path.of(instancePath.toUri())).getClass()
+        == (dataDirPath = Path.of(dataDirPath.toUri())).getClass();
+
+    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, instancePath, core.getDataDir());
+
+    maybeClearLog(core);
+
+    // usage of tlog dir almost entirely bypasses `Directory` API; we only need to do this so that
+    // we can remove the tlog dir via `DirectoryFactory.remove()`, which understands how to delete
+    // in filesystem-specific ways.
+    DirectoryFactory df = core.getDirectoryFactory();
+    Directory d;
+    try {
+      d =
+          df.get(
+              tlogDir.toAbsolutePath().toString(),
+              DirectoryFactory.DirContext.DEFAULT,
+              DirectoryFactory.LOCK_TYPE_NONE);
+      this.releaseTlogDir = () -> df.release(d);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
     try {
       Files.createDirectories(tlogDir);
     } catch (IOException e) {
@@ -442,36 +622,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       newestLogsOnStartup.addFirst(ll);
       if (newestLogsOnStartup.size() >= 2) break;
     }
-
-    try {
-      versionInfo = new VersionInfo(this, numVersionBuckets);
-    } catch (SolrException e) {
-      log.error("Unable to use updateLog: ", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
-    }
-
-    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
-    try (RecentUpdates startingUpdates = getRecentUpdates()) {
-      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
-
-      // populate recent deletes list (since we can't get that info from the index)
-      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
-        DeleteUpdate du = startingUpdates.deleteList.get(i);
-        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
-      }
-
-      // populate recent deleteByQuery commands
-      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
-        Update update = startingUpdates.deleteByQueryList.get(i);
-        @SuppressWarnings({"unchecked"})
-        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
-        long version = (Long) dbq.get(1);
-        String q = (String) dbq.get(2);
-        trackDeleteByQuery(q, version);
-      }
-    }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override
@@ -522,8 +672,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 
-  public String getLogDir() {
+  public String getTlogDir() {
     return tlogDir.toAbsolutePath().toString();
+  }
+
+  public String getUlogDir() {
+    return dataDir;
   }
 
   public List<Long> getStartingVersions() {
@@ -998,7 +1152,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " is not a partial doc"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // This update is an inplace update, get the partial doc. The input doc is always at last
       // position.
@@ -1022,8 +1176,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // if the newerDoc has this field, then this field from olderDoc can be ignored
       if (!newerDoc.containsKey(fieldName)
           && (mergeFields == null || mergeFields.contains(fieldName))) {
-        for (Object val : olderDoc.getFieldValues(fieldName)) {
-          newerDoc.addField(fieldName, val);
+        Collection<Object> values = olderDoc.getFieldValues(fieldName);
+        if (values == null) {
+          newerDoc.addField(fieldName, null);
+        } else {
+          for (Object val : values) {
+            newerDoc.addField(fieldName, val);
+          }
         }
       }
     }
@@ -1219,7 +1378,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(recoverLogs, false);
 
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       state = State.REPLAYING;
 
@@ -1229,7 +1388,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       deleteByQueries.clear();
       oldDeletes.clear();
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
 
     // At this point, we are guaranteed that any new updates coming in will see the state as
@@ -1255,11 +1414,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(Collections.singletonList(tlog), false, true);
 
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       state = State.REPLAYING;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
 
     return cs.submit(replayer, recoveryInfo);
@@ -1273,7 +1432,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param cuc any updates that have version larger than the version of cuc will be copied over
    */
   public void copyOverBufferingUpdates(CommitUpdateCommand cuc) {
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       synchronized (this) {
         state = State.ACTIVE;
@@ -1286,7 +1445,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         dropBufferTlog();
       }
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
   }
 
@@ -1297,7 +1456,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param cuc any updates that have version larger than the version of cuc will be copied over
    */
   public void commitAndSwitchToNewTlog(CommitUpdateCommand cuc) {
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       synchronized (this) {
         if (tlog == null) {
@@ -1311,7 +1470,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       }
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
   }
 
@@ -1343,9 +1502,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     copyOverOldUpdatesMeter.mark();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
-    TransactionLog.LogReader logReader = oldTlog.getReader(0);
+    TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
+      logReader = oldTlog.getReader(0);
       while ((o = logReader.next()) != null) {
         try {
           List<?> entry = (List<?>) o;
@@ -1458,36 +1618,41 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     close(committed, false);
   }
 
+  @SuppressWarnings("try")
   public void close(boolean committed, boolean deleteOnClose) {
-    recoveryExecutor.shutdown(); // no new tasks
+    try (Closeable c = releaseTlogDir) {
+      recoveryExecutor.shutdown(); // no new tasks
 
-    synchronized (this) {
+      synchronized (this) {
 
-      // Don't delete the old tlogs, we want to be able to replay from them and retrieve old
-      // versions
+        // Don't delete the old tlogs, we want to be able to replay from them and retrieve old
+        // versions
 
-      doClose(prevTlog, committed);
-      doClose(tlog, committed);
+        doClose(prevTlog, committed);
+        doClose(tlog, committed);
 
-      for (TransactionLog log : logs) {
-        if (log == prevTlog || log == tlog) continue;
-        log.deleteOnClose = false;
-        log.decref();
-        log.forceClose();
+        for (TransactionLog log : logs) {
+          if (log == prevTlog || log == tlog) continue;
+          log.deleteOnClose = false;
+          log.decref();
+          log.forceClose();
+        }
+
+        if (bufferTlog != null) {
+          // should not delete bufferTlog on close, existing bufferTlog is a sign for skip peerSync
+          bufferTlog.deleteOnClose = false;
+          bufferTlog.decref();
+          bufferTlog.forceClose();
+        }
       }
 
-      if (bufferTlog != null) {
-        // should not delete bufferTlog on close, existing bufferTlog is a sign for skip peerSync
-        bufferTlog.deleteOnClose = false;
-        bufferTlog.decref();
-        bufferTlog.forceClose();
+      try {
+        ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
+      } catch (Exception e) {
+        log.error("Exception shutting down recoveryExecutor", e);
       }
-    }
-
-    try {
-      ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
-    } catch (Exception e) {
-      log.error("Exception shutting down recoveryExecutor", e);
+    } catch (IOException e) {
+      log.warn("exception releasing tlog dir", e);
     }
   }
 
@@ -1541,7 +1706,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public List<Long> getVersions(int n, long maxVersion) {
       List<Long> ret = new ArrayList<>(n);
-      LongSet set = new LongSet(n);
+      LongSet set = new LongHashSet(n);
       final int nInput = n;
 
       for (List<Update> singleList : updateList) {
@@ -1728,7 +1893,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // block all updates to eliminate race conditions
     // reading state and acting on it in the distributed update processor
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       if (state != State.ACTIVE && state != State.BUFFERING) {
         // we don't currently have support for handling other states
@@ -1746,13 +1911,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       state = State.BUFFERING;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
   }
 
   /** Returns true if we were able to drop buffered updates and return to the ACTIVE state */
   public boolean dropBufferedUpdates() {
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       if (state != State.BUFFERING) return false;
 
@@ -1764,7 +1929,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       state = State.ACTIVE;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
     return true;
   }
@@ -1786,7 +1951,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // block all updates to eliminate race conditions
     // reading state and acting on it in the update processor
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       cancelApplyBufferUpdate = false;
       if (state != State.BUFFERING) return null;
@@ -1802,7 +1967,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       state = State.APPLYING_BUFFERED;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
 
     if (ExecutorUtil.isShutdown(recoveryExecutor)) {
@@ -1888,13 +2053,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
         if (finishing) {
-
-          // after replay, update the max from the index
-          log.info("Re-computing max version from index after log re-play.");
-          maxVersionFromIndex = null;
-          getMaxVersionFromIndex();
-
-          versionInfo.unblockUpdates();
+          updateLocks.unblockUpdates();
         }
 
         // clean up in case we hit some unexpected exception and didn't get
@@ -1921,10 +2080,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.positionOfStart,
             inSortedOrder);
         long lastStatusTime = System.nanoTime();
-        if (inSortedOrder) {
-          tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
-        } else {
-          tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        try {
+          if (inSortedOrder) {
+            tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
+          } else {
+            tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
         }
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
@@ -1942,7 +2105,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   return proc;
                 });
 
-        OrderedExecutor executor =
+        OrderedExecutor<BytesRef> executor =
             inSortedOrder ? null : req.getCoreContainer().getReplayUpdatesExecutor();
         AtomicInteger pendingTasks = new AtomicInteger(0);
         AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
@@ -1989,7 +2152,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 // after we've finished this recovery.
                 // NOTE: our own updates won't be blocked since the thread holding a write lock can
                 // lock a read lock.
-                versionInfo.blockUpdates();
+                updateLocks.blockUpdates();
                 finishing = true;
                 o = tlogReader.next();
               } else {
@@ -2151,34 +2314,27 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
 
-    private Integer getBucketHash(UpdateCommand cmd) {
+    private BytesRef getIndexedId(UpdateCommand cmd) {
       if (cmd instanceof AddUpdateCommand) {
-        BytesRef idBytes = ((AddUpdateCommand) cmd).getIndexedId();
-        if (idBytes == null) return null;
-        return DistributedUpdateProcessor.bucketHash(idBytes);
+        return ((AddUpdateCommand) cmd).getIndexedId();
       }
-
       if (cmd instanceof DeleteUpdateCommand) {
-        BytesRef idBytes = ((DeleteUpdateCommand) cmd).getIndexedId();
-        if (idBytes == null) return null;
-        return DistributedUpdateProcessor.bucketHash(idBytes);
+        return ((DeleteUpdateCommand) cmd).getIndexedId();
       }
-
       return null;
     }
 
     private void execute(
         UpdateCommand cmd,
-        OrderedExecutor executor,
+        OrderedExecutor<BytesRef> executor,
         AtomicInteger pendingTasks,
         ThreadLocal<UpdateRequestProcessor> procTl,
         AtomicReference<SolrException> exceptionHolder) {
       assert cmd instanceof AddUpdateCommand || cmd instanceof DeleteUpdateCommand;
 
       if (executor != null) {
-        // by using the same hash as DUP, independent updates can avoid waiting for same bucket
         executor.execute(
-            getBucketHash(cmd),
+            getIndexedId(cmd),
             () -> {
               try {
                 // fail fast
@@ -2279,30 +2435,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  protected String getTlogDir(SolrCore core, PluginInfo info) {
-    String dataDir = (String) info.initArgs.get("dir");
-
-    String ulogDir = core.getCoreDescriptor().getUlogDir();
-    if (ulogDir != null) {
-      dataDir = ulogDir;
-    }
-
-    if (dataDir == null || dataDir.length() == 0) {
-      dataDir = core.getDataDir();
-    }
-
-    return dataDir + "/" + TLOG_NAME;
-  }
-
-  /**
-   * Clears the logs on the file system. Only call before init.
-   *
-   * @param core the SolrCore
-   * @param ulogPluginInfo the init info for the UpdateHandler
-   */
-  public void clearLog(SolrCore core, PluginInfo ulogPluginInfo) {
-    if (ulogPluginInfo == null) return;
-    Path tlogPath = Path.of(getTlogDir(core, ulogPluginInfo));
+  /** Clears the logs on the file system. Only call before init. */
+  public void clearLog() {
+    Path tlogPath = tlogDir;
     if (Files.exists(tlogPath)) {
       try (Stream<Path> paths = Files.walk(tlogPath)) {
         paths
@@ -2319,71 +2454,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       } catch (IOException e) {
         log.error("Could not clear old tlogs in {}", tlogPath);
       }
-    }
-  }
-
-  public Long getCurrentMaxVersion() {
-    return maxVersionFromIndex;
-  }
-
-  // this method is primarily used for unit testing and is not part of the public API for this class
-  Long getMaxVersionFromIndex() {
-    RefCounted<SolrIndexSearcher> newestSearcher =
-        (uhandler != null && uhandler.core != null) ? uhandler.core.getRealtimeSearcher() : null;
-    if (newestSearcher == null)
-      throw new IllegalStateException("No searcher available to lookup max version from index!");
-
-    try {
-      seedBucketsWithHighestVersion(newestSearcher.get());
-      return getCurrentMaxVersion();
-    } finally {
-      newestSearcher.decref();
-    }
-  }
-
-  /** Used to seed all version buckets with the max value of the version field in the index. */
-  protected Long seedBucketsWithHighestVersion(
-      SolrIndexSearcher newSearcher, VersionInfo versions) {
-    Long highestVersion = null;
-    final RTimer timer = new RTimer();
-
-    try (RecentUpdates recentUpdates = getRecentUpdates()) {
-      long maxVersionFromRecent = recentUpdates.getMaxRecentVersion();
-      long maxVersionFromIndex = versions.getMaxVersionFromIndex(newSearcher);
-
-      long maxVersion = Math.max(maxVersionFromIndex, maxVersionFromRecent);
-      if (maxVersion == 0L) {
-        maxVersion = versions.getNewClock();
-        log.info(
-            "Could not find max version in index or recent updates, using new clock {}",
-            maxVersion);
-      }
-
-      // seed all version buckets with the highest value from recent and index
-      versions.seedBucketsWithHighestVersion(maxVersion);
-
-      highestVersion = maxVersion;
-    } catch (IOException ioExc) {
-      log.warn("Failed to determine the max value of the version field due to: ", ioExc);
-    }
-
-    if (debug) {
-      log.debug(
-          "Took {}ms to seed version buckets with highest version {}",
-          timer.getTime(),
-          highestVersion);
-    }
-
-    return highestVersion;
-  }
-
-  public void seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher) {
-    log.debug("Looking up max value of version field to seed version buckets");
-    versionInfo.blockUpdates();
-    try {
-      maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
-    } finally {
-      versionInfo.unblockUpdates();
     }
   }
 

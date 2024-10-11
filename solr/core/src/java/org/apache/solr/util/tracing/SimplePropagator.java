@@ -45,11 +45,11 @@ public class SimplePropagator implements TextMapPropagator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String TRACE_HOST_NAME =
-      System.getProperty("trace_host_name", System.getProperty("host"));
+      System.getProperty("solr.traceHostName", System.getProperty("host"));
   private static final TextMapPropagator INSTANCE = new SimplePropagator();
   private static final ContextKey<String> TRACE_ID_KEY = ContextKey.named("trace_id");
 
-  static final String TRACE_ID = System.getProperty("TRACE_ID", "X-Trace-Id");
+  static final String TRACE_ID = System.getProperty("solr.traceIdHeader", "X-Trace-Id");
   private static final List<String> FIELDS = List.of(TRACE_ID);
 
   private static final AtomicLong traceCounter = new AtomicLong(0);
@@ -64,7 +64,7 @@ public class SimplePropagator implements TextMapPropagator {
       GlobalOpenTelemetry.set(otel);
       loaded = true;
     }
-    return GlobalOpenTelemetry.getTracer("solr");
+    return TraceUtils.getGlobalTracer();
   }
 
   public static TextMapPropagator getInstance() {

@@ -30,12 +30,12 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.DeleteCollectionBackupApi;
 import org.apache.solr.client.api.model.BackupDeletionData;
 import org.apache.solr.client.api.model.BackupDeletionResponseBody;

@@ -23,6 +23,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    if (System.getProperty("host") == null) {
+    if (EnvUtils.getProperty("host") == null) {
       System.setProperty("host", "localhost");
     }
   }
@@ -62,7 +63,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
 
     // force early init
     CustomTestOtelTracerConfigurator tracer = new CustomTestOtelTracerConfigurator();
-    tracer.prepareConfiguration();
+    tracer.prepareConfiguration(new NamedList<>());
 
     bootOtel();
   }

@@ -47,7 +47,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.TestPseudoReturnFields;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -67,6 +66,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -97,7 +97,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     assertEquals(
@@ -744,16 +744,15 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
 
         assertTrue(msg, doc.getFieldValue("shard_id") instanceof String);
-        MatcherAssert.assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
+        assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
 
         assertTrue(msg, doc.getFieldValue("replica_urls") instanceof String);
-        MatcherAssert.assertThat(
+        assertThat(
             doc.getFieldValue("replica_urls").toString(),
             containsString(
                 "/solr/org.apache.solr.cloud.TestCloudPseudoReturnFields_collection_shard"));
         if (1 < repFactor) {
-          MatcherAssert.assertThat(
-              doc.getFieldValue("replica_urls").toString(), containsString("|"));
+          assertThat(doc.getFieldValue("replica_urls").toString(), containsString("|"));
         }
 
         assertEquals(msg, doc.getFieldValue("shard_id"), doc.getFieldValue("[shard]"));
@@ -790,16 +789,15 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         String msg = p + " => " + doc;
 
         assertTrue(msg, doc.getFieldValue("shard_id") instanceof String);
-        MatcherAssert.assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
+        assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
 
         assertTrue(msg, doc.getFieldValue("replica_urls") instanceof String);
-        MatcherAssert.assertThat(
+        assertThat(
             doc.getFieldValue("replica_urls").toString(),
             containsString(
                 "/solr/org.apache.solr.cloud.TestCloudPseudoReturnFields_collection_shard"));
         if (1 < repFactor) {
-          MatcherAssert.assertThat(
-              doc.getFieldValue("replica_urls").toString(), containsString("|"));
+          assertThat(doc.getFieldValue("replica_urls").toString(), containsString("|"));
         }
 
         assertEquals(msg, doc.getFieldValue("shard_id"), doc.getFieldValue("[shard]"));

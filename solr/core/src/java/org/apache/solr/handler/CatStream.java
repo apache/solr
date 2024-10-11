@@ -196,7 +196,9 @@ public class CatStream extends TupleStream implements Expressible {
                     new GZIPInputStream(Files.newInputStream(currentFilePath.absolutePath)),
                     StandardCharsets.UTF_8));
       } else {
-        currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
+        currentFileLines =
+            FileUtils.lineIterator(
+                currentFilePath.absolutePath.toFile(), StandardCharsets.UTF_8.name());
       }
       if (currentFileLines.hasNext()) return true;
     }

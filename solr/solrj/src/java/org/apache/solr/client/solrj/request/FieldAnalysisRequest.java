@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -30,7 +29,7 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since solr.14
  */
-public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
+public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAnalysisResponse> {
 
   private String fieldValue;
   private String query;
@@ -90,7 +89,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
   // ===== Helper Methods =====
 
   /**
-   * Convers the given list of string to a comma-separated string.
+   * Converts the given list of strings to a comma-separated string.
    *
    * @param list The list of string.
    * @return The comma-separated string.
@@ -153,7 +152,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
 
   /**
    * Sets whether index time tokens that match query time tokens should be marked as a "match". By
-   * default this is set to {@code false}. Obviously, this flag is ignored if when the query is set
+   * default, this is set to {@code false}. Obviously, this flag is ignored if when the query is set
    * to {@code null}.
    *
    * @param showMatch Sets whether index time tokens that match query time tokens should be marked
@@ -237,7 +236,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
 
   /**
    * Returns a list of field types the analysis should be performed on. May return {@code null}
-   * indicating that no analysis will be peformed on field types.
+   * indicating that no analysis will be performed on field types.
    *
    * @return The field types the analysis should be performed on.
    */

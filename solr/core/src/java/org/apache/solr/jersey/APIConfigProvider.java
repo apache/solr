@@ -17,16 +17,14 @@
 package org.apache.solr.jersey;
 
 import org.apache.solr.jersey.APIConfigProvider.APIConfig;
-import org.glassfish.hk2.api.Factory;
 
 /**
  * Interface to be implemented by the Request Handlers that need to provide some custom
  * configuration to the V2 APIs
  */
-public interface APIConfigProvider<T extends APIConfig> extends Factory<T> {
+public interface APIConfigProvider<T extends APIConfig> {
 
-  @Override
-  default void dispose(T instance) {}
+  T provide();
 
   Class<T> getConfigClass();
 

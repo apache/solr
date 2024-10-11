@@ -55,10 +55,11 @@ public interface FacetParams {
   public static final String FACET_METHOD_uif = "uif";
 
   /**
-   * Any lucene formated queries the user would like to use for Facet Constraint Counts
+   * Any lucene formatted queries the user would like to use for Facet Constraint Counts
    * (multi-value)
    */
   public static final String FACET_QUERY = FACET + ".query";
+
   /**
    * Any field whose terms the user wants to enumerate over for Facet Constraint Counts
    * (multi-value)
@@ -164,21 +165,25 @@ public interface FacetParams {
    * Any field whose terms the user wants to enumerate over for Facet Contraint Counts (multi-value)
    */
   public static final String FACET_DATE = FACET + ".date";
+
   /**
    * Date string indicating the starting point for a date facet range. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_DATE_START = FACET_DATE + ".start";
+
   /**
    * Date string indicating the ending point for a date facet range. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_DATE_END = FACET_DATE + ".end";
+
   /**
    * Date Math string indicating the interval of sub-ranges for a date facet range. Can be
    * overridden on a per field basis.
    */
   public static final String FACET_DATE_GAP = FACET_DATE + ".gap";
+
   /**
    * Boolean indicating how counts should be computed if the range between 'start' and 'end' is not
    * evenly divisible by 'gap'. If this value is true, then all counts of ranges involving the 'end'
@@ -192,6 +197,7 @@ public interface FacetParams {
    * <p>Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_HARD_END = FACET_DATE + ".hardend";
+
   /**
    * String indicating what "other" ranges should be computed for a date facet range (multi-value).
    *
@@ -216,25 +222,29 @@ public interface FacetParams {
   public static final String FACET_DATE_INCLUDE = FACET_DATE + ".include";
 
   /**
-   * Any numerical field whose terms the user wants to enumerate over Facet Contraint Counts for
+   * Any numerical field whose terms the user wants to enumerate over Facet Constraint Counts for
    * selected ranges.
    */
   public static final String FACET_RANGE = FACET + ".range";
+
   /**
    * Number indicating the starting point for a numerical range facet. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_RANGE_START = FACET_RANGE + ".start";
+
   /**
    * Number indicating the ending point for a numerical range facet. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_RANGE_END = FACET_RANGE + ".end";
+
   /**
    * Number indicating the interval of sub-ranges for a numerical facet range. Can be overridden on
    * a per field basis.
    */
   public static final String FACET_RANGE_GAP = FACET_RANGE + ".gap";
+
   /**
    * Boolean indicating how counts should be computed if the range between 'start' and 'end' is not
    * evenly divisible by 'gap'. If this value is true, then all counts of ranges involving the 'end'
@@ -248,6 +258,7 @@ public interface FacetParams {
    * <p>Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_HARD_END = FACET_RANGE + ".hardend";
+
   /**
    * String indicating what "other" ranges should be computed for a numerical range facet
    * (multi-value). Can be overridden on a per field basis.
@@ -298,7 +309,7 @@ public interface FacetParams {
    * <pre>["-150 10" TO "-100 30"]</pre>
    *
    * (the first is bottom-left and second is bottom-right, both of which are parsed as points are
-   * parsed). OR, any WKT can be provided and it's bounding box will be taken.
+   * parsed). OR, any WKT can be provided, and it's bounding box will be taken.
    */
   public static final String FACET_HEATMAP_GEOM = FACET_HEATMAP + ".geom";
 
@@ -319,7 +330,7 @@ public interface FacetParams {
    * Used to determine the heatmap grid level to compute (optional). It has the same interpretation
    * of maxDistErr or distErr with RPT. It's an absolute distance (in units of what's specified on
    * the field type) that a grid square must maximally fit into (width &amp; height). It can be used
-   * to to more explicitly specify the maximum grid square size without knowledge of what particular
+   * to more explicitly specify the maximum grid square size without knowledge of what particular
    * grid levels translate to. This can in turn be used with knowledge of the size of 'bbox' to get
    * a target minimum number of grid cells. Mutually exclusive with distErrPct &amp; gridLevel.
    */
@@ -410,12 +421,13 @@ public interface FacetParams {
             e);
       }
     }
+
     /**
-     * Convinience method for parsing the param value according to the correct semantics and
+     * Convenience method for parsing the param value according to the correct semantics and
      * applying the default of "LOWER"
      */
     public static EnumSet<FacetRangeInclude> parseParam(final String[] param) {
-      // short circut for default behavior
+      // short circuit for default behavior
       if (null == param || 0 == param.length) return EnumSet.of(LOWER);
 
       // build up set containing whatever is specified
@@ -424,7 +436,7 @@ public interface FacetParams {
         include.add(FacetRangeInclude.get(o));
       }
 
-      // if set contains all, then we're back to short circuting
+      // if set contains all, then we're back to short-circuiting
       if (include.contains(FacetRangeInclude.ALL)) return EnumSet.allOf(FacetRangeInclude.class);
 
       // use whatever we've got.

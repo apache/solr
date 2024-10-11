@@ -21,7 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
 
   public void testVersionBehavior() throws Exception {
-    for (float v : new float[] {1.0F, 1.1F, 1.2F, 1.3F, 1.4F, 1.5F, 1.6F}) {
+    for (float v : new float[] {1.0F, 1.1F, 1.2F, 1.3F, 1.4F, 1.5F, 1.6F, 1.7F}) {
       try {
         final IndexSchema schema = initCoreUsingSchemaVersion(v);
         final String ver = String.valueOf(v);
@@ -70,9 +70,17 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
               (v < 1.6F ? false : true),
               field.useDocValuesAsStored());
 
-          // uninvertable defaults to true (for now)
-          assertTrue(
-              f + " field's type has wrong uninvertable for ver=" + ver, field.isUninvertible());
+          // 1.7: docValues defaults to true
+          assertEquals(
+              f + " field's type has wrong docValues for ver=" + ver,
+              ((v < 1.7F || f.contains("text")) ? false : true),
+              field.hasDocValues());
+
+          // 1.7: uninvertible defaults to false
+          assertEquals(
+              f + " field's type has wrong uninvertible for ver=" + ver,
+              (v < 1.7F ? true : false),
+              field.isUninvertible());
         }
 
         // regardless of version, explicit multiValued values on field or type
@@ -137,7 +145,7 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           if (f.contains("ft_")) {
             // sanity check that we really are inheriting from fieldtype
             assertEquals(
-                f + " field's omitTfP doesn't match type for ver=" + ver,
+                f + " field's type has wrong useDocValuesAsStored for ver=" + ver,
                 expected,
                 ft.hasProperty(FieldType.USE_DOCVALUES_AS_STORED));
           } else {
@@ -148,6 +156,42 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
                 f + " field's type has wrong useDocValuesAsStored for ver=" + ver,
                 (v < 1.6F ? false : true),
                 ft.hasProperty(FieldType.USE_DOCVALUES_AS_STORED));
+          }
+        }
+
+        // regardless of version, explicit docValues values on field or type should be correct
+        for (String f :
+            new String[] {
+              "ft_dv_f",
+              "ft_dv_t",
+              "dv_f",
+              "dv_t",
+              "xx_dyn_ft_dv_f",
+              "xx_dyn_ft_dv_f",
+              "xx_dyn_dv_f",
+              "xx_dyn_dv_f"
+            }) {
+
+          boolean expected = f.endsWith("dv_t");
+          SchemaField field = schema.getField(f);
+          assertEquals(
+              f + " field's docValues is wrong for ver=" + ver, expected, field.hasDocValues());
+
+          FieldType ft = field.getType();
+          if (f.contains("ft_")) {
+            // sanity check that we really are inheriting from fieldtype
+            assertEquals(
+                f + " field's type has wrong docValues for ver=" + ver,
+                expected,
+                ft.hasProperty(FieldType.DOC_VALUES));
+          } else {
+            // for fields where the property is explicit, make sure
+            // we aren't getting a false negative because someone changed the
+            // schema, and we're inheriting from fieldType
+            assertEquals(
+                f + " field's type has wrong docValues for ver=" + ver,
+                (v < 1.7F ? false : true),
+                ft.hasProperty(FieldType.DOC_VALUES));
           }
         }
 

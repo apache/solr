@@ -91,13 +91,11 @@ public class SizeLimitedDistributedMap extends DistributedMap {
       for (String child : children) {
         Long id = childToModificationZxid.get(child);
         if (id != null && id <= topElementMzxId) {
-          try {
-            zookeeper.delete(dir + "/" + child, -1, true);
-            if (onOverflowObserver != null)
-              onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
-          } catch (KeeperException.NoNodeException ignored) {
-            // this could happen if multiple threads try to clean the same map
-          }
+          String trackingId = child.substring(PREFIX.length());
+          boolean removed = remove(trackingId);
+          if (removed && onOverflowObserver != null) {
+            onOverflowObserver.onChildDelete(trackingId);
+          } // else, probably multiple threads cleaning the queue simultaneously
         }
       }
     }

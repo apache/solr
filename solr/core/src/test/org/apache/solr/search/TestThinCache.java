@@ -26,12 +26,62 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.stats.MetricUtils;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test for {@link ThinCache}. */
 public class TestThinCache extends SolrTestCaseJ4 {
+
+  @ClassRule public static EmbeddedSolrServerTestRule solrRule = new EmbeddedSolrServerTestRule();
+  public static final String SOLR_NODE_LEVEL_CACHE_XML =
+      "<solr>\n"
+          + "  <caches>\n"
+          + "    <cache name='myNodeLevelCache'\n"
+          + "      size='10'\n"
+          + "      initialSize='10'\n"
+          + "      />\n"
+          + "    <cache name='myNodeLevelCacheThin'\n"
+          + "      class='solr.ThinCache$NodeLevelCache'\n"
+          + "      size='10'\n"
+          + "      initialSize='10'\n"
+          + "      />\n"
+          + "  </caches>\n"
+          + "</solr>";
+
+  @BeforeClass
+  public static void setupSolrHome() throws Exception {
+    Path home = createTempDir("home");
+    Files.writeString(home.resolve("solr.xml"), SOLR_NODE_LEVEL_CACHE_XML);
+
+    solrRule.startSolr(home);
+
+    Path configSet = createTempDir("configSet");
+    copyMinConf(configSet.toFile());
+    // insert a special filterCache configuration
+    Path solrConfig = configSet.resolve("conf/solrconfig.xml");
+    Files.writeString(
+        solrConfig,
+        Files.readString(solrConfig)
+            .replace(
+                "</config>",
+                "<query>\n"
+                    + "<filterCache\n"
+                    + "      class=\"solr.ThinCache\"\n"
+                    + "      parentCacheName=\"myNodeLevelCacheThin\"\n"
+                    + "      size=\"5\"\n"
+                    + "      initialSize=\"5\"/>\n"
+                    + "</query></config>"));
+
+    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+
+    // legacy; get rid of this someday!
+    h = new TestHarness(solrRule.getCoreContainer());
+    lrf = h.getRequestFactory("/select", 0, 20);
+  }
 
   SolrMetricManager metricManager = new SolrMetricManager();
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
@@ -125,36 +175,5 @@ public class TestThinCache extends SolrTestCaseJ4 {
 
     // for the other node-level cache, simply check that metrics are accessible
     assertEquals(0, nodeMetricsSnapshot.get("CACHE.nodeLevelCache/myNodeLevelCache.size"));
-  }
-
-  @BeforeClass
-  public static void setupSolrHome() throws Exception {
-    // make a solr home underneath the test's TEMP_DIR, else we don't have write access to copy in
-    // `solr.xml`
-    Path tmpFile = createTempDir();
-
-    // make data and conf dirs
-    Files.createDirectories(tmpFile.resolve("data"));
-    Path confDir = tmpFile.resolve("collection1").resolve("conf");
-    Files.createDirectories(confDir);
-
-    // copy over configuration files
-    copyXmlToHome(
-        tmpFile.toFile(),
-        TEST_PATH().resolve("solr-nodelevelcaches.xml").toAbsolutePath().toString());
-    Files.copy(
-        getFile("solr/collection1/conf/solrconfig-nodelevelcaches.xml").toPath(),
-        confDir.resolve("solrconfig.xml"));
-    Files.copy(
-        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml").toPath(),
-        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
-    Files.copy(
-        getFile("solr/collection1/conf/schema-minimal.xml").toPath(),
-        confDir.resolve("schema.xml"));
-
-    // we want the actual `solr.xml` file to be read, instead of the normal operation, which creates
-    // a synthetic "test NodeConfig"
-    System.setProperty("solr.tests.loadSolrXml", "true");
-    initCore("solrconfig.xml", "schema.xml", tmpFile.toAbsolutePath().toString());
   }
 }

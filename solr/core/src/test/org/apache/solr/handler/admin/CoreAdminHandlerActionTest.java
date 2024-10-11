@@ -47,8 +47,7 @@ public class CoreAdminHandlerActionTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
 
     setupNoCoreTest(createTempDir(), SOLR_XML);
-
-    admin = new CoreAdminHandler(h.getCoreContainer());
+    admin = h.getCoreContainer().getMultiCoreHandler();
   }
 
   @Test

@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -52,6 +53,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   private static final long serialVersionUID = 1L;
 
   private DocumentObjectBinder binder;
+  protected String defaultCollection;
 
   /**
    * Adds a collection of documents
@@ -543,7 +545,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param collection the Solr collection to send the optimize to
+   * @param collection the Solr collection to send the optimize command to
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
    *     from the server
    * @throws IOException If there is a low-level I/O error.
@@ -574,7 +576,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param collection the Solr collection to send the optimize to
+   * @param collection the Solr collection to send the optimize command to
    * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
@@ -611,7 +613,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param collection the Solr collection to send the optimize to
+   * @param collection the Solr collection to send the optimize command to
    * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
@@ -972,7 +974,7 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Query solr, and stream the results. Unlike the standard query, this will send events for each
-   * Document rather then add them to the QueryResponse.
+   * Document rather than add them to the QueryResponse.
    *
    * <p>Although this function returns a 'QueryResponse' it should be used with care since it
    * excludes anything that was passed to callback. Also note that future version may pass even more
@@ -1012,7 +1014,7 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Query solr, and stream the results. Unlike the standard query, this will send events for each
-   * Document rather then add them to the QueryResponse.
+   * Document rather than add them to the QueryResponse.
    *
    * <p>Although this function returns a 'QueryResponse' it should be used with care since it
    * excludes anything that was passed to callback. Also note that future version may pass even more
@@ -1044,6 +1046,7 @@ public abstract class SolrClient implements Serializable, Closeable {
       throws SolrServerException, IOException {
     return getById(collection, id, null);
   }
+
   /**
    * Retrieves the SolrDocument associated with the given identifier.
    *
@@ -1180,7 +1183,7 @@ public abstract class SolrClient implements Serializable, Closeable {
       throws SolrServerException, IOException;
 
   /**
-   * Execute a request against a Solr server
+   * Execute a request against a Solr server using the default collection
    *
    * @param request the request to execute
    * @return a {@link NamedList} containing the response from the server
@@ -1213,5 +1216,30 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
+  }
+
+  /**
+   * Gets the collection used by default for collection or core-based requests
+   *
+   * <p>If no value is specified at client-creation time, this method will return null.
+   */
+  public String getDefaultCollection() {
+    return defaultCollection;
+  }
+
+  /**
+   * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have
+   * been returned by the remote server or a proxy along the way.
+   */
+  public static class RemoteSolrException extends SolrException {
+    /**
+     * @param remoteHost the host the error was received from
+     * @param code Arbitrary HTTP status code
+     * @param msg Exception Message
+     * @param th Throwable to wrap with this Exception
+     */
+    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
+      super(code, "Error from server at " + remoteHost + ": " + msg, th);
+    }
   }
 }

@@ -64,6 +64,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   public static long CONFIG_SET_TIMEOUT = 300 * 1000;
+
   /**
    * Overloaded ctor to inject CoreContainer into the handler.
    *

@@ -220,7 +220,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     }
 
     List<LeafReaderContext> leafList = fcontext.searcher.getTopReaderContext().leaves();
-    leaves = leafList.toArray(new LeafReaderContext[leafList.size()]);
+    leaves = leafList.toArray(new LeafReaderContext[0]);
   }
 
   private SimpleOrderedMap<Object> nextBucket() {

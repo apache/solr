@@ -35,6 +35,7 @@ public final class SolrPaths {
 
   /** Special path which means to accept all paths. */
   public static final Path ALL_PATH = Paths.get("_ALL_");
+
   /** Special singleton path set containing only {@link #ALL_PATH}. */
   private static final Set<Path> ALL_PATHS = Collections.singleton(ALL_PATH);
 

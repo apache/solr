@@ -96,6 +96,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   public static void disableMetrics() {
     System.clearProperty("metricsEnabled");
   }
+
   /** Used to check metric counts for PKI auth */
   protected void assertPkiAuthMetricsMinimums(
       int requests,

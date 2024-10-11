@@ -55,6 +55,7 @@ public class IntervalFacet {
      * local param
      */
     private final String key;
+
     /** The count of this interval */
     private final int count;
 

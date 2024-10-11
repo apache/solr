@@ -25,31 +25,34 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "assert for non cloud mode" {
+  solr assert --not-started http://localhost:${SOLR_PORT} --timeout 5000
   run solr start
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
-  run solr assert --not-cloud http://localhost:8983/solr
+  run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr
   assert_output --partial "needn't include Solr's context-root"
   refute_output --partial "ERROR"
 
-  run solr assert --cloud http://localhost:8983
+  run solr assert --cloud http://localhost:${SOLR_PORT}
   assert_output --partial "ERROR: Solr is not running in cloud mode"
 
-  run ! solr assert --cloud http://localhost:8983/solr -e
+  run ! solr assert --cloud http://localhost:${SOLR_PORT} --exitcode
 }
 
 @test "assert for cloud mode" {
   run solr start -c
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
 
-  run solr assert --cloud http://localhost:8983
+  run solr assert --cloud http://localhost:${SOLR_PORT}
   refute_output --partial "ERROR"
 
-  run solr assert --not-cloud http://localhost:8983/solr
+  run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr
   assert_output --partial "needn't include Solr's context-root"
   assert_output --partial "ERROR: Solr is not running in standalone mode"
 
-  run ! solr assert --not-cloud http://localhost:8983 -e
+  run ! solr assert --not-cloud http://localhost:${SOLR_PORT} --exitcode
 }

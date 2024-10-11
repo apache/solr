@@ -249,6 +249,17 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/entertaining==['entertaining','funny','jocular','whimsical']");
     assertJQ(endpoint + "/jocular", "/jocular==['entertaining','funny','jocular','whimsical']");
     assertJQ(endpoint + "/whimsical", "/whimsical==['entertaining','funny','jocular','whimsical']");
+
+    // test for SOLR-6853 - should be able to delete synonyms with slash
+    Map<String, List<String>> slashSyns = new HashMap<>();
+    slashSyns.put("cheerful/joyful", List.of("sleepy/tired"));
+    assertJPut(endpoint, toJSONString(slashSyns), "/responseHeader/status==0");
+
+    // verify delete works
+    assertJDelete(endpoint + "/cheerful/joyful", "/responseHeader/status==0");
+
+    // should fail with 404 as some/thing doesn't exist
+    assertJDelete(endpoint + "/cheerful/joyful", "/error/code==404");
   }
 
   /** Can we add and remove stopwords with umlauts */

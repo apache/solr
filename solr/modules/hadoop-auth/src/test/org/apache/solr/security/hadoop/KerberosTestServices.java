@@ -19,18 +19,23 @@ package org.apache.solr.security.hadoop;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
+import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.common.util.EnvUtils;
+import org.junit.Assume;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +45,57 @@ public class KerberosTestServices {
   private volatile MiniKdc kdc;
   private final JaasConfiguration jaasConfiguration;
   private final Configuration savedConfig;
-  private volatile Locale savedLocale;
   private final boolean debug;
 
   private final File workDir;
+
+  public static void assumeMiniKdcWorksWithDefaultLocale() throws Exception {
+    final String principal = "server";
+
+    Path kdcDir = LuceneTestCase.createTempDir().resolve("miniKdc");
+    File keytabFile = kdcDir.resolve("keytabs").toFile();
+
+    Properties conf = MiniKdc.createConf();
+    conf.setProperty("kdc.port", "0");
+    MiniKdc kdc = new MiniKdc(conf, kdcDir.toFile());
+    kdc.start();
+    kdc.createPrincipal(keytabFile, principal);
+
+    AppConfigurationEntry appConfigEntry =
+        new AppConfigurationEntry(
+            KerberosTestServices.krb5LoginModuleName,
+            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+            Map.of(
+                "principal",
+                principal,
+                "storeKey",
+                "true",
+                "useKeyTab",
+                "true",
+                "useTicketCache",
+                "false",
+                "refreshKrb5Config",
+                "true",
+                "keyTab",
+                keytabFile.getAbsolutePath(),
+                "keytab",
+                keytabFile.getAbsolutePath()));
+    Configuration configuration =
+        new Configuration() {
+          @Override
+          public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+            return new AppConfigurationEntry[] {appConfigEntry};
+          }
+        };
+
+    try {
+      new LoginContext("Server", null, null, configuration).login();
+    } catch (LoginException e) {
+      Assume.assumeNoException(Locale.getDefault() + " appears to be incompatible with MiniKdc", e);
+    } finally {
+      kdc.stop();
+    }
+  }
 
   private KerberosTestServices(
       File workDir, JaasConfiguration jaasConfiguration, Configuration savedConfig, boolean debug) {
@@ -58,10 +110,7 @@ public class KerberosTestServices {
   }
 
   public void start() throws Exception {
-    if (incompatibleLanguagesWithMiniKdc.contains(Locale.getDefault().getLanguage())) {
-      savedLocale = Locale.getDefault();
-      Locale.setDefault(Locale.US);
-    }
+    assumeMiniKdcWorksWithDefaultLocale();
 
     // There is time lag between selecting a port and trying to bind with it. It's possible that
     // another service captures the port in between which'll result in BindException.
@@ -93,7 +142,6 @@ public class KerberosTestServices {
     if (kdc != null) kdc.stop();
     Configuration.setConfiguration(savedConfig);
     Krb5HttpClientBuilder.regenerateJaasConfiguration();
-    if (savedLocale != null) Locale.setDefault(savedLocale);
   }
 
   public static Builder builder() {
@@ -139,7 +187,7 @@ public class KerberosTestServices {
       clientOptions.put("storeKey", "true");
       clientOptions.put("useTicketCache", "false");
       clientOptions.put("refreshKrb5Config", "true");
-      String jaasProp = System.getProperty("solr.jaas.debug");
+      String jaasProp = EnvUtils.getProperty("solr.jaas.debug");
       if (jaasProp != null && "true".equalsIgnoreCase(jaasProp)) {
         clientOptions.put("debug", "true");
       }
@@ -193,15 +241,6 @@ public class KerberosTestServices {
       Constants.IS_IBM_JAVA
           ? "com.ibm.security.auth.module.Krb5LoginModule"
           : "com.sun.security.auth.module.Krb5LoginModule";
-
-  /**
-   * These Locales don't generate dates that are compatible with Hadoop MiniKdc. See LocaleTest.java
-   * and https://issues.apache.org/jira/browse/DIRKRB-753
-   */
-  static final List<String> incompatibleLanguagesWithMiniKdc =
-      List.of(
-          "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
-          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as", "raj", "bho", "bgc");
 
   public static class Builder {
     private File kdcWorkDir;
