@@ -30,7 +30,6 @@ The list below describe shows the most common settings for the `wt` parameter, w
 * <<JSON Response Writer,json>>
 * <<php-writer,php>>
 * <<php-writer,phps>>
-* <<Python Response Writer,python>>
 * <<Ruby Response Writer,ruby>>
 * <<Smile Response Writer,smile>>
 * <<XLSX Response Writer,xlsx>>
@@ -284,16 +283,6 @@ See xref:deployment-guide:client-apis.adoc[] for more details.
 Returns Solr results in http://geojson.org[GeoJSON] augmented with Solr-specific JSON.
 To use this, set `wt=geojson` and `geojson.field` to the name of a spatial Solr field.
 Not all spatial fields types are supported, and you'll get an error if you use an unsupported one.
-
-== Python Response Writer
-
-Solr has an optional Python response format that extends its JSON output in the following ways to allow the response to be safely evaluated by the python interpreter:
-
-* true and false changed to True and False
-* Python unicode strings are used where needed
-* ASCII output (with unicode escapes) is used for less error-prone interoperability
-* newlines are escaped
-* null changed to None
 
 [[php-writer]]
 == PHP Response Writer and PHP Serialized Response Writer

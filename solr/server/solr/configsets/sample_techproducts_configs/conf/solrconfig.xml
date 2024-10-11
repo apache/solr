@@ -1243,7 +1243,6 @@ via parameters.  The below configuration supports hl.method=original and fastVec
                           default="true"
                           class="solr.XMLResponseWriter" />
      <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
-     <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
      <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
      <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
      <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>

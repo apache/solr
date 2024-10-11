@@ -39,7 +39,7 @@ import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Test some aspects of JSON/python writer output (very incomplete) */
+/** Test some aspects of JSON writer output */
 public class JSONWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -56,14 +56,13 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   public void testTypes() throws IOException {
     SolrQueryRequest req = req("q", "dummy", "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    QueryResponseWriter w = new PythonResponseWriter();
+    QueryResponseWriter w;
+    new StringWriter();
+    StringWriter buf;
 
-    StringWriter buf = new StringWriter();
     rsp.add("data1", Float.NaN);
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
-    w.write(buf, req, rsp);
-    jsonEq(buf.toString(), "{'data1':float('NaN'),'data2':-float('Inf'),'data3':float('Inf')}");
 
     w = new RubyResponseWriter();
     buf = new StringWriter();
@@ -326,7 +325,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     JacksonJsonWriter w = new JacksonJsonWriter();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     w.write(baos, req, rsp);
-    String received = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+    String received = baos.toString(StandardCharsets.UTF_8);
     String expected = "testFun( {\n  \"param0\":\"v0\",\n  \"param1\":42\n} )";
     jsonEq(expected, received);
     req.close();
