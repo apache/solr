@@ -307,14 +307,13 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [--user-managed] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [--verbose]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or --cloud Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
-@echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
-@echo                   such as 9983 if Solr is bound to 8983
+@echo   --user-managed Start Solr in user managed aka standalone mode"
+@echo                   See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html
 @echo.
 @echo   --host host   Specify the hostname for this Solr instance
 @echo.
@@ -401,9 +400,7 @@ IF "%1"=="--verbose" goto set_verbose
 IF "%1"=="-v" goto set_verbose
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn
-IF "%1"=="-c" goto set_cloud_mode
-IF "%1"=="-cloud" goto set_cloud_mode
-IF "%1"=="--cloud" goto set_cloud_mode
+IF "%1"=="--user-managed" goto set_user_managed_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="--server-dir" goto set_server_dir
@@ -462,8 +459,8 @@ set SOLR_LOG_LEVEL=WARN
 SHIFT
 goto parse_args
 
-:set_cloud_mode
-set SOLR_MODE=solrcloud
+:set_user_managed_mode
+set SOLR_MODE=user-managed
 SHIFT
 goto parse_args
 
@@ -875,7 +872,7 @@ IF "%SCRIPT_CMD%"=="start" (
       )
     )
   )
-  
+
   IF "%EMPTY_ADDL_JVM_ARGS%"=="true" (
     set "SCRIPT_ERROR=JVM options are required when using the -a or --jvm-opts option!"
     goto err
@@ -907,6 +904,7 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
 )
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
+IF NOT "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
@@ -942,7 +940,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
-  set CLOUD_MODE_OPTS=
+  REM change Cloud mode to User Managed mode with flag
+  set "CLOUD_MODE_OPTS=--user-managed"
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
     IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
       set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
