@@ -986,7 +986,7 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
-  @echo Solr will start in SolrCloud mode by default in version 10.  You will need to pass in --standalone flag to run in Standalone mode.
+  @echo Solr will start in SolrCloud mode by default in version 10.  You will need to pass in --user-managed flag to run in User Managed (aka Standalone) mode.
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
     IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
       set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"

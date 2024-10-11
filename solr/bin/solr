@@ -1219,7 +1219,7 @@ else
     exit 1
   fi
   
-  echo -e "\nSolr will start in SolrCloud mode by default in version 10.  You will need to pass in --standalone flag to run in Standalone mode.\n"
+  echo -e "\nSolr will start in SolrCloud mode by default in version 10.  You will need to pass in --user-managed flag to run in User Managed (aka Standalone) mode.\n"
 fi
 
 # Exit if old syntax found
