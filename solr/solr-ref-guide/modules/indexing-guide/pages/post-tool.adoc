@@ -43,7 +43,7 @@ The basic usage of `bin/solr post` is:
 ----
 usage: post
  -c,--name <NAME>                                 Name of the collection.
- -d,--delay <delay>                               If recursive then delay
+    --delay <delay>                               If recursive then delay
                                                   will be the wait time
                                                   between posts.  default:
                                                   10 for web, 0 for files

@@ -1521,7 +1521,9 @@ for %%a in (%*) do (
    ) else (
       set "option!option!=%%a"
       if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
       if "!option!" equ "-s" set "SOLR_HOME=%%a"
+      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"      
       if not "!option!" equ "-s" if not "!option!" equ "-d" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )

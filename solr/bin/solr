@@ -1372,7 +1372,7 @@ function start_solr() {
   cd "$SOLR_SERVER_DIR" || (echo -e "\nCd to SOLR_SERVER_DIR failed" && exit 1)
 
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
-    echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
+    echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your --server-dir parameter to set the correct Solr server directory.\n"
     exit 1
   fi
 
