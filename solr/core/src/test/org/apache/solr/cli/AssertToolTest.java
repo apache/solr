@@ -48,7 +48,7 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
-    assertEquals("Expected AssertTool to raise an error", numAssertionsFailed, 100);
+    assertEquals("Expected AssertTool to raise an error", 100, numAssertionsFailed);
   }
 
   @Test
@@ -59,7 +59,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
     assertEquals(
-        "Expected AssertTool to pass assertion that directory exists", numAssertionsFailed, 0);
+        "Expected AssertTool to pass assertion that directory exists", 0, numAssertionsFailed);
   }
 
   @Test
@@ -73,7 +73,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
     assertEquals(
-        "Expected AssertTool to fail assertion that directory exists", numAssertionsFailed, 1);
+        "Expected AssertTool to fail assertion that directory exists", 1, numAssertionsFailed);
   }
 
   @Test
@@ -85,8 +85,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
-        numAssertionsFailed,
-        1);
+        1,
+        numAssertionsFailed);
   }
 
   @Test
@@ -99,8 +99,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
-        numAssertionsFailed,
-        0);
+        0,
+        numAssertionsFailed);
   }
 
   @Test
@@ -112,8 +112,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to pass assertion when Solr is running on provided URL",
-        numAssertionsFailed,
-        0);
+        0,
+        numAssertionsFailed);
   }
 
   @Test
@@ -125,8 +125,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion when Solr isn't running on provided URL",
-        numAssertionsFailed,
-        1);
+        1,
+        numAssertionsFailed);
   }
 
   @Test
@@ -138,8 +138,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion when Solr is running on provided URL",
-        numAssertionsFailed,
-        1);
+        1,
+        numAssertionsFailed);
   }
 
   @Test
@@ -151,8 +151,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to pass assertion when Solr isn't running on provided URL",
-        numAssertionsFailed,
-        0);
+        0,
+        numAssertionsFailed);
   }
 
   private int runAssertToolWithArgs(String[] args) throws Exception {

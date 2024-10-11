@@ -498,32 +498,28 @@ The basic usage of `bin/solr assert` is:
 [source, plain]
 ----
 $ bin/solr assert -h
-usage: bin/solr assert [-m <message>] [-e] [-rR] [--started <url>] [-not-started <url>] [-c
-                <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]
- -c,---cloud <url>             Asserts that Solr is running in cloud mode.
-                               Also fails if Solr not running.  URL should
-                               be for root Solr path.
- -C,--not-cloud <url>          Asserts that Solr is not running in cloud
-                               mode.  Also fails if Solr not running.  URL
-                               should be for root Solr path.
- -e,--exitcode                 Return an exit code instead of printing
-                               error message on assert fail.
- -m,--message <message>        Exception message to be used in place of
-                               the default error message.
- -R,--not-root                 Asserts that we are NOT the root user.
- -r,--root                     Asserts that we are the root user.
- -S,--not-started <url>        Asserts that Solr is NOT running on a
-                               certain URL. Default timeout is 1000ms.
- -s,--started <url>            Asserts that Solr is running on a certain
-                               URL. Default timeout is 1000ms.
- -t,--timeout <ms>             Timeout in ms for commands supporting a
-                               timeout.
- -u,--same-user <directory>    Asserts that we run as same user that owns
-                               <directory>.
- -x,--exists <directory>       Asserts that directory <directory> exists.
- -X,--not-exists <directory>   Asserts that directory <directory> does NOT
-                               exist.
- -u,--credentials <user:pass>  Username and password for Basic authentication.
+usage: bin/solr assert [--cloud <url>] [--exists <directory>] [--exitcode] [-h] [--message <message>] [--not-cloud
+       <url>] [--not-exists <directory>] [--not-root] [--not-started <url>] [--root] [--same-user <directory>]
+       [--started <url>] [--timeout <ms>] [-u <credentials>] [--verbose]
+
+List of options:
+    --cloud <url>                 Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL
+                                  should be for root Solr path.
+    --exists <directory>          Asserts that directory <directory> exists.
+    --exitcode                    Return an exit code instead of printing error message on assert fail.
+ -h,--help                        Print this message.
+    --message <message>           Exception message to be used in place of the default error message.
+    --not-cloud <url>             Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL
+                                  should be for root Solr path.
+    --not-exists <directory>      Asserts that directory <directory> does NOT exist.
+    --not-root                    Asserts that we are NOT the root user.
+    --not-started <url>           Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.
+    --root                        Asserts that we are the root user.
+    --same-user <directory>       Asserts that we run as same user that owns <directory>.
+    --started <url>               Asserts that Solr is running on a certain URL. Default timeout is 1000ms.
+    --timeout <ms>                Timeout in ms for commands supporting a timeout.
+ -u,--credentials <credentials>   Credentials in the format username:password. Example: --credentials solr:SolrRocks
+    --verbose                     Enable verbose command output.
 ----
 
 === Healthcheck
