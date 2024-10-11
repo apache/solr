@@ -96,7 +96,7 @@ For more details, see the section <<SolrCloud Mode>> below.
 +
 *Example*: `bin/solr start -c`
 
-`-d <dir>`::
+`--server-dir <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -107,7 +107,7 @@ Define a server directory, defaults to `server` (as in, `$SOLR_TIP/server`).
 It is uncommon to override this option.
 When running multiple instances of Solr on the same host, it is more common to use the same server directory for each instance and use a unique Solr home directory using the `--solr-home` option.
 +
-*Example*: `bin/solr start -d newServerDir`
+*Example*: `bin/solr start --server-dir newServerDir`
 
 `-e <name>`::
 +
@@ -203,7 +203,7 @@ If this is not specified, `8983` will be used.
 +
 Sets the `solr.solr.home` system property.
 Solr will create core directories under this directory.
-This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
+This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `--server-dir` parameter.
 If set, the specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 +
 This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
@@ -278,7 +278,7 @@ To emphasize how the default settings work take a moment to understand that the 
 
 `bin/solr start`
 
-`bin/solr start --host localhost -p 8983 -d server --solr-home solr -m 512m`
+`bin/solr start --host localhost -p 8983 --server-dir server --solr-home solr -m 512m`
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
@@ -415,7 +415,7 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
-`-d` or `--verbose`::
+`--verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -797,7 +797,7 @@ The `delete` command detects the mode that Solr is running in and then deletes t
 If you're deleting a collection in SolrCloud mode, the default behavior is to also delete the configuration directory from Zookeeper so long as it is not being used by another collection.
 
 For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
-If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing -deleteConfig false when running this command.atom
+If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing `--delete-config false` when running this command.atom
 
 ==== Delete Core or Collection Parameters
 
@@ -821,7 +821,7 @@ Name of the core or collection to delete.
 +
 Whether or not the configuration directory should also be deleted from ZooKeeper.
 +
-If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--deleteConfig` as `true`.
+If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--delete-config` as `true`.
 +
 *Example*: `bin/solr delete --delete-config false`
 
@@ -980,7 +980,7 @@ Defines the ZooKeeper connect string.
 This is useful if you want to enable authentication before all your Solr nodes have come up.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-d <dir>`::
+`--server-dir <dir>`::
 +
 [%autowidth,frame=none]
 |===
