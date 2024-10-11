@@ -37,16 +37,16 @@ import org.slf4j.LoggerFactory;
 public class SolrClientCloudManager implements SolrCloudManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // protected final CloudLegacySolrClient solrClient;
+  private final CloudHttp2SolrClient cloudSolrClient;
   private final ZkDistribStateManager stateManager;
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
-  private final CloudHttp2SolrClient cloudSolrClient;
 
   public SolrClientCloudManager(ObjectCache objectCache, CloudHttp2SolrClient client) {
+    this.cloudSolrClient = client;
     this.zkStateReader = ZkStateReader.from(client);
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
@@ -58,7 +58,6 @@ public class SolrClientCloudManager implements SolrCloudManager {
       this.objectCache = objectCache;
       this.closeObjectCache = false;
     }
-    this.cloudSolrClient = client;
   }
 
   @Override
@@ -91,7 +90,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public NodeStateProvider getNodeStateProvider() {
-    return new SolrClientNodeStateProvider(cloudSolrClient);
+    return new SolrClientNodeStateProvider(cloudSolrClient, cloudSolrClient.getHttpClient());
   }
 
   @Override
