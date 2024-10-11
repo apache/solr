@@ -188,12 +188,10 @@ public class PostTool extends ToolBase {
             .longOpt("name")
             .hasArg()
             .argName("NAME")
-            .required(false)
             .desc("Name of the collection.")
             .build(),
         Option.builder()
             .longOpt("skip-commit")
-            .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
         Option.builder()
@@ -204,19 +202,16 @@ public class PostTool extends ToolBase {
                     .setSince("9.7")
                     .setDescription("Use --skip-commit instead")
                     .get())
-            .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
         Option.builder("o")
             .longOpt("optimize")
-            .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
         Option.builder()
             .longOpt("mode")
             .hasArg()
             .argName("mode")
-            .required(false)
             .desc(
                 "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
             .build(),

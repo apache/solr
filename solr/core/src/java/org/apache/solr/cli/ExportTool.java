@@ -113,7 +113,6 @@ public class ExportTool extends ToolBase {
             .longOpt("name")
             .hasArg()
             .argName("NAME")
-            .required(false)
             .desc("Name of the collection.")
             .build(),
         Option.builder("out")

@@ -75,14 +75,12 @@ public class PostLogsTool extends ToolBase {
                     .get())
             .hasArg()
             .argName("ADDRESS")
-            .required(true)
             .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
             .build(),
         Option.builder("c")
             .longOpt("name")
             .hasArg()
-            .argName("NAME")
-            .required(false)
+            .argName("NAME")`
             .desc("Name of the collection.")
             .build(),
         Option.builder("rootdir")
