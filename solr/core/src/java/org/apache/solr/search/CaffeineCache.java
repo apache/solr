@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.metrics.MetricsMap;
@@ -99,7 +100,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private boolean async;
 
   private MetricsMap cacheMap;
-  private SolrMetricsContext solrMetricsContext;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -165,7 +165,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       builder.maximumWeight(maxRamBytes);
       builder.weigher(
           (k, v) -> (int) (RamUsageEstimator.sizeOfObject(k) + RamUsageEstimator.sizeOfObject(v)));
-    } else {
+    } else if (maxSize < Integer.MAX_VALUE) {
       builder.maximumSize(maxSize);
     }
     Cache<K, V> newCache;
@@ -387,16 +387,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache<K, V> old) {
-    if (regenerator == null) {
-      return;
-    }
-
     long warmingStartTime = System.nanoTime();
     Map<K, V> hottest = Collections.emptyMap();
     CaffeineCache<K, V> other = (CaffeineCache<K, V>) old;
 
     // warm entries
-    if (isAutowarmingOn()) {
+    if (isAutowarmingOn() && regenerator != null) {
       int size = autowarm.getWarmCount(other.cache.asMap().size());
       hottest =
           other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());
@@ -460,11 +456,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   }
 
   @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
-  }
-
-  @Override
   public String toString() {
     return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
@@ -475,7 +466,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    super.initializeMetrics(parentContext, scope);
     cacheMap =
         new MetricsMap(
             map -> {
@@ -505,10 +496,15 @@ public class CaffeineCache<K, V> extends SolrCacheBase
                 map.put("cumulative_evictions", cumulativeStats.evictionCount());
               }
             });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+    getSolrMetricsContext().gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   private static double hitRate(long hitCount, long lookupCount) {
     return lookupCount == 0 ? 1.0 : (double) hitCount / lookupCount;
+  }
+
+  @Override
+  public void forEach(BiConsumer<K, V> action) {
+    cache.asMap().forEach(action);
   }
 }

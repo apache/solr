@@ -78,6 +78,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.OrdMapRegenerator;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
@@ -310,6 +311,8 @@ public class SolrConfig implements MapSerializable {
       //    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
       //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
 
+      updateHandlerInfo = loadUpdatehandlerInfo(); // must do this before configuring ordMapCache
+
       useFilterForSortedQuery = get("query").get("useFilterForSortedQuery").boolVal(false);
       queryResultWindowSize = Math.max(1, get("query").get("queryResultWindowSize").intVal(1));
       queryResultMaxDocsCached =
@@ -333,6 +336,13 @@ public class SolrConfig implements MapSerializable {
         conf = new CacheConfig(CaffeineCache.class, args, null);
       }
       fieldValueCacheConfig = conf;
+      conf = CacheConfig.getConfig(this, get("query").get("ordMapCache"), "query/ordMapCache");
+      if (conf != null) {
+        OrdMapRegenerator.configureRegenerator(this, conf);
+        ordMapCacheConfig = conf;
+      } else {
+        ordMapCacheConfig = OrdMapRegenerator.getDefaultCacheConfig();
+      }
       useColdSearcher = get("query").get("useColdSearcher").boolVal(false);
       dataDir = get("dataDir").txt();
       if (dataDir != null && dataDir.length() == 0) dataDir = null;
@@ -360,8 +370,6 @@ public class SolrConfig implements MapSerializable {
         }
       }
       this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
-
-      updateHandlerInfo = loadUpdatehandlerInfo();
 
       final var requestParsersNode = get("requestDispatcher").get("requestParsers");
 
@@ -687,6 +695,7 @@ public class SolrConfig implements MapSerializable {
   //  public final int filtOptCacheSize;
   //  public final float filtOptThreshold;
   // SolrIndexSearcher - caches configurations
+  public final CacheConfig ordMapCacheConfig;
   public final CacheConfig filterCacheConfig;
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;

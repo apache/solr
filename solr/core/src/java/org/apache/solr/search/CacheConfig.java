@@ -170,7 +170,7 @@ public class CacheConfig implements MapSerializable {
       @SuppressWarnings("unchecked")
       SolrCache<?, ?> cache = newInstance(core, (Class<? extends SolrCache<?, ?>>) clazz.get());
       persistence[0] = cache.init(args, persistence[0], regenerator);
-      return cache;
+      return cache.toExternal();
     } catch (Exception e) {
       log.error("Error instantiating cache", e);
       // we can carry on without a cache... but should we?

@@ -69,7 +69,8 @@ public class TestDocTermOrds extends SolrTestCase {
     final DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
 
-    final LeafReader composite = SlowCompositeReaderWrapper.wrap(ir);
+    final LeafReader composite =
+        SlowCompositeReaderWrapper.wrap(ir, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(composite);
 
     // check the leaves
@@ -114,7 +115,8 @@ public class TestDocTermOrds extends SolrTestCase {
     final IndexReader r = w.getReader();
     w.close();
 
-    final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+    final LeafReader ar =
+        SlowCompositeReaderWrapper.wrap(r, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(ar);
     final DocTermOrds dto = new DocTermOrds(ar, ar.getLiveDocs(), "field");
     SortedSetDocValues iter = dto.iterator(ar);
@@ -218,7 +220,8 @@ public class TestDocTermOrds extends SolrTestCase {
     if (VERBOSE) {
       System.out.println("TEST: top reader");
     }
-    LeafReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader slowR =
+        SlowCompositeReaderWrapper.wrap(r, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(slowR);
     verify(slowR, idToOrds, termsArray, null);
 
@@ -307,7 +310,8 @@ public class TestDocTermOrds extends SolrTestCase {
       System.out.println("TEST: reader=" + r);
     }
 
-    LeafReader slowR = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader slowR =
+        SlowCompositeReaderWrapper.wrap(r, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(slowR);
     for (String prefix : prefixesArray) {
 

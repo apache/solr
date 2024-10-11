@@ -304,7 +304,8 @@ public class TestFieldCache extends SolrTestCase {
             dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(500));
     writer.close();
     IndexReader r = DirectoryReader.open(dir);
-    LeafReader reader = SlowCompositeReaderWrapper.wrap(r);
+    LeafReader reader =
+        SlowCompositeReaderWrapper.wrap(r, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(reader);
     FieldCache.DEFAULT.getTerms(reader, "foobar");
     FieldCache.DEFAULT.getTermsIndex(reader, "foobar");

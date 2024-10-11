@@ -47,6 +47,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -157,6 +158,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final boolean cachingEnabled;
   private final SolrCache<Query, DocSet> filterCache;
+  private final SolrCache<String, OrdinalMap> ordMapCache;
   private final SolrCache<QueryResultKey, DocList> queryResultCache;
   private final SolrCache<String, UnInvertedField> fieldValueCache;
   private final LongAdder fullSortCount = new LongAdder();
@@ -342,7 +344,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.directoryFactory = directoryFactory;
     this.reader = (DirectoryReader) super.readerContext.reader();
     this.rawReader = r;
-    this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
     this.statsCache = core.createStatsCache();
     this.schema = schema;
@@ -376,38 +377,48 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.queryResultMaxDocsCached = solrConfig.queryResultMaxDocsCached;
     this.useFilterForSortedQuery = solrConfig.useFilterForSortedQuery;
 
+    ordMapCache = solrConfig.ordMapCacheConfig.newInstance(core);
+    assert ordMapCache != null;
+    this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader, ordMapCache);
+
     this.docFetcher = new SolrDocumentFetcher(this, solrConfig, enableCache);
 
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
+      clist.add(ordMapCache.toInternal());
       fieldValueCache =
           solrConfig.fieldValueCacheConfig == null
               ? null
               : solrConfig.fieldValueCacheConfig.newInstance(core);
-      if (fieldValueCache != null) clist.add(fieldValueCache);
+      if (fieldValueCache != null) {
+        clist.add(fieldValueCache.toInternal());
+      }
       filterCache =
           solrConfig.filterCacheConfig == null
               ? null
               : solrConfig.filterCacheConfig.newInstance(core);
-      if (filterCache != null) clist.add(filterCache);
+      if (filterCache != null) clist.add(filterCache.toInternal());
       queryResultCache =
           solrConfig.queryResultCacheConfig == null
               ? null
               : solrConfig.queryResultCacheConfig.newInstance(core);
-      if (queryResultCache != null) clist.add(queryResultCache);
+      if (queryResultCache != null) {
+        clist.add(queryResultCache.toInternal());
+      }
       SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
-      if (documentCache != null) clist.add(documentCache);
+      if (documentCache != null) clist.add(documentCache.toInternal());
 
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
         cacheMap = CollectionUtil.newHashMap(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String, CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache cache = e.getValue().newInstance(core);
+          CacheConfig config = e.getValue();
+          SolrCache<?, ?> cache = config.newInstance(core);
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
-            clist.add(cache);
+            clist.add(cache.toInternal());
           }
         }
       }
@@ -626,6 +637,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return StreamSupport.stream(getFieldInfos().spliterator(), false)
         .map(fieldInfo -> fieldInfo.name)
         .collect(Collectors.toUnmodifiableList());
+  }
+
+  public SolrCache<String, OrdinalMap> getOrdMapCache() {
+    return ordMapCache;
   }
 
   public SolrCache<Query, DocSet> getFilterCache() {

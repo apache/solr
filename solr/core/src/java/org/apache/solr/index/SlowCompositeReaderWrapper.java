@@ -17,10 +17,8 @@
 package org.apache.solr.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
@@ -50,10 +48,14 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.IOFunction;
 
 /**
  * This class forces a composite reader (eg a {@link MultiReader} or {@link DirectoryReader}) to
@@ -76,24 +78,34 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // also have a cached FieldInfos instance so this is consistent. SOLR-12878
   private final FieldInfos fieldInfos;
 
-  // TODO: this could really be a weak map somewhere else on the coreCacheKey,
-  // but do we really need to optimize slow-wrapper any more?
-  final Map<String, OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
+  public static final SolrCache<String, OrdinalMap> NO_CACHED_ORDMAPS =
+      new CaffeineCache<>() {
+        @Override
+        public OrdinalMap computeIfAbsent(
+            String key, IOFunction<? super String, ? extends OrdinalMap> mappingFunction)
+            throws IOException {
+          return mappingFunction.apply(key);
+        }
+      };
+
+  final SolrCache<String, OrdinalMap> cachedOrdMaps;
 
   /**
    * This method is sugar for getting an {@link LeafReader} from an {@link IndexReader} of any kind.
    * If the reader is already atomic, it is returned unchanged, otherwise wrapped by this class.
    */
-  public static LeafReader wrap(IndexReader reader) throws IOException {
+  public static LeafReader wrap(IndexReader reader, SolrCache<String, OrdinalMap> ordMapCache)
+      throws IOException {
     if (reader instanceof CompositeReader) {
-      return new SlowCompositeReaderWrapper((CompositeReader) reader);
+      return new SlowCompositeReaderWrapper((CompositeReader) reader, ordMapCache);
     } else {
       assert reader instanceof LeafReader;
       return (LeafReader) reader;
     }
   }
 
-  SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+  SlowCompositeReaderWrapper(CompositeReader reader, SolrCache<String, OrdinalMap> cachedOrdMaps)
+      throws IOException {
     in = reader;
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
@@ -118,6 +130,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
               leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
+    this.cachedOrdMaps = cachedOrdMaps;
   }
 
   @Override
@@ -162,6 +175,80 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     return MultiDocValues.getSortedNumericValues(in, field); // TODO cache?
   }
 
+  public static DocIdSetIterator[] getLeafDocValues(List<LeafReaderContext> leaves, String field)
+      throws IOException {
+    int size = leaves.size();
+    DocIdSetIterator[] tmp = new DocIdSetIterator[size];
+    DocValuesType type = getLeafDocValues(leaves, field, tmp, new int[size], null, null);
+    if (type == null) {
+      return null;
+    }
+    switch (type) {
+      case SORTED:
+        SortedDocValues[] sdv = new SortedDocValues[size];
+        for (int i = size - 1; i >= 0; i--) {
+          DocIdSetIterator v = tmp[i];
+          sdv[i] = v == null ? DocValues.emptySorted() : (SortedDocValues) v;
+        }
+        return sdv;
+      case SORTED_SET:
+        SortedSetDocValues[] ssdv = new SortedSetDocValues[size];
+        for (int i = size - 1; i >= 0; i--) {
+          DocIdSetIterator v = tmp[i];
+          ssdv[i] = v == null ? DocValues.emptySortedSet() : (SortedSetDocValues) v;
+        }
+        return ssdv;
+      default:
+        return null;
+    }
+  }
+
+  private static DocValuesType getLeafDocValues(
+      List<LeafReaderContext> leaves,
+      String field,
+      DocIdSetIterator[] values,
+      int[] starts,
+      DocValuesType type,
+      DocIdSetIterator empty)
+      throws IOException {
+    final int size = values.length;
+    boolean anyReal = false;
+    for (int i = 0; i < size; i++) {
+      LeafReaderContext context = leaves.get(i);
+      final LeafReader reader = context.reader();
+      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+      DocIdSetIterator v;
+      if (fieldInfo == null) {
+        v = empty;
+      } else {
+        DocValuesType actualType = fieldInfo.getDocValuesType();
+        if (type == null) {
+          type = actualType;
+        } else if (actualType != type) {
+          return null;
+        }
+        switch (type) {
+          case SORTED:
+            v = reader.getSortedDocValues(field);
+            break;
+          case SORTED_SET:
+            v = reader.getSortedSetDocValues(field);
+            break;
+          default:
+            throw new IllegalStateException();
+        }
+        if (v == null) {
+          v = empty;
+        } else {
+          anyReal = true;
+        }
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    return anyReal ? type : null;
+  }
+
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
@@ -181,54 +268,27 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       return leaves.get(0).reader().getSortedDocValues(field);
     }
 
-    boolean anyReal = false;
     final SortedDocValues[] values = new SortedDocValues[size];
     final int[] starts = new int[size + 1];
-    long totalCost = 0;
-    for (int i = 0; i < size; i++) {
-      LeafReaderContext context = in.leaves().get(i);
-      final LeafReader reader = context.reader();
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED) {
-        return null;
-      }
-      SortedDocValues v = reader.getSortedDocValues(field);
-      if (v == null) {
-        v = DocValues.emptySorted();
-      } else {
-        anyReal = true;
-      }
-      totalCost += v.cost();
-      values[i] = v;
-      starts[i] = context.docBase;
-    }
-    starts[size] = maxDoc();
-    if (anyReal == false) {
+    if (getLeafDocValues(
+            in.leaves(), field, values, starts, DocValuesType.SORTED, DocValues.emptySorted())
+        == null) {
       return null;
     }
+    long totalCost = Arrays.stream(values).mapToLong(SortedDocValues::cost).sum();
+    starts[size] = maxDoc();
 
-    // at this point in time we are able to formulate the producer
-    OrdinalMap map = null;
     CacheHelper cacheHelper = getReaderCacheHelper();
-
-    Function<? super String, ? extends OrdinalMap> producer =
-        (notUsed) -> {
-          try {
-            OrdinalMap mapping =
-                OrdinalMap.build(
-                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
-            return mapping;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        };
 
     // either we use a cached result that gets produced eventually during caching,
     // or we produce directly without caching
+    OrdinalMap map;
     if (cacheHelper != null) {
-      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
+      IOFunction<? super String, ? extends OrdinalMap> producer =
+          (notUsed) -> OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT);
+      map = cachedOrdMaps.computeIfAbsent(field, producer);
     } else {
-      map = producer.apply("notUsed");
+      map = OrdinalMap.build(null, values, PackedInts.DEFAULT);
     }
 
     return new MultiSortedDocValues(values, starts, map, totalCost);
@@ -253,54 +313,32 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       return leaves.get(0).reader().getSortedSetDocValues(field);
     }
 
-    boolean anyReal = false;
     final SortedSetDocValues[] values = new SortedSetDocValues[size];
     final int[] starts = new int[size + 1];
-    long totalCost = 0;
-    for (int i = 0; i < size; i++) {
-      LeafReaderContext context = in.leaves().get(i);
-      final LeafReader reader = context.reader();
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED_SET) {
-        return null;
-      }
-      SortedSetDocValues v = reader.getSortedSetDocValues(field);
-      if (v == null) {
-        v = DocValues.emptySortedSet();
-      } else {
-        anyReal = true;
-      }
-      totalCost += v.cost();
-      values[i] = v;
-      starts[i] = context.docBase;
-    }
-    starts[size] = maxDoc();
-    if (anyReal == false) {
+    if (getLeafDocValues(
+            in.leaves(),
+            field,
+            values,
+            starts,
+            DocValuesType.SORTED_SET,
+            DocValues.emptySortedSet())
+        == null) {
       return null;
     }
+    long totalCost = Arrays.stream(values).mapToLong(SortedSetDocValues::cost).sum();
+    starts[size] = maxDoc();
 
-    // at this point in time we are able to formulate the producer
-    OrdinalMap map = null;
     CacheHelper cacheHelper = getReaderCacheHelper();
-
-    Function<? super String, ? extends OrdinalMap> producer =
-        (notUsed) -> {
-          try {
-            OrdinalMap mapping =
-                OrdinalMap.build(
-                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
-            return mapping;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        };
 
     // either we use a cached result that gets produced eventually during caching,
     // or we produce directly without caching
+    OrdinalMap map;
     if (cacheHelper != null) {
-      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
+      IOFunction<? super String, ? extends OrdinalMap> producer =
+          (notUsed) -> OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT);
+      map = cachedOrdMaps.computeIfAbsent(field, producer);
     } else {
-      map = producer.apply("notUsed");
+      map = OrdinalMap.build(null, values, PackedInts.DEFAULT);
     }
 
     return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, totalCost);
