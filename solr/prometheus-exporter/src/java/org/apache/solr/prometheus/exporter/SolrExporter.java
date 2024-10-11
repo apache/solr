@@ -145,6 +145,7 @@ public class SolrExporter {
     Options mainOptions = new Options();
     Options deprecatedOptions = new Options();
 
+    // Change to -s and --solr-url in main once -s for --scrape-interval removed.
     Option baseUrlOption =
         Option.builder("b")
             .longOpt("base-url")
@@ -213,7 +214,7 @@ public class SolrExporter {
     mainOptions.addOption(clusterIdOption);
 
     Option numThreadsOption =
-        Option.builder("n")
+        Option.builder()
             .longOpt("num-threads")
             .hasArg()
             .argName("NUM_THREADS")
@@ -224,6 +225,23 @@ public class SolrExporter {
                     + ".")
             .build();
     mainOptions.addOption(numThreadsOption);
+    Option numThreadsOptionDeprecated =
+        Option.builder("n")
+            .hasArg()
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --num-threads instead")
+                    .get())
+            .argName("NUM_THREADS")
+            .type(Integer.class)
+            .desc(
+                "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
+                    + DEFAULT_NUM_THREADS
+                    + ".")
+            .build();
+    mainOptions.addOption(numThreadsOptionDeprecated);
 
     Option portOption =
         Option.builder("p")
@@ -236,7 +254,7 @@ public class SolrExporter {
     mainOptions.addOption(portOption);
 
     Option scrapeIntervalOption =
-        Option.builder("s")
+        Option.builder()
             .longOpt("scrape-interval")
             .hasArg()
             .argName("SCRAPE_INTERVAL")
@@ -247,6 +265,24 @@ public class SolrExporter {
                     + " seconds.")
             .build();
     mainOptions.addOption(scrapeIntervalOption);
+
+    Option scrapeIntervalOptionDeprecated =
+        Option.builder("s")
+            .hasArg()
+            .argName("SCRAPE_INTERVAL")
+            .type(Integer.class)
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --scrape-interval instead")
+                    .get())
+            .desc(
+                "Specify the delay between scraping Solr metrics; the default is "
+                    + DEFAULT_SCRAPE_INTERVAL
+                    + " seconds.")
+            .build();
+    mainOptions.addOption(scrapeIntervalOptionDeprecated);
 
     Option sslOption =
         Option.builder("ssl")
@@ -347,12 +383,25 @@ public class SolrExporter {
       } else if (commandLine.hasOption(configOption)) {
         configFile = commandLine.getOptionValue(configOption);
       }
+      int numberOfThreads = DEFAULT_NUM_THREADS;
+      if (commandLine.hasOption("num-threads")) {
+        numberOfThreads = commandLine.getParsedOptionValue("num-threads");
+      } else if (commandLine.hasOption("n")) {
+        numberOfThreads = commandLine.getParsedOptionValue("n");
+      }
+
+      int scrapeInterval = DEFAULT_SCRAPE_INTERVAL;
+      if (commandLine.hasOption("s")) {
+        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOptionDeprecated);
+      } else if (commandLine.hasOption("scrape-interval")) {
+        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOption);
+      }
 
       SolrExporter solrExporter =
           new SolrExporter(
               port,
-              commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS),
-              commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL),
+              numberOfThreads,
+              scrapeInterval,
               scrapeConfiguration,
               loadMetricsConfiguration(configFile),
               clusterId);
