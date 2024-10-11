@@ -145,7 +145,7 @@ public class SolrExporter {
     Options mainOptions = new Options();
     Options deprecatedOptions = new Options();
 
-    // Change to -s and --solr-url in main once -s for --scrape-interval removed.
+    // Change to -s and --solr-url in main once deprecated -s flag for --scrape-interval is removed.
     Option baseUrlOption =
         Option.builder("b")
             .longOpt("base-url")
@@ -338,6 +338,7 @@ public class SolrExporter {
         defaultClusterId = makeShortHash(zkHost);
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(zkHost);
       } else if (commandLine.hasOption(baseUrlOption) || commandLine.hasOption(baseUrlDepOption)) {
+        log.warn("-b and --base-url will be replaced with -s and --solr-url in Solr 10");
         String baseUrl =
             commandLine.hasOption(baseUrlOption)
                 ? commandLine.getOptionValue(baseUrlOption)

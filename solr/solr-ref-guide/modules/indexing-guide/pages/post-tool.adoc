@@ -41,63 +41,37 @@ The basic usage of `bin/solr post` is:
 
 [source,plain]
 ----
-usage: post
+usage: bin/solr post [-c <NAME>] [-d <delay>] [--dry-run] [--format] [-ft <<type>[,<type>,...]>] [-h] [--mode <mode>]
+       [-o] [--out] [--params <<key>=<value>[&<key>=<value>...]>] [-r <recursive>] [-s <HOST>] [--skip-commit] [-t
+       <content-type>] [-u <credentials>] [--verbose]
+
+List of options:
  -c,--name <NAME>                                 Name of the collection.
- -d,--delay <delay>                               If recursive then delay
-                                                  will be the wait time
-                                                  between posts.  default:
+ -d,--delay <delay>                               If recursive then delay will be the wait time between posts.  default:
                                                   10 for web, 0 for files
-    --dry-run                                     Performs a dry run of
-                                                  the posting process
-                                                  without actually sending
-                                                  documents to Solr.  Only
-                                                  works with files mode.
-    --format                                      sends application/json
-                                                  content as Solr commands
-                                                  to /update instead of
+    --dry-run                                     Performs a dry run of the posting process without actually sending
+                                                  documents to Solr.  Only works with files mode.
+    --format                                      sends application/json content as Solr commands to /update instead of
                                                   /update/json/docs.
  -ft,--filetypes <<type>[,<type>,...]>            default:
-                                                  xml,json,jsonl,csv,pdf,d
-                                                  oc,docx,ppt,pptx,xls,xls
-                                                  x,odt,odp,ods,ott,otp,ot
-                                                  s,rtf,htm,html,txt,log
+                                                  xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,
+                                                  ots,rtf,htm,html,txt,log
  -h,--help                                        Print this message.
-    --mode <mode>                                 Which mode the Post tool
-                                                  is running in, 'files'
-                                                  crawls local directory,
-                                                  'web' crawls website,
-                                                  'args' processes input
-                                                  args, and 'stdin' reads
-                                                  a command from standard
-                                                  in. default: files.
- -o,--optimize                                    Issue an optimize at end
-                                                  of posting documents.
-    --out                                         sends Solr response
-                                                  outputs to console.
- --params <<key>=<value>[&<key>=<value>...]>      values must be
-                                                  URL-encoded; these pass
-                                                  through to Solr update
-                                                  request.
- -r,--recursive <recursive>                       For web crawl, how deep
-                                                  to go. default: 1
-    --skip-commit                                 Do not 'commit', and
-                                                  thus changes won't be
-                                                  visible till a commit
+    --mode <mode>                                 Which mode the Post tool is running in, 'files' crawls local
+                                                  directory, 'web' crawls website, 'args' processes input args, and
+                                                  'stdin' reads a command from standard in. default: files.
+ -o,--optimize                                    Issue an optimize at end of posting documents.
+    --out                                         sends Solr response outputs to console.
+    --params <<key>=<value>[&<key>=<value>...]>   Values must be URL-encoded; these pass through to Solr update request.
+ -r,--recursive <recursive>                       For web crawl, how deep to go. default: 1
+ -s,--solr-url <HOST>                             Base Solr URL, which can be used to determine the zk-host if that's
+                                                  not known; defaults to: http://localhost:8983.
+    --skip-commit                                 Do not 'commit', and thus changes won't be visible till a commit
                                                   occurs.
- -t,--type <content-type>                         Specify a specific
-                                                  mimetype to use, such as
-                                                  application/json.
- -u,--credentials <credentials>                   Credentials in the
-                                                  format
-                                                  username:password.
-                                                  Example: --credentials
+ -t,--type <content-type>                         Specify a specific mimetype to use, such as application/json.
+ -u,--credentials <credentials>                   Credentials in the format username:password. Example: --credentials
                                                   solr:SolrRocks
- -url,--solr-update-url <UPDATEURL>               Solr Update URL, the
-                                                  full url to the update
-                                                  handler, including the
-                                                  /update.
- -v,--verbose                                     Enable more verbose
-                                                  command output.
+    --verbose                                     Enable verbose command output.
 
 ----
 

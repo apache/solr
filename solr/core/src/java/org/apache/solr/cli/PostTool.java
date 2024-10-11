@@ -174,6 +174,12 @@ public class PostTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .longOpt("solr-update-url")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --solr-url and -c / --name instead")
+                    .get())
             .hasArg()
             .argName("UPDATEURL")
             .desc("Solr Update URL, the full url to the update handler, including the /update.")
@@ -290,6 +296,7 @@ public class PostTool extends ToolBase {
             .desc(
                 "Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
@@ -298,7 +305,16 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
-    if (cli.hasOption("solr-update-url")) {
+    if (cli.hasOption("solr-url")) {
+      if (!cli.hasOption("name")) {
+        throw new IllegalArgumentException(
+            "Must specify -c / --name parameter with --solr-url to post documents.");
+      }
+      String url =
+          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
+      solrUpdateUrl = new URI(url);
+
+    } else if (cli.hasOption("solr-update-url")) {
       String url = cli.getOptionValue("solr-update-url");
       solrUpdateUrl = new URI(url);
     } else if (cli.hasOption("name")) {
