@@ -50,6 +50,13 @@ teardown() {
 
 }
 
+@test "start provides warning about SolrCloud mode" {
+  run solr start
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  assert_output --partial 'Solr will start in SolrCloud mode by default in version 10.  You will need to pass in --standalone flag to run in Standalone mode.'
+  solr stop
+}
+
 @test "check stop command doesn't hang" {
   # for start/stop/restart we parse the args separate from picking the command
   # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.

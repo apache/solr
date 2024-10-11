@@ -1185,6 +1185,8 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   : "${ZK_CLIENT_TIMEOUT:=30000}"
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
 
+  echo -e "\nSolr will start in SolrCloud mode by default in version 10, even if no -c or --cloud flag is specified.\n"
+  
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
@@ -1216,6 +1218,8 @@ else
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
     exit 1
   fi
+  
+  echo -e "\nSolr will start in SolrCloud mode by default in version 10.  You will need to pass in --user-managed flag to run in User Managed (aka Standalone) mode.\n"
 fi
 
 # Exit if old syntax found
