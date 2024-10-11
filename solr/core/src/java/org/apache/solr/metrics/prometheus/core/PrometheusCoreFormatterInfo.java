@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import java.util.regex.Pattern;
 
-public interface PrometheusCoreExporterInfo {
+public interface PrometheusCoreFormatterInfo {
   /** Category of prefix Solr Core dropwizard handler metric names */
   enum CoreCategory {
     ADMIN,

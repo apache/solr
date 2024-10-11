@@ -31,15 +31,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Base class for all {@link SolrPrometheusExporter} holding {@link MetricSnapshot}s. Can export
+ * Base class for all {@link SolrPrometheusFormatter} holding {@link MetricSnapshot}s. Can export
  * {@link com.codahale.metrics.Metric} to {@link MetricSnapshot} to be outputted for {@link
  * org.apache.solr.response.PrometheusResponseWriter}
  */
-public abstract class SolrPrometheusExporter {
+public abstract class SolrPrometheusFormatter {
   protected final Map<String, List<CounterSnapshot.CounterDataPointSnapshot>> metricCounters;
   protected final Map<String, List<GaugeSnapshot.GaugeDataPointSnapshot>> metricGauges;
 
-  public SolrPrometheusExporter() {
+  public SolrPrometheusFormatter() {
     this.metricCounters = new HashMap<>();
     this.metricGauges = new HashMap<>();
   }

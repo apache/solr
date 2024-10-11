@@ -21,7 +21,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name *.xx-responses and *-requests */
 public class SolrJettyReqRespMetric extends SolrJettyMetric {
@@ -51,14 +51,14 @@ public class SolrJettyReqRespMetric extends SolrJettyMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (metricName.endsWith("xx-responses")) {
-      exporter.exportMeter(JETTY_RESPONSES_TOTAL, (Meter) dropwizardMetric, getLabels());
+      formatter.exportMeter(JETTY_RESPONSES_TOTAL, (Meter) dropwizardMetric, getLabels());
     } else if (metricName.endsWith("-requests")) {
       if (dropwizardMetric instanceof Counter) {
-        exporter.exportCounter(JETTY_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
+        formatter.exportCounter(JETTY_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
       } else if (dropwizardMetric instanceof Timer) {
-        exporter.exportTimerCount(JETTY_REQUESTS_TOTAL, (Timer) dropwizardMetric, getLabels());
+        formatter.exportTimerCount(JETTY_REQUESTS_TOTAL, (Timer) dropwizardMetric, getLabels());
       }
     }
   }

@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name CACHE.* */
 public class SolrCoreCacheMetric extends SolrCoreMetric {
@@ -44,9 +44,9 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (dropwizardMetric instanceof Gauge) {
-      exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

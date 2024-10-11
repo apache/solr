@@ -237,21 +237,38 @@ public class ExecutorUtil {
     return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
-  /** See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)} */
+  /**
+   * Create a new pool of threads, with no limit for the number of threads. The pool has no task
+   * queue. Each submitted task is executed immediately, either by reusing an existing thread if one
+   * is available, or by starting a new thread. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
   }
 
+  /**
+   * Create a new pool of threads. Threads are created for new work if there is room to do so up to
+   * {@code maxThreads}. Beyond that, the queue is used up to {@code queueCapacity}. Beyond that,
+   * work is rejected with an exception. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(
       int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
-    return new MDCAwareThreadPoolExecutor(
-        0,
-        maxThreads,
-        60L,
-        TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(queueCapacity),
-        threadFactory);
+    // Create an executor with same value of core size and max total size. With an unbounded queue,
+    // the ThreadPoolExecutor ignores the configured max value and only considers core pool size.
+    // Since we allow core threads to die when idle for too long, this ends in having a pool with
+    // lazily-initialized and cached threads.
+    MDCAwareThreadPoolExecutor executor =
+        new MDCAwareThreadPoolExecutor(
+            maxThreads,
+            maxThreads,
+            60L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(queueCapacity),
+            threadFactory);
+    // Allow core threads to die
+    executor.allowCoreThreadTimeOut(true);
+    return executor;
   }
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")

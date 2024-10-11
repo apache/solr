@@ -22,7 +22,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name SEARCHER.* */
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
@@ -50,15 +50,16 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("liveDocsCache")) {
-        exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        formatter.exportGauge(
+            CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       } else {
-        exporter.exportGauge(CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        formatter.exportGauge(CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Timer) {
-      exporter.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
+      formatter.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

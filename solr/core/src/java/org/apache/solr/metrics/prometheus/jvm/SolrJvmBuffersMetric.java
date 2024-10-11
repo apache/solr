@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name buffers.* */
 public class SolrJvmBuffersMetric extends SolrJvmMetric {
@@ -44,13 +44,13 @@ public class SolrJvmBuffersMetric extends SolrJvmMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     String[] parsedMetric = metricName.split("\\.");
     String metricType = parsedMetric[parsedMetric.length - 1];
     if (metricType.equals("Count")) {
-      exporter.exportGauge(JVM_BUFFERS, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(JVM_BUFFERS, (Gauge<?>) dropwizardMetric, getLabels());
     } else if (metricType.equals(("MemoryUsed")) || metricType.equals(("TotalCapacity"))) {
-      exporter.exportGauge(JVM_BUFFERS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(JVM_BUFFERS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

@@ -166,6 +166,9 @@ public abstract class CoreAdminParams {
    */
   public static final String REPLICA_TYPE = "replicaType";
 
+  /** Whether the request that generated the admin command is trusted */
+  public static final String TRUSTED = "trusted";
+
   public enum CoreAdminAction {
     STATUS(true),
     UNLOAD,

@@ -25,15 +25,15 @@ import com.google.common.base.Enums;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /**
  * This class maintains a {@link io.prometheus.metrics.model.snapshots.MetricSnapshot}s exported
  * from solr.node {@link com.codahale.metrics.MetricRegistry}
  */
-public class SolrPrometheusNodeExporter extends SolrPrometheusExporter
-    implements PrometheusNodeExporterInfo {
-  public SolrPrometheusNodeExporter() {
+public class SolrPrometheusNodeFormatter extends SolrPrometheusFormatter
+    implements PrometheusNodeFormatterInfo {
+  public SolrPrometheusNodeFormatter() {
     super();
   }
 
@@ -51,7 +51,7 @@ public class SolrPrometheusNodeExporter extends SolrPrometheusExporter
   @Override
   public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
     String metricCategory = metricName.split("\\.", 2)[0];
-    if (!Enums.getIfPresent(PrometheusNodeExporterInfo.NodeCategory.class, metricCategory)
+    if (!Enums.getIfPresent(PrometheusNodeFormatterInfo.NodeCategory.class, metricCategory)
         .isPresent()) {
       return new SolrNoOpMetric();
     }

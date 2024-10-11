@@ -31,47 +31,47 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 import org.junit.Test;
 
-public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
+public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
   @Test
   public void testExportMeter() {
-    TestSolrPrometheusExporter testExporter = new TestSolrPrometheusExporter();
+    TestSolrPrometheusFormatter testFormatter = new TestSolrPrometheusFormatter();
     String expectedMetricName = "test_metric";
     Meter metric = new Meter();
     metric.mark(123);
     Labels expectedLabels = Labels.of("test", "test-value");
 
-    testExporter.exportMeter(expectedMetricName, metric, expectedLabels);
-    assertTrue(testExporter.getMetricCounters().containsKey(expectedMetricName));
+    testFormatter.exportMeter(expectedMetricName, metric, expectedLabels);
+    assertTrue(testFormatter.getMetricCounters().containsKey(expectedMetricName));
 
     CounterSnapshot.CounterDataPointSnapshot actual =
-        testExporter.getMetricCounters().get("test_metric").get(0);
+        testFormatter.getMetricCounters().get("test_metric").get(0);
     assertEquals(123.0, actual.getValue(), 0);
     assertEquals(expectedLabels, actual.getLabels());
   }
 
   @Test
   public void testExportCounter() {
-    TestSolrPrometheusExporter testExporter = new TestSolrPrometheusExporter();
+    TestSolrPrometheusFormatter testFormatter = new TestSolrPrometheusFormatter();
     String expectedMetricName = "test_metric";
     Counter metric = new Counter();
     metric.inc(123);
     Labels expectedLabels = Labels.of("test", "test-value");
 
-    testExporter.exportCounter(expectedMetricName, metric, expectedLabels);
-    assertTrue(testExporter.getMetricCounters().containsKey(expectedMetricName));
+    testFormatter.exportCounter(expectedMetricName, metric, expectedLabels);
+    assertTrue(testFormatter.getMetricCounters().containsKey(expectedMetricName));
 
     CounterSnapshot.CounterDataPointSnapshot actual =
-        testExporter.getMetricCounters().get("test_metric").get(0);
+        testFormatter.getMetricCounters().get("test_metric").get(0);
     assertEquals(123.0, actual.getValue(), 0);
     assertEquals(expectedLabels, actual.getLabels());
   }
 
   @Test
   public void testExportTimer() throws InterruptedException {
-    TestSolrPrometheusExporter testExporter = new TestSolrPrometheusExporter();
+    TestSolrPrometheusFormatter testFormatter = new TestSolrPrometheusFormatter();
     String expectedMetricName = "test_metric";
     Timer metric = new Timer();
     Timer.Context context = metric.time();
@@ -79,18 +79,18 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
     context.stop();
 
     Labels expectedLabels = Labels.of("test", "test-value");
-    testExporter.exportTimer(expectedMetricName, metric, expectedLabels);
-    assertTrue(testExporter.getMetricGauges().containsKey(expectedMetricName));
+    testFormatter.exportTimer(expectedMetricName, metric, expectedLabels);
+    assertTrue(testFormatter.getMetricGauges().containsKey(expectedMetricName));
 
     GaugeSnapshot.GaugeDataPointSnapshot actual =
-        testExporter.getMetricGauges().get("test_metric").get(0);
+        testFormatter.getMetricGauges().get("test_metric").get(0);
     assertEquals(5000000000L, actual.getValue(), 500000000L);
     assertEquals(expectedLabels, actual.getLabels());
   }
 
   @Test
   public void testExportGaugeNumber() throws InterruptedException {
-    TestSolrPrometheusExporter testExporter = new TestSolrPrometheusExporter();
+    TestSolrPrometheusFormatter testFormatter = new TestSolrPrometheusFormatter();
     String expectedMetricName = "test_metric";
     Gauge<Number> metric =
         new SettableGauge<>() {
@@ -104,18 +104,18 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
         };
 
     Labels expectedLabels = Labels.of("test", "test-value");
-    testExporter.exportGauge(expectedMetricName, metric, expectedLabels);
-    assertTrue(testExporter.getMetricGauges().containsKey(expectedMetricName));
+    testFormatter.exportGauge(expectedMetricName, metric, expectedLabels);
+    assertTrue(testFormatter.getMetricGauges().containsKey(expectedMetricName));
 
     GaugeSnapshot.GaugeDataPointSnapshot actual =
-        testExporter.getMetricGauges().get("test_metric").get(0);
+        testFormatter.getMetricGauges().get("test_metric").get(0);
     assertEquals(123.0, actual.getValue(), 0);
     assertEquals(expectedLabels, actual.getLabels());
   }
 
   @Test
   public void testExportGaugeMap() throws InterruptedException {
-    TestSolrPrometheusExporter testExporter = new TestSolrPrometheusExporter();
+    TestSolrPrometheusFormatter testFormatter = new TestSolrPrometheusFormatter();
     String expectedMetricName = "test_metric";
     Gauge<Map<String, Number>> metric =
         new SettableGauge<>() {
@@ -131,17 +131,17 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
         };
 
     Labels labels = Labels.of("test", "test-value");
-    testExporter.exportGauge(expectedMetricName, metric, labels);
-    assertTrue(testExporter.getMetricGauges().containsKey(expectedMetricName));
+    testFormatter.exportGauge(expectedMetricName, metric, labels);
+    assertTrue(testFormatter.getMetricGauges().containsKey(expectedMetricName));
 
     GaugeSnapshot.GaugeDataPointSnapshot actual =
-        testExporter.getMetricGauges().get("test_metric").get(0);
+        testFormatter.getMetricGauges().get("test_metric").get(0);
     assertEquals(123.0, actual.getValue(), 0);
     Labels expectedLabels = Labels.of("test", "test-value", "item", "test-item");
     assertEquals(expectedLabels, actual.getLabels());
   }
 
-  static class TestSolrPrometheusExporter extends SolrPrometheusExporter {
+  static class TestSolrPrometheusFormatter extends SolrPrometheusFormatter {
     @Override
     public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {}
 

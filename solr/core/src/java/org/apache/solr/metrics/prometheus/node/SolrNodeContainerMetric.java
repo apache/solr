@@ -19,7 +19,7 @@ package org.apache.solr.metrics.prometheus.node;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name CONTAINER.* */
 public class SolrNodeContainerMetric extends SolrNodeMetric {
@@ -44,14 +44,14 @@ public class SolrNodeContainerMetric extends SolrNodeMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     String[] parsedMetric = metricName.split("\\.");
     if (metricName.startsWith("CONTAINER.cores.")) {
       labels.put("item", parsedMetric[2]);
-      exporter.exportGauge(NODE_CORES, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(NODE_CORES, (Gauge<?>) dropwizardMetric, getLabels());
     } else if (metricName.startsWith("CONTAINER.fs.coreRoot.")) {
       labels.put("item", parsedMetric[3]);
-      exporter.exportGauge(NODE_CORE_FS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(NODE_CORE_FS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

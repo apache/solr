@@ -28,9 +28,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
+import org.slf4j.MDC;
 
 public class ExecutorUtilTest extends SolrTestCase {
 
@@ -106,6 +109,57 @@ public class ExecutorUtilTest extends SolrTestCase {
       w.tellWorkerToFinish();
       ExecutorUtil.shutdownNowAndAwaitTermination(executorService);
     }
+  }
+
+  @Test
+  public void testCMDCAwareCachedThreadPool() throws Exception {
+    // 5 threads max, unbounded queue
+    ExecutorService executor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            5, Integer.MAX_VALUE, new NamedThreadFactory("test"));
+
+    AtomicInteger concurrentTasks = new AtomicInteger();
+    AtomicInteger maxConcurrentTasks = new AtomicInteger();
+    int taskCount = 5 + random().nextInt(100);
+    CountDownLatch latch = new CountDownLatch(5);
+    List<Future<Void>> futures = new ArrayList<>();
+
+    for (int i = 0; i < taskCount; i++) {
+      String core = "id_" + random().nextLong();
+
+      Callable<Void> task =
+          () -> {
+            // ensure we never have too many concurrent tasks
+            int concurrent = concurrentTasks.incrementAndGet();
+            assertTrue(concurrent <= 5);
+            maxConcurrentTasks.getAndAccumulate(concurrent, Math::max);
+
+            // assert MDC context is copied from the parent thread that submitted the task
+            assertEquals(core, MDC.get("core"));
+
+            // The first 4 tasks to be executed will wait on the latch, and the 5th will
+            // release all the threads.
+            latch.countDown();
+            latch.await(1, TimeUnit.SECONDS);
+            concurrentTasks.decrementAndGet();
+            return null;
+          };
+
+      MDCLoggingContext.setCoreName(core);
+      futures.add(executor.submit(task));
+    }
+
+    ExecutorUtil.shutdownAndAwaitTermination(executor);
+
+    for (Future<Void> future : futures) {
+      // Throws an exception (and make the test fail) if an assertion failed
+      // in the subtask
+      future.get();
+    }
+
+    // assert the pool was actually multithreaded. Since we submitted many tasks,
+    // all the threads should have been started
+    assertEquals(5, maxConcurrentTasks.get());
   }
 
   private static final class Worker implements Callable<Boolean> {

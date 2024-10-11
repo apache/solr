@@ -20,18 +20,18 @@ import com.codahale.metrics.Metric;
 import com.google.common.base.Enums;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /**
  * This class maintains a {@link io.prometheus.metrics.model.snapshots.MetricSnapshot}s exported
  * from solr.core {@link com.codahale.metrics.MetricRegistry}
  */
-public class SolrPrometheusCoreExporter extends SolrPrometheusExporter
-    implements PrometheusCoreExporterInfo {
+public class SolrPrometheusCoreFormatter extends SolrPrometheusFormatter
+    implements PrometheusCoreFormatterInfo {
   public final String coreName;
   public final boolean cloudMode;
 
-  public SolrPrometheusCoreExporter(String coreName, boolean cloudMode) {
+  public SolrPrometheusCoreFormatter(String coreName, boolean cloudMode) {
     super();
     this.coreName = coreName;
     this.cloudMode = cloudMode;
@@ -46,7 +46,7 @@ public class SolrPrometheusCoreExporter extends SolrPrometheusExporter
   @Override
   public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
     String metricCategory = metricName.split("\\.", 2)[0];
-    if (!Enums.getIfPresent(PrometheusCoreExporterInfo.CoreCategory.class, metricCategory)
+    if (!Enums.getIfPresent(PrometheusCoreFormatterInfo.CoreCategory.class, metricCategory)
         .isPresent()) {
       return new SolrNoOpMetric();
     }

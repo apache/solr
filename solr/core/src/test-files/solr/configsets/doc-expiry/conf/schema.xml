@@ -32,15 +32,15 @@
        1.6: useDocValuesAsStored defaults to true.
        1.7: docValues defaults to true, uninvertible defaults to false.
      -->
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" positionIncrementGap="0" uninvertible="true"/>
 
-  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
-  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0" uninvertible="true"/>
+  <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0" uninvertible="true"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -157,7 +157,7 @@
   </fieldType>
 
   <fieldType name="uuid" class="solr.UUIDField"/>
-  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false"/>
+  <fieldType name="ignored" class="solr.StrField" indexed="false" stored="false" docValues="false" uninvertible="false"/>
 
 
   <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
@@ -177,16 +177,16 @@
   <!-- to test property inheritance and overriding -->
   <field name="shouldbeunstored" type="unstored"/>
   <field name="shouldbestored" type="unstored" stored="true"/>
-  <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true"/>
+  <field name="shouldbeunindexed" type="unstored" indexed="false" stored="true" uninvertible="false"/>
 
 
   <!-- test different combinations of indexed and stored -->
   <field name="bind" type="boolean" indexed="true" stored="false"/>
-  <field name="bsto" type="boolean" indexed="false" stored="true"/>
+  <field name="bsto" type="boolean" indexed="false" stored="true" uninvertible="false"/>
   <field name="bindsto" type="boolean" indexed="true" stored="true"/>
-  <field name="isto" type="int" indexed="false" stored="true"/>
+  <field name="isto" type="int" indexed="false" stored="true" uninvertible="false"/>
   <field name="iind" type="int" indexed="true" stored="false"/>
-  <field name="ssto" type="string" indexed="false" stored="true"/>
+  <field name="ssto" type="string" indexed="false" stored="true" uninvertible="false"/>
   <field name="sind" type="string" indexed="true" stored="false"/>
   <field name="sindsto" type="string" indexed="true" stored="true"/>
 
@@ -221,10 +221,10 @@
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
 
-  <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
+  <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false" uninvertible="false"/>
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
-  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true" uninvertible="false"/>
   <dynamicField name="t_*" type="text" indexed="true" stored="true"/>
   <dynamicField name="tv_*" type="text" indexed="true" stored="true"
                 termVectors="true" termPositions="true" termOffsets="true"/>

@@ -21,7 +21,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /* Dropwizard metrics of name ADMIN.* and UPDATE.* */
 public class SolrNodeHandlerMetric extends SolrNodeMetric {
@@ -49,16 +49,16 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (metricName.endsWith(".totalTime")) {
       labels.remove("type");
-      exporter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
+      formatter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
     } else if (metricName.endsWith("Connections")) {
-      exporter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
+      formatter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Meter) {
-      exporter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
+      formatter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
-      exporter.exportCounter(NODE_REQUESTS, (Counter) dropwizardMetric, getLabels());
+      formatter.exportCounter(NODE_REQUESTS, (Counter) dropwizardMetric, getLabels());
     }
   }
 }

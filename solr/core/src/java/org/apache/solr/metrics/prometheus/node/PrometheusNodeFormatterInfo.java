@@ -14,17 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jvm;
+package org.apache.solr.metrics.prometheus.node;
 
-public interface PrometheusJvmExporterInfo {
-  /** Category of prefix Solr JVM dropwizard handler metric names */
-  enum JvmCategory {
-    buffers,
-    gc,
-    memory,
-    os,
-    threads,
-    classes,
-    system
+public interface PrometheusNodeFormatterInfo {
+  /** Category of prefix Solr Node dropwizard handler metric names */
+  enum NodeCategory {
+    ADMIN,
+    UPDATE,
+    CONTAINER,
+    CACHE
   }
 }

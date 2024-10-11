@@ -14,48 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.jvm;
+package org.apache.solr.metrics.prometheus.jetty;
 
 import com.codahale.metrics.Metric;
-import com.google.common.base.Enums;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrNoOpMetric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /**
  * This class maintains a {@link io.prometheus.metrics.model.snapshots.MetricSnapshot}s exported
- * from solr.jvm {@link com.codahale.metrics.MetricRegistry}
+ * from solr.jetty {@link com.codahale.metrics.MetricRegistry}
  */
-public class SolrPrometheusJvmExporter extends SolrPrometheusExporter
-    implements PrometheusJvmExporterInfo {
-  public SolrPrometheusJvmExporter() {
+public class SolrPrometheusJettyFormatter extends SolrPrometheusFormatter {
+  public SolrPrometheusJettyFormatter() {
     super();
   }
 
   @Override
   public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
-    SolrMetric solrJvmMetric = categorizeMetric(dropwizardMetric, metricName);
-    solrJvmMetric.parseLabels().toPrometheus(this);
+    SolrMetric solrJettyMetric = categorizeMetric(dropwizardMetric, metricName);
+    solrJettyMetric.parseLabels().toPrometheus(this);
   }
 
   @Override
   public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
-    String metricCategory = metricName.split("\\.", 2)[0];
-    if (!Enums.getIfPresent(JvmCategory.class, metricCategory).isPresent()) {
+    if (metricName.endsWith("xx-responses") || metricName.endsWith("-requests")) {
+      return new SolrJettyReqRespMetric(dropwizardMetric, metricName);
+    } else if (metricName.endsWith(".dispatches")) {
+      return new SolrJettyDispatchesMetric(dropwizardMetric, metricName);
+    } else {
       return new SolrNoOpMetric();
-    }
-    switch (JvmCategory.valueOf(metricCategory)) {
-      case gc:
-        return new SolrJvmGcMetrics(dropwizardMetric, metricName);
-      case memory:
-        return new SolrJvmMemoryMetric(dropwizardMetric, metricName);
-      case os:
-      case threads:
-        return new SolrJvmOsMetric(dropwizardMetric, metricName);
-      case buffers:
-        return new SolrJvmBuffersMetric(dropwizardMetric, metricName);
-      default:
-        return new SolrNoOpMetric();
     }
   }
 }
