@@ -53,10 +53,10 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTypes() throws IOException {
+  public void testSimpleJson() throws IOException {
     SolrQueryRequest req = req("q", "dummy", "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    QueryResponseWriter w;
+    QueryResponseWriter w = new JSONResponseWriter();
     new StringWriter();
     StringWriter buf;
 
@@ -64,12 +64,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
 
-    w = new RubyResponseWriter();
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    jsonEq(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
 
-    w = new JSONResponseWriter();
     buf = new StringWriter();
     w.write(buf, req, rsp);
     jsonEq(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");

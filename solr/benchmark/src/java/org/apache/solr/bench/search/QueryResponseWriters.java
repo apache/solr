@@ -67,7 +67,6 @@ public class QueryResponseWriters {
       "xml",
       "python",
       "phps",
-      "ruby",
       "raw"
     })
     String wt;

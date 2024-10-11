@@ -133,7 +133,6 @@ import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -3016,7 +3015,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("graphml", new GraphMLResponseWriter());
     m.put("php", new PHPResponseWriter());
     m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
     m.put("cbor", new CborResponseWriter());
