@@ -72,10 +72,10 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -256,7 +256,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   private boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   private void setBasicAuthHeader(SolrRequest<?> request, HttpRequestBase method)
@@ -606,7 +606,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           break;
         default:
           if (processor == null || contentType == null) {
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl,
                 httpStatus,
                 "non ok status: "
@@ -636,7 +636,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
                 .collect(Collectors.toSet());
         if (!processorMimeTypes.contains(mimeType)) {
           if (isUnmatchedErrorCode(mimeType, httpStatus)) {
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl,
                 httpStatus,
                 "non ok status: "
@@ -654,10 +654,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
             respBody.transferTo(body);
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl, httpStatus, prefix + body.toString(exceptionCharset), null);
           } catch (IOException e) {
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl,
                 httpStatus,
                 "Could not parse response with encoding " + exceptionCharset,
@@ -670,7 +670,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       try {
         rsp = processor.processResponse(respBody, charsetName);
       } catch (Exception e) {
-        throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
+        throw new SolrClient.RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
       Object error = rsp == null ? null : rsp.get("error");
       if (error != null
@@ -714,7 +714,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
               .append(method.getURI());
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
-        RemoteSolrException rss = new RemoteSolrException(baseUrl, httpStatus, reason, null);
+        SolrClient.RemoteSolrException rss =
+            new SolrClient.RemoteSolrException(baseUrl, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
@@ -736,7 +737,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically
   // true when SolrDispatchFilter uses the sendError mechanism since the expected MIME type of
-  // response is not HTML but HTTP sendError generates a HTML output, which can lead to mismatch
+  // response is not HTML but HTTP sendError generates an HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType == null) {
       return false;

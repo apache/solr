@@ -69,6 +69,7 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
+import org.apache.commons.io.output.NullOutputStream;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -221,6 +222,19 @@ public class PostTool extends ToolBase {
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
         Option.builder("d")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --delay instead")
+                    .get())
+            .hasArg()
+            .argName("delay")
+            .required(false)
+            .desc(
+                "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
+            .build(),
+        Option.builder()
             .longOpt("delay")
             .hasArg()
             .argName("delay")
@@ -242,12 +256,24 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("default: " + DEFAULT_FILE_TYPES)
             .build(),
-        Option.builder("p")
+        Option.builder()
             .longOpt("params")
             .hasArg()
             .argName("<key>=<value>[&<key>=<value>...]")
             .required(false)
-            .desc("values must be URL-encoded; these pass through to Solr update request.")
+            .desc("Values must be URL-encoded; these pass through to Solr update request.")
+            .build(),
+        Option.builder("p")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --params instead")
+                    .get())
+            .hasArg()
+            .argName("<key>=<value>[&<key>=<value>...]")
+            .required(false)
+            .desc("Values must be URL-encoded; these pass through to Solr update request.")
             .build(),
         Option.builder()
             .longOpt("out")
@@ -255,6 +281,17 @@ public class PostTool extends ToolBase {
             .desc("sends Solr response outputs to console.")
             .build(),
         Option.builder("f")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --format instead")
+                    .get())
+            .required(false)
+            .desc(
+                "sends application/json content as Solr commands to /update instead of /update/json/docs.")
+            .build(),
+        Option.builder()
             .longOpt("format")
             .required(false)
             .desc(
@@ -294,14 +331,22 @@ public class PostTool extends ToolBase {
       // Turn off automatically looking up the mimetype in favour of what is passed in.
       auto = false;
     }
-    format = cli.hasOption("format") ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
+    format =
+        cli.hasOption("format") || cli.hasOption("f")
+            ? FORMAT_SOLR
+            : ""; // i.e not solr formatted json commands
 
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
     }
 
-    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = Integer.parseInt(cli.getOptionValue("delay", String.valueOf(defaultDelay)));
+    delay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
+    if (cli.hasOption("delay")) {
+      delay = Integer.parseInt(cli.getOptionValue("delay"));
+    } else if (cli.hasOption("d")) {
+      delay = Integer.parseInt(cli.getOptionValue("d"));
+    }
+
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
@@ -312,7 +357,7 @@ public class PostTool extends ToolBase {
 
     args = cli.getArgs();
 
-    params = cli.getOptionValue("params", "");
+    params = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "params", "p", "");
 
     execute(mode);
   }
@@ -335,11 +380,11 @@ public class PostTool extends ToolBase {
       return;
     }
 
-    if (commit) {
-      commit();
-    }
     if (optimize) {
+      // optimize does a commit under the covers.
       optimize();
+    } else if (commit) {
+      commit();
     }
     displayTiming((long) timer.getTime());
   }
@@ -379,37 +424,32 @@ public class PostTool extends ToolBase {
   private void doWebMode() {
     reset();
     int numPagesPosted;
-    try {
-      if (type != null) {
-        throw new IllegalArgumentException(
-            "Specifying content-type with \"--mode=web\" is not supported");
-      }
-
-      // Set Extracting handler as default
-      solrUpdateUrl = appendUrlPath(solrUpdateUrl, "/extract");
-
-      info("Posting web pages to Solr url " + solrUpdateUrl);
-      auto = true;
-      info(
-          "Entering auto mode. Indexing pages with content-types corresponding to file endings "
-              + fileTypes);
-      if (recursive > 0) {
-        if (recursive > MAX_WEB_DEPTH) {
-          recursive = MAX_WEB_DEPTH;
-          warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
-        }
-        if (delay < DEFAULT_WEB_DELAY) {
-          warn(
-              "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
-        }
-        info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
-      }
-      numPagesPosted = postWebPages(args, 0, out);
-      info(numPagesPosted + " web pages indexed.");
-
-    } catch (URISyntaxException e) {
-      warn("Wrong URL trying to append /extract to " + solrUpdateUrl);
+    if (type != null) {
+      throw new IllegalArgumentException(
+          "Specifying content-type with \"--mode=web\" is not supported");
     }
+
+    // Set Extracting handler as default
+    solrUpdateUrl = appendUrlPath(solrUpdateUrl, "/extract");
+
+    info("Posting web pages to Solr url " + solrUpdateUrl);
+    auto = true;
+    info(
+        "Entering auto mode. Indexing pages with content-types corresponding to file endings "
+            + fileTypes);
+    if (recursive > 0) {
+      if (recursive > MAX_WEB_DEPTH) {
+        recursive = MAX_WEB_DEPTH;
+        warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
+      }
+      if (delay < DEFAULT_WEB_DELAY) {
+        warn(
+            "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
+      }
+      info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
+    }
+    numPagesPosted = postWebPages(args, 0, out);
+    info(numPagesPosted + " web pages indexed.");
   }
 
   private void doStdinMode() {
@@ -461,7 +501,7 @@ public class PostTool extends ToolBase {
    * @param args array of file names
    * @param startIndexInArgs offset to start
    * @param out output stream to post data to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
    */
   public int postFiles(String[] args, int startIndexInArgs, OutputStream out, String type) {
@@ -533,7 +573,7 @@ public class PostTool extends ToolBase {
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
-      } catch (InterruptedException | URISyntaxException e) {
+      } catch (InterruptedException | MalformedURLException | URISyntaxException e) {
         throw new RuntimeException(e);
       }
     }
@@ -545,7 +585,7 @@ public class PostTool extends ToolBase {
    *
    * @param globFile file holding glob path
    * @param out outputStream to write results to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
+   * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
    */
   int handleGlob(File globFile, OutputStream out, String type) {
@@ -699,13 +739,14 @@ public class PostTool extends ToolBase {
    * @param link the absolute or relative link
    * @return the string version of the full URL
    */
-  protected String computeFullUrl(URL baseUrl, String link) {
+  protected static String computeFullUrl(URL baseUrl, String link)
+      throws MalformedURLException, URISyntaxException {
     if (link == null || link.length() == 0) {
       return null;
     }
     if (!link.startsWith("http")) {
       if (link.startsWith("/")) {
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + link;
+        link = baseUrl.toURI().resolve(link).toString();
       } else {
         if (link.contains(":")) {
           return null; // Skip non-relative URLs
@@ -715,10 +756,12 @@ public class PostTool extends ToolBase {
           int sep = path.lastIndexOf('/');
           String file = path.substring(sep + 1);
           if (file.contains(".") || file.contains("?")) {
-            path = path.substring(0, sep);
+            path = path.substring(0, sep + 1);
+          } else {
+            path = path + "/";
           }
         }
-        link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + path + "/" + link;
+        link = baseUrl.toURI().resolve(path + link).toString();
       }
     }
     link = normalizeUrlEnding(link);
@@ -806,7 +849,8 @@ public class PostTool extends ToolBase {
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type) throws URISyntaxException {
+  public void postFile(File file, OutputStream output, String type)
+      throws MalformedURLException, URISyntaxException {
     InputStream is = null;
 
     URI uri = solrUpdateUrl;
@@ -884,9 +928,20 @@ public class PostTool extends ToolBase {
    * @param append the path to append
    * @return the final URL version
    */
-  protected static URI appendUrlPath(URI uri, String append) throws URISyntaxException {
-    var newPath = uri.getPath() + append;
-    return new URI(uri.getScheme(), uri.getAuthority(), newPath, uri.getQuery(), uri.getFragment());
+  protected static URI appendUrlPath(URI uri, String append) {
+    if (append == null || append.isEmpty()) {
+      return uri;
+    }
+    if (append.startsWith("/")) {
+      append = append.substring(1);
+    }
+    if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
+      append += "?" + uri.getQuery();
+    }
+    if (!uri.getPath().endsWith("/")) {
+      append = uri.getPath() + "/" + append;
+    }
+    return uri.resolve(append);
   }
 
   /**
@@ -1054,16 +1109,12 @@ public class PostTool extends ToolBase {
    * source and thrown away.
    */
   private static void pipe(InputStream source, OutputStream dest) throws IOException {
-    byte[] buf = new byte[1024];
-    int read = 0;
-    while ((read = source.read(buf)) >= 0) {
-      if (null != dest) {
-        dest.write(buf, 0, read);
-      }
+    if (dest == null) {
+      dest = NullOutputStream.INSTANCE;
     }
-    if (null != dest) {
-      dest.flush();
-    }
+    // copy source to dest
+    source.transferTo(dest);
+    dest.flush();
   }
 
   public FileFilter getFileFilterFromFileTypes(String fileTypes) {

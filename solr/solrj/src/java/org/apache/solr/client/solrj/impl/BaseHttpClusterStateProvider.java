@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
+import static org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -112,7 +112,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // Cluster state for the given collection was not found, could be an alias.
-        // Lets fetch/update our aliases:
+        // Let's fetch/update our aliases:
         getAliases(true);
         return null;
       }
@@ -347,10 +347,10 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
         return fetchClusterState(client, null, null);
-      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
+      } catch (SolrServerException | SolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
-        // not possible! (we passed in null for collection so it can't be an alias)
+        // not possible! (we passed in null for collection, so it can't be an alias)
         throw new RuntimeException(
             "null should never cause NotACollectionException in "
                 + "fetchClusterState() Please report this as a bug!");
@@ -376,7 +376,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         SimpleOrderedMap<?> cluster =
             submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_CLUSTER_PROP);
         return (Map<String, Object>) cluster.get("properties");
-      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
+      } catch (SolrServerException | SolrClient.RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       }
     }

@@ -86,7 +86,7 @@ public class KnnStream extends TupleStream implements Expressible {
               expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
+    // Named parameters - passed directly to solr as SolrParams
     if (namedParams.size() < 2) {
       throw new IOException(
           String.format(

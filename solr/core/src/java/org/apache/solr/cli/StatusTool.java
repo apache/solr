@@ -56,7 +56,7 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  public static final Option OPTION_MAXWAITSECS =
+  private static final Option OPTION_MAXWAITSECS =
       Option.builder()
           .longOpt("max-wait-secs")
           .argName("SECS")

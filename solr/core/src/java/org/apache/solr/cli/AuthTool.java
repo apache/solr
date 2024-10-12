@@ -75,7 +75,7 @@ public class AuthTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    return "\nUpdates or enables/disables authentication.  Must be run on the machine hosting Solr.\n"
+    return "Updates or enables/disables authentication.  Must be run on the Solr server itself.\n"
         + "\n"
         + "List of options:";
   }
@@ -193,6 +193,7 @@ public class AuthTool extends ToolBase {
             .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
@@ -265,7 +266,7 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           if (!zkInaccessible) {
-            echoIfVerbose("Uploading following security.json: " + securityJson, cli);
+            echoIfVerbose("Uploading following security.json: " + securityJson);
             try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
@@ -424,7 +425,7 @@ public class AuthTool extends ToolBase {
         String securityJson = securityJson1.toPrettyString();
 
         if (!updateIncludeFileOnly) {
-          echoIfVerbose("Uploading following security.json: " + securityJson, cli);
+          echoIfVerbose("Uploading following security.json: " + securityJson);
           try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
             zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
           }
@@ -514,7 +515,7 @@ public class AuthTool extends ToolBase {
         SolrCLI.exit(1);
       }
 
-      echoIfVerbose("Uploading following security.json: {}", cli);
+      echoIfVerbose("Uploading following security.json: {}");
 
       try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
         zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
@@ -624,9 +625,9 @@ public class AuthTool extends ToolBase {
     Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
 
     if (basicAuthConfFile != null) {
-      echoIfVerbose("Written out credentials file: " + basicAuthConfFile, cli);
+      echoIfVerbose("Written out credentials file: " + basicAuthConfFile);
     }
-    echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath(), cli);
+    echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath());
   }
 
   private void updateIncludeFileDisableAuth(Path includeFile, CommandLine cli) throws IOException {
@@ -648,7 +649,7 @@ public class AuthTool extends ToolBase {
     if (hasChanged) {
       String lines = includeFileLines.stream().collect(Collectors.joining(System.lineSeparator()));
       Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
-      echoIfVerbose("Commented out necessary lines from " + includeFile.toAbsolutePath(), cli);
+      echoIfVerbose("Commented out necessary lines from " + includeFile.toAbsolutePath());
     }
   }
 
