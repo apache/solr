@@ -52,7 +52,7 @@ If you are building complex interactions with Solr, then consider these librarie
 === Inactive
 * link:http://rubygems.org/gems/solr-ruby[Solr-ruby]: Low-level access to Solr from Ruby.
 * link:http://rubygems.org/gems/flare[Flare]: A plugin adding faceted browsing, AJAX suggest, and more to Rails controllers.
-* link:http://acts_as_solr.railsfreaks.com/[acts_as_solr]: A plugin to add full-text search capabilities using Solr to link:ActiveRecord[ActiveRecord] models. link:http://www.quarkruby.com/2007/8/12/acts_as_solr-for-search-and-faceting/[nice acts_as_solr tutorial]
+* link:http://acts_as_solr.railsfreaks.com/[acts_as_solr]: A plugin to add full-text search capabilities using Solr to ActiveRecord models. link:http://www.quarkruby.com/2007/8/12/acts_as_solr-for-search-and-faceting/[nice acts_as_solr tutorial]
 * link:http://rubyforge.org/projects/background-solr/[acts_as_background_solr]: An extension to acts_as_solr moving more processing to the background.
-* link:http://mojodna.net/searchable/ruby/[Searchable]: A Rails plugin that provides search integration with link:ActiveRecord[ActiveRecord]. (an alternative to acts_as_solr)
+* link:http://mojodna.net/searchable/ruby/[Searchable]: A Rails plugin that provides search integration with ActiveRecord. (an alternative to acts_as_solr)
 * link:http://delsolr.rubyforge.org/[DelSolr]: A Solr wrapper designed to simplify facet and filter queries.
