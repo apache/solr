@@ -98,6 +98,7 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -115,6 +116,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1167,6 +1169,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * resolved against the filter cache, and populate it.
    */
   public ProcessedFilter getProcessedFilter(List<Query> queries) throws IOException {
+    final SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
+    final ResponseBuilder rb = reqInfo.getResponseBuilder();
+    RTimer fqstimer = null;
+    FilterQueryDebugInfo fqsdebug = null;
+
+    if (rb.isDebug()) {
+      fqsdebug = new FilterQueryDebugInfo();
+      rb.req.getContext().put("FilterQueryDebugInfo", fqsdebug);
+      fqstimer = new RTimer();
+    }
+
     ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
       return pf;
@@ -1183,7 +1196,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     int end = 0; // size of "sets" and "neg"; parallel arrays
 
+    FilterQueryDebugInfo fqdebug = null;
+    RTimer fqtimer = null;
     for (Query q : queries) {
+      if (fqdebug != null) {
+        long fqTimeElapsed = (long) fqtimer.getTime();
+        fqdebug.setElapsed(fqTimeElapsed);
+      }
+      if (fqsdebug != null) {
+        fqdebug = new FilterQueryDebugInfo();
+        fqdebug.setQuery(q.toString());
+        fqsdebug.addChild(fqdebug);
+        fqtimer = new RTimer();
+      }
       if (q instanceof ExtendedQuery) {
         ExtendedQuery eq = (ExtendedQuery) q;
         if (!eq.getCache()) {
@@ -1229,7 +1254,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       sets[end++] = docSet;
     } // end of queries
+    if (fqdebug != null) {
+      long fqTimeElapsed = (long) fqtimer.getTime();
+      fqdebug.setElapsed(fqTimeElapsed);
+    }
 
+    RTimer fqsMergeTimer = null;
+    if (fqsdebug != null) {
+      fqsMergeTimer = new RTimer();
+    }
     if (end > 0) {
       // Are all of our normal cached filters negative?
       if (answer == null) {
@@ -1259,6 +1292,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // ignore "answer" if it simply matches all docs
     if (answer != null && answer.size() == numDocs()) {
       answer = null;
+    }
+
+    if (fqsdebug != null) {
+      fqsdebug.setElapsed((long) fqstimer.getTime());
+      fqsdebug.setFqMergeElapsed((long) fqsMergeTimer.getTime());
     }
 
     // answer is done.

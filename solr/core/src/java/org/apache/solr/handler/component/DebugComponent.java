@@ -38,6 +38,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.FilterQueryDebugInfo;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
@@ -104,6 +105,12 @@ public class DebugComponent extends SearchComponent {
         info = stdinfo;
       } else {
         info.addAll(stdinfo);
+      }
+
+      FilterQueryDebugInfo fqdebug =
+          (FilterQueryDebugInfo) (rb.req.getContext().get("FilterQueryDebugInfo"));
+      if (fqdebug != null) {
+        info.add("filter-query-trace", fqdebug.getDebugInfo());
       }
 
       FacetDebugInfo fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo"));
