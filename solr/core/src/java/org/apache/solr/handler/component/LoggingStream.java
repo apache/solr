@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Sends tuples emitted by a wrapped {@link TupleStream} as writes to a log file. The log file will
- * be created in the "userfiles" directory.
+ * be created in the "userfiles" directory and formatted in the JSON w/ Lines format.
  *
  * <p>I really want to call this the DogStream, as it matches the CatStream.
  *
@@ -261,6 +261,9 @@ public class LoggingStream extends TupleStream implements Expressible {
       throw new IllegalStateException(
           chroot + " directory used to load files must exist but could not be found!");
     }
+
+    // Pass down the stream context.
+    this.tupleSource.setStreamContext(context);
   }
 
   private void verifyCollectionName(String collectionName, StreamExpression expression)

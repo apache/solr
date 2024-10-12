@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CsvStream;
 import org.apache.solr.client.solrj.io.stream.EchoStream;
 import org.apache.solr.client.solrj.io.stream.ListStream;
-import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -37,7 +36,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -149,7 +147,7 @@ public class LoggingStreamTest extends SolrCloudTestCase {
   @Test
   public void testLoggingStreamCombinedWithCatAndJsonStream() throws Exception {
     String expr =
-        "logging(parsed_csv_output.log,"
+        "logging(parsed_csv_output.jsonl,"
             + "parseCSV(list(tuple(file=\"file1\", line=\"a,b,c\"), "
             + "                        tuple(file=\"file1\", line=\"1,2,3\"),"
             + "                        tuple(file=\"file1\", line=\"\\\"hello, world\\\",9000,20\"),"
@@ -158,31 +156,21 @@ public class LoggingStreamTest extends SolrCloudTestCase {
             + ")";
 
     try (LoggingStream stream = new LoggingStream(StreamExpressionParser.parse(expr), factory)) {
+      stream.setStreamContext(context);
       List<Tuple> tuples = getTuples(stream);
+      assertEquals(tuples.size(), 3);
+      assertEquals(tuples.get(0).getString("totalIndexed"), "1");
+      assertEquals(tuples.get(0).getString("batchLogged"), "1");
+      assertEquals(tuples.get(0).getString("batchNumber"), "1");
+
+      assertEquals(tuples.get(1).getString("totalIndexed"), "2");
+      assertEquals(tuples.get(1).getString("batchLogged"), "1");
+      assertEquals(tuples.get(1).getString("batchNumber"), "2");
+
+      assertEquals(tuples.get(2).getString("totalIndexed"), "3");
+      assertEquals(tuples.get(2).getString("batchLogged"), "1");
+      assertEquals(tuples.get(2).getString("batchNumber"), "3");
     }
-
-    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", expr);
-    paramsLoc.set("qt", "/stream");
-
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTION;
-    TupleStream solrStream = new SolrStream(url, paramsLoc);
-
-    StreamContext context = new StreamContext();
-    solrStream.setStreamContext(context);
-    List<Tuple> tuples = getTuples(solrStream);
-    assertEquals(tuples.size(), 3);
-    assertEquals(tuples.get(0).getString("a"), "1");
-    assertEquals(tuples.get(0).getString("b"), "2");
-    assertEquals(tuples.get(0).getString("c"), "3");
-
-    assertEquals(tuples.get(1).getString("a"), "hello, world");
-    assertEquals(tuples.get(1).getString("b"), "9000");
-    assertEquals(tuples.get(1).getString("c"), "20");
-
-    assertEquals(tuples.get(2).getString("field_1"), "8");
-    assertEquals(tuples.get(2).getString("field_2"), "9");
-    assertNull(tuples.get(2).get("field_3"));
   }
 
   private static Path findUserFilesDataDir() {
