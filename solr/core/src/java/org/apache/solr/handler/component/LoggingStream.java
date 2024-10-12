@@ -53,11 +53,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>I really want to call this the DogStream, as it matches the CatStream.
  *
+ * <p>Is this generically useful to be added to the streaming jar and Lang?
+ *
  * <p>WriterStream? LoggingStream? FileoutputStream? JsonOutputStream? LoggingStream??
  *
  * @since 9.8.0
  */
-public class LogStream extends TupleStream implements Expressible {
+public class LoggingStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // field name in summary tuple for #docs updated in batch
@@ -85,7 +87,7 @@ public class LogStream extends TupleStream implements Expressible {
   JSONWriter jsonWriter = new JSONWriter(charArr, -1);
   private Writer writer;
 
-  public LogStream(StreamExpression expression, StreamFactory factory) throws IOException {
+  public LoggingStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
     filepath = factory.getValueOperand(expression, 0);
     if (filepath == null) {
@@ -114,7 +116,7 @@ public class LogStream extends TupleStream implements Expressible {
     init(filepathWithoutSurroundingQuotes, factory.constructStream(sourceStreamExpression));
   }
 
-  public LogStream(String filepath, TupleStream tupleSource) throws IOException {
+  public LoggingStream(String filepath, TupleStream tupleSource) throws IOException {
 
     init(filepath, tupleSource);
   }
@@ -211,7 +213,7 @@ public class LogStream extends TupleStream implements Expressible {
         expression.addParameter(((Expressible) tupleSource).toExpression(factory));
       } else {
         throw new IOException(
-            "This LogStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+            "This LoggingStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
     } else {
       expression.addParameter("<stream>");

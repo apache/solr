@@ -86,7 +86,7 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
 
     // LocalCatStream extends CatStream and disables the Solr cluster specific
     // logic about where to read data from.
-    streamFactory.withFunctionName("logging", LogStream.class);
+    streamFactory.withFunctionName("logging", LoggingStream.class);
 
     Lang.register(streamFactory);
 
@@ -104,10 +104,10 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
     tuple.put("field2", "blah");
     tuple.put("field3", "blah");
 
-    // LogStream logStream =
-    ///    //   new LogStream(localFile.getAbsolutePath());
-    // LogStream logStream =
-    //              new LogStream();
+    // LoggingStream logStream =
+    ///    //   new LoggingStream(localFile.getAbsolutePath());
+    // LoggingStream logStream =
+    //              new LoggingStream();
     List<Tuple> tuples2 = new ArrayList();
     try {
       // logStream.open();
