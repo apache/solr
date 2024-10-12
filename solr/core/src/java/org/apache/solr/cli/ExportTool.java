@@ -271,8 +271,11 @@ public class ExportTool extends ToolBase {
       }
       url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
 
-    } else {
+    } else if (cli.hasOption("solr-collection-url")) {
       url = cli.getOptionValue("solr-collection-url");
+    } else {
+      // Swap to required Option when --solr-collection-url removed.
+      throw new IllegalArgumentException("Must specify --solr-url.");
     }
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
     Info info = new MultiThreadedRunner(url, credentials);

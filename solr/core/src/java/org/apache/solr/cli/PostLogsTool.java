@@ -104,8 +104,11 @@ public class PostLogsTool extends ToolBase {
       }
       url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
 
-    } else {
+    } else if (cli.hasOption("solr-collection-url")) {
       url = cli.getOptionValue("solr-collection-url");
+    } else {
+      // Swap to required Option when --solr-collection-url removed.
+      throw new IllegalArgumentException("Must specify --solr-url.");
     }
     String rootDir = cli.getOptionValue("rootdir");
     String credentials = cli.getOptionValue("credentials");
