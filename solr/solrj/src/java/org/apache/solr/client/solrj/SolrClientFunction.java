@@ -14,22 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.client.solrj;
 
-import java.lang.invoke.MethodHandles;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
 
-public class IOUtils {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static void closeQuietly(AutoCloseable closeable) {
-    try {
-      if (closeable != null) {
-        closeable.close();
-      }
-    } catch (Exception e) {
-      log.error("Error while closing", e);
-    }
-  }
+/** A lambda intended for invoking SolrClient operations */
+@FunctionalInterface
+public interface SolrClientFunction<C extends SolrClient, R> {
+  R apply(C c) throws IOException, SolrServerException;
 }

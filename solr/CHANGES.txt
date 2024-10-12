@@ -102,6 +102,8 @@ Other Changes
 
 * SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
 
+* SOLR-17285: SolrJ RemoteSolrException moved to SolrClient. (@samuelrivascoding)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
@@ -109,8 +111,16 @@ New Features
   It will now be released as a fully supported Solr feature.
   This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
+* SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
+
 Improvements
 ---------------------
+* SOLR-17158: Users using query limits (timeAllowed, cpuTimeAllowed) for whom partial results are uninteresting
+  may set partialResults=false. This parameter has been enhanced to reduce time spent processing partial results
+  and omit partialResults from the response. Since this is requested behavior, no exception is thrown and the
+  partialResults response header will always exist if the result was short circuited.
+  (Gus Heck, Andrzej Bialecki, hossman)
+
 * SOLR-17397: SkipExistingDocumentsProcessor now functions correctly with child documents.  (Tim Owens via Eric Pugh)
 
 * SOLR-17180: Deprecate snapshotscli.sh in favour of bin/solr snapshot sub commands.  Now able to manage Snapshots from the CLI.  HDFS module specific snapshot script now ships as part of that module in the modules/hdfs/bin directory. (Eric Pugh)
@@ -124,6 +134,10 @@ Improvements
 * SOLR-17431: Deprecate -p parameter where it doesn't refer to a port in bin/solr. (Eric Pugh, Christos Malliaridis)
 
 * SOLR-17442: Resolve -v flag conflict (version, value, verbose) in bin/solr. (Eric Pugh, Christos Malliaridis)
+
+* SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
+  override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski,
+  Sanjay Dutt, David Smiley)
 
 Optimizations
 ---------------------
@@ -158,6 +172,8 @@ Bug Fixes
 * SOLR-16254: Clarify when a bin/solr create needs to be run on the same server as Solr. (Eric Pugh)
 
 * SOLR-6962: bin/solr stop/start/restart should complain about missing value for options that expect a value. (Eric Pugh, Rahul Goswami)
+
+* SOLR-17464: Fixed Http2SolrClient bug in that 'requestAsync' triggered NPE when using a shared Jetty client (Jason Gerlowski, James Dyer)
 
 Dependency Upgrades
 ---------------------

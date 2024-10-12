@@ -19,6 +19,7 @@ package org.apache.lucene.gradle;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Writer;
+import org.jetbrains.annotations.NotNull;
 
 class StdOutTeeWriter extends Writer {
   private final Writer delegate;
@@ -35,19 +36,19 @@ class StdOutTeeWriter extends Writer {
   }
 
   @Override
-  public void write(char[] cbuf) throws IOException {
+  public void write(char @NotNull [] cbuf) throws IOException {
     delegate.write(cbuf);
     out.print(cbuf);
   }
 
   @Override
-  public void write(String str) throws IOException {
+  public void write(@NotNull String str) throws IOException {
     delegate.write(str);
     out.print(str);
   }
 
   @Override
-  public void write(String str, int off, int len) throws IOException {
+  public void write(@NotNull String str, int off, int len) throws IOException {
     delegate.write(str, off, len);
     out.append(str, off, len);
   }
@@ -74,7 +75,7 @@ class StdOutTeeWriter extends Writer {
   }
 
   @Override
-  public void write(char[] cbuf, int off, int len) throws IOException {
+  public void write(char @NotNull [] cbuf, int off, int len) throws IOException {
     delegate.write(cbuf, off, len);
     out.print(new String(cbuf, off, len));
   }

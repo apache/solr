@@ -19,13 +19,14 @@ package org.apache.solr.search;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.index.NoMergePolicyFactory;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.AfterClass;
@@ -35,7 +36,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestCpuAllowedLimit extends SolrCloudTestCase {
+@LogLevel("org.apache.solr.search.MemAllowedLimit=DEBUG")
+public class TestMemAllowedLimit extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String COLLECTION = "test";
@@ -64,13 +66,14 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupClass() throws Exception {
+  public static void setup() throws Exception {
     // Using NoMergePolicy and 100 commits we should get 100 segments (across all shards).
     // At this point of writing MAX_SEGMENTS_PER_SLICE in lucene is 5, so we should be
     // ensured that any multithreaded testing will create 20 executable tasks for the
     // executor that was provided to index-searcher.
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
+    System.setProperty("metricsEnabled", "true");
     Path configset = createConfigSet();
     configureCluster(1).addConfig("conf", configset).configure();
     SolrClient solrClient = cluster.getSolrClient();
@@ -91,64 +94,50 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCompareToWallClock() throws Exception {
-    Assume.assumeTrue("Thread CPU time monitoring is not available", ThreadCpuTimer.isSupported());
-    long limitMs = 100;
-    CpuAllowedLimit cpuLimit = new CpuAllowedLimit(limitMs);
-    int[] randoms = new int[100];
+  public void testLimit() throws Exception {
+    Assume.assumeTrue("Thread memory monitoring is not available", MemAllowedLimit.isSupported());
+    long limitMs = 100000;
+    // 1 MiB
+    MemAllowedLimit memLimit = new MemAllowedLimit(1f);
+    ArrayList<byte[]> data = new ArrayList<>();
     long startNs = System.nanoTime();
     int wakeups = 0;
-    while (!cpuLimit.shouldExit()) {
-      Thread.sleep(1);
-      // do some busywork
-      for (int i = 0; i < randoms.length; i++) {
-        randoms[i] = random().nextInt();
+    while (!memLimit.shouldExit()) {
+      Thread.sleep(100);
+      // allocate memory
+      for (int i = 0; i < 20; i++) {
+        data.add(new byte[5000]);
       }
       wakeups++;
     }
     long endNs = System.nanoTime();
+    assertTrue(data.size() > 1);
     long wallTimeDeltaMs = TimeUnit.MILLISECONDS.convert(endNs - startNs, TimeUnit.NANOSECONDS);
     log.info(
-        "CPU limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}",
+        "Time limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}",
         limitMs,
         wallTimeDeltaMs,
         wakeups);
+    assertTrue("Number of wakeups should be smaller than 100 but was " + wakeups, wakeups < 100);
     assertTrue(
-        "Elapsed wall-clock time expected much larger than 100ms but was " + wallTimeDeltaMs,
-        limitMs < wallTimeDeltaMs);
+        "Elapsed wall-clock time expected much smaller than 100ms but was " + wallTimeDeltaMs,
+        limitMs > wallTimeDeltaMs);
   }
 
   @Test
   public void testDistribLimit() throws Exception {
-    Assume.assumeTrue("Thread CPU time monitoring is not available", ThreadCpuTimer.isSupported());
-
+    Assume.assumeTrue("Thread memory monitoring is not available", MemAllowedLimit.isSupported());
     SolrClient solrClient = cluster.getSolrClient();
-
-    // no limits set - should eventually complete
-    log.info("--- No limits, full results ---");
-    long sleepMs = 1000;
+    // no limits set - should complete
+    long dataSize = 150; // 150 KiB
     QueryResponse rsp =
         solrClient.query(
             COLLECTION,
-            params(
-                "q",
-                "id:*",
-                "sort",
-                "id asc",
-                ExpensiveSearchComponent.SLEEP_MS_PARAM,
-                String.valueOf(sleepMs),
-                "stages",
-                "prepare,process"));
-    // System.err.println("rsp=" + rsp.jsonStr());
+            params("q", "id:*", "sort", "id desc", "dataSize", String.valueOf(dataSize)));
     assertEquals(rsp.getHeader().get("status"), 0);
-    Number qtime = (Number) rsp.getHeader().get("QTime");
-    assertTrue("QTime expected " + qtime + " >> " + sleepMs, qtime.longValue() > sleepMs);
     assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
-    TestInjection.measureCpu();
-    // 25 ms per 5 segments ~175ms each shard
-    TestInjection.cpuTimerDelayInjectedNS = new AtomicInteger(25_000_000);
-    // timeAllowed set, should return partial results
-    log.info("--- timeAllowed, partial results ---");
+
+    // memAllowed set with large value, should return full results
     rsp =
         solrClient.query(
             COLLECTION,
@@ -157,18 +146,15 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "id:*",
                 "sort",
                 "id asc",
-                ExpensiveSearchComponent.SLEEP_MS_PARAM,
-                String.valueOf(sleepMs),
+                "memLoadCount",
+                String.valueOf(dataSize),
                 "stages",
                 "prepare,process",
-                "multiThreaded",
-                "false",
-                "timeAllowed",
-                "500"));
-    // System.err.println("rsp=" + rsp.jsonStr());
-    assertEquals("should have partial results", true, rsp.getHeader().get("partialResults"));
+                "memAllowed",
+                "1.5"));
+    assertNull("should have full results", rsp.getHeader().get("partialResults"));
 
-    log.info("--- timeAllowed, partial results, multithreading ---");
+    // memAllowed set, should return partial results
     rsp =
         solrClient.query(
             COLLECTION,
@@ -177,98 +163,32 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "id:*",
                 "sort",
                 "id asc",
-                ExpensiveSearchComponent.SLEEP_MS_PARAM,
-                String.valueOf(sleepMs),
+                "memLoadCount",
+                String.valueOf(dataSize),
+                "stages",
+                "prepare,process",
+                "memAllowed",
+                "0.2"));
+    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+
+    // multi-threaded search
+    // memAllowed set, should return partial results
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                "memLoadCount",
+                String.valueOf(dataSize),
                 "stages",
                 "prepare,process",
                 "multiThreaded",
                 "true",
-                "timeAllowed",
-                "500"));
-    // System.err.println("rsp=" + rsp.jsonStr());
+                "memAllowed",
+                "0.2"));
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
-
-    // cpuAllowed set with large value, should return full results
-    log.info("--- cpuAllowed, full results ---");
-    rsp =
-        solrClient.query(
-            COLLECTION,
-            params(
-                "q",
-                "id:*",
-                "sort",
-                "id desc",
-                "stages",
-                "prepare,process",
-                "cpuAllowed",
-                "10000"));
-    // System.err.println("rsp=" + rsp.jsonStr());
-    assertNull("should have full results", rsp.getHeader().get("partialResults"));
-    // cpuAllowed set, should return partial results
-    log.info("--- cpuAllowed 1, partial results ---");
-    rsp =
-        solrClient.query(
-            COLLECTION,
-            params(
-                "q",
-                "id:*",
-                "sort",
-                "id desc",
-                "stages",
-                "prepare,process",
-                "cpuAllowed",
-                "100",
-                "multiThreaded",
-                "false"));
-    // System.err.println("rsp=" + rsp.jsonStr());
-    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
-    log.info("--- cpuAllowed 1, partial results omitted ---");
-    rsp =
-        solrClient.query(
-            COLLECTION,
-            params(
-                "q",
-                "id:*",
-                "sort",
-                "id desc",
-                "stages",
-                "prepare,process",
-                "cpuAllowed",
-                "100",
-                "partialResults",
-                "false",
-                "multiThreaded",
-                "false",
-                "_",
-                "foo"));
-    String s = rsp.jsonStr();
-    System.err.println("rsp=" + s);
-    assertEquals("should have partial results", "omitted", rsp.getHeader().get("partialResults"));
-
-    // cpuAllowed set, should return partial results
-    log.info("--- cpuAllowed 2, partial results, multi-threaded ---");
-    rsp =
-        solrClient.query(
-            COLLECTION,
-            params(
-                "q",
-                "id:*",
-                "sort",
-                "id desc",
-                "stages",
-                "prepare,process",
-                "cpuAllowed",
-                "100",
-                "multiThreaded",
-                "true"));
-    // System.err.println("rsp=" + rsp.jsonStr());
-    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
-  }
-
-  @Test
-  public void testDistribLimit2() throws Exception {
-    // This looks silly, but it actually guards against:
-    // https://issues.apache.org/jira/browse/SOLR-17203
-    testDistribLimit();
   }
 }

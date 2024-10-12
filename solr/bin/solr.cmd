@@ -307,7 +307,7 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts "jvm-opts"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [-V]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
@@ -333,7 +333,7 @@ goto done
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
-@echo   -s dir        Sets the solr.solr.home system property; Solr will create core directories under
+@echo   --solr.home dir  Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the -d parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
@@ -341,7 +341,7 @@ goto done
 @echo                   on which example is run. The default value is server/solr. If passed a relative dir
 @echo                   validation with the current dir will be done before trying the default server/^<dir^>
 @echo.
-@echo   -t dir        Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
+@echo   --data-hone dir Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
 @echo   -e example    Name of the example to run; available examples:
@@ -410,6 +410,7 @@ IF "%1"=="-s" goto set_solr_home_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
 IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="--solr-data" goto set_solr_data_dir
+IF "%1"=="--data-home" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host
@@ -1294,7 +1295,7 @@ IF "%1"=="-V" (
 ) ELSE IF "%1"=="-n" (
   goto set_config_name
 ) ELSE IF "%1"=="-r" (
-  goto set_zk_recurse
+  goto set_zk_recursive
 ) ELSE IF "%1"=="-configname" (
   goto set_config_name
 ) ELSE IF "%1"=="-d" (
@@ -1369,8 +1370,8 @@ set ZK_DST=%~1
 SHIFT
 goto parse_zk_args
 
-:set_zk_recurse
-set ZK_RECURSE="true"
+:set_zk_recursive
+set ZK_RECURSIVE="true"
 SHIFT
 goto parse_zk_args
 
@@ -1455,7 +1456,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mv" (
   IF "%ZK_SRC%"=="" (
     set ERROR_MSG="<src> must be specified for 'mv' command"
@@ -1477,7 +1478,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="ls" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
@@ -1486,7 +1487,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mkroot" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"

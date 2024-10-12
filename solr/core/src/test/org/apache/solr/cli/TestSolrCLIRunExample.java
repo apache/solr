@@ -119,7 +119,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             return startStandaloneSolr(args);
           }
 
-          String solrHomeDir = getArg("-s", args);
+          String solrHomeDir = getArg("--solr-home", args);
           int port = Integer.parseInt(getArg("-p", args));
           String solrxml =
               Files.readString(
@@ -226,7 +226,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       int port = Integer.parseInt(getArg("-p", args));
 
-      File solrHomeDir = new File(getArg("-s", args));
+      File solrHomeDir = new File(getArg("--solr-home", args));
 
       System.setProperty("host", "localhost");
       System.setProperty("jetty.port", String.valueOf(port));
@@ -584,7 +584,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--server-dir", solrServerDir.getAbsolutePath(),
           "--example-dir", solrExampleDir.getAbsolutePath(),
           "-p", String.valueOf(bindPort),
-          "-script", toExecute.getAbsolutePath()
+          "--script", toExecute.getAbsolutePath()
         };
 
     // capture tool output to stdout

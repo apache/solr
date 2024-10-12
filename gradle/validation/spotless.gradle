@@ -20,8 +20,6 @@
  * spotless and Google Java Format.
  */
 
-// def resources = scriptResources(buildscript)
-
 configure(allprojects) { prj ->
   plugins.withType(JavaPlugin) {
     prj.apply plugin: libs.plugins.diffplug.spotless.get().pluginId
