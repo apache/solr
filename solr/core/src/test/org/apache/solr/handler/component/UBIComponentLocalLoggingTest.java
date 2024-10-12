@@ -55,11 +55,9 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (1 + 1));
 
-
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-
 
     SolrCore solrCoreToLoad = null;
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
@@ -97,8 +95,6 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
     tuples = getTuples(stream);
     stream.close();
     solrClientCache.close();
-
-
   }
 
   private static Path findUserFilesDataDir() {
