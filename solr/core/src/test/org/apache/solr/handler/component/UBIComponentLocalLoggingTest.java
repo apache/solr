@@ -6,27 +6,81 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.request.SolrQueryRequest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
 
+    private static final String COLLECTION = "collection1";
+
+    @BeforeClass
+    public static void setupCluster() throws Exception {
+        configureCluster(1)
+                .addConfig(
+                        "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+                .configure();
+    }
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void testLocalCatStream() throws Exception {
+
+        CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 1, 1, 0)
+                .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(COLLECTION, 2, 2 * (1 + 1));
 
         File localFile = File.createTempFile("topLevel1", ".txt");
 
         TupleStream stream;
         List<Tuple> tuples;
         StreamContext streamContext = new StreamContext();
+        //Replica rr = zkStateReader.getCollection(coll).getReplicas().get(0);
+
+        //cluster.getJettySolrRunner(0).getCoreContainer().getCore()
+//        Replica replica =
+  //              getRandomReplica(
+    //                    shard, (r) -> (r.getState() == Replica.State.ACTIVE && !r.equals(shard.getLeader())));
+
+        SolrCore solrCoreToLoad = null;
+        for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
+            for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
+                if (solrCore != null){
+                    solrCoreToLoad = solrCore;
+                }
+                System.out.println(solrCore);
+            }
+        }
+
+        final Path dataDir = findUserFilesDataDir();
+        Files.createDirectories(dataDir);
+        //populateFileStreamData(dataDir);
+
+        //JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
+        //cluster.getJettySolrRunner(0).getCoreContainer().getr
+
+
+        //SolrQueryRequest req = req("q", "*:*");
+CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
+
+        var l = cc.getAllCoreNames();
+SolrCore core = cc.getCore(l.get(0));
+        streamContext.put("solr-core", core);
         SolrClientCache solrClientCache = new SolrClientCache();
 
         streamContext.setSolrClientCache(solrClientCache);
@@ -57,11 +111,13 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
         tuple.put("field2", "blah");
         tuple.put("field3", "blah");
 
-       LogStream logStream =
-                new LogStream(localFile.getAbsolutePath());
+       //LogStream logStream =
+         ///    //   new LogStream(localFile.getAbsolutePath());
+       // LogStream logStream =
+         //              new LogStream();
         List<Tuple> tuples2 = new ArrayList();
         try {
-            logStream.open();
+           // logStream.open();
 
 
 
@@ -75,7 +131,7 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
 //            }
 
         } finally {
-            logStream.close();
+         //   logStream.close();
         }
 
         assertEquals(4, tuples.size());
@@ -85,6 +141,18 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
             assertEquals(localFile.getName() + " line " + (i + 1), t.get("line"));
             assertEquals(localFile.getAbsolutePath(), t.get("file"));
         }
+    }
+
+    private static Path findUserFilesDataDir() {
+        for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+            for (CoreDescriptor coreDescriptor : jetty.getCoreContainer().getCoreDescriptors()) {
+                if (coreDescriptor.getCollectionName().equals(COLLECTION)) {
+                    return jetty.getCoreContainer().getUserFilesPath();
+                }
+            }
+        }
+
+        throw new IllegalStateException("Unable to determine data-dir for: " + COLLECTION);
     }
 
     private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
@@ -97,7 +165,6 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
                 break;
             } else {
                 tuples.add(t);
-            }
         }
         tupleStream.close();
         return tuples;

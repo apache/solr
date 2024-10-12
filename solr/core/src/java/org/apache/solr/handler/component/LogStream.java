@@ -76,7 +76,8 @@ public class LogStream extends TupleStream implements Expressible {
 
     private int batchNumber;
     private long totalDocsIndex;
-    private PushBackStream tupleSource;
+    //private PushBackStream tupleSource;
+    private TupleStream tupleSource;
     private List<SolrInputDocument> documentBatch = new ArrayList<>();
 
     private OutputStream fos;
@@ -116,9 +117,6 @@ public class LogStream extends TupleStream implements Expressible {
         init(filepathWithoutSurroundingQuotes, factory.constructStream(sourceStreamExpression));
     }
 
-    public LogStream(String commaDelimitedFilepaths) {
-
-    }
 
     public LogStream(
             String collectionName, TupleStream tupleSource)
@@ -131,7 +129,7 @@ public class LogStream extends TupleStream implements Expressible {
     private void init(
             String filepaths, TupleStream tupleSource) {
         this.filepath = filepaths;
-        this.tupleSource = new PushBackStream(tupleSource);
+        this.tupleSource = tupleSource;//new PushBackStream(tupleSource);
     }
 
     /** The name of the file being updated */
@@ -170,7 +168,7 @@ public class LogStream extends TupleStream implements Expressible {
 
             return tuple;
         } else {
-            tupleSource.pushBack(tuple);
+            //tupleSource.pushBack(tuple);
             uploadBatchToCollection(tuple);
             // return createBatchSummaryTuple(b);
         }
@@ -180,7 +178,7 @@ public class LogStream extends TupleStream implements Expressible {
         //uploadBatchToCollection(documentBatch);
         //int b = documentBatch.size();
         //documentBatch.clear();
-        int b = 0;
+        int b = 1;
         return createBatchSummaryTuple(b);
     }
 
@@ -286,77 +284,6 @@ public class LogStream extends TupleStream implements Expressible {
         }
     }
 
-    private String findZkHost(
-            StreamFactory factory, String collectionName, StreamExpression expression) {
-        StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-        if (null == zkHostExpression) {
-            String zkHost = factory.getCollectionZkHost(collectionName);
-            if (zkHost == null) {
-                return factory.getDefaultZkHost();
-            } else {
-                return zkHost;
-            }
-        } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-            return ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
-        }
-
-        return null;
-    }
-
-    private void verifyZkHost(String zkHost, String collectionName, StreamExpression expression)
-            throws IOException {
-        if (null == zkHost) {
-            throw new IOException(
-                    String.format(
-                            Locale.ROOT,
-                            "invalid expression %s - zkHost not found for collection '%s'",
-                            expression,
-                            collectionName));
-        }
-    }
-
-    private int extractBatchSize(StreamExpression expression, StreamFactory factory)
-            throws IOException {
-        StreamExpressionNamedParameter batchSizeParam =
-                factory.getNamedOperand(expression, "batchSize");
-        if (batchSizeParam == null) {
-            // Sensible default batch size
-            return 250;
-        }
-        String batchSizeStr = ((StreamExpressionValue) batchSizeParam.getParameter()).getValue();
-        return parseBatchSize(batchSizeStr, expression);
-    }
-
-    private int parseBatchSize(String batchSizeStr, StreamExpression expression) throws IOException {
-        try {
-            int batchSize = Integer.parseInt(batchSizeStr);
-            if (batchSize <= 0) {
-                throw new IOException(
-                        String.format(
-                                Locale.ROOT,
-                                "invalid expression %s - batchSize '%d' must be greater than 0.",
-                                expression,
-                                batchSize));
-            }
-            return batchSize;
-        } catch (NumberFormatException e) {
-            throw new IOException(
-                    String.format(
-                            Locale.ROOT,
-                            "invalid expression %s - batchSize '%s' is not a valid integer.",
-                            expression,
-                            batchSizeStr));
-        }
-    }
-
-    /**
-     * Used during initialization to specify the default value for the <code>"pruneVersionField"
-     * </code> option. {@link org.apache.solr.client.solrj.io.stream.UpdateStream} returns <code>true</code> for backcompat and to simplify
-     * slurping of data from one collection to another.
-     */
-    protected boolean defaultPruneVersionField() {
-        return true;
-    }
 
 //    private SolrInputDocument convertTupleTJson(Tuple tuple) {
 //        SolrInputDocument doc = new SolrInputDocument();
