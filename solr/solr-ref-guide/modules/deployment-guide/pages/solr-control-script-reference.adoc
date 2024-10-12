@@ -816,14 +816,14 @@ Name of the core or collection to delete.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: none
 |===
 +
-Whether or not the configuration directory should also be deleted from ZooKeeper.
+Specify the configuration directory should also be deleted from ZooKeeper.
 +
-If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--delete-config` as `true`.
+If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--delete-config`.
 +
-*Example*: `bin/solr delete --delete-config false`
+*Example*: `bin/solr delete --delete-config`
 
 `-f` or `--force`::
 +
