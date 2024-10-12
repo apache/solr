@@ -231,7 +231,8 @@ public class CoreContainerProvider implements ServletContextListener {
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
-
+      NodeConfig nodeConfig = coresInit.getNodeConfig();
+      nodeConfig.forEachModule(coresInit, nodeConfig.moduleStarter(coresInit));
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
 

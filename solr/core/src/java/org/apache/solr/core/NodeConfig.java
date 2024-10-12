@@ -18,18 +18,22 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -124,6 +128,8 @@ public class NodeConfig {
   private final PluginInfo[] clusterPlugins;
 
   private final String defaultZkHost;
+
+  private Map<String, ModuleLifecycle> moduleLifeCycles = new HashMap<>();
 
   private NodeConfig(
       String nodeName,
@@ -566,6 +572,7 @@ public class NodeConfig {
             log.debug("Libs loaded from {}: {}", moduleLibPath, urls);
           }
           modified = true;
+
         } catch (IOException e) {
           throw new SolrException(
               ErrorCode.SERVER_ERROR, "Couldn't load libs for module " + m + ": " + e, e);
@@ -578,6 +585,81 @@ public class NodeConfig {
     if (modified) {
       loader.reloadLuceneSPI();
     }
+  }
+
+  private static void ifModuleHasLifeCycle(SolrResourceLoader loader, String m, Consumer<String> action) {
+    // explicit convention rather than annotation to avoid slow
+    // classpath scanning.
+    String initClassFile = "META-INF/modules/" + m + "/init-class.txt";
+    if (null != loader.getClassLoader().getResource(initClassFile)) {
+      log.debug("No init class for module {}", m);
+      action.accept(initClassFile);
+    }
+  }
+
+  private void startModule(SolrResourceLoader loader, String lifecycleClassDefinitionFile) {
+    ModuleLifecycle init = getModuleLifecycle(loader, lifecycleClassDefinitionFile);
+    loader.getCoreContainer().runAsync(init);
+  }
+
+  private ModuleLifecycle getModuleLifecycle(SolrResourceLoader loader, String initClassFile) {
+    return this.moduleLifeCycles.computeIfAbsent(initClassFile, (file) ->{
+      List<String> lines = null;
+      try {
+        lines = loader.getLines(initClassFile);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      List<String> nonblankLines = lines.stream().filter((l) -> !l.trim().isEmpty()).collect(Collectors.toList());
+      if (nonblankLines.size() != 1) {
+        throw new RuntimeException("Expected 1 line found "+ nonblankLines.size() + " in " + initClassFile);
+      }
+      Constructor<?> constructor;
+      Class<? extends ModuleLifecycle> aClass = null;
+      String className = nonblankLines.get(0);
+      log.info("initializing '" + className + "'");
+      aClass = loader.findClass(className, ModuleLifecycle.class);
+      try {
+        constructor = aClass.getConstructor(CoreContainer.class);
+      } catch (NoSuchMethodException e) {
+        try {
+          constructor = aClass.getConstructor();
+        } catch (NoSuchMethodException ex) {
+          ex.addSuppressed(e);
+          throw new RuntimeException("Niethr no-arg nor CoreContainer constructor found",ex);
+        }
+      }
+      ModuleLifecycle init;
+      try {
+        init = (ModuleLifecycle) constructor.newInstance(loader.getCoreContainer());
+      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        throw new RuntimeException(e);
+      }
+      return init;
+    });
+  }
+
+  public void forEachModule(CoreContainer coresInit, Consumer<String> moduleConsumer) {
+    // modules must be collected both from solr.xml, and system properties
+    var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(modules);
+    moduleNames.addAll(ModuleUtils
+        .resolveModulesFromStringOrSyspropOrEnv(coresInit.getNodeConfig().getModules()));
+    for (String m : moduleNames) {
+      moduleConsumer.accept(m);
+    }
+  }
+
+  public Consumer<String> moduleStarter(CoreContainer cc) {
+    return    (module) ->  NodeConfig.ifModuleHasLifeCycle(cc.loader, module, (path) -> startModule(cc.loader,path));
+  }
+  public Consumer<String> moduleStopper(CoreContainer cc) {
+    return    (module) ->  NodeConfig.ifModuleHasLifeCycle(cc.loader, module, (path) -> stopModule(cc.loader,path));
+  }
+
+  private void stopModule(SolrResourceLoader loader, String path) {
+    //Todo: some coordination? In theory a very fast start/stop as a race condition because startup is async
+    // this is pretty unlikely outside of tests though.
+    getModuleLifecycle(loader,path).shutdown(loader.getCoreContainer());
   }
 
   public static class NodeConfigBuilder {

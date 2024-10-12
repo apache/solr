@@ -456,6 +456,7 @@ public class CoreContainer {
     } else {
       this.collectorExecutor = null;
     }
+    config.getSolrResourceLoader().setCoreContainer(this);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1266,6 +1267,7 @@ public class CoreContainer {
 
   /** Close / shut down. Only called by {@link org.apache.solr.servlet.CoreContainerProvider}. */
   public void shutdown() {
+    cfg.forEachModule(this, cfg.moduleStopper(this));
 
     ZkController zkController = getZkController();
     if (zkController != null) {
