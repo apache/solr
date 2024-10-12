@@ -73,7 +73,7 @@ teardown() {
   }' "http://localhost:${SOLR_PORT}/solr/content_extraction/config"
   
   # We filter to pdf to invoke the Extract handler.
-  run solr post --filetypes pdf -url http://localhost:${SOLR_PORT}/solr/content_extraction/update ${SOLR_TIP}/example/exampledocs
+  run solr post --filetypes pdf --solr-url http://localhost:${SOLR_PORT} --name content_extraction ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'

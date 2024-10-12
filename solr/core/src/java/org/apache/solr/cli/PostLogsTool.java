@@ -80,7 +80,7 @@ public class PostLogsTool extends ToolBase {
         Option.builder("c")
             .longOpt("name")
             .hasArg()
-            .argName("NAME")`
+            .argName("NAME")
             .desc("Name of the collection.")
             .build(),
         Option.builder("rootdir")
