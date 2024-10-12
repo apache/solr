@@ -65,8 +65,6 @@ public class QueryResponseWriters {
       "cbor",
       "smile",
       "xml",
-      "python",
-      "phps",
       "raw"
     })
     String wt;

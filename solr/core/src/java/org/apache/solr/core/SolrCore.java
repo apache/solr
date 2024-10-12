@@ -128,8 +128,6 @@ import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
@@ -3013,8 +3011,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
     m.put("cbor", new CborResponseWriter());
