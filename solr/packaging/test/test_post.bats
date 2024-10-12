@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
 }
 
 teardown_file() {

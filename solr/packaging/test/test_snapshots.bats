@@ -20,7 +20,7 @@ load bats_helper
 setup_file() {
   common_clean_setup
 
-  solr start -c -e films
+  solr start -e films
 
 }
 

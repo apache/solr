@@ -167,11 +167,10 @@ public class RunExampleTool extends ToolBase {
             .required(false)
             .desc("Specify the hostname for this Solr instance.")
             .build(),
-        Option.builder("c")
-            .longOpt("cloud")
+        Option.builder()
+            .longOpt("user-managed")
             .required(false)
-            .desc(
-                "Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983.")
+            .desc("Start Solr in User Managed mode.")
             .build(),
         Option.builder("m")
             .longOpt("memory")
@@ -263,7 +262,7 @@ public class RunExampleTool extends ToolBase {
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isCloudMode = cli.hasOption('c');
+    boolean isCloudMode = !cli.hasOption("user-managed");
     String zkHost = cli.getOptionValue('z');
     int port =
         Integer.parseInt(
@@ -538,7 +537,7 @@ public class RunExampleTool extends ToolBase {
       // start the other nodes
       for (int n = 1; n < numNodes; n++)
         startSolr(
-            new File(cloudDir, "node" + (n + 1) + "/solr"), true, cli, cloudPorts[n], zkHost, 30);
+            new File(cloudDir, "node" + (n + 1) + "/solr"), false, cli, cloudPorts[n], zkHost, 30);
     }
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
@@ -614,9 +613,9 @@ public class RunExampleTool extends ToolBase {
     String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
-    String cloudModeArg = cloudMode ? "--cloud " : "";
+    String cloudModeArg = cloudMode ? "" : "--user-managed";
     String forceArg = cli.hasOption("force") ? " --force" : "";
-    String verboseArg = verbose ? "-V" : "";
+    String verboseArg = verbose ? "--verbose" : "";
 
     String jvmOpts =
         cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');

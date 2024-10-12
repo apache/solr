@@ -62,7 +62,7 @@ teardown() {
 }
 
 @test "export fails on non cloud mode" {
-  run solr start
+  run solr start --user-managed
   run solr create -c COLL_NAME
   run solr export -url "http://localhost:${SOLR_PORT}/solr/COLL_NAME"
   refute_output --partial 'Export complete'
