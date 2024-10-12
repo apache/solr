@@ -195,8 +195,12 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
         try {
           stream = constructStream(streamFactory, streamExpression);
-        } catch (IOException e) {
-          e.printStackTrace();
+        } catch (IOException exception) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Error constructing stream for processing UBI data collection: "
+                  + UBIComponent.class.getSimpleName(),
+              exception);
         }
         stream.setStreamContext(streamContext);
 
