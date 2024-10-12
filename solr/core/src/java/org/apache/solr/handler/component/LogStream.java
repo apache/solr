@@ -223,21 +223,18 @@ public class LogStream extends TupleStream implements Expressible {
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
-    // An update stream is backward wrt the order in the explanation. This stream is the "child"
-    // while the collection we're updating is the parent.
-
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId() + "-datastore");
 
-    explanation.setFunctionName(String.format(Locale.ROOT, "log (%s)", filepath));
-    explanation.setImplementingClass("Solr/Lucene");
+    explanation.setFunctionName(String.format(Locale.ROOT, "logging (%s)", filepath));
+    explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.DATASTORE);
-    explanation.setExpression("Log into " + filepath);
+    explanation.setExpression("Log tuples into " + filepath);
 
     // child is a datastore so add it at this point
     StreamExplanation child = new StreamExplanation(getStreamNodeId().toString());
     child.setFunctionName(String.format(Locale.ROOT, factory.getFunctionName(getClass())));
     child.setImplementingClass(getClass().getName());
-    child.setExpressionType(ExpressionType.STREAM_DECORATOR);
+    child.setExpressionType(ExpressionType.DATASTORE);
     child.setExpression(toExpression(factory, false).toString());
     child.addChild(tupleSource.toExplanation(factory));
 

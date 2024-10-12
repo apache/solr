@@ -6,6 +6,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.EchoStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -70,6 +71,18 @@ public class LogStreamTest extends SolrCloudTestCase {
       expressionString = stream.toExpression(factory).toString();
       assertTrue(expressionString.contains("logging(outputs/bob.txt,"));
       assertTrue(expressionString.contains("echo(\"bob"));
+    }
+  }
+
+  @Test
+  public void testLogStreamExpressionToExplanation() throws Exception {
+
+    try (LogStream stream =
+        new LogStream(StreamExpressionParser.parse("logging(bob.txt,echo(\"bob\"))"), factory)) {
+      String expressionString = stream.toExpression(factory).toString();
+      Explanation explanation = stream.toExplanation(factory);
+      assertEquals("logging (bob.txt)", explanation.getFunctionName());
+      assertEquals(LogStream.class.getName(), explanation.getImplementingClass());
     }
   }
 
