@@ -64,7 +64,6 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
 
-
     buf = new StringWriter();
     w.write(buf, req, rsp);
     jsonEq(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
