@@ -24,6 +24,7 @@ Solr supports a variety of Response Writers to ensure that query responses can b
 The `wt` parameter selects the Response Writer to be used.
 The list below describe shows the most common settings for the `wt` parameter, with links to further sections that discuss them in more detail.
 
+* <<CBOR Response Writer,cbor>>
 * <<CSV Response Writer,csv>>
 * <<GeoJSON Response Writer,geojson>>
 * <<Binary Response Writer,javabin>>
