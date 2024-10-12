@@ -67,8 +67,8 @@ public class TupStream extends TupleStream implements Expressible {
       fieldLabels.put(name, name);
       StreamExpressionParameter param = np.getParameter();
 
-      // we're going to split these up here so we only make the choice once
-      // order of these in read() doesn't matter
+      // We're going to split these up here, so we only make the choice once.
+      // The order of these in read() doesn't matter.
       if (param instanceof StreamExpressionValue) {
         stringParams.put(name, ((StreamExpressionValue) param).getValue());
       } else if (factory.isEvaluator((StreamExpression) param)) {
@@ -140,7 +140,7 @@ public class TupStream extends TupleStream implements Expressible {
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
 
-    // also set in evalators and streams
+    // also set in evaluators and streams
     for (StreamEvaluator evaluator : evaluatorParams.values()) {
       evaluator.setStreamContext(context);
     }
