@@ -16,12 +16,10 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -51,25 +49,17 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testLocalCatStream() throws Exception {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 1, 1, 0)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2 * (1 + 1));
 
-    File localFile = File.createTempFile("topLevel1", ".txt");
 
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-    // Replica rr = zkStateReader.getCollection(coll).getReplicas().get(0);
 
-    // cluster.getJettySolrRunner(0).getCoreContainer().getCore()
-    //        Replica replica =
-    //              getRandomReplica(
-    //                    shard, (r) -> (r.getState() == Replica.State.ACTIVE &&
-    // !r.equals(shard.getLeader())));
 
     SolrCore solrCoreToLoad = null;
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
@@ -77,7 +67,6 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
         if (solrCore != null) {
           solrCoreToLoad = solrCore;
         }
-        System.out.println(solrCore);
       }
     }
 
@@ -85,10 +74,6 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
     Files.createDirectories(dataDir);
     // populateFileStreamData(dataDir);
 
-    // JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
-    // cluster.getJettySolrRunner(0).getCoreContainer().getr
-
-    // SolrQueryRequest req = req("q", "*:*");
     CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
 
     var l = cc.getAllCoreNames();
@@ -113,41 +98,7 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
     stream.close();
     solrClientCache.close();
 
-    // populateFileWithData(localFile.toPath());
 
-    Tuple tuple = new Tuple(new HashMap());
-    tuple.put("field1", "blah");
-    tuple.put("field2", "blah");
-    tuple.put("field3", "blah");
-
-    // LoggingStream logStream =
-    ///    //   new LoggingStream(localFile.getAbsolutePath());
-    // LoggingStream logStream =
-    //              new LoggingStream();
-    List<Tuple> tuples2 = new ArrayList();
-    try {
-      // logStream.open();
-
-      //            while (true) {
-      //                Tuple tuple = logStream.read();
-      //                if (tuple.EOF) {
-      //                    break;
-      //                } else {
-      //                    tuples.add(tuple);
-      //                }
-      //            }
-
-    } finally {
-      //   logStream.close();
-    }
-
-    assertEquals(1, tuples.size());
-
-    //    for (int i = 0; i < 1; i++) {
-    //      Tuple t = tuples.get(i);
-    //      assertEquals(localFile.getName() + " line " + (i + 1), t.get("line"));
-    //      assertEquals(localFile.getAbsolutePath(), t.get("file"));
-    //    }
   }
 
   private static Path findUserFilesDataDir() {
