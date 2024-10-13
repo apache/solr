@@ -151,11 +151,14 @@ public class StatusTool extends ToolBase {
         Optional<SolrProcess> process = processMgr.processForPort(urlPort);
 
         if (process.isEmpty() && urlProvided) {
-          // Try harder to get status if the URL was provided, even if Solr is not a separate OS process
+          // Try harder to get status if the URL was provided, even if Solr is not a separate OS
+          // process
           try {
             getStatus(solrUrl, cli.getOptionValue(OPTION_CREDENTIALS));
             process = Optional.of(new SolrProcess(-1, urlPort, solrUrl.contains("https")));
-          } catch (Exception e) { /* Ignore */ }
+          } catch (Exception e) {
+            /* Ignore */
+          }
         }
 
         if (process.isPresent()) {
