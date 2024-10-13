@@ -139,15 +139,16 @@ public class StatusTool extends ToolBase {
         }
       }
     } else {
+      // We have a solrUrl
       int urlPort = portFromUrl(solrUrl);
       if (shortFormat) {
         if (processMgr.isRunningWithPort(urlPort)) {
           CLIO.out(solrUrl);
         }
       } else {
-        CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", 1));
         Optional<SolrProcess> process = processMgr.processForPort(urlPort);
         if (process.isPresent()) {
+          CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", 1));
           printProcessStatus(process.get(), cli);
         } else {
           CLIO.out("\nNo Solr running on port " + urlPort + ".");
