@@ -57,14 +57,13 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("q", "dummy", "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     QueryResponseWriter w = new JSONResponseWriter();
-    new StringWriter();
-    StringWriter buf;
+
+    StringWriter buf = new StringWriter();
 
     rsp.add("data1", Float.NaN);
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
 
-    buf = new StringWriter();
     w.write(buf, req, rsp);
     jsonEq(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
     req.close();
