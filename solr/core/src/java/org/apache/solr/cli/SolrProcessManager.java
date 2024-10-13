@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -155,7 +156,8 @@ public class SolrProcessManager {
                     "/format:list")
                 .redirectErrorStream(true)
                 .start();
-        try (InputStreamReader inputStreamReader = new InputStreamReader(process.getInputStream());
+        try (InputStreamReader inputStreamReader =
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8);
             BufferedReader reader = new BufferedReader(inputStreamReader)) {
           while (true) {
             String line = reader.readLine();
