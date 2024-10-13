@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.OPTION_CREDENTIALS;
 import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
 
 import java.io.PrintStream;
@@ -99,6 +100,7 @@ public class StatusTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(OPTION_SOLRURL);
+    boolean urlProvided = solrUrl != null;
     Integer port =
         cli.hasOption(OPTION_PORT) ? Integer.parseInt(cli.getOptionValue(OPTION_PORT)) : null;
     boolean shortFormat = cli.hasOption(OPTION_SHORT);
@@ -147,6 +149,15 @@ public class StatusTool extends ToolBase {
         }
       } else {
         Optional<SolrProcess> process = processMgr.processForPort(urlPort);
+
+        if (process.isEmpty() && urlProvided) {
+          // Try harder to get status if the URL was provided, even if Solr is not a separate OS process
+          try {
+            getStatus(solrUrl, cli.getOptionValue(OPTION_CREDENTIALS));
+            process = Optional.of(new SolrProcess(-1, urlPort, solrUrl.contains("https")));
+          } catch (Exception e) { /* Ignore */ }
+        }
+
         if (process.isPresent()) {
           CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", 1));
           printProcessStatus(process.get(), cli);
