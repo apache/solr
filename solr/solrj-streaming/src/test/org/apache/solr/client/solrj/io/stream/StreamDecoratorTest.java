@@ -1264,7 +1264,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
           .add(id, "10", "a_s", "hello0", "a_i", "1", "a_f", "10")
           .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
-      // Now lets clear the existing docs in the queue 9, plus 3 more to get passed the run that was
+      // Now lets clear the existing docs in the queue 9, plus 3 more to get pass the run that was
       // blocked. The next run should
       // have the tuples with the updated count.
       for (int i = 0; i < 12; i++) {

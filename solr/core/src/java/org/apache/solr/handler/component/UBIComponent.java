@@ -148,23 +148,25 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       log.info("Initializing UBIComponent");
       if (coreContainer.isZooKeeperAware()) {
         String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();
-        String ubiQueryProcessingExpression = initArgs.get("ubiQueryProcessingExpression");
+        String ubiQueryStreamProcessingExpression =
+            initArgs.get("ubiQueryStreamProcessingExpression");
 
-        String expr = null;
-        if (ubiQueryProcessingExpression == null) {
+        String expr;
+
+        if (ubiQueryStreamProcessingExpression == null) {
           log.info(
-              "You should provide a ubiQueryProcessingExpression to control how UBI query information is persisted.");
-          log.info("Writing out UBI query information to local log file ubi_queries.log instead.");
-
+              "You should provide a ubiQueryStreamProcessingExpression to control how UBI query information is persisted.");
+          log.info(
+              "Writing out UBI query information to local log file ubi_queries.jsonl instead.");
+          expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
         } else {
-
           LineNumberReader bufferedReader;
 
           try {
             bufferedReader =
                 new LineNumberReader(
                     new InputStreamReader(
-                        core.getResourceLoader().openResource(ubiQueryProcessingExpression),
+                        core.getResourceLoader().openResource(ubiQueryStreamProcessingExpression),
                         StandardCharsets.UTF_8));
 
             String[] args = {}; // maybe we have variables?
@@ -178,16 +180,18 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           } catch (IOException ioe) {
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
-                "Error reading file " + ubiQueryProcessingExpression,
+                "Error reading file " + ubiQueryStreamProcessingExpression,
                 ioe);
           }
         }
-        StreamContext streamContext = new StreamContext();
 
+        StreamContext streamContext = new StreamContext();
+        streamContext.put("solr-core", core);
         streamContext.setSolrClientCache(solrClientCache);
 
         StreamExpression streamExpression = StreamExpressionParser.parse(expr);
         StreamFactory streamFactory = new StreamFactory();
+        streamFactory.withFunctionName("logging", LoggingStream.class);
 
         streamFactory.withDefaultZkHost(defaultZkHost);
 
@@ -281,10 +285,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     ubiQueryLogInfo.add(QUERY_ATTRIBUTES, ubiQuery.getQueryAttributes());
     ubiQueryLogInfo.add("doc_ids", docIds);
 
-    // pushBackStream = new PushBackStream(stream);
     if (stream != null) {
-      // getTuples invokes the streaming expression.
       List<Tuple> tuples = getTuples(stream);
+      log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
     }
   }
 

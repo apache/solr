@@ -258,8 +258,13 @@ public class LoggingStream extends TupleStream implements Expressible {
 
     this.chroot = core.getCoreContainer().getUserFilesPath();
     if (!Files.exists(chroot)) {
-      throw new IllegalStateException(
-          chroot + " directory used to load files must exist but could not be found!");
+      try {
+        Files.createDirectories(this.chroot);
+      } catch (IOException ioe) {
+        throw new SolrException(
+            SolrException.ErrorCode.INVALID_STATE,
+            chroot + " directory used to load files must exist but and couldn't be created!");
+      }
     }
 
     // Pass down the stream context.

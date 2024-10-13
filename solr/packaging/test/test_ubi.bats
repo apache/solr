@@ -30,7 +30,7 @@ teardown() {
 }
 
 @test "Run set up process" {
-  solr start -c -e techproducts
+  solr start -e techproducts
   
   run solr healthcheck -c techproducts
   refute_output --partial 'error'
