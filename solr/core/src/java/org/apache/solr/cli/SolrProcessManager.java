@@ -18,7 +18,9 @@ package org.apache.solr.cli;
 
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +35,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.lucene.util.Constants;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,11 +57,9 @@ public class SolrProcessManager {
     pidProcessMap =
         ProcessHandle.allProcesses()
             .filter(p -> p.info().command().orElse("").contains("java"))
-            .filter(p -> p.info().commandLine().orElse("").contains("-Djetty.port="))
+            .filter(p -> commandLine(p).orElse("").contains("-Djetty.port="))
             .filter(
-                p ->
-                    !enableTestingMode
-                        || p.info().commandLine().orElse("").contains("-DmockSolr=true"))
+                p -> !enableTestingMode || commandLine(p).orElse("").contains("-DmockSolr=true"))
             .collect(
                 Collectors.toUnmodifiableMap(
                     ProcessHandle::pid,
@@ -116,7 +118,7 @@ public class SolrProcessManager {
 
   private Optional<Integer> parsePortFromProcess(ProcessHandle ph) {
     Optional<String> portStr =
-        Arrays.stream(ph.info().arguments().orElse(new String[] {}))
+        arguments(ph).stream()
             .filter(a -> a.contains("-Djetty.port="))
             .map(s -> s.split("=")[1])
             .findFirst();
@@ -124,9 +126,69 @@ public class SolrProcessManager {
   }
 
   private boolean isProcessSsl(ProcessHandle ph) {
-    return Arrays.stream(ph.info().arguments().orElse(new String[] {}))
+    return arguments(ph).stream()
         .anyMatch(
             arg -> List.of("--module=https", "--module=ssl", "--module=ssl-reload").contains(arg));
+  }
+
+  /**
+   * Gets the command line of a process as a string. This is a workaround for the fact that
+   * ProcessHandle.info().command() is not (yet) implemented on Windows.
+   *
+   * @param ph the process handle
+   * @return the command line of the process
+   */
+  private static Optional<String> commandLine(ProcessHandle ph) {
+    if (!Constants.WINDOWS) {
+      return ph.info().commandLine();
+    } else {
+      long desiredProcessid = ph.pid();
+      try {
+        Process process =
+            new ProcessBuilder(
+                    "wmic",
+                    "process",
+                    "where",
+                    "ProcessID=" + desiredProcessid,
+                    "get",
+                    "commandline",
+                    "/format:list")
+                .redirectErrorStream(true)
+                .start();
+        try (InputStreamReader inputStreamReader = new InputStreamReader(process.getInputStream());
+            BufferedReader reader = new BufferedReader(inputStreamReader)) {
+          while (true) {
+            String line = reader.readLine();
+            if (line == null) {
+              return Optional.empty();
+            }
+            if (!line.startsWith("CommandLine=")) {
+              continue;
+            }
+            return Optional.of(line.substring("CommandLine=".length()));
+          }
+        }
+      } catch (IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error getting command line for process " + desiredProcessid,
+            e);
+      }
+    }
+  }
+
+  /**
+   * Gets the arguments of a process as a list of strings. With workaround for Windows.
+   *
+   * @param ph the process handle
+   * @return the arguments of the process
+   */
+  private static List<String> arguments(ProcessHandle ph) {
+    if (!Constants.WINDOWS) {
+      return Arrays.asList(ph.info().arguments().orElse(new String[] {}));
+    } else {
+      return Arrays.asList(commandLine(ph).orElse("").split("\\s+"));
+    }
   }
 
   /** Represents a running Solr process */
