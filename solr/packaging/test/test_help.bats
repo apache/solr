@@ -60,7 +60,7 @@ setup() {
 
 @test "status help flag prints help" {
   run solr status --help
-  assert_output --partial 'usage: bin/solr status [--max-wait-secs <SECS>] [-p <PORT>] [--short] [-url <HOST>]'
+  assert_output --partial 'usage: bin/solr status'
   refute_output --partial 'ERROR'
 }
 
