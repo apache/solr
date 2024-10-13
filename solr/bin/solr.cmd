@@ -307,14 +307,13 @@ goto done
 
 :start_usage
 @echo.
-@echo Usage: solr %SCRIPT_CMD% [-f] [-c] [--host hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [--jvm-opts "jvm-opts"] [-V]
+@echo Usage: solr %SCRIPT_CMD% [-f] [--user-managed] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [--verbose]
 @echo.
 @echo   -f            Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
-@echo   -c or --cloud Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in
-@echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
-@echo                   such as 9983 if Solr is bound to 8983
+@echo   --user-managed Start Solr in user managed aka standalone mode"
+@echo                   See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html
 @echo.
 @echo   --host host   Specify the hostname for this Solr instance
 @echo.
@@ -323,7 +322,7 @@ goto done
 @echo                   STOP_PORT=(%%SOLR_PORT%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT%%+10000).
 @echo                   For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985
 @echo.
-@echo   -d dir        Specify the Solr server directory; defaults to server
+@echo   --server-dir dir Specify the Solr server directory; defaults to server
 @echo.
 @echo   -z zkHost     Zookeeper connection string; only used when running in SolrCloud mode using -c
 @echo                   If neither ZK_HOST is defined in solr.in.cmd nor the -z parameter is specified,
@@ -333,15 +332,15 @@ goto done
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
-@echo   -s dir        Sets the solr.solr.home system property; Solr will create core directories under
+@echo   --solr.home dir  Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
-@echo                   while reusing the same server directory set using the -d parameter. If set, the
+@echo                   while reusing the same server directory set using the --server-dir parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 @echo                   This parameter is ignored when running examples (-e), as the solr.solr.home depends
 @echo                   on which example is run. The default value is server/solr. If passed a relative dir
 @echo                   validation with the current dir will be done before trying the default server/^<dir^>
 @echo.
-@echo   -t dir        Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
+@echo   --data-home dir Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
 @echo   -e example    Name of the example to run; available examples:
@@ -362,15 +361,13 @@ goto done
 @echo.
 @echo   --no-prompt   Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
-@echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
-@echo.
-@echo   -V/--verbose  Verbose messages from this script
+@echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
 goto done
 
 :stop_usage
 @echo.
-@echo Usage: solr stop [-k key] [-p port] [-V]
+@echo Usage: solr stop [-k key] [-p port] [--verbose]
 @echo.
 @echo  -k key         Stop key; default is solrrocks
 @echo.
@@ -378,7 +375,7 @@ goto done
 @echo.
 @echo  --all          Find and stop all running Solr servers on this host
 @echo.
-@echo  -V/--verbose   Verbose messages from this script
+@echo  --verbose      Verbose messages from this script
 @echo.
 @echo  NOTE: To see if any Solr servers are running, do: solr status
 @echo.
@@ -400,17 +397,18 @@ IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="-V" goto set_verbose
 IF "%1"=="--verbose" goto set_verbose
-IF "%1"=="-v" goto set_debug
+IF "%1"=="-v" goto set_verbose
 IF "%1"=="-q" goto set_warn
-IF "%1"=="-c" goto set_cloud_mode
-IF "%1"=="-cloud" goto set_cloud_mode
-IF "%1"=="--cloud" goto set_cloud_mode
+IF "%1"=="--quiet" goto set_warn
+IF "%1"=="--user-managed" goto set_user_managed_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="--dir" goto set_server_dir
+IF "%1"=="--server-dir" goto set_server_dir
 IF "%1"=="-s" goto set_solr_home_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
 IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="--solr-data" goto set_solr_data_dir
+IF "%1"=="--data-home" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host
@@ -425,8 +423,8 @@ IF "%1"=="--zkHost" goto set_zookeeper
 IF "%1"=="-s" goto set_solr_url
 IF "%1"=="--solr-url" goto set_solr_url
 IF "%1"=="-solrUrl" goto set_solr_url
-IF "%1"=="-a" goto set_addl_opts
-IF "%1"=="--jvm-opts" goto set_addl_opts
+IF "%1"=="-a" goto set_jvm_opts
+IF "%1"=="--jvm-opts" goto set_jvm_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="--noprompt" goto set_noprompt
@@ -451,12 +449,8 @@ goto parse_args
 
 :set_verbose
 set verbose=1
-set "PASS_TO_RUN_EXAMPLE=--verbose !PASS_TO_RUN_EXAMPLE!"
-SHIFT
-goto parse_args
-
-:set_debug
 set SOLR_LOG_LEVEL=DEBUG
+set "PASS_TO_RUN_EXAMPLE=--verbose !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 
@@ -465,8 +459,8 @@ set SOLR_LOG_LEVEL=WARN
 SHIFT
 goto parse_args
 
-:set_cloud_mode
-set SOLR_MODE=solrcloud
+:set_user_managed_mode
+set SOLR_MODE=user-managed
 SHIFT
 goto parse_args
 
@@ -661,9 +655,12 @@ SHIFT
 SHIFT
 goto parse_args
 
-:set_addl_opts
+:set_jvm_opts
 set "arg=%~2"
 set "SOLR_ADDL_ARGS=%~2"
+IF "%SOLR_ADDL_ARGS%"=="" (
+  set "EMPTY_ADDL_JVM_ARGS=true"
+)
 SHIFT
 SHIFT
 goto parse_args
@@ -875,6 +872,11 @@ IF "%SCRIPT_CMD%"=="start" (
       )
     )
   )
+
+  IF "%EMPTY_ADDL_JVM_ARGS%"=="true" (
+    set "SCRIPT_ERROR=JVM options are required when using the -a or --jvm-opts option!"
+    goto err
+  )
 )
 
 @REM determine if -server flag is supported by current JVM
@@ -902,6 +904,7 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
 )
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
+IF NOT "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
@@ -937,7 +940,8 @@ IF "%SOLR_MODE%"=="solrcloud" (
 
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
-  set CLOUD_MODE_OPTS=
+  REM change Cloud mode to User Managed mode with flag
+  set "CLOUD_MODE_OPTS=--user-managed"
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
     IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
       set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
@@ -1198,7 +1202,7 @@ REM Run the requested example
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -Dsolr.install.symDir="%SOLR_TIP%" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% -d "%SOLR_SERVER_DIR%" ^
+  org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" ^
   --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
 REM End of run_example
@@ -1263,7 +1267,7 @@ IF "%1"=="-V" (
 ) ELSE IF "%1"=="-n" (
   goto set_config_name
 ) ELSE IF "%1"=="-r" (
-  goto set_zk_recurse
+  goto set_zk_recursive
 ) ELSE IF "%1"=="-configname" (
   goto set_config_name
 ) ELSE IF "%1"=="-d" (
@@ -1338,8 +1342,8 @@ set ZK_DST=%~1
 SHIFT
 goto parse_zk_args
 
-:set_zk_recurse
-set ZK_RECURSE="true"
+:set_zk_recursive
+set ZK_RECURSIVE="true"
 SHIFT
 goto parse_zk_args
 
@@ -1424,7 +1428,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mv" (
   IF "%ZK_SRC%"=="" (
     set ERROR_MSG="<src> must be specified for 'mv' command"
@@ -1446,7 +1450,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="ls" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
@@ -1455,7 +1459,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recursive !ZK_RECURSIVE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mkroot" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"
@@ -1488,7 +1492,9 @@ for %%a in (%*) do (
    ) else (
       set "option!option!=%%a"
       if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
       if "!option!" equ "-s" set "SOLR_HOME=%%a"
+      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"      
       if not "!option!" equ "-s" if not "!option!" equ "-d" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )

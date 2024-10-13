@@ -47,6 +47,7 @@ public class SnapshotListTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -54,8 +55,7 @@ public class SnapshotListTool extends ToolBase {
             .required(true)
             .desc("Name of collection to list snapshots for.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

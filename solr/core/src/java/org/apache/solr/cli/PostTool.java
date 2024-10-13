@@ -222,6 +222,19 @@ public class PostTool extends ToolBase {
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
         Option.builder("d")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --delay instead")
+                    .get())
+            .hasArg()
+            .argName("delay")
+            .required(false)
+            .desc(
+                "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
+            .build(),
+        Option.builder()
             .longOpt("delay")
             .hasArg()
             .argName("delay")
@@ -268,6 +281,17 @@ public class PostTool extends ToolBase {
             .desc("sends Solr response outputs to console.")
             .build(),
         Option.builder("f")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --format instead")
+                    .get())
+            .required(false)
+            .desc(
+                "sends application/json content as Solr commands to /update instead of /update/json/docs.")
+            .build(),
+        Option.builder()
             .longOpt("format")
             .required(false)
             .desc(
@@ -307,14 +331,22 @@ public class PostTool extends ToolBase {
       // Turn off automatically looking up the mimetype in favour of what is passed in.
       auto = false;
     }
-    format = cli.hasOption("format") ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
+    format =
+        cli.hasOption("format") || cli.hasOption("f")
+            ? FORMAT_SOLR
+            : ""; // i.e not solr formatted json commands
 
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
     }
 
-    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = Integer.parseInt(cli.getOptionValue("delay", String.valueOf(defaultDelay)));
+    delay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
+    if (cli.hasOption("delay")) {
+      delay = Integer.parseInt(cli.getOptionValue("delay"));
+    } else if (cli.hasOption("d")) {
+      delay = Integer.parseInt(cli.getOptionValue("d"));
+    }
+
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     out = cli.hasOption("out") ? CLIO.getOutStream() : null;
