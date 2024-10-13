@@ -64,6 +64,7 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         if (solrCore != null) {
           solrCoreToLoad = solrCore;
+          break;
         }
       }
     }

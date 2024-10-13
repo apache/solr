@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-commit(ubi,
-  update(ubi,
+commit(ubi_queries,
+  update(ubi_queries,
     tuple(id=49,a_i=1,b_i=5)
   )
 )

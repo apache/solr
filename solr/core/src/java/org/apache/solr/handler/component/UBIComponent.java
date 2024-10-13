@@ -155,7 +155,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
         if (ubiQueryStreamProcessingExpression == null) {
           log.info(
-              "You should provide a ubiQueryStreamProcessingExpression to control how UBI query information is persisted.");
+              "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
           log.info(
               "Writing out UBI query information to local log file ubi_queries.jsonl instead.");
           expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
