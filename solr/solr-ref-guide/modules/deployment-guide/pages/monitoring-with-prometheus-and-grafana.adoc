@@ -62,14 +62,14 @@ Linux::
 [source,bash]
 ----
 $ cd prometheus-exporter
-$ ./bin/solr-exporter -p 9854 -b http://localhost:8983/solr -f ./conf/solr-exporter-config.xml -n 8
+$ ./bin/solr-exporter -p 9854 -b http://localhost:8983/solr --config-file ./conf/solr-exporter-config.xml --num-threads 8
 ----
 
 .SolrCloud
 [source,bash]
 ----
 $ cd prometheus-exporter
-$ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-config.xml -n 16
+$ ./bin/solr-exporter -p 9854 -z localhost:2181/solr --config-file ./conf/solr-exporter-config.xml --num-threads 16
 ----
 ====
 
@@ -80,14 +80,14 @@ Windows::
 [source,text]
 ----
 > cd prometheus-exporter
-> .\bin\solr-exporter.cmd -p 9854 -b http://localhost:8983/solr -f .\conf\solr-exporter-config.xml -n 8
+> .\bin\solr-exporter.cmd -p 9854 -b http://localhost:8983/solr --config-file .\conf\solr-exporter-config.xml --num-threads 8
 ----
 
 .SolrCloud
 [source,text]
 ----
 > cd prometheus-exporter
-> .\bin\solr-exporter -p 9854 -z localhost:2181/solr -f .\conf\solr-exporter-config.xml -n 16
+> .\bin\solr-exporter -p 9854 -z localhost:2181/solr --config-file .\conf\solr-exporter-config.xml --num-threads 16
 ----
 ====
 ======
@@ -139,7 +139,7 @@ The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`
 If you are running a user-managed cluster or single-node installation, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
-`-f`, `--config-file`, `$CONFIG_FILE`::
+`--config-file`, `$CONFIG_FILE`::
 +
 [%autowidth,frame=none]
 |===
@@ -148,7 +148,7 @@ If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` param
 +
 The path to the configuration file that defines the Solr metrics to read.
 
-`-n`, `--num-threads`, `$NUM_THREADS`::
+`--num-threads`, `$NUM_THREADS`::
 +
 [%autowidth,frame=none]
 |===
@@ -159,7 +159,7 @@ The number of threads.
 The `solr-exporter` creates thread pools for requests to Solr.
 Request latency can be improved by increasing the number of threads.
 
-`-s`, `--scrape-interval`, `$SCRAPE_INTERVAL`::
+`--scrape-interval`, `$SCRAPE_INTERVAL`::
 +
 [%autowidth,frame=none]
 |===
@@ -285,7 +285,7 @@ $ cd prometheus-exporter
 $ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties"
 $ export ZK_CREDS_AND_ACLS="-DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
 $ export CLASSPATH_PREFIX="../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
-$ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 -f ./conf/solr-exporter-config.xml -n 16
+$ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 --config-file ./conf/solr-exporter-config.xml --num-threads 16
 ----
 
 NOTE:: The Exporter needs the `commons-codec` library for SSL/BasicAuth, but does not bring it.

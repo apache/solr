@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "Check export command" {
-  run solr start -c -e techproducts
+  run solr start -e techproducts
   run solr export --solr-collection-url "http://localhost:${SOLR_PORT}/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
 
   refute_output --partial 'Unrecognized option'
@@ -62,7 +62,7 @@ teardown() {
 }
 
 @test "export fails on non cloud mode" {
-  run solr start
+  run solr start --user-managed
   run solr create -c COLL_NAME
   run solr export -url "http://localhost:${SOLR_PORT}/solr/COLL_NAME"
   refute_output --partial 'Export complete'
