@@ -10,7 +10,7 @@ New Features
 ---------------------
 * SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
-* SOLR-17467: Solr CLI bin/solr start defaults to starting Solr in Cloud mode, use --user-managed switch for User Managed (aka Standalone) mode.  (Eric Pugh) 
+* SOLR-17467: Solr CLI bin/solr start defaults to starting Solr in Cloud mode, use --user-managed switch for User Managed (aka Standalone) mode.  (Eric Pugh)
 
 Improvements
 ---------------------
@@ -140,6 +140,10 @@ Improvements
 * SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
   override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski,
   Sanjay Dutt, David Smiley)
+
+* SOLR-17414: When searching with multiThreaded=true, the internal tasks may now block instead of
+  enqueuing with a risk of rejection. Solr will use less resources under stress but to get the most
+  of your machine, you may want to increase the thread pool. (David Smiley)
 
 Optimizations
 ---------------------
