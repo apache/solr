@@ -26,7 +26,6 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -146,6 +145,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -160,7 +160,6 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StartupLoggingUtils;
-import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -185,8 +184,8 @@ public class CoreContainer {
 
   final SolrCores solrCores;
 
-  public Executor getCollectorExecutor() {
-    return collectorExecutor;
+  public Executor getIndexSearcherExecutor() {
+    return indexSearcherExecutor;
   }
 
   public static class CoreLoadFailure {
@@ -294,7 +293,7 @@ public class CoreContainer {
 
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
-  private final ExecutorService collectorExecutor;
+  private final ExecutorService indexSearcherExecutor;
 
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
@@ -452,17 +451,7 @@ public class CoreContainer {
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
-    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
-    if (0 < indexSearcherExecutorThreads) {
-      this.collectorExecutor =
-          ExecutorUtil.newMDCAwareFixedThreadPool(
-              indexSearcherExecutorThreads, // thread count
-              indexSearcherExecutorThreads * 1000, // queue size
-              new SolrNamedThreadFactory("searcherCollector"),
-              () -> ThreadCpuTimer.reset(TIMING_CONTEXT));
-    } else {
-      this.collectorExecutor = null;
-    }
+    this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -689,7 +678,7 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
-    collectorExecutor = null;
+    indexSearcherExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1292,7 +1281,7 @@ public class CoreContainer {
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
-    ExecutorUtil.shutdownAndAwaitTermination(collectorExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 

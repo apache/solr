@@ -33,6 +33,10 @@ Improvements
   override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski,
   Sanjay Dutt, David Smiley)
 
+* SOLR-17414: When searching with multiThreaded=true, the internal tasks may now block instead of
+  enqueuing with a risk of rejection. Solr will use less resources under stress but to get the most
+  of your machine, you may want to increase the thread pool. (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
