@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
+@Deprecated(since = "9.8")
 public class PHPResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8 = "text/x-php;charset=UTF-8";
 

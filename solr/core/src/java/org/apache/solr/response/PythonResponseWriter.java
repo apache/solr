@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Writer;
 import org.apache.solr.request.SolrQueryRequest;
 
+@Deprecated(since = "9.8")
 public class PythonResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PYTHON_ASCII = "text/x-python;charset=US-ASCII";
 

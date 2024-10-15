@@ -36,6 +36,7 @@ import org.apache.solr.search.ReturnFields;
  * A description of the PHP serialization format can be found here:
  * http://www.hurring.com/scott/code/perl/serialize/
  */
+@Deprecated(since = "9.8")
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8 = "text/x-php-serialized;charset=UTF-8";
 
