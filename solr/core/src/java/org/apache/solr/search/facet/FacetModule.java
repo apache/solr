@@ -423,7 +423,7 @@ public class FacetModule extends SearchComponent {
   }
 
   public static class FacetLongMerger extends FacetSortableMerger {
-    long val;
+    private long val;
 
     @Override
     public void merge(Object facetResult, Context mcontext) {
@@ -444,7 +444,7 @@ public class FacetModule extends SearchComponent {
   // base class for facets that create buckets (and can hence have sub-facets)
   public abstract static class FacetBucketMerger<FacetRequestT extends FacetRequest>
       extends FacetMerger {
-    FacetRequestT freq;
+    protected final FacetRequestT freq;
 
     public FacetBucketMerger(FacetRequestT freq) {
       this.freq = freq;
@@ -485,7 +485,7 @@ public class FacetModule extends SearchComponent {
   }
 
   public static class FacetQueryMerger extends FacetBucketMerger<FacetQuery> {
-    FacetBucket bucket;
+    private FacetBucket bucket;
 
     public FacetQueryMerger(FacetQuery freq) {
       super(freq);
