@@ -108,7 +108,8 @@ public class StatusTool extends ToolBase {
 
     if (solrUrl != null) {
       // URL provided, do not consult local processes, as the URL may be remote
-      System.exit(statusFromRunningSolr(solrUrl, cli, 0));
+      boolean running = printStatusFromRunningSolr(solrUrl, cli);
+      System.exit(running ? 0 : 1);
     }
 
     if (port != null) {
@@ -125,7 +126,7 @@ public class StatusTool extends ToolBase {
       if (!shortFormat) {
         CLIO.out("Looking for running processes...");
       }
-      Collection<SolrProcess> procs = processMgr.getAllRunning();
+      Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
       if (!shortFormat) {
         CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", procs.size()));
       }
@@ -166,16 +167,20 @@ public class StatusTool extends ToolBase {
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
     boolean shortFormat = cli.hasOption(OPTION_SHORT);
     String pidUrl = process.getLocalUrl();
-    CLIO.out(
-        String.format(
-            Locale.ROOT,
-            "\nSolr process %s running on port %s",
-            process.getPid(),
-            process.getPort()));
     if (shortFormat) {
       CLIO.out(pidUrl);
     } else {
-      statusFromRunningSolr(pidUrl, cli, maxWaitSecs);
+      if (maxWaitSecs > 0) {
+        waitForSolrUpAndPrintStatus(pidUrl, cli, maxWaitSecs);
+      } else {
+        CLIO.out(
+            String.format(
+                Locale.ROOT,
+                "\nSolr process %s running on port %s",
+                process.getPid(),
+                process.getPort()));
+        printStatusFromRunningSolr(pidUrl, cli);
+      }
     }
     CLIO.out("");
   }
@@ -190,43 +195,76 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public int statusFromRunningSolr(String solrUrl, CommandLine cli, int maxWaitSecs)
+  public void waitForSolrUpAndPrintStatus(String solrUrl, CommandLine cli, int maxWaitSecs)
       throws Exception {
-    if (maxWaitSecs > 0) {
-      int solrPort = portFromUrl(solrUrl);
-      echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
-      try {
-        waitToSeeSolrUp(
-            solrUrl,
-            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
-            maxWaitSecs,
-            TimeUnit.SECONDS);
-        echo("Started Solr server on port " + solrPort + ". Happy searching!");
-      } catch (TimeoutException timeout) {
-        throw new Exception(
-            "Solr at " + solrUrl + " did not come online within " + maxWaitSecs + " seconds!");
-      }
+    int solrPort = portFromUrl(solrUrl);
+    echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
+    boolean solrUp = waitForSolrUp(solrUrl, cli, maxWaitSecs);
+    if (solrUp) {
+      echo("Started Solr server on port " + solrPort + ". Happy searching!");
     } else {
-      try {
-        CharArr arr = new CharArr();
-        new JSONWriter(arr, 2)
-            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
-        echo(arr.toString());
-      } catch (Exception exc) {
-        if (SolrCLI.exceptionIsAuthRelated(exc)) {
-          throw exc;
-        }
-        if (SolrCLI.checkCommunicationError(exc)) {
-          // this is not actually an error from the tool as it's ok if Solr is not online.
-          CLIO.err("Solr at " + solrUrl + " not online.");
-          return 1;
-        } else {
-          throw new Exception(
-              "Failed to get system information from " + solrUrl + " due to: " + exc);
-        }
+      throw new Exception(
+          "Solr at " + solrUrl + " did not come online within " + maxWaitSecs + " seconds!");
+    }
+  }
+
+  /**
+   * Wait for Solr to come online and return true if it does, false otherwise.
+   *
+   * @param solrUrl the URL of the Solr server
+   * @param cli the command line options
+   * @param maxWaitSecs the maximum number of seconds to wait
+   * @return true if Solr comes online, false otherwise
+   */
+  public boolean waitForSolrUp(String solrUrl, CommandLine cli, int maxWaitSecs) throws Exception {
+    try {
+      waitToSeeSolrUp(
+          solrUrl,
+          cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+          maxWaitSecs,
+          TimeUnit.SECONDS);
+      return true;
+    } catch (TimeoutException timeout) {
+      return false;
+    }
+  }
+
+  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
+    String statusJson = statusFromRunningSolr(solrUrl, cli);
+    if (statusJson != null) {
+      CLIO.out("Found 1 Solr nodes:");
+      CLIO.out(statusJson);
+    } else {
+      CLIO.err("Solr at " + solrUrl + " not online.");
+    }
+    return statusJson != null;
+  }
+
+  /**
+   * Get the status of a Solr server and responds with a JSON status string.
+   *
+   * @param solrUrl the URL of the Solr server
+   * @param cli the command line options
+   * @return the status of the Solr server or null if the server is not online
+   * @throws Exception if there is an error getting the status
+   */
+  public String statusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
+    try {
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2)
+          .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
+      return arr.toString();
+    } catch (Exception exc) {
+      if (SolrCLI.exceptionIsAuthRelated(exc)) {
+        throw exc;
+      }
+      if (SolrCLI.checkCommunicationError(exc)) {
+        // this is not actually an error from the tool as it's ok if Solr is not online.
+        return null;
+      } else {
+        throw new Exception("Failed to get system information from " + solrUrl + " due to: " + exc);
       }
     }
-    return 0;
   }
 
   @SuppressWarnings("BusyWait")

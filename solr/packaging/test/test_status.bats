@@ -43,7 +43,7 @@ teardown() {
   solr start
   run solr status --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Found 1 Solr nodes:"
-  assert_output --partial "running on port ${SOLR_PORT}"
+  assert_output --partial "\"solr_home\":"
   solr stop
 }
 
