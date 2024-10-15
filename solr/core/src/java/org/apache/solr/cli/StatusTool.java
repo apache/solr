@@ -187,7 +187,13 @@ public class StatusTool extends ToolBase {
 
   private Integer portFromUrl(String solrUrl) {
     try {
-      return new URI(solrUrl).getPort();
+      URI uri = new URI(solrUrl);
+      int port = uri.getPort();
+      if (port == -1) {
+        return uri.getScheme().equals("https") ? 443 : 80;
+      } else {
+        return port;
+      }
     } catch (URISyntaxException e) {
       CLIO.err("Invalid URL provided, does not contain port");
       System.exit(1);
