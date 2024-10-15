@@ -63,6 +63,7 @@ import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
@@ -2097,10 +2098,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
         Collection<UpdateRequestProcessor> procPool =
             Collections.synchronizedList(new ArrayList<>());
+        final var params =
+            new MapSolrParams(
+                Map.of(
+                    DISTRIB_UPDATE_PARAM,
+                    FROMLEADER.toString(),
+                    DistributedUpdateProcessor.LOG_REPLAY,
+                    "true"));
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
             ThreadLocal.withInitial(
                 () -> {
-                  var proc = processorChain.createProcessor(req, rsp);
+                  // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
+                  final var solrQueryRequest = new LocalSolrQueryRequest(uhandler.core, params);
+                  var proc = processorChain.createProcessor(solrQueryRequest, rsp);
                   procPool.add(proc);
                   return proc;
                 });
