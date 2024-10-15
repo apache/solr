@@ -230,7 +230,12 @@ public class StatusTool extends ToolBase {
   }
 
   public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
-    String statusJson = statusFromRunningSolr(solrUrl, cli);
+    String statusJson = null;
+    try {
+      statusJson = statusFromRunningSolr(solrUrl, cli);
+    } catch (Exception e) {
+      /* ignore */
+    }
     if (statusJson != null) {
       CLIO.out("Found 1 Solr nodes:");
       CLIO.out(statusJson);

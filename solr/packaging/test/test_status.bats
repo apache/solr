@@ -58,7 +58,7 @@ teardown() {
 @test "status with invalid --solr-url from user" {
   solr start
   run solr status --solr-url http://invalidhost:${SOLR_PORT}
-  assert_output --partial "No Solr nodes are running."
+  assert_output --partial "Solr at http://invalidhost:${SOLR_PORT} not online"
   solr stop
 }
 
