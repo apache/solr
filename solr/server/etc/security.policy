@@ -228,4 +228,7 @@ grant {
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+
+  // Used by SolrProcessManager to find commandLine of a running Windows process
+  permission java.io.FilePermission "C:\\Windows\\*\\wmic.exe", "execute";
 };
