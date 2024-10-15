@@ -160,12 +160,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
   }
 
   @Override
-  public void destroy() {
-    // CoreService shuts itself down as a ContextListener. The filter does not own anything with a
-    // lifecycle anymore! Yay!
-  }
-
-  @Override
   @SuppressForbidden(
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
