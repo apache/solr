@@ -23,7 +23,7 @@ setup_file() {
   # set up paths and helpers
   common_clean_setup
 
-  solr start -c -V
+  solr start -V
   # echo $output >&3
 }
 

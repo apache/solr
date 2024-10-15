@@ -30,7 +30,7 @@ teardown() {
 }
 
 @test "SQL Module" {
-  run solr start -c -Dsolr.modules=sql
+  run solr start -Dsolr.modules=sql
   run solr create -c COLL_NAME
   run solr api --solr-url http://localhost:${SOLR_PORT}/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
   assert_output --partial '"docs":'
@@ -46,7 +46,7 @@ teardown() {
 
   # Start Solr
   export SOLR_MODULES=hadoop-auth
-  solr start -c \
+  solr start \
     -Dsolr.kerberos.principal=test \
     -Dsolr.kerberos.keytab=test \
     -Dsolr.kerberos.cookie.domain=test
@@ -65,7 +65,7 @@ teardown() {
   echo "SOLR_MODULES=analysis-extras" > "${solr_include_file}"
 
   export SOLR_INCLUDE="${solr_include_file}"
-  run solr start -c
+  run solr start
   run solr create -c COLL_NAME -d test/analysis_extras_config/conf
   assert_output --partial "Created collection 'COLL_NAME'"
 }

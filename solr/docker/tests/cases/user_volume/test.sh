@@ -62,7 +62,7 @@ docker run \
   -v "$mylogs:/var/solr/logs" \
   --user "$(id -u):$(id -g)" \
   --name "$container_name" \
-  -d "$tag"
+  -d "$tag" --user-managed
 
 wait_for_container_and_solr "$container_name"
 

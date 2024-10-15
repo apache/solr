@@ -367,14 +367,13 @@ function print_usage() {
 
   if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
-    echo "Usage: solr $CMD [-f] [-c] [--host host] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [-V]"
+    echo "Usage: solr $CMD [-f] [--user-managed] [--host host] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts \"jvm-opts\"] [--verbose]"
     echo ""
     echo "  -f                    Start Solr in foreground; default starts Solr in the background"
     echo "                          and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or --cloud         Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
-    echo "                          solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
-    echo "                          such as 9983 if Solr is bound to 8983"
+    echo "  --user-managed        Start Solr in user managed aka standalone mode"
+    echo "                          See the Ref Guide for more details: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html"
     echo ""
     echo "  --host <host>         Specify the hostname for this Solr instance"
     echo ""
@@ -383,9 +382,9 @@ function print_usage() {
     echo "                          STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
     echo "                          For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
     echo ""
-    echo "  -d <dir>              Specify the Solr server directory; defaults to server"
+    echo "  --server-dir <dir>   Specify the Solr server directory; defaults to server"
     echo ""
-    echo "  -z/--zk-host <zkHost> Zookeeper connection string; only used when running in SolrCloud mode using -c"
+    echo "  -z/--zk-host <zkHost> Zookeeper connection string; ignored when running in User Managed (--user-managed) mode."
     echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                          an embedded ZooKeeper instance will be launched."
     echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
@@ -395,7 +394,7 @@ function print_usage() {
     echo ""
     echo "  --solr-home <dir>     Sets the solr.solr.home system property; Solr will create core directories under"
     echo "                          this directory. This allows you to run multiple Solr instances on the same host"
-    echo "                          while reusing the same server directory set using the -d parameter. If set, the"
+    echo "                          while reusing the same server directory set using the --server-dir parameter. If set, the"
     echo "                          specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
     echo "                          This parameter is ignored when running examples (-e), as the solr.solr.home depends"
     echo "                          on which example is run. The default value is server/solr. If passed relative dir,"
@@ -733,16 +732,17 @@ FORCE=false
 SOLR_OPTS=(${SOLR_OPTS:-})
 SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
+SOLR_MODE="solrcloud"
 
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
-        -c|--cloud|-cloud)
-            SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=("-c")
+        --user-managed)
+            SOLR_MODE="user-managed"
+            PASS_TO_RUN_EXAMPLE+=("--user-managed")
             shift
         ;;
-        -d|--dir|-dir)
+        -d|--dir|-dir|--server-dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
               exit 1
@@ -821,7 +821,6 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             ZK_HOST="$2"
-            SOLR_MODE="solrcloud"
             PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
@@ -930,7 +929,7 @@ fi
 # otherwise let this script proceed to process the user request
 #
 if [ -n "${EXAMPLE:-}" ] && [ "$SCRIPT_CMD" == "start" ]; then
-  run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" --url-scheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
+  run_tool run_example -e "$EXAMPLE" --server-dir "$SOLR_SERVER_DIR" --url-scheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
   exit $?
 fi
 
@@ -1139,11 +1138,6 @@ if [ "${#GC_LOG_OPTS[@]}" -gt 0 ]; then
       GC_LOG_OPTS[$i]=$(echo "${GC_LOG_OPTS[$i]}" | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
     done
   fi
-fi
-
-# If ZK_HOST is defined, the assume SolrCloud mode
-if [[ -n "${ZK_HOST:-}" ]]; then
-  SOLR_MODE="solrcloud"
 fi
 
 if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
@@ -1372,7 +1366,7 @@ function start_solr() {
   cd "$SOLR_SERVER_DIR" || (echo -e "\nCd to SOLR_SERVER_DIR failed" && exit 1)
 
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
-    echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
+    echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your --server-dir parameter to set the correct Solr server directory.\n"
     exit 1
   fi
 

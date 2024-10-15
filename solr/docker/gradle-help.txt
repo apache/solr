@@ -78,11 +78,11 @@ Each input tasks a comma separated list of test names.
 
 Run specific tests:
    EnvVar: SOLR_DOCKER_TESTS_INCLUDE
-   Gradle Property: -Psolr.docker.tests.include
+   Gradle Property: -Psolr.docker.tests.include=cloud_multi_node_embedded_zk,demo
 
 Exclude specific tests:
    EnvVar: SOLR_DOCKER_TESTS_EXCLUDE
-   Gradle Property: -Psolr.docker.tests.exclude
+   Gradle Property: -Psolr.docker.tests.exclude=cloud_multi_node_embedded_zk,demo
 
 The docker tests can also be run concurrently, if explicitly specified.
 The parallelization is set by the number of gradle workers you have defined, this cannot be specified separately.
