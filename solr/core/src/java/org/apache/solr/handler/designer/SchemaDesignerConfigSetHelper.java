@@ -57,20 +57,17 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -85,6 +82,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -128,43 +127,27 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   Map<String, Object> analyzeField(String configSet, String fieldName, String fieldText)
       throws IOException {
     final String mutableId = getMutableId(configSet);
-    final URI uri;
+    var solrParams = new ModifiableSolrParams();
+    solrParams.add("analysis.showmatch", "true");
+    solrParams.add("analysis.fieldname", fieldName);
+    solrParams.add("analysis.fieldvalue", "POST");
+    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/analysis/field", solrParams);
+    request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
+    request.setRequiresCollection(true);
+    request.setResponseParser(new InputStreamResponseParser(null));
+    InputStream is = null;
     try {
-      uri =
-          collectionApiEndpoint(mutableId, "analysis", "field")
-              .setParameter(CommonParams.WT, CommonParams.JSON)
-              .setParameter("analysis.showmatch", "true")
-              .setParameter("analysis.fieldname", fieldName)
-              .setParameter("analysis.fieldvalue", "POST")
-              .build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-
-    Map<String, Object> analysis = Collections.emptyMap();
-    HttpPost httpPost = new HttpPost(uri);
-    httpPost.setHeader("Content-Type", "text/plain");
-    httpPost.setEntity(new ByteArrayEntity(fieldText.getBytes(StandardCharsets.UTF_8)));
-    try {
-      HttpResponse resp = ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpPost);
-      int statusCode = resp.getStatusLine().getStatusCode();
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(statusCode),
-            EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      }
-
+      var resp = request.process(cloudClient(), mutableId).getResponse();
+      is = (InputStream) resp.get("stream");
       Map<String, Object> response =
           (Map<String, Object>)
-              fromJSONString(EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      if (response != null) {
-        analysis = (Map<String, Object>) response.get("analysis");
-      }
+              fromJSONString(new String(is.readAllBytes(), StandardCharsets.UTF_8));
+      return (Map<String, Object>) response.get("analysis");
+    } catch (SolrServerException e) {
+      throw new RuntimeException(e);
     } finally {
-      httpPost.releaseConnection();
+      IOUtils.closeQuietly(is);
     }
-
-    return analysis;
   }
 
   List<String> listCollectionsForConfig(String configSet) {
@@ -533,11 +516,31 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           collectionApiEndpoint(BLOB_STORE_ID, "blob", configSet + "_sample")
               .setParameter(CommonParams.WT, "filestream")
               .build();
+
     } catch (URISyntaxException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+    final var params = new ModifiableSolrParams();
+    var request =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample", params);
+    request.setRequiresCollection(true);
+    request.setResponseParser(new InputStreamResponseParser("filestream"));
+    InputStream inputStream = null;
+    try {
+      var resp = request.process(cloudClient(), BLOB_STORE_ID).getResponse();
+      inputStream = (InputStream) resp.get("stream");
+      var bytes = inputStream.readAllBytes();
+      if (bytes.length > 0) {
+        return (List<SolrInputDocument>) Utils.fromJavabin(bytes);
+      } else return Collections.emptyList();
+    } catch (SolrServerException e) {
+      throw new IOException("Failed to lookup stored docs for " + configSet + " due to: " + e);
+    } finally {
+      assert inputStream != null;
+      inputStream.close();
+    }
 
-    HttpGet httpGet = new HttpGet(uri);
+    /*HttpGet httpGet = new HttpGet(uri);
     try {
       HttpResponse entity =
           ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
@@ -558,7 +561,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     } finally {
       httpGet.releaseConnection();
     }
-    return docs != null ? docs : Collections.emptyList();
+    return docs != null ? docs : Collections.emptyList();*/
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
@@ -575,7 +578,16 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   protected void postDataToBlobStore(CloudSolrClient cloudClient, String blobName, byte[] bytes)
       throws IOException {
-    final URI uri;
+    var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
+    request.withContent(bytes, BinaryResponseParser.BINARY_CONTENT_TYPE);
+    request.setRequiresCollection(true);
+
+    try {
+      request.process(cloudClient, BLOB_STORE_ID);
+    } catch (Exception e) {
+      // throw new IOException(e);
+    }
+    /*final URI uri;
     try {
       uri = collectionApiEndpoint(BLOB_STORE_ID, "blob", blobName).build();
     } catch (URISyntaxException e) {
@@ -595,7 +607,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
     } finally {
       httpPost.releaseConnection();
-    }
+    }*/
   }
 
   private String getBaseUrl(final String collection) {
