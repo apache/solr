@@ -19,15 +19,16 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-      sourceCompatibility = project.minJavaVersion
-      targetCompatibility = project.minJavaVersion
-
       // Use 'release' flag instead of 'source' and 'target'
       tasks.withType(JavaCompile) {
         compileTestJava {
+          sourceCompatibility = JavaVersion.toVersion(scriptDepVersions['min-java-version']).toString()
+          targetCompatibility = JavaVersion.toVersion(scriptDepVersions['min-java-version']).toString()
           options.compilerArgs += ["--release", JavaVersion.toVersion(scriptDepVersions['min-java-version']).toString()]
         }
         compileJava {
+          sourceCompatibility = project.minJavaVersion
+          targetCompatibility = project.minJavaVersion
           options.compilerArgs += ["--release", project.minJavaVersion.toString()]
         }
       }
