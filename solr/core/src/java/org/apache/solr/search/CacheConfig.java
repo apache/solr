@@ -166,7 +166,7 @@ public class CacheConfig implements MapSerializable {
     try {
       SolrCache<?, ?> cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
-      return cache;
+      return cache.toExternal();
     } catch (Exception e) {
       log.error("Error instantiating cache", e);
       // we can carry on without a cache... but should we?
