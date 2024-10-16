@@ -23,12 +23,15 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.apache.lucene.document.Document;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 
@@ -84,7 +87,35 @@ class PHPSerializedWriter extends JSONWriter {
 
   @Override
   public void writeNamedList(String name, NamedList<?> val) throws IOException {
+    /*SimpleOrderedMap<Object> copy = new SimpleOrderedMap<>();
+    for (Map.Entry<String,?> tuple : val) {
+
+      Object entryVal = tuple.getValue();
+      if (entryVal!=null && (entryVal instanceof SolrDocument || entryVal instanceof Document)) {
+        entryVal = new Object[]{entryVal};
+      }
+      copy.add(tuple.getKey(), entryVal);
+    }*/
     writeNamedListAsMapMangled(name, val);
+  }
+
+  @Override
+  public void writeVal(String name, Object val) throws IOException {
+    if (val==null) {
+      super.writeVal(name, val);
+    } else {
+      if (val instanceof Document || val instanceof SolrDocument) {
+        writeMapOpener(1); //
+          //writeKey(1, false); // Docs never appears standalone, but always in docList,
+                                // unless it's reponded by /admin/luke where Lucene Document
+                                // appears in SimpleOrderedMap
+                                // commening this line fixes PHPS format
+          super.writeVal(""+0, val);
+        writeMapCloser();
+      } else {
+        super.writeVal(name, val);
+      }
+    }
   }
 
   @Override
