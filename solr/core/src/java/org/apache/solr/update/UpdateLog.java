@@ -2109,8 +2109,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             ThreadLocal.withInitial(
                 () -> {
                   // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
-                  final var solrQueryRequest = new LocalSolrQueryRequest(uhandler.core, params);
-                  var proc = processorChain.createProcessor(solrQueryRequest, rsp);
+                  final var localRequest = new LocalSolrQueryRequest(uhandler.core, params);
+                  var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;
                 });
