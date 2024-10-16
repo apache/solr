@@ -101,6 +101,7 @@ public class StatusTool extends ToolBase {
     Integer port =
         cli.hasOption(OPTION_PORT) ? Integer.parseInt(cli.getOptionValue(OPTION_PORT)) : null;
     boolean shortFormat = cli.hasOption(OPTION_SHORT);
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
 
     if (port != null && solrUrl != null) {
       throw new IllegalArgumentException("Only one of port or url can be specified");
@@ -108,8 +109,19 @@ public class StatusTool extends ToolBase {
 
     if (solrUrl != null) {
       // URL provided, do not consult local processes, as the URL may be remote
-      boolean running = printStatusFromRunningSolr(solrUrl, cli);
-      System.exit(running ? 0 : 1);
+      if (maxWaitSecs > 0) {
+        // Used by Windows start script when starting Solr
+        try {
+          waitForSolrUpAndPrintStatus(solrUrl, cli, maxWaitSecs);
+          System.exit(0);
+        } catch (Exception e) {
+          CLIO.err(e.getMessage());
+          System.exit(1);
+        }
+      } else {
+        boolean running = printStatusFromRunningSolr(solrUrl, cli);
+        System.exit(running ? 0 : 1);
+      }
     }
 
     if (port != null) {
