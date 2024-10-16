@@ -1,0 +1,218 @@
+= Size Component
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Size Component is intended to compute resource usage information for a given Solr core. It will perform those computations based on current index schema, Solr configuration and document indexed in the core. It is not meant to be distributable, see the cluster sizing action of the collection admin API for more information about sizing distributed collections.
+
+== Configuration
+
+The Size Component must be defined in the `solrconfig.xml` file before it can be used. This is done in 2 parts.
+
+1- Declare the component:
+
+----
+<searchComponent name="size" class="solr.SizeComponent" />
+----
+
+2- Use the component in some handler, using the default ` /select` handler will make it easier to use:
+----
+<requestHandler name="/select" class="solr.SearchHandler">
+  ...
+  <arr name="last-components">
+    ...
+    <str>size</str>
+  </arr>
+</requestHandler> 
+----
+
+== Parameters
+
+The Size Component accepts the following parameters:
+
+`size`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, then invokes the Size component.
+
+`sizeUnit`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+If present, values for disk size, RAM, and cache will be output as `double`, according to the chosen size unit.
++
+Valid values for are: GB, MB, KB, bytes.
++
+If not present, values are output in a human-readable format.
+
+`avgDocSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 0
+|===
++
+Document size used to compute resource usage. If less than 1, the value will be computed using the content of currently indexed documents.
+
+`numDocs`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 0
+|===
++
+Number of documents to use when computing resource usage. If less than 1, actual number of indexed documents will be used. This parameter will be ignored if estimationRatio is specified.
+
+`estimationRatio`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 0.0
+|===
++
+Ratio used for resource usage estimations. If a value greater than 0.0 is specified, the current number of documents will be multiplied by this ratio in order to determine number of documents to be used when computing resource usage.
+
+`deletedDocs`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+If specified, will be used as number of deleted documents in the index when computing resource usage, otherwise, current number of deleted documents will be used instead.
+
+`filterCacheMax`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+Size of the filter cache to use for computing resource usage, if not specified, current filter cache size will be used.
+
+`queryResultCacheMax`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+Size of the query result cache to use for computing resource usage, if not specified, current query result cache size will be used.
+
+`documentCacheMax`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+Size of the document cache to use for computing resource usage, if not specified, current document cache size will be used.
+
+`queryResultMaxDocsCached`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+Maximum number of documents to cache per entry in query result cache to use for computing resource usage, if not specified, current maximum will be used.
+
+
+=== Size Component Example
+
+The query below does not request a specific `sizeUnit`, therefore the response shows the values for disk size, RAM, and cache in human-readable format.
+
+Use the `sizeUnit` parameter to obtain more machine-readable values.
+
+Note that to run the query on a distributed Solr, you must not only include the exact core name in the request path, but also force a non-distributed request with parameter `distrib=false`.
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/<core>/select?q=*:*&rows=0&wt=xml&size=true
+----
+
+*Output*
+
+[source,xml]
+----
+<response>  
+  <lst name="responseHeader">  
+    <int name="status">0</int>  
+    <int name="QTime">109</int>  
+    <lst name="params">  
+      <str name="q">*:*</str>  
+      <str name="size">true</str>  
+      <str name="indent">true</str>  
+      <str name="rows">0</str>  
+      <str name="wt">xml</str>  
+    </lst>  
+  </lst>  
+  <result name="response" numFound="2287" start="0">  
+  </result>  
+  <lst name="size">  
+    <str name="total-disk-size">199.6 MB</str>  
+    <str name="total-lucene-RAM">33.35 MB</str>  
+    <str name="total-solr-RAM">79.16 MB</str>  
+    <long name="estimated-num-docs">2287</long>  
+    <str name="estimated-doc-size">89.37 KB</str>  
+    <lst name="solr-details">  
+      <str name="filterCache">152.94 KB</str>  
+      <str name="queryResultCache">1,000 KB</str>  
+      <str name="documentCache">44.68 MB</str>  
+      <str name="luceneRam">33.35 MB</str>  
+    </lst>  
+  </lst>  
+</response>
+----
+
+== Result Fields
+
+`total-disk-size`::
+Estimation of total disk space used by the index according to parameters.
+
+`total-lucene-RAM`::
+Estimation of index RAM usage specifically for Lucene according to parameters.
+
+`total-solr-RAM`::
+Estimation of total index RAM usage for Solr (including Lucene) according to parameters.
+
+`estimated-num-docs`::
+Number of documents used for computing estimated values.
+
+`estimated-doc-size`::
+Average size of document used for computing estimated values.
+
+`solr-details / filterCache`::
+Estimated maximum amount of RAM used for caching filters for the index, if cache was filled.
+
+`solr-details / queryResultCache`::
+Estimated maximum amount of RAM used for caching query results for the index, if cache was filled.
+
+`solr-details / documentCache`::
+Estimated maximum amount of RAM used for caching documents for the index, if cache was filled.
+
+`solr-details / luceneRam`::
+Estimated amount of RAM used by Lucene for the index.
+
