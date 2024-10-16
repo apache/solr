@@ -98,18 +98,33 @@ public class SolrProcessManager {
     return pidProcessMap.containsKey(pid) ? Optional.of(pidProcessMap.get(pid)) : Optional.empty();
   }
 
+  /**
+   * Scans the PID directory for Solr PID files and returns a list of SolrProcesses for each running
+   * Solr instance. If a PID file is found but no process is running, the PID file is deleted. On
+   * Windows, the file is a 'PORT' file containing the port number.
+   *
+   * @return a list of SolrProcesses for each running Solr instance
+   */
   public Collection<SolrProcess> scanSolrPidFiles() throws IOException {
     List<SolrProcess> processes = new ArrayList<>();
     try (Stream<Path> pidFiles =
         Files.list(pidDir)
             .filter(p -> pidFilePattern.matcher(p.getFileName().toString()).matches())) {
       for (Path p : pidFiles.collect(Collectors.toList())) {
-        Long pid = Long.valueOf(Files.readAllLines(p).get(0));
-        Optional<SolrProcess> process = getProcessForPid(pid);
+        Optional<SolrProcess> process;
+        if (p.toString().endsWith(".port")) {
+          // On Windows, the file is a 'PORT' file containing the port number.
+          Integer port = Integer.valueOf(Files.readAllLines(p).get(0));
+          process = processForPort(port);
+        } else {
+          // On Linux, the file is a 'PID' file containing the process ID.
+          Long pid = Long.valueOf(Files.readAllLines(p).get(0));
+          process = getProcessForPid(pid);
+        }
         if (process.isPresent()) {
           processes.add(process.get());
         } else {
-          log.warn("PID file found for PID {}, but no process found. Deleting PID file", pid);
+          log.warn("PID file {} found, but no process running. Deleting PID file", p.getFileName());
           Files.deleteIfExists(p);
         }
       }

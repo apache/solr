@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,33 +30,38 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SolrProcessManagerTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static SolrProcessManager solrProcessManager;
   private static Pair<Integer, Process> processHttp;
   private static Pair<Integer, Process> processHttps;
-  private static final String PID_SUFFIX = Constants.WINDOWS ? ".pid" : ".port";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    boolean isWindows = random().nextBoolean();
+    String PID_SUFFIX = isWindows ? ".port" : ".pid";
+    log.info("Simulating pid file on {}", isWindows ? "Windows" : "Linux");
     processHttp = createProcess(findAvailablePort(), false);
     processHttps = createProcess(findAvailablePort(), true);
+    long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
+    long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
     System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
     Path pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
     pidDir.toFile().deleteOnExit();
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
-        pidDir.resolve("solr-" + processHttp.getKey() + PID_SUFFIX),
-        Long.toString(processHttp.getValue().pid()));
+        pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));
     Files.writeString(
-        pidDir.resolve("solr-" + processHttps.getKey() + PID_SUFFIX),
-        Long.toString(processHttps.getValue().pid()));
+        pidDir.resolve("solr-" + processHttpsValue + PID_SUFFIX), Long.toString(processHttpsValue));
     Files.writeString(pidDir.resolve("solr-99999" + PID_SUFFIX), "99999"); // Invalid
     solrProcessManager = new SolrProcessManager();
   }
@@ -174,6 +180,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
    * This class is started as new java process by {@link SolrProcessManagerTest#createProcess}, and
    * it listens to a HTTP(s) port to simulate a real Solr process.
    */
+  @SuppressWarnings("NewClassNamingConvention")
   public static class MockSolrProcess {
     public static void main(String[] args) {
       int port = Integer.parseInt(System.getProperty("jetty.port"));
