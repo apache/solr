@@ -105,6 +105,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.core.TrackingDirectoryReader;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -215,7 +216,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
       reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
     }
-    return reader;
+    return TrackingDirectoryReader.wrap(reader);
   }
 
   /**
