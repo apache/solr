@@ -69,10 +69,14 @@ public class SolrProcessManager {
                             ph.pid(), parsePortFromProcess(ph).orElseThrow(), isProcessSsl(ph))));
     portProcessMap =
         pidProcessMap.values().stream().collect(Collectors.toUnmodifiableMap(p -> p.port, p -> p));
+    String solrInstallDir = EnvUtils.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE);
     pidDir =
         Paths.get(
             EnvUtils.getProperty(
-                "solr.pid.dir", EnvUtils.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE + "/bin", "/tmp")));
+                "solr.pid.dir",
+                solrInstallDir != null
+                    ? solrInstallDir + "/bin"
+                    : System.getProperty("java.io.tmpdir")));
   }
 
   public boolean isRunningWithPort(Integer port) {
