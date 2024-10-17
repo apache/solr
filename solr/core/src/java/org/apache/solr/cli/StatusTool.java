@@ -22,6 +22,7 @@ import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,6 +71,7 @@ public class StatusTool extends ToolBase {
           .argName("SECS")
           .hasArg()
           .required(false)
+          .deprecated() // Will make it a stealth option, not printed or complained about
           .desc("Wait up to the specified number of seconds to see Solr running.")
           .build();
 
@@ -108,6 +110,14 @@ public class StatusTool extends ToolBase {
     }
 
     if (solrUrl != null) {
+      try {
+        new URL(solrUrl);
+      } catch (Exception e) {
+        // Added to catch use of -solrUrl option in which case the url would be "olrUrl"
+        CLIO.err("Invalid URL provided: " + solrUrl);
+        System.exit(1);
+      }
+
       // URL provided, do not consult local processes, as the URL may be remote
       if (maxWaitSecs > 0) {
         // Used by Windows start script when starting Solr
