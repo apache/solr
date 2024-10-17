@@ -46,16 +46,16 @@ public final class LoadAdminUiServlet extends HttpServlet {
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
 
   @Override
-  public void doGet(HttpServletRequest _request, HttpServletResponse _response) throws IOException {
+  public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
     if (disabled) {
-      _response.sendError(
+      response.sendError(
           404,
           "Solr Admin UI is disabled. To enable it, change the default value of SOLR_ADMIN_UI_"
               + "ENABLED in bin/solr.in.sh or solr.in.cmd.");
       return;
     }
-    HttpServletRequest request = ServletUtils.closeShield(_request, false);
-    HttpServletResponse response = ServletUtils.closeShield(_response, false);
+    request = ServletUtils.closeShield(request);
+    response = ServletUtils.closeShield(response);
 
     response.addHeader(
         "X-Frame-Options", "DENY"); // security: SOLR-7966 - avoid clickjacking for admin interface

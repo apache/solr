@@ -165,25 +165,23 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
+    if (excludedPath(excludePatterns, request, response, chain)) {
+      return;
+    }
+
     try (var mdcSnapshot = MDCSnapshot.create()) {
       assert null != mdcSnapshot; // prevent compiler warning
       MDCLoggingContext.reset();
       MDCLoggingContext.setNode(getCores());
       Thread.currentThread().setContextClassLoader(getCores().getResourceLoader().getClassLoader());
 
-      doFilter(request, response, chain, false);
+      doFilterRetry(closeShield(request), closeShield(response), chain, false);
     }
   }
 
-  public void doFilter(
-      HttpServletRequest _request, HttpServletResponse _response, FilterChain chain, boolean retry)
+  protected void doFilterRetry(
+      HttpServletRequest request, HttpServletResponse response, FilterChain chain, boolean retry)
       throws IOException, ServletException {
-    HttpServletRequest request = closeShield(_request, retry);
-    HttpServletResponse response = closeShield(_response, retry);
-
-    if (excludedPath(excludePatterns, request, response, chain)) {
-      return;
-    }
     setTracer(request, getCores().getTracer());
     RateLimitManager rateLimitManager = containerProvider.getRateLimitManager();
     try {
@@ -240,7 +238,7 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           break;
         case RETRY:
           span.addEvent("SolrDispatchFilter RETRY");
-          doFilter(request, response, chain, true); // RECURSION
+          doFilterRetry(request, response, chain, true); // RECURSION
           break;
         case FORWARD:
           span.addEvent("SolrDispatchFilter FORWARD");
