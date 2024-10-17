@@ -10,6 +10,7 @@ on:
       - 'solr/bin/**'
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
+      - 'solr/prometheus-exporter/**'
 
 jobs:
   test:
@@ -18,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
     steps:
     # Setup
@@ -29,6 +30,8 @@ jobs:
         distribution: 'temurin'
         java-version: 11
         java-package: jdk
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - uses: actions/cache@v4
@@ -47,4 +50,3 @@ jobs:
       with:
         name: logs
         path: solr/packaging/build/test-output
-

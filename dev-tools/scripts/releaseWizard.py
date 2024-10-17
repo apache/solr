@@ -1123,7 +1123,7 @@ def file_to_string(filename):
         return f.read().strip()
 
 def download_keys():
-    download('KEYS', "https://archive.apache.org/dist/solr/KEYS", state.config_path)
+    download('KEYS', "https://downloads.apache.org/solr/KEYS", state.config_path)
 
 def keys_downloaded():
     return os.path.exists(os.path.join(state.config_path, "KEYS"))

@@ -43,7 +43,7 @@ dependencies {
     exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
   })
   implementation ('com.fasterxml.jackson.core:jackson-databind')
-  implementation ('net.sourceforge.argparse4j:argparse4j')
+  implementation 'commons-cli:commons-cli'
   implementation ('com.github.ben-manes.caffeine:caffeine') { transitive = false }
   implementation 'org.slf4j:slf4j-api'
   implementation 'commons-codec:commons-codec'
@@ -54,6 +54,7 @@ dependencies {
   runtimeOnly 'com.lmax:disruptor'
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-zookeeper')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.apache.lucene:lucene-test-framework'

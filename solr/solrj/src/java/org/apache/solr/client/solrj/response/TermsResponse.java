@@ -51,7 +51,7 @@ public class TermsResponse {
   }
 
   /**
-   * Get's the term list for a given field
+   * Gets the term list for a given field
    *
    * @return the term list or null if no terms for the given field exist
    */

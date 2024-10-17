@@ -225,7 +225,7 @@ This section assumes you have created and started an external ZooKeeper.
 See xref:zookeeper-ensemble.adoc[] for more information.
 
 The `urlScheme` cluster-wide property needs to be set to `https` before any Solr node starts up.
-The examples below use the `zkcli` tool that comes with Solr to do this.
+The examples below use the `bin/solr` tool that comes with Solr to do this.
 
 [tabs#zkclusterprops]
 ======
@@ -234,7 +234,7 @@ The examples below use the `zkcli` tool that comes with Solr to do this.
 ====
 [source,terminal]
 ----
-$ bin/solr cluster -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
+$ bin/solr cluster --property urlSchema --value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -243,13 +243,13 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin/solr.cmd -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
+C:\> bin/solr.cmd --property urlSchema --value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 ======
 
 Be sure to use the correct `zkhost` value for your system.
-If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkhost` string, e.g., `-zkhost server1:2181,server2:2181,server3:2181/solr`.
+If you have set up your ZooKeeper ensemble to use a xref:taking-solr-to-production.adoc#zookeeper-chroot[chroot for Solr], make sure to include it in the `zkHost` string, e.g., `--zk-host server1:2181,server2:2181,server3:2181/solr`.
 
 === Update Cluster Properties for Existing Collections
 
@@ -310,7 +310,7 @@ If you created the SSL key without all DNS names or IP addresses on which Solr n
 ====
 [source,terminal]
 ----
-$ bin/solr start --cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+$ bin/solr start --cloud --solr-home cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 
@@ -319,7 +319,7 @@ Windows::
 ====
 [source,powershell]
 ----
-C:\> bin\solr.cmd --cloud -s cloud\node1 -z server1:2181,server2:2181,server3:2181
+C:\> bin\solr.cmd --cloud --solr-home cloud\node1 -z server1:2181,server2:2181,server3:2181
 
 ----
 ====
@@ -435,9 +435,9 @@ You should get a response that looks like this:
 
 Use `bin/solr post` to index some example documents to the SolrCloud collection created above:
 
-[source,bash]
+[source,console]
 ----
-$ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/update example/exampledocs/*.xml
+$ bin/solr post --solr-url https://localhost:8984 --name mycollection example/exampledocs/*.xml
 ----
 
 === Query Using curl
@@ -445,9 +445,9 @@ $ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/updat
 Use curl to query the SolrCloud collection created above, from a directory containing the PEM formatted certificate and key created above (e.g., `example/etc/`).
 If you have not enabled client authentication (system property `-Djetty.ssl.clientAuth=true)`, then you can remove the `-E solr-ssl.pem:secret` option:
 
-[source,bash]
+[source,console]
 ----
-curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
+$ curl -E solr-ssl.pem:secret --cacert solr-ssl.pem "https://localhost:8984/solr/mycollection/select?q=*:*"
 ----
 
 === Index a Document using CloudSolrClient

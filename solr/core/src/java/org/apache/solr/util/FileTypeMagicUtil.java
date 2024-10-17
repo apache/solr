@@ -60,6 +60,14 @@ public class FileTypeMagicUtil implements ContentInfoUtil.ErrorCallBack {
         new SimpleFileVisitor<>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            if (Files.isSymbolicLink(file)) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  String.format(
+                      Locale.ROOT,
+                      "Not uploading symbolic link %s to configset, as symbolic links are not supported in ZooKeeper",
+                      file));
+            }
             if (FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,

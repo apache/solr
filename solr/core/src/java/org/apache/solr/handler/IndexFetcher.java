@@ -94,7 +94,6 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -185,7 +184,7 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final SolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
   private Integer connTimeout;
 
@@ -263,17 +262,15 @@ public class IndexFetcher {
   // It's crucial not to remove the authentication credentials as they are essential for User
   // managed replication.
   // GitHub PR #2276
-  private SolrClient createSolrClient(
+  private Http2SolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
-    Http2SolrClient httpClient =
-        new Http2SolrClient.Builder(leaderBaseUrl)
-            .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
-            .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
-            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
-            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-            .build();
-    return httpClient;
+    return new Http2SolrClient.Builder(leaderBaseUrl)
+        .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
+        .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
+        .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   public IndexFetcher(
@@ -376,10 +373,8 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-    req.setBasePath(leaderBaseUrl);
-    // TODO modify to use shardhandler
     try {
-      return solrClient.request(req, leaderCoreName);
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -397,10 +392,9 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-    req.setBasePath(leaderBaseUrl);
-    // TODO modify to use shardhandler
     try {
-      NamedList<?> response = solrClient.request(req, leaderCoreName);
+      NamedList<?> response =
+          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -1802,7 +1796,7 @@ public class IndexFetcher {
       } finally {
         cleanup();
         // if cleanup succeeds . The file is downloaded fully. do an fsync
-        fsyncService.submit(
+        fsyncService.execute(
             () -> {
               try {
                 file.sync();
@@ -1988,16 +1982,36 @@ public class IndexFetcher {
         req.setBasePath(leaderBaseUrl);
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
         response = solrClient.request(req, leaderCoreName);
+        final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
+
+        if (responseStatus != 200) {
+          final var errorMsg =
+              String.format(
+                  Locale.ROOT,
+                  "Unexpected status code [%d] when downloading file [%s].",
+                  responseStatus,
+                  fileName);
+          closeStreamAndBuildIOE(is, errorMsg, null);
+        }
+
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
         }
         return new FastInputStream(is);
       } catch (Exception e) {
-        // close stream on error
-        IOUtils.closeQuietly(is);
-        throw new IOException("Could not download file '" + fileName + "'", e);
+        final var ioe = closeStreamAndBuildIOE(is, "Could not download file '" + fileName + "'", e);
+        throw ioe;
       }
+    }
+
+    private IOException closeStreamAndBuildIOE(
+        InputStream is, String exceptionMessage, Exception e) {
+      IOUtils.closeQuietly(is);
+      if (e != null) {
+        return new IOException(exceptionMessage, e);
+      }
+      return new IOException(exceptionMessage);
     }
   }
 
@@ -2112,9 +2126,8 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     QueryRequest request = new QueryRequest(params);
-    request.setBasePath(leaderBaseUrl);
     // TODO use shardhandler
-    return solrClient.request(request, leaderCoreName);
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
   }
 
   public void destroy() {

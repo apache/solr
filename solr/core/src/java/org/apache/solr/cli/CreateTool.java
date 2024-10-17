@@ -41,7 +41,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
@@ -67,6 +67,14 @@ public class CreateTool extends ToolBase {
   }
 
   @Override
+  public String getHeader() {
+    return "Creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).\n"
+        + "If you are using standalone mode you must run this command on the Solr server itself.\n"
+        + "\n"
+        + "List of options:";
+  }
+
+  @Override
   public List<Option> getOptions() {
     return List.of(
         Option.builder("c")
@@ -76,7 +84,7 @@ public class CreateTool extends ToolBase {
             .required(true)
             .desc("Name of collection or core to create.")
             .build(),
-        Option.builder("s")
+        Option.builder("sh")
             .longOpt("shards")
             .hasArg()
             .argName("#")
@@ -150,6 +158,7 @@ public class CreateTool extends ToolBase {
             .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
@@ -218,20 +227,19 @@ public class CreateTool extends ToolBase {
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
-              + coreInstanceDir.toAbsolutePath(),
-          cli);
+              + coreInstanceDir.toAbsolutePath());
     }
 
-    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest", cli);
+    echoIfVerbose("\nCreating new core '" + coreName + "' using CoreAdminRequest");
 
     try {
       CoreAdminResponse res = CoreAdminRequest.createCore(coreName, coreName, solrClient);
-      if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      if (isVerbose()) {
         echo(res.jsonStr());
         echo("\n");
-      } else {
-        echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
       }
+      echo(String.format(Locale.ROOT, "\nCreated new core '%s'", coreName));
+
     } catch (Exception e) {
       /* create-core failed, cleanup the copied configset before propagating the error. */
       PathUtils.deleteDirectory(coreInstanceDir);
@@ -248,8 +256,8 @@ public class CreateTool extends ToolBase {
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
+    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -311,7 +319,10 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
+      // TODO: This should be done using the configSet API
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
+      ConfigSetService configSetService =
+          new ZkConfigSetService(ZkStateReader.from(cloudSolrClient).getZkClient());
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echoIfVerbose(
@@ -320,13 +331,9 @@ public class CreateTool extends ToolBase {
               + " for config "
               + confName
               + " to ZooKeeper at "
-              + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
-          cli);
-      ZkMaintenanceUtils.uploadToZK(
-          ZkStateReader.from(cloudSolrClient).getZkClient(),
-          confPath,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
-          ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
+              + cloudSolrClient.getClusterStateProvider().getQuorumHosts());
+      // We will trust the config since we have the Zookeeper Address
+      configSetService.uploadConfig(confName, confPath, true);
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
@@ -340,7 +347,7 @@ public class CreateTool extends ToolBase {
 
     // doesn't seem to exist ... try to create
     echoIfVerbose(
-        "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest", cli);
+        "\nCreating new collection '" + collectionName + "' using CollectionAdminRequest");
 
     NamedList<Object> response;
     try {
@@ -354,25 +361,24 @@ public class CreateTool extends ToolBase {
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+    if (isVerbose()) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
       echo(arr.toString());
-    } else {
-      String endMessage =
-          String.format(
-              Locale.ROOT,
-              "Created collection '%s' with %d shard(s), %d replica(s)",
-              collectionName,
-              numShards,
-              replicationFactor);
-      if (confName != null && !confName.trim().isEmpty()) {
-        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
-      }
-
-      echo(endMessage);
     }
+    String endMessage =
+        String.format(
+            Locale.ROOT,
+            "Created collection '%s' with %d shard(s), %d replica(s)",
+            collectionName,
+            numShards,
+            replicationFactor);
+    if (confName != null && !confName.trim().isEmpty()) {
+      endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
+    }
+
+    echo(endMessage);
   }
 
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
@@ -411,7 +417,7 @@ public class CreateTool extends ToolBase {
       final String configCommand =
           String.format(
               Locale.ROOT,
-              "bin/solr config -c %s -solrUrl %s -action set-user-property -property update.autoCreateFields -value false",
+              "bin/solr config -c %s -s %s --action set-user-property --property update.autoCreateFields --value false",
               collectionName,
               solrUrl);
       echo(

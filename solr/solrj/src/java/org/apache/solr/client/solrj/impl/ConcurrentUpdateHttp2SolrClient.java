@@ -279,8 +279,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 log.warn("Failed to parse error response from {} due to: ", basePath, exc);
               } finally {
                 solrExc =
-                    new BaseHttpSolrClient.RemoteSolrException(
-                        basePath, statusCode, msg.toString(), null);
+                    new SolrClient.RemoteSolrException(basePath, statusCode, msg.toString(), null);
                 if (metadata != null) {
                   solrExc.setMetadata(metadata);
                 }
@@ -407,9 +406,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       int lastQueueSize = -1;
       for (; ; ) {
         synchronized (runners) {
-          // see if queue is half full and we can add more runners
+          // see if queue is half full, and we can add more runners
           // special case: if only using a threadCount of 1 and the queue
-          // is filling up, allow 1 add'l runner to help process the queue
+          // is filling up, allow 1 additional runner to help process the queue
           if (runners.isEmpty()
               || (queue.remainingCapacity() < queue.size() && runners.size() < threadCount)) {
             // We need more runners, so start a new one.
@@ -486,7 +485,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
       synchronized (runners) {
 
-        // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may
+        // NOTE: if the executor is shut down, runners may never become empty. A scheduled task may
         // never be run, which means it would never remove itself from the runners list. This is why
         // we don't wait forever and periodically check if the scheduler is shutting down.
         int loopCount = 0;
@@ -627,7 +626,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   /**
-   * Intended to be used as an extension point for doing post processing after a request completes.
+   * Intended to be used as an extension point for doing post-processing after a request completes.
    *
    * @param respBody the body of the response, subclasses must not close this stream.
    */
@@ -819,7 +818,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     /**
      * Configures created clients to not stream delete requests.
      *
-     * <p>With this option set when the created ConcurrentUpdateHttp2SolrClient sents a delete
+     * <p>With this option set when the created ConcurrentUpdateHttp2SolrClient sends a delete
      * request it will first will lock the queue and block until all queued updates have been sent,
      * and then send the delete request.
      */

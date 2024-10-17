@@ -37,6 +37,11 @@ public class SortableBinaryField extends BinaryField {
   }
 
   @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
+  }
+
+  @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     if (field.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();

@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import static java.lang.System.nanoTime;
 
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -30,9 +29,10 @@ import org.apache.solr.request.SolrQueryRequest;
  * has {@code timeAllowed} set. Essentially only one timeAllowed can be specified for any thread
  * executing a query. This is to ensure that subqueries don't escape from the intended limit
  */
-public class TimeAllowedLimit implements QueryTimeout {
+public class TimeAllowedLimit implements QueryLimit {
 
   private final long timeoutAt;
+  private final long timingSince;
 
   /**
    * Create an object to represent a time limit for the current request.
@@ -50,9 +50,12 @@ public class TimeAllowedLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Check for limit with hasTimeLimit(req) before creating a TimeAllowedLimit");
     }
-    long timeAllowed = reqTimeAllowed - (long) req.getRequestTimer().getTime();
+    long timeAlreadySpent = (long) req.getRequestTimer().getTime();
+    long now = nanoTime();
+    long timeAllowed = reqTimeAllowed - timeAlreadySpent;
     long nanosAllowed = TimeUnit.NANOSECONDS.convert(timeAllowed, TimeUnit.MILLISECONDS);
-    timeoutAt = nanoTime() + nanosAllowed;
+    timeoutAt = now + nanosAllowed;
+    timingSince = now - timeAlreadySpent;
   }
 
   /** Return true if the current request has a parameter with a valid value of the limit. */
@@ -64,5 +67,10 @@ public class TimeAllowedLimit implements QueryTimeout {
   @Override
   public boolean shouldExit() {
     return timeoutAt - nanoTime() < 0L;
+  }
+
+  @Override
+  public Object currentValue() {
+    return nanoTime() - timingSince;
   }
 }

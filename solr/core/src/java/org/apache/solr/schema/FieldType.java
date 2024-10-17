@@ -178,7 +178,8 @@ public abstract class FieldType extends FieldProperties {
    * which is called by this method.
    */
   protected void setArgs(IndexSchema schema, Map<String, String> args) {
-    // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
+    // default to STORED, INDEXED, OMIT_TF_POSITIONS,MULTIVALUED, USE_DOCVALUES_AS_STORED
+    // and DOC_VALUES depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
     if (schemaVersion < 1.1f) properties |= MULTIVALUED;
@@ -187,8 +188,9 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
+    if (schemaVersion >= 1.7f && enableDocValuesByDefault()) properties |= DOC_VALUES;
 
-    properties |= UNINVERTIBLE;
+    if (schemaVersion < 1.7f) properties |= UNINVERTIBLE;
 
     this.args = Collections.unmodifiableMap(args);
     Map<String, String> initArgs = new HashMap<>(args);
@@ -1157,6 +1159,19 @@ public abstract class FieldType extends FieldProperties {
   protected void checkSupportsDocValues() {
     throw new SolrException(
         ErrorCode.SERVER_ERROR, "Field type " + this + " does not support doc values");
+  }
+
+  /**
+   * Returns whether this field type should enable docValues by default for schemaVersion &gt;= 1.7.
+   * This should not be enabled for fields that did not have docValues implemented by Solr 9.7, as
+   * users may have indexed documents without docValues (since they weren't supported). Flipping the
+   * default docValues values when they upgrade to a new version will break their index
+   * compatibility.
+   *
+   * <p>New field types can enable this without issue, as long as they support docValues.
+   */
+  protected boolean enableDocValuesByDefault() {
+    return false;
   }
 
   public static final String TYPE = "type";

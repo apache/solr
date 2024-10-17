@@ -16,7 +16,7 @@
  */
 
 /**
- * The {@link org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmExporter} is responsible for
+ * The {@link org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmFormatter} is responsible for
  * exporting solr.jvm registry metrics to Prometheus.
  */
 package org.apache.solr.metrics.prometheus.jvm;

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.core.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
 
 import com.codahale.metrics.Metric;
 import java.util.regex.Matcher;

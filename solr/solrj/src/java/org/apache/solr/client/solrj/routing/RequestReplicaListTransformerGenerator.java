@@ -181,7 +181,7 @@ public class RequestReplicaListTransformerGenerator {
         } while (iter.hasNext());
         boundaries[boundaryCount++] = idx;
 
-        // Finally inspect boundaries to apply base transformation, where necessary (separate phase
+        // Finally, inspect boundaries to apply base transformation, where necessary (separate phase
         // to avoid ConcurrentModificationException)
         int startIdx = 0;
         int endIdx;

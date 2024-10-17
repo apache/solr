@@ -40,20 +40,14 @@ public class ZkLsTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("path")
-            .argName("PATH")
-            .hasArg()
-            .required(true)
-            .desc("Path to list.")
-            .build(),
-        SolrCLI.OPTION_RECURSE,
+        SolrCLI.OPTION_RECURSE_DEPRECATED,
+        SolrCLI.OPTION_RECURSIVE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -62,24 +56,29 @@ public class ZkLsTool extends ToolBase {
   }
 
   @Override
+  public String getUsage() {
+    // very brittle.  Maybe add a getArgsUsage to append the "path"?
+    return "bin/solr zk ls [-r ] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>] path";
+  }
+
+  @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
+    String znode = cli.getArgs()[0];
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
-      String znode = cli.getOptionValue("path");
-      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+      boolean recursive = cli.hasOption("recursive") || cli.hasOption("recurse");
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode
               + " from ZooKeeper at "
               + zkHost
-              + " recurse: "
-              + recurse,
-          cli);
-      stdout.print(zkClient.listZnode(znode, recurse));
+              + " recursive: "
+              + recursive);
+      stdout.print(zkClient.listZnode(znode, recursive));
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
       throw (e);

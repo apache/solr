@@ -59,6 +59,7 @@ public class FunctionQParser extends QParser {
   public FunctionQParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
+    setFlags(FLAG_DEFAULT);
     setString(qstr);
   }
 
@@ -89,15 +90,12 @@ public class FunctionQParser extends QParser {
   }
 
   @Override
-  @SuppressWarnings("ErroneousBitwiseExpression")
   public Query parse() throws SyntaxError {
     ValueSource vs = null;
     List<ValueSource> lst = null;
 
     for (; ; ) {
-      // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
-      // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
-      ValueSource valsource = parseValueSource(FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER);
+      ValueSource valsource = parseValueSource(getFlags() & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
       if (!parseMultipleSources) {
         vs = valsource;
@@ -298,7 +296,7 @@ public class FunctionQParser extends QParser {
    * @return List&lt;ValueSource&gt;
    */
   public List<ValueSource> parseValueSourceList() throws SyntaxError {
-    return parseValueSourceList(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER);
+    return parseValueSourceList(getFlags() | FLAG_CONSUME_DELIMITER);
   }
 
   /**
@@ -318,7 +316,7 @@ public class FunctionQParser extends QParser {
   /** Parse an individual ValueSource. */
   public ValueSource parseValueSource() throws SyntaxError {
     /* consume the delimiter afterward for an external call to parseValueSource */
-    return parseValueSource(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER);
+    return parseValueSource(getFlags() | FLAG_CONSUME_DELIMITER);
   }
 
   /*
@@ -386,14 +384,11 @@ public class FunctionQParser extends QParser {
    *
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource
    */
-  @SuppressWarnings("ErroneousBitwiseExpression")
   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
-    // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
-    // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
     return parseValueSource(
         doConsumeDelimiter
-            ? (FLAG_DEFAULT | FLAG_CONSUME_DELIMITER)
-            : (FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER));
+            ? (getFlags() | FLAG_CONSUME_DELIMITER)
+            : (getFlags() & ~FLAG_CONSUME_DELIMITER));
   }
 
   protected ValueSource parseValueSource(int flags) throws SyntaxError {
@@ -430,7 +425,9 @@ public class FunctionQParser extends QParser {
       } else {
         QParser subParser = subQuery(val, "func");
         if (subParser instanceof FunctionQParser) {
-          ((FunctionQParser) subParser).setParseMultipleSources(true);
+          FunctionQParser subFunc = (FunctionQParser) subParser;
+          subFunc.setParseMultipleSources(true);
+          subFunc.setFlags(flags);
         }
         Query subQuery = subParser.getQuery();
         if (subQuery == null) {

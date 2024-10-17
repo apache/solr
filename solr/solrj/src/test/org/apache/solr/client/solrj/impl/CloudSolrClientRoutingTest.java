@@ -99,7 +99,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
       // at the mercy of org.apache.solr.servlet.HttpSolrCall.randomlyGetSolrCore, and if this
       // randomly selected replica is not the one the doc id lives in, the request is forwarded
       // from there.
-      // The decision whether or not the request is forwarded is made at
+      // The decision whether the request is forwarded is made at
       // org.apache.solr.handler.component.HttpShardHandler.canShortCircuit()
 
       boolean forwardedWithoutRoute =

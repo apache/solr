@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -69,7 +68,7 @@ public class ClientUtils {
    * @param solrRequest the {@link SolrRequest} to build the URL for
    * @param requestWriter a {@link RequestWriter} from the {@link SolrClient} that will be sending
    *     the request
-   * @param serverRootUrl the root URL of the Solr server being targeted. May by overridden {@link
+   * @param serverRootUrl the root URL of the Solr server being targeted. May be overridden {@link
    *     SolrRequest#getBasePath()}, if present.
    * @param collection the collection to send the request to. May be null if no collection is
    *     needed.
@@ -82,14 +81,12 @@ public class ClientUtils {
       String serverRootUrl,
       String collection)
       throws MalformedURLException {
+
+    // TODO remove getBasePath support here prior to closing SOLR-17256
     String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
 
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = serverRootUrl + "/____v2";
-      }
+    if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
+      basePath = addNormalV2ApiRoot(basePath);
     }
 
     if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
@@ -102,10 +99,18 @@ public class ClientUtils {
     return basePath + path;
   }
 
-  private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URI oldURI = URI.create(basePath);
-    String newPath = oldURI.getPath().replaceFirst("/solr", "/api");
-    return oldURI.resolve(newPath).toString();
+  private static String addNormalV2ApiRoot(String basePath) throws MalformedURLException {
+    final var oldURI = URI.create(basePath);
+    final var revisedPath = buildReplacementV2Path(oldURI.getPath());
+    return oldURI.resolve(revisedPath).toString();
+  }
+
+  private static String buildReplacementV2Path(String existingPath) {
+    if (existingPath.contains("/solr")) {
+      return existingPath.replaceFirst("/solr", "/api");
+    } else {
+      return existingPath + "/api";
+    }
   }
 
   // ------------------------------------------------------------------------
@@ -124,7 +129,7 @@ public class ClientUtils {
         if (v instanceof SolrInputDocument) {
           writeVal(writer, name, v, null);
         } else if (v instanceof Map) {
-          // currently only supports a single value
+          // currently, only supports a single value
           for (Entry<Object, Object> entry : ((Map<Object, Object>) v).entrySet()) {
             update = entry.getKey().toString();
             v = entry.getValue();
@@ -211,7 +216,7 @@ public class ClientUtils {
    * See: <a href="https://www.google.com/?gws_rd=ssl#q=lucene+query+parser+syntax">Lucene query
    * parser syntax</a> for more information on Escaping Special Characters
    */
-  // NOTE: its broken to link to any lucene-queryparser.jar docs, not in classpath!!!!!
+  // NOTE: It is a broken link to any lucene-queryparser.jar docs, not in classpath!!!!!
   public static String escapeQueryChars(String s) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < s.length(); i++) {
@@ -246,11 +251,11 @@ public class ClientUtils {
   }
 
   /**
-   * Returns the (literal) value encoded properly so it can be appended after a <code>name=</code>
+   * Returns the (literal) value encoded properly, so it can be appended after a <code>name=</code>
    * local-param key.
    *
    * <p>NOTE: This method assumes <code>$</code> is a literal character that must be quoted. (It
-   * does not assume strings starting <code>$</code> should be treated as param refrenes)
+   * does not assume strings starting <code>$</code> should be treated as param references)
    */
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
@@ -297,7 +302,7 @@ public class ClientUtils {
   }
 
   /**
-   * Determines whether any SolrClient "default" collection should applied to the specified request
+   * Determines whether any SolrClient "default" collection should apply to the specified request
    *
    * @param providedCollection a collection/core explicitly provided to the SolrClient (typically
    *     through {@link org.apache.solr.client.solrj.SolrClient#request(SolrRequest, String)}

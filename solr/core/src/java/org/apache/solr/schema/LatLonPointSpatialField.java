@@ -70,6 +70,11 @@ public class LatLonPointSpatialField
   }
 
   @Override
+  protected boolean enableDocValuesByDefault() {
+    return true;
+  }
+
+  @Override
   public void inform(IndexSchema schema) {
     this.schema = schema;
   }

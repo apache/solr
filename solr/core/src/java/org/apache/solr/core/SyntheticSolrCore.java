@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.rest.RestManager;
+import org.apache.solr.update.UpdateHandler;
 
 /**
  * A synthetic core that is created only in memory and not registered against Zookeeper.
@@ -34,7 +35,20 @@ import org.apache.solr.rest.RestManager;
  */
 public class SyntheticSolrCore extends SolrCore {
   public SyntheticSolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet configSet) {
-    super(coreContainer, cd, configSet);
+    this(coreContainer, cd, configSet, null, null, null, null, false);
+  }
+
+  public SyntheticSolrCore(
+      CoreContainer coreContainer,
+      CoreDescriptor coreDescriptor,
+      ConfigSet configSet,
+      String dataDir,
+      UpdateHandler updateHandler,
+      IndexDeletionPolicyWrapper delPolicy,
+      SolrCore prev,
+      boolean reload) {
+    super(
+        coreContainer, coreDescriptor, configSet, dataDir, updateHandler, delPolicy, prev, reload);
   }
 
   public static SyntheticSolrCore createAndRegisterCore(
@@ -71,5 +85,19 @@ public class SyntheticSolrCore extends SolrCore {
     // which synthetic core is not registered in ZK.
     // We do not expect RestManager ops on Coordinator Nodes
     return new RestManager();
+  }
+
+  @Override
+  protected SyntheticSolrCore cloneForReloadCore(
+      CoreDescriptor newCoreDescriptor, ConfigSet newCoreConfig, boolean cloneCurrentState) {
+    return new SyntheticSolrCore(
+        getCoreContainer(),
+        newCoreDescriptor,
+        newCoreConfig,
+        getDataDir(),
+        getUpdateHandler(),
+        getDeletionPolicy(),
+        cloneCurrentState ? this : null,
+        true);
   }
 }

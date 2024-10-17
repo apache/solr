@@ -49,7 +49,7 @@ public class CreateToolTest extends SolrCloudTestCase {
       "cloud-minimal",
       "-z",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
+      "--credentials",
       SecurityJson.USER_PASS,
       "-verbose"
     };

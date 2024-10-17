@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 
 /** Dropwizard metrics of name TLOG.* */
 public class SolrCoreTlogMetric extends SolrCoreMetric {
@@ -44,9 +44,9 @@ public class SolrCoreTlogMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusExporter exporter) {
+  public void toPrometheus(SolrPrometheusFormatter formatter) {
     if (dropwizardMetric instanceof Meter) {
-      exporter.exportMeter(CORE_TLOG_METRICS, (Meter) dropwizardMetric, getLabels());
+      formatter.exportMeter(CORE_TLOG_METRICS, (Meter) dropwizardMetric, getLabels());
     }
   }
 }

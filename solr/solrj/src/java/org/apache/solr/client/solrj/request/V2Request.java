@@ -112,6 +112,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   }
 
   @Override
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V2;
+  }
+
+  @Override
   protected V2Response createResponse(SolrClient client) {
     return new V2Response();
   }

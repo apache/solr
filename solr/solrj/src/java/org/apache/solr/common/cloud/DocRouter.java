@@ -237,7 +237,7 @@ public abstract class DocRouter {
 
   /**
    * This method is consulted to determine what slices should be queried for a request when an
-   * explicit shards parameter was not used. This method only accepts a single shard key (or null).
+   * explicit shards' parameter was not used. This method only accepts a single shard key (or null).
    * If you have a comma separated list of shard keys, call getSearchSlices
    */
   public abstract Collection<Slice> getSearchSlicesSingle(
@@ -245,7 +245,7 @@ public abstract class DocRouter {
 
   /**
    * This method is consulted to determine what search range (the part of the hash ring) should be
-   * queried for a request when an explicit shards parameter was not used. This method only accepts
+   * queried for a request when an explicit shards' parameter was not used. This method only accepts
    * a single shard key (or null).
    */
   public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
@@ -263,7 +263,7 @@ public abstract class DocRouter {
 
   /**
    * This method is consulted to determine what slices should be queried for a request when an
-   * explicit shards parameter was not used. This method accepts a multi-valued shardKeys parameter
+   * explicit shards' parameter was not used. This method accepts a multi-valued shardKeys parameter
    * (normally comma separated from the shard.keys request parameter) and aggregates the slices
    * returned by getSearchSlicesSingle for each shardKey.
    */
