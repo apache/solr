@@ -49,7 +49,6 @@ import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
@@ -367,16 +366,16 @@ public class DistribFileStore implements FileStore {
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
+    String getFrom = "";
     try {
       for (String node : nodes) {
         String baseUrl =
             coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-        String getFrom = "";
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
           // it's there in  the memory now. So , it must be served fast
-          getFrom += myNodeName;
+          getFrom = myNodeName;
         } else {
           if (i == FETCHFROM_SRC) {
             // This is just an optimization
@@ -390,7 +389,7 @@ public class DistribFileStore implements FileStore {
           // trying to avoid the thundering herd problem when there are a very large no:of nodes
           // others should try to fetch it from any node where it is available. By now,
           // almost FETCHFROM_SRC other nodes may have it
-          getFrom += "*";
+          getFrom = "*";
         }
         try {
           var solrClient = coreContainer.getDefaultHttpSolrClient();
@@ -520,12 +519,15 @@ public class DistribFileStore implements FileStore {
     for (String node : nodes) {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-      try (var solrClient =
-          new Http2SolrClient.Builder(baseUrl)
-              .withHttpClient(coreContainer.getDefaultHttpSolrClient())
-              .build()) {
+      try {
+        var solrClient = coreContainer.getDefaultHttpSolrClient();
         // invoke delete command on all nodes asynchronously
-        solrClient.requestAsync(solrRequest);
+        solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
+      } catch (SolrServerException | IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to delete " + path + " on node " + node,
+            e);
       }
     }
   }
