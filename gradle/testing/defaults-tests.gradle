@@ -153,7 +153,7 @@ allprojects {
       }
 
       // Disable HTML report generation. The reports are big and slow to generate.
-      reports.html.required = Boolean.parseBoolean(providers.gradleProperty("tests.html").get())
+      reports.html.required = Boolean.parseBoolean(providers.gradleProperty("tests.html").getOrElse("false"))
 
       // Set up logging.
       testLogging {
