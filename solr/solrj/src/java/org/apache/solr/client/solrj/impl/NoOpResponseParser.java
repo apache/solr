@@ -26,8 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Simply puts the entire response into an entry in a NamedList. This parser isn't parse response
- * into a QueryResponse.
+ * A special parser that puts the entire response into a string "response" field in the NamedList.
  */
 public class NoOpResponseParser extends ResponseParser {
 
