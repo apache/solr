@@ -90,7 +90,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public NodeStateProvider getNodeStateProvider() {
-    return new SolrClientNodeStateProvider(cloudSolrClient, cloudSolrClient.getHttpClient());
+    return new SolrClientNodeStateProvider(cloudSolrClient);
   }
 
   @Override

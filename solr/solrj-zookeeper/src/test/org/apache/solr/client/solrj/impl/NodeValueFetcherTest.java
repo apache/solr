@@ -75,8 +75,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
       // We should get same number than when we created the collection
       for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
         String node = runner.getNodeName();
-        RemoteCallCtx ctx =
-            new RemoteCallCtx(node, cloudHttp2SolrClient, cloudHttp2SolrClient.getHttpClient());
+        RemoteCallCtx ctx = new RemoteCallCtx(node, cloudHttp2SolrClient);
         NodeValueFetcher fetcher = new NodeValueFetcher();
 
         Set<String> requestedTags = Set.of("cores");
