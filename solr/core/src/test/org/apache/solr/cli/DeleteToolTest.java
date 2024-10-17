@@ -60,8 +60,6 @@ public class DeleteToolTest extends SolrCloudTestCase {
       "delete",
       "-c",
       "testDeleteCollectionWithBasicAuth",
-      "--delete-config",
-      "false",
       "-z",
       cluster.getZkClient().getZkServerAddress(),
       "--credentials",
