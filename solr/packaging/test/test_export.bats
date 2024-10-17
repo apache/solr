@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "Check export command" {
-  run solr start -c -e techproducts
+  run solr start -e techproducts
   run solr export --solr-url http://localhost:${SOLR_PORT} --name techproducts -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
 
   refute_output --partial 'Unrecognized option'
