@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.RemoteCallCtx;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -62,28 +64,31 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testGetTags() {
+  public void testGetTags() throws Exception {
+    try (var cloudHttp2SolrClient =
+        new CloudHttp2SolrClient.Builder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .build()) {
+      int totalCores = 0;
 
-    CloudLegacySolrClient solrClient = (CloudLegacySolrClient) cluster.getSolrClient();
-    int totalCores = 0;
+      // Sum all the cores of the collection by fetching tags of all nodes.
+      // We should get same number than when we created the collection
+      for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+        String node = runner.getNodeName();
+        RemoteCallCtx ctx = new RemoteCallCtx(node, cloudHttp2SolrClient);
+        NodeValueFetcher fetcher = new NodeValueFetcher();
 
-    // Sum all the cores of the collection by fetching tags of all nodes.
-    // We should get same number than when we created the collection
-    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      String node = runner.getNodeName();
-      RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
-      NodeValueFetcher fetcher = new NodeValueFetcher();
+        Set<String> requestedTags = Set.of("cores");
+        fetcher.getTags(requestedTags, ctx);
 
-      Set<String> requestedTags = Set.of("cores");
-      fetcher.getTags(requestedTags, ctx);
+        // make sure we only get the tag we asked
+        assertEquals(1, ctx.tags.size());
 
-      // make sure we only get the tag we asked
-      assertEquals(1, ctx.tags.size());
+        int coresOnNode = (Integer) ctx.tags.get("cores");
+        totalCores += coresOnNode;
+      }
 
-      int coresOnNode = (Integer) ctx.tags.get("cores");
-      totalCores += coresOnNode;
+      assertEquals(numShards * numReplicas, totalCores);
     }
-
-    assertEquals(numShards * numReplicas, totalCores);
   }
 }
