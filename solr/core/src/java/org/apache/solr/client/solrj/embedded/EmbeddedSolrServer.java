@@ -308,7 +308,7 @@ public class EmbeddedSolrServer extends SolrClient {
 
     if (responseParser instanceof InputStreamResponseParser) {
       // SPECIAL CASE
-      var namedList = new NamedList<>();
+      NamedList<Object> namedList = new NamedList<>();
       namedList.add("stream", byteBuffer.toInputStream());
       namedList.add("responseStatus", 200); // always by this point
       return namedList;

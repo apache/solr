@@ -197,7 +197,7 @@ public class SolrRequestParsers {
   private SolrQueryRequest buildRequestFrom(
       SolrCore core,
       SolrParams params,
-      Collection<ContentStream> streams,
+      Collection<ContentStream> streams, // might be added to but caller shouldn't depend on it
       RTimerTree requestTimer,
       final HttpServletRequest req,
       final Principal principal)
@@ -205,8 +205,8 @@ public class SolrRequestParsers {
     // ensure streams is non-null and mutable so we can easily add to it
     if (streams == null) {
       streams = new ArrayList<>();
-    } else {
-      streams = new ArrayList<>(streams); // clone
+    } else if (!(streams instanceof ArrayList)) {
+      streams = new ArrayList<>(streams);
     }
 
     // The content type will be applied to all streaming content
