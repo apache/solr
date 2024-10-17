@@ -10,7 +10,6 @@
     initparams, \
     requestdispatcher, \
     update-request-processors, \
-    script-update-processor, \
     codec-factory
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
