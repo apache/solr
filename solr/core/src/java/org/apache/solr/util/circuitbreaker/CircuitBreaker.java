@@ -144,4 +144,6 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
   public Set<SolrRequestType> getRequestTypes() {
     return requestTypes;
   }
+
+  public abstract CircuitBreaker setThreshold(double threshold);
 }
