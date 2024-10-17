@@ -316,7 +316,7 @@ public class PostTool extends ToolBase {
             "Must specify -c / --name parameter with --solr-url to post documents.");
       }
       String url =
-          SolrCLI.normalizeSolrUrl(cli) + "/" + cli.getOptionValue("name") + "/update";
+          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URI(url);
 
     } else if (cli.hasOption("solr-update-url")) {
