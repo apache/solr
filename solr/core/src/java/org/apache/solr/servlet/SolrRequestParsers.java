@@ -202,6 +202,13 @@ public class SolrRequestParsers {
       final HttpServletRequest req,
       final Principal principal)
       throws Exception {
+    // ensure streams is non-null and mutable so we can easily add to it
+    if (streams == null) {
+      streams = new ArrayList<>();
+    } else {
+      streams = new ArrayList<>(streams); // clone
+    }
+
     // The content type will be applied to all streaming content
     String contentType = params.get(CommonParams.STREAM_CONTENTTYPE);
 
@@ -293,7 +300,7 @@ public class SolrRequestParsers {
             return httpSolrCall;
           }
         };
-    if (streams != null && streams.size() > 0) {
+    if (!streams.isEmpty()) {
       q.setContentStreams(streams);
     }
     return q;
