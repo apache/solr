@@ -10,6 +10,8 @@ New Features
 ---------------------
 * SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
+* SOLR-17467: Solr CLI bin/solr start defaults to starting Solr in Cloud mode, use --user-managed switch for User Managed (aka Standalone) mode.  (Eric Pugh)
+
 Improvements
 ---------------------
 
@@ -111,6 +113,8 @@ New Features
   It will now be released as a fully supported Solr feature.
   This feature closes SIP-13: Cross Data Center Replication. (Mark Miller, Andrzej Bialecki, Jason Gerlowski, Houston Putman)
 
+* SOLR-17150: Implement `memAllowed` parameter to limit per-thread memory allocations during request processing. (Andrzej Bialecki, Gus Heck)
+
 Improvements
 ---------------------
 * SOLR-17158: Users using query limits (timeAllowed, cpuTimeAllowed) for whom partial results are uninteresting
@@ -136,6 +140,10 @@ Improvements
 * SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
   override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski,
   Sanjay Dutt, David Smiley)
+
+* SOLR-17414: When searching with multiThreaded=true, the internal tasks may now block instead of
+  enqueuing with a risk of rejection. Solr will use less resources under stress but to get the most
+  of your machine, you may want to increase the thread pool. (David Smiley)
 
 Optimizations
 ---------------------

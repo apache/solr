@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -DminStateByteLenForCompression=0 -c
+  solr start -DminStateByteLenForCompression=0
 }
 
 teardown_file() {
@@ -60,7 +60,7 @@ teardown() {
 
 @test "listing out files" {
   sleep 1
-  run solr zk ls / -z localhost:${ZK_PORT}
+  run solr zk ls / -z localhost:${ZK_PORT} --recursive
   assert_output --partial "aliases.json"
 }
 
