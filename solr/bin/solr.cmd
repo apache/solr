@@ -1015,12 +1015,6 @@ IF "%GC_TUNE%"=="" (
     -XX:+ExplicitGCInvokesConcurrent
 )
 
-REM Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
-if !JAVA_MAJOR_VERSION! GEQ 17  (
-  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
-  echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
-)
-
 REM Vector optimizations are only supported for Java 20 and 21 for now.
 REM This will need to change as Lucene is upgraded and newer Java versions are released
 if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
@@ -1519,11 +1513,11 @@ for %%a in (%*) do (
       if "!arg:~0,1!" equ "-" set "option=!arg!"
    ) else (
       set "option!option!=%%a"
-      if "!option!" equ "-s" set "SOLR_HOME=%%a"
-      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"        
       if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
-      if not "!option!" equ "-s" if not "!option!" equ "--solr-home" if not "!option!" equ "-d" if not "!option!" equ "--server-dir" (
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
+      if "!option!" equ "-s" set "SOLR_HOME=%%a"
+      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"      
+      if not "!option!" equ "-s" if not "!option!" equ "-d" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )
       set "option="
