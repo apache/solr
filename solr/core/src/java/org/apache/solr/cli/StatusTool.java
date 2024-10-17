@@ -22,7 +22,6 @@ import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +39,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -110,10 +110,7 @@ public class StatusTool extends ToolBase {
     }
 
     if (solrUrl != null) {
-      try {
-        new URL(solrUrl);
-      } catch (Exception e) {
-        // Added to catch use of -solrUrl option in which case the url would be "olrUrl"
+      if (!URLUtil.hasScheme(solrUrl)) {
         CLIO.err("Invalid URL provided: " + solrUrl);
         System.exit(1);
       }
