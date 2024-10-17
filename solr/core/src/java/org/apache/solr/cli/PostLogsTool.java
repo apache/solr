@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -65,10 +66,21 @@ public class PostLogsTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .longOpt("solr-collection-url")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --solr-url and -c / --name instead")
+                    .get())
             .hasArg()
             .argName("ADDRESS")
-            .required(true)
             .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
+            .build(),
+        Option.builder("c")
+            .longOpt("name")
+            .hasArg()
+            .argName("NAME")
+            .desc("Name of the collection.")
             .build(),
         Option.builder("rootdir")
             .longOpt("rootdir")
@@ -76,12 +88,26 @@ public class PostLogsTool extends ToolBase {
             .argName("DIRECTORY")
             .required(true)
             .desc("All files found at or below the root directory will be indexed.")
-            .build());
+            .build(),
+        SolrCLI.OPTION_SOLRURL);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
+    String url = null;
+    if (cli.hasOption("solr-url")) {
+      if (!cli.hasOption("name")) {
+        throw new IllegalArgumentException(
+            "Must specify -c / --name parameter with --solr-url to post documents.");
+      }
+      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
+
+    } else if (cli.hasOption("solr-collection-url")) {
+      url = cli.getOptionValue("solr-collection-url");
+    } else {
+      // Swap to required Option when --solr-collection-url removed.
+      throw new IllegalArgumentException("Must specify --solr-url.");
+    }
     String rootDir = cli.getOptionValue("rootdir");
     runCommand(url, rootDir);
   }

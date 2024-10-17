@@ -74,8 +74,10 @@ public class PostToolTest extends SolrCloudTestCase {
 
     String[] args = {
       "post",
-      "--solr-update-url",
-      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
+      "--solr-url",
+      cluster.getJettySolrRunner(0).getBaseUrl().toString(),
+      "--name",
+      collection,
       jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
