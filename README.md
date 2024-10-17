@@ -48,6 +48,12 @@ Learn more about [Solr in Docker](https://solr.apache.org/guide/solr/latest/depl
 Solr has official support for running on Kubernetes, in the official Docker image.
 Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
 
+### Running Solr on Elestio
+
+You can deploy Solr on Elestio using one-click deployment. Elestio handles version updates, maintenance, securtiy, backups, etc. Additionally, Elestio supports Solr by providing revenue share so go ahead and click below to deploy and start using.
+
+[![Deploy on Elestio](https://elest.io/images/logos/deploy-to-elestio-btn.png)](https://elest.io/open-source/solr)
+
 ## How to Use
 
 Solr includes a few examples to help you get started. To run a specific example, enter:
