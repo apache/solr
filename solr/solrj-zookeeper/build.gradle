@@ -34,8 +34,6 @@ dependencies {
 
     // declare dependencies we use even though already declared by solrj-core
     implementation 'org.slf4j:slf4j-api'
-    implementation 'org.apache.httpcomponents:httpclient'
-    implementation 'org.apache.httpcomponents:httpcore'
 
     api('org.apache.zookeeper:zookeeper', {
         exclude group: "org.apache.yetus", module: "audience-annotations"

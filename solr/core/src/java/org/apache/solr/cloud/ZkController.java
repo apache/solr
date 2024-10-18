@@ -54,11 +54,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -199,7 +198,8 @@ public class ZkController implements Closeable {
   private final SolrZkClient zkClient;
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
-  private CloudLegacySolrClient cloudSolrClient;
+
+  private CloudHttp2SolrClient cloudSolrClient;
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -866,12 +866,11 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudLegacySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
-              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+          new CloudHttp2SolrClient.Builder(
+                  Collections.singletonList(getZkServerAddress()), Optional.empty())
+              .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
-      cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
+      cloudManager = new SolrClientCloudManager(cc.getObjectCache(), cloudSolrClient);
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;
