@@ -287,6 +287,10 @@ Not all spatial fields types are supported, and you'll get an error if you use a
 
 == Python Response Writer
 
+*Deprecation*
+
+The Python Response Writer is marked for deprecation and will be removed in 10.0.
+
 Solr has an optional Python response format that extends its JSON output in the following ways to allow the response to be safely evaluated by the python interpreter:
 
 * true and false changed to True and False
@@ -297,6 +301,10 @@ Solr has an optional Python response format that extends its JSON output in the 
 
 [[php-writer]]
 == PHP Response Writer and PHP Serialized Response Writer
+
+*Deprecation*
+
+The PHP Response Writer is marked for deprecation and will be removed in 10.0.
 
 Solr has a PHP response format that outputs an array (as PHP code) which can be evaluated.
 Setting the `wt` parameter to `php` invokes the PHP Response Writer.
@@ -323,6 +331,10 @@ print_r($result);
 ----
 
 == Ruby Response Writer
+
+*Deprecation*
+
+The Ruby Response Writer is marked for deprecation and will be removed in 10.0.
 
 Solr has an optional Ruby response format that extends its JSON output in the following ways to allow the response to be safely evaluated by Ruby's interpreter:
 

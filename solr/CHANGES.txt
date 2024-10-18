@@ -99,6 +99,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17359: Move Zk Arg parsing into Java Code from bin/solr scripts.   (Eric Pugh, Rahul Goswami)
 
+* SOLR-17494: Document deprecation status of language specific writer types (wt=python,ruby,php,phps).  (Eric Pugh)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------

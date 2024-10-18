@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Writer;
 import org.apache.solr.request.SolrQueryRequest;
 
+@Deprecated(since = "9.8")
 public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8 = "text/x-ruby;charset=UTF-8";
 
