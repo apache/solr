@@ -71,6 +71,10 @@ Due to changes in Lucene 9, that isn't possible any more.
 === Configuration
 In solrconfig.xml, the `numVersionBuckets` and `versionBucketLockTimeoutMs` settings are now obsolete and ignored; a warning will be logged if specified.
 
+=== Deprecations
+* The language specific Response Writers have been deprecated in favour of more widely used formats like JSON.
+The writer types invoked as part of the `wt` parameter that will be removed in 10 include `python`, `ruby`, `php`, and `phps`.  
+
 == Solr 9.7
 === SchemaVersion upgraded to 1.7
 The default schemaVersion is now 1.7.
