@@ -138,46 +138,34 @@ public class StatusTool extends ToolBase {
         System.exit(1);
       } else {
         solrUrl = proc.get().getLocalUrl();
+        if (shortFormat) {
+          CLIO.out(solrUrl);
+        } else {
+          printProcessStatus(proc.get(), cli);
+        }
+        System.exit(0);
       }
     }
 
-    if (solrUrl == null) {
-      if (!shortFormat) {
-        CLIO.out("Looking for running processes...");
-      }
-      Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
-      if (!shortFormat) {
-        CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", procs.size()));
-      }
-      if (!procs.isEmpty()) {
-        for (SolrProcess process : procs) {
-          if (shortFormat) {
-            CLIO.out(process.getLocalUrl());
-          } else {
-            printProcessStatus(process, cli);
-          }
-        }
-      } else {
-        if (!shortFormat) {
-          CLIO.out("\nNo Solr nodes are running.\n");
+    // No URL or port, scan for running processes
+    if (!shortFormat) {
+      CLIO.out("Looking for running processes...");
+    }
+    Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
+    if (!shortFormat) {
+      CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", procs.size()));
+    }
+    if (!procs.isEmpty()) {
+      for (SolrProcess process : procs) {
+        if (shortFormat) {
+          CLIO.out(process.getLocalUrl());
+        } else {
+          printProcessStatus(process, cli);
         }
       }
     } else {
-      // We have a solrUrl
-      int urlPort = portFromUrl(solrUrl);
-      if (shortFormat) {
-        if (processMgr.isRunningWithPort(urlPort)) {
-          CLIO.out(solrUrl);
-        }
-      } else {
-        Optional<SolrProcess> process = processMgr.processForPort(urlPort);
-
-        if (process.isPresent()) {
-          CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", 1));
-          printProcessStatus(process.get(), cli);
-        } else {
-          CLIO.out("\nNo Solr running on port " + urlPort + ".");
-        }
+      if (!shortFormat) {
+        CLIO.out("\nNo Solr nodes are running.\n");
       }
     }
   }
@@ -262,7 +250,6 @@ public class StatusTool extends ToolBase {
       /* ignore */
     }
     if (statusJson != null) {
-      CLIO.out("Found 1 Solr nodes:");
       CLIO.out(statusJson);
     } else {
       CLIO.err("Solr at " + solrUrl + " not online.");
