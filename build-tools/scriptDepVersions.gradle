@@ -21,8 +21,8 @@
 
 ext {
   scriptDepVersions = [
-      "min-solrj-java-version" : "17",
       "min-java-version": "21",
+      "min-solrj-java-version" : "17",
       "apache-rat": "0.15",
       "commons-codec": "1.16.0",
       "ecj": "3.36.0",
