@@ -34,8 +34,8 @@ plugins {
 apply from: file('build-tools/scriptDepVersions.gradle')
 
 // Declare default Java versions for the entire project and for SolrJ separately
-rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(scriptDepVersions['min-java-version'])
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(scriptDepVersions['min-java-version'])
+rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(scriptDepVersions['min-solrj-java-version'])
 
 apply from: file('gradle/globals.gradle')
 
