@@ -34,7 +34,11 @@
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
     <updateLog class="${solr.ulog:solr.UpdateLog}"></updateLog>
-  </updateHandler>  
+  </updateHandler>
+  
+  <searchComponent name="ubi" class="org.apache.solr.handler.component.UBIComponent" >
+    <str name="ubiQueryStreamProcessingExpression">ubi-query-pipeline.expr</str>
+  </searchComponent>
   
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
@@ -42,6 +46,9 @@
       <str name="indent">true</str>
       <str name="df">text</str>
     </lst>
+    <arr name="last-components">
+      <str>ubi</str>
+    </arr>
   </requestHandler>
 
   <updateRequestProcessorChain name="add-unknown-fields-to-the-schema" default="true">
