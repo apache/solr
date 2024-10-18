@@ -32,7 +32,6 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -355,16 +354,16 @@ public class AssertTool extends ToolBase {
       ret += assertSolrNotRunning(cli.getOptionValue("not-started"));
     }
     if (cli.hasOption("c")) {
-      ret += assertSolrRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("c"), false));
+      ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
     }
     if (cli.hasOption("cloud")) {
-      ret += assertSolrRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("cloud"), false));
+      ret += assertSolrRunningInCloudMode(cli.getOptionValue("cloud"));
     }
     if (cli.hasOption("C")) {
-      ret += assertSolrNotRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("C"), false));
+      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
     }
     if (cli.hasOption("not-cloud")) {
-      ret += assertSolrNotRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("not-cloud"), false));
+      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("not-cloud"));
     }
     return ret;
   }
@@ -531,7 +530,7 @@ public class AssertTool extends ToolBase {
   }
 
   private static boolean runningSolrIsCloud(String url) throws Exception {
-    try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
+    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
       final SolrRequest<CollectionAdminResponse> request =
           new CollectionAdminRequest.ClusterStatus();
       final CollectionAdminResponse response = request.process(client);
