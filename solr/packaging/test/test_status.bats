@@ -33,7 +33,7 @@ teardown() {
   assert_output --partial "No Solr nodes are running."
   solr start
   run solr status
-  assert_output --partial "Found 1 Solr nodes:"
+  assert_output --partial "running on port ${SOLR_PORT}"
   solr stop
   run solr status
   assert_output --partial "No Solr nodes are running."

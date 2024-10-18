@@ -148,13 +148,7 @@ public class StatusTool extends ToolBase {
     }
 
     // No URL or port, scan for running processes
-    if (!shortFormat) {
-      CLIO.out("Looking for running processes...");
-    }
     Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
-    if (!shortFormat) {
-      CLIO.out(String.format(Locale.ROOT, "\nFound %s Solr nodes: ", procs.size()));
-    }
     if (!procs.isEmpty()) {
       for (SolrProcess process : procs) {
         if (shortFormat) {
