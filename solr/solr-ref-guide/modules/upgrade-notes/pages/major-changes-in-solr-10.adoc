@@ -26,6 +26,10 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 // TODO add similar text that previous releases have at this spot.
 
+== Required Java Version Changes
+
+Minimum Java version for Solr 10.x is Java 21.
+
 === Solr CLI and Scripts
 
 The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
@@ -37,6 +41,8 @@ Users are urged to review all use of the `bin/solr` command, such as in scripts 
 
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.
+
+* Minimum Java version for Solrj 10.x is Java 17.
 
 === Service installer
 
