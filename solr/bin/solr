@@ -51,7 +51,7 @@ verbose=false
 THIS_OS=$(uname -s)
 
 # What version of Java is required to run this version of Solr.
-JAVA_VER_REQ=11
+JAVA_VER_REQ=21
 
 stop_all=false
 
@@ -1370,18 +1370,9 @@ function start_solr() {
     exit 1
   fi
 
-  # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
-  if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
-    SCRIPT_SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
-    echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
-  fi
-
   # Vector optimizations are only supported for Java 20 and 21 for now.
   # This will need to change as Lucene is upgraded and newer Java versions are released
-  if [[ "$JAVA_VER_NUM" -ge "20" ]] && [[ "$JAVA_VER_NUM" -le "21" ]] ; then
-    SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
-    echo "Java $JAVA_VER_NUM detected. Incubating Panama Vector APIs have been enabled"
-  fi
+  SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.log.dir="$SOLR_LOGS_DIR" \
