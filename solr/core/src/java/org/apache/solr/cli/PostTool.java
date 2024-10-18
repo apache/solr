@@ -172,6 +172,12 @@ public class PostTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .longOpt("solr-update-url")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --solr-url and -c / --name instead")
+                    .get())
             .hasArg()
             .argName("UPDATEURL")
             .desc("Solr Update URL, the full url to the update handler, including the /update.")
@@ -180,12 +186,10 @@ public class PostTool extends ToolBase {
             .longOpt("name")
             .hasArg()
             .argName("NAME")
-            .required(false)
             .desc("Name of the collection.")
             .build(),
         Option.builder()
             .longOpt("skip-commit")
-            .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
         Option.builder()
@@ -196,19 +200,16 @@ public class PostTool extends ToolBase {
                     .setSince("9.7")
                     .setDescription("Use --skip-commit instead")
                     .get())
-            .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
         Option.builder("o")
             .longOpt("optimize")
-            .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
         Option.builder()
             .longOpt("mode")
             .hasArg()
             .argName("mode")
-            .required(false)
             .desc(
                 "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
             .build(),
@@ -300,7 +301,8 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc(
                 "Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
-            .build());
+            .build(),
+        SolrCLI.OPTION_SOLRURL);
   }
 
   @Override
@@ -308,8 +310,16 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
+    if (cli.hasOption("solr-url")) {
+      if (!cli.hasOption("name")) {
+        throw new IllegalArgumentException(
+            "Must specify -c / --name parameter with --solr-url to post documents.");
+      }
+      String url =
+          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
+      solrUpdateUrl = new URI(url);
 
-    if (cli.hasOption("solr-update-url")) {
+    } else if (cli.hasOption("solr-update-url")) {
       String url = cli.getOptionValue("solr-update-url");
       solrUpdateUrl = new URI(url);
     } else if (cli.hasOption("name")) {

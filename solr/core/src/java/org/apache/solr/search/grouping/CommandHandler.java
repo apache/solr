@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.grouping;
 
+import static org.apache.solr.response.SolrQueryResponse.partialResultsStatus;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -34,6 +36,8 @@ import org.apache.lucene.search.grouping.AllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.TermGroupSelector;
 import org.apache.lucene.search.grouping.ValueSourceGroupSelector;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
@@ -122,7 +126,6 @@ public class CommandHandler {
   private final boolean needDocSet;
   private final boolean truncateGroups;
   private final boolean includeHitCount;
-  private boolean partialResults = false;
   private int totalHitCount;
 
   private DocSet docSet;
@@ -225,7 +228,15 @@ public class CommandHandler {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }
-    queryResult.setPartialResults(partialResults);
+    if (queryResult.isPartialResults()) {
+      queryResult.setPartialResults(
+          partialResultsStatus(
+              SolrRequestInfo.getRequest()
+                  .map(
+                      solrQueryRequest ->
+                          SolrQueryRequest.disallowPartialResults(solrQueryRequest.getParams()))
+                  .orElse(false)));
+    }
     return transformer.transform(commands);
   }
 
@@ -257,7 +268,6 @@ public class CommandHandler {
       searcher.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException
         | ExitableDirectoryReader.ExitingReaderException x) {
-      partialResults = true;
       log.warn("Query: {}; ", query, x);
     }
 

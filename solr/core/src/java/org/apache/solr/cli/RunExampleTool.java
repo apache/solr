@@ -328,14 +328,15 @@ public class RunExampleTool extends ToolBase {
       }
 
       if (exampledocsDir.isDirectory()) {
-        String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing tech product example docs from " + exampledocsDir.getAbsolutePath());
 
         String[] args =
             new String[] {
               "post",
-              "--solr-update-url",
-              updateUrl,
+              "--solr-url",
+              solrUrl,
+              "--name",
+              collectionName,
               "--type",
               "application/xml",
               exampledocsDir.getAbsolutePath() + "/*.xml"
@@ -410,13 +411,14 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n");
 
         File filmsJsonFile = new File(exampleDir, "films/films.json");
-        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
         String[] args =
             new String[] {
               "post",
-              "--solr-update-url",
-              updateUrl,
+              "--solr-url",
+              solrUrl,
+              "--name",
+              collectionName,
               "--type",
               "application/json",
               filmsJsonFile.getAbsolutePath()
