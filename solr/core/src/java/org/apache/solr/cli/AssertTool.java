@@ -355,16 +355,16 @@ public class AssertTool extends ToolBase {
       ret += assertSolrNotRunning(cli.getOptionValue("not-started"));
     }
     if (cli.hasOption("c")) {
-      ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
+      ret += assertSolrRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("c"), false));
     }
     if (cli.hasOption("cloud")) {
-      ret += assertSolrRunningInCloudMode(cli.getOptionValue("cloud"));
+      ret += assertSolrRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("cloud"), false));
     }
     if (cli.hasOption("C")) {
-      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
+      ret += assertSolrNotRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("C"), false));
     }
     if (cli.hasOption("not-cloud")) {
-      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("not-cloud"));
+      ret += assertSolrNotRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("not-cloud"), false));
     }
     return ret;
   }
