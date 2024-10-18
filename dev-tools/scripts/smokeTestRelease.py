@@ -774,8 +774,6 @@ def testSolrExample(binaryDistPath, javaPath):
       raise RuntimeError('Failed to run the techproducts example, check log for previous errors.')
 
     os.chdir('example')
-    print('      test utf8...')
-    run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
     if s.find('"numFound":3,') == -1:

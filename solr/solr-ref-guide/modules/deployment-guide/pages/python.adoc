@@ -16,45 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr includes an output format specifically for xref:query-guide:response-writers.adoc#python-response-writer[Python Response Writer], but the xref:query-guide:response-writers.adoc#json-response-writer[JSON Response Writer] is a little more robust.
+== Python
 
-== Simple Python
-
-Making a query is a simple matter.
-First, tell Python you will need to make HTTP connections.
-
-[source,python]
-----
-from urllib2 import *
-----
-
-Now open a connection to the server and get a response.
-The `wt` query parameter tells Solr to return results in a format that Python can understand.
-
-[source,python]
-----
-connection = urlopen('http://localhost:8983/solr/collection_name/select?q=cheese&wt=python')
-response = eval(connection.read())
-----
-
-Now interpreting the response is just a matter of pulling out the information that you need.
-
-[source,python]
-----
-print response['response']['numFound'], "documents found."
-
-# Print the name of each document.
-
-for document in response['response']['docs']:
-  print "  Name =", document['name']
-----
-
-== Python with JSON
-
-JSON is a more robust response format, and Python has support for it in its standard library since version 2.6.
-
-Making a query is nearly the same as before.
-However, notice that the `wt` query parameter is now `json` (which is also the default if no `wt` parameter is specified), and the response is now digested by `json.load()`.
+JSON is the preferred interchange format for Python users, and Python has support for it in its standard library since version 2.6.
 
 [source,python]
 ----
@@ -69,3 +33,5 @@ print response['response']['numFound'], "documents found."
 for document in response['response']['docs']:
   print "  Name =", document['name']
 ----
+
+You can even skip the `wt=json` as it's the default writer type.
