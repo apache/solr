@@ -55,14 +55,8 @@
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
-#-XX:+UseConcMarkSweepGC \
-#-XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 \
-#-XX:+CMSScavengeBeforeRemark \
+#-XX:ParallelGCThreads=4 \
 #-XX:PretenureSizeThreshold=64m \
-#-XX:+UseCMSInitiatingOccupancyOnly \
-#-XX:CMSInitiatingOccupancyFraction=50 \
-#-XX:CMSMaxAbortablePrecleanTime=6000 \
-#-XX:+CMSParallelRemarkEnabled \
 #-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
