@@ -71,7 +71,7 @@ delete_all_collections() {
   local collection_list="$(solr zk ls /collections -z localhost:${ZK_PORT})"
   for collection in $collection_list; do
     if [[ -n $collection ]]; then
-      solr delete -c $collection >/dev/null 2>&1
+      solr delete -c $collection --delete-config >/dev/null 2>&1
     fi
   done
 }
