@@ -373,7 +373,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
       // in another thread on another 'recovery' executor.
       //
       // avoid deadlock: we can't use the recovery executor here!
-      cc.getUpdateShardHandler().getUpdateExecutor().submit(recoveryTask);
+      cc.getUpdateShardHandler().getUpdateExecutor().execute(recoveryTask);
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
     }

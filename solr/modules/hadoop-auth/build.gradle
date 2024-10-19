@@ -99,6 +99,8 @@ dependencies {
     exclude group:'org.apache.kerby', module:'kerby-xdr'
     exclude group:'org.apache.kerby', module:'token-provider'
     exclude group:'org.slf4j', module:'slf4j-reload4j'
+    exclude group:'org.jline', module:'jline'
+    exclude group:'com.jcraft', module:'jsch'
   })
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this

@@ -45,6 +45,7 @@ public class SnapshotCreateTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -59,8 +60,7 @@ public class SnapshotCreateTool extends ToolBase {
             .required(true)
             .desc("Name of the snapshot to produce")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
