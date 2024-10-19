@@ -18,38 +18,170 @@
 
 This section embodies the Solr community's thoughts on best practices for deploying Solr depending on your needs.
 
-Soemthing about the various directions you can sacle...  David Smiley had some good words.  
+NOTE: Soemthing about the various directions you can sacle...  David Smiley had some good words.  
 Query load.  Index Load.  Number of Collections.   Densitiy of Data (Vectors).
 
+== Solr from smallest to largest.
 
-Then, a section about what to thikn about.
-
-=== Solr from smallest to largest.
-
-When we start up Solr on our computer, we're already starting Solr with the underpinnings required to let Solr scale in a clustered fashion, the coordination library ZooKeeper.
+When we start up Solr on our computer, we're already starting Solr with the underpinnings required to let Solr scale in a smooth fashion, the coordination library ZooKeeper.
 ZooKeeper is the unifying technology that supports maintaining state from a single node up to many 1000's of nodes.
 
-If you only need a single Solr node, then it's perfectly reasonable to start Solr with `bin/solr start`.   You will have a single Solr node running in SolrCloud mode, with all the nice APIs and features that SolrCloud mode provides.
+=== Simplest Setup
 
-Yes, if you Solr goes down, you won't have any diaster recovery or failure, but that is okay.
-
-<drawing of Solr Node>
-
-==== Introducing Fail Over
+If you only need a single Solr node, then it's perfectly reasonable to start Solr with `bin/solr start`.   You will have a single Solr node running in SolrCloud mode, with all the lovely APIs and features that SolrCloud provides.
 
 [graphviz]
 ....
-digraph foo {
+digraph single_node {
   node [style=rounded]
-  node1 [shape=box]
-  node2 [fillcolor=yellow, style="rounded,filled", shape=diamond]
-  node3 [shape=record, label="{ a | b | c }"]
+  node1 [shape=box, fillcolor=yellow]
+  
+  node1
+}
+....
 
-  node1 -> node2 -> node3
+Use this approach when:
+
+* You have minimal load
+* You can restart Solr and reindex your data quickly
+* You are just playing around
+* You aren't worried about HA or Failover
+* You want the simplest deployment approach.
+
+
+=== Introducing Fail Over
+
+The next most common setup after a single node is having two seperate nodes running on seperate machines, with one as the xref:cluster-types.adoc#leaders[Leader] and the other as the Follower.  
+
+There are two approaches that you can take, one that uses loosely coupled Solr nodes with embedded ZooKeepers, and one with a shared ZooKeeper.  Both of these work just fine if you only need a single xref:cluster-types.adoc#shards[Shard] to store your data.  If you need multiple Shards for your data volume, skip down below.
+
+==== Loosely coupled Solr Nodes
+
+The first is using replication to copy complete Lucene segments over from the Leader to the Followers.
+This allows you to run two completely independent Solr nodes and copy the data over.
+See the xref:user-managed-index-replication.adoc[User Managed Index Replication] page to learn more about setting this up.
+
+NOTE: Need to update user-managed-index-replication.adoc to talk about doing this when embedded zk is set up.  
+
+NOTE: Reference https://github.com/apache/solr/pull/1875
+
+[graphviz]
+....
+digraph leader_follower_replication {
+  node [style=rounded]
+  leader [shape=box]
+  follower [fillcolor=yellow, style="rounded,filled"]
+  
+  leader -> follower
+}
+....
+
+You can get even fancier with this, by introducing the concept of Repeater nodes.
+
+[graphviz]
+....
+digraph leader_repeater_follower_replication {
+  node [style=rounded]
+  leader [shape=box]
+  repeater [fillcolor=yellow, style="rounded,filled"]
+  follower [shape=box]
+  
+  leader -> repeater -> follower
+}
+....
+
+And even multiple followers:
+
+[graphviz]
+....
+digraph leader_repeater_followers_replication {
+  node [style=rounded]
+  leader [shape=box]
+  repeater [shape=box]
+  follower1 [fillcolor=yellow, style="rounded,filled"]
+  follower2 [fillcolor=yellow, style="rounded,filled"]
+  follower3 [fillcolor=yellow, style="rounded,filled"]
+  
+  leader -> repeater
+  repeater -> follower1
+  repeater -> follower2
+  repeater -> follower3
+}
+....
+
+Use these approaches when:
+
+* You want each Solr node to be completely independent in state.  No shared ZooKeeper for managing interactions.
+* You don't need any kind of realtime/near real time updates.
+* You potentially have a slow network boundary between your nodes, and want something robust between them.
+* All your updates can go to the leader node.
+
+Some con's to this approach are:
+
+* This is pull based, so the segments are pulled by the bottom node from each node above them, which introduces latency and potential for slightly differnet views of the data in the Leader and the various Followers.
+* You need to set up via various API calls all the interactions between the various nodes. 
+
+==== Embedded ZooKeeper Ensemble Setup
+
+NOTE: This needs Jason's https://github.com/apache/solr/pull/2391 to get to done done!
+
+The second approach you can take is to use a simple ZooKeeper xref:solr-glossary.adoc#ensemble[Ensemble] setup.   You can start a pair of Solr's and have their embedded ZooKeeper join each other to form an Ensemble.   And yes, I hear you when you say "this isn't a odd number and ZK quorums should be an odd number to avoid split brain etc".   
+
+NOTE: What is the difference between fail over and high availablity?  
+
+[graphviz]
+....
+graph simple_embedded_zk_ensemble {
+  node [style=rounded]
+  layout=neato
+  node1 [shape=box]
+  node2 [shape=box]
+  
+  node1 -- node2
+  node2 -- node1
 }
 ....
 
 
-=== What about Embedding Solr in my Java Application?
+Use this approach when:
+
+* You have only two Solr nodes and they are close to each other in network terms.
+* This appraoch is for when you want fail over, but you aren't worried about high availablity.  You have a load balancer in front of the two Solr nodes and it notices one goes away and balances traffic to the other one for querying. 
+* You will deal with the fall out to indexing if one of the nodes goes away.
+
+You can then scale this up to multiple Solr's:
+
+[graphviz]
+....
+graph simple_embedded_zk_ensemble {
+  node [style=rounded]
+  layout=neato
+  node1 [shape=box]
+  node2 [shape=box]
+  node3 [shape=box]
+  node4 [shape=box]
+  node5 [shape=box]
+  
+  node1 -- node2
+  node2 -- node3
+  node3 -- node4
+  node4 -- node5
+  node5 -- node1
+}
+....
+
+Use these approaches when:
+
+* You want to be able to split your logical Collection across multiple Shards.  You want to be able to distribute Replicas around the cluster.
+* You don't want to go through the effort of deploying a seperate ZK ensemble independently.  And honestly, you don't need to either.
+
+
+Some con's to this approach are:
+
+* Having five ZK's all updating each other is fine, but it starts to break down if you went to 9 or 11 ZooKeeper forming the Quorum.
+* 
+
+
+== What about Embedding Solr in my Java Application?
 
 Yes, there is embedded Solr.  YMMV.
