@@ -3,7 +3,7 @@
 == Introduction
 
 The new UI that is introduced is a standalone frontend client that makes use of Solr's API.
-It is written in Kotlin and uses Compose Multiplatform as UI framework.
+It is written in Kotlin and uses Compose Multiplatform as the UI framework.
 
 == Overview
 

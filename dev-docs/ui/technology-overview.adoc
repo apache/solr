@@ -5,7 +5,7 @@ This document lists information about the technologies used in the UI module.
 
 == Kotlin
 
-Kotlin is a modern, statically-typed programming language that runs on the Java Virtual
+Kotlin is a modern, statically typed programming language that runs on the Java Virtual
 Machine (JVM) and can also be compiled to JavaScript or native code. It is designed to be
 fully interoperable with Java, making it an excellent choice for UI and
 server-side development.
@@ -46,7 +46,7 @@ integration yet.
 
 === Material 3
 
-Material 3 (also known as Material You) is the latest version of Google's Material Design system.
+Material 3, also known as Material You, is the latest version of Google's Material Design system.
 It offers new components, dynamic theming, and updated guidelines to create a more personalized
 and adaptive user experience.
 
@@ -65,7 +65,7 @@ You can find out more and get started via the https://arkivanov.github.io/Decomp
 === MVIKotlin
 
 MVIKotlin is a library for implementing the Model-View-Intent (MVI) architecture pattern in
-Kotlin applications. It is particularly useful for managing complex state and side-effects in a
+Kotlin applications. It is particularly useful for managing complex state and side effects in a
 predictable manner. In combination with Decompose it provides a great foundation and
 unified structure for the UI components.
 
@@ -80,4 +80,4 @@ lifecycles, and other common tasks in a type-safe and idiomatic way.
 Similar to MVIKotlin, it adds the foundation and structure of the UI module and plays an
 essential part in Decompose.
 
-Fore more information you can have a look at https://github.com/arkivanov/Essenty[Github - Essenty].
+For more information, you can have a look at https://github.com/arkivanov/Essenty[GitHub - Essenty].

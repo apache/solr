@@ -5,7 +5,7 @@
 
 The following list contains a possible approach for implementing a new UI component:
 
-1. Create new design or start with an existing design, see for example Figma
+1. Create a new design or start with an existing design, see for example Figma
 2. Validate the use case and analyze the components that may be used for the implementation
 3. Create Composables that represent the UI component(s) and use placeholders for data population
 4. Create a component interface and implementation with the UI state and UI component interactions
@@ -17,7 +17,7 @@ The following list contains a possible approach for implementing a new UI compon
 10. If not already done, extract resources like texts to allow internationalization and localization
 
 It is recommended to take a look at existing components, so that you get a better understanding
-on how things are implemented, what they have in common, and how each technology is utilized.
+of how things are implemented, what they have in common, and how each technology is utilized.
 
 == Component's Logic
 
@@ -37,9 +37,11 @@ The state stores manage the state of the application, but independent of the sta
 represented in the UI. Instances are created by store providers that hold the logic of the
 store.
 
-Store providers consist of an executor implementation that consumes actions and intents and
-creates messages and labels, a reducer that updates the store state with the messages produced
-by the executor, and a function for retrieving an instance of the store.
+Store providers consist of three elements:
+
+- an executor implementation that consumes actions and intents and creates messages and labels
+- a reducer that updates the store state with the messages produced by the executor
+- a function for retrieving an instance of the store
 
 The store provider does also define the interface for the client that has to be provided in
 order for the executor to make API calls and interact with the Solr backend.
@@ -57,8 +59,8 @@ so the structure and configurations there may be mapped almost one-by-one in Com
 
 === Styling
 
-The styling in Compose is done via `Modifier`s. Each composable should normally accept a modifier
-as parameter, so that the user can customize specific visual parameters of the composable like
+The styling in Compose is done via ``Modifier``s. Each composable should normally accept a modifier
+as a parameter, so that the user can customize specific visual parameters of the composable like
 width, height and alignment in the parent's composable.
 
 Since we are using Material 3, you do not have to care much about colors, typography and shapes.
@@ -69,9 +71,10 @@ that are provided by the theme.
 
 Compose comes with many accessibility features that can be used to improve the user experience.
 
-The simplest form of accessibility in UI is probably the responsiveness of the UI. this is
-realized with `WindowSizeClass`. Some compsables may use a wrapper (usually suffixed with `Content`)
-that checks the window size and loads different UI based on the dimensions of the current window.
+The simplest form of accessibility in a UI is probably the responsiveness of the UI. This is
+realized with `WindowSizeClass`. Some composables may use a wrapper (usually suffixed with
+`Content`) that checks the window size and loads different UI based on the dimensions of the
+current window.
 
 Another accessibility feature is the resource loading based on the system's locale or the user's
 preference. This allows the UI to be displayed in the user's native language. For that, you have
@@ -82,7 +85,7 @@ deficiency may need a different theme, so that elements with problematic contras
 better visible again.
 
 Additional accessibility features like font scaling, semantics for screen readers may also
-be considered. Jetpack Compose provides an https://developer.android.com/develop/ui/compose/accessibility[simplified overview]
+be considered. Jetpack Compose provides a https://developer.android.com/develop/ui/compose/accessibility[simplified overview]
 and https://developer.android.com/codelabs/jetpack-compose-accessibility#0[Codelabs] for getting started.
 
 === Navigation and Child Components
@@ -91,5 +94,5 @@ Some components may have navigation elements and will load other components insi
 Since components hold a hierarchical context that needs to be managed somehow, child components
 (also used in navigation) are instantiated in a slightly different manner.
 
-Decompose provides for that https://arkivanov.github.io/Decompose/navigation/overview/[a few examples]
+Decompose provides https://arkivanov.github.io/Decompose/navigation/overview/[a few examples]
 and details of the process behind the navigation and child components.
