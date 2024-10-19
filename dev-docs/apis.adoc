@@ -13,7 +13,7 @@ But in the interim, this document can help guide developers who need to understa
 
 APIs in Solr (regardless of whether v1 or v2) can typically be classified as either "per-core" or "cluster" APIs.
 
-Per-core APIs, as the name suggests, typically affect only a single collection or core, usually used to search or analyze that core's contents in some way.
+Per-core APIs, as the name suggests, typically affect only a single core or collection, usually used to search or analyze that core's contents in some way.
 Implementation-wise, they're registered on the `SolrCore` object itself.
 They are configured in solrconfig.xml, which also means they can differ from one core to another based on the configset being used.
 
