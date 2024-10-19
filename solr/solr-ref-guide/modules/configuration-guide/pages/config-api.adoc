@@ -850,7 +850,7 @@ In order to be able to `update` and `delete` of the same item in `configoverlay.
 When using SolrCloud, every core watches the ZooKeeper directory for the configset being used with that core.
 If there are multiple cores in the same node using the same configset, only one ZooKeeper watch is used.
 
-TIP:: In a user-managed cluster or single-nodeco installation, there is no watch (because ZooKeeper is not running).
+TIP:: In a user-managed cluster or single-node installation, there is no watch (because ZooKeeper is not running).
 
 For instance, if the configset 'myconf' is used by a core, the node would watch `/configs/myconf`.
 Every write operation performed through the API would 'touch' the directory and all watchers are notified.
