@@ -20,6 +20,7 @@
 * xref:solr-control-script-reference.adoc[]
 
 * Installation & Deployment
+** xref:thinking-about-deployment-strategy.adoc[]
 ** xref:system-requirements.adoc[]
 ** xref:installing-solr.adoc[]
 ** xref:taking-solr-to-production.adoc[]

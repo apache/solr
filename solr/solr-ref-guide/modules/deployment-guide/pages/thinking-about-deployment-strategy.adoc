@@ -1,0 +1,55 @@
+= Thinking About Deployment Strategy
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section embodies the Solr community's thoughts on best practices for deploying Solr depending on your needs.
+
+Soemthing about the various directions you can sacle...  David Smiley had some good words.  
+Query load.  Index Load.  Number of Collections.   Densitiy of Data (Vectors).
+
+
+Then, a section about what to thikn about.
+
+=== Solr from smallest to largest.
+
+When we start up Solr on our computer, we're already starting Solr with the underpinnings required to let Solr scale in a clustered fashion, the coordination library ZooKeeper.
+ZooKeeper is the unifying technology that supports maintaining state from a single node up to many 1000's of nodes.
+
+If you only need a single Solr node, then it's perfectly reasonable to start Solr with `bin/solr start`.   You will have a single Solr node running in SolrCloud mode, with all the nice APIs and features that SolrCloud mode provides.
+
+Yes, if you Solr goes down, you won't have any diaster recovery or failure, but that is okay.
+
+<drawing of Solr Node>
+
+==== Introducing Fail Over
+
+[graphviz]
+....
+digraph foo {
+  node [style=rounded]
+  node1 [shape=box]
+  node2 [fillcolor=yellow, style="rounded,filled", shape=diamond]
+  node3 [shape=record, label="{ a | b | c }"]
+
+  node1 -> node2 -> node3
+}
+....
+
+
+=== What about Embedding Solr in my Java Application?
+
+Yes, there is embedded Solr.  YMMV.
