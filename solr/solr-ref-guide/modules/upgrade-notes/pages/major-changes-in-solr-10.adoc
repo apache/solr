@@ -64,3 +64,6 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 * The `BlobRepository`, which was deprecated in 8x in favour of the `FileStore` approach is removed.   
 Users should migrate to the `FileStore` implementation (per node stored file) and the still existing `BlobHandler` (across the cluster storage backed by `.system` collection).
 Please note this also removes the ability to share resource intensive objects across multiple cores as this feature was tied to the `BlobRepository` implementation.
+
+* The language specific Response Writers, which were deprecated in 9.8 in favour of more widely used formats like JSON have been removed.
+The removed writer types (invoked as part of the `wt` parameter) include `python`, `ruby`, `php`, and `phps`.
