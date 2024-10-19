@@ -247,10 +247,15 @@ You can also refer to xref:jvm-settings.adoc[] for tuning your memory and garbag
 The `bin/solr` script uses the `-XX:+CrashOnOutOfMemoryError` JVM option to crash Solr on `OutOfMemoryError` exceptions.
 This behavior is recommended. In SolrCloud mode ZooKeeper will be immediately notified that a node has experienced a non-recoverable error.
 
-=== Going to Production with SolrCloud
 
-To run Solr in SolrCloud mode, you need to set the `ZK_HOST` variable in the include file to point to your ZooKeeper ensemble.
-Running the embedded ZooKeeper is not supported in production environments.
+=== Going to Production with SolrCloud with Embedded ZooKeeper
+
+Solr runs by default in SolrCloud mode with an embedded ZooKeeper, no additional configuration required.
+
+=== Going to Production with SolrCloud with External ZooKeeper Ensemble
+
+To run Solr in SolrCloud mode with an external ZooKeeper ensemble, you need to set the `ZK_HOST` variable in the include file to point to your ZooKeeper ensemble.
+
 For instance, if you have a ZooKeeper ensemble hosted on the following three hosts on the default client port 2181 (zk1, zk2, and zk3), then you would set:
 
 [source,bash]
@@ -258,7 +263,9 @@ For instance, if you have a ZooKeeper ensemble hosted on the following three hos
 ZK_HOST=zk1,zk2,zk3
 ----
 
-When the `ZK_HOST` variable is set, Solr will launch in "cloud" mode.
+When the `ZK_HOST` variable is set, Solr will launch and connect to the defined ZooKeepers instead of starting an embedded ZooKeeper.
+
+See xref:zookeeper-ensemble[ZooKeeper Ensemble Configuration] for more on setting up ZooKeeper.
 
 ==== ZooKeeper chroot
 

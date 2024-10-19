@@ -17,12 +17,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Although Solr comes bundled with http://zookeeper.apache.org[Apache ZooKeeper], you are strongly encouraged to use an external ZooKeeper setup in production.
+Although Solr comes bundled with http://zookeeper.apache.org[Apache ZooKeeper], depending on your scaling needs you may need to use a external ZooKeeper setup in production.
 
-While using Solr's embedded ZooKeeper instance is fine for getting started, you shouldn't use this in production because it does not provide any failover: if the Solr instance that hosts ZooKeeper shuts down, ZooKeeper is also shut down.
+ERIC: this is editorial content that should be moved.
+While using Solr's embedded ZooKeeper instance is fine for smaller setups, you shouldn't use this in production because it does not provide any failover: if the Solr instance that hosts ZooKeeper shuts down, ZooKeeper is also shut down.
 Any shards or Solr instances that rely on it will not be able to communicate with it or each other.
 
 The solution to this problem is to set up an external ZooKeeper _ensemble_, which is a number of servers running ZooKeeper that communicate with each other to coordinate the activities of the cluster.
+ERIC: End editorial.
 
 == How Many ZooKeeper Nodes?
 
