@@ -47,9 +47,11 @@ output:
 asciidoc:
   attributes:
     stem:
+    kroki-fetch-diagram: true
   extensions:
     - '@djencks/asciidoctor-mathjax'
     - '@asciidoctor/tabs'
+    - asciidoctor-kroki
 
 runtime:
   fetch: true
