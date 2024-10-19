@@ -16,6 +16,7 @@
  */
 package org.apache.solr.request;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
@@ -27,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;

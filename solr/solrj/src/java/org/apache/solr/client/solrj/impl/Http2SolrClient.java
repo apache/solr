@@ -285,7 +285,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
       proxy = new HttpProxy(address, builder.proxyIsSecure, protocol);
     }
-    httpClient.getProxyConfiguration().addProxy(proxy);
+    httpClient.getProxyConfiguration().getProxies().add(proxy);
   }
 
   @Override

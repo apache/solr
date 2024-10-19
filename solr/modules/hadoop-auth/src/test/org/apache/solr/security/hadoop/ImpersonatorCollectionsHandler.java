@@ -17,7 +17,7 @@
 package org.apache.solr.security.hadoop;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;

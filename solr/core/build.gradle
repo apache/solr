@@ -54,6 +54,8 @@ dependencies {
   implementation ('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
+  implementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
+  //implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation 'io.dropwizard.metrics:metrics-jmx'
   implementation 'io.dropwizard.metrics:metrics-jvm'
 
@@ -122,7 +124,7 @@ dependencies {
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-io'
-  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  //implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {

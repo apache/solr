@@ -41,6 +41,7 @@ dependencies {
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-util'
   implementation 'org.eclipse.jetty:jetty-io'
+  //implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
 
   api('org.apache.httpcomponents:httpmime', {
@@ -74,11 +75,12 @@ dependencies {
   testImplementation 'commons-io:commons-io'
   testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
-  testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  //testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   testImplementation 'org.eclipse.jetty:jetty-server'
   testImplementation 'org.eclipse.jetty:jetty-servlet'
   testImplementation 'org.eclipse.jetty:jetty-webapp'
+  testImplementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
   testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })

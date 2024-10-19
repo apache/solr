@@ -21,8 +21,8 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.ZK_CONNECT_STRING;
 
 import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.servlets.MetricsServlet;
-import com.codahale.metrics.servlets.ThreadDumpServlet;
+import io.dropwizard.metrics.servlets.MetricsServlet;
+import io.dropwizard.metrics.servlets.ThreadDumpServlet;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;

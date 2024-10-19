@@ -40,10 +40,11 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-http'
-  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  implementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
+  //implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation 'com.google.guava:guava'
   implementation 'org.slf4j:slf4j-api'
-
+  //implementation 'org.eclipse.jetty:jetty-servlet'
   testImplementation project(':solr:test-framework')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'junit:junit'
