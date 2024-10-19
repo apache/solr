@@ -1,4 +1,4 @@
-= Getting Started with SolrCloud
+= Exercise 6: Getting Deeper with SolrCloud
 :tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -17,7 +17,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-SolrCloud is designed to provide a highly available, fault tolerant environment for distributing your indexed content and query requests across multiple servers.
+SolrCloud is designed to provide a highly available, fault tolerant environment for distributing your indexed content and query requests across multiple servers.  It is the default mode for running Solr, even with a single node!
 
 It's a system in which data is organized into multiple pieces, or shards, that can be hosted on multiple machines, with replicas providing redundancy for both scalability and fault tolerance, and a ZooKeeper server that helps manage the overall structure so that both indexing and search requests can be routed properly.
 
@@ -82,7 +82,7 @@ The script will start each node in order and show you the command it uses to sta
 
 [,console]
 ----
-$ bin/solr start --cloud --solr-home example/cloud/node1/solr -p 8983
+$ bin/solr start --solr-home example/cloud/node1/solr -p 8983
 ----
 
 The first node will also start an embedded ZooKeeper server bound to port 9983.
@@ -176,14 +176,14 @@ For instance, to restart node1 running on port 8983 (with an embedded ZooKeeper 
 
 [,console]
 ----
-$ bin/solr restart -c -p 8983 --solr-home example/cloud/node1/solr
+$ bin/solr restart -p 8983 --solr-home example/cloud/node1/solr
 ----
 
 To restart node2 running on port 7574, you can do:
 
 [,console]
 ----
-$ bin/solr restart -c -p 7574 -z localhost:9983 --solr-home example/cloud/node2/solr
+$ bin/solr restart -p 7574 -z localhost:9983 --solr-home example/cloud/node2/solr
 ----
 
 Notice that you need to specify the ZooKeeper address (`-z localhost:9983`) when starting node2 so that it can join the cluster with node1.
@@ -196,7 +196,7 @@ Once you start a SolrCloud cluster using the startup scripts, you can add a new 
 [,console]
 ----
 $ mkdir <solr.home for new Solr node>
-$ bin/solr start --cloud --solr-home <solr.home>/solr -p <port num> -z <zk hosts string>
+$ bin/solr start --solr-home <solr.home>/solr -p <port num> -z <zk hosts string>
 ----
 
 Notice that the above requires you to create a Solr home directory.
@@ -206,7 +206,7 @@ Example (with directory structure) that adds a node to an example started with "
 [,console]
 ----
 $ mkdir -p example/cloud/node3/solr
-$ bin/solr start --cloud --solr-home example/cloud/node3/solr -p 8987 -z localhost:9983
+$ bin/solr start --solr-home example/cloud/node3/solr -p 8987 -z localhost:9983
 ----
 
 The previous command will start another Solr node on port 8987 with Solr home set to `example/cloud/node3/solr`.
