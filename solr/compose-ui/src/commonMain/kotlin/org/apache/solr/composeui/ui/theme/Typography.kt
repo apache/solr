@@ -40,26 +40,21 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun SolrTypography(): Typography {
-    val ralewayFontFamily = Fonts.raleway()
-
     return Typography(
         headlineLarge = MaterialTheme.typography.headlineLarge.copy(
-            fontFamily = ralewayFontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Light,
             fontSize = 32.sp,
             lineHeight = 40.sp,
             letterSpacing= 0.sp,
         ),
         headlineMedium = MaterialTheme.typography.headlineMedium.copy(
-            fontFamily = ralewayFontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Light,
             fontSize = 28.sp,
             lineHeight = 36.sp,
             letterSpacing= 0.sp,
         ),
         headlineSmall = MaterialTheme.typography.headlineSmall.copy(
-            fontFamily = ralewayFontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Light,
             fontSize = 24.sp,
             lineHeight = 32.sp,
             letterSpacing= 0.sp,
@@ -70,9 +65,9 @@ fun SolrTypography(): Typography {
 // Customize the extended typography
 @Composable
 fun extendedTypography() = ExtendedTypography(
-    codeSmall = SolrTheme.typography.codeSmall.copy(fontFamily = Fonts.firacode()),
-    codeMedium = SolrTheme.typography.codeMedium.copy(fontFamily = Fonts.firacode()),
-    codeLarge = SolrTheme.typography.codeLarge.copy(fontFamily = Fonts.firacode()),
+    codeSmall = SolrTheme.typography.codeSmall,
+    codeMedium = SolrTheme.typography.codeMedium,
+    codeLarge = SolrTheme.typography.codeLarge,
 )
 
 /**
