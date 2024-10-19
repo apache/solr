@@ -33,21 +33,6 @@ plugins {
   id 'com.github.node-gradle.node' version '7.0.1' apply false
 }
 
-allprojects {
-  repositories {
-    mavenCentral()
-    maven {
-      url = "https://maven.pkg.jetbrains.space/public/p/compose/dev"
-    }
-    maven {
-      url = "https://maven.pkg.jetbrains.space/kotlin/p/wasm/experimental"
-    }
-    maven {
-      url = "https://maven.pkg.jetbrains.space/public/p/ktor/eap"
-    }
-  }
-}
-
 apply from: file('build-tools/scriptDepVersions.gradle')
 
 // Declare default Java versions for the entire project and for SolrJ separately
