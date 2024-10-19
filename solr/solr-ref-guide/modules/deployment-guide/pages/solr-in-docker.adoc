@@ -61,7 +61,7 @@ This gives you a default search for `*:*` which returns all docs.
 Hit the "Execute Query" button, and you should see a few docs with data.
 Congratulations!
 
-=== Docker-Compose
+=== Docker Compose
 
 You can use Docker Compose to run a single standalone server or a multi-node cluster.
 And you could use Docker Volumes instead of host-mounted directories.
@@ -69,7 +69,6 @@ For example, with a `docker-compose.yml` containing the following:
 
 [source,yaml]
 ----
-version: '3'
 services:
   solr:
     image: solr
@@ -97,7 +96,6 @@ name `zoo`.:
 
 [source,yaml]
 ----
-version: '3'
 services:
   solr:
     image: solr:9-slim
@@ -120,7 +118,7 @@ networks:
 ----
 
 
-=== Single-Command Demo
+=== Single Command Demo
 
 For quick demos of Solr docker, there is a single command that starts Solr, creates a collection called "demo", and loads sample data into it:
 
@@ -139,6 +137,38 @@ If you want to use custom configuration, mount it in the appropriate place.
 See below for examples.
 
 The Solr docker distribution adds scripts in `/opt/solr/docker/scripts` to make it easier to use under Docker, for example to create cores on container startup.
+
+=== Creating Collections
+
+In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
+
+These examples assume you're running a xref:docker-compose[docker compose cluster].
+
+The first way to create a collection is to go to the http://localhost:8983/[Solr Admin UI], select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
+
+The second way is through the Solr control script on one of the containers:
+
+[source,bash]
+----
+docker exec solr1 solr create -c gettingstarted2
+----
+
+The third way is to use a separate container:
+
+[source,bash]
+----
+docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create -c gettingstarted3 -p 8983
+----
+
+The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
+
+[source,bash]
+----
+curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted3&numShards=1&collection.configName=_default'
+----
+
+If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
+You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
 
 === Creating Cores
 
@@ -197,38 +227,6 @@ For example:
 ----
 docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr bash -c "precreate-core gettingstarted && source /mysetup.sh && solr-foreground"
 ----
-
-=== Creating Collections
-
-In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
-
-These examples assume you're running a xref:docker-compose[docker compose cluster].
-
-The first way to create a collection is to go to the http://localhost:8983/[Solr Admin UI], select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
-
-The second way is through the Solr control script on one of the containers:
-
-[source,bash]
-----
-docker exec solr1 solr create -c gettingstarted2
-----
-
-The third way is to use a separate container:
-
-[source,bash]
-----
-docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create_collection -c gettingstarted3 -p 8983
-----
-
-The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
-
-[source,bash]
-----
-curl 'http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted3&numShards=1&collection.configName=_default'
-----
-
-If you want to use a custom configuration for your collection, you first need to upload it, and then refer to it by name when you create the collection.
-You can use the xref:solr-control-script-reference.adoc#upload-a-configuration-set[`bin/solr zk` command] or the xref:configuration-guide:configsets-api.adoc#configsets-upload[Configsets API].
 
 === Loading Your Own Data
 

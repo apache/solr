@@ -161,6 +161,14 @@ Additionally, you will need to depend on the `solr-solrj-zookeeper` artifact or 
 
 The ZooKeeper based connection is the most reliable and performant means for CloudSolrClient to work.  On the other hand, it means exposing ZooKeeper more broadly than to Solr nodes, which is a security risk.  It also adds more JAR dependencies.
 
+==== Default Collections
+
+Most `SolrClient` methods allow users to specify the collection or core they wish to query, etc. as a `String` parameter.
+However continually specifying this parameter can become tedious, especially for users who always work with the same collection.
+
+Users can avoid this pattern by specifying a "default" collection when creating their client, using the `withDefaultCollection(String)` method available on the relevant `SolrClient` Builder object.
+If specified on a Builder, the created `SolrClient` will use this default for making requests whenever a collection or core is needed (and no overriding value is specified).
+
 ==== Timeouts
 All `SolrClient` implementations allow users to specify the connection and read timeouts for communicating with Solr.
 These are provided at client creation time, as in the example below:

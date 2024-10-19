@@ -623,16 +623,16 @@ Below is an example healthcheck request and response using a non-standard ZooKee
 
 The `bin/solr` script can also help you create new collections or cores, or delete collections or cores.
 
-=== Create a Core or Collection
+=== Create a Collection or Core
 
-The `create` command creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
+The `create` command creates a core or collection depending on whether Solr is running in SolrCloud (collection) or user-managed mode (core).
 In other words, this action detects which mode Solr is running in, and then takes the appropriate action (either `create_core` or `create_collection`).
 
 `bin/solr create [options]`
 
 `bin/solr create --help`
 
-==== Create Core or Collection Parameters
+==== Create Collection or Core Parameters
 
 `-c <name>`::
 +
@@ -641,7 +641,7 @@ In other words, this action detects which mode Solr is running in, and then take
 s|Required |Default: none
 |===
 +
-Name of the core or collection to create.
+Name of the collection or core to create.
 +
 *Example*: `bin/solr create -c mycollection`
 
@@ -666,7 +666,7 @@ See the section <<Configuration Directories and SolrCloud>> below for more detai
 |===
 +
 The configuration name.
-This defaults to the same name as the core or collection.
+This defaults to the same name as the collection or core.
 +
 *Example*: `bin/solr create -n basic`
 
@@ -945,9 +945,9 @@ $ bin/solr config -c mycollection --action set-user-property --property update.a
 
 See also the section <<Set or Unset Configuration Properties>>.
 
-=== Delete Core or Collection
+=== Delete Collection or Core
 
-The `delete` command detects the mode that Solr is running in and then deletes the specified core (user-managed or single-node) or collection (SolrCloud) as appropriate.
+The `delete` command detects the mode that Solr is running in and then deletes the specified collection (SolrCloud) or core (user-managed or single-node) as appropriate.
 
 `bin/solr delete [options]`
 
@@ -958,7 +958,7 @@ If you're deleting a collection in SolrCloud mode, the default behavior is to al
 For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
 If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing `--delete-config false` when running this command.atom
 
-==== Delete Core or Collection Parameters
+==== Delete Collection or Core Parameters
 
 `-c <name>`::
 +
@@ -967,7 +967,7 @@ If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You c
 s|Required |Default: none
 |===
 +
-Name of the core or collection to delete.
+Name of the collection or core to delete.
 +
 *Example*: `bin/solr delete -c mycoll`
 
@@ -1207,7 +1207,7 @@ To unset a previously set user-defined property, specify `--action unset-user-pr
 s|Required |Default: none
 |===
 +
-Name of the core or collection on which to change configuration.
+Name of the collection or core on which to change configuration.
 
 `--action <name>`::
 +
