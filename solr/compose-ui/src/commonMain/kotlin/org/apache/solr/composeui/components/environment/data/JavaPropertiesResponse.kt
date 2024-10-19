@@ -28,5 +28,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class JavaPropertiesResponse(
     @SerialName("system.properties")
-    val properties: Map<String, String>,
+    val properties: Map<String, String> = emptyMap(),
 )

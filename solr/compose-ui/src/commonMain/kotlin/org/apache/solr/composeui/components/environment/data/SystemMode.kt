@@ -25,6 +25,6 @@ enum class SystemMode {
     Unknown,
     @SerialName("solrcloud")
     SolrCloud,
-    @SerialName("standalone")
+    @SerialName("std")
     Standalone,
 }
