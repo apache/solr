@@ -20,7 +20,7 @@
 This exercise will walk you through how to start Solr as a two-node cluster (both nodes on the same machine) and create a collection during startup.
 Then you will index some sample data that ships with Solr and do some basic searches.
 
-== Launch Solr in SolrCloud Mode
+== Launch Solr
 To launch Solr, run: `bin/solr start -e cloud` on Unix or MacOS; `bin\solr.cmd start -e cloud` on Windows.
 
 This will start an interactive session that will start two Solr "servers" on your machine.
