@@ -80,21 +80,18 @@ Additional parameters to pass to Jetty when starting Solr.
 For example, to add configuration folder that Jetty should read you could pass: `-j "--include-jetty-dir=/etc/jetty/custom/server/"`.
 In most cases, you should wrap the additional parameters in double quotes.
 
-`--cloud` or `-c`::
+`--user-managed`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper instance included with Solr.
-The embedded ZooKeeper instance is started on Solr port+1000, so 9983 if Solr is bound to 8983.
+Start Solr in User Managed mode (AKA Standalone mode).  This is the style of Solr that supports only cores, not collections.
 +
-If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) or pass the `-z` parameter.
+For more details, see the section <<User Managed Mode>> below.
 +
-For more details, see the section <<SolrCloud Mode>> below.
-+
-*Example*: `bin/solr start -c`
+*Example*: `bin/solr start --user-managed`
 
 `--server-dir <dir>`::
 +
@@ -303,11 +300,7 @@ the `SOLR_TOOL_OPTS` environment variable should be used.
 
 ==== SolrCloud Mode
 
-The `-c` and `--cloud` options are equivalent:
-
-`bin/solr start -c`
-
-`bin/solr start --cloud`
+This is the default mode for running Solr.
 
 If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
 
@@ -327,6 +320,13 @@ When starting in SolrCloud mode, the interactive script session will prompt you 
 
 For more information about starting Solr in SolrCloud mode, see also the section xref:getting-started:tutorial-solrcloud.adoc[].
 
+==== User Managed Mode
+
+`bin/solr start --user-managed` starts Solr in User Managed mode (AKA Standalone mode).  This was the default mode up until Solr 10x.
+
+For more information about the different modes, see the section xref:deployment-guide:cluster-types.adoc[].
+
+
 ==== Running with Example Configurations
 
 `bin/solr start -e <name>`
@@ -337,7 +337,7 @@ Each example launches Solr with a managed schema, which allows use of the xref:i
 
 If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section xref:configuration-guide:schema-factory.adoc[].
 
-Unless otherwise noted in the descriptions below, the examples do not enable SolrCloud nor xref:indexing-guide:schemaless-mode.adoc[].
+Unless otherwise noted in the descriptions below, the examples do not enable xref:indexing-guide:schemaless-mode.adoc[].
 
 The following examples are provided:
 
