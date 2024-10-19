@@ -179,8 +179,45 @@ Use these approaches when:
 Some con's to this approach are:
 
 * Having five ZK's all updating each other is fine, but it starts to break down if you went to 9 or 11 ZooKeeper forming the Quorum.
-* 
+* We currently don't have any flexible resizing of the quorum.   You kind of just have to pick it.
 
+=== Moving Beyond the Basic Cluster
+
+NOTE: This isn't yet fleshed out how it works!
+
+Solr has a concept of node xref:deployment-guide:node-roles.adoc#ensemble[Roles] that could be leveraged to establish a set of Solr nodes that run embedded ZooKeeper, and then a larger set of Solr nodes that connect to those ZooKeepers.  We currently have the concept of "data" nodes that hosts shards and replicas, we can introduce a "zookeeper" node that also runs the embedded ZooKeeper process.   
+
+This will work well as you grow from six to 12 nodes in your cluster.
+
+[graphviz]
+....
+graph simple_embedded_zk_ensemble {
+  node [style=rounded]
+  layout=circo
+  overlap=false
+  node1 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
+  node2 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
+  node3 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
+  node4 [shape=box, label="data"]
+  node5 [shape=box, label="data"]
+  node6 [shape=box, label="data"]
+  node7 [shape=box, label="data"]
+  node8 [shape=box, label="data"]
+  node9 [shape=box, label="data"]
+  
+  
+  node1 -- node2
+  node2 -- node3
+  node3 -- node1
+  node3 -- node4
+  node4 -- node5
+  node5 -- node6
+  node6 -- node7
+  node7 -- node8
+  node8 -- node9
+  node9 -- node1
+}
+....
 
 == What about Embedding Solr in my Java Application?
 
