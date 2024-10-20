@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
@@ -74,12 +75,16 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class PostTool extends ToolBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_FILE_TYPES =
       "xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
@@ -315,8 +320,17 @@ public class PostTool extends ToolBase {
         throw new IllegalArgumentException(
             "Must specify -c / --name parameter with --solr-url to post documents.");
       }
-      String url =
-          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
+
+      String solrUrl = cli.getOptionValue("solr-url");
+
+      String hostContext = System.getProperty("hostContext", "/solr");
+      if (hostContext.isBlank()) {
+        log.warn("Invalid hostContext {} provided, setting to /solr", hostContext);
+        hostContext = "/solr";
+      }
+
+      solrUrl = SolrCLI.normalizeSolrUrl(solrUrl, true, hostContext) + hostContext;
+      String url = solrUrl + "/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URI(url);
 
     } else if (cli.hasOption("solr-update-url")) {

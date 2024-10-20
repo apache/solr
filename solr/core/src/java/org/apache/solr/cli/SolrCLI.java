@@ -792,7 +792,6 @@ public class SolrCLI implements CLIO {
 
           String firstLiveNode = liveNodes.iterator().next();
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
-          // solrUrl = normalizeSolrUrl(solrUrl, false);
         }
       }
     }
