@@ -74,25 +74,27 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
@@ -350,7 +352,7 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
 
       server.setConnectors(new Connector[] {connector});
-      server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
+      // server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector =
@@ -364,13 +366,17 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }
-
-    HandlerWrapper chain;
+    SessionHandler sessionHandler = new SessionHandler();
+    sessionHandler.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
+    Handler chain;
     {
       // Initialize the servlets
       final ServletContextHandler root =
-          new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
-      root.setResourceBase(".");
+          new ServletContextHandler("/solr", ServletContextHandler.SESSIONS);
+      root.setSessionHandler(sessionHandler);
+      root.setServer(server);
+      root.setBaseResource(ResourceFactory.root().newResource("."));
+      // [EE10]root.setResourceBase(".");
 
       root.addEventListener(
           // Install CCP first.  Subclass CCP to do some pre-initialization
@@ -422,8 +428,9 @@ public class JettySolrRunner {
     if (config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
-      rwh.setRewriteRequestURI(true);
-      rwh.setRewritePathInfo(false);
+
+      // [EE10]rwh.setRewriteRequestURI(true);
+      // [EE10]rwh.setRewritePathInfo(false);
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;
@@ -442,7 +449,7 @@ public class JettySolrRunner {
    * descendants may inject own handler chaining it to the given root and then returning that own
    * one
    */
-  protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+  protected Handler injectJettyHandlers(Handler chain) {
     return chain;
   }
 

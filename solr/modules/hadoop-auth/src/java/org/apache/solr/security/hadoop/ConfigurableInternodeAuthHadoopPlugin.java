@@ -34,7 +34,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

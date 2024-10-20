@@ -35,14 +35,16 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
 
-  api 'org.eclipse.jetty.http2:http2-client'
-  implementation 'org.eclipse.jetty.http2:http2-http-client-transport'
+  api 'org.eclipse.jetty.http2:jetty-http2-client'
+  implementation 'org.eclipse.jetty.http2:jetty-http2-client-transport'
   implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-client'
   implementation 'org.eclipse.jetty:jetty-util'
   implementation 'org.eclipse.jetty:jetty-io'
   //implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-client'
+  testImplementation 'jakarta.servlet:jakarta.servlet-api'
+  testImplementation 'org.eclipse.jetty:jetty-session'
 
   api('org.apache.httpcomponents:httpmime', {
     exclude group: "commons-codec", module: "commons-codec"
@@ -78,9 +80,9 @@ dependencies {
   //testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   testImplementation 'org.eclipse.jetty:jetty-server'
-  testImplementation 'org.eclipse.jetty:jetty-servlet'
-  testImplementation 'org.eclipse.jetty:jetty-webapp'
-  testImplementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
+  testImplementation 'org.eclipse.jetty.ee10:jetty-ee10-servlet'
+  testImplementation 'org.eclipse.jetty.ee10:jetty-ee10-webapp'
+  //testImplementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
   testRuntimeOnly ('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })

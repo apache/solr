@@ -46,19 +46,19 @@ dependencies {
   serverLib 'org.eclipse.jetty:jetty-rewrite'
   serverLib 'org.eclipse.jetty:jetty-security'
   serverLib 'org.eclipse.jetty:jetty-server'
-  serverLib 'org.eclipse.jetty:jetty-servlet'
-  serverLib 'org.eclipse.jetty:jetty-servlets'
+  serverLib 'org.eclipse.jetty.ee10:jetty-ee10-servlet'
+  serverLib 'org.eclipse.jetty.ee10:jetty-ee10-servlets'
   serverLib 'org.eclipse.jetty:jetty-util'
-  serverLib 'org.eclipse.jetty:jetty-webapp'
+  serverLib 'org.eclipse.jetty.ee10:jetty-ee10-webapp'
   serverLib 'org.eclipse.jetty:jetty-xml'
   serverLib 'org.eclipse.jetty:jetty-alpn-server'
   serverLib('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
 
-  serverLib 'org.eclipse.jetty.http2:http2-server'
-  serverLib 'org.eclipse.jetty.http2:http2-common'
-  serverLib 'org.eclipse.jetty.http2:http2-hpack'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-server'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-common'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-hpack'
 
   serverLib 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 

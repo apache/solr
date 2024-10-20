@@ -23,7 +23,7 @@ import javax.security.auth.login.Configuration;
 import org.apache.solr.common.util.EnvUtils;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.util.SPNEGOAuthentication;
+import org.eclipse.jetty.client.SPNEGOAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

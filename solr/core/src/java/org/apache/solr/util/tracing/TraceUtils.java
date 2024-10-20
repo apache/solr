@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {

@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 public class JettyConfig {
 
