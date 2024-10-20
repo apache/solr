@@ -17,6 +17,8 @@
 
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
+
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,9 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DeprecatedAttributes;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
+import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -42,9 +43,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-
-import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
-import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL_DEPRECATED;
 
 public class StatusTool extends ToolBase {
   private final SolrProcessManager processMgr;
@@ -106,7 +104,12 @@ public class StatusTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return List.of(OPTION_SOLRURL, OPTION_MAXWAITSECS, OPTION_MAXWAITSECS_DEPRECATED, OPTION_PORT, OPTION_SHORT);
+    return List.of(
+        OPTION_SOLRURL,
+        OPTION_MAXWAITSECS,
+        OPTION_MAXWAITSECS_DEPRECATED,
+        OPTION_PORT,
+        OPTION_SHORT);
   }
 
   @Override
@@ -239,8 +242,8 @@ public class StatusTool extends ToolBase {
    */
   public boolean waitForSolrUp(String solrUrl, CommandLine cli, int maxWaitSecs) throws Exception {
     try {
-        waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
-        return true;
+      waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
+      return true;
     } catch (TimeoutException timeout) {
       return false;
     }
@@ -272,7 +275,7 @@ public class StatusTool extends ToolBase {
   public String statusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
     try {
       CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(getStatus(solrUrl));
+      new JSONWriter(arr, 2).write(getStatus(solrUrl));
       return arr.toString();
     } catch (Exception exc) {
       if (SolrCLI.exceptionIsAuthRelated(exc)) {
