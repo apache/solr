@@ -171,14 +171,14 @@ To use it to start Solr you can simply enter:
 
 [source,bash]
 ----
-bin/solr start --cloud
+bin/solr start
 ----
 
 If you are running Windows, you can start Solr by running `bin\solr.cmd` instead.
 
 [source,plain]
 ----
-bin\solr.cmd start --cloud
+bin\solr.cmd start
 ----
 
 This will start Solr in the background, listening on port 8983.
@@ -195,7 +195,7 @@ For instance, to launch the "techproducts" example, you would do:
 
 [source,bash]
 ----
-bin/solr start --cloud -e techproducts
+bin/solr start -e techproducts
 ----
 
 Currently, the available examples you can run are: techproducts, schemaless, and cloud.
