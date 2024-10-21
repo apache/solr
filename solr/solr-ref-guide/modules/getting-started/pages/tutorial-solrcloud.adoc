@@ -121,7 +121,7 @@ $ curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"upd
 ----
 ====
 
-V2 API SolrCloud::
+V2 API::
 +
 ====
 [,console]

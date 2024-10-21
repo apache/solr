@@ -19,8 +19,8 @@
 
 This exercise will walk you through how to start using Solr in just 5 Minutes!
 
-== Launch Solr in SolrCloud Mode
-To launch Solr, run: `bin/solr start -c` on Unix or MacOS; `bin\solr.cmd start -c` on Windows.
+== Launch Solr
+To launch Solr, run: `bin/solr start` on Unix or MacOS; `bin\solr.cmd start` on Windows.
 
 To start another Solr node and have it join the cluster alongside the first node,
 
