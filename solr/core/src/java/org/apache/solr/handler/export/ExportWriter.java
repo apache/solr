@@ -500,7 +500,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       SchemaField schemaField = req.getSchema().getField(field);
       if (!schemaField.hasDocValues()) {
-        throw new IOException(schemaField + " must have DocValues to use this feature.");
+        if (schemaField.useDocValuesAsStored()
+            || solrReturnFields.getExplicitlyRequestedFieldNames().contains(field)) {
+          throw new IOException(schemaField + " must have DocValues to use this feature.");
+        } else {
+          // if we're glob matching and _don't_ have udvas=true, then just skip this field
+          continue;
+        }
       }
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();

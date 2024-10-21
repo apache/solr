@@ -136,6 +136,7 @@ public final class BloomStrField extends StrField implements SchemaAware {
     props.put("indexed", "true");
     props.put("stored", "false");
     props.put("docValues", "false");
+    props.put("useDocValuesAsStored", "false");
     props.put("sortMissingLast", "true");
     props.put("termVectors", "false");
     props.put("omitNorms", "true");
