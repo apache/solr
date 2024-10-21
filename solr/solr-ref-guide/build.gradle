@@ -63,6 +63,7 @@ ext {
     antoraLunrExtensionVersion = "1.0.0-alpha.8"
     asciidoctorMathjaxVersion = "0.0.9"
     asciidoctorTabsVersion = "1.0.0-beta.6"
+    asciidoctorKrokiVersion = "0.18.1"
     linkCheckerVersion = "1.4.2"
     gulpCliVersion = "2.3.0"
     // Most recent commit as of 2022-06-24, this repo does not have tags
@@ -239,19 +240,19 @@ task downloadAntoraLunrExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
 }
 
-task downloadAsciiDoctorKrokiExtension(type: NpmTask) {
+task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@antora/lunr-extension@${project.ext.antoraLunrExtensionVersion}"]
+    args = ["install", "@djencks/asciidoctor-mathjax@${project.ext.asciidoctorMathjaxVersion}"]
 
-    inputs.property("Antora lunr-extension version", project.ext.antoraLunrExtensionVersion)
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
+    inputs.property("Antora asciidoctor-mathjax version", project.ext.asciidoctorMathjaxVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
-task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
+task downloadAsciiDoctorKrokiExtension(type: NpmTask) {
     group = 'Build Dependency Download'
     args = ["install", "asciidoctor-kroki"]
 
-    inputs.property("asciidoctor-mathjax version", project.ext.asciidoctorMathjaxVersion)
+    inputs.property("asciidoctor-kroki version", project.ext.asciidoctorKrokiVersion)
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/asciidoctor-kroki")
 }
 
