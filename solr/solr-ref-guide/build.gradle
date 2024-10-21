@@ -239,12 +239,20 @@ task downloadAntoraLunrExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
 }
 
+task downloadAsciiDoctorKrokiExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@antora/lunr-extension@${project.ext.antoraLunrExtensionVersion}"]
+
+    inputs.property("Antora lunr-extension version", project.ext.antoraLunrExtensionVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
+}
+
 task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@djencks/asciidoctor-mathjax@${project.ext.asciidoctorMathjaxVersion}"]
+    args = ["install", "asciidoctor-kroki"]
 
     inputs.property("asciidoctor-mathjax version", project.ext.asciidoctorMathjaxVersion)
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/asciidoctor-kroki")
 }
 
 task downloadAsciidoctorTabsExtension(type: NpmTask) {
@@ -262,6 +270,7 @@ task downloadAntora {
     dependsOn tasks.downloadAntoraCli
     dependsOn tasks.downloadAntoraSiteGenerator
     dependsOn tasks.downloadAntoraLunrExtension
+    dependsOn tasks.downloadAsciiDoctorKrokiExtension
     dependsOn tasks.downloadAsciidoctorMathjaxExtension
     dependsOn tasks.downloadAsciidoctorTabsExtension
 }
