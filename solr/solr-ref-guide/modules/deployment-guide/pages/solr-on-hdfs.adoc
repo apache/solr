@@ -46,7 +46,7 @@ All dynamically created collections will create the appropriate directories auto
 
 [source,bash]
 ----
-bin/solr start --cloud -Dsolr.directoryFactory=HdfsDirectoryFactory
+bin/solr start -Dsolr.directoryFactory=HdfsDirectoryFactory
      -Dsolr.lock.type=hdfs
      -Dsolr.hdfs.home=hdfs://host:port/path
 ----
