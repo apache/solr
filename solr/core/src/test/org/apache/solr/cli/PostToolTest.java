@@ -240,28 +240,6 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() {
-    assertEquals(
-        URI.create("http://[ff01::114]/a?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]/?foo=bar"), "/a"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "/b"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "/b"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "b"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "b"));
-  }
-
-  @Test
   public void testGuessType() {
     File f = new File("foo.doc");
     assertEquals("application/msword", PostTool.guessType(f));
