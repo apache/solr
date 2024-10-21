@@ -904,7 +904,7 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
 )
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
-IF NOT "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
+IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
@@ -941,7 +941,7 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   REM change Cloud mode to User Managed mode with flag
-  set "CLOUD_MODE_OPTS=--user-managed"
+  set "CLOUD_MODE_OPTS="
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
     IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
       set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
