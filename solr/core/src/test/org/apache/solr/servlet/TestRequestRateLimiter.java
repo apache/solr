@@ -23,6 +23,7 @@ import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
