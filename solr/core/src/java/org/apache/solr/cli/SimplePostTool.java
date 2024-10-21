@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import jakarta.ws.rs.core.UriBuilder;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -377,38 +378,34 @@ public class SimplePostTool {
   private void doWebMode() {
     reset();
     int numPagesPosted = 0;
-    try {
-      if (type != null) {
-        fatal("Specifying content-type with \"-Ddata=web\" is not supported");
-      }
-      if (args[0].equals("-")) {
-        // Skip posting url if special param "-" given
-        return;
-      }
-      // Set Extracting handler as default
-      solrUrl = appendUrlPath(solrUrl, "/extract");
-
-      info("Posting web pages to Solr url " + solrUrl);
-      auto = true;
-      info(
-          "Entering auto mode. Indexing pages with content-types corresponding to file endings "
-              + fileTypes);
-      if (recursive > 0) {
-        if (recursive > MAX_WEB_DEPTH) {
-          recursive = MAX_WEB_DEPTH;
-          warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
-        }
-        if (delay < DEFAULT_WEB_DELAY) {
-          warn(
-              "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
-        }
-        info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
-      }
-      numPagesPosted = postWebPages(args, 0, out);
-      info(numPagesPosted + " web pages indexed.");
-    } catch (URISyntaxException e) {
-      fatal("Wrong URL trying to append /extract to " + solrUrl);
+    if (type != null) {
+      fatal("Specifying content-type with \"-Ddata=web\" is not supported");
     }
+    if (args[0].equals("-")) {
+      // Skip posting url if special param "-" given
+      return;
+    }
+    // Set Extracting handler as default
+    solrUrl = UriBuilder.fromUri(solrUrl).path("/extract").build();
+
+    info("Posting web pages to Solr url " + solrUrl);
+    auto = true;
+    info(
+        "Entering auto mode. Indexing pages with content-types corresponding to file endings "
+            + fileTypes);
+    if (recursive > 0) {
+      if (recursive > MAX_WEB_DEPTH) {
+        recursive = MAX_WEB_DEPTH;
+        warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
+      }
+      if (delay < DEFAULT_WEB_DELAY) {
+        warn(
+            "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
+      }
+      info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
+    }
+    numPagesPosted = postWebPages(args, 0, out);
+    info(numPagesPosted + " web pages indexed.");
   }
 
   private void doStdinMode() {
@@ -862,7 +859,7 @@ public class SimplePostTool {
         // TODO: from being interpreted as Solr documents internally
         if (type.equals("application/json") && !FORMAT_SOLR.equals(format)) {
           suffix = "/json/docs";
-          String urlStr = appendUrlPath(solrUrl, suffix).toString();
+          String urlStr = UriBuilder.fromUri(solrUrl).path(suffix).build().toString();
           url = URI.create(urlStr);
         } else if (type.equals("application/xml")
             || type.equals("text/csv")
@@ -871,7 +868,7 @@ public class SimplePostTool {
         } else {
           // SolrCell
           suffix = "/extract";
-          String urlStr = appendUrlPath(solrUrl, suffix).toString();
+          String urlStr = UriBuilder.fromUri(solrUrl).path(suffix).build().toString();
           if (!urlStr.contains("resource.name")) {
             urlStr =
                 appendParam(
@@ -898,8 +895,6 @@ public class SimplePostTool {
               + (mockMode ? " MOCK!" : ""));
       is = new FileInputStream(file);
       postData(is, file.length(), output, type, url);
-    } catch (URISyntaxException e) {
-      warn("Not valid URL");
     } catch (IOException e) {
       warn("Can't open/read file: " + file);
     } finally {
@@ -911,17 +906,6 @@ public class SimplePostTool {
         fatal("IOException while closing file: " + e);
       }
     }
-  }
-
-  /**
-   * Appends to the path of the URI
-   *
-   * @param uri the URI
-   * @param append the path to append
-   * @return the final URI version
-   */
-  protected static URI appendUrlPath(URI uri, String append) throws URISyntaxException {
-    return PostTool.appendUrlPath(uri, append);
   }
 
   /**
