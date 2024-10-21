@@ -26,7 +26,7 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 // TODO add similar text that previous releases have at this spot.
 
-== Required Java Version Changes
+== System Requirements
 
 Minimum Java version for Solr 10.x is Java 21.
 
