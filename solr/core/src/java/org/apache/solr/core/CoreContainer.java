@@ -95,6 +95,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -138,6 +139,8 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.SolrPackageLoader;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
@@ -153,6 +156,8 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.security.SolrNodeKeyPair;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.OrderedExecutor;
@@ -2061,13 +2066,16 @@ public class CoreContainer {
           RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
           if (iwRef != null) {
             IndexWriter iw = iwRef.get();
-            // switch old core to readOnly
-            core.readOnly = true;
             try {
               if (iw != null) {
-                iw.commit();
+                SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+                CommitUpdateCommand cmd =
+                    new DirectUpdateHandler2.ClosingCommitUpdateCommand(req, false);
+                core.getUpdateHandler().commit(cmd);
               }
             } finally {
+              // switch old core to readOnly
+              core.readOnly = true;
               iwRef.decref();
             }
           }
