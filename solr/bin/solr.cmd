@@ -950,6 +950,7 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
 )
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
+IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
   @echo Solr will start in SolrCloud mode by default in version 10, and you will no longer need to pass in -c or --cloud flag.
