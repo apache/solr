@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.SolrZkClient.IsClosed;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
@@ -123,15 +122,6 @@ public class ZkDistributedQueue implements DistributedQueue {
   }
 
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize) {
-    this(zookeeper, dir, stats, maxQueueSize, null);
-  }
-
-  public ZkDistributedQueue(
-      SolrZkClient zookeeper,
-      String dir,
-      Stats stats,
-      int maxQueueSize,
-      IsClosed higherLevelIsClosed) {
     this.dir = dir;
 
     try {

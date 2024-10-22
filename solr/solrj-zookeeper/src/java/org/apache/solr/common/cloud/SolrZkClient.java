@@ -189,7 +189,8 @@ public class SolrZkClient implements Closeable {
             new SolrNamedThreadFactory("curator-safeService"));
 
     RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-    var clientBuilder =
+
+    client =
         CuratorFrameworkFactory.builder()
             .ensembleProvider(new FixedEnsembleProvider(zkHost))
             .namespace(chroot)
@@ -198,9 +199,8 @@ public class SolrZkClient implements Closeable {
             .aclProvider(this.aclProvider)
             .authorization(zkCredentialsProvider.getCredentials())
             .retryPolicy(retryPolicy)
-            .runSafeService(curatorSafeServiceExecutor);
-
-    client = clientBuilder.build();
+            .runSafeService(curatorSafeServiceExecutor)
+            .build();
     if (onReconnect != null) {
       client
           .getConnectionStateListenable()
@@ -220,7 +220,6 @@ public class SolrZkClient implements Closeable {
                 "Timeout while waiting for Zookeeper Client to connect: %d ms",
                 clientConnectTimeout));
       }
-      ;
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();

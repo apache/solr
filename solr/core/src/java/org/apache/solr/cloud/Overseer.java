@@ -1047,11 +1047,7 @@ public class Overseer implements SolrCloseable {
    */
   ZkDistributedQueue getStateUpdateQueue(Stats zkStats) {
     return new ZkDistributedQueue(
-        reader.getZkClient(),
-        "/overseer/queue",
-        zkStats,
-        STATE_UPDATE_MAX_QUEUE,
-        () -> Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown());
+        reader.getZkClient(), "/overseer/queue", zkStats, STATE_UPDATE_MAX_QUEUE);
   }
 
   /**
