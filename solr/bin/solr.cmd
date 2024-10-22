@@ -253,7 +253,7 @@ IF "%1"=="-h" goto run_solrcli
 IF "%1"=="--help" goto run_solrcli
 IF "%1"=="-help" goto run_solrcli
 IF "%1"=="/?" goto run_solrcli
-IF "%1"=="status" goto get_status
+IF "%1"=="status" goto run_solrcli
 IF "%1"=="version" goto run_solrcli
 IF "%1"=="-v" goto run_solrcli
 IF "%1"=="-version" goto run_solrcli
@@ -1206,34 +1206,6 @@ REM Run the requested example
   --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
 REM End of run_example
-goto done
-
-:get_status
-REM Find all Java processes, correlate with those listening on a port
-REM and then try to contact via that port using the status tool
-for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
-  set SOME_SOLR_PORT=
-  For /F "Delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
-  if NOT "!SOME_SOLR_PORT!"=="" (
-    for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-      IF NOT "%%k"=="0" (
-        if "%%j"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
-          @echo.
-          set has_info=1
-          echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-          REM Passing in %2 (-h or --help) directly is captured by a custom help path for usage output
-          "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
-            -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-            -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-            org.apache.solr.cli.SolrCLI status --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!SOME_SOLR_PORT! %2
-          @echo.
-        )
-      )
-    )
-  )
-)
-if NOT "!has_info!"=="1" echo No running Solr nodes found.
-set has_info=
 goto done
 
 :run_solrcli
