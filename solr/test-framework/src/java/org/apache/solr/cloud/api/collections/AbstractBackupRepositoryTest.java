@@ -20,7 +20,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.lucene.codecs.CodecUtil.FOOTER_MAGIC;
 import static org.apache.lucene.codecs.CodecUtil.writeBEInt;
 import static org.apache.lucene.codecs.CodecUtil.writeBELong;
-import static org.apache.solr.core.backup.repository.AbstractBackupRepository.PARAM_VERIFY_CHECKSUM;
 import static org.apache.solr.core.backup.repository.DelegatingBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
 import java.io.File;

@@ -69,7 +69,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -106,7 +105,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -148,7 +146,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testCreateErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     try (final SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-      getConfigSetService().uploadConfig("configSet", configset("configset-2"));
+      getConfigSetService().uploadConfig("configSet", configset("configset-2"), false);
 
       // no action
       CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -299,7 +297,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           getConfigSetProps(oldProps),
           UTF_8);
     }
-    getConfigSetService().uploadConfig(baseConfigSetName, tmpConfigDir);
+    getConfigSetService()
+        .uploadConfig(
+            baseConfigSetName, tmpConfigDir, isTrusted(zkClient(), baseConfigSetName, ""));
   }
 
   private void verifyCreate(
@@ -1351,12 +1351,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
     String configSetZkPath =
         String.format(Locale.ROOT, "/configs/%s%s", configsetName, configsetSuffix);
-    byte[] configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);
-    ;
+    try {
+      byte[] configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);
 
-    @SuppressWarnings("unchecked")
-    Map<Object, Object> contentMap = (Map<Object, Object>) Utils.fromJSON(configSetNodeContent);
-    return (boolean) contentMap.getOrDefault("trusted", true);
+      @SuppressWarnings("unchecked")
+      Map<Object, Object> contentMap = (Map<Object, Object>) Utils.fromJSON(configSetNodeContent);
+      return (boolean) contentMap.getOrDefault("trusted", true);
+    } catch (KeeperException.NoNodeException e) {
+      return true;
+    }
   }
 
   private int getConfigZNodeVersion(
@@ -1391,7 +1394,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("uploaded without any authentication in place");
     Throwable thrown =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               createCollection(
                   "newcollection2",
@@ -1402,8 +1405,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("uploaded without any authentication in place");
 
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Underlying core creation failed"));
+    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1427,7 +1429,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("without any authentication in place");
     Throwable thrown =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               createCollection(
                   "newcollection3",
@@ -1438,8 +1440,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             });
     unIgnoreException("without any authentication in place");
 
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Underlying core creation failed"));
+    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
 
     // Authorization on
     final String trustedSuffix = "-trusted";
@@ -1584,7 +1585,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       final ByteBuffer fileBytes =
           TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
       final String uriEnding =
-          "/api/cluster/configs/"
+          "/cluster/configs/"
               + configSetName
               + suffix
               + (!overwrite ? "?overwrite=false" : "")
@@ -1593,8 +1594,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Map<?, ?> map =
           postDataAndGetResponse(
               cluster.getSolrClient(),
-              cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "")
-                  + uriEnding,
+              cluster.getJettySolrRunners().get(0).getBaseURLV2().toString() + uriEnding,
               fileBytes,
               username,
               usePut);
@@ -1637,7 +1637,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       final ByteBuffer sampleConfigFile =
           TestSolrConfigHandler.getFileContent(file.getAbsolutePath(), false);
       final String uriEnding =
-          "/api/cluster/configs/"
+          "/cluster/configs/"
               + configSetName
               + suffix
               + "/"
@@ -1649,8 +1649,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Map<?, ?> map =
           postDataAndGetResponse(
               cluster.getSolrClient(),
-              cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "")
-                  + uriEnding,
+              cluster.getJettySolrRunners().get(0).getBaseURLV2().toString() + uriEnding,
               sampleConfigFile,
               username,
               usePut);
@@ -1759,14 +1758,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           zout.putNextEntry(new ZipEntry("test." + fileType));
 
           try (InputStream in = new FileInputStream(fileOrDirectory)) {
-            byte[] buffer = new byte[1024];
-            while (true) {
-              int readCount = in.read(buffer);
-              if (readCount < 0) {
-                break;
-              }
-              zout.write(buffer, 0, readCount);
-            }
+            in.transferTo(zout);
           }
 
           zout.closeEntry();
@@ -1788,8 +1780,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     Deque<File> queue = new ArrayDeque<>();
     queue.push(directory);
     OutputStream out = new FileOutputStream(zipfile);
-    ZipOutputStream zout = new ZipOutputStream(out);
-    try {
+    try (ZipOutputStream zout = new ZipOutputStream(out)) {
       while (!queue.isEmpty()) {
         directory = queue.pop();
         for (File kid : directory.listFiles()) {
@@ -1801,26 +1792,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
           } else {
             zout.putNextEntry(new ZipEntry(name));
 
-            InputStream in = new FileInputStream(kid);
-            try {
-              byte[] buffer = new byte[1024];
-              while (true) {
-                int readCount = in.read(buffer);
-                if (readCount < 0) {
-                  break;
-                }
-                zout.write(buffer, 0, readCount);
-              }
-            } finally {
-              in.close();
+            try (InputStream in = new FileInputStream(kid)) {
+              in.transferTo(zout);
             }
 
             zout.closeEntry();
           }
         }
       }
-    } finally {
-      zout.close();
     }
   }
 
@@ -1933,7 +1912,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         tmpConfigDir.resolve("configsetprops.json"),
         getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
-    getConfigSetService().uploadConfig("configSet", tmpConfigDir);
+    getConfigSetService().uploadConfig("configSet", tmpConfigDir, false);
 
     // no ConfigSet name
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();
@@ -1961,7 +1940,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "testDelete";
-    getConfigSetService().uploadConfig(configSet, configset("configset-2"));
+    getConfigSetService().uploadConfig(configSet, configset("configset-2"), false);
     assertDelete(solrClient, configSet, true);
     assertDelete(solrClient, "configSetBogus", false);
     solrClient.close();
@@ -2010,7 +1989,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       Set<String> configSets = new HashSet<String>();
       for (int i = 0; i < 5; ++i) {
         String configSet = "configSet" + i;
-        getConfigSetService().uploadConfig(configSet, configset("configset-2"));
+        getConfigSetService().uploadConfig(configSet, configset("configset-2"), false);
         configSets.add(configSet);
       }
       response = list.process(solrClient);

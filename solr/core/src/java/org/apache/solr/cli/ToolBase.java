@@ -33,8 +33,13 @@ public abstract class ToolBase implements Tool {
     this.stdout = stdout;
   }
 
-  protected void echoIfVerbose(final String msg, CommandLine cli) {
-    if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+  /** Is this tool being run in a verbose mode? */
+  protected boolean isVerbose() {
+    return verbose;
+  }
+
+  protected void echoIfVerbose(final String msg) {
+    if (verbose) {
       echo(msg);
     }
   }
@@ -45,7 +50,7 @@ public abstract class ToolBase implements Tool {
 
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt());
 
     int toolExitStatus = 0;
     try {

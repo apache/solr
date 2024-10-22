@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -183,18 +184,21 @@ public class FieldValueFeature extends Feature {
     public class FieldValueFeatureScorer extends FeatureScorer {
 
       private final LeafReaderContext context;
+      private final StoredFields storedFields;
 
       public FieldValueFeatureScorer(
-          FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr) {
+          FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr)
+          throws IOException {
         super(weight, itr);
         this.context = context;
+        this.storedFields = (context == null ? null : context.reader().storedFields());
       }
 
       @Override
       public float score() throws IOException {
 
         try {
-          final Document document = context.reader().document(itr.docID(), fieldAsSet);
+          final Document document = storedFields.document(itr.docID(), fieldAsSet);
           final IndexableField indexableField = document.getField(field);
           if (indexableField == null) {
             return getDefaultValue();

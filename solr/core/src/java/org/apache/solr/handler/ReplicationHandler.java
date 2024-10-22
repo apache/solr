@@ -1214,9 +1214,10 @@ public class ReplicationHandler extends RequestHandlerBase
       log.info(" No value set for 'pollInterval'. Timer Task not started.");
       return;
     }
-
+    final Map<String, String> context = MDC.getCopyOfContextMap();
     Runnable task =
         () -> {
+          MDC.setContextMap(context);
           if (pollDisabled.get()) {
             log.info("Poll disabled");
             return;
@@ -1740,7 +1741,7 @@ public class ReplicationHandler extends RequestHandlerBase
     @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
-      return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
+      return Path.of(core.getUpdateHandler().getUpdateLog().getTlogDir(), tlogFileName);
     }
   }
 

@@ -83,11 +83,11 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
     @Override
     public void writeResponse() throws IOException {
       if (wrapperFunction != null) {
-        writeStr(null, wrapperFunction + "(", false);
+        writeStrRaw(null, wrapperFunction + "(");
       }
       super.writeNamedList(null, rsp.getValues());
       if (wrapperFunction != null) {
-        writeStr(null, ")", false);
+        writeStrRaw(null, ")");
       }
       gen.close();
     }
@@ -128,11 +128,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
     @Override
     public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-      if (needsEscaping) {
-        gen.writeString(val);
-      } else {
-        gen.writeRawValue(val);
-      }
+      gen.writeString(val);
     }
 
     @Override

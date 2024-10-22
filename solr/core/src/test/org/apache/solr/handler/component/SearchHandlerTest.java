@@ -207,6 +207,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       Slice disconnectedSlice = getRandomEntry(slices);
       Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
       JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
+      req = new QueryRequest(params); // TODO Can be removed when SOLR-17314 fixed
       // Use the replica's core URL to avoid ZK communication
       try (SolrClient solrClient =
           new HttpSolrClient.Builder(disconnectedReplica.getBaseUrl())

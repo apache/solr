@@ -81,7 +81,6 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
     indexDir = (String) config.get(INDEX_DIR);
-    String accuracy = (String) config.get(ACCURACY);
     // If indexDir is relative then create index inside core.getDataDir()
     if (indexDir != null) {
       if (!new File(indexDir).isAbsolute()) {
@@ -120,9 +119,10 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    Object accuracy = config.get(ACCURACY);
     if (accuracy != null) {
       try {
-        this.accuracy = Float.parseFloat(accuracy);
+        this.accuracy = Float.parseFloat(accuracy.toString());
         spellChecker.setAccuracy(this.accuracy);
       } catch (NumberFormatException e) {
         throw new RuntimeException("Unparseable accuracy given for dictionary: " + name, e);

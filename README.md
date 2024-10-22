@@ -18,8 +18,11 @@
 # Welcome to the Apache Solr project!
 -----------------------------------
 
-Solr is the popular, blazing fast open source search platform for all your
-enterprise, e-commerce, and analytics needs, built on [Apache Lucene](https://lucene.apache.org/).
+Solr is the blazing-fast, open source, multi-modal search platform built on [Apache Lucene](https://lucene.apache.org/).
+It powers full-text, vector, and geospatial search at many of the world's largest organizations.
+
+[![Build Status](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/badge/icon?subject=Solr%20Artifacts)](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/)
+[![Build Status](https://ci-builds.apache.org/job/Solr/job/Solr-Check-main/badge/icon?subject=Solr%20Check)](https://ci-builds.apache.org/job/Solr/job/Solr-Check-main/)
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
@@ -91,7 +94,7 @@ Solr uses [Gradle](https://gradle.org/) for its build system. Here are some usef
 
 ```
 cd ./solr/packaging/build/dev
-bin/solr start -c
+bin/solr start
 ```
 
 - Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections. For example use the `bin/solr post` tool to index some sample data.
@@ -105,4 +108,3 @@ To get involved in the developer community:
 - Slack: `#solr-dev` in the `the-asf` organization.  Sign up at https://the-asf.slack.com/messages/CE70MDPMF
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr-dev` on [libera.chat](https://web.libera.chat/?channels=#solr-dev)
-

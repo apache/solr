@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.schema.ZkIndexSchemaReader;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   private final String configSetZkPath;
-  private ZkController zkController;
+  private final ZkController zkController;
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -52,7 +51,8 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
       Path instanceDir, String configSet, ClassLoader parent, ZkController zooKeeperController) {
     super(instanceDir, parent);
     this.zkController = zooKeeperController;
-    configSetZkPath = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
+    this.configSetZkPath = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
+    setCoreContainer(zooKeeperController.getCoreContainer());
   }
 
   public Pair<String, Integer> getZkResourceInfo(String resource) {
@@ -90,7 +90,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
           byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
           return new ZkByteArrayInputStream(bytes, file, stat);
         } else {
-          // Path does not exists. We only retry for session expired exceptions.
+          // Path does not exist. We only retry for session expired exceptions.
           break;
         }
       } catch (KeeperException.SessionExpiredException e) {
@@ -174,10 +174,5 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   public ZkIndexSchemaReader getZkIndexSchemaReader() {
     return zkIndexSchemaReader;
-  }
-
-  @Override
-  public CoreContainer getCoreContainer() {
-    return zkController.getCoreContainer();
   }
 }

@@ -32,7 +32,7 @@ dependencies {
 
   // Guava implements Preconditions, caches, and VisibleForTesting annotations
   implementation 'com.google.guava:guava'
-
+  implementation 'io.dropwizard.metrics:metrics-core'
   // Caffeine cache to implement HDFS block caching  
   implementation 'com.github.ben-manes.caffeine:caffeine'
 
@@ -50,7 +50,6 @@ dependencies {
   testImplementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
   testRuntimeOnly 'org.apache.hadoop:hadoop-client-minicluster'
 
-  testImplementation 'org.slf4j:jcl-over-slf4j'
   testRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api'
 
   // classes like solr.ICUCollationField, used by NNFailoverTest for example.
@@ -93,4 +92,11 @@ tasks.named('processTestResources').configure {
 tasks.withType(Test).configureEach {
   jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
            "--add-opens=java.base/java.util=ALL-UNNAMED"])
+}
+
+assemblePackaging {
+  // Add bin folder to default packaging.
+  from(projectDir, {
+    include "bin/**"
+  })
 }

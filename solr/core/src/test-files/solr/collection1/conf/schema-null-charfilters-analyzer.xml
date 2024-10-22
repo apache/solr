@@ -16,7 +16,7 @@
   limitations under the License.
   -->
 
-<schema name="test" version="1.4">
+<schema name="test" version="1.7">
   <fieldType name="string" class="solr.StrField"/>
 
   <!-- field type with custom TokenizerChain analyzer (created with 2-arg constructor, see SOLR-7765) -->

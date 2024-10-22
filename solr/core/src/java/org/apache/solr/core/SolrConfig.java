@@ -103,6 +103,8 @@ public class SolrConfig implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+  public static final String MIN_PREFIX_QUERY_TERM_LENGTH = "minPrefixQueryTermLength";
+  public static final int DEFAULT_MIN_PREFIX_QUERY_TERM_LENGTH = -1;
   private final String resourceName;
 
   private int znodeVersion;
@@ -201,13 +203,11 @@ public class SolrConfig implements MapSerializable {
    *     true otherwise
    * @param substitutableProperties optional properties to substitute into the XML
    */
-  @SuppressWarnings("unchecked")
   private SolrConfig(
       SolrResourceLoader loader,
       String name,
       boolean isConfigsetTrusted,
-      Properties substitutableProperties)
-      throws IOException {
+      Properties substitutableProperties) {
     this.resourceLoader = loader;
     this.resourceName = name;
     this.substituteProperties = substitutableProperties;
@@ -291,6 +291,10 @@ public class SolrConfig implements MapSerializable {
             BooleanQuery.getMaxClauseCount(),
             "set 'maxBooleanClauses' in solr.xml to increase global limit");
       }
+      prefixQueryMinPrefixLength =
+          get("query")
+              .get(MIN_PREFIX_QUERY_TERM_LENGTH)
+              .intVal(DEFAULT_MIN_PREFIX_QUERY_TERM_LENGTH);
 
       // Warn about deprecated / discontinued parameters
       // boolToFilterOptimizer has had no effect since 3.1
@@ -390,6 +394,9 @@ public class SolrConfig implements MapSerializable {
 
       solrRequestParsers = new SolrRequestParsers(this);
       log.debug("Loaded SolrConfig: {}", name);
+
+      // make resource loader aware of the config early on
+      this.resourceLoader.setSolrConfig(this);
     } finally {
       ConfigNode.SUBSTITUTES.remove();
     }
@@ -667,6 +674,7 @@ public class SolrConfig implements MapSerializable {
 
   /* The set of materialized parameters: */
   public final int booleanQueryMaxClauseCount;
+  public final int prefixQueryMinPrefixLength;
   // SolrIndexSearcher - nutch optimizer -- Disabled since 3.1
   //  public final boolean filtOptEnabled;
   //  public final int filtOptCacheSize;
@@ -1018,6 +1026,7 @@ public class SolrConfig implements MapSerializable {
     m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
+    m.put(MIN_PREFIX_QUERY_TERM_LENGTH, prefixQueryMinPrefixLength);
 
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());

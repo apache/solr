@@ -199,10 +199,8 @@ public abstract class ServletUtils {
       HttpServletResponse response,
       Runnable limitedExecution)
       throws ServletException, IOException {
-    boolean accepted = false;
-    try {
-      accepted = rateLimitManager.handleRequest(request);
-      if (!accepted) {
+    try (RequestRateLimiter.SlotReservation accepted = rateLimitManager.handleRequest(request)) {
+      if (accepted == null) {
         response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
       }
@@ -212,10 +210,6 @@ public abstract class ServletUtils {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-    } finally {
-      if (accepted) {
-        rateLimitManager.decrementActiveRequests(request);
-      }
     }
   }
 

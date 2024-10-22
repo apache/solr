@@ -249,6 +249,21 @@ public class SSLTestConfig {
     };
   }
 
+  public KeyStore defaultKeyStore() {
+    if (keyStore == null) {
+      return null;
+    }
+    return buildKeyStore(keyStore, TEST_PASSWORD);
+  }
+
+  public String defaultKeyStorePassword() {
+    return TEST_PASSWORD;
+  }
+
+  public SecureRandom notSecureSecureRandom() {
+    return NotSecurePseudoRandom.INSTANCE;
+  }
+
   /** Constructs a KeyStore using the specified filename and password */
   private static KeyStore buildKeyStore(Resource resource, String password) {
     try {

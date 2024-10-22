@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -47,8 +46,6 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   private static final int TIMEOUT = DEFAULT_TIMEOUT;
   private static final String id = "id";
 
-  private static boolean useAlias;
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(4)
@@ -71,7 +68,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         .configure();
 
     String collection;
-    useAlias = random().nextBoolean();
+    boolean useAlias = random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {
@@ -145,39 +142,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
-    return assertOrderOf(tuples, "id", ids);
-  }
-
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... ids)
-      throws Exception {
-    int i = 0;
-    for (int val : ids) {
-      Tuple t = tuples.get(i);
-      String tip = t.getString(fieldName);
-      if (!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:" + tip + " expecting:" + val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  protected boolean assertMapOrder(List<Tuple> tuples, int... ids) throws Exception {
-    int i = 0;
-    for (int val : ids) {
-      Tuple t = tuples.get(i);
-      List<Map<?, ?>> tip = t.getMaps("group");
-      int id = (int) tip.get(0).get("id");
-      if (id != val) {
-        throw new Exception("Found value:" + id + " expecting:" + val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  protected boolean assertFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (!tuple.getFields().containsKey(field)) {
@@ -185,10 +150,9 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
-  protected boolean assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (tuple.getFields().containsKey(field)) {
@@ -196,21 +160,6 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
-  }
-
-  protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
-    List<?> group = (List<?>) tuple.get("tuples");
-    int i = 0;
-    for (int val : ids) {
-      Map<?, ?> t = (Map<?, ?>) group.get(i);
-      Long tip = (Long) t.get("id");
-      if (tip.intValue() != val) {
-        throw new Exception("Found value:" + tip.intValue() + " expecting:" + val);
-      }
-      ++i;
-    }
-    return true;
   }
 
   public boolean assertLong(Tuple tuple, String fieldName, long l) throws Exception {
@@ -235,12 +184,9 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
     String actual = (String) tuple.get(fieldName);
 
-    if ((null == expected && null != actual)
-        || (null != expected && null == actual)
-        || (null != expected && !expected.equals(actual))) {
-      throw new Exception("Longs not equal:" + expected + " : " + actual);
+    if ((null != expected || null == actual) && (null == expected || expected.equals(actual))) {
+      return true;
     }
-
-    return true;
+    throw new Exception("Longs not equal:" + expected + " : " + actual);
   }
 }

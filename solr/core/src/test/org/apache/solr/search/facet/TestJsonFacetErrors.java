@@ -23,7 +23,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -588,7 +587,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(),
         containsString(
             "Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
@@ -600,7 +599,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(),
         containsString(
             "Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
@@ -612,7 +611,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
 
     e =
@@ -622,8 +621,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
-        e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+    assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
 
     resetExceptionIgnores();
   }

@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -133,8 +133,8 @@ public class AdminHandlersProxy {
       String nodeName, String endpoint, SolrParams params, ZkController zkController)
       throws IOException, SolrServerException {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
-    URL baseUrl = new URL(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
+    URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
+    HttpSolrClient solr = new HttpSolrClient.Builder(baseUri.toString()).build();
     SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, endpoint, params);
     HttpSolrClient.HttpUriRequestResponse proxyResp = solr.httpUriRequest(proxyReq);
     return new Pair<>(proxyResp.future, solr);

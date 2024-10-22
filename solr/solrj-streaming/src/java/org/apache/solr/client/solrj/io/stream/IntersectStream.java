@@ -202,7 +202,7 @@ public class IntersectStream extends TupleStream implements Expressible {
         return a;
       }
 
-      // We're not at the end and they're not equal. We now need to decide which we can
+      // We're not at the end, and they're not equal. We now need to decide which we can
       // throw away. This is accomplished by checking which is less than the other. The
       // one that is less (determined by the sort) can be tossed. The other should
       // be pushed back and the loop continued. We don't have to worry about an == 0

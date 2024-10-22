@@ -784,7 +784,7 @@ public class FieldCacheImpl implements FieldCache {
           u.docsWithField == null ? new Bits.MatchNoBits(reader.maxDoc()) : u.docsWithField;
       if (values == null) {
         return new LongsFromArray(
-            key.field, new PackedInts.NullReader(reader.maxDoc()), 0L, docsWithField);
+            key.field, PackedInts.NullReader.forCount(reader.maxDoc()), 0L, docsWithField);
       }
       return new LongsFromArray(
           key.field, values.writer.getMutable(), values.minValue, docsWithField);

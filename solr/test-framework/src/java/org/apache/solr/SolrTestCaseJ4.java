@@ -148,7 +148,6 @@ import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -223,7 +222,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {
-        MatcherAssert.assertThat(thrown.getMessage(), containsString(expectedString));
+        assertThat(thrown.getMessage(), containsString(expectedString));
       }
     }
   }
@@ -284,7 +283,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.retries.on.forward", "1");
     System.setProperty("solr.retries.to.followers", "1");
 
-    System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", Boolean.toString(usually()));
@@ -334,7 +332,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
       System.clearProperty("tests.shardhandler.randomSeed");
@@ -365,19 +362,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_1 = "[::1]:4";
+  public static final String DEAD_HOST_1 = "127.0.0.1:4";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_2 = "[::1]:6";
+  public static final String DEAD_HOST_2 = "127.0.0.1:6";
 
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
-  public static final String DEAD_HOST_3 = "[::1]:8";
+  public static final String DEAD_HOST_3 = "127.0.0.1:8";
 
   /**
    * Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if
@@ -768,10 +765,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     log.info("####initCore");
 
     ignoreException("ignore_exception");
-    factoryProp = System.getProperty("solr.directoryFactory");
-    if (factoryProp == null) {
-      System.setProperty("solr.directoryFactory", "solr.RAMDirectoryFactory");
-    }
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -2161,7 +2154,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return file;
     }
     throw new RuntimeException(
-        "Cannot find resource in classpath or in file-system (relative to CWD): " + name);
+        "Cannot find resource in classpath or in file-system (relative to CWD): "
+            + new File(name).getAbsolutePath());
   }
 
   public static String TEST_HOME() {

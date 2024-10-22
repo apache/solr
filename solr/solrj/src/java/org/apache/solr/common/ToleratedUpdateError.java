@@ -49,7 +49,7 @@ public final class ToleratedUpdateError {
   /**
    * Given a 'maxErrors' value such that<code>-1 &lt;= maxErrors &lt;= {@link Integer#MAX_VALUE}
    * </code> this method returns the original input unless it is {@link Integer#MAX_VALUE} in which
-   * case <code>-1</code> is returned for user convinience. Input of <code>maxErrors &lt; -1</code>
+   * case <code>-1</code> is returned for user convenience. Input of <code>maxErrors &lt; -1</code>
    * will trip an assertion and otherwise have undefined behavior.
    *
    * @see #getEffectiveMaxErrors

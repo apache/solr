@@ -25,9 +25,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -74,10 +72,10 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -95,7 +93,7 @@ import org.slf4j.MDC;
 /**
  * A SolrClient implementation that talks directly to a Solr server via Apache HTTP client
  *
- * @deprecated Please use {@link Http2SolrClient}
+ * @deprecated Please use {@link Http2SolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
 public class HttpSolrClient extends BaseHttpSolrClient {
@@ -258,7 +256,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   private boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   private void setBasicAuthHeader(SolrRequest<?> request, HttpRequestBase method)
@@ -334,22 +332,15 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return queryModParams;
   }
 
-  static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
-  }
-
   protected HttpRequestBase createMethod(SolrRequest<?> request, String collection)
       throws IOException, SolrServerException {
     SolrParams params = request.getParams();
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(request);
     Collection<ContentStream> streams =
         contentWriter == null ? requestWriter.getContentStreams(request) : null;
-    String path = requestWriter.getPath(request);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
-    }
+
+    final String requestUrlBeforeParams =
+        ClientUtils.buildRequestUrl(request, requestWriter, baseUrl, collection);
 
     ResponseParser parser = request.getResponseParser();
     if (parser == null) {
@@ -369,36 +360,24 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       wparams.add(invariantParams);
     }
 
-    String basePath = baseUrl;
-    if (collection != null) basePath += "/" + collection;
-
-    if (request instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
-        basePath = baseUrl.replace("/solr", "/api");
-      } else {
-        basePath = baseUrl + "/____v2";
-      }
-    }
-
     if (SolrRequest.METHOD.GET == request.getMethod()) {
       if (streams != null || contentWriter != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
 
-      HttpGet result = new HttpGet(basePath + path + wparams.toQueryString());
+      HttpGet result = new HttpGet(requestUrlBeforeParams + wparams.toQueryString());
 
       populateHeaders(result, contextHeaders);
       return result;
     }
 
     if (SolrRequest.METHOD.DELETE == request.getMethod()) {
-      return new HttpDelete(basePath + path + wparams.toQueryString());
+      return new HttpDelete(requestUrlBeforeParams + wparams.toQueryString());
     }
 
     if (SolrRequest.METHOD.POST == request.getMethod()
         || SolrRequest.METHOD.PUT == request.getMethod()) {
 
-      String url = basePath + path;
       boolean hasNullStreamName = false;
       if (streams != null) {
         for (ContentStream cs : streams) {
@@ -416,7 +395,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       List<NameValuePair> postOrPutParams = new ArrayList<>();
 
       if (contentWriter != null) {
-        String fullQueryUrl = url + wparams.toQueryString();
+        String fullQueryUrl = requestUrlBeforeParams + wparams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
             SolrRequest.METHOD.POST == request.getMethod()
                 ? new HttpPost(fullQueryUrl)
@@ -443,7 +422,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.urlParamNames, wparams);
         queryParams.add(calculateQueryParams(request.getQueryParams(), wparams));
-        String fullQueryUrl = url + queryParams.toQueryString();
+        String fullQueryUrl = requestUrlBeforeParams + queryParams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
             fillContentStream(
                 request, streams, wparams, isMultipart, postOrPutParams, fullQueryUrl);
@@ -451,7 +430,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       }
       // It is has one stream, it is the post body, put the params in the URL
       else {
-        String fullQueryUrl = url + wparams.toQueryString();
+        String fullQueryUrl = requestUrlBeforeParams + wparams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut =
             SolrRequest.METHOD.POST == request.getMethod()
                 ? new HttpPost(fullQueryUrl)
@@ -627,7 +606,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           break;
         default:
           if (processor == null || contentType == null) {
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl,
                 httpStatus,
                 "non ok status: "
@@ -657,7 +636,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
                 .collect(Collectors.toSet());
         if (!processorMimeTypes.contains(mimeType)) {
           if (isUnmatchedErrorCode(mimeType, httpStatus)) {
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl,
                 httpStatus,
                 "non ok status: "
@@ -675,10 +654,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
           try {
             ByteArrayOutputStream body = new ByteArrayOutputStream();
             respBody.transferTo(body);
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl, httpStatus, prefix + body.toString(exceptionCharset), null);
           } catch (IOException e) {
-            throw new RemoteSolrException(
+            throw new SolrClient.RemoteSolrException(
                 baseUrl,
                 httpStatus,
                 "Could not parse response with encoding " + exceptionCharset,
@@ -691,7 +670,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       try {
         rsp = processor.processResponse(respBody, charsetName);
       } catch (Exception e) {
-        throw new RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
+        throw new SolrClient.RemoteSolrException(baseUrl, httpStatus, e.getMessage(), e);
       }
       Object error = rsp == null ? null : rsp.get("error");
       if (error != null
@@ -735,7 +714,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
               .append(method.getURI());
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
-        RemoteSolrException rss = new RemoteSolrException(baseUrl, httpStatus, reason, null);
+        SolrClient.RemoteSolrException rss =
+            new SolrClient.RemoteSolrException(baseUrl, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
@@ -757,7 +737,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   // When raising an error using HTTP sendError, mime types can be mismatched. This is specifically
   // true when SolrDispatchFilter uses the sendError mechanism since the expected MIME type of
-  // response is not HTML but HTTP sendError generates a HTML output, which can lead to mismatch
+  // response is not HTML but HTTP sendError generates an HTML output, which can lead to mismatch
   private boolean isUnmatchedErrorCode(String mimeType, int httpStatus) {
     if (mimeType == null) {
       return false;
@@ -801,6 +781,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return invariantParams;
   }
 
+  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
   public String getBaseURL() {
     return baseUrl;
   }

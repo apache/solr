@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -111,8 +113,8 @@ public class BlobHandler extends RequestHandlerBase
 
       for (ContentStream stream : req.getContentStreams()) {
         ByteBuffer payload;
-        try (InputStream is = stream.getStream()) {
-          payload = Utils.toByteArray(is, maxSize);
+        try (InputStream is = boundedInputStream(stream.getStream(), maxSize)) {
+          payload = Utils.toByteArray(is);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());
@@ -140,7 +142,7 @@ public class BlobHandler extends RequestHandlerBase
 
         long version = 0;
         if (docs.totalHits.value > 0) {
-          Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+          Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
         }
@@ -214,7 +216,7 @@ public class BlobHandler extends RequestHandlerBase
 
                   @Override
                   public void write(OutputStream os) throws IOException {
-                    Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+                    Document doc = req.getSearcher().getDocFetcher().doc(docs.scoreDocs[0].doc);
                     IndexableField sf = doc.getField("blob");
                     FieldType fieldType = req.getSchema().getField("blob").getType();
                     ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
@@ -259,6 +261,16 @@ public class BlobHandler extends RequestHandlerBase
             rsp);
       }
     }
+  }
+
+  private static InputStream boundedInputStream(final InputStream is, final long maxLength)
+      throws IOException {
+    return new BoundedInputStream(is, maxLength) {
+      @Override
+      protected void onMaxLength(long maxLength, long count) {
+        throw new BufferOverflowException();
+      }
+    };
   }
 
   private void verifyWithRealtimeGet(

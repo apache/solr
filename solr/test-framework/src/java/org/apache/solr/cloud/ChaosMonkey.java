@@ -633,7 +633,7 @@ public class ChaosMonkey {
             new SolrNamedThreadFactory("ChaosMonkey"),
             false);
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(
+      executor.execute(
           () -> {
             try {
               jetty.stop();
@@ -657,7 +657,7 @@ public class ChaosMonkey {
             new SolrNamedThreadFactory("ChaosMonkey"),
             false);
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(
+      executor.execute(
           () -> {
             try {
               jetty.start();

@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -151,7 +151,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     try {
       log.debug("Reloading exchange rates from {}", ratesFileLocation);
       try {
-        ratesJsonStream = (new URL(ratesFileLocation)).openStream();
+        ratesJsonStream = (new URI(ratesFileLocation).toURL()).openStream();
       } catch (Exception e) {
         ratesJsonStream = resourceLoader.openResource(ratesFileLocation);
       }

@@ -88,6 +88,7 @@ public class SolrZkClient implements Closeable {
   private final ZkMetrics metrics = new ZkMetrics();
 
   private Compressor compressor;
+  private int minStateByteLenForCompression;
 
   public MapWriter getMetrics() {
     return metrics::writeMap;
@@ -122,6 +123,7 @@ public class SolrZkClient implements Closeable {
         builder.onReconnect,
         builder.beforeReconnect,
         builder.higherLevelIsClosed,
+        builder.minStateByteLenForCompression,
         builder.compressor,
         builder.solrClassLoader,
         builder.useDefaultCredsAndACLs);
@@ -136,6 +138,7 @@ public class SolrZkClient implements Closeable {
       final OnReconnect onReconnect,
       BeforeReconnect beforeReconnect,
       IsClosed higherLevelIsClosed,
+      int minStateByteLenForCompression,
       Compressor compressor,
       SolrClassLoader solrClassLoader,
       boolean useDefaultCredsAndACLs) {
@@ -238,6 +241,7 @@ public class SolrZkClient implements Closeable {
     } else {
       this.compressor = compressor;
     }
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
   }
 
   public CuratorFramework getCuratorFramework() {
@@ -468,9 +472,12 @@ public class SolrZkClient implements Closeable {
   }
 
   /** Returns node's state */
-  public Stat setData(
-      final String path, final byte data[], final int version, boolean retryOnConnLoss)
+  public Stat setData(final String path, byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
+      // state.json should be compressed before being put to ZK
+      data = compressor.compressBytes(data);
+    }
     Stat result =
         runWithCorrectThrows(
             "setting data", () -> client.setData().withVersion(version).forPath(path, data));
@@ -570,16 +577,9 @@ public class SolrZkClient implements Closeable {
     makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, Path data, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, byte[] data, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(
-        path,
-        Files.readAllBytes(data),
-        CreateMode.PERSISTENT,
-        null,
-        failOnExists,
-        retryOnConnLoss,
-        0);
+    makePath(path, data, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
   public void makePath(String path, Path data, boolean retryOnConnLoss)
@@ -675,6 +675,12 @@ public class SolrZkClient implements Closeable {
     if (!failOnExists) {
       createBuilder.orSetData();
     }
+
+    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
+      // state.json should be compressed before being put to ZK
+      data = compressor.compressBytes(data);
+    }
+
     metrics.writes.increment();
     if (data != null) {
       metrics.bytesWritten.add(data.length);
@@ -805,14 +811,14 @@ public class SolrZkClient implements Closeable {
    * Write file to ZooKeeper - default system encoding used.
    *
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
-   * @param data a filepath to read data from
+   * @param source a filepath to read data from
    */
-  public Stat setData(String path, Path data, boolean retryOnConnLoss)
+  public Stat setData(String path, Path source, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
-      log.debug("Write to ZooKeeper: {} to {}", data.toAbsolutePath(), path);
+      log.debug("Write to ZooKeeper: {} to {}", source.toAbsolutePath(), path);
     }
-    return setData(path, Files.readAllBytes(data), retryOnConnLoss);
+    return setData(path, Files.readAllBytes(source), retryOnConnLoss);
   }
 
   @FunctionalInterface
@@ -1149,7 +1155,12 @@ public class SolrZkClient implements Closeable {
     public void process(final WatchedEvent event) {
       log.debug("Submitting job to respond to event {}", event);
       try {
-        zkCallbackExecutor.submit(() -> watcher.process(event));
+        zkCallbackExecutor.execute(
+            () -> {
+              metrics.watchesFired.increment();
+              watcher.process(event);
+            }
+        );
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
         if (!isClosed()) {
@@ -1240,6 +1251,7 @@ public class SolrZkClient implements Closeable {
     public boolean useDefaultCredsAndACLs = true;
 
     public Compressor compressor;
+    private int minStateByteLenForCompression = -1;
 
     public Builder withUrl(String server) {
       this.zkServerAddress = server;
@@ -1254,6 +1266,20 @@ public class SolrZkClient implements Closeable {
      */
     public Builder withTimeout(int zkClientTimeout, TimeUnit unit) {
       this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
+      return this;
+    }
+
+    /**
+     * If the state.json is greater than this many bytes and compression is enabled in solr.xml,
+     * then the data will be compressed
+     *
+     * @param minStateByteLenForCompression how big the state.json file can be
+     * @param compressor The compressor to use
+     */
+    public Builder withStateFileCompression(
+        int minStateByteLenForCompression, Compressor compressor) {
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
       return this;
     }
 
@@ -1293,6 +1319,7 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
+    // I believe this doesn't make sense with out the minStateByteLenForCompression flag?
     public Builder withCompressor(Compressor c) {
       this.compressor = c;
       return this;
@@ -1311,5 +1338,15 @@ public class SolrZkClient implements Closeable {
     public SolrZkClient build() {
       return new SolrZkClient(this);
     }
+  }
+
+  static boolean shouldCompressData(byte[] data, String path, int minStateByteLenForCompression) {
+    if (path.endsWith("state.json")
+        && minStateByteLenForCompression > -1
+        && data.length > minStateByteLenForCompression) {
+      // state.json should be compressed before being put to ZK
+      return true;
+    }
+    return false;
   }
 }

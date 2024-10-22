@@ -16,8 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.SolrCloudTestCase.setPrsDefault;
-import static org.apache.solr.cloud.SolrCloudTestCase.unsetPrsDefault;
+import static org.apache.solr.cloud.SolrCloudTestCase.configurePrsDefault;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,8 +39,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -71,14 +69,9 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     // and it's TestInjection use
   }
 
-  @After
-  public void _unsetPrsDefault() {
-    unsetPrsDefault();
-  }
-
-  @Before
-  public void _setPrsDefault() {
-    setPrsDefault();
+  @BeforeClass
+  public static void _setPrsDefault() {
+    configurePrsDefault();
   }
 
   @Test

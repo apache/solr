@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.filestore.FileStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -272,12 +273,13 @@ public class SolrPackageLoader implements Closeable {
         List<Path> paths = new ArrayList<>();
 
         List<String> errs = new ArrayList<>();
-        coreContainer.getFileStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+        FileStoreUtils.validateFiles(
+            coreContainer.getFileStore(), version.files, true, s -> errs.add(s));
         if (!errs.isEmpty()) {
           throw new RuntimeException("Cannot load package: " + errs);
         }
         for (String file : version.files) {
-          paths.add(coreContainer.getFileStoreAPI().getFileStore().getRealpath(file));
+          paths.add(coreContainer.getFileStore().getRealpath(file));
         }
 
         loader =

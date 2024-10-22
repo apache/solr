@@ -47,7 +47,6 @@ import org.apache.solr.util.LogListener;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -1288,10 +1287,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
           "/responseHeader/status==0");
 
       assertEquals(2, listener.getCount());
-      MatcherAssert.assertThat(
-          listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
-      MatcherAssert.assertThat(
-          listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
+      assertThat(listener.pollMessage(), containsString("hardcoded behavior is omitNorms=true"));
+      assertThat(listener.pollMessage(), containsString("hardcoded behavior is termOffsets=false"));
 
       // Add a date range field with violated invariants
       assertJPost(

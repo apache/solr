@@ -24,11 +24,9 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +60,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.NodeRoles;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SyntheticSolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.slf4j.Logger;
@@ -76,7 +76,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     try {
       CloudSolrClient client = cluster.getSolrClient();
       String COLLECTION_NAME = "test_coll";
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
@@ -105,14 +104,20 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       assertEquals(10, rslt.getResults().size());
 
+      String SYNTHETIC_COLLECTION =
+          CoordinatorHttpSolrCall.getSyntheticCollectionNameFromConfig("conf");
       DocCollection collection =
           cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
-      assertNotNull(collection);
+      // this should be empty as synthetic collection does not register with ZK
+      assertNull(collection);
 
-      Set<String> expectedNodes = new HashSet<>();
-      expectedNodes.add(coordinatorJetty.getNodeName());
-      collection.forEachReplica((s, replica) -> expectedNodes.remove(replica.getNodeName()));
-      assertTrue(expectedNodes.isEmpty());
+      String syntheticCoreName = CoordinatorHttpSolrCall.getSyntheticCoreNameFromConfig("conf");
+      try (SolrCore syntheticCore =
+          coordinatorJetty.getCoreContainer().getCore(syntheticCoreName)) {
+        assertNotNull(syntheticCore);
+        assertTrue(syntheticCore instanceof SyntheticSolrCore);
+        assertEquals("conf", syntheticCore.getCoreDescriptor().getConfigSet());
+      }
     } finally {
       cluster.shutdown();
     }
@@ -124,7 +129,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     try {
       CloudSolrClient client = cluster.getSolrClient();
       String COLLECTION_NAME = "test_coll";
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
       for (int j = 1; j <= 10; j++) {
         String collname = COLLECTION_NAME + "_" + j;
         CollectionAdminRequest.createCollection(collname, "conf", 2, 2)
@@ -170,15 +174,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
         assertEquals(10, rslt.getResults().size());
       }
-
-      DocCollection collection =
-          cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
-      assertNotNull(collection);
-
-      int coordNode1NumCores = coordinatorJetty1.getCoreContainer().getNumAllCores();
-      assertEquals("Unexpected number of cores found for coordinator node", 1, coordNode1NumCores);
-      int coordNode2NumCores = coordinatorJetty2.getCoreContainer().getNumAllCores();
-      assertEquals("Unexpected number of cores found for coordinator node", 1, coordNode2NumCores);
     } finally {
       cluster.shutdown();
     }
@@ -573,15 +568,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         testFuture.get(); // check for any exceptions/failures
       }
 
-      // number of replicas created in the synthetic collection should be one per coordinator node
-      assertEquals(
-          COORDINATOR_NODE_COUNT,
-          client
-              .getClusterState()
-              .getCollection(CoordinatorHttpSolrCall.getSyntheticCollectionName("conf"))
-              .getReplicas()
-              .size());
-
       executorService.shutdown();
       executorService.awaitTermination(10, TimeUnit.SECONDS);
     } finally {
@@ -873,6 +859,69 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
               .process(client, COLLECTION_NAME);
 
       assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  public void testCoreReload() throws Exception {
+    final int DATA_NODE_COUNT = 1;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+
+    List<String> dataNodes =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getNodeName)
+            .collect(Collectors.toUnmodifiableList());
+
+    try {
+      CollectionAdminRequest.createCollection("c1", "conf1", 1, 1).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c1", 1, 1);
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      try (HttpSolrClient coordinatorClient =
+          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+        HttpResponse response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(
+                    new HttpGet(
+                        coordinatorJetty.getBaseUrl()
+                            + "/c1/select?q:*:*")); // make a call so the synthetic core would be
+        // created
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        // conf1 has no cache-control
+        assertNull(response.getFirstHeader("cache-control"));
+
+        // now update conf1
+        cluster.uploadConfigSet(configset("cache-control"), "conf1");
+
+        response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(
+                    new HttpGet(
+                        coordinatorJetty.getBaseUrl()
+                            + "/admin/cores?core=.sys.COORDINATOR-COLL-conf1_core&action=reload"));
+        assertEquals(200, response.getStatusLine().getStatusCode());
+
+        response =
+            coordinatorClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c1/select?q:*:*"));
+        assertEquals(200, response.getStatusLine().getStatusCode());
+        // now the response should show cache-control
+        assertTrue(response.getFirstHeader("cache-control").getValue().contains("max-age=30"));
+      }
     } finally {
       cluster.shutdown();
     }

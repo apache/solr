@@ -36,7 +36,6 @@ public class FieldValueEvaluatorTest extends SolrTestCase {
     values = new HashMap<>();
   }
 
-  @SuppressWarnings("serial")
   @Test
   public void listTypes() throws Exception {
     values.clear();
@@ -87,7 +86,6 @@ public class FieldValueEvaluatorTest extends SolrTestCase {
         "second", ((Collection<?>) new FieldValueEvaluator("e").evaluate(tuple)).toArray()[1]);
   }
 
-  @SuppressWarnings("serial")
   @Test
   public void iterableTypes() throws Exception {
     values.clear();
