@@ -41,6 +41,8 @@ dependencies {
     exclude group: "org.awaitility", module: "awaitility"
   })
   serverLib 'org.eclipse.jetty:jetty-http'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-client'
+  serverLib 'org.eclipse.jetty.http2:jetty-http2-client-transport'
   serverLib 'org.eclipse.jetty:jetty-io'
   serverLib 'org.eclipse.jetty:jetty-jmx'
   serverLib 'org.eclipse.jetty:jetty-rewrite'

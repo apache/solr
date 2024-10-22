@@ -375,7 +375,7 @@ public class JettySolrRunner {
           new ServletContextHandler("/solr", ServletContextHandler.SESSIONS);
       root.setSessionHandler(sessionHandler);
       root.setServer(server);
-      root.setBaseResource(ResourceFactory.root().newResource("."));
+      root.setBaseResource(ResourceFactory.of(server).newResource("."));
       // [EE10]root.setResourceBase(".");
 
       root.addEventListener(
