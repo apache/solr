@@ -73,23 +73,32 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     }
   }
 
-  /** Returns true if the queue contains a task with the specified async id. */
-  public boolean containsTaskWithRequestId(String requestIdKey, String requestId)
-      throws KeeperException, InterruptedException {
+  /**
+   * Helper method to find the path of a first task with a specific request ID.
+   *
+   * @param requestIdKey The key of the request ID in the task message.
+   * @param requestId The request ID to look for.
+   * @return The path of the task if found, or null if not found.
+   */
+  private String findTaskWithRequestId(String requestIdKey, String requestId)
+          throws KeeperException, InterruptedException {
 
     List<String> childNames = zookeeper.getChildren(dir, null, true);
     stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
       if (childName != null && childName.startsWith(PREFIX)) {
+        String path = dir + "/" + childName;
         try {
-          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
+          byte[] data = zookeeper.getData(path, null, null, true);
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
               if (log.isDebugEnabled()) {
-                log.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
+                log.debug("Looking for requestId '{}', found '{}'", requestId, message.get(requestIdKey));
               }
-              if (message.get(requestIdKey).equals(requestId)) return true;
+              if (message.get(requestIdKey).equals(requestId)) {
+                return path;
+              }
             }
           }
         } catch (KeeperException.NoNodeException e) {
@@ -97,8 +106,33 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         }
       }
     }
+    return null;
+  }
 
-    return false;
+  /** Returns true if the queue contains a task with the specified request ID. */
+  public boolean containsTaskWithRequestId(String requestIdKey, String requestId)
+          throws KeeperException, InterruptedException {
+
+    String path = findTaskWithRequestId(requestIdKey, requestId);
+    return path != null;
+  }
+
+  /** Removes the first task with the specified request ID from the queue. */
+  public void removeTaskWithRequestId(String requestIdKey, String requestId)
+          throws KeeperException, InterruptedException {
+
+    String path = findTaskWithRequestId(requestIdKey, requestId);
+    if (path != null) {
+      try {
+        zookeeper.delete(path, -1, true);
+        log.info("Removed task with requestId '{}' at path {}", requestId, path);
+      } catch (KeeperException.NoNodeException e) {
+        // Node might have been removed already
+        log.warn("Node at path {} does not exist. It might have been removed already.", path);
+      }
+    } else {
+      log.info("No task with requestId '{}' was found in the queue.", requestId);
+    }
   }
 
   /** Remove the event and save the response into the other path. */
