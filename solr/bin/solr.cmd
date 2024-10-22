@@ -443,6 +443,7 @@ IF "%1"=="--quiet" goto set_warn
 IF "%1"=="-c" goto set_cloud_mode
 IF "%1"=="-cloud" goto set_cloud_mode
 IF "%1"=="--cloud" goto set_cloud_mode
+IF "%1"=="--user-managed" goto set_user_managed_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="--server-dir" goto set_server_dir
@@ -507,6 +508,13 @@ goto parse_args
 
 :set_cloud_mode
 set SOLR_MODE=solrcloud
+REM Notify user in 9.x about the default mode change if cloud flag is used.
+@echo Solr will start in SolrCloud mode by default in version 10, and you will no longer need to pass in -c or --cloud flag.
+SHIFT
+goto parse_args
+
+:set_user_managed_mode
+set SOLR_MODE=user-managed
 SHIFT
 goto parse_args
 
@@ -950,11 +958,16 @@ if !JAVA_MAJOR_VERSION! LSS 9  (
 )
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
-IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
+IF "%SOLR_MODE%"=="" (
+  REM User has not provided any option for the mode (--cloud/--user-managed), therefore
+  REM stay on user-managed mode in 9.x to avoid behavior changing / breaking changes
+  set SOLR_MODE="user-managed"
+  REM and notify that staying the default option (not providing --user-managed) will affect
+  REM future execution
+  echo Solr will start in SolrCloud mode by default in version 10, and you will have to provide --user-managed if you want to stay on the user-managed (aka. standalone) mode.
+)
 
 IF "%SOLR_MODE%"=="solrcloud" (
-  @echo Solr will start in SolrCloud mode by default in version 10, and you will no longer need to pass in -c or --cloud flag.
-  @echo.
   IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
 
   set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
@@ -989,7 +1002,6 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF EXIST "%SOLR_HOME%\collection1\core.properties" set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dbootstrap_confdir=./solr/collection1/conf -Dcollection.configName=myconf -DnumShards=1"
 ) ELSE (
   set CLOUD_MODE_OPTS=
-  @echo Solr will start in SolrCloud mode by default in version 10.  You will need to pass in --user-managed flag to run in User Managed (aka Standalone) mode.
   IF NOT EXIST "%SOLR_HOME%\solr.xml" (
     IF "%SOLR_SOLRXML_REQUIRED%"=="true" (
       set "SCRIPT_ERROR=Solr home directory %SOLR_HOME% must contain solr.xml!"
