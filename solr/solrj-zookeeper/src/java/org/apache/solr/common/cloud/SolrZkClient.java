@@ -478,9 +478,10 @@ public class SolrZkClient implements Closeable {
       // state.json should be compressed before being put to ZK
       data = compressor.compressBytes(data);
     }
+    final byte[] finalData = data;
     Stat result =
         runWithCorrectThrows(
-            "setting data", () -> client.setData().withVersion(version).forPath(path, data));
+            "setting data", () -> client.setData().withVersion(version).forPath(path, finalData));
     metrics.writes.increment();
     if (data != null) {
       metrics.bytesWritten.add(data.length);
@@ -721,10 +722,12 @@ public class SolrZkClient implements Closeable {
     } else {
       finalPath = path;
     }
+
+    final byte[] finalData = data;
     runWithCorrectThrows(
         "making path",
         () -> {
-          createBuilder.creatingParentsIfNeeded().withMode(createMode).forPath(finalPath, data);
+          createBuilder.creatingParentsIfNeeded().withMode(createMode).forPath(finalPath, finalData);
           return client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(finalPath);
         });
   }
