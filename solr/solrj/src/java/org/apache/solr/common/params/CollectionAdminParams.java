@@ -25,6 +25,8 @@ public interface CollectionAdminParams {
   /* Param used by DELETESTATUS call to clear all stored responses */
   String FLUSH = "flush";
 
+  String FORCE = "force";
+
   String COLLECTION = "collection";
 
   String COUNT_PROP = "count";
