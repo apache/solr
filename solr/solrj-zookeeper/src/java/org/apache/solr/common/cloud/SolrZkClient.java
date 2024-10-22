@@ -727,7 +727,10 @@ public class SolrZkClient implements Closeable {
     runWithCorrectThrows(
         "making path",
         () -> {
-          createBuilder.creatingParentsIfNeeded().withMode(createMode).forPath(finalPath, finalData);
+          createBuilder
+              .creatingParentsIfNeeded()
+              .withMode(createMode)
+              .forPath(finalPath, finalData);
           return client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(finalPath);
         });
   }
@@ -1162,8 +1165,7 @@ public class SolrZkClient implements Closeable {
             () -> {
               metrics.watchesFired.increment();
               watcher.process(event);
-            }
-        );
+            });
       } catch (RejectedExecutionException e) {
         // If not a graceful shutdown
         if (!isClosed()) {
