@@ -54,6 +54,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         Overseer.getRunningMap(zkStateReader.getZkClient()),
         Overseer.getCompletedMap(zkStateReader.getZkClient()),
         Overseer.getFailureMap(zkStateReader.getZkClient()),
+        Overseer.getAsyncIdsMap(zkStateReader.getZkClient()),
         solrMetricsContext);
   }
 
@@ -69,6 +70,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
       DistributedMap runningMap,
       DistributedMap completedMap,
       DistributedMap failureMap,
+      DistributedMap asyncIdMap,
       SolrMetricsContext solrMetricsContext) {
     super(
         zkStateReader,
@@ -87,6 +89,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         runningMap,
         completedMap,
         failureMap,
+        asyncIdMap,
         solrMetricsContext);
   }
 
