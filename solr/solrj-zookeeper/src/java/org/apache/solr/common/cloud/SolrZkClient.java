@@ -726,10 +726,15 @@ public class SolrZkClient implements Closeable {
     runWithCorrectThrows(
         "making path",
         () -> {
-          createBuilder
-              .creatingParentsIfNeeded()
-              .withMode(createMode)
-              .forPath(finalPath, finalData);
+          try {
+            createBuilder
+                .creatingParentsIfNeeded()
+                .withMode(createMode)
+                .forPath(finalPath, finalData);
+          } catch (KeeperException.NodeExistsException e) {
+            // There can be a race exception when this is called in parallel
+            setData(finalPath, finalData, true);
+          }
           return client.checkExists().usingWatcher(wrapWatcher(watcher)).forPath(finalPath);
         });
   }

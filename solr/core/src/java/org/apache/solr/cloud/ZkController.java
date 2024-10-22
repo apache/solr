@@ -2513,7 +2513,7 @@ public class ZkController implements Closeable {
       } catch (NoNodeException e) {
         if (createIfNotExists) {
           try {
-            zkClient.create(resourceLocation, content, CreateMode.PERSISTENT, true);
+            zkClient.makePath(resourceLocation, content, CreateMode.PERSISTENT, true);
             latestVersion = 0; // just created so version must be zero
             touchConfDir(zkLoader);
           } catch (KeeperException.NodeExistsException nee) {
