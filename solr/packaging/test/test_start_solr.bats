@@ -50,10 +50,27 @@ teardown() {
 
 }
 
-@test "start provides warning about SolrCloud mode" {
+@test "start warns about SolrCloud mode if no mode specified" {
   run solr start
-  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
-  assert_output --partial 'Solr will start in SolrCloud mode by default in version 10.  You will need to pass in --user-managed flag to run in User Managed (aka Standalone) mode.'
+  # Default behavior should be user-managed mode in Solr 9
+  solr assert --not-cloud http://localhost:${SOLR_PORT} --timeout 5000
+  assert_output --partial 'Solr will start in SolrCloud mode by default in version 10'
+  assert_output --partial 'you will have to provide --user-managed'
+  solr stop
+}
+
+@test "start warns about SolrCloud mode if --cloud used" {
+  run solr start --cloud
+  solr assert --cloud http://localhost:${SOLR_PORT} --timeout 5000
+  assert_output --partial 'Solr will start in SolrCloud mode by default in version 10'
+  assert_output --partial 'you will no longer need to pass in -c or --cloud flag'
+  solr stop
+}
+
+@test "start doesn't warn about SolrCloud mode if --user-managed used" {
+  run solr start --user-managed
+  solr assert --not-cloud http://localhost:${SOLR_PORT} --timeout 5000
+  refute_output --partial 'Solr will start in SolrCloud mode by default in version 10'
   solr stop
 }
 
