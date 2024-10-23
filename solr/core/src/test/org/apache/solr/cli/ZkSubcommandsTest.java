@@ -280,7 +280,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // Lets do it again
     assertEquals(0, runTool(args, tool));
 
-    fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
+    fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);

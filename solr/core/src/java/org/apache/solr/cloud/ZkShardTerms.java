@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -396,6 +398,15 @@ public class ZkShardTerms implements AutoCloseable {
             e);
         return;
       } catch (KeeperException e) {
+        try {
+          zkClient.getCuratorFramework().blockUntilConnected(zkClient.getZkClientTimeout(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Error watching shard term for collection: " + collection,
+              ie);
+        }
         log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
       }
     }
@@ -405,6 +416,10 @@ public class ZkShardTerms implements AutoCloseable {
   private void registerWatcher() throws KeeperException {
     Watcher watcher =
         event -> {
+          // Don't do anything if we are closed
+          if (isClosed.get()) {
+            return;
+          }
           // session events are not change events, and do not remove the watcher
           if (Watcher.Event.EventType.None == event.getType()) {
             return;
@@ -420,7 +435,7 @@ public class ZkShardTerms implements AutoCloseable {
         };
     try {
       // exists operation is faster than getData operation
-      zkClient.exists(znodePath, watcher, true);
+      zkClient.getData(znodePath, watcher, null, true);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(

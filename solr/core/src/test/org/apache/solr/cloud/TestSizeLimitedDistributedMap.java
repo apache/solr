@@ -92,7 +92,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map =
           new SizeLimitedDistributedMap(
-              zkClient, path, numResponsesToStore, (element) -> deletedItems.add(element));
+              zkClient, path, numResponsesToStore, deletedItems::add);
       // fill the map to limit first
       for (int i = 0; i < numResponsesToStore; i++) {
         map.put("xyz_" + i, new byte[0]);
