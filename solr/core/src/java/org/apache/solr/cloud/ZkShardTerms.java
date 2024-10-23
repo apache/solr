@@ -397,17 +397,6 @@ public class ZkShardTerms implements AutoCloseable {
             e);
         return;
       } catch (KeeperException e) {
-        try {
-          zkClient
-              .getCuratorFramework()
-              .blockUntilConnected(zkClient.getZkClientTimeout(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Error watching shard term for collection: " + collection,
-              ie);
-        }
         log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
       }
     }
