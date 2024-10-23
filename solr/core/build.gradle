@@ -123,6 +123,8 @@ dependencies {
   implementation 'org.eclipse.jetty:jetty-io'
   implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
+  // ZooKeeper
+
   implementation('org.apache.curator:curator-framework', {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })
@@ -132,8 +134,6 @@ dependencies {
   testImplementation('org.apache.curator:curator-test', {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
   })
-
-  // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
