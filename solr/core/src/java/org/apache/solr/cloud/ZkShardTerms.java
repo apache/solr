@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -399,7 +398,9 @@ public class ZkShardTerms implements AutoCloseable {
         return;
       } catch (KeeperException e) {
         try {
-          zkClient.getCuratorFramework().blockUntilConnected(zkClient.getZkClientTimeout(), TimeUnit.MILLISECONDS);
+          zkClient
+              .getCuratorFramework()
+              .blockUntilConnected(zkClient.getZkClientTimeout(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
           throw new SolrException(
