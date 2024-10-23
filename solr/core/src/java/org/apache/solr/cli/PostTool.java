@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import jakarta.ws.rs.core.UriBuilder;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -330,15 +331,24 @@ public class PostTool extends ToolBase {
       }
 
       solrUrl = SolrCLI.normalizeSolrUrl(solrUrl, true, hostContext) + hostContext;
-      String url = solrUrl + "/" + cli.getOptionValue("name") + "/update";
-      solrUpdateUrl = new URI(url);
+
+      solrUpdateUrl =
+          UriBuilder.fromUri(SolrCLI.normalizeSolrUrl(solrUrl, true, hostContext))
+              .path(hostContext)
+              .path(cli.getOptionValue("name"))
+              .path("update")
+              .build();
 
     } else if (cli.hasOption("solr-update-url")) {
       String url = cli.getOptionValue("solr-update-url");
       solrUpdateUrl = new URI(url);
     } else if (cli.hasOption("name")) {
-      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
-      solrUpdateUrl = new URI(url);
+      solrUpdateUrl =
+          UriBuilder.fromUri(SolrCLI.getDefaultSolrUrl())
+              .path("solr")
+              .path(cli.getOptionValue("name"))
+              .path("update")
+              .build();
     } else {
       throw new IllegalArgumentException(
           "Must specify either --solr-update-url or -c parameter to post documents.");
@@ -450,7 +460,7 @@ public class PostTool extends ToolBase {
     }
 
     // Set Extracting handler as default
-    solrUpdateUrl = appendUrlPath(solrUpdateUrl, "/extract");
+    solrUpdateUrl = UriBuilder.fromUri(solrUpdateUrl).path("extract").build();
 
     info("Posting web pages to Solr url " + solrUpdateUrl);
     auto = true;
@@ -896,7 +906,7 @@ public class PostTool extends ToolBase {
       // TODO: from being interpreted as Solr documents internally
       if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
         suffix = "/json/docs";
-        String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
+        String urlStr = UriBuilder.fromUri(solrUpdateUrl).path(suffix).build().toString();
         uri = new URI(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
@@ -905,7 +915,8 @@ public class PostTool extends ToolBase {
       } else {
         // SolrCell
         suffix = "/extract";
-        String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
+        String urlStr = UriBuilder.fromUri(solrUpdateUrl).path(suffix).build().toString();
+        ;
         if (!urlStr.contains("resource.name")) {
           urlStr =
               appendParam(
@@ -951,29 +962,6 @@ public class PostTool extends ToolBase {
         }
       }
     }
-  }
-
-  /**
-   * Appends to the path of the URL
-   *
-   * @param uri the URI
-   * @param append the path to append
-   * @return the final URL version
-   */
-  protected static URI appendUrlPath(URI uri, String append) {
-    if (append == null || append.isEmpty()) {
-      return uri;
-    }
-    if (append.startsWith("/")) {
-      append = append.substring(1);
-    }
-    if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
-      append += "?" + uri.getQuery();
-    }
-    if (!uri.getPath().endsWith("/")) {
-      append = uri.getPath() + "/" + append;
-    }
-    return uri.resolve(append);
   }
 
   /**

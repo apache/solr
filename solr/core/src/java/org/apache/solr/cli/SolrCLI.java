@@ -739,7 +739,7 @@ public class SolrCLI implements CLIO {
         hostContext = hostContext.substring(0, hostContext.length() - 1);
       }
       // Only consider URI path component when normalizing hostContext
-      if (urlPath.contains(hostContext)) {
+      if (hostContext != null && !hostContext.isBlank() && urlPath.contains(hostContext)) {
         String newSolrUrl =
             uri.resolve(urlPath.substring(0, urlPath.indexOf(hostContext)) + "/").toString();
         if (logUrlFormatWarning) {

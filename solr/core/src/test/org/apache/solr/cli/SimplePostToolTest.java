@@ -156,28 +156,6 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAppendUrlPath() throws URISyntaxException {
-    assertEquals(
-        URI.create("http://[ff01::114]/a?foo=bar"),
-        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a?foo=bar"),
-        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]/?foo=bar"), "/a"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "/b"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "/b"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]/a?foo=bar"), "b"));
-    assertEquals(
-        URI.create("http://[ff01::114]/a/b?foo=bar"),
-        SimplePostTool.appendUrlPath(URI.create("http://[ff01::114]/a/?foo=bar"), "b"));
-  }
-
-  @Test
   public void testGuessType() {
     File f = new File("foo.doc");
     assertEquals("application/msword", SimplePostTool.guessType(f));
