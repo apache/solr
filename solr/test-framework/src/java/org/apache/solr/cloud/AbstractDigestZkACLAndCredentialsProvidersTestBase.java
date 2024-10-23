@@ -134,6 +134,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     // no (or completely open) ACLs added. Therefore, hack your way into being authorized for
     // creating anyway
     zkClient
+        .getCuratorFramework()
+        .getZookeeperClient()
         .getZooKeeper()
         .addAuthInfo(
             "digest", (ALL_USERNAME + ":" + ALL_PASSWORD).getBytes(StandardCharsets.UTF_8));
@@ -305,6 +307,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
       // no (or completely open) ACLs added. Therefore, hack your way into being authorized for
       // creating anyway
       zkClient
+          .getCuratorFramework()
+          .getZookeeperClient()
           .getZooKeeper()
           .addAuthInfo(
               "digest",

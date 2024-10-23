@@ -64,7 +64,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
@@ -933,10 +932,6 @@ public class SolrZkClient implements Closeable {
     return isClosed || (higherLevelIsClosed != null && higherLevelIsClosed.isClosed());
   }
 
-  public ZooKeeper getZooKeeper() throws Exception {
-    return client.getZookeeperClient().getZooKeeper();
-  }
-
   public long getZkSessionId() {
     if (isConnected()) {
       try {
@@ -950,7 +945,7 @@ public class SolrZkClient implements Closeable {
   public int getZkSessionTimeout() {
     if (isConnected()) {
       try {
-        return client.getZookeeperClient().getZooKeeper().getSessionTimeout();
+        return client.getZookeeperClient().getLastNegotiatedSessionTimeoutMs();
       } catch (Exception ignored) {
       }
     }
