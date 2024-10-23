@@ -23,6 +23,8 @@ Improvements
 
 * SOLR-17077: When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. (Pierre Salagnac)
 
+* SOLR-16116: Apache Curator is now used to manage all Solr Zookeeper interactions. (Houston Putman, Kevin Risden, Mike Drob, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
