@@ -47,7 +47,9 @@ setup() {
 }
 
 @test "status help flag prints help" {
-  skip "Currently the status -help flag doesn't return nice help text!"
+  run solr status --help
+  assert_output --partial 'usage: bin/solr status'
+  refute_output --partial 'ERROR'
 }
 
 @test "healthcheck help flag prints help" {
