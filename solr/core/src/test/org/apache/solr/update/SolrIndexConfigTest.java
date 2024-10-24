@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.misc.index.BPReorderingMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -55,6 +56,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       "solrconfig-concurrentmergescheduler.xml";
   private static final String solrConfigFileNameSortingMergePolicyFactory =
       "solrconfig-sortingmergepolicyfactory.xml";
+  private static final String solrConfigFileNameBPReorderingMergePolicyFactory =
+      "solrconfig-bpreorderingmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
 
   private static boolean compoundMergePolicySort = false;
@@ -167,6 +170,23 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     final Sort actual = sortingMergePolicy.getSort();
     assertEquals("SortingMergePolicy.getSort", expected, actual);
+  }
+
+  public void testBPReorderingMPSolrIndexConfigCreation() throws Exception {
+    SolrConfig solrConfig =
+        new SolrConfig(instanceDir, solrConfigFileNameBPReorderingMergePolicyFactory);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertNotNull(solrIndexConfig);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    final MergePolicy mergePolicy = iwc.getMergePolicy();
+    assertNotNull("null mergePolicy", mergePolicy);
+    assertTrue(
+        "mergePolicy (" + mergePolicy + ") is not a BPReorderingMergePolicy",
+        mergePolicy instanceof BPReorderingMergePolicy);
   }
 
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
