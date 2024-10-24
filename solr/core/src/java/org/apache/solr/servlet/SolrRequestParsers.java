@@ -197,11 +197,18 @@ public class SolrRequestParsers {
   private SolrQueryRequest buildRequestFrom(
       SolrCore core,
       SolrParams params,
-      Collection<ContentStream> streams,
+      Collection<ContentStream> streams, // might be added to but caller shouldn't depend on it
       RTimerTree requestTimer,
       final HttpServletRequest req,
       final Principal principal)
       throws Exception {
+    // ensure streams is non-null and mutable so we can easily add to it
+    if (streams == null) {
+      streams = new ArrayList<>();
+    } else if (!(streams instanceof ArrayList)) {
+      streams = new ArrayList<>(streams);
+    }
+
     // The content type will be applied to all streaming content
     String contentType = params.get(CommonParams.STREAM_CONTENTTYPE);
 
@@ -293,7 +300,7 @@ public class SolrRequestParsers {
             return httpSolrCall;
           }
         };
-    if (streams != null && streams.size() > 0) {
+    if (!streams.isEmpty()) {
       q.setContentStreams(streams);
     }
     return q;

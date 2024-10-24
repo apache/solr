@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -60,7 +61,11 @@ public class TestRawTransformer extends SolrCloudTestCase {
     if (random().nextBoolean()) {
       initStandalone();
       JSR.start();
-      CLIENT = JSR.newClient();
+      if (random().nextBoolean()) {
+        CLIENT = JSR.newClient();
+      } else {
+        CLIENT = new EmbeddedSolrServer(JSR.getCoreContainer(), null);
+      }
     } else {
       initCloud();
       CLIENT = JSR.newClient();
