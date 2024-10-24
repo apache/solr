@@ -170,6 +170,8 @@ Optimizations
 
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
+* SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)
@@ -202,9 +204,6 @@ tasks that were scheduled via ExecutorService#submit, the results of the task ex
 led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
-
-* SOLR-16503: Replaced CloudLegacySolrClient with CloudHttp2SolrClient in SolrClientCloudManager and updated all
-internal classes accordingly. (Sanjay Dutt, David Smiley)
 
 ==================  9.7.0 ==================
 New Features
