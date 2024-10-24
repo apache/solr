@@ -54,11 +54,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -199,7 +199,11 @@ public class ZkController implements Closeable {
   private final SolrZkClient zkClient;
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
-  private CloudLegacySolrClient cloudSolrClient;
+
+  // only for internal usage
+  private Http2SolrClient http2SolrClient;
+
+  private CloudHttp2SolrClient cloudSolrClient;
 
   private final String zkServerAddress; // example: 127.0.0.1:54062/solr
 
@@ -768,8 +772,9 @@ public class ZkController implements Closeable {
     } finally {
 
       sysPropsCacher.close();
-      customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
       customThreadPool.execute(() -> IOUtils.closeQuietly(cloudManager));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(cloudSolrClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(http2SolrClient));
 
       try {
         try {
@@ -865,11 +870,15 @@ public class ZkController implements Closeable {
       if (cloudManager != null) {
         return cloudManager;
       }
-      cloudSolrClient =
-          new CloudLegacySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
-              .withHttpClient(cc.getUpdateShardHandler().getDefaultHttpClient())
+      http2SolrClient =
+          new Http2SolrClient.Builder()
+              .withHttpClient(cc.getDefaultHttpSolrClient())
+              .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
               .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+              .build();
+      cloudSolrClient =
+          new CloudHttp2SolrClient.Builder(List.of(getZkServerAddress()), Optional.empty())
+              .withHttpClient(http2SolrClient)
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
       cloudManager.getClusterStateProvider().connect();
