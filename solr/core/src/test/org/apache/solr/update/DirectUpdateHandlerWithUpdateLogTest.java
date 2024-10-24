@@ -17,15 +17,20 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * Tests {@link DirectUpdateHandler2} with update log enabled.
+ */
 @LogLevel("org.apache.solr.update=INFO")
 public class DirectUpdateHandlerWithUpdateLogTest extends SolrTestCaseJ4 {
 
@@ -68,7 +73,7 @@ public class DirectUpdateHandlerWithUpdateLogTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3"));
     h.close();
     // Then the shouldCommit hook is called.
-    new TimeOut(10)
+    new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME)
         .waitFor(
             "Timeout waiting for should commit hook",
             () -> updater.shouldCommitCallCount.get() == 4);
