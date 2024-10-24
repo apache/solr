@@ -19,7 +19,10 @@ package org.apache.solr.composeui.ui.navigation
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -38,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.apache.solr.compose_ui.generated.resources.Res
 import org.apache.solr.compose_ui.generated.resources.community
@@ -52,50 +56,68 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * The basic footer shown in all pages.
+ *
+ * @param modifier Modifier to apply to the root composable.
+ * @param collapseWidth The width at which the footer should be collapsed and display only icons.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Footer(
     modifier: Modifier = Modifier,
+    collapseWidth: Dp = 1024.dp,
 ) = Column(modifier = modifier) {
     HorizontalDivider()
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        FooterAction(
-            imageVector = Icons.AutoMirrored.Rounded.MenuBook,
-            stringRes = Res.string.documentation,
-        )
 
-        FooterAction(
-            imageVector = Icons.Rounded.Code,
-            stringRes = Res.string.solr_query_syntax,
-        )
+    BoxWithConstraints {
 
-        FooterAction(
-            imageVector = Icons.Rounded.BugReport,
-            stringRes = Res.string.issue_tracker,
-        )
+        val showIconsOnly = maxWidth < collapseWidth
 
-        FooterAction(
-            imageVector = Icons.Rounded.Groups,
-            stringRes = Res.string.community,
-        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            FooterAction(
+                imageVector = Icons.AutoMirrored.Rounded.MenuBook,
+                stringRes = Res.string.documentation,
+                iconOnly = showIconsOnly,
+            )
 
-        FooterAction(
-            imageVector = Icons.Rounded.ImageNotSupported, // TODO Add Slack Logo
-            stringRes = Res.string.slack,
-        )
+            FooterAction(
+                imageVector = Icons.Rounded.Code,
+                stringRes = Res.string.solr_query_syntax,
+                iconOnly = showIconsOnly,
+            )
 
-        FooterAction(
-            imageVector = Icons.Rounded.Dashboard,
-            stringRes = Res.string.irc,
-        )
+            FooterAction(
+                imageVector = Icons.Rounded.BugReport,
+                stringRes = Res.string.issue_tracker,
+                iconOnly = showIconsOnly,
+            )
 
-        FooterAction(
-            imageVector = Icons.Rounded.Support,
-            stringRes = Res.string.support,
-        )
+            FooterAction(
+                imageVector = Icons.Rounded.Groups,
+                stringRes = Res.string.community,
+                iconOnly = showIconsOnly,
+            )
+
+            FooterAction(
+                imageVector = Icons.Rounded.ImageNotSupported, // TODO Add Slack Logo
+                stringRes = Res.string.slack,
+                iconOnly = showIconsOnly,
+            )
+
+            FooterAction(
+                imageVector = Icons.Rounded.Dashboard,
+                stringRes = Res.string.irc,
+                iconOnly = showIconsOnly,
+            )
+
+            FooterAction(
+                imageVector = Icons.Rounded.Support,
+                stringRes = Res.string.support,
+                iconOnly = showIconsOnly,
+            )
+        }
     }
 }
 
@@ -103,6 +125,7 @@ fun Footer(
 private fun FooterAction(
     imageVector: ImageVector,
     stringRes: StringResource,
+    iconOnly: Boolean = false,
     onClick: () -> Unit = {},
 ) = Row(
     modifier = Modifier.clickable(onClick = onClick)
@@ -114,5 +137,5 @@ private fun FooterAction(
         imageVector = imageVector,
         contentDescription = null,
     )
-    Text(stringResource(stringRes))
+    if (!iconOnly) Text(stringResource(stringRes))
 }
