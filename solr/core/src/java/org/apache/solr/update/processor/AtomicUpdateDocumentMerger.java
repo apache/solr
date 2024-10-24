@@ -69,10 +69,12 @@ public class AtomicUpdateDocumentMerger {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  protected final SolrQueryRequest request;
   protected final IndexSchema schema;
   protected final SchemaField idField;
 
   public AtomicUpdateDocumentMerger(SolrQueryRequest queryReq) {
+    request = queryReq;
     schema = queryReq.getSchema();
     idField = schema.getUniqueKeyField();
   }
@@ -517,12 +519,16 @@ public class AtomicUpdateDocumentMerger {
               + existingField.getName()
               + " since it contains values which are either not SolrInputDocument's or do not have an id property");
     }
+    boolean skipMissingChildren = request.getParams().getBool("skipUpdateIfMissing", false);
     for (SolrInputDocument child : children) {
       if (isAtomicUpdate(child)) {
         // When it is atomic update, update the nested document ONLY if it already exists
         final BytesRef childIdBytes = readChildIdBytes(child);
         SolrInputDocument original = originalChildrenById.get(childIdBytes);
         if (original == null) {
+          if (skipMissingChildren) {
+            continue;
+          }
           throw new SolrException(
               ErrorCode.BAD_REQUEST,
               "A nested atomic update can only update an existing nested document");
