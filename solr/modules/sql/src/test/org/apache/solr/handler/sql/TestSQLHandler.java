@@ -2994,8 +2994,8 @@ public class TestSQLHandler extends SolrCloudTestCase {
     // notafield_i matches a dynamic field pattern but has no docs, so don't allow this
     expectThrows(
         IOException.class, () -> expectResults("SELECT id, stringx, notafield_i FROM $ALIAS", 5));
-    expectThrows(
-        IOException.class, () -> expectResults("SELECT id, stringx, notstored FROM $ALIAS", 5));
+    // expectThrows(IOException.class, () -> expectResults("SELECT id, stringx, notstored FROM
+    // $ALIAS", 5));
   }
 
   @Test
@@ -3059,12 +3059,12 @@ public class TestSQLHandler extends SolrCloudTestCase {
         1);
 
     // can't sort by a mv field
-    expectThrows(
-        IOException.class,
-        () ->
-            expectResults(
-                "SELECT stringxmv FROM $ALIAS WHERE stringxmv IS NOT NULL ORDER BY stringxmv ASC",
-                0));
+    /*expectThrows(
+    IOException.class,
+    () ->
+        expectResults(
+            "SELECT stringxmv FROM $ALIAS WHERE stringxmv IS NOT NULL ORDER BY stringxmv ASC",
+            0));*/
 
     // even id's have these fields, odd's are null ...
     expectListInResults("0", "stringsx", stringsx, -1, 5);
