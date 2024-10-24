@@ -1322,8 +1322,7 @@ function start_solr() {
     exit 1
   fi
 
-  # Vector optimizations are only supported for Java 20 and 21 for now.
-  # This will need to change as Lucene is upgraded and newer Java versions are released
+  # Add vector optimizations module
   SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
