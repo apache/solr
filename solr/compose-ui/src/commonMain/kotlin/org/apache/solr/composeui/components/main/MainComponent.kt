@@ -19,7 +19,6 @@ package org.apache.solr.composeui.components.main
 
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
-import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.composeui.components.environment.EnvironmentComponent
 import org.apache.solr.composeui.components.logging.LoggingComponent
 import org.apache.solr.composeui.components.navigation.NavigationComponent

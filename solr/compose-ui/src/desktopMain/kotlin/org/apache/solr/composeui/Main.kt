@@ -30,8 +30,6 @@ import com.arkivanov.decompose.extensions.compose.lifecycle.LifecycleController
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import com.arkivanov.mvikotlin.core.utils.setMainThreadId
 import com.arkivanov.mvikotlin.main.store.DefaultStoreFactory
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.defaultRequest
 import java.awt.Dimension
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.composeui.components.root.RootComponent

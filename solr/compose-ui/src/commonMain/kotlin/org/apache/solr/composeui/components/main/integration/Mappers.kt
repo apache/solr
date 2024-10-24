@@ -20,7 +20,6 @@ package org.apache.solr.composeui.components.main.integration
 import org.apache.solr.composeui.components.main.MainComponent
 import org.apache.solr.composeui.ui.navigation.MainMenu
 
-
 val MainComponent.Child.asMainMenu: MainMenu
     get() = when (this) {
         // TODO Add additional mappings once more children are supported
