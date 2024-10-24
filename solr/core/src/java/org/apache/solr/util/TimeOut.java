@@ -28,10 +28,6 @@ public class TimeOut {
   private final long timeoutAt, startTime;
   private final TimeSource timeSource;
 
-  public TimeOut(long intervalSeconds) {
-    this(intervalSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-  }
-
   public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
