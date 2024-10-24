@@ -18,16 +18,14 @@
 package org.apache.solr.composeui.ui.environment
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.apache.solr.composeui.components.environment.EnvironmentComponent
 
@@ -40,84 +38,35 @@ import org.apache.solr.composeui.components.environment.EnvironmentComponent
  * @param component The component that holds the state of this composable and handles interactions.
  * @param modifier Modifier to apply to the root composable.
  */
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EnvironmentContent(
     component: EnvironmentComponent,
     modifier: Modifier = Modifier,
-) {
-    val model by component.model.collectAsState()
-    val windowSizeClass = calculateWindowSizeClass()
-    val isLargeScreen = windowSizeClass.widthSizeClass > WindowWidthSizeClass.Medium
-
-    if (isLargeScreen) EnvironmentContentExpanded(
-        modifier = modifier,
-        model = model,
-    ) else EnvironmentContentMedium(
-        modifier = modifier,
-        model = model,
-    )
-}
-
-/**
- * Composable for loading the environment section for expanded window sizes.
- *
- * @param model The state of the composable that holds the data to display.
- * @param modifier Modifier to apply to the root composable.
- */
-@Composable
-private fun EnvironmentContentExpanded(
-    model: EnvironmentComponent.Model,
-    modifier: Modifier = Modifier,
-) = Row(
+) = FlowRow(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
-) {
-    Column(
-        modifier = Modifier.weight(1f),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        VersionsCard(
-            modifier = Modifier.fillMaxWidth(),
-            versions = model.versions,
-            jvm = model.jvm,
-        )
-        JavaPropertiesCard(
-            modifier = Modifier.fillMaxWidth(),
-            properties = model.javaProperties,
-        )
-    }
-    CommandLineArgumentsCard(
-        modifier = Modifier.weight(1f),
-        arguments = model.jvm.jmx.commandLineArgs,
-    )
-}
-
-/**
- * Composable for loading the environment section for medium window sizes.
- *
- * @param model The state of the composable that holds the data to display.
- * @param modifier Modifier to apply to the root composable.
- */
-@Composable
-private fun EnvironmentContentMedium(
-    model: EnvironmentComponent.Model,
-    modifier: Modifier = Modifier,
-) = Column(
-    modifier = modifier,
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
+    val model by component.model.collectAsState()
+
+    val minChildWidth: Dp = 400.dp
+    val maxChildWidth: Dp = 800.dp
+
     VersionsCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.weight(1f)
+            .widthIn(min = minChildWidth, max = maxChildWidth),
         versions = model.versions,
         jvm = model.jvm,
     )
-    JavaPropertiesCard(
-        modifier = Modifier.fillMaxWidth(),
-        properties = model.javaProperties,
-    )
     CommandLineArgumentsCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.weight(1f)
+            .widthIn(min = minChildWidth, max = maxChildWidth),
         arguments = model.jvm.jmx.commandLineArgs,
+    )
+    JavaPropertiesCard(
+        modifier = Modifier.weight(1f)
+            .widthIn(min = minChildWidth, max = maxChildWidth),
+        properties = model.javaProperties,
     )
 }
