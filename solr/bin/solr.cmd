@@ -1009,13 +1009,7 @@ REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 
 IF "%GC_LOG_OPTS%"=="" (
-  set GC_LOG_OPTS=-verbose:gc ^
-   -XX:+PrintHeapAtGC ^
-   -XX:+PrintGCDetails ^
-   -XX:+PrintGCDateStamps ^
-   -XX:+PrintGCTimeStamps ^
-   -XX:+PrintTenuringDistribution ^
-   -XX:+PrintGCApplicationStoppedTime
+  set GC_LOG_OPTS="-Xlog:gc*"
 )
 if "%JAVA_VENDOR%" == "OpenJ9" (
   set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
