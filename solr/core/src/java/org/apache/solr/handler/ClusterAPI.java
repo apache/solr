@@ -42,6 +42,7 @@ import java.util.Set;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
+import org.apache.solr.client.api.model.SetNestedClusterPropertyRequestBody;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
@@ -59,6 +60,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.handler.admin.api.SetNestedClusterProperty;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
@@ -278,14 +280,13 @@ public class ClusterAPI {
     @Command(name = "set-obj-property")
     public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
       // Not using the object directly here because the API differentiate between {name:null} and {}
-      Map<String, Object> m = obj.getDataMap();
-      ClusterProperties clusterProperties =
-          new ClusterProperties(getCoreContainer().getZkController().getZkClient());
-      try {
-        clusterProperties.setClusterProperties(m);
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
+      SetNestedClusterPropertyRequestBody setNestedClusterPropertyRequestBody =
+          new SetNestedClusterPropertyRequestBody();
+      setNestedClusterPropertyRequestBody.properties = obj.getDataMap();
+      SetNestedClusterProperty setNestedClusterPropertyAPI =
+          new SetNestedClusterProperty(getCoreContainer());
+      setNestedClusterPropertyAPI.createOrUpdateNestedClusterProperty(
+          setNestedClusterPropertyRequestBody);
     }
 
     @Command(name = "set-property")
