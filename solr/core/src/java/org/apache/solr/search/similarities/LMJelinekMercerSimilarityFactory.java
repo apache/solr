@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.similarities;
 
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
@@ -33,8 +35,7 @@ import org.apache.solr.schema.SimilarityFactory;
  * <p>Optional settings:
  *
  * <ul>
- *   <li>discountOverlaps (bool): Sets {@link
- *       LMJelinekMercerSimilarity#setDiscountOverlaps(boolean)}
+ *   <li>discountOverlaps (bool): Sets {link Similarity#getDiscountOverlaps()}
  * </ul>
  *
  * @lucene.experimental
@@ -52,8 +53,17 @@ public class LMJelinekMercerSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    LMJelinekMercerSimilarity sim = new LMJelinekMercerSimilarity(lambda);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new LMJelinekMercerSimilarity(lambda) {
+      private final Similarity computeNormProxySimilarity = new ClassicSimilarity(discountOverlaps);
+
+      @Override
+      public long computeNorm(FieldInvertState state) {
+        return computeNormProxySimilarity.computeNorm(state);
+      }
+    };
+
+    // TODO: when available, use a constructor with 'discountOverlaps' parameter and remove above
+    // TODO: hack
+    // return new LMJelinekMercerSimilarity(lambda, discountOverlaps);
   }
 }
