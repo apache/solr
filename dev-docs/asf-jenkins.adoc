@@ -3,7 +3,7 @@
 
 The Solr project uses a Jenkins instance provided by the Apache Software Foundation ("ASF") for running tests, validation, etc.
 
-This file aims to document our ASF Jenkins usage and administrator, to prevent it from becoming "tribal knowledge" understood by just a few.
+This file aims to document our [ASF Jenkins](https://ci-builds.apache.org/job/Solr/) usage and administration, to prevent it from becoming "tribal knowledge" understood by just a few.
 
 == Jobs
 
@@ -14,8 +14,6 @@ We run a number of jobs on Jenkins, each validating an overlapping set of concer
 * `Solr-Docker-Nightly-*` - daily jobs that `./gradlew testDocker dockerPush` to validate docker image packaging.  Snapshot images are pushed to hub.docker.com
 * `Solr-reference-guide-*` - hourly jobs that build the Solr reference guide via `./gradlew checkSite` and push the resulting artifact to the staging/preview site `nightlies.apache.org`
 * `Solr-Smoketest-*` - daily jobs that produce a snapshot release (via the `assembleRelease` task) and run the release smoketester
-
-Unless otherwise specified, all builds currently run using JDK 11.
 
 Most jobs that validate particular build artifacts are run "daily", which is sufficient to prevent any large breaks from creeping into the build.
 
