@@ -173,5 +173,6 @@ allprojects {
     // Assign different java version for client-side modules 'api' and 'solrj*'
     var isSolrJ = project.name.matches("^(solrj.*|api)\$")
     minJavaVersion = isSolrJ ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersionDefault
+    minJavaTestVersion = rootProject.minJavaVersionDefault
   }
 }
