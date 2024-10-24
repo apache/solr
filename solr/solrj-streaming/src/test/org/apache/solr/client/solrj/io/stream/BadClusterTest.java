@@ -18,10 +18,15 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -97,15 +102,15 @@ public class BadClusterTest extends SolrCloudTestCase {
   }
 
   private void testClusterShutdown() throws Exception {
-
-    CloudSolrStream stream = new CloudSolrStream(buildSearchExpression(), streamFactory);
     cluster.shutdown();
 
-    try {
-      getTuples(stream);
-      fail("Expected IOException: SolrException: TimeoutException");
-    } catch (IOException ioe) {
-      SolrException se = (SolrException) ioe.getCause();
+    try (CloudSolrClient cloudSolrClient =
+        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+            .withZkConnectTimeout(1, TimeUnit.SECONDS)
+            .build()) {
+      cloudSolrClient.getById(collection, "1");
+      fail("Expected SolrException: TimeoutException");
+    } catch (SolrException se) {
       TimeoutException te = (TimeoutException) se.getCause();
       assertNotNull(te);
     }

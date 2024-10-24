@@ -697,7 +697,9 @@ public class ZkController implements Closeable {
     this.isClosed = true;
 
     try {
-      this.removeEphemeralLiveNode();
+      if (getZkClient().isConnected()) {
+        this.removeEphemeralLiveNode();
+      }
     } catch (IllegalStateException
         | SessionExpiredException
         | KeeperException.ConnectionLossException e) {
