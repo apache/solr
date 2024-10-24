@@ -1,3 +1,5 @@
+import io.swagger.v3.plugins.gradle.tasks.ResolveTask
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,8 +18,8 @@
  */
 
 plugins {
-  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
-  id "org.openapi.generator" version "6.0.1"
+  alias(libs.plugins.swagger3Core)
+  alias(libs.plugins.openapiGenerator)
 }
 
 apply plugin: 'java-library'
@@ -45,7 +47,9 @@ configurations {
         canBeResolved = false
     }
 
-    swaggerBuild.extendsFrom implementation
+    swaggerBuild {
+        extendsFrom implementation
+    }
 }
 
 resolve {
@@ -55,6 +59,7 @@ resolve {
   outputDir = file(project.openApiSpecDir)
   outputFileName = "solr-openapi-${version}"
   prettyPrint = true
+  outputFormat = ResolveTask.Format.JSONANDYAML
 }
 
 dependencies {

@@ -21,6 +21,8 @@ import java.time.format.DateTimeFormatter
 plugins {
   id 'base'
   id 'solr.build-infra'
+  alias(libs.plugins.kotlinMultiplatform) apply false
+  alias(libs.plugins.jetbrainsCompose) apply false
   id 'com.palantir.consistent-versions' version '2.16.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
   id 'ca.cutterslade.analyze' version '1.10.0'
@@ -206,8 +208,8 @@ apply from: file('gradle/hacks/gradle-archives.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
-apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
-apply from: file('gradle/hacks/dummy-outputs.gradle')
+//apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
+//apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')

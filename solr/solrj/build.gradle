@@ -16,7 +16,7 @@
  */
 
 plugins {
-  id "org.openapi.generator" version "6.6.0"
+  alias(libs.plugins.openapiGenerator)
 }
 
 apply plugin: 'java-library'

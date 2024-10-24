@@ -71,7 +71,7 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
             HttpHeaders.CONTENT_SECURITY_POLICY,
             "default-src 'none'; base-uri 'none'; connect-src "
                 + connectSrc
-                + "; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';");
+                + "; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self';");
 
         // We have to close this to flush OutputStreamWriter buffer
         try (Writer out =
