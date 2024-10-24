@@ -246,8 +246,7 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   @Test
   public void testDeduplicationOfSubmittedTasks() throws IOException, SolrServerException {
     try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
-      CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1)
-          .processAsync("3000", client);
+      CollectionAdminRequest.createCollection("ocptest_shardsplit2", "conf1", 3, 1).process(client);
 
       SplitShard splitShardRequest =
           CollectionAdminRequest.splitShard("ocptest_shardsplit2").setShardName(SHARD1);

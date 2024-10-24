@@ -45,7 +45,6 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
@@ -796,42 +795,26 @@ public class ZkTestServer {
     props.put("configName", "conf1");
     final ZkNodeProps zkProps = new ZkNodeProps(props);
 
-    List<Op> ops = new ArrayList<>(2);
-    String path = "/collections";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/collections/collection1";
-    ops.add(
-        Op.create(
-            path,
-            Utils.toJSON(zkProps),
-            chRootClient.getZkACLProvider().getACLsToAdd(path),
-            CreateMode.PERSISTENT));
-    path = "/collections/collection1/shards";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/collections/control_collection";
-    ops.add(
-        Op.create(
-            path,
-            Utils.toJSON(zkProps),
-            chRootClient.getZkACLProvider().getACLsToAdd(path),
-            CreateMode.PERSISTENT));
-    path = "/collections/control_collection/shards";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/configs";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    path = "/configs/conf1";
-    ops.add(
-        Op.create(
-            path, null, chRootClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT));
-    chRootClient.multi(ops, true);
+    chRootClient.multi(
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections", null),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/collection1", Utils.toJSON(zkProps)),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/collection1/shards", null),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/control_collection", Utils.toJSON(zkProps)),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/control_collection/shards", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs", null),
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs/conf1", null));
 
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", chRootClient, solrhome, config, "solrconfig.xml");

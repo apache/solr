@@ -152,7 +152,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   protected void assertOpenACLUnsafeAllover(
       SolrZkClient zkClient, String path, List<String> verifiedList) throws Exception {
-    List<ACL> acls = zkClient.getZooKeeper().getACL(path, new Stat());
+    List<ACL> acls = zkClient.getACL(path, new Stat(), true);
     if (log.isInfoEnabled()) {
       log.info("Verifying {}", path);
     }

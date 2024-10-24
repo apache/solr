@@ -53,8 +53,7 @@ public class TestImpersonationWithHadoopAuth extends SolrCloudTestCase {
     InetAddress loopback = InetAddress.getLoopbackAddress();
     Path securityJsonPath =
         TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json");
-    String securityJson =
-        new String(Files.readAllBytes(securityJsonPath), Charset.defaultCharset());
+    String securityJson = Files.readString(securityJsonPath, Charset.defaultCharset());
 
     Map<String, Object> securityConfig = (Map<String, Object>) Utils.fromJSONString(securityJson);
     Map<String, Object> authConfig = (Map<String, Object>) securityConfig.get("authentication");

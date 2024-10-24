@@ -14,22 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
-import java.io.IOException;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
-import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 
-/**
- * Connection strategy that creates instances of {@link TestableZooKeeper} instead of plain {@link
- * ZooKeeper} objects. Useful for adding pause and disconnect events.
- */
-public class TestConnectionStrategy extends DefaultConnectionStrategy {
+public interface OnDisconnect extends ConnectionStateListener {
+  public void command();
+
   @Override
-  protected ZooKeeper newZooKeeperInstance(
-      String serverAddress, int zkClientTimeout, Watcher watcher) throws IOException {
-    return new TestableZooKeeper(serverAddress, zkClientTimeout, watcher);
+  default void stateChanged(CuratorFramework client, ConnectionState newState) {
+    if (newState == ConnectionState.LOST) {
+      command();
+    }
   }
 }

@@ -50,6 +50,7 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:4", "connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:6", "connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:8", "connect,resolve";
+  permission java.net.SocketPermission "----------", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";

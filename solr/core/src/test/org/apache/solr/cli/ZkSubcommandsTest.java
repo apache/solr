@@ -178,7 +178,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
+    assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
 
     // test re-put to existing
     data = "my data deux";
@@ -201,13 +201,13 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         };
     assertEquals(0, runTool(args, tool));
 
-    byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
+    byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     byte[] fromLoc =
         new ZLibCompressor()
             .compressBytes(Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
 
-    assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
+    assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
   }
 
   @Test
@@ -272,7 +272,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     ZkCpTool tool = new ZkCpTool();
     assertEquals(0, runTool(args, tool));
 
-    byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
+    byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     byte[] fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
@@ -280,7 +280,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // Lets do it again
     assertEquals(0, runTool(args, tool));
 
-    fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
+    fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);
