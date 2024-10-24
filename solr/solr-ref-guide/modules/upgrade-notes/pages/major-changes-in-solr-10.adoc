@@ -73,4 +73,3 @@ Please note this also removes the ability to share resource intensive objects ac
 
 * The language specific Response Writers, which were deprecated in 9.8 in favour of more widely used formats like JSON have been removed.
 The removed writer types (invoked as part of the `wt` parameter) include `python`, `ruby`, `php`, and `phps`.
-
