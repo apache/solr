@@ -149,6 +149,8 @@ Improvements
   enqueuing with a risk of rejection. Solr will use less resources under stress but to get the most
   of your machine, you may want to increase the thread pool. (David Smiley)
 
+* SOLR-17477: Let to extend FacetModule aka JSON DSL Facet (Tim Owen, Christine Poerschke via Mikhail Khludnev)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
