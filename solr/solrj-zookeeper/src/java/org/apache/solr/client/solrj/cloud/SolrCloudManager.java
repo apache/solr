@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
-import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -53,13 +52,4 @@ public interface SolrCloudManager extends SolrCloseable {
   // Solr-like methods
 
   <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException;
-
-  byte[] httpRequest(
-      String url,
-      SolrRequest.METHOD method,
-      Map<String, String> headers,
-      String payload,
-      int timeout,
-      boolean followRedirects)
-      throws IOException;
 }
