@@ -73,6 +73,8 @@ Deprecation Removals
 
 * SOLR-17400: Remove deprecated script snapshotcli.sh.  bin/solr snapshot-* commands have replaced this. (Eric Pugh)
 
+* SOLR-17494: Remove language specific writer types (i.e wt= ruby, python, php, and phps). (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
