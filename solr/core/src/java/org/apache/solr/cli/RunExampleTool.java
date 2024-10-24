@@ -537,7 +537,7 @@ public class RunExampleTool extends ToolBase {
       // start the other nodes
       for (int n = 1; n < numNodes; n++)
         startSolr(
-            new File(cloudDir, "node" + (n + 1) + "/solr"), false, cli, cloudPorts[n], zkHost, 30);
+            new File(cloudDir, "node" + (n + 1) + "/solr"), true, cli, cloudPorts[n], zkHost, 30);
     }
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
