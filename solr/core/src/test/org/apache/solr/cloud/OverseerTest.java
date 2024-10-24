@@ -1959,7 +1959,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             .build();
     solrClients.add(cloudSolrClient);
     solrClients.add(httpSolrClient);
-    SolrClientCloudManager sccm = new SolrClientCloudManager(null, cloudSolrClient);
+    SolrClientCloudManager sccm = new SolrClientCloudManager(cloudSolrClient, null);
     sccm.getClusterStateProvider().connect();
     return sccm;
   }

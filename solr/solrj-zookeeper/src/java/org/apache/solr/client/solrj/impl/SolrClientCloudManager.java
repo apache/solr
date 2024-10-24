@@ -45,7 +45,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
-  public SolrClientCloudManager(ObjectCache objectCache, CloudHttp2SolrClient client) {
+  public SolrClientCloudManager(CloudHttp2SolrClient client, ObjectCache objectCache) {
     this.cloudSolrClient = client;
     this.zkStateReader = ZkStateReader.from(client);
     this.zkClient = zkStateReader.getZkClient();
