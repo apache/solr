@@ -71,8 +71,11 @@ kotlin {
                 implementation(compose.components.uiToolingPreview)
                 implementation(compose.materialIconsExtended)
 
+                implementation(libs.kotlinx.serialization.core)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
+
                 implementation(libs.decompose.decompose)
                 implementation(libs.essenty.lifecycle)
                 implementation(libs.decompose.extensions.compose)
@@ -80,8 +83,6 @@ kotlin {
                 implementation(libs.mvikotlin.mvikotlin)
                 implementation(libs.mvikotlin.main)
                 implementation(libs.mvikotlin.logging)
-
-                implementation(libs.chrisbanes.material3.windowSizeClass)
 
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.contentNegotiation)
