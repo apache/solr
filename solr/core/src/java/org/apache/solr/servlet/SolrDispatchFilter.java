@@ -58,7 +58,6 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -134,9 +133,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   @Override
   public void init(FilterConfig config) throws ServletException {
     try {
-      SLF4JBridgeHandler.removeHandlersForRootLogger();
-      SLF4JBridgeHandler.install();
-
       containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
           NodeRoles.MODE_ON.equals(getCores().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
