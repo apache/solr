@@ -76,8 +76,16 @@ class ChangesToHtmlTask extends DefaultTask {
 
   def toHtml(File versionsFile) {
     def output = new ByteArrayOutputStream()
+    
+    // Check if the perl executable exists
+    def perlExecutable = project.externalTool("perl")
+    if (!new File(perlExecutable).exists()) {
+        logger.warn("WARNING: Perl is not installed or could not be found at: ${perlExecutable}, skipping creating Changes.html")
+        return
+    }
+    
     def result = project.exec {
-      executable project.externalTool("perl")
+      perlExecutable
       standardInput changesFile.newInputStream()
       standardOutput project.file("${targetDir.get().getAsFile()}/Changes.html").newOutputStream()
       errorOutput = output
