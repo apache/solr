@@ -19,6 +19,9 @@ package org.apache.solr.security;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -33,9 +36,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHeaders;
@@ -57,7 +57,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -414,11 +414,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
             if ("v1".equals(System.getProperty(SEND_VERSION))) {
               preFetchedUser
                   .map(PKIAuthenticationPlugin.this::generateToken)
-                  .ifPresent(token -> request.header(HEADER, token));
+                  .ifPresent(token -> request.headers(h -> h.add(HEADER, token)));
             } else {
               preFetchedUser
                   .map(PKIAuthenticationPlugin.this::generateTokenV2)
-                  .ifPresent(token -> request.header(HEADER_V2, token));
+                  .ifPresent(token -> request.headers(h -> h.add(HEADER_V2, token)));
             }
           }
 

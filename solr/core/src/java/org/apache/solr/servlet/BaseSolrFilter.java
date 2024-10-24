@@ -16,7 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.Filter;
+import jakarta.servlet.Filter;
 
 /**
  * All Solr filters available to the user's webapp should extend this class and not just implement

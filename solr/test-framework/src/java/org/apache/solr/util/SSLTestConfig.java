@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -111,10 +112,9 @@ public class SSLTestConfig {
     if (this.useSsl) {
       assumeSslIsSafeToTest();
     }
-
     final String resourceName =
         checkPeerName ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
-    trustStore = keyStore = Resource.newClassPathResource(resourceName);
+    trustStore = keyStore = ResourceFactory.root().newClassLoaderResource(resourceName);
     if (null == keyStore || !keyStore.exists()) {
       throw new IllegalStateException(
           "Unable to locate keystore resource file in classpath: " + resourceName);

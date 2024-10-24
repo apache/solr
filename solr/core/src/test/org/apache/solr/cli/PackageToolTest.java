@@ -31,12 +31,11 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SecurityJson;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.resource.PathResourceFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -402,12 +401,13 @@ public class PackageToolTest extends SolrCloudTestCase {
       server.setStopAtShutdown(true);
 
       ResourceHandler resourceHandler = new ResourceHandler();
-      resourceHandler.setResourceBase(resourceDir);
-      resourceHandler.setDirectoriesListed(true);
+      resourceHandler.setBaseResource(new PathResourceFactory().newResource(resourceDir));
 
-      HandlerList handlers = new HandlerList();
-      handlers.setHandlers(new Handler[] {resourceHandler, new DefaultHandler()});
-      server.setHandler(handlers);
+      // [EE10]resourceHandler.setResourceBase(resourceDir);
+
+      // [EE10]resourceHandler.setDirectoriesListed(true);
+
+      server.setHandler(new DefaultHandler());
 
       server.start();
     }

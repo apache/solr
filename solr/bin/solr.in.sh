@@ -55,14 +55,8 @@
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
-#-XX:+UseConcMarkSweepGC \
-#-XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 \
-#-XX:+CMSScavengeBeforeRemark \
+#-XX:ParallelGCThreads=4 \
 #-XX:PretenureSizeThreshold=64m \
-#-XX:+UseCMSInitiatingOccupancyOnly \
-#-XX:CMSInitiatingOccupancyFraction=50 \
-#-XX:CMSMaxAbortablePrecleanTime=6000 \
-#-XX:+CMSParallelRemarkEnabled \
 #-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
@@ -263,7 +257,7 @@
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
-#SOLR_SECURITY_MANAGER_ENABLED=true
+# SOLR_SECURITY_MANAGER_ENABLED=true
 # This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
 # change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
@@ -279,7 +273,7 @@
 # other directory, which will implicitly enable heap dumping. Dump name pattern will be solr-[timestamp]-pid[###].hprof
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
-# See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
+# See https://docs.oracle.com/en/java/javase/21/troubleshoot/command-line-options1.html
 # You can test this behavior by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps

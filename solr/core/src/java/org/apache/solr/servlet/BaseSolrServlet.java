@@ -16,7 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import javax.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServlet;
 
 /**
  * All Solr servlets available to the user's webapp should extend this class and not {@link

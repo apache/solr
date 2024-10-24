@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -69,6 +70,9 @@ public class CloudIndexing {
 
     @Param({"50000"})
     int preGenerate;
+
+    @Param({"2", "4", "8", "16", "32", "64", "128"})
+    int maxConnectionPerHost;
 
     private final Docs largeDocs;
     private final Docs smallDocs;
@@ -118,6 +122,7 @@ public class CloudIndexing {
       preGenerate();
 
       System.setProperty("mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
+      Http2SolrClient.maxConnectionPerHost = maxConnectionPerHost;
       miniClusterState.startMiniCluster(nodeCount);
       miniClusterState.createCollection(COLLECTION, numShards, numReplicas);
     }

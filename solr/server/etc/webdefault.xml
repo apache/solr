@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-  <!-- ===================================================================== -->
-  <!-- This file contains the default descriptor for web applications.       -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- The intent of this descriptor is to include jetty specific or common  -->
-  <!-- configuration for all webapps.   If a context has a webdefault.xml    -->
-  <!-- descriptor, it is applied before the contexts own web.xml file        -->
-  <!--                                                                       -->
-  <!-- A context may be assigned a default descriptor by:                    -->
-  <!--  + Calling WebApplicationContext.setDefaultsDescriptor                -->
-  <!--  + Passed an arg to addWebApplications                                -->
-  <!--                                                                       -->
-  <!-- This file is used both as the resource within the jetty.jar (which is -->
-  <!-- used as the default if no explicit defaults descriptor is set) and it -->
-  <!-- is copied to the etc directory of the Jetty distro and explicitly     -->
-  <!-- by the jetty.xml file.                                                -->
-  <!--                                                                       -->
-  <!-- ===================================================================== -->
+<!-- ===================================================================== -->
+<!-- This file contains the default descriptor for web applications.       -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- The intent of this descriptor is to include jetty specific or common  -->
+<!-- configuration for all webapps.   If a context has a webdefault.xml    -->
+<!-- descriptor, it is applied before the contexts own web.xml file        -->
+<!--                                                                       -->
+<!-- A context may be assigned a default descriptor by:                    -->
+<!--  + Calling WebApplicationContext.setDefaultsDescriptor                -->
+<!--  + Passed an arg to addWebApplications                                -->
+<!--                                                                       -->
+<!-- This file is used both as the resource within the jetty.jar (which is -->
+<!-- used as the default if no explicit defaults descriptor is set) and it -->
+<!-- is copied to the etc directory of the Jetty distro and explicitly     -->
+<!-- by the jetty.xml file.                                                -->
+<!--                                                                       -->
+<!-- ===================================================================== -->
 <web-app
-  xmlns="http://java.sun.com/xml/ns/javaee"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-  metadata-complete="true"
-  version="2.5"
+        xmlns="http://java.sun.com/xml/ns/javaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+        metadata-complete="true"
+        version="2.5"
 >
 
   <description>
-    Default web.xml file.  
+    Default web.xml file.
     This file is applied to a Web application before its own WEB_INF/web.xml file
   </description>
 
@@ -34,18 +34,18 @@
   <!-- Removes static references to beans from javax.el.BeanELResolver to   -->
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->
-  <listener>
+  <!--<listener>
    <listener-class>org.eclipse.jetty.servlet.listener.ELContextCleaner</listener-class>
-  </listener>
-  
+  </listener>-->
+
   <!-- ==================================================================== -->
   <!-- Removes static cache of Methods from java.beans.Introspector to      -->
   <!-- ensure webapp classloader can be released on undeploy                -->
-  <!-- ==================================================================== -->  
+  <!-- ==================================================================== -->
   <listener>
-   <listener-class>org.eclipse.jetty.servlet.listener.IntrospectorCleaner</listener-class>
+    <listener-class>org.eclipse.jetty.ee10.servlet.listener.IntrospectorCleaner</listener-class>
   </listener>
-  
+
 
   <!-- ==================================================================== -->
   <!-- Context params to control Session Cookies                            -->
@@ -111,12 +111,12 @@
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
  -->
- 
- 
+
+
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
-    <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee10.servlet.DefaultServlet</servlet-class>
     <init-param>
       <param-name>aliases</param-name>
       <param-value>false</param-value>
@@ -264,7 +264,7 @@
   <!--   try setting the init parameter "javaEncoding" to "ISO-8859-1".     -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet
-    id="jsp"
+          id="jsp"
   >
     <servlet-name>jsp</servlet-name>
     <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
