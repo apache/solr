@@ -120,6 +120,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
+  }
+
   // TODO: Remove this for 10.0, there is a typo in the method name
   @Deprecated(since = "9.8", forRemoval = true)
   protected ModifiableSolrParams initalizeSolrParams(

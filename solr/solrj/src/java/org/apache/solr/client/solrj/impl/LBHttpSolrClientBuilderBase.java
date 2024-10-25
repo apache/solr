@@ -2,8 +2,8 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.concurrent.TimeUnit;
 
-public abstract class LBHttpSolrClientBuilderBase<A extends LBHttpSolrClientBase, B extends LBHttpSolrClientBuilderBase<?,?,?>, C extends HttpSolrClientBase> {
-    final C http2SolrClient;
+public abstract class LBHttpSolrClientBuilderBase<A extends LBHttpSolrClientBase<?>, B extends LBHttpSolrClientBuilderBase<?,?,?>, C extends HttpSolrClientBase> {
+    final C solrClient;
     protected final LBSolrClient.Endpoint[] solrEndpoints;
     long aliveCheckIntervalMillis =
             TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
@@ -12,7 +12,7 @@ public abstract class LBHttpSolrClientBuilderBase<A extends LBHttpSolrClientBase
     public abstract A build();
 
     public LBHttpSolrClientBuilderBase(C http2Client, LBSolrClient.Endpoint... endpoints) {
-        this.http2SolrClient = http2Client;
+        this.solrClient = http2Client;
         this.solrEndpoints = endpoints;
     }
 
