@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
@@ -29,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
@@ -139,6 +142,34 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
     assertEquals(123.0, actual.getValue(), 0);
     Labels expectedLabels = Labels.of("test", "test-value", "item", "test-item");
     assertEquals(expectedLabels, actual.getLabels());
+  }
+
+  @Test
+  public void testCloudCorePattern() {
+    String coreName = "core_test-core_shard2_replica_t123";
+    Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);
+    assertTrue(m.find());
+    assertEquals("test-core", m.group(1));
+    assertEquals("shard2", m.group(2));
+    assertEquals("replica_t123", m.group(3));
+
+    coreName = "core_foo_bar_shard24_replica_p8";
+    m = CLOUD_CORE_PATTERN.matcher(coreName);
+    assertTrue(m.find());
+    assertEquals("foo_bar", m.group(1));
+    assertEquals("shard24", m.group(2));
+    assertEquals("replica_p8", m.group(3));
+  }
+
+  @Test
+  public void testBadCloudCorePattern() {
+    String badCoreName = "core_solrtest_shard100_replica_xyz23";
+    Matcher m = CLOUD_CORE_PATTERN.matcher(badCoreName);
+    assertFalse(m.find());
+
+    badCoreName = "core_solrtest_shards100_replica_x23";
+    m = CLOUD_CORE_PATTERN.matcher(badCoreName);
+    assertFalse(m.find());
   }
 
   static class TestSolrPrometheusFormatter extends SolrPrometheusFormatter {
