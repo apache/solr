@@ -155,7 +155,7 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
     coreName = "core_foo_bar_shard24_replica_p8";
     m = CLOUD_CORE_PATTERN.matcher(coreName);
-    assertTrue(m.find());
+    assertTrue(m.matches());
     assertEquals("foo_bar", m.group(1));
     assertEquals("shard24", m.group(2));
     assertEquals("replica_p8", m.group(3));
@@ -165,11 +165,11 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
   public void testBadCloudCorePattern() {
     String badCoreName = "core_solrtest_shard100_replica_xyz23";
     Matcher m = CLOUD_CORE_PATTERN.matcher(badCoreName);
-    assertFalse(m.find());
+    assertFalse(m.matches());
 
     badCoreName = "core_solrtest_shards100_replica_x23";
     m = CLOUD_CORE_PATTERN.matcher(badCoreName);
-    assertFalse(m.find());
+    assertFalse(m.matches());
   }
 
   static class TestSolrPrometheusFormatter extends SolrPrometheusFormatter {
