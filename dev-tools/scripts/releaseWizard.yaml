@@ -1871,11 +1871,11 @@ groups:
       commands:
       - !Command
         cmd: |
-          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
-        logfile: svn-rm-solr.log
-        comment: Delete from Lucene dist area
-      - !Command
-        cmd: |
           svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-solr.log
         comment: Delete from new Solr dist area
+      - !Command
+        cmd: |
+          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
+        logfile: svn-rm-solr.log
+        comment: Delete from Lucene dist area
