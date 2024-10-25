@@ -23,15 +23,12 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
+
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
@@ -95,10 +92,10 @@ import org.slf4j.MDC;
  *
  * @since solr 8.0
  */
-public abstract class LBHttp2SolrClientBase extends LBSolrClient {
+public abstract class LBHttpSolrClientBase extends LBSolrClient {
 
 
-  protected LBHttp2SolrClientBase(Builder builder) {
+  protected LBHttpSolrClientBase(Builder builder) {
     super(Arrays.asList(builder.solrEndpoints));
   }
 

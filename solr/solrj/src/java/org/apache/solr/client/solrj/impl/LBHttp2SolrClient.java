@@ -4,10 +4,9 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
-import java.util.Arrays;
 import java.util.Set;
 
-public class LBHttp2SolrClient extends LBHttp2SolrClientBase {
+public class LBHttp2SolrClient extends LBHttpSolrClientBase {
     protected final Http2SolrClient solrClient;
 
     protected LBHttp2SolrClient(Builder builder) {
