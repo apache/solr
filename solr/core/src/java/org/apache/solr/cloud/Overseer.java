@@ -414,7 +414,9 @@ public class Overseer implements SolrCloseable {
           log.info("Overseer Loop exiting : {}", LeaderElector.getNodeName(myId));
         }
         // do this in a separate thread because any wait is interrupted in this main thread
-        new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
+        Thread checkLeaderThread = new Thread(this::checkIfIamStillLeader, "OverseerExitThread");
+        checkLeaderThread.setDaemon(true);
+        checkLeaderThread.start();
       }
     }
 
