@@ -184,7 +184,7 @@ public abstract class SolrScraper implements Closeable {
             labelValues.add(zkHostLabelValue);
           }
 
-          // Add the unique cluster ID, either as specified on cmdline -i or baseUrl/zkHost
+          // Add the unique cluster ID, either as specified on cmdline --cluster-id or baseUrl/zkHost
           labelNames.add(CLUSTER_ID_LABEL);
           labelValues.add(clusterId);
 
