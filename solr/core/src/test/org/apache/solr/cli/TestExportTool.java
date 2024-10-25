@@ -243,8 +243,10 @@ public class TestExportTool extends SolrCloudTestCase {
 
       String[] args = {
         "export",
-        "-url",
-        cluster.getJettySolrRunner(0).getBaseUrl() + "/" + COLLECTION_NAME,
+        "--solr-url",
+        cluster.getJettySolrRunner(0).getBaseUrl().toString(),
+        "--name",
+        COLLECTION_NAME,
         "--credentials",
         SecurityJson.USER_PASS,
         "-out",
