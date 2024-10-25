@@ -224,7 +224,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
   // wait maximum ms for serverName to come back up
   private void waitForServer(
-      int maxSeconds, LBHttp2SolrClient client, int nServers, String serverName) throws Exception {
+          int maxSeconds, LBHttp2SolrClient client, int nServers, String serverName) throws Exception {
     final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       QueryResponse resp;
