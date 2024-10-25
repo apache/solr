@@ -188,7 +188,7 @@ public abstract class LBHttpSolrClientBase extends LBSolrClient {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
     CompletableFuture<NamedList<Object>> future =
-        ((Http2SolrClient) getClient(endpoint)).requestAsync(req.getRequest());
+        ((HttpSolrClientBase) getClient(endpoint)).requestAsync(req.getRequest());
     future.whenComplete(
         (result, throwable) -> {
           if (!future.isCompletedExceptionally()) {
