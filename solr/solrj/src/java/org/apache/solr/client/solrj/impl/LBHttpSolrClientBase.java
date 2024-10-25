@@ -95,7 +95,7 @@ import org.slf4j.MDC;
 public abstract class LBHttpSolrClientBase extends LBSolrClient {
 
 
-  protected LBHttpSolrClientBase(Builder builder) {
+  protected LBHttpSolrClientBase(LBHttpSolrClientBuilderBase<?,?,?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
   }
 
@@ -258,45 +258,6 @@ public abstract class LBHttpSolrClientBase extends LBSolrClient {
       }
     } catch (Exception e) {
       listener.onFailure(new SolrServerException(e), false);
-    }
-  }
-
-  public static class Builder {
-
-    final Http2SolrClient http2SolrClient;
-    private final Endpoint[] solrEndpoints;
-    long aliveCheckIntervalMillis =
-        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
-    protected String defaultCollection;
-
-    public Builder(Http2SolrClient http2Client, Endpoint... endpoints) {
-      this.http2SolrClient = http2Client;
-      this.solrEndpoints = endpoints;
-    }
-
-    /**
-     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
-     * this to set that interval
-     *
-     * @param aliveCheckInterval how often to ping for aliveness
-     */
-    public LBHttp2SolrClient.Builder setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
-      if (aliveCheckInterval <= 0) {
-        throw new IllegalArgumentException(
-            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
-      }
-      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
-      return this;
-    }
-
-    /** Sets a default for core or collection based requests. */
-    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
-      this.defaultCollection = defaultCoreOrCollection;
-      return this;
-    }
-
-    public LBHttp2SolrClient build() {
-      return new LBHttp2SolrClient(this);
     }
   }
 }
