@@ -69,6 +69,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -125,11 +126,33 @@ public class SolrIndexSplitter {
       numPieces = cmd.ranges.size();
       rangesArr = cmd.ranges.toArray(new DocRouter.Range[0]);
     }
+
+    SchemaField maybeField;
     if (cmd.routeFieldName == null) {
-      field = searcher.getSchema().getUniqueKeyField();
+      // To support routing child documents, use the root field if it exists (which would be
+      // populated with unique field),
+      // otherwise use the unique key field
+      maybeField = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
+      if (maybeField == null) {
+        maybeField = searcher.getSchema().getUniqueKeyField();
+      }
     } else {
-      field = searcher.getSchema().getField(cmd.routeFieldName);
+      SchemaField uniqueField = searcher.getSchema().getUniqueKeyField();
+      if (uniqueField.getName().equals(cmd.routeFieldName)) {
+        // Explicitly routing based on unique field
+        // To support routing child documents, use the root field if it exists (which would be
+        // populated with unique field),
+        // otherwise use the unique key field
+        maybeField = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
+        if (maybeField == null) {
+          maybeField = searcher.getSchema().getUniqueKeyField();
+        }
+      } else {
+        // Custom routing
+        maybeField = searcher.getSchema().getField(cmd.routeFieldName);
+      }
     }
+    field = maybeField;
     if (cmd.splitKey == null) {
       splitKey = null;
     } else {
