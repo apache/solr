@@ -132,16 +132,13 @@ public class SolrIndexSplitter {
       // To support routing child documents, use the root field if it exists (which would be
       // populated with unique field), otherwise use the unique key field
       if (searcher.getSchema().isUsableForChildDocs()) {
-        maybeField = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
+        maybeField = searcher.getSchema().getField(IndexSchema.ROOT_FIELD_NAME);
       } else {
         maybeField = searcher.getSchema().getUniqueKeyField();
       }
     } else {
       // Custom routing
-      // This may not route child documents the same as parents; users are expected to manage this
-      // themselves, such as by using the value in each field.
-      // If the field is set to the unique field, users can reset it to null so the above logic to
-      // use _root_ is available.
+      // If child docs are used, users must ensure that the whole nested document tree has a consistent routeField value
       maybeField = searcher.getSchema().getField(cmd.routeFieldName);
     }
     field = maybeField;
