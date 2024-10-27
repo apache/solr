@@ -130,35 +130,29 @@ public class SolrIndexSplitter {
     SchemaField maybeField;
     if (cmd.routeFieldName == null) {
       // To support routing child documents, use the root field if it exists (which would be
-      // populated with unique field),
-      // otherwise use the unique key field
-      maybeField = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
-      if (maybeField == null) {
+      // populated with unique field), otherwise use the unique key field
+      if (searcher.getSchema().isUsableForChildDocs()) {
+        maybeField = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
+      } else {
         maybeField = searcher.getSchema().getUniqueKeyField();
       }
     } else {
-      SchemaField uniqueField = searcher.getSchema().getUniqueKeyField();
-      if (uniqueField.getName().equals(cmd.routeFieldName)) {
-        // Explicitly routing based on unique field
-        // To support routing child documents, use the root field if it exists (which would be
-        // populated with unique field),
-        // otherwise use the unique key field
-        maybeField = searcher.getSchema().getFieldOrNull(IndexSchema.ROOT_FIELD_NAME);
-        if (maybeField == null) {
-          maybeField = searcher.getSchema().getUniqueKeyField();
-        }
-      } else {
-        // Custom routing
-        maybeField = searcher.getSchema().getField(cmd.routeFieldName);
-      }
+      // Custom routing
+      // This may not route child documents the same as parents; users are expected to manage this
+      // themselves, such as by using the value in each field.
+      // If the field is set to the unique field, users can reset it to null so the above logic to
+      // use _root_ is available.
+      maybeField = searcher.getSchema().getField(cmd.routeFieldName);
     }
     field = maybeField;
+
     if (cmd.splitKey == null) {
       splitKey = null;
     } else {
       checkRouterSupportsSplitKey(hashRouter, cmd.splitKey);
       splitKey = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(cmd.splitKey);
     }
+
     if (cmd.cores == null) {
       this.splitMethod = SplitMethod.REWRITE;
     } else {
