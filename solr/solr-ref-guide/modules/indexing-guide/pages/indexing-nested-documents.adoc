@@ -283,8 +283,7 @@ This makes it much easier to apply
 xref:partial-document-updates.adoc#updating-child-documents[atomic updates] to individual child documents.
 ====
 
-== Maintaining Integrity
-=== Updates and Deletes
+== Maintaining Integrity Updates and Deletes
 
 Nested document trees can be modified with
 xref:partial-document-updates.adoc#atomic-updates[atomic updates] to
