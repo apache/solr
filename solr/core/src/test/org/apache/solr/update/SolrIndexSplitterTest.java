@@ -591,7 +591,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   /** Utility method to find Ids that hash into which ranges. Uncomment @Test to print. */
   //  @Test
-  public void testCompositeHashSandbox() {
+  public void printCompositeHashSandbox() {
     CompositeIdRouter r1 = new CompositeIdRouter();
     String routeBase = "sea-line!";
     DocRouter.Range routeBaseRange = r1.keyHashRange(routeBase);
