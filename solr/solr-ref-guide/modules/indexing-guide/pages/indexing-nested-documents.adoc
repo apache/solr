@@ -313,8 +313,6 @@ If you use the default `router.field`, this is handled correctly for you.
 If your collection has a custom `router.field`, then you must ensure that all documents in a hierarchy have the same value for that field.
 ====
 
-[#indexing-anonymous-children]
-
 == Indexing Anonymous Children
 
 Although not recommended, it is also possible to index child documents "anonymously":
