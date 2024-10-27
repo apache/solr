@@ -92,8 +92,7 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setNumSubShards(5)
             .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    waitForState(
-        "Waiting for 6 shards after split", COLLECTION_NAME, activeClusterShape(6, 6));
+    waitForState("Waiting for 6 shards after split", COLLECTION_NAME, activeClusterShape(6, 6));
 
     try {
       splitShard =
@@ -149,9 +148,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         CollectionAdminRequest.splitShard(collectionName).setSplitFuzz(0.5f).setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
     waitForState(
-        "Waiting for 3 active shards after split",
-        collectionName,
-        activeClusterShape(3, 3));
+        "Waiting for 3 active shards after split", collectionName, activeClusterShape(3, 3));
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
@@ -194,7 +191,8 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setShardName("shard1");
     splitShard.setWaitForFinalState(true);
     splitShard.process(solrClient);
-    waitForState("Waiting for 2 active shards after split", COLLECTION_NAME, activeClusterShape(2, 2));
+    waitForState(
+        "Waiting for 2 active shards after split", COLLECTION_NAME, activeClusterShape(2, 2));
 
     QueryRequest req =
         new QueryRequest(new SolrQuery("type_s:parent").setFields("*", "[child]", "[shard]"));

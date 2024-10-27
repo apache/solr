@@ -138,7 +138,8 @@ public class SolrIndexSplitter {
       }
     } else {
       // Custom routing
-      // If child docs are used, users must ensure that the whole nested document tree has a consistent routeField value
+      // If child docs are used, users must ensure that the whole nested document tree has a
+      // consistent routeField value
       maybeField = searcher.getSchema().getField(cmd.routeFieldName);
     }
     field = maybeField;
