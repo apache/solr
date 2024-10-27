@@ -21,6 +21,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,11 +36,14 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -89,15 +93,7 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
     waitForState(
-        "Timed out waiting for sub shards to be active. Number of active shards="
-            + cluster
-                .getSolrClient()
-                .getClusterState()
-                .getCollection(COLLECTION_NAME)
-                .getActiveSlices()
-                .size(),
-        COLLECTION_NAME,
-        activeClusterShape(6, 6));
+        "Timed out waiting for 6 shards after split", COLLECTION_NAME, activeClusterShape(6, 6));
 
     try {
       splitShard =
@@ -153,13 +149,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         CollectionAdminRequest.splitShard(collectionName).setSplitFuzz(0.5f).setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
     waitForState(
-        "Timed out waiting for sub shards to be active. Number of active shards="
-            + cluster
-                .getSolrClient()
-                .getClusterState()
-                .getCollection(collectionName)
-                .getActiveSlices()
-                .size(),
+        "Timed out waiting for 3 active shards after split",
         collectionName,
         activeClusterShape(3, 3));
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
@@ -172,6 +162,50 @@ public class SplitShardTest extends SolrCloudTestCase {
     long expected1 = (Integer.MAX_VALUE >> 1) - fuzz;
     assertEquals("wrong range in s1_0", expected0, delta0);
     assertEquals("wrong range in s1_1", expected1, delta1);
+  }
+
+  @Test
+  public void testWithChildDocuments() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1).process(solrClient);
+
+    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
+
+    List<SolrInputDocument> inputDocs = new ArrayList<>();
+    for (int idx = 0; idx < 10; ++idx) {
+      SolrInputDocument parent = new SolrInputDocument();
+      parent.addField("id", idx);
+      parent.addField("type_s", "parent");
+
+      // Child has different ID, so could be routed differently if used for routing.
+      SolrInputDocument child = new SolrInputDocument();
+      child.addField("id", idx + "_child");
+      child.addField("expected_parent_s", idx);
+
+      parent.addField("myChild", List.of(child));
+
+      inputDocs.add(parent);
+    }
+    solrClient.add(COLLECTION_NAME, inputDocs);
+
+    CollectionAdminRequest.SplitShard splitShard =
+        CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setNumSubShards(2)
+            .setShardName("shard1");
+    splitShard.process(solrClient);
+    waitForState("Timed out waiting for shard split", COLLECTION_NAME, activeClusterShape(2, 2));
+
+    QueryRequest req =
+        new QueryRequest(new SolrQuery("type_s:parent").setFields("*", "[child]", "[shard]"));
+    QueryResponse rsp = req.process(solrClient, COLLECTION_NAME);
+    assertEquals(10, rsp.getResults().getNumFound());
+    for (SolrDocument doc : rsp.getResults()) {
+      @SuppressWarnings("unchecked")
+      List<SolrDocument> children = (List<SolrDocument>) doc.get("myChild");
+      assertEquals("only 1 child per parent", 1, children.size());
+      SolrDocument child = children.get(0);
+      assertEquals("parent-child match", doc.get("id"), child.get("expected_parent_s"));
+    }
   }
 
   private CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
