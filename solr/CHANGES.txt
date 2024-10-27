@@ -29,7 +29,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-11191: Splitting shards now routes child-docs with their _root_ field when available so they maintain parent relationship. (Zack Kendall)
 
 Deprecation Removals
 ----------------------
