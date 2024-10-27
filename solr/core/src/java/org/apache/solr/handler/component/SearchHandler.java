@@ -25,6 +25,7 @@ import static org.apache.solr.handler.component.ResponseBuilder.STAGE_PARSE_QUER
 import static org.apache.solr.handler.component.ResponseBuilder.STAGE_START;
 import static org.apache.solr.handler.component.ResponseBuilder.STAGE_TOP_GROUPS;
 import static org.apache.solr.request.SolrRequestInfo.getQueryLimits;
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 
 import com.codahale.metrics.Counter;
 import java.io.IOException;
@@ -39,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
@@ -473,29 +475,7 @@ public class SearchHandler extends RequestHandlerBase
     // creates a ShardHandler object only if it's needed
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
-    if (timer == null) {
-      // non-debugging prepare phase
-      for (SearchComponent c : components) {
-        if (checkLimitsBefore(c, "prepare", rb.req, rb.rsp, components)) {
-          shortCircuitedResults(req, rb);
-          return;
-        }
-        c.prepare(rb);
-      }
-    } else {
-      // debugging prepare phase
-      RTimerTree subt = timer.sub("prepare");
-      for (SearchComponent c : components) {
-        if (checkLimitsBefore(c, "prepare debug", rb.req, rb.rsp, components)) {
-          shortCircuitedResults(req, rb);
-          return;
-        }
-        rb.setTimer(subt.sub(c.getName()));
-        c.prepare(rb);
-        rb.getTimer().stop();
-      }
-      subt.stop();
-    }
+    if (!prepareComponents(req, rb, timer, components)) return;
 
     { // Once all of our components have been prepared, check if this request involves a SortSpec.
       // If it does, and if our request includes a cursorMark param, then parse & init the
@@ -512,7 +492,6 @@ public class SearchHandler extends RequestHandlerBase
 
     if (!rb.isDistrib) {
       // a normal non-distributed request
-
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
@@ -547,7 +526,6 @@ public class SearchHandler extends RequestHandlerBase
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         log.warn("Query: {}; ", req.getParamString(), ex);
         shortCircuitedResults(req, rb);
-        rb.rsp.setPartialResults(rb.req);
       }
     } else {
       // a distributed request
@@ -565,7 +543,10 @@ public class SearchHandler extends RequestHandlerBase
 
         // call all components
         for (SearchComponent c : components) {
-          // the next stage is the minimum of what all components report
+          if (checkLimitsBefore(c, "distrib", rb.req, rb.rsp, components)) {
+            shortCircuitedResults(req, rb);
+            return;
+          } // the next stage is the minimum of what all components report
           nextStage = Math.min(nextStage, c.distributedProcess(rb));
         }
 
@@ -619,6 +600,7 @@ public class SearchHandler extends RequestHandlerBase
                     ? shardHandler1.takeCompletedIncludingErrors()
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
+            AtomicReference<Object> detailMesg = new AtomicReference<>(); // or perhaps new Object[1] ?
 
             boolean anyResponsesPartial =
                 srsp.getShardRequest().responses.stream()
@@ -629,9 +611,20 @@ public class SearchHandler extends RequestHandlerBase
                             return false;
                           }
                           Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          if (recursive != null) {
+                            Object message =
+                                "[Shard:"
+                                    + response.getShardAddress()
+                                    + "]"
+                                    + resp.findRecursive(
+                                        "responseHeader",
+                                        RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY);
+                            detailMesg.compareAndSet(null, message); // first one, ingore rest
+                          }
                           return recursive != null;
                         });
             if (anyResponsesPartial) {
+              rb.rsp.addPartialResponseDetail(detailMesg.get());
               rsp.setPartialResults(rb.req);
             }
             // Was there an exception?
@@ -655,6 +648,12 @@ public class SearchHandler extends RequestHandlerBase
                   throwSolrException(srsp.getException());
                 } else {
                   rsp.setPartialResults(rb.req);
+                  if (publishCpuTime) {
+                    totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
+                    rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+                    rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+                  }
+                  return; // nothing for components to see, don't need to finish stages
                 }
               }
             }
@@ -663,6 +662,15 @@ public class SearchHandler extends RequestHandlerBase
 
             // let the components see the responses to the request
             for (SearchComponent c : components) {
+              if (checkLimitsBefore(
+                  c,
+                  "handleResponses next stage:" + stageInEnglish(nextStage),
+                  rb.req,
+                  rb.rsp,
+                  components)) {
+                shortCircuitedResults(req, rb);
+                return;
+              }
               c.handleResponses(rb, srsp.getShardRequest());
             }
 
@@ -675,7 +683,7 @@ public class SearchHandler extends RequestHandlerBase
 
         for (SearchComponent c : components) {
           if (checkLimitsBefore(
-              c, "finish stage:" + stageInEnglish(nextStage), rb.req, rb.rsp, components)) {
+              c, "finishStage stage:" + stageInEnglish(nextStage), rb.req, rb.rsp, components)) {
             return;
           }
           c.finishStage(rb);
@@ -689,6 +697,35 @@ public class SearchHandler extends RequestHandlerBase
         rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       }
     }
+  }
+
+  private static boolean prepareComponents(
+      SolrQueryRequest req, ResponseBuilder rb, RTimerTree timer, List<SearchComponent> components)
+      throws IOException {
+    if (timer == null) {
+      // non-debugging prepare phase
+      for (SearchComponent component : components) {
+        if (checkLimitsBefore(component, "prepare", rb.req, rb.rsp, components)) {
+          shortCircuitedResults(req, rb);
+          return false;
+        }
+        component.prepare(rb);
+      }
+    } else {
+      // debugging prepare phase
+      RTimerTree subt = timer.sub("prepare");
+      for (SearchComponent c : components) {
+        if (checkLimitsBefore(c, "prepare debug", rb.req, rb.rsp, components)) {
+          shortCircuitedResults(req, rb);
+          return false;
+        }
+        rb.setTimer(subt.sub(c.getName()));
+        c.prepare(rb);
+        rb.getTimer().stop();
+      }
+      subt.stop();
+    }
+    return true;
   }
 
   private static String stageInEnglish(int nextStage) {
@@ -730,6 +767,7 @@ public class SearchHandler extends RequestHandlerBase
       debug.add("explain", new NamedList<>());
       rb.rsp.add("debug", debug);
     }
+    rb.rsp.setPartialResults(rb.req);
   }
 
   private static boolean checkLimitsBefore(
@@ -741,11 +779,15 @@ public class SearchHandler extends RequestHandlerBase
 
     return getQueryLimits(req, resp)
         .maybeExitWithPartialResults(
-            () -> {
-              List<String> names =
-                  components.stream().map(SearchComponent::getName).collect(Collectors.toList());
-              return "[" + when + "] Limit(s) exceeded prior to " + c.getName() + " in " + names;
-            });
+            () ->
+                "["
+                    + when
+                    + "] Limit(s) exceeded prior to "
+                    + c.getName()
+                    + " in "
+                    + components.stream()
+                        .map(SearchComponent::getName)
+                        .collect(Collectors.toList()));
   }
 
   private long computeShardCpuTime(List<ShardResponse> responses) {
