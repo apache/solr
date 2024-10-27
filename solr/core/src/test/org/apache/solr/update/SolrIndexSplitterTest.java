@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -536,14 +535,12 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCoreContainer()
               .create(
                   "split1",
-                  ImmutableMap.of(
-                      "dataDir", indexDir1.getAbsolutePath(), "configSet", "cloud-minimal"));
+                  Map.of("dataDir", indexDir1.getAbsolutePath(), "configSet", "cloud-minimal"));
       core2 =
           h.getCoreContainer()
               .create(
                   "split2",
-                  ImmutableMap.of(
-                      "dataDir", indexDir2.getAbsolutePath(), "configSet", "cloud-minimal"));
+                  Map.of("dataDir", indexDir2.getAbsolutePath(), "configSet", "cloud-minimal"));
 
       LocalSolrQueryRequest request = null;
       try {
