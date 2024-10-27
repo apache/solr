@@ -44,7 +44,13 @@
   </updateLog>
  </updateHandler>
 
- <requestHandler name="/update" class="solr.UpdateRequestHandler" />
+ <requestHandler name="/update" class="solr.UpdateRequestHandler" >
+  <lst name="defaults">
+   <str name="update.chain">embedding</str>
+  </lst>
+ </requestHandler>
+=dedupe
+ 
  <!-- Query request handler managing models and features -->
  <requestHandler name="/query" class="solr.SearchHandler">
   <lst name="defaults">
@@ -54,5 +60,14 @@
    <str name="df">id</str>
   </lst>
  </requestHandler>
+
+ <updateRequestProcessorChain name="embedding">
+  <processor class="solr.llm.update.processor.TextEmbedderUpdateProcessorFactory">
+   <str name="inputField">string_field</str>
+   <str name="outputField">vector</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+ </updateRequestProcessorChain>
 
 </config>
