@@ -305,8 +305,14 @@ Instead, use delete-by-query (most efficient) or xref:partial-document-updates.a
 If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is structured to ensure no descendent children remain of any documents that are being deleted.
 *_Doing otherwise will violate integrity assumptions that Solr expects._*
 
-=== Shard Splits
-When xref:deployment-guide:shard-management.adoc#splitshard[splitting shards], child documents get transmitted and routed on their own, since they are documents in their own right. If you route based on your unique field, then the child documents will be routed correctly based on their `_root_`. However, if your collection specifies a router field (even if it matches the unique field), then the child documents will be routed based on that field instead of their root field. If your collection specifies a router field, you should ensure every doc in a hierarchy has the same value for that field, otherwise it maybe broken during a shard split.
+
+[NOTE]
+====
+.Shard Splits
+When xref:deployment-guide:shard-management.adoc#splitshard[splitting shards], child documents get transmitted and routed independently.
+If you use the default `router.field`, this is handled correctly for you.
+If your collection has a custom `router.field`, then you must ensure that all documents in a hierarchy have the same value for that field.
+====
 
 [#indexing-anonymous-children]
 
