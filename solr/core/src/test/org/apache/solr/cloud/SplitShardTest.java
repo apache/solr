@@ -169,15 +169,15 @@ public class SplitShardTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
 
     List<SolrInputDocument> inputDocs = new ArrayList<>();
-    for (int idx = 0; idx < 10; ++idx) {
+    for (int idx = 0; idx < 20; ) { // 10 parents + 10 children
       SolrInputDocument parent = new SolrInputDocument();
-      parent.addField("id", idx);
+      parent.addField("id", ++idx);
       parent.addField("type_s", "parent");
 
       // Child has different ID, so could be routed differently if used for routing.
       SolrInputDocument child = new SolrInputDocument();
-      child.addField("id", idx + "_child");
-      child.addField("expected_parent_s", idx);
+      child.addField("id", ++idx);
+      child.addField("expected_parent_s", parent.getField("id"));
 
       parent.addField("myChild", List.of(child));
 
