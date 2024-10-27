@@ -242,9 +242,9 @@ client.add(Arrays.asList(d1, d2));
 
 == Query Time
 
-Apache Solr provides two query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, and the `vectorSimilarity` query parser.
+Apache Solr provides three query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `embed` query parser.
 
-Both parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (with out needing to compute their vector similarity distances).
+All parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (without needing to compute their vector similarity distances).
 
 Common parameters for both query parsers are:
 
@@ -307,6 +307,40 @@ Here's an example of a simple `knn` search:
 ?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
 The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
+
+
+=== embed Query Parser
+
+The `embed` query parser encode a textual query to a vector using a dedicated Large Language Model(fine tuned for the task of encoding text to vector for sentence similarity) and matches k-nearest neighbours documents to such query vector.
+
+In addition to the parameters in common with the other dense-retrieval query parsers, it takes the following:
+
+`model`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The model to use to encode the text to a vector. Must reference an existing model loaded into the `/schema/embedding-model-store`.
+
+`topK`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: 10
+|===
++
+How many k-nearest results to return.
+
+Here's an example of a simple `embed` search:
+
+[source,text]
+?q={!embed model=a-model f=vector topK=10}hello world query
+
+The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
+
+For more details on how to work with embedding text in Apache Solr, please refer to the dedicated page: xref:embedding-text.adoc[Embedding Text]
 
 === vectorSimilarity Query Parser
 
