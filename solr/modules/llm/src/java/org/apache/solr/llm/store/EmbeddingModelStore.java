@@ -16,9 +16,6 @@
  */
 package org.apache.solr.llm.store;
 
-
-
-
 import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import java.util.ArrayList;
 import java.util.Collections;
