@@ -592,15 +592,16 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     }
   }
 
-  /** Utility method to find Ids that hash into which ranges */
-  @Test
+  /** Utility method to find Ids that hash into which ranges. Uncomment @Test to print. */
+  //  @Test
   public void testCompositeHashSandbox() {
     CompositeIdRouter r1 = new CompositeIdRouter();
     String routeBase = "sea-line!";
-    List<DocRouter.Range> twoRanges = r1.partitionRange(2, r1.keyHashRange(routeBase));
+    DocRouter.Range routeBaseRange = r1.keyHashRange(routeBase);
+    List<DocRouter.Range> twoRanges = r1.partitionRange(2, routeBaseRange);
     System.out.println("splitKeyRange = " + twoRanges);
 
-    // for loop checking if value is in hash range
+    // Hash some values and print which range they fall into
     for (int i = 0; i < 10; i++) {
       String key = routeBase + i;
       int hash = r1.sliceHash(key, null, null, null);
@@ -608,7 +609,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       boolean inB = twoRanges.get(1).includes(hash);
 
       // Print which range the key is in
-      System.out.println(key + " in A: " + inA + " in B: " + inB);
+      System.out.println(key + " in " + (inA ? twoRanges.get(0) : twoRanges.get(1)));
     }
   }
 
