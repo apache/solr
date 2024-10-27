@@ -127,22 +127,20 @@ public class SolrIndexSplitter {
       rangesArr = cmd.ranges.toArray(new DocRouter.Range[0]);
     }
 
-    SchemaField maybeField;
     if (cmd.routeFieldName == null) {
       // To support routing child documents, use the root field if it exists (which would be
       // populated with unique field), otherwise use the unique key field
       if (searcher.getSchema().isUsableForChildDocs()) {
-        maybeField = searcher.getSchema().getField(IndexSchema.ROOT_FIELD_NAME);
+        field = searcher.getSchema().getField(IndexSchema.ROOT_FIELD_NAME);
       } else {
-        maybeField = searcher.getSchema().getUniqueKeyField();
+        field = searcher.getSchema().getUniqueKeyField();
       }
     } else {
       // Custom routing
       // If child docs are used, users must ensure that the whole nested document tree has a
       // consistent routeField value
-      maybeField = searcher.getSchema().getField(cmd.routeFieldName);
+      field = searcher.getSchema().getField(cmd.routeFieldName);
     }
-    field = maybeField;
 
     if (cmd.splitKey == null) {
       splitKey = null;
