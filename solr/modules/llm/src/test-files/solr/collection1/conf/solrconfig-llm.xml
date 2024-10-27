@@ -43,13 +43,6 @@
    <str name="dir">${solr.data.dir:}</str>
   </updateLog>
  </updateHandler>
-
- <requestHandler name="/update" class="solr.UpdateRequestHandler" >
-  <lst name="defaults">
-   <str name="update.chain">embedding</str>
-  </lst>
- </requestHandler>
-=dedupe
  
  <!-- Query request handler managing models and features -->
  <requestHandler name="/query" class="solr.SearchHandler">
