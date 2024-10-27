@@ -1,0 +1,280 @@
+= Embedding Text
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+With the *Large Language Model* (or *LLM* for short) module you can interact with Large Language Models in Solr to encode text to vectors at indexing and query time.
+
+
+== Text Embedding Concepts
+
+=== From Text to Vector
+
+The task of sentence similarity aims to encode text to vector in a way that sentences semantically similar are encoded to vectors close in a vector space (using a vector distance metric).
+
+
+=== Large Language Models 
+
+Large Language Models can be fine-tuned for such task.
+The resulting model is able to encode text to a numerical vector.
+
+For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
+
+==== Embedding Services
+
+Training, fine-tuning and operating such Large Language Models is expensive.
+
+Many companies focus on this aspect and let users access APIs to encode the text (at the price of a license fee).
+
+Apache Solr uses LangChain4j (add link here) to connect to such apis.
+
+[IMPORTANT]
+====
+At the moment a subset of the embedding models supported by LangChain4j is supported by Solr.
+
+*Disclaimer*: Apache Solr is *in no way* affiliated to any of these corporations or services.
+
+If you want to add support for additional services or improve the support for the existing ones, feel free to contribute:
+
+* https://github.com/apache/solr/blob/main/CONTRIBUTING.md[Contributing to Solr]
+====
+
+== Module
+
+This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+At the moment the only supported way to interact with Large Language Models is via embedding text.
+
+In the future additional components to empower Solr with LLM will be added.
+
+== Installation of LLM
+
+The llm module requires the `modules/ltr/lib/solr-llm-*.jar` JARs.
+
+== LLM Configuration
+
+Large-Language-Model is a module and therefore its plugins must be configured in `solrconfig.xml`.
+
+=== Minimum Requirements
+
+* Include the required module JARs.
+Note that by default paths are relative to the Solr core, so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
++
+[source,xml]
+----
+<lib dir="${solr.install.dir:../../../..}/modules/llm/lib/" regex=".*\.jar" />
+----
+
+* Declaration of the `embed` query parser.
++
+[source,xml]
+----
+<queryParser name="embed" class="org.apache.solr.llm.search.TextEmbedderQParserPlugin"/>
+----
+
+== Text Embedding Lifecycle
+
+
+=== Models
+
+* A model encodes text to a vector.
+* A model in Solr is a reference to an external API that runs the Large Language Model responsible for text embedding.
+
+*N.B.* the Solr embedding model specifies the parameters to access the APIs, the model doesn't run internally in Solr
+
+
+A model is described by these parameters:
+
+
+`class`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The model implementation.
+Accepted values: 
+
+* `dev.langchain4j.model.huggingface.HuggingFaceEmbeddingModel`.
+* `dev.langchain4j.model.mistralai.MistralAiEmbeddingModel`.
+* `dev.langchain4j.model.openai.OpenAiEmbeddingModel`.
+* `dev.langchain4j.model.cohere.CohereEmbeddingModel`.
+
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The identifier of your model, this is used by any component that intends to use the model (`embed` query parser).
+
+`params`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Each model class has potentially different params.
+Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr (link to langChain).
+
+
+=== Supported Models
+Apache Solr uses LangChain4j (add link here) to support text embedding.
+The models currently supported are:
+
+[tabs#supported-models]
+======
+Hugging Face::
++
+====
+
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.huggingface.HuggingFaceEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "accessToken": "<your-huggingface-api-key>",
+    "modelId": "<a-huggingface-embedding-model>"
+  }
+}
+----
+====
+
+MistralAI::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.mistralai.MistralAiEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.mistral.ai/v1",
+    "apiKey": "<your-mistralAI-api-key>",
+    "modelName": "<a-mistralAI-embedding-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+OpenAI::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.openai.OpenAiEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "<your-openAI-api-key>",
+    "modelName": "<a-openAI-embedding-model>",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+----
+====
+
+Cohere::
++
+====
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.cohere.CohereEmbeddingModel",
+  "name": "<a-name-for-your-model>",
+  "params": {
+    "baseUrl": "https://api.cohere.ai/v1/",
+    "apiKey": "<your-cohere-api-key>",
+    "modelName": "<a-cohere-embedding-model>",
+    "inputType": "search_document",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true
+  }
+}
+----
+====
+======
+
+=== Uploading a Model
+
+To upload the model in a `/path/myModel.json` file, please run:
+
+[source,bash]
+----
+curl -XPUT 'http://localhost:8983/solr/techproducts/schema/embedding-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+----
+
+
+To view all models:
+
+[source,text]
+http://localhost:8983/solr/techproducts/schema/embedding-model-store
+
+To delete the `currentModel` model:
+
+[source,bash]
+----
+curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/embedding-model-store/currentModel'
+----
+
+
+To view the model you just uploaded please open the following URL in a browser:
+
+[source,text]
+http://localhost:8983/solr/techproducts/schema/embedding-model-store
+
+.Example: /path/myModel.json
+[source,json]
+----
+{
+  "class": "dev.langchain4j.model.openai.OpenAiEmbeddingModel",
+  "name": "openai-1",
+  "params": {
+    "baseUrl": "https://api.openai.com/v1",
+    "apiKey": "apiKey-openAI",
+    "modelName": "text-embedding-3-small",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true,
+    "maxRetries": 5
+  }
+}
+
+----
+
+=== Running an embedding Query
+To run a query that embeds your query text, using a model you previously uploaded is simple:
+
+[source,text]
+?q={!embed model=a-model f=vector topK=10}hello world query
+
+The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
+
+For more details on how to work with vector search query parsers in Apache Solr, please refer to the dedicated page: xref:dense-vector-search.adoc[Dense Vector Search]
