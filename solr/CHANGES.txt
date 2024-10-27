@@ -29,7 +29,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-* SOLR-11191: Splitting shards now routes child-docs with their _root_ field when available so they maintain parent relationship. (Zack Kendall)
+(No changes)
 
 Deprecation Removals
 ----------------------
@@ -186,6 +186,8 @@ Bug Fixes
 * SOLR-6962: bin/solr stop/start/restart should complain about missing value for options that expect a value. (Eric Pugh, Rahul Goswami)
 
 * SOLR-17464: Fixed Http2SolrClient bug in that 'requestAsync' triggered NPE when using a shared Jetty client (Jason Gerlowski, James Dyer)
+
+* SOLR-11191: Splitting shards now routes child-docs with their _root_ field when available so they maintain parent relationship. (Zack Kendall)
 
 Dependency Upgrades
 ---------------------
