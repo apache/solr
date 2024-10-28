@@ -133,6 +133,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.executor == null) {
         this.executor = builder.executor;
       }
+
+      initAuthStoreFromExistingClient(httpClient);
       this.closeClient = false;
     } else {
       this.httpClient = createHttpClient(builder);
@@ -146,6 +148,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  private void initAuthStoreFromExistingClient(HttpClient httpClient) {
+    assert httpClient.getAuthenticationStore() instanceof AuthenticationStoreHolder;
+    this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
   @Deprecated(since = "9.7")
