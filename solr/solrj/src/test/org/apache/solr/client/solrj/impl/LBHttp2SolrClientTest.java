@@ -119,8 +119,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
                 checkSynchonousResponseContent(response, qValue);
             }
 
-            client.basePathToFail = ep1.getBaseUrl();
-            basePathToSucceed = ep2.getBaseUrl();
+            client.basePathToFail = ep2.getBaseUrl();
+            basePathToSucceed = ep1.getBaseUrl();
             qValue = "Second time";
 
             for (int i = 0; i < 5; i++) {
