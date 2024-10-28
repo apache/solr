@@ -1999,6 +1999,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected RecoveryInfo recoveryInfo;
 
   class LogReplayer implements Runnable {
+    private final SolrParams BASE_REPLAY_PARAMS =
+        new MapSolrParams(
+            Map.of(
+                DISTRIB_UPDATE_PARAM,
+                FROMLEADER.toString(),
+                DistributedUpdateProcessor.LOG_REPLAY,
+                "true"));
+
     private Logger loglog = log; // set to something different?
 
     Deque<TransactionLog> translogs;
@@ -2025,10 +2033,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     @Override
     public void run() {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
-      params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
-      req = new LocalSolrQueryRequest(uhandler.core, params);
+      req = new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
       rsp = new SolrQueryResponse();
       // setting request info will help logging
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
@@ -2098,18 +2103,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
         Collection<UpdateRequestProcessor> procPool =
             Collections.synchronizedList(new ArrayList<>());
-        final var params =
-            new MapSolrParams(
-                Map.of(
-                    DISTRIB_UPDATE_PARAM,
-                    FROMLEADER.toString(),
-                    DistributedUpdateProcessor.LOG_REPLAY,
-                    "true"));
         ThreadLocal<UpdateRequestProcessor> procThreadLocal =
             ThreadLocal.withInitial(
                 () -> {
                   // SolrQueryRequest is not thread-safe, so use a copy when creating URPs
-                  final var localRequest = new LocalSolrQueryRequest(uhandler.core, params);
+                  final var localRequest =
+                      new LocalSolrQueryRequest(uhandler.core, BASE_REPLAY_PARAMS);
                   var proc = processorChain.createProcessor(localRequest, rsp);
                   procPool.add(proc);
                   return proc;
