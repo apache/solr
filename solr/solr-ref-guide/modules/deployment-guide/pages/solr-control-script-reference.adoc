@@ -1985,10 +1985,10 @@ Use the export command to take :
 
 [,console]
 ----
-$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [-i <ID>] --snapshot-name <NAME>
+$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>] --snapshot-name <NAME>
 ----
 
-The `-i` parameter specifies that this is an asynchronous process.
+The `--async-id` parameter specifies that this is an asynchronous process.
 
 
 === Delete a Snapshot
