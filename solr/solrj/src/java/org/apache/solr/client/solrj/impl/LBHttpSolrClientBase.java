@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -101,7 +100,7 @@ public abstract class LBHttpSolrClientBase<C extends HttpSolrClientBase> extends
   protected final C solrClient;
 
   @SuppressWarnings("unchecked")
-  protected LBHttpSolrClientBase(LBHttpSolrClientBuilderBase<?,?,?> builder) {
+  protected LBHttpSolrClientBase(LBHttpSolrClientBuilderBase<?, ?, ?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
     this.solrClient = (C) builder.solrClient;
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
