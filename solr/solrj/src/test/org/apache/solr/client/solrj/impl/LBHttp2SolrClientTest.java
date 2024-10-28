@@ -79,7 +79,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         Http2SolrClient.Builder b =
                 new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
         ;
-        try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
+        try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
              LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
             String lastEndpoint = null;
@@ -105,7 +105,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         Http2SolrClient.Builder b =
                 new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
         ;
-        try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
+        try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
              LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
             client.basePathToFail = ep1.getBaseUrl();
@@ -151,7 +151,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         Http2SolrClient.Builder b =
                 new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
         ;
-        try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
+        try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
              LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
             for (int j = 0; j < 2; j++) {
@@ -214,7 +214,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
         Http2SolrClient.Builder b =
                 new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
-        try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
+        try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
              LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
             int limit = 10; // For simplicity use an even limit
@@ -268,7 +268,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         }
     }
 
-    public static class MockHttp2SolrClient extends Http2SolrClient {
+    public static class MockHttpSolrClient extends Http2SolrClient {
 
         public List<SolrRequest<?>> lastSolrRequests = new ArrayList<>();
 
@@ -278,7 +278,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
         public String basePathToFail = null;
 
-        protected MockHttp2SolrClient(String serverBaseUrl, Builder builder) {
+        protected MockHttpSolrClient(String serverBaseUrl, Builder builder) {
             // TODO: Consider creating an interface for Http*SolrClient
             // so mocks can Implement, not Extend, and not actually need to
             // build an (unused) client
