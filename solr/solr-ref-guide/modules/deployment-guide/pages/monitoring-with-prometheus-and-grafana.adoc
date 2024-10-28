@@ -124,7 +124,7 @@ It can be any port not already in use on your server.
 |Optional |Default: _see description_
 |===
 +
-The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
+The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a  The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in a user-managed cluster or a single-node installation.
 If you are running SolrCloud, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
@@ -171,7 +171,7 @@ The `solr-exporter` collects metrics from Solr every few seconds controlled by t
 These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool.
 The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr.
 
-`-i`, `--cluster-id`, `$CLUSTER_ID`::
+`--cluster-id`, `$CLUSTER_ID`::
 +
 [%autowidth,frame=none]
 |===

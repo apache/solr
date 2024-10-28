@@ -145,7 +145,7 @@ public class SolrExporter {
     Options mainOptions = new Options();
     Options deprecatedOptions = new Options();
 
-    // Change to -s and --solr-url in main once -s for --scrape-interval removed.
+    // Change to -s and --solr-url in main once deprecated -s flag for --scrape-interval is removed.
     Option baseUrlOption =
         Option.builder("b")
             .longOpt("base-url")
@@ -203,7 +203,7 @@ public class SolrExporter {
     mainOptions.addOption(helpOption);
 
     Option clusterIdOption =
-        Option.builder("i")
+        Option.builder()
             .longOpt("cluster-id")
             .hasArg()
             .argName("CLUSTER_ID")
@@ -212,6 +212,22 @@ public class SolrExporter {
                 "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to a hash of the -b or -z argument")
             .build();
     mainOptions.addOption(clusterIdOption);
+
+    Option clusterIdDepOption =
+        Option.builder("i")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --cluster-id instead")
+                    .get())
+            .hasArg()
+            .argName("CLUSTER_ID")
+            .type(String.class)
+            .desc(
+                "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to a hash of the -b or -z argument")
+            .build();
+    deprecatedOptions.addOption(clusterIdDepOption);
 
     Option numThreadsOption =
         Option.builder()
@@ -338,6 +354,7 @@ public class SolrExporter {
         defaultClusterId = makeShortHash(zkHost);
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(zkHost);
       } else if (commandLine.hasOption(baseUrlOption) || commandLine.hasOption(baseUrlDepOption)) {
+        log.warn("-b and --base-url will be replaced with -s and --solr-url in Solr 10");
         String baseUrl =
             commandLine.hasOption(baseUrlOption)
                 ? commandLine.getOptionValue(baseUrlOption)
@@ -355,6 +372,9 @@ public class SolrExporter {
 
       int port = commandLine.getParsedOptionValue(portOption, DEFAULT_PORT);
       String clusterId = commandLine.getOptionValue(clusterIdOption, DEFAULT_CLUSTER_ID);
+      if (commandLine.hasOption("i")) {
+        clusterId = commandLine.getOptionValue("i");
+      }
       if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
       }

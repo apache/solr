@@ -152,7 +152,7 @@ The ZooKeeper based connection is the most reliable and performant means for Clo
 
 ==== Default Collections
 
-Most `SolrClient` methods allow users to specify the core or collection they wish to query, etc. as a `String` parameter.
+Most `SolrClient` methods allow users to specify the collection or core they wish to query, etc. as a `String` parameter.
 However continually specifying this parameter can become tedious, especially for users who always work with the same collection.
 
 Users can avoid this pattern by specifying a "default" collection when creating their client, using the `withDefaultCollection(String)` method available on the relevant `SolrClient` Builder object.
