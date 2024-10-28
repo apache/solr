@@ -424,7 +424,7 @@ public class ZkShardTerms implements AutoCloseable {
         };
     try {
       // exists operation is faster than getData operation
-      zkClient.getData(znodePath, watcher, null, true);
+      zkClient.exists(znodePath, watcher, true);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(

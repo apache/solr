@@ -82,7 +82,7 @@ public class SolrZkClient implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ExecutorService curatorSafeServiceExecutor;
-  CuratorFramework client;
+  private CuratorFramework client;
 
   private final ZkMetrics metrics = new ZkMetrics();
 
@@ -835,6 +835,11 @@ public class SolrZkClient implements Closeable {
     return setData(path, Files.readAllBytes(source), retryOnConnLoss);
   }
 
+  /**
+   * A function that takes a transaction builder and returns a curator operation. This is used for
+   * users to provide a multi-transaction operation to the client, without needing to use the
+   * underlying Curator client to access the transaction builder.
+   */
   @FunctionalInterface
   public interface CuratorOpBuilder {
     CuratorOp build(TransactionOp startingOp) throws Exception;
@@ -994,14 +999,14 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
-   * @return the address of the zookeeper cluster
+   * @return the ChRoot that this client is using for the ZK cluster
    */
   public String getChroot() {
     return client.getNamespace();
   }
 
   /**
-   * @return the address of the zookeeper cluster
+   * @return the given path's absolute path in the ZK cluster
    */
   public String getAbsolutePath(String path) {
     return ZKPaths.fixForNamespace(getChroot(), path);

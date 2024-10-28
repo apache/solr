@@ -17,9 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -33,8 +31,6 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Can be removed once CURATOR-720 is resolved, and the dependency is updated
-@ThreadLeakFilters(filters = {SolrIgnoredThreadsFilter.class})
 public class ZkFailoverTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

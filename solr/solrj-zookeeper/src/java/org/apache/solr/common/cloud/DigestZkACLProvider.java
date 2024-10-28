@@ -39,9 +39,7 @@ public class DigestZkACLProvider extends SecurityAwareZkACLProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Called by reflective instantiation */
-  public DigestZkACLProvider() {
-    super();
-  }
+  public DigestZkACLProvider() {}
 
   public DigestZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
     super(zkCredentialsInjector);

@@ -34,9 +34,7 @@ public class DigestZkCredentialsProvider extends DefaultZkCredentialsProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Called by reflective instantiation */
-  public DigestZkCredentialsProvider() {
-    super();
-  }
+  public DigestZkCredentialsProvider() {}
 
   public DigestZkCredentialsProvider(ZkCredentialsInjector zkCredentialsInjector) {
     super(zkCredentialsInjector);
