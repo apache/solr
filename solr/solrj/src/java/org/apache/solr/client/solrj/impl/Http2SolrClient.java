@@ -151,6 +151,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private void initAuthStoreFromExistingClient(HttpClient httpClient) {
+    // Since we don't allow users to provide arbitrary Jetty clients, all parameters to this method
+    // must originate from the 'createHttpClient' method, which uses AuthenticationStoreHolder.
+    // Verify this assumption and copy the existing instance to avoid unnecessary wrapping.
     assert httpClient.getAuthenticationStore() instanceof AuthenticationStoreHolder;
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
