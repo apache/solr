@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +29,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -49,7 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.4
  */
-public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
+public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
