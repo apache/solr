@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,7 +28,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -133,20 +136,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
   }
 
-  // TODO This test currently fails, because the "MockHttp2SolrClient" carefully created to record
-  // the requests sent, isn't actually used anymore due to changes "under the covers" in
-  // LBHttp2SolrClient.  Previously, LBHttp2SolrClient would use the provided Http2SolrClient
-  // directly when making endpoint requests, but this is no longer the case.  With recent changes in
-  // this PR, the provided Http2SC is used as a "template" that is used to create a new "NoClose"
-  // Http2SolrClient based on the original.  So all of the recording logic in this test's custom
-  // "MockHttp2SolrClient" is ignored entirely.
-  // How do we fix this?
-  //   1. Could this test use Mockito to capture the values sent to requestWithBaseUrl?
-  //      (Maybe add a convenience requestAsyncWithBaseUrl to Http2SC)
-  //   2. Could we make LBHttp2SolrClient more extensible by using delegation in some way instead
-  //      of the current "NoClose" solution?
-  //   3. Could I add an override in MockHttp2SolrClient for requestWithBaseUrl, so that we're
-  //      capturing things a level up?
   @Test
   public void testAsync() {
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
@@ -177,9 +166,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         int index = Integer.parseInt(lastQueryReq.getParams().get("q"));
         assertNull("Found same request twice: " + index, queryRequests[index]);
         queryRequests[index] = lastQueryReq;
-        if (lastQueryReq.getBasePath().equals(ep1.toString())) {
+
+        final String lastBasePath = client.lastBasePaths.get(i);
+        if (lastBasePath.equals(ep1.toString())) {
           numEndpointOne++;
-        } else if (lastQueryReq.getBasePath().equals(ep2.toString())) {
+        } else if (lastBasePath.equals(ep2.toString())) {
           numEndpointTwo++;
         }
 
@@ -219,6 +210,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     public String basePathToFail = null;
 
+    public String tmpBaseUrl = null;
+
     protected MockHttp2SolrClient(String serverBaseUrl, Builder builder) {
       // TODO: Consider creating an interface for Http*SolrClient
       // so mocks can Implement, not Extend, and not actually need to
@@ -227,13 +220,26 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
 
     @Override
+    public <R> R requestWithBaseUrl(
+        String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
+        throws SolrServerException, IOException {
+      // This use of 'tmpBaseUrl' is thread unsafe, but that's fine for our purposes here.
+      try {
+        tmpBaseUrl = baseUrl;
+        return clientFunction.apply(this);
+      } finally {
+        tmpBaseUrl = null;
+      }
+    }
+
+    @Override
     public CompletableFuture<NamedList<Object>> requestAsync(
         final SolrRequest<?> solrRequest, String collection) {
       CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
       lastSolrRequests.add(solrRequest);
-      lastBasePaths.add(solrRequest.getBasePath());
+      lastBasePaths.add(tmpBaseUrl);
       lastCollections.add(collection);
-      if (solrRequest.getBasePath().equals(basePathToFail)) {
+      if (tmpBaseUrl != null && tmpBaseUrl.equals(basePathToFail)) {
         cf.completeExceptionally(
             new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this."));
       } else {
