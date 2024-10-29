@@ -1634,11 +1634,11 @@ NOTE: The `export` command only works with in a Solr running in cloud mode.
 
 The `bin/solr export` command takes the following parameters:
 
-`--solr-url <url>`::
+`-s <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `http://localhost:8983`
 |===
 +
 Fully-qualified address to a Solr.
