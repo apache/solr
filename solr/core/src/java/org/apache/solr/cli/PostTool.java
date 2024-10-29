@@ -1044,8 +1044,7 @@ public class PostTool extends ToolBase {
         warn("IOException while reading response: " + e);
         success = false;
       } catch (GeneralSecurityException e) {
-        warn(
-            "Looks like Solr is secured and would not let us in. Try with another user in '-u' parameter");
+        warn("Looks like Solr is secured and would not let us in.");
       }
     } finally {
       if (urlConnection != null) {

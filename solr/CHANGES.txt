@@ -83,6 +83,8 @@ Bug Fixes
 
 * SOLR-17413: Fixed UpdateLog replay bug that shared thread-unsafe SolrQueryRequest objects across threads (Jason Gerlowski, David Smiley, Houston Putman)
 
+* SOLR-17529: Clean up error message in PostTool when you attempt to post to a basic auth secured Solr.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
