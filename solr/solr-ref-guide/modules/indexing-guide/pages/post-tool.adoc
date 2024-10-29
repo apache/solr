@@ -176,11 +176,11 @@ $ bin/solr post --mode web -c gettingstarted --recursive 1 --delay 1 https://sol
 === Standard Input as Source for Indexing
 
 You can use the standard input as your source for data to index.  
-Notice the `-out` providing raw responses from Solr.
+Notice the `--verbose` providing raw responses from Solr.
 
 [,console]
 ----
-$ echo '{commit: {}}' | bin/solr post --mode stdin --solr-url http://localhost:8983 --name my_collection --out
+$ echo '{commit: {}}' | bin/solr post --mode stdin --solr-url http://localhost:8983 --name my_collection --verbose
 ----
 
 === Raw Data as Source for Indexing
@@ -189,5 +189,5 @@ Provide the raw document as a string for indexing.
 
 [,console]
 ----
-$ bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv -out $'id,value\n1,0.47' 
+$ bin/solr post --solr-url http://localhost:8983 --name signals -mode args --type text/csv --verbose $'id,value\n1,0.47' 
 ----
