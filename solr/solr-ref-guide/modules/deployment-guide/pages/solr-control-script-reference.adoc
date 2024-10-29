@@ -1652,7 +1652,7 @@ Fully-qualified address to a Solr.
 s|Required |Default: none
 |===
 +
-Name of the collection to run a export against.
+Name of the collection to run an export against.
 +
 *Example*: `bin/solr export -c gettingstarted`
 
