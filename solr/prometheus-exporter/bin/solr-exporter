@@ -84,13 +84,6 @@ else
   JAVA_MEM_OPTS="-Xms$JAVA_HEAP -Xmx$JAVA_HEAP"
 fi
 
-# define default GC_TUNE
-if [ -z ${GC_TUNE+x} ]; then
-    GC_TUNE='-XX:+UseG1GC'
-else
-    GC_TUNE="$GC_TUNE"
-fi
-
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then
   [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --windows "$CLASSPATH"`

@@ -39,15 +39,9 @@
 #SOLR_JAVA_MEM="-Xms512m -Xmx512m"
 
 # Enable verbose GC logging...
-#  * If this is unset, various default options will be selected depending on which JVM version is in use
-#  * For Java 8: if this is set, additional params will be added to specify the log file & rotation
-#  * For Java 9 or higher: each included opt param that starts with '-Xlog:gc', but does not include an
-#    output specifier, will have a 'file' output specifier (as well as formatting & rollover options)
-#    appended, using the effective value of the SOLR_LOGS_DIR.
+# If this is unset, various default options will be selected depending on which JVM version is in use
 #
-#GC_LOG_OPTS='-Xlog:gc*'  # (Java 9+)
-#GC_LOG_OPTS="-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails \
-#  -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
+#GC_LOG_OPTS='-Xlog:gc*:time,level,tags,heap,tenuring,stop:filecount=9,filesize=20M'
 
 # These GC settings have shown to work well for a number of common Solr workloads
 #GC_TUNE=" \

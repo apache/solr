@@ -996,8 +996,7 @@ set SCRIPT_SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SCRIPT_SOLR_OPTS%
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
 IF "%GC_TUNE%"=="" (
-  set GC_TUNE=-XX:+UseG1GC ^
-    -XX:+PerfDisableSharedMem ^
+  set GC_TUNE=-XX:+PerfDisableSharedMem ^
     -XX:+ParallelRefProcEnabled ^
     -XX:MaxGCPauseMillis=250 ^
     -XX:+UseLargePages ^
@@ -1009,12 +1008,7 @@ REM Add vector optimizations module
 set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 
 IF "%GC_LOG_OPTS%"=="" (
-  set GC_LOG_OPTS="-Xlog:gc*"
-)
-if "%JAVA_VENDOR%" == "OpenJ9" (
-  set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-) else (
-  set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
+  set GC_LOG_OPTS="-Xlog:gc*:file=!SOLR_LOGS_DIR!\solr_gc.log:time,level,tags:filecount=9,filesize=20M"
 )
 
 IF "%verbose%"=="1" (

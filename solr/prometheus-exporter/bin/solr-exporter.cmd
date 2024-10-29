@@ -65,7 +65,6 @@ set BASEDIR=%~dp0..
 
 IF NOT "%JAVA_HEAP%"=="" set JAVA_MEM=-Xms%JAVA_HEAP% -Xmx%JAVA_HEAP%
 IF "%JAVA_MEM%"=="" set JAVA_MEM=-Xms512m -Xmx512m
-IF "%GC_TUNE%"=="" set GC_TUNE=-XX:+UseG1GC
 
 if "%JAVACMD%"=="" set JAVACMD=java
 

@@ -39,9 +39,8 @@ REM Increase Java Min/Max Heap as needed to support your indexing / query needs
 REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
 REM Configure verbose GC logging:
-REM For Java 8: if this is set, additional params will be added to specify the log file & rotation
-REM For Java 9 or higher: GC_LOG_OPTS is currently not supported unless you are using OpenJ9. Otherwise if you set it, the startup script will exit with failure.
-REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime
+REM Settings this value overrides the default configuration.
+REM set GC_LOG_OPTS=-Xlog:gc*:time,level,tags,heap,tenuring,stop:filecount=9,filesize=20M
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.

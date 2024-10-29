@@ -228,7 +228,7 @@ This is ignored if `JAVA_HEAP` is provided.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `-XX:+UseG1GC`
+|Optional |Default: none
 |===
 +
 Custom Java garbage collection settings.
