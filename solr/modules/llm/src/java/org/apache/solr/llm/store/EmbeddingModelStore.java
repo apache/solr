@@ -16,12 +16,12 @@
  */
 package org.apache.solr.llm.store;
 
-import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 
 public class EmbeddingModelStore {
 
@@ -57,7 +57,8 @@ public class EmbeddingModelStore {
   public synchronized void addModel(SolrEmbeddingModel modeldata) throws EmbeddingModelException {
     final String name = modeldata.getName();
     if (availableModels.containsKey(name)) {
-      throw new EmbeddingModelException("model '" + name + "' already exists. Please use a different name");
+      throw new EmbeddingModelException(
+          "model '" + name + "' already exists. Please use a different name");
     }
     availableModels.put(modeldata.getName(), modeldata);
   }
