@@ -40,7 +40,8 @@ Some key changes that you may run into are:
  * Commands that interact with Solr now all use `--solr-url` (or `-s`) plus a `--name` (or `-c`) to specify the Solr to interact with.
  * You may use `--zk-host` (or `-z`) in place of the `--solr-url` option to lookup the Solr host.
  * Basic Authentication support has been added to bin/solr via the `--credentials` (or `-u`) option.
-
+ * Some short and single-letter options have been removed to avoid conflicts or in favor to other options.
+ 
 To learn about the updated options in each CLI tool, use the `--help` option or look up the tool in the documentation.
 
 === SolrJ
