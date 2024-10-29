@@ -20,12 +20,12 @@ import dev.langchain4j.model.cohere.CohereEmbeddingModel;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.TestLlmBase;
+import org.apache.solr.llm.search.TextEmbedderQParserPlugin;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.apache.solr.llm.search.TextEmbedderQParserPlugin;
 
 public class TestModelManager extends TestLlmBase {
 
@@ -41,9 +41,10 @@ public class TestModelManager extends TestLlmBase {
     final RestManager.Registry registry = loader.getManagedResourceRegistry();
     assertNotNull(
         "Expected a non-null RestManager.Registry from the SolrResourceLoader!", registry);
-    
+
     final String resourceId = "/schema/mstore1";
-    registry.registerManagedResource(resourceId, ManagedEmbeddingModelStore.class, new TextEmbedderQParserPlugin());
+    registry.registerManagedResource(
+        resourceId, ManagedEmbeddingModelStore.class, new TextEmbedderQParserPlugin());
 
     final NamedList<String> initArgs = new NamedList<>();
 
@@ -58,48 +59,51 @@ public class TestModelManager extends TestLlmBase {
   @Test
   public void testRestManagerEndpoints() throws Exception {
     assertJQ("/schema/managed", "/responseHeader/status==0");
-    
+
     final String cohereModelClassName = CohereEmbeddingModel.class.getName();
 
     // Add models
-    String model =
-        "{ \"name\":\"testModel1\", \"class\":\"" + cohereModelClassName + "\"}";
+    String model = "{ \"name\":\"testModel1\", \"class\":\"" + cohereModelClassName + "\"}";
     // fails since it does not have params
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==400");
     // success
     model =
         "{ name:\"testModel2\", class:\""
-            + cohereModelClassName + "\"," +
-                "params:{" +
-                "baseUrl:\"https://api.cohere.ai/v1/\"," +
-                "apiKey:\"cohereApiKey2\"," +
-                "modelName:\"embed-english-light-v3.0\"," +
-                "inputType:\"search_document\"," +
-                "logRequests:true," +
-                "logResponses:false" +
-                "}}";
+            + cohereModelClassName
+            + "\","
+            + "params:{"
+            + "baseUrl:\"https://api.cohere.ai/v1/\","
+            + "apiKey:\"cohereApiKey2\","
+            + "modelName:\"embed-english-light-v3.0\","
+            + "inputType:\"search_document\","
+            + "logRequests:true,"
+            + "logResponses:false"
+            + "}}";
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==0");
     // success
     final String multipleModels =
         "[{ name:\"testModel3\", class:\""
-            + cohereModelClassName+"\"," +
-            "params:{baseUrl:\"https://api.cohere.ai/v1/\"," +
-            "apiKey:\"cohereApiKey3\"," +
-            "modelName:\"embed-english-light-v3.0\"," +
-                "inputType:\"search_document\"," +
-                "logRequests:true," +
-                "logResponses:false" +
-            "}}\n"
+            + cohereModelClassName
+            + "\","
+            + "params:{baseUrl:\"https://api.cohere.ai/v1/\","
+            + "apiKey:\"cohereApiKey3\","
+            + "modelName:\"embed-english-light-v3.0\","
+            + "inputType:\"search_document\","
+            + "logRequests:true,"
+            + "logResponses:false"
+            + "}}\n"
             + ",{ name:\"testModel4\", class:\""
-            + cohereModelClassName+"\"," +
-                "params:{baseUrl:\"https://api.cohere.ai/v1/\"," +
-                "apiKey:\"cohereApiKey4\"," +
-                "modelName:\"embed-english-light-v3.0\"," +
-                "inputType:\"search_document\"," +
-                "logRequests:true," +
-                "logResponses:false" +
-                "}}]";
-    assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+            + cohereModelClassName
+            + "\","
+            + "params:{baseUrl:\"https://api.cohere.ai/v1/\","
+            + "apiKey:\"cohereApiKey4\","
+            + "modelName:\"embed-english-light-v3.0\","
+            + "inputType:\"search_document\","
+            + "logRequests:true,"
+            + "logResponses:false"
+            + "}}]";
+    assertJPut(
+        ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
     final String qryResult = JQ(ManagedEmbeddingModelStore.REST_END_POINT);
 
     assertTrue(
@@ -113,9 +117,7 @@ public class TestModelManager extends TestLlmBase {
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/testModel2");
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/testModel3");
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/testModel4");
-    assertJQ(
-            ManagedEmbeddingModelStore.REST_END_POINT,
-        "/models==[]'");
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models==[]'");
   }
 
   @Test
@@ -124,10 +126,17 @@ public class TestModelManager extends TestLlmBase {
 
     final String modelName = "cohere-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='embed-english-light-v3.0'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/inputType=='search_document'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='embed-english-light-v3.0'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/inputType=='search_document'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -141,9 +150,14 @@ public class TestModelManager extends TestLlmBase {
 
     final String modelName = "openai-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='text-embedding-3-small'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/baseUrl=='https://api.openai.com/v1'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-openAI'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/modelName=='text-embedding-3-small'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
@@ -158,14 +172,18 @@ public class TestModelManager extends TestLlmBase {
 
     final String modelName = "mistralai-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='mistral-embed'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/baseUrl=='https://api.mistral.ai/v1'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-mistralAI'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelName=='mistral-embed'");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/maxRetries==5");
-    
+
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }
 
@@ -175,8 +193,12 @@ public class TestModelManager extends TestLlmBase {
 
     final String modelName = "huggingface-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/accessToken=='apiKey-huggingface'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/modelId=='sentence-transformers/all-MiniLM-L6-v2'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/accessToken=='apiKey-huggingface'");
+    assertJQ(
+        ManagedEmbeddingModelStore.REST_END_POINT,
+        "/models/[0]/params/modelId=='sentence-transformers/all-MiniLM-L6-v2'");
 
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }
