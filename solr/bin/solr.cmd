@@ -263,7 +263,6 @@ IF "%1"=="assert" goto run_solrcli
 IF "%1"=="zk" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
-IF "%1"=="auth" goto run_solrcli
 IF "%1"=="api" goto run_solrcli
 IF "%1"=="post" goto run_solrcli
 
@@ -1208,9 +1207,6 @@ SHIFT
 goto parse_config_args
 
 :run_auth
-IF "%1"=="-help" goto usage
-IF "%1"=="-usage" goto usage
-
 REM Options parsing.
 REM Note: With the following technique of parsing, it is not possible
 REM       to have an option without a value.
