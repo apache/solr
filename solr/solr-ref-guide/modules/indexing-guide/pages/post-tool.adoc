@@ -41,8 +41,8 @@ The basic usage of `bin/solr post` is:
 
 [source,plain]
 ----
-usage: bin/solr post [-c <NAME>] [-d <delay>] [--dry-run] [--format] [-ft <<type>[,<type>,...]>] [-h] [--mode <mode>]
-       [-o] [--out] [--params <<key>=<value>[&<key>=<value>...]>] [-r <recursive>] [-s <HOST>] [--skip-commit] [-t
+usage: bin/solr post [-c <NAME>] [--delay <delay>] [--dry-run] [--format] [-ft <<type>[,<type>,...]>] [-h] [--mode
+       <mode>] [-o] [--params <<key>=<value>[&<key>=<value>...]>] [-r <recursive>] [-s <HOST>] [--skip-commit] [-t
        <content-type>] [-u <credentials>] [--verbose]
 
 List of options:
@@ -61,7 +61,6 @@ List of options:
                                                   directory, 'web' crawls website, 'args' processes input args, and
                                                   'stdin' reads a command from standard in. default: files.
  -o,--optimize                                    Issue an optimize at end of posting documents.
-    --out                                         sends Solr response outputs to console.
     --params <<key>=<value>[&<key>=<value>...]>   Values must be URL-encoded; these pass through to Solr update request.
  -r,--recursive <recursive>                       For web crawl, how deep to go. default: 1
  -s,--solr-url <HOST>                             Base Solr URL, which can be used to determine the zk-host if that's
