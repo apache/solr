@@ -1010,11 +1010,6 @@ set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 IF "%GC_LOG_OPTS%"=="" (
   set GC_LOG_OPTS="-Xlog:gc*"
 )
-if "%JAVA_VENDOR%" == "OpenJ9" (
-  set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-) else (
-  set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-)
 
 IF "%verbose%"=="1" (
   @echo Starting Solr using the following settings:
@@ -1284,9 +1279,9 @@ IF "%FIRST_ARG%"=="start" (
 ) ELSE IF "%FIRST_ARG%"=="create" (
   goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="zk" (
-  goto zk_short_usage
+  goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="auth" (
-  goto auth_usage
+  goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="status" (
   goto run_solrcli
 )
