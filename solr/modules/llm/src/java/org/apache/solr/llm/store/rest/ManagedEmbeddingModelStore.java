@@ -16,6 +16,11 @@
  */
 package org.apache.solr.llm.store.rest;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -31,12 +36,6 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /** Managed resource for storing a model */
 public class ManagedEmbeddingModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
@@ -45,7 +44,8 @@ public class ManagedEmbeddingModelStore extends ManagedResource
       SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
     solrResourceLoader
         .getManagedResourceRegistry()
-        .registerManagedResource(REST_END_POINT, ManagedEmbeddingModelStore.class, managedResourceObserver);
+        .registerManagedResource(
+            REST_END_POINT, ManagedEmbeddingModelStore.class, managedResourceObserver);
   }
 
   public static ManagedEmbeddingModelStore getManagedModelStore(SolrCore core) {
@@ -54,15 +54,19 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   /** the model store rest endpoint */
   public static final String REST_END_POINT = "/schema/embedding-model-store";
+
   /** Managed model store: the name of the attribute containing all the models of a model store */
   private static final String MODELS_JSON_FIELD = "models";
+
   /** name of the attribute containing a class */
   static final String CLASS_KEY = "class";
+
   /** name of the attribute containing a name */
   static final String NAME_KEY = "name";
+
   /** name of the attribute containing parameters */
   static final String PARAMS_KEY = "params";
-  
+
   private final EmbeddingModelStore store;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,7 +83,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
       ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
     return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
   }
-  
+
   private Object managedData;
 
   @Override
@@ -181,10 +185,9 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   }
 
   @SuppressWarnings("unchecked")
-  public static SolrEmbeddingModel fromEmbeddingModelMap(
-      Map<String, Object> embeddingModel) {
+  public static SolrEmbeddingModel fromEmbeddingModelMap(Map<String, Object> embeddingModel) {
     final SolrEmbeddingModel embedder =
-            SolrEmbeddingModel.getInstance(
+        SolrEmbeddingModel.getInstance(
             (String) embeddingModel.get(CLASS_KEY), // modelClassName
             (String) embeddingModel.get(NAME_KEY), // modelName
             (Map<String, Object>) embeddingModel.get(PARAMS_KEY));
