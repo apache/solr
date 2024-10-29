@@ -200,11 +200,13 @@ public class CreateTool extends ToolBase {
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue("name");
     String solrUrl =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli , "solr-url", "solrUrl", SolrCLI.getDefaultSolrUrl());
+        SolrCLI.getOptionWithDeprecatedAndDefault(
+            cli, "solr-url", "solrUrl", SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli , "conf-dir", "confdir", SolrCLI.DEFAULT_CONFIG_SET);
+        SolrCLI.getOptionWithDeprecatedAndDefault(
+            cli, "conf-dir", "confdir", SolrCLI.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
     Path configsetDir = Paths.get(confDirName);
@@ -284,10 +286,10 @@ public class CreateTool extends ToolBase {
 
     String collectionName = cli.getOptionValue("name");
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    String confName =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli , "conf-name", "confname", null);
+    String confName = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "conf-name", "confname", null);
     String confDir =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli , "conf-dir", "confdir", SolrCLI.DEFAULT_CONFIG_SET);
+        SolrCLI.getOptionWithDeprecatedAndDefault(
+            cli, "conf-dir", "confdir", SolrCLI.DEFAULT_CONFIG_SET);
     Path solrInstallDirPath = Paths.get(solrInstallDir);
     Path confDirPath = Paths.get(confDir);
     ensureConfDirExists(solrInstallDirPath, confDirPath);
@@ -299,8 +301,7 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli , "solr-url", "solrUrl", null);
+    String solrUrl = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "solr-url", "solrUrl", null);
     if (solrUrl == null) {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
@@ -308,12 +309,10 @@ public class CreateTool extends ToolBase {
 
     // build a URL to create the collection
     int numShards = Integer.parseInt(cli.getOptionValue("shards", String.valueOf(1)));
-    int replicationFactor = Integer.parseInt(
-        SolrCLI.getOptionWithDeprecatedAndDefault(
-            cli,
-            "replication-factor",
-            "replicationFactor",
-            "1"));
+    int replicationFactor =
+        Integer.parseInt(
+            SolrCLI.getOptionWithDeprecatedAndDefault(
+                cli, "replication-factor", "replicationFactor", "1"));
 
     boolean configExistsInZk =
         confName != null
@@ -410,15 +409,17 @@ public class CreateTool extends ToolBase {
 
   private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
     final String confDirectoryName =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli , "conf-dir", "confdir", SolrCLI.DEFAULT_CONFIG_SET);
+        SolrCLI.getOptionWithDeprecatedAndDefault(
+            cli, "conf-dir", "confdir", SolrCLI.DEFAULT_CONFIG_SET);
     final String confName =
-    SolrCLI.getOptionWithDeprecatedAndDefault(cli , "conf-name", "confname", "");
+        SolrCLI.getOptionWithDeprecatedAndDefault(cli, "conf-name", "confname", "");
 
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue("name");
       final String solrUrl =
-          SolrCLI.getOptionWithDeprecatedAndDefault(cli , "solr-url", "solrUrl", SolrCLI.getDefaultSolrUrl());
+          SolrCLI.getOptionWithDeprecatedAndDefault(
+              cli, "solr-url", "solrUrl", SolrCLI.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,

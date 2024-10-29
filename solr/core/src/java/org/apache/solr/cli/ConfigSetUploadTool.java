@@ -110,10 +110,8 @@ public class ConfigSetUploadTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     Path solrInstallDirPath = Paths.get(solrInstallDir);
 
-    String confName =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli, "conf-name", "confname", null);
-    String confDir =
-        SolrCLI.getOptionWithDeprecatedAndDefault(cli, "conf-dir", "confdir", null);
+    String confName = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "conf-name", "confname", null);
+    String confDir = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "conf-dir", "confdir", null);
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 

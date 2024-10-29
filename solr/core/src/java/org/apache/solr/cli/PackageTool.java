@@ -78,7 +78,8 @@ public class PackageTool extends ToolBase {
       String solrUrl =
           cli.hasOption("solr-url")
               ? cli.getOptionValue("solr-url")
-              : SolrCLI.getOptionWithDeprecatedAndDefault(cli, "solrUrl", "url", SolrCLI.getDefaultSolrUrl());
+              : SolrCLI.getOptionWithDeprecatedAndDefault(
+                  cli, "solrUrl", "url", SolrCLI.getDefaultSolrUrl());
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.debug("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
 
