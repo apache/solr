@@ -203,3 +203,15 @@ capture_echo_to_solr() {
   run capture_echo_to_solr
   assert_output --partial '"status":0'
 }
+
+@test "verbose echo the Solr response" {
+
+  run solr create -c monitors_verbose -d _default
+  assert_output --partial "Created collection 'monitors_verbose'"
+
+  run solr post --verbose --type application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors_verbose/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+
+  assert_output --partial '1 files indexed.'
+  assert_output --partial '<lst name="responseHeader">'
+  refute_output --partial 'ERROR'
+}
