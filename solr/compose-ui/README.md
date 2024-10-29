@@ -30,6 +30,12 @@ The module is available for desktop / JVM targets and web (WebAssembly).
 
 ## Build and Run
 
+> **IMPORTANT**
+> 
+> Before you try to build your project, make sure you update your `gradle.properties` files to
+> reflect the module's configuration requirements. Review the differences between your file and
+> `gradle/template.gradle.properties` and update accordingly.
+
 To build and run the desktop client simply run `./gradlew :solr:compose-ui:run`.
 
 Make sure that you have a Solr development instance running on `localhost:8983`, as the current
