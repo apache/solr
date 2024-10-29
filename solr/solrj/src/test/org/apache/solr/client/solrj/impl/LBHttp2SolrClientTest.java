@@ -133,6 +133,20 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
   }
 
+  // TODO This test currently fails, because the "MockHttp2SolrClient" carefully created to record
+  // the requests sent, isn't actually used anymore due to changes "under the covers" in
+  // LBHttp2SolrClient.  Previously, LBHttp2SolrClient would use the provided Http2SolrClient
+  // directly when making endpoint requests, but this is no longer the case.  With recent changes in
+  // this PR, the provided Http2SC is used as a "template" that is used to create a new "NoClose"
+  // Http2SolrClient based on the original.  So all of the recording logic in this test's custom
+  // "MockHttp2SolrClient" is ignored entirely.
+  // How do we fix this?
+  //   1. Could this test use Mockito to capture the values sent to requestWithBaseUrl?
+  //      (Maybe add a convenience requestAsyncWithBaseUrl to Http2SC)
+  //   2. Could we make LBHttp2SolrClient more extensible by using delegation in some way instead
+  //      of the current "NoClose" solution?
+  //   3. Could I add an override in MockHttp2SolrClient for requestWithBaseUrl, so that we're
+  //      capturing things a level up?
   @Test
   public void testAsync() {
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
