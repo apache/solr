@@ -278,12 +278,12 @@ public class PostTool extends ToolBase {
             .build(),
         Option.builder()
             .longOpt("out")
-                .deprecated(
-                        DeprecatedAttributes.builder()
-                                .setForRemoval(true)
-                                .setSince("9.8")
-                                .setDescription("Use --verbose instead")
-                                .get())
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --verbose instead")
+                    .get())
             .required(false)
             .desc("sends Solr response outputs to console.")
             .build(),
@@ -366,7 +366,10 @@ public class PostTool extends ToolBase {
 
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
-    out = cli.hasOption("out") || cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt()) ? CLIO.getOutStream() : null;
+    out =
+        cli.hasOption("out") || cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt())
+            ? CLIO.getOutStream()
+            : null;
     commit = !(cli.hasOption("skipcommit") || cli.hasOption("skip-commit"));
     optimize = cli.hasOption("optimize");
 
