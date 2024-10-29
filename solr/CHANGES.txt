@@ -147,6 +147,8 @@ Improvements
   enqueuing with a risk of rejection. Solr will use less resources under stress but to get the most
   of your machine, you may want to increase the thread pool. (David Smiley)
 
+* SOLR-17528: Introduce -y short option to bin/solr start --no-prompt option. Aligns with bin/solr package tool.  (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
