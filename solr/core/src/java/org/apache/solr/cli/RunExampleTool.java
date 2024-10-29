@@ -89,7 +89,7 @@ public class RunExampleTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
+        Option.builder("y")
             .longOpt("no-prompt")
             .required(false)
             .desc(
