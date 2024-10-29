@@ -126,7 +126,7 @@ elif [[ -n "$SOLR_URL" ]]; then
 fi
 
 if [[ -n "$CLUSTER_ID" ]]; then
-  EXPORTER_ARGS+=(-i "$CLUSTER_ID")
+  EXPORTER_ARGS+=(--cluster-id "$CLUSTER_ID")
 fi
 
 if [[ -n "$CREDENTIALS" ]]; then
