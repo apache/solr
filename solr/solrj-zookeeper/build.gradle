@@ -41,7 +41,7 @@ dependencies {
     implementation('org.apache.curator:curator-client', {
         exclude group: 'org.apache.zookeeper', module: 'zookeeper'
     })
-    api('org.apache.curator:curator-framework', {
+    implementation('org.apache.curator:curator-framework', {
         exclude group: 'org.apache.zookeeper', module: 'zookeeper'
     })
     api('org.apache.zookeeper:zookeeper', {
