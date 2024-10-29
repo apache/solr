@@ -20,7 +20,7 @@ load bats_helper
 setup_file() {
   common_clean_setup
 
-  solr start -c -e films
+  solr start -e films
 
 }
 
@@ -45,7 +45,7 @@ teardown() {
   run solr snapshot-create -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully created snapshot with name snapshot1 for collection films"  
   
-  run solr snapshot-delete -c films --snapshot-name snapshot1 -url http://localhost:${SOLR_PORT}
+  run solr snapshot-delete -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot1 for collection films"
   
    # make sure you can create it again!

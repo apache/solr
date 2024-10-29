@@ -107,6 +107,11 @@ A standalone application, included under `bin/`, that monitors Solr instances an
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 *This is not included in the `slim` distribution.*
 
+cross-dc-manager/::
+A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
+See the section xref:deployment-guide:cross-dc-replication.adoc[] for more information.
+*This is not included in the `slim` distribution.*
+
 docker/::
 This contains a Dockerfile to build a Docker image from the binary distribution, that is compatible with the official image.
 This directory also contains the scripts needed when using Solr inside the Docker image, under the `scripts/` directory.
@@ -196,8 +201,8 @@ bin/solr start -e techproducts
 Currently, the available examples you can run are: techproducts, schemaless, and cloud.
 See the section xref:solr-control-script-reference.adoc#running-with-example-configurations[Running with Example Configurations] for details on each example.
 
-.Getting Started with SolrCloud
-NOTE: Running the `cloud` example starts Solr in xref:cluster-types.adoc#solrcloud-mode[SolrCloud] mode.
+.Going deeper with SolrCloud
+NOTE: Running the `cloud` example demonstrates running multiple nodes of Solr using xref:cluster-types.adoc#solrcloud-mode[SolrCloud] mode.
 For more information on starting Solr in SolrCloud mode, see the section xref:getting-started:tutorial-solrcloud.adoc[].
 
 === Check if Solr is Running
@@ -222,9 +227,9 @@ image::installing-solr/SolrAdminDashboard.png[Solr's Admin UI,pdfwidth=75%]
 If Solr is not running, your browser will complain that it cannot connect to the server.
 Check your port number and try again.
 
-=== Create a Core
+=== Create a Collection
 
-If you did not start Solr with an example configuration, you would need to create a core in order to be able to index and search.
+If you did not start Solr with an example configuration, you would need to create a collection in order to be able to index and search.
 You can do so by running:
 
 [source,bash]
@@ -232,9 +237,9 @@ You can do so by running:
 bin/solr create -c <name>
 ----
 
-This will create a core that uses a data-driven schema which tries to guess the correct field type when you add documents to the index.
+This will create a collection that uses a data-driven schema which tries to guess the correct field type when you add documents to the index.
 
-To see all available options for creating a new core, execute:
+To see all available options for creating a new collection, execute:
 
 [source,bash]
 ----

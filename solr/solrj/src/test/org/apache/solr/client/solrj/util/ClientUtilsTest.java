@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.junit.Test;
 
 /**
@@ -72,20 +71,12 @@ public class ClientUtilsTest extends SolrTestCase {
       assertEquals("http://localhost:8983/solr/someColl/select", url);
     }
 
-    // V2 path is correct when solr.v2RealPath sysprop set
+    // Uses SolrRequest.getBasePath() to override baseUrl
     {
-      System.setProperty("solr.v2RealPath", "true");
-      final var request = new V2Request.Builder("/collections").build();
+      final var request = new HealthCheckRequest();
+      request.setBasePath("http://alternate-url:7574/solr");
       final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://localhost:8983/solr/____v2/collections", url);
-    }
-
-    // V2 path is correct when solr.v2RealPath sysprop NOT set
-    {
-      System.clearProperty("solr.v2RealPath");
-      final var request = new V2Request.Builder("/collections").build();
-      final var url = ClientUtils.buildRequestUrl(request, rw, "http://localhost:8983/solr", null);
-      assertEquals("http://localhost:8983/api/collections", url);
+      assertEquals("http://alternate-url:7574/solr/admin/info/health", url);
     }
 
     // Ignores collection when not needed (i.e. obeys SolrRequest.requiresCollection)

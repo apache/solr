@@ -59,17 +59,7 @@ public class QueryResponseWriters {
   public static class BenchState {
 
     /** See {@link SolrCore#DEFAULT_RESPONSE_WRITERS} */
-    @Param({
-      CommonParams.JAVABIN,
-      CommonParams.JSON,
-      "cbor",
-      "smile",
-      "xml",
-      "python",
-      "phps",
-      "ruby",
-      "raw"
-    })
+    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml", "raw"})
     String wt;
 
     private int docs = 100;

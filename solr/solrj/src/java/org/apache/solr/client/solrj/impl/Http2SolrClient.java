@@ -40,12 +40,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -130,6 +130,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
+      if (this.executor == null) {
+        this.executor = builder.executor;
+      }
       this.closeClient = false;
     } else {
       this.httpClient = createHttpClient(builder);
@@ -455,7 +458,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing success");
                         future.complete(body);
-                      } catch (RemoteSolrException | SolrServerException e) {
+                      } catch (SolrClient.RemoteSolrException | SolrServerException e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
@@ -1103,6 +1106,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.listenerFactory == null) {
         this.listenerFactory = new ArrayList<HttpListenerFactory>();
         http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
+      }
+      if (this.executor == null) {
+        this.executor = http2SolrClient.executor;
       }
       return this;
     }

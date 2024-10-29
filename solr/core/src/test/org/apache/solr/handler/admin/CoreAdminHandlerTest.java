@@ -34,7 +34,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -419,9 +418,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    BaseHttpSolrClient.RemoteSolrException rse =
+    SolrClient.RemoteSolrException rse =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               try (SolrClient client =
                   new HttpSolrClient.Builder(runner.getBaseUrl().toString())

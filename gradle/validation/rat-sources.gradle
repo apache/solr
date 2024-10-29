@@ -96,10 +96,10 @@ allprojects {
                     exclude "dev-tools/scripts/README.md"
                     exclude "dev-tools/scripts/create_line_file_docs.py"
 
-                    // The root project also includes patterns for the boostrap (buildSrc) and composite
+                    // The root project also includes patterns for the include composite
                     // projects. Include their sources in the scan.
-                    include "buildSrc/src/**"
-                    include "dev-tools/solr-missing-doclet/src/**"
+                    include "build-tools/build-infra/src/**"
+                    include "build-tools/missing-doclet/src/**"
                     break
 
                 case ":solr:modules:clustering":
