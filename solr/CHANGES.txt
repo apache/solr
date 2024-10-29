@@ -7,9 +7,9 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------
-(No changes)
-
 * SOLR-17464: Fixed Http2SolrClient bug in that 'requestAsync' triggered NPE when using a shared Jetty client (Jason Gerlowski, James Dyer)
+
+* SOLR-17515: Http2SolrClient now sets its 'AuthenticationStore' in all circumstances, preventing NPE's when used with a HttpClientBuilderFactory (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
