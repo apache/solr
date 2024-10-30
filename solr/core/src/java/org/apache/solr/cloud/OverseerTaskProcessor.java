@@ -327,16 +327,16 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
             final String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
-              if (head.getId().equals(oldestItemInWorkQueue))
-                hasLeftOverItems = false;
-              if (asyncId != null){
-                  if (completedMap.contains(asyncId) || failureMap.contains(asyncId)) {
-                    log.debug("Found already processed task in workQueue, cleaning up. AsyncId [{}]",
-                            asyncId);
-                  }
-                  if (!asyncIdMap.contains(asyncId)){
-                    log.debug("async id has been removed by canceling. AsyncId [{}]", asyncId);
-                  }
+              if (head.getId().equals(oldestItemInWorkQueue)) hasLeftOverItems = false;
+              if (asyncId != null) {
+                if (completedMap.contains(asyncId) || failureMap.contains(asyncId)) {
+                  log.debug(
+                      "Found already processed task in workQueue, cleaning up. AsyncId [{}]",
+                      asyncId);
+                }
+                if (!asyncIdMap.contains(asyncId)) {
+                  log.debug("async id has been removed by canceling. AsyncId [{}]", asyncId);
+                }
                 workQueue.remove(head);
                 continue;
               }

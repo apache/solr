@@ -905,13 +905,18 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   rsp.getValues()
                       .add(
                           "status", "successfully removed stored response for [" + requestId + "]");
-                } else if (force && !zkController.getOverseerRunningMap().contains(requestId) && zkController.getOverseerCollectionQueue().containsTaskWithRequestId(ASYNC,requestId)) {
+                } else if (force
+                    && !zkController.getOverseerRunningMap().contains(requestId)
+                    && zkController
+                        .getOverseerCollectionQueue()
+                        .containsTaskWithRequestId(ASYNC, requestId)) {
                   // submitted but not started yet
-                  zkController.getOverseerCollectionQueue().removeTaskWithRequestId(ASYNC,requestId);
+                  zkController
+                      .getOverseerCollectionQueue()
+                      .removeTaskWithRequestId(ASYNC, requestId);
                   zkController.clearAsyncId(requestId);
                   rsp.getValues()
-                          .add(
-                                  "status", "successfully removed submitted task for [" + requestId + "]");
+                      .add("status", "successfully removed submitted task for [" + requestId + "]");
                 } else {
                   rsp.getValues()
                       .add("status", "[" + requestId + "] not found in stored responses");

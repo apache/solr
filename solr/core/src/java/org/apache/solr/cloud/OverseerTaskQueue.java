@@ -81,7 +81,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    * @return The path of the task if found, or null if not found.
    */
   private String findTaskWithRequestId(String requestIdKey, String requestId)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
 
     List<String> childNames = zookeeper.getChildren(dir, null, true);
     stats.setQueueLength(childNames.size());
@@ -94,7 +94,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
               if (log.isDebugEnabled()) {
-                log.debug("Looking for requestId '{}', found '{}'", requestId, message.get(requestIdKey));
+                log.debug(
+                    "Looking for requestId '{}', found '{}'", requestId, message.get(requestIdKey));
               }
               if (message.get(requestIdKey).equals(requestId)) {
                 return path;
@@ -111,7 +112,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   /** Returns true if the queue contains a task with the specified request ID. */
   public boolean containsTaskWithRequestId(String requestIdKey, String requestId)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
 
     String path = findTaskWithRequestId(requestIdKey, requestId);
     return path != null;
@@ -119,7 +120,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   /** Removes the first task with the specified request ID from the queue. */
   public void removeTaskWithRequestId(String requestIdKey, String requestId)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
 
     String path = findTaskWithRequestId(requestIdKey, requestId);
     if (path != null) {
