@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c -Dsolr.modules=extraction
+  solr start -Dsolr.modules=extraction
 }
 
 teardown_file() {
@@ -69,6 +69,17 @@ teardown() {
   assert_output --partial "Created collection 'monitors_c_param'"
 
   run solr post --type application/xml -c monitors_c_param ${SOLR_TIP}/example/exampledocs/monitor.xml
+
+  assert_output --partial '1 files indexed.'
+  refute_output --partial 'ERROR'
+}
+
+@test "basic post with solr-url and collection" {
+
+  run solr create -c monitors_solr_url_param -d _default
+  assert_output --partial "Created collection 'monitors_solr_url_param'"
+
+  run solr post --type application/xml -c monitors_solr_url_param --solr-url http://localhost:${SOLR_PORT} ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -191,4 +202,16 @@ capture_echo_to_solr() {
 
   run capture_echo_to_solr
   assert_output --partial '"status":0'
+}
+
+@test "verbose echo the Solr response" {
+
+  run solr create -c monitors_verbose -d _default
+  assert_output --partial "Created collection 'monitors_verbose'"
+
+  run solr post --verbose --type application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors_verbose/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+
+  assert_output --partial '1 files indexed.'
+  assert_output --partial '<lst name="responseHeader">'
+  refute_output --partial 'ERROR'
 }

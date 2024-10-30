@@ -348,9 +348,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> IOUtils.closeQuietly(controlClient));
+    customThreadPool.execute(() -> IOUtils.closeQuietly(controlClient));
 
-    customThreadPool.submit(
+    customThreadPool.execute(
         () -> {
           try {
             controlJetty.stop();
@@ -362,11 +362,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         });
 
     for (SolrClient client : clients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(client));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(client));
     }
 
     for (JettySolrRunner jetty : jettys) {
-      customThreadPool.submit(
+      customThreadPool.execute(
           () -> {
             try {
               jetty.stop();

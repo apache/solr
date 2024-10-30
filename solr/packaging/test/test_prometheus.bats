@@ -31,14 +31,14 @@ teardown() {
 }
 
 @test "should start solr prometheus exporter that scrapes solr for metrics" {
-  solr start
+  solr start --user-managed
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
   
   run solr create -c COLL_NAME
   assert_output --partial "Created new core 'COLL_NAME'"
  
   echo "# starting solr-exporter on ${SOLR_EXPORTER_PORT}" >&3
-  run solr-exporter -p $SOLR_EXPORTER_PORT -b http://localhost:${SOLR_PORT}/solr >&3 &
+  run solr-exporter --cluster-id bats-test -p $SOLR_EXPORTER_PORT -b http://localhost:${SOLR_PORT}/solr >&3 &
 
   sleep 5
 
@@ -46,4 +46,5 @@ teardown() {
   
   assert_output --partial 'solr_metrics_core_query_requests_total'
   assert_output --partial 'core="COLL_NAME"'
+  assert_output --partial 'bats-test'
 }
