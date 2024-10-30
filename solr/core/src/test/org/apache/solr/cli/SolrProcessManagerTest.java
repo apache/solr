@@ -85,7 +85,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     // Get the path to the java executable from the current JVM
     String classPath =
         Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator))
-            .filter(p -> p.contains("solr/core/build"))
+            .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
             .collect(Collectors.joining(File.pathSeparator));
     ProcessBuilder processBuilder =
         new ProcessBuilder(
