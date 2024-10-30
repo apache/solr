@@ -368,10 +368,7 @@ public class PackageTool extends ToolBase {
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 }

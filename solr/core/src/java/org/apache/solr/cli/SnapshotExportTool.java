@@ -47,7 +47,6 @@ public class SnapshotExportTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")

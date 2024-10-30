@@ -146,10 +146,7 @@ public class DeleteTool extends ToolBase {
                 "Skip safety checks when deleting the configuration directory used by a collection.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 

@@ -188,8 +188,7 @@ public class RunExampleTool extends ToolBase {
             .desc(
                 "Additional options to be passed to the JVM when starting example Solr server(s).")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
