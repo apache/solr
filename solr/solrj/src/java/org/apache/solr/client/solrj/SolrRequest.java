@@ -58,7 +58,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     SECURITY,
     ADMIN,
     STREAMING,
-    UNSPECIFIED
+    UNSPECIFIED,
+    PRIORITY_BASED,
   };
 
   public enum SolrClientContext {

@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
+import static org.apache.solr.servlet.PriorityBasedRateLimiter.SOLR_REQUEST_PRIORITY_PARAM;
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -26,7 +27,9 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -81,7 +84,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
               1,
               DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
               5 /* allowedRequests */,
-              true /* isSlotBorrowing */);
+              true /* isSlotBorrowing */,
+              false);
       // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
       // its parent here
       RateLimitManager.Builder builder =
@@ -129,7 +133,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             guaranteed,
             slotAcqTimeMillis,
             slotLimit /* allowedRequests */,
-            true /* isSlotBorrowing */);
+            true /* isSlotBorrowing */,
+            false);
     // set allowed/guaranteed to the same, and very low, to force it to mainly borrow. It would also
     // be theoretically possible to optimize a single-request-type config to bypass slot-borrowing
     // logic altogether, so configuring a second ratelimiter eliminates the possibility that at
@@ -141,7 +146,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             1,
             slotAcqTimeMillis,
             1 /* allowedRequests */,
-            true /* isSlotBorrowing */);
+            true /* isSlotBorrowing */,
+            false);
     mgr.registerRequestRateLimiter(
         new RequestRateLimiter(queryConfig), SolrRequest.SolrRequestType.QUERY);
     mgr.registerRequestRateLimiter(
@@ -283,10 +289,20 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     private final String ctx;
     private final String type;
 
+    private final String priority;
+
     public DummyRequest(String ctx, String type) {
       super(null, null);
       this.ctx = ctx;
       this.type = type;
+      this.priority = null;
+    }
+
+    public DummyRequest(String ctx, String type, String priority) {
+      super(null, null);
+      this.ctx = ctx;
+      this.type = type;
+      this.priority = priority;
     }
 
     @Override
@@ -296,6 +312,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
           return ctx;
         case SOLR_REQUEST_TYPE_PARAM:
           return type;
+        case SOLR_REQUEST_PRIORITY_PARAM:
+          return priority;
         default:
           throw new IllegalArgumentException();
       }
@@ -319,7 +337,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
               1,
               DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
               5 /* allowedRequests */,
-              true /* isSlotBorrowing */);
+              true /* isSlotBorrowing */,
+              false);
       RateLimiterConfig indexRateLimiterConfig =
           new RateLimiterConfig(
               SolrRequest.SolrRequestType.UPDATE,
@@ -327,7 +346,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
               1,
               DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
               5 /* allowedRequests */,
-              true /* isSlotBorrowing */);
+              true /* isSlotBorrowing */,
+              false);
       // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
       // its parent
       RateLimitManager.Builder builder =
@@ -420,10 +440,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public SlotReservation handleRequest() throws InterruptedException {
+    public SlotReservation handleRequest(HttpServletRequest request) throws InterruptedException {
       incomingRequestCount.getAndIncrement();
 
-      SlotReservation response = super.handleRequest();
+      SlotReservation response = super.handleRequest(request);
 
       if (response != null) {
         acceptedNewRequestCount.getAndIncrement();
@@ -486,6 +506,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
   @Test
   @SuppressWarnings("try")
   public void testAdjustingConfig() throws IOException, InterruptedException {
+    DummyRequest dr = new DummyRequest(null, SolrRequest.SolrRequestType.QUERY.toString());
     Random r = random();
     int maxAllowed = 32;
     int allowed = r.nextInt(maxAllowed) + 1;
@@ -498,7 +519,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
             guaranteed,
             20,
             allowed /* allowedRequests */,
-            true /* isSlotBorrowing */);
+            true /* isSlotBorrowing */,
+            false);
     RequestRateLimiter limiter = new RequestRateLimiter(config);
     ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("tests");
     try (Closeable c = () -> ExecutorUtil.shutdownAndAwaitTermination(exec)) {
@@ -522,7 +544,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
                   () -> {
                     while (!finish.get()) {
                       try (RequestRateLimiter.SlotReservation slotReservation =
-                          limiterF.handleRequest()) {
+                          limiterF.handleRequest(dr)) {
                         if (slotReservation != null) {
                           executed.increment();
                           int ct = outstanding.incrementAndGet();
@@ -601,9 +623,151 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
                 guaranteed,
                 20,
                 allowed /* allowedRequests */,
-                true /* isSlotBorrowing */);
+                true /* isSlotBorrowing */,
+                false);
         limiter = new RequestRateLimiter(config);
       }
     }
+  }
+
+  @Test
+  public void testPriorityBasedRateLimiter() throws Exception {
+    RateLimitManager rateLimitManager = new RateLimitManager();
+
+    // PriorityBasedRateLimiter
+    RateLimiterConfig rateLimiterConfig =
+        new RateLimiterConfig(
+            SolrRequest.SolrRequestType.QUERY,
+            true,
+            1,
+            DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
+            5 /* allowedRequests */,
+            true /* isSlotBorrowing */,
+            true);
+
+    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig);
+
+    rateLimitManager.registerRequestRateLimiter(
+        requestRateLimiter, SolrRequest.SolrRequestType.PRIORITY_BASED);
+
+    HttpServletRequest foreground =
+        new DummyRequest(null, SolrRequest.SolrRequestType.PRIORITY_BASED.name(), "FOREGROUND");
+
+    try (final RequestRateLimiter.SlotReservation allowed =
+        rateLimitManager.handleRequest(foreground)) {
+      assertNotNull(allowed);
+      assertEquals(1, requestRateLimiter.getRequestsAllowed());
+    }
+
+    HttpServletRequest background =
+        new DummyRequest(null, SolrRequest.SolrRequestType.PRIORITY_BASED.name(), "BACKGROUND");
+
+    try (final RequestRateLimiter.SlotReservation allowed =
+        rateLimitManager.handleRequest(background)) {
+      assertNotNull(allowed);
+      assertEquals(1, requestRateLimiter.getRequestsAllowed());
+    }
+
+    HttpServletRequest unknown =
+        new DummyRequest(null, SolrRequest.SolrRequestType.PRIORITY_BASED.name(), "unknown");
+
+    boolean gotException = false;
+    try (final RequestRateLimiter.SlotReservation allowed =
+        rateLimitManager.handleRequest(unknown)) {
+      assertNull(allowed);
+    } catch (SolrException se) {
+      gotException = true;
+    }
+    assertTrue(gotException);
+  }
+
+  @Test
+  public void testPriorityBasedRateLimiterTimeout() throws Exception {
+    RateLimitManager rateLimitManager = new RateLimitManager();
+
+    // PriorityBasedRateLimiter
+    RateLimiterConfig rateLimiterConfig =
+        new RateLimiterConfig(
+            SolrRequest.SolrRequestType.QUERY,
+            true,
+            1,
+            10,
+            1 /* allowedRequests */,
+            true /* isSlotBorrowing */,
+            true);
+
+    PriorityBasedRateLimiter requestRateLimiter = new PriorityBasedRateLimiter(rateLimiterConfig);
+
+    rateLimitManager.registerRequestRateLimiter(
+        requestRateLimiter, SolrRequest.SolrRequestType.PRIORITY_BASED);
+
+    HttpServletRequest firstRequest =
+        new DummyRequest(null, SolrRequest.SolrRequestType.PRIORITY_BASED.name(), "FOREGROUND");
+
+    RequestRateLimiter.SlotReservation firstRequestAllowed =
+        rateLimitManager.handleRequest(firstRequest);
+    assertNotNull(firstRequestAllowed);
+    assertEquals(1, requestRateLimiter.getRequestsAllowed());
+
+    HttpServletRequest secondRequest =
+        new DummyRequest(null, SolrRequest.SolrRequestType.PRIORITY_BASED.name(), "FOREGROUND");
+
+    RequestRateLimiter.SlotReservation secondRequestNotAllowed =
+        rateLimitManager.handleRequest(secondRequest);
+    assertNull(secondRequestNotAllowed);
+    assertEquals(1, requestRateLimiter.getRequestsAllowed());
+
+    HttpServletRequest thirdRequest =
+        new DummyRequest(null, SolrRequest.SolrRequestType.PRIORITY_BASED.name(), "BACKGROUND");
+
+    RequestRateLimiter.SlotReservation thirdRequestNotAllowed =
+        rateLimitManager.handleRequest(thirdRequest);
+    assertNull(thirdRequestNotAllowed);
+    assertEquals(1, requestRateLimiter.getRequestsAllowed());
+
+    firstRequestAllowed.close();
+  }
+
+  @Test
+  public void testPriorityBasedRateLimiterDynamicChange() throws Exception {
+    RateLimitManager rateLimitManager = new RateLimitManager();
+
+    // PriorityBasedRateLimiter
+    RateLimiterConfig rateLimiterConfig =
+        new RateLimiterConfig(
+            SolrRequest.SolrRequestType.QUERY,
+            true,
+            1,
+            10,
+            1 /* allowedRequests */,
+            true /* isSlotBorrowing */,
+            false);
+
+    QueryRateLimiter requestRateLimiter = new QueryRateLimiter(rateLimiterConfig);
+
+    rateLimitManager.registerRequestRateLimiter(
+        requestRateLimiter, SolrRequest.SolrRequestType.QUERY);
+
+    RequestRateLimiter rateLimiter =
+        rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.PRIORITY_BASED);
+    assertNull(rateLimiter);
+
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, Object> rateLimiterProps = new HashMap<>();
+    rateLimiterProps.put("enabled", true);
+    rateLimiterProps.put("guaranteedSlots", 1);
+    rateLimiterProps.put("allowedRequests", 1);
+    rateLimiterProps.put("slotBorrowingEnabled", false);
+    rateLimiterProps.put("slotAcquisitionTimeoutInMS", 100);
+    rateLimiterProps.put("priorityBasedEnabled", true);
+    properties.put("rate-limiters", rateLimiterProps);
+
+    // updating rate limiter
+    rateLimitManager.onChange(properties);
+
+    rateLimiter =
+        rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.PRIORITY_BASED);
+
+    assertEquals(true, rateLimiter.getRateLimiterConfig().priorityBasedEnabled);
   }
 }

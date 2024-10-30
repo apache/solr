@@ -32,6 +32,7 @@ public class RateLimiterConfig {
   public final int allowedRequests;
   public final boolean isSlotBorrowingEnabled;
   public final int guaranteedSlotsThreshold;
+  public final boolean priorityBasedEnabled;
 
   /**
    * We store the config definition in order to determine whether anything has changed that would
@@ -49,7 +50,8 @@ public class RateLimiterConfig {
       int guaranteedSlotsThreshold,
       long waitForSlotAcquisition,
       int allowedRequests,
-      boolean isSlotBorrowingEnabled) {
+      boolean isSlotBorrowingEnabled,
+      boolean priorityBasedEnabled) {
     this(
         requestType,
         makePayload(
@@ -57,7 +59,8 @@ public class RateLimiterConfig {
             guaranteedSlotsThreshold,
             waitForSlotAcquisition,
             allowedRequests,
-            isSlotBorrowingEnabled));
+            isSlotBorrowingEnabled,
+            priorityBasedEnabled));
   }
 
   private static RateLimiterPayload makePayload(
@@ -65,13 +68,15 @@ public class RateLimiterConfig {
       int guaranteedSlotsThreshold,
       long waitForSlotAcquisition,
       int allowedRequests,
-      boolean isSlotBorrowingEnabled) {
+      boolean isSlotBorrowingEnabled,
+      boolean priorityBasedEnabled) {
     RateLimiterPayload ret = new RateLimiterPayload();
     ret.enabled = isEnabled;
     ret.allowedRequests = allowedRequests;
     ret.guaranteedSlots = guaranteedSlotsThreshold;
     ret.slotBorrowingEnabled = isSlotBorrowingEnabled;
     ret.slotAcquisitionTimeoutInMS = Math.toIntExact(waitForSlotAcquisition);
+    ret.priorityBasedEnabled = priorityBasedEnabled;
     return ret;
   }
 
@@ -97,6 +102,9 @@ public class RateLimiterConfig {
         definition.slotAcquisitionTimeoutInMS == null
             ? DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS
             : definition.slotAcquisitionTimeoutInMS.longValue();
+
+    priorityBasedEnabled =
+        definition.priorityBasedEnabled == null ? false : definition.priorityBasedEnabled;
 
     this.definition = definition;
   }
@@ -125,6 +133,7 @@ public class RateLimiterConfig {
     sb.append(", guaranteedSlots=").append(guaranteedSlotsThreshold);
     sb.append(", borrowEnabled=").append(isSlotBorrowingEnabled);
     sb.append(", waitForSlotMillis=").append(waitForSlotAcquisition);
+    sb.append(", priorityBasedEnabled=").append(priorityBasedEnabled);
     return sb.append('}').toString();
   }
 }

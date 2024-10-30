@@ -19,7 +19,9 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
@@ -28,9 +30,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +54,7 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class RateLimitManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   public static final String ERROR_MESSAGE =
       "Too many requests for this request type. Please try after some time or increase the quota for this request type";
   public static final int DEFAULT_CONCURRENT_REQUESTS =
@@ -61,20 +69,36 @@ public class RateLimitManager implements ClusterPropertiesListener {
   @Override
   public boolean onChange(Map<String, Object> properties) {
 
+    byte[] configInput = Utils.toJSON(properties.get(RL_CONFIG_KEY));
+
+    RateLimiterPayload rateLimiterMeta;
+    if (configInput == null || configInput.length == 0) {
+      return false;
+    } else {
+      try {
+        rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
     // Hack: We only support query rate limiting for now
     requestRateLimiterMap.compute(
-        SolrRequest.SolrRequestType.QUERY.toString(),
+        rateLimiterMeta.priorityBasedEnabled
+            ? SolrRequest.SolrRequestType.PRIORITY_BASED.name()
+            : SolrRequest.SolrRequestType.QUERY.name(),
         (k, v) -> {
           try {
             RateLimiterConfig newConfig =
                 QueryRateLimiter.processConfigChange(
-                    SolrRequest.SolrRequestType.QUERY,
-                    v == null ? null : v.getRateLimiterConfig(),
-                    properties);
+                    v == null ? null : v.getRateLimiterConfig(), rateLimiterMeta);
             if (newConfig == null) {
               return v;
             } else {
               log.info("updated config: {}", newConfig);
+              if (newConfig.priorityBasedEnabled) {
+                return new PriorityBasedRateLimiter(newConfig);
+              }
               return new QueryRateLimiter(newConfig);
             }
           } catch (IOException e) {
@@ -115,7 +139,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
     // slot borrowing should be fallback behavior, so if `slotAcquisitionTimeoutInMS`
     // is configured it will be applied here (blocking if necessary), to make a best
     // effort to draw from the request's own slot pool.
-    RequestRateLimiter.SlotReservation result = requestRateLimiter.handleRequest();
+    RequestRateLimiter.SlotReservation result = requestRateLimiter.handleRequest(request);
 
     if (result != null) {
       return result;
@@ -188,10 +212,55 @@ public class RateLimitManager implements ClusterPropertiesListener {
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
-      rateLimitManager.registerRequestRateLimiter(
-          new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
+      RateLimiterConfig rateLimiterConfig = constructQueryRateLimiterConfig(solrZkClient);
+
+      if (rateLimiterConfig.priorityBasedEnabled) {
+        rateLimitManager.registerRequestRateLimiter(
+            new PriorityBasedRateLimiter(rateLimiterConfig),
+            SolrRequest.SolrRequestType.PRIORITY_BASED);
+      } else {
+        rateLimitManager.registerRequestRateLimiter(
+            new QueryRateLimiter(rateLimiterConfig), SolrRequest.SolrRequestType.QUERY);
+      }
 
       return rateLimitManager;
+    }
+
+    // To be used in initialization
+    @SuppressWarnings({"unchecked"})
+    private static RateLimiterConfig constructQueryRateLimiterConfig(SolrZkClient zkClient) {
+      try {
+
+        if (zkClient == null) {
+          return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+        }
+
+        Map<String, Object> clusterPropsJson =
+            (Map<String, Object>)
+                Utils.fromJSON(
+                    zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+        byte[] configInput = Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY));
+
+        if (configInput.length == 0) {
+          // No Rate Limiter configuration defined in clusterprops.json. Return default
+          // configuration
+          // values
+          return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+        }
+
+        RateLimiterPayload rateLimiterMeta =
+            mapper.readValue(configInput, RateLimiterPayload.class);
+        return rateLimiterMeta.priorityBasedEnabled
+            ? new RateLimiterConfig(SolrRequest.SolrRequestType.PRIORITY_BASED, rateLimiterMeta)
+            : new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY, rateLimiterMeta);
+      } catch (KeeperException.NoNodeException e) {
+        return new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
+      } catch (KeeperException | InterruptedException e) {
+        throw new RuntimeException(
+            "Error reading cluster property", SolrZkClient.checkInterrupted(e));
+      } catch (IOException e) {
+        throw new RuntimeException("Encountered an IOException " + e.getMessage());
+      }
     }
   }
 }

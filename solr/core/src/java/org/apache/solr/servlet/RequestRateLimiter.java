@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.http.HttpServletRequest;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.core.RateLimiterConfig;
 
@@ -46,7 +47,7 @@ public class RequestRateLimiter {
 
   private final AtomicInteger nativeReservations;
 
-  private final RateLimiterConfig rateLimiterConfig;
+  protected final RateLimiterConfig rateLimiterConfig;
   public static final SlotReservation UNLIMITED =
       () -> {
         // no-op
@@ -91,7 +92,7 @@ public class RequestRateLimiter {
    * Handles an incoming request. returns a metadata object representing the metadata for the
    * acquired slot, if acquired. If a slot is not acquired, returns a null metadata object.
    */
-  public SlotReservation handleRequest() throws InterruptedException {
+  public SlotReservation handleRequest(HttpServletRequest request) throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
       return UNLIMITED;
