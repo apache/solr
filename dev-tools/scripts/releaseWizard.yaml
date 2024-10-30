@@ -1864,16 +1864,9 @@ groups:
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |
         Run these commands to delete proposed versions from distribution directory.
-        Note, as long as we have some releases (7.x, 8.x) in Lucene dist repo and other
-        releases (9.0 ->) in the Solr dist repo, we may need to delete two places.
-
+        
         WARNING: Validate that the proposal is correct!
       commands:
-      - !Command
-        cmd: |
-          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
-        logfile: svn-rm-solr.log
-        comment: Delete from Lucene dist area
       - !Command
         cmd: |
           svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}

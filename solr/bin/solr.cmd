@@ -20,6 +20,8 @@
 
 IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
 
+@REM What version of Java is required to run this version of Solr.
+set REQUIRED_JAVA_VERSION=21
 set "PASS_TO_RUN_EXAMPLE="
 
 REM Determine top-level Solr directory
@@ -61,8 +63,8 @@ IF NOT EXIST "%JAVA_HOME%\bin\java.exe" (
 )
 set "JAVA=%JAVA_HOME%\bin\java"
 CALL :resolve_java_info
-IF !JAVA_MAJOR_VERSION! LSS 8 (
-  set "SCRIPT_ERROR=Java 1.8 or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO! (detected major: !JAVA_MAJOR_VERSION!)"
+IF !JAVA_MAJOR_VERSION! LSS !REQUIRED_JAVA_VERSION! (
+  set "SCRIPT_ERROR=Java !REQUIRED_JAVA_VERSION! or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO! (detected major: !JAVA_MAJOR_VERSION!)"
   goto err
 )
 
@@ -890,18 +892,6 @@ IF ERRORLEVEL 1 (
   set IS_JDK=true
   set "SERVEROPT=-server"
 )
-if !JAVA_MAJOR_VERSION! LSS 9  (
-  "%JAVA%" -d64 -version > nul 2>&1
-  IF ERRORLEVEL 1 (
-    set "IS_64BIT=false"
-    @echo WARNING: 32-bit Java detected. Not recommended for production. Point your JAVA_HOME to a 64-bit JDK
-    @echo.
-  ) ELSE (
-    set IS_64bit=true
-  )
-) ELSE (
-  set IS_64bit=true
-)
 
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
@@ -1015,41 +1005,16 @@ IF "%GC_TUNE%"=="" (
     -XX:+ExplicitGCInvokesConcurrent
 )
 
-REM Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
-if !JAVA_MAJOR_VERSION! GEQ 17  (
-  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
-  echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
-)
+REM Add vector optimizations module
+set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
 
-REM Vector optimizations are only supported for Java 20 and 21 for now.
-REM This will need to change as Lucene is upgraded and newer Java versions are released
-if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
-  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
-  echo Java %JAVA_MAJOR_VERSION% detected. Incubating Panama Vector APIs have been enabled
+IF "%GC_LOG_OPTS%"=="" (
+  set GC_LOG_OPTS="-Xlog:gc*"
 )
-
-if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (
-  IF NOT "%GC_LOG_OPTS%"=="" (
-    echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
-    GOTO :eof
-  )
-  set GC_LOG_OPTS="-Xlog:gc*:file=\"!SOLR_LOGS_DIR!\solr_gc.log\":time,uptime:filecount=9,filesize=20M"
+if "%JAVA_VENDOR%" == "OpenJ9" (
+  set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
 ) else (
-  IF "%GC_LOG_OPTS%"=="" (
-    rem Set defaults for Java 8
-    set GC_LOG_OPTS=-verbose:gc ^
-     -XX:+PrintHeapAtGC ^
-     -XX:+PrintGCDetails ^
-     -XX:+PrintGCDateStamps ^
-     -XX:+PrintGCTimeStamps ^
-     -XX:+PrintTenuringDistribution ^
-     -XX:+PrintGCApplicationStoppedTime
-  )
-  if "%JAVA_VENDOR%" == "OpenJ9" (
-    set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xverbosegclog:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-  ) else (
-    set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
-  )
+  set GC_LOG_OPTS=!GC_LOG_OPTS! "-Xloggc:!SOLR_LOGS_DIR!\solr_gc.log" -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=20M
 )
 
 IF "%verbose%"=="1" (
@@ -1127,7 +1092,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
 set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
-set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED% -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
+set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
@@ -1178,9 +1143,8 @@ IF "%FG%"=="1" (
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 
-  REM default to 30 seconds for backwards compatibility.
   IF "!SOLR_START_WAIT!"=="" (
-    set SOLR_START_WAIT=30
+    set SOLR_START_WAIT=180
   )
   REM now wait to see Solr come online ...
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
@@ -1565,11 +1529,7 @@ IF "%FIRST_ARG%"=="start" (
 )
 
 :need_java_home
-@echo Please set the JAVA_HOME environment variable to the path where you installed Java 1.8+
-goto done
-
-:need_java_vers
-@echo Java 1.8 or later is required to run Solr.
+@echo Please set the JAVA_HOME environment variable to the path where you installed Java 21+
 goto done
 
 :err

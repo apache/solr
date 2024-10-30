@@ -20,6 +20,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -78,6 +79,19 @@ public class SnapshotExportTool extends ToolBase {
                 "Specifies name of the backup repository to be used during snapshot export preparation.")
             .build(),
         Option.builder("i")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --async-id instead")
+                    .get())
+            .argName("ID")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Specifies the async request identifier to be used during snapshot export preparation.")
+            .build(),
+        Option.builder()
             .longOpt("async-id")
             .argName("ID")
             .hasArg()
@@ -91,12 +105,15 @@ public class SnapshotExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    //
+
     String snapshotName = cli.getOptionValue("snapshot-name");
     String collectionName = cli.getOptionValue("name");
     String destDir = cli.getOptionValue("dest-dir");
     Optional<String> backupRepo = Optional.ofNullable(cli.getOptionValue("backup-repo-name"));
     Optional<String> asyncReqId = Optional.ofNullable(cli.getOptionValue("async-id"));
+    if (cli.hasOption("i")) {
+      asyncReqId = Optional.ofNullable(cli.getOptionValue("i"));
+    }
 
     try (var solrClient = SolrCLI.getSolrClient(cli)) {
       exportSnapshot(solrClient, collectionName, snapshotName, destDir, backupRepo, asyncReqId);
