@@ -189,6 +189,8 @@ Bug Fixes
 
 * SOLR-17413: Fixed UpdateLog replay bug that shared thread-unsafe SolrQueryRequest objects across threads (Jason Gerlowski, David Smiley, Houston Putman)
 
+* SOLR-11191: Splitting shards now routes child-docs with their _root_ field when available so they maintain parent relationship. (Zack Kendall)
+
 * SOLR-16976: Remove log4j-jul jar and use slf4j bridge for JUL to prevent exception from being logged when remote JMX
   is enabled (Shawn Heisey, Stephen Zhou, Eric Pugh, Christine Poerschke, David Smiley)
 
