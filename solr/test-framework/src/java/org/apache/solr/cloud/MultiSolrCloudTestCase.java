@@ -32,6 +32,7 @@ import org.junit.AfterClass;
  * instances, available via the {@code clusterId2cluster} variable. The clusters' shutdown is
  * handled automatically.
  */
+@SolrCloud
 public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
   protected static Map<String, MiniSolrCloudCluster> clusterId2cluster =

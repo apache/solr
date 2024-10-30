@@ -76,6 +76,10 @@ For example, run all solr-core tests annotated as @Nightly:
 
 gradlew -p solr/core test -Ptests.filter=@Nightly
 
+All SolrCloud tests
+
+gradlew test -Ptests.filter=@SolrCloud
+
 Test group filters can be combined into Boolean expressions:
 
 gradlew -p solr/core test -Ptests.filter="default and not(@awaitsfix)"
