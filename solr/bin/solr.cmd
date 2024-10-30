@@ -963,7 +963,7 @@ IF "%SOLR_MODE%"=="" (
   set SOLR_MODE="user-managed"
   REM and notify that staying the default option (not providing --user-managed) will affect
   REM future execution
-  echo Solr will start in SolrCloud mode by default in version 10, and you will have to provide --user-managed if you want to stay on the user-managed (aka. standalone) mode.
+  echo "Solr will start in SolrCloud mode by default in version 10, and you will have to provide --user-managed if you want to stay on the user-managed (aka. standalone) mode."
 )
 
 IF "%SOLR_MODE%"=="solrcloud" (
