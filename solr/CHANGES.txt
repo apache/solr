@@ -85,6 +85,8 @@ Bug Fixes
 
 * SOLR-17529: Clean up error message in PostTool when you attempt to post to a basic auth secured Solr.  (Eric Pugh)
 
+* SOLR-11191: Splitting shards now routes child-docs with their _root_ field when available so they maintain parent relationship. (Zack Kendall)
+
 Dependency Upgrades
 ---------------------
 (No changes)
