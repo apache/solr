@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutorService;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -143,36 +142,17 @@ public class SolrExporter {
 
   public static void main(String[] args) {
     Options mainOptions = new Options();
-    Options deprecatedOptions = new Options();
 
-    // Change to -s and --solr-url in main once deprecated -s flag for --scrape-interval is removed.
-    Option baseUrlOption =
-        Option.builder("b")
-            .longOpt("base-url")
+    Option solrUrlOption =
+        Option.builder("s")
+            .longOpt("solr-url")
             .hasArg()
             .argName("BASE_URL")
             .type(String.class)
             .desc(
                 "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
             .build();
-    mainOptions.addOption(baseUrlOption);
-
-    Option baseUrlDepOption =
-        Option.builder()
-            .longOpt("baseUrl")
-            .hasArg()
-            .argName("BASE_URL")
-            .type(String.class)
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --base-url instead")
-                    .get())
-            .desc(
-                "Specify the Solr base URL when connecting to Solr in standalone mode. If omitted both the -b parameter and the -z parameter, connect to http://localhost:8983/solr. For example 'http://localhost:8983/solr'.")
-            .build();
-    deprecatedOptions.addOption(baseUrlDepOption);
+    mainOptions.addOption(solrUrlOption);
 
     Option configOption =
         Option.builder()
@@ -182,21 +162,8 @@ public class SolrExporter {
             .type(String.class)
             .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
             .build();
-    Option configOptionDeprecated =
-        Option.builder("f")
-            .hasArg()
-            .argName("CONFIG")
-            .type(String.class)
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --config-file instead")
-                    .get())
-            .desc("Specify the configuration file; the default is " + DEFAULT_CONFIG + ".")
-            .build();
+
     mainOptions.addOption(configOption);
-    mainOptions.addOption(configOptionDeprecated);
 
     Option helpOption =
         Option.builder("h").longOpt("help").desc("Prints this help message.").build();
@@ -213,22 +180,6 @@ public class SolrExporter {
             .build();
     mainOptions.addOption(clusterIdOption);
 
-    Option clusterIdDepOption =
-        Option.builder("i")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --cluster-id instead")
-                    .get())
-            .hasArg()
-            .argName("CLUSTER_ID")
-            .type(String.class)
-            .desc(
-                "Specify a unique identifier for the cluster, which can be used to select between multiple clusters in Grafana. By default this ID will be equal to a hash of the -b or -z argument")
-            .build();
-    deprecatedOptions.addOption(clusterIdDepOption);
-
     Option numThreadsOption =
         Option.builder()
             .longOpt("num-threads")
@@ -241,23 +192,6 @@ public class SolrExporter {
                     + ".")
             .build();
     mainOptions.addOption(numThreadsOption);
-    Option numThreadsOptionDeprecated =
-        Option.builder("n")
-            .hasArg()
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --num-threads instead")
-                    .get())
-            .argName("NUM_THREADS")
-            .type(Integer.class)
-            .desc(
-                "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
-                    + DEFAULT_NUM_THREADS
-                    + ".")
-            .build();
-    mainOptions.addOption(numThreadsOptionDeprecated);
 
     Option portOption =
         Option.builder("p")
@@ -282,26 +216,8 @@ public class SolrExporter {
             .build();
     mainOptions.addOption(scrapeIntervalOption);
 
-    Option scrapeIntervalOptionDeprecated =
-        Option.builder("s")
-            .hasArg()
-            .argName("SCRAPE_INTERVAL")
-            .type(Integer.class)
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --scrape-interval instead")
-                    .get())
-            .desc(
-                "Specify the delay between scraping Solr metrics; the default is "
-                    + DEFAULT_SCRAPE_INTERVAL
-                    + " seconds.")
-            .build();
-    mainOptions.addOption(scrapeIntervalOptionDeprecated);
-
     Option sslOption =
-        Option.builder("ssl")
+        Option.builder()
             .longOpt("ssl-enabled")
             .type(Boolean.class)
             .desc(
@@ -333,7 +249,6 @@ public class SolrExporter {
 
     Options options = new Options();
     options.addOptions(mainOptions);
-    options.addOptions(deprecatedOptions);
 
     try {
       CommandLineParser parser = new DefaultParser();
@@ -353,12 +268,8 @@ public class SolrExporter {
         String zkHost = commandLine.getOptionValue(zkHostOption, DEFAULT_ZK_HOST);
         defaultClusterId = makeShortHash(zkHost);
         scrapeConfiguration = SolrScrapeConfiguration.solrCloud(zkHost);
-      } else if (commandLine.hasOption(baseUrlOption) || commandLine.hasOption(baseUrlDepOption)) {
-        log.warn("-b and --base-url will be replaced with -s and --solr-url in Solr 10");
-        String baseUrl =
-            commandLine.hasOption(baseUrlOption)
-                ? commandLine.getOptionValue(baseUrlOption)
-                : commandLine.getOptionValue(baseUrlDepOption, DEFAULT_BASE_URL);
+      } else if (commandLine.hasOption(solrUrlOption)) {
+        String baseUrl = commandLine.getOptionValue(solrUrlOption);
         defaultClusterId = makeShortHash(baseUrl);
         scrapeConfiguration = SolrScrapeConfiguration.standalone(baseUrl);
       }
@@ -366,7 +277,7 @@ public class SolrExporter {
       if (scrapeConfiguration == null) {
         log.error(
             "Must provide either --{} or --{}",
-            baseUrlOption.getLongOpt(),
+            solrUrlOption.getLongOpt(),
             zkHostOption.getLongOpt());
       }
 
@@ -398,9 +309,7 @@ public class SolrExporter {
       }
 
       String configFile = DEFAULT_CONFIG;
-      if (commandLine.hasOption(configOptionDeprecated)) {
-        configFile = commandLine.getOptionValue(configOptionDeprecated);
-      } else if (commandLine.hasOption(configOption)) {
+      if (commandLine.hasOption(configOption)) {
         configFile = commandLine.getOptionValue(configOption);
       }
       int numberOfThreads = DEFAULT_NUM_THREADS;
@@ -411,9 +320,7 @@ public class SolrExporter {
       }
 
       int scrapeInterval = DEFAULT_SCRAPE_INTERVAL;
-      if (commandLine.hasOption("s")) {
-        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOptionDeprecated);
-      } else if (commandLine.hasOption("scrape-interval")) {
+      if (commandLine.hasOption("scrape-interval")) {
         scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOption);
       }
 

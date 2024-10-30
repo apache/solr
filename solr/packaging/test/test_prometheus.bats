@@ -37,8 +37,8 @@ teardown() {
   run solr create -c COLL_NAME
   assert_output --partial "Created new core 'COLL_NAME'"
  
-  echo "# starting solr-exporter on ${SOLR_EXPORTER_PORT}" >&3
-  run solr-exporter --cluster-id bats-test -p $SOLR_EXPORTER_PORT -b http://localhost:${SOLR_PORT}/solr >&3 &
+  # echo "# starting solr-exporter on ${SOLR_EXPORTER_PORT}" >&3
+  run solr-exporter --cluster-id bats-test -p $SOLR_EXPORTER_PORT --solr-url http://localhost:${SOLR_PORT}/solr >&3 &
 
   sleep 5
 
