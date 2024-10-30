@@ -108,12 +108,6 @@ internal class EnvironmentStoreProvider(
                 }.onSuccess {
                     dispatch(Message.SystemDataUpdated(it))
                 }
-
-                withContext(ioContext) {
-                    client.getJavaProperties()
-                }.onSuccess {
-                    dispatch(Message.JavaPropertiesUpdated(it))
-                }
                 // TODO Add error handling
             }
         }
