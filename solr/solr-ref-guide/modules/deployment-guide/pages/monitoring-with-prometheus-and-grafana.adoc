@@ -178,7 +178,7 @@ The freshness of the metrics can be improved by reducing the scrape interval but
 |Optional |Default: _see description_
 |===
 +
-A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
+A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `--solr-url` or `--zk-host` will be used as ID by default.
 
 `-u`, `--credentials`, `$CREDENTIALS`::
 +
