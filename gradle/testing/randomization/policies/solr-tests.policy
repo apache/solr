@@ -50,6 +50,8 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:4", "connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:6", "connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:8", "connect,resolve";
+  // Used as an invalid ZK host
+  permission java.net.SocketPermission "----------:33332", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
