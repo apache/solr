@@ -42,7 +42,6 @@ public class ZkRmTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_RECURSE_DEPRECATED,
         SolrCLI.OPTION_RECURSIVE,
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
@@ -65,7 +64,7 @@ public class ZkRmTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     String target = cli.getArgs()[0];
-    boolean recursive = cli.hasOption("recursive") || cli.hasOption("recurse");
+    boolean recursive = cli.hasOption("recursive");
 
     String znode = target;
     if (target.toLowerCase(Locale.ROOT).startsWith("zk:")) {

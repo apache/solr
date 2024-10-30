@@ -46,7 +46,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -121,19 +120,6 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
-  public static final Option OPTION_RECURSE_DEPRECATED =
-      Option.builder()
-          .longOpt("recurse")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.8")
-                  .setDescription("Use --recursive instead")
-                  .get())
-          .required(false)
-          .desc("Apply the command recursively.")
-          .build();
-
   public static final Option OPTION_RECURSIVE =
       Option.builder("r")
           .longOpt("recursive")
@@ -164,19 +150,13 @@ public class SolrCLI implements CLIO {
   public static void main(String[] args) throws Exception {
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
-    final boolean isHelpCommand =
-        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+    final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
-    if (Arrays.asList("-version", "version").contains(args[0])) {
-      // select the version tool to be run
-      CLIO.out("Deprecated operation as of 9.8.  Please use bin/solr --version.");
-      args = new String[] {"version"};
-    }
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
       args = new String[] {"version"};
@@ -192,7 +172,7 @@ public class SolrCLI implements CLIO {
         // remap our arguments to invoke the ZK tool help.
         args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
       } else if (args.length == 2) {
-        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+        if (Arrays.asList("-h", "--help").contains(args[1])) {
           // remap our arguments to invoke the ZK tool help.
           args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
         } else {
@@ -411,7 +391,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "--help".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg)) {
             hasHelpArg = true;
             break;
           }
