@@ -157,6 +157,10 @@ public class SolrCLI implements CLIO {
       exit(1);
     }
 
+    if (args[0].equalsIgnoreCase("version")) {
+      CLIO.out("version is not a valid command!  Did you mean --version?\n");
+      exit(1);
+    }
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
       args = new String[] {"version"};
