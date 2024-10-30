@@ -121,9 +121,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           message.getStr(CollectionStateProps.PER_REPLICA_STATE),
           isPRS);
     }
-    if (isPRS && !message.getBool(CollectionStateProps.PER_REPLICA_STATE, false)) {
-      message = message.plus(CollectionStateProps.PER_REPLICA_STATE, true);
-    }
 
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
