@@ -31,7 +31,7 @@ public interface SetClusterPropertyApi {
 
   @PUT
   @Operation(
-      summary = "Set a cluster property in this Solr cluster",
+      summary = "Set a single new or existing cluster property in this Solr cluster",
       tags = {"cluster-properties"})
   SolrJerseyResponse createOrUpdateClusterProperty(
       @Parameter(description = "The name of the property being set.", required = true)
