@@ -775,8 +775,7 @@ public class SolrCLI implements CLIO {
     }
 
     if (solrUrl == null) {
-      String zkHost =
-          cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+      String zkHost = getOptionWithDeprecatedAndDefault(cli, "zk-host", "zkHost", null);
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.err(
@@ -838,7 +837,7 @@ public class SolrCLI implements CLIO {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("solrUrl")
+              + getOptionWithDeprecatedAndDefault(cli, "solr-url", "solrUrl", null)
               + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
     }
     return new SolrZkClient.Builder()
