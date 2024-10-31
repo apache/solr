@@ -29,6 +29,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.util.List;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -74,7 +75,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @GET
   @Path("/files/{filePath}")
   @Produces({MediaType.TEXT_PLAIN, BINARY_CONTENT_TYPE_V2})
-  public String fetchFile(
+  public StreamingOutput fetchFile(
       @PathParam("filePath") String filePath,
       @Parameter(
               description =

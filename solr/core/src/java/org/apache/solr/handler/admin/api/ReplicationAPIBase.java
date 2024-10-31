@@ -19,13 +19,12 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
 import static org.apache.solr.handler.ReplicationHandler.OK_STATUS;
 
-import java.io.ByteArrayOutputStream;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -102,7 +101,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return getFileList(generation, replicationHandler);
   }
 
-  protected String doFetchFile(
+  protected StreamingOutput doFetchFile(
       String filePath,
       String dirType,
       String offset,
@@ -127,13 +126,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
               filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
     }
     solrQueryResponse.add(FILE_STREAM, dfs);
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    return getFile(dfs, out);
-  }
-
-  protected String getFile(DirectoryFileStream dfs, ByteArrayOutputStream out) throws IOException {
-    dfs.write(out);
-    return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    return dfs;
   }
 
   protected CoreReplicationAPI.FileListResponse getFileList(
@@ -254,7 +247,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   }
 
   /** This class is used to read and send files in the lucene index */
-  protected class DirectoryFileStream implements SolrCore.RawWriter {
+  protected class DirectoryFileStream implements SolrCore.RawWriter, StreamingOutput {
     protected FastOutputStream fos;
 
     protected Long indexGen;
