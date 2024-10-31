@@ -31,7 +31,7 @@ public class TestModelManagerPersistence extends TestLlmBase {
 
   @Before
   public void init() throws Exception {
-    setupPersistenttest(true);
+    setupTest(false, true);
   }
 
   @After
