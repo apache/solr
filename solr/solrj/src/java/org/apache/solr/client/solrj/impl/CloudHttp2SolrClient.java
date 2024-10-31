@@ -40,7 +40,7 @@ import org.apache.solr.common.SolrException;
 public class CloudHttp2SolrClient extends CloudSolrClient {
 
   private final ClusterStateProvider stateProvider;
-  private final LBHttp2SolrClient lbClient;
+  private final LBHttp2SolrClient<Http2SolrClient> lbClient;
   private final Http2SolrClient myClient;
   private final boolean clientIsInternal;
 
@@ -76,7 +76,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
-    this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
+    this.lbClient = new LBHttp2SolrClient.Builder<Http2SolrClient>(myClient).build();
   }
 
   private Http2SolrClient createOrGetHttpClientFromBuilder(Builder builder) {
@@ -142,7 +142,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   }
 
   @Override
-  public LBHttp2SolrClient getLbClient() {
+  public LBHttp2SolrClient<Http2SolrClient> getLbClient() {
     return lbClient;
   }
 
