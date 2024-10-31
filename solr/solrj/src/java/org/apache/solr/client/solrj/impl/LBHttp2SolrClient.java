@@ -37,8 +37,8 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
 /**
- * LBHttp2SolrClient or "LoadBalanced LBHttp2SolrClient" is a load balancing wrapper around {@link
- * Http2SolrClient}. This is useful when you have multiple Solr endpoints and requests need to be
+ * LBHttp2SolrClient or "LoadBalanced Http Solr Client" is a load balancing wrapper around a
+ * Http Solr Client. This is useful when you have multiple Solr endpoints and requests need to be
  * Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
