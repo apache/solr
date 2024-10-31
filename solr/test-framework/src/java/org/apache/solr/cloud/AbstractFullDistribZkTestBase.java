@@ -1813,7 +1813,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           "Could not find collection "
               + DEFAULT_COLLECTION
               + " in "
-              + clusterState.getCollectionsMap().keySet());
+              + clusterState.getCollectionNames());
     }
 
     for (CloudJettyRunner cjetty : cloudJettys) {
