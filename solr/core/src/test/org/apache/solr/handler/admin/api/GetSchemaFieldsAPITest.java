@@ -30,13 +30,13 @@ import org.apache.solr.schema.IndexSchema;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Unit tests for {@link GetSchemaFieldAPI} */
+/** Unit tests for {@link GetSchemaField} */
 @SuppressWarnings("unchecked")
 public class GetSchemaFieldsAPITest extends SolrTestCaseJ4 {
 
   private IndexSchema mockSchema;
   private SolrParams mockParams;
-  private GetSchemaFieldAPI api;
+  private GetSchemaField api;
 
   private SimpleOrderedMap<Object> mockField;
   private ArrayList<SimpleOrderedMap<Object>> mockFieldList;
@@ -47,7 +47,7 @@ public class GetSchemaFieldsAPITest extends SolrTestCaseJ4 {
 
     mockSchema = mock(IndexSchema.class);
     mockParams = mock(SolrParams.class);
-    api = new GetSchemaFieldAPI(mockSchema, mockParams);
+    api = new GetSchemaField(mockSchema, mockParams);
 
     mockField = new SimpleOrderedMap<>();
     mockField.add("name", "id");
@@ -131,7 +131,7 @@ public class GetSchemaFieldsAPITest extends SolrTestCaseJ4 {
     final var response = api.getFieldTypeInfo("id");
 
     assertNotNull(response);
-    assertCorrectField(response.fieldTypeInfo);
+    assertCorrectField((SimpleOrderedMap) response.fieldTypeInfo);
   }
 
   private void assertCorrectListFields(List<Object> responseFields) {
