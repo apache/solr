@@ -59,6 +59,7 @@ teardown() {
 @test "snapshot list" {  
   solr snapshot-create -c films --snapshot-name snapshot3 --solr-url http://localhost:${SOLR_PORT}
   
+  # Confirm that we continue to normalize away the /solr ending.
   run solr snapshot-list -c films -s http://localhost:${SOLR_PORT}/solr
   assert_output --partial "snapshot3"
   
