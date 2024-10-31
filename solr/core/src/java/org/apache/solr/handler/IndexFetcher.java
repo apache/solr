@@ -89,6 +89,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
@@ -1801,7 +1802,7 @@ public class IndexFetcher {
             () -> {
               try {
                 file.sync();
-              } catch (IOException e) {
+              } catch (IOException | AlreadyClosedException e) {
                 fsyncException = e;
               }
             });
