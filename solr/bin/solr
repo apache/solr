@@ -574,7 +574,7 @@ function stop_solr() {
 
 if [ $# -eq 1 ]; then
   case $1 in
-    --help|-h|-help)
+    --help|-h)
         run_tool ""
         exit
     ;;
@@ -794,7 +794,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
-        -k|--key|-key)
+        -k|--key)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Stop key is required when using the $1 option!"
               exit 1

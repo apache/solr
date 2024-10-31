@@ -248,8 +248,6 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
-REM -help is a special case to faciliate folks learning about how to use Solr.
-IF "%1"=="-help" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
 IF "%1"=="--help" goto run_solrcli
 IF "%1"=="status" goto run_solrcli
@@ -1166,10 +1164,7 @@ goto done
 IF [%1]==[] goto run_config
 IF "%1"=="-z" goto set_config_zk
 IF "%1"=="--zk-host" goto set_config_zk
-IF "%1"=="-zkHost" goto set_config_zk
-IF "%1"=="--zkHost" goto set_config_zk
-IF "%1"=="-s" goto set_config_url_scheme
-IF "%1"=="-scheme" goto set_config_url_scheme
+IF "%1"=="--scheme" goto set_config_url_scheme
 set "CONFIG_ARGS=!CONFIG_ARGS! %1"
 SHIFT
 goto parse_config_args
