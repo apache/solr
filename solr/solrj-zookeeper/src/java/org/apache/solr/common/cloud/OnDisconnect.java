@@ -14,19 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.servlet;
+package org.apache.solr.common.cloud;
 
-import javax.servlet.http.HttpServlet;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 
-/**
- * All Solr servlets available to the user's webapp should extend this class and not {@link
- * HttpServlet}. This class ensures that the logging configuration is correct before any Solr
- * specific code is executed.
- */
-@SuppressWarnings("serial")
-abstract class BaseSolrServlet extends HttpServlet {
+public interface OnDisconnect extends ConnectionStateListener {
+  public void command();
 
-  static {
-    CheckLoggingConfiguration.check();
+  @Override
+  default void stateChanged(CuratorFramework client, ConnectionState newState) {
+    if (newState == ConnectionState.LOST) {
+      command();
+    }
   }
 }

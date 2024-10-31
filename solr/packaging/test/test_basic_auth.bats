@@ -77,7 +77,7 @@ run solr create -c COLL_NAME
   assert_output --partial 'Committed'
   
   # Test export
-  #run solr export -u name:password --solr-url "http://localhost:${SOLR_PORT} --name COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
+  #run solr export -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --query "*:*" --output "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
   
 }
