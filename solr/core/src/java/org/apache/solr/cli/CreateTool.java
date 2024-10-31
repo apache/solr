@@ -112,7 +112,6 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
-
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_CREDENTIALS);
@@ -136,7 +135,7 @@ public class CreateTool extends ToolBase {
     String solrUrl = cli.getOptionValue("solr-url", SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    final String confDirName =cli.getOptionValue("conf-dir", SolrCLI.DEFAULT_CONFIG_SET);
+    final String confDirName = cli.getOptionValue("conf-dir", SolrCLI.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
     Path configsetDir = Paths.get(confDirName);
@@ -219,7 +218,7 @@ public class CreateTool extends ToolBase {
 
     String collectionName = cli.getOptionValue("name");
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    String confName =cli.getOptionValue("conf-name");
+    String confName = cli.getOptionValue("conf-name");
     String confDir = cli.getOptionValue("conf-dir", SolrCLI.DEFAULT_CONFIG_SET);
     Path solrInstallDirPath = Paths.get(solrInstallDir);
     Path confDirPath = Paths.get(confDir);

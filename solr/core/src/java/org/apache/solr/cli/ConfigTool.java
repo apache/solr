@@ -71,8 +71,7 @@ public class ConfigTool extends ToolBase {
             .longOpt("property")
             .argName("PROP")
             .hasArg()
-            .required(
-                true)
+            .required(true)
             .desc(
                 "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
             .build(),
