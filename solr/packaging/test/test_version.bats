@@ -26,7 +26,9 @@ setup() {
   assert_output --partial "Solr version is:"    
 }
 
-@test "version as direct tool call fails" {  
-  run ! solr version
-  assert_output --partial "version is not a valid command!  Did you mean --version?"  
+@test "version as direct tool call still runs" {  
+  #run ! solr version
+  #assert_output --partial "version is not a valid command!  Did you mean --version?"  
+  run solr version
+  assert_output --partial "Solr version is:"
 }
