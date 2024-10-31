@@ -29,7 +29,6 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 import org.apache.solr.llm.store.EmbeddingModelException;
 import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
@@ -40,9 +39,6 @@ import org.slf4j.LoggerFactory;
 public class TestLlmBase extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  protected static final SolrResourceLoader solrResourceLoader =
-      new SolrResourceLoader(Path.of("").toAbsolutePath());
 
   protected static Path tmpSolrHome;
   protected static Path tmpConfDir;
@@ -59,14 +55,9 @@ public class TestLlmBase extends RestTestBase {
   protected static String vectorField2 = "vector2";
   protected static String vectorFieldByteEncoding = "vector_byte_encoding";
 
-  protected static void setuptest(boolean bulkIndex) throws Exception {
-    setuptest("solrconfig-llm.xml", "schema.xml");
-    if (bulkIndex) prepareIndex();
-  }
-
-  protected static void setupPersistenttest(boolean bulkIndex) throws Exception {
-    setupPersistentTest("solrconfig-llm.xml", "schema.xml");
-    if (bulkIndex) prepareIndex();
+  protected static void setupTest(boolean buildIndex, boolean persistent) throws Exception {
+    setupTest("solrconfig-llm.xml", "schema.xml", persistent);
+    if (buildIndex) prepareIndex();
   }
 
   public static ManagedEmbeddingModelStore getManagedModelStore() {
@@ -75,52 +66,31 @@ public class TestLlmBase extends RestTestBase {
     }
   }
 
-  protected static void setupTestInit(String solrconfig, String schema, boolean isPersistent)
+  protected static void setupTestInit(boolean isPersistent)
       throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     tmpConfDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
 
-    final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
+    final Path modelStore = tmpConfDir.resolve(MODEL_FILE_NAME);
 
     if (isPersistent) {
-      embeddingModelStoreFile = mstore;
+      embeddingModelStoreFile = modelStore;
     }
 
-    if (Files.exists(mstore)) {
+    if (Files.exists(modelStore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", mstore.toAbsolutePath());
+        log.info("remove model store config file in {}", modelStore.toAbsolutePath());
       }
-      Files.delete(mstore);
-    }
-    if (!solrconfig.equals("solrconfig-llm.xml")) {
-      Files.copy(
-          tmpSolrHome.resolve(CONF_DIR).resolve(solrconfig),
-          tmpSolrHome.resolve(CONF_DIR).resolve("solrconfig-llm.xml"));
-    }
-    if (!schema.equals("schema.xml")) {
-      Files.copy(
-          tmpSolrHome.resolve(CONF_DIR).resolve(schema),
-          tmpSolrHome.resolve(CONF_DIR).resolve("schema.xml"));
+      Files.delete(modelStore);
     }
 
     System.setProperty("managed.schema.mutable", "true");
   }
 
-  public static void setuptest(String solrconfig, String schema) throws Exception {
-
-    setupTestInit(solrconfig, schema, false);
-    System.setProperty("enable.update.log", "false");
-
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
-  }
-
-  public static void setupPersistentTest(String solrconfig, String schema) throws Exception {
-
-    setupTestInit(solrconfig, schema, true);
-
+  public static void setupTest(String solrconfig, String schema, boolean persistent) throws Exception {
+    setupTestInit(persistent);
     createJettyAndHarness(
         tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
   }

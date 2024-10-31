@@ -31,7 +31,7 @@ public class TestModelManager extends TestLlmBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    setuptest(false);
+    setupTest(false, false);
   }
 
   @Test
