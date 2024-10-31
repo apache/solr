@@ -25,7 +25,7 @@ import org.junit.Test;
 public class TextEmbedderQParserTest extends TestLlmBase {
   @BeforeClass
   public static void init() throws Exception {
-    setuptest(true);
+    setupTest(true, false);
     loadModels("dummy-model.json");
   }
 
