@@ -341,8 +341,9 @@ public class SolrCLI implements CLIO {
    * Returns the value of the option with the given name, or the value of the deprecated option. If
    * both values are null, then it returns the default value.
    *
-   * If this method is marked as unused by your IDE, it means we have no deprecated CLI options currently, congratulations!
-   * This method is preserved for the next time we need to deprecate a CLI option.
+   * <p>If this method is marked as unused by your IDE, it means we have no deprecated CLI options
+   * currently, congratulations! This method is preserved for the next time we need to deprecate a
+   * CLI option.
    */
   public static String getOptionWithDeprecatedAndDefault(
       CommandLine cli, String opt, String deprecated, String def) {
