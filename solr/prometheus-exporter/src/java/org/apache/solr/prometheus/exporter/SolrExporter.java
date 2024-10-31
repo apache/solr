@@ -34,7 +34,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -50,7 +49,6 @@ public class SolrExporter {
   private static final int DEFAULT_PORT = 8989;
   private static final String DEFAULT_BASE_URL = "http://localhost:8983/solr";
   private static final String DEFAULT_ZK_HOST = "";
-  private static final String DEFAULT_CLUSTER_ID = "";
   private static final String DEFAULT_CONFIG = "solr-exporter-config.xml";
   private static final int DEFAULT_SCRAPE_INTERVAL = 60;
   private static final Integer DEFAULT_NUM_THREADS = 1;
@@ -282,13 +280,7 @@ public class SolrExporter {
       }
 
       int port = commandLine.getParsedOptionValue(portOption, DEFAULT_PORT);
-      String clusterId = commandLine.getOptionValue(clusterIdOption, DEFAULT_CLUSTER_ID);
-      if (commandLine.hasOption("i")) {
-        clusterId = commandLine.getOptionValue("i");
-      }
-      if (StrUtils.isNullOrEmpty(clusterId)) {
-        clusterId = defaultClusterId;
-      }
+      String clusterId = commandLine.getOptionValue(clusterIdOption, defaultClusterId);
 
       if (commandLine.hasOption(credentialsOption)) {
         String credentials = commandLine.getOptionValue(credentialsOption, DEFAULT_CREDENTIALS);
@@ -308,21 +300,10 @@ public class SolrExporter {
             getSystemVariable("SOLR_SSL_TRUST_STORE_PASSWORD"));
       }
 
-      String configFile = DEFAULT_CONFIG;
-      if (commandLine.hasOption(configOption)) {
-        configFile = commandLine.getOptionValue(configOption);
-      }
-      int numberOfThreads = DEFAULT_NUM_THREADS;
-      if (commandLine.hasOption("num-threads")) {
-        numberOfThreads = commandLine.getParsedOptionValue("num-threads");
-      } else if (commandLine.hasOption("n")) {
-        numberOfThreads = commandLine.getParsedOptionValue("n");
-      }
-
-      int scrapeInterval = DEFAULT_SCRAPE_INTERVAL;
-      if (commandLine.hasOption("scrape-interval")) {
-        scrapeInterval = commandLine.getParsedOptionValue(scrapeIntervalOption);
-      }
+      String configFile = commandLine.getOptionValue(configOption, DEFAULT_CONFIG);
+      int numberOfThreads = commandLine.getParsedOptionValue("num-threads", DEFAULT_NUM_THREADS);
+      int scrapeInterval =
+          commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL);
 
       SolrExporter solrExporter =
           new SolrExporter(

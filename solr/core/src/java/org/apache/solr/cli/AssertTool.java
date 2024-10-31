@@ -178,14 +178,8 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("message")) {
       message = cli.getOptionValue("message");
     }
-    if (cli.hasOption("t")) {
-      timeoutMs = Long.parseLong(cli.getOptionValue("t"));
-    }
     if (cli.hasOption("timeout")) {
-      timeoutMs = Long.parseLong(cli.getOptionValue("timeout"));
-    }
-    if (cli.hasOption("e")) {
-      useExitCode = true;
+      timeoutMs = cli.getParsedOptionValue("timeout");
     }
     if (cli.hasOption("exitcode")) {
       useExitCode = true;
