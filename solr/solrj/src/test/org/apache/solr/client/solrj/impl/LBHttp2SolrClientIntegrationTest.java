@@ -20,14 +20,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -134,6 +140,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       var delegateClient = new HttpJdkSolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
+              .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
               .build();
       var lbClient = new LBHttpJdkSolrClient.Builder(delegateClient, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
@@ -371,4 +378,52 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       }
     }
   }
+
+  /**
+   * Taken from: https://www.baeldung.com/java-httpclient-ssl sec 4.1, 2024/02/12. This is an
+   * all-trusting Trust Manager. Works with self-signed certificates.
+   */
+  private static final TrustManager MOCK_TRUST_MANAGER =
+      new X509ExtendedTrustManager() {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
+            throws CertificateException {
+          // no-op
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
+            throws CertificateException {
+          // no-op
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+            throws CertificateException {
+          // no-op
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+            throws CertificateException {
+          // no-op
+        }
+
+        @Override
+        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+          return new java.security.cert.X509Certificate[0];
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
+          // no-op
+        }
+
+        @Override
+        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
+            throws CertificateException {
+          // no-op
+        }
+      };
 }
