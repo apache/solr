@@ -100,7 +100,7 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
   protected final C solrClient;
 
   @SuppressWarnings("unchecked")
-  protected LBHttp2SolrClient(Builder<?> builder) {
+  private LBHttp2SolrClient(Builder<?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
     this.solrClient = (C) builder.solrClient;
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
@@ -287,15 +287,12 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
   }
 
   public static class Builder<C extends HttpSolrClientBase> {
-    final C solrClient;
-    protected final LBSolrClient.Endpoint[] solrEndpoints;
-    long aliveCheckIntervalMillis =
+
+    private final C solrClient;
+    private final LBSolrClient.Endpoint[] solrEndpoints;
+    private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
     protected String defaultCollection;
-
-    public LBHttp2SolrClient<C> build() {
-      return new LBHttp2SolrClient<C>(this);
-    }
 
     public Builder(C http2Client, LBSolrClient.Endpoint... endpoints) {
       this.solrClient = http2Client;
@@ -308,7 +305,6 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
      *
      * @param aliveCheckInterval how often to ping for aliveness
      */
-    @SuppressWarnings("unchecked")
     public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
       if (aliveCheckInterval <= 0) {
         throw new IllegalArgumentException(
@@ -319,10 +315,13 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
     }
 
     /** Sets a default for core or collection based requests. */
-    @SuppressWarnings("unchecked")
     public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
       return this;
+    }
+
+    public LBHttp2SolrClient<C> build() {
+      return new LBHttp2SolrClient<C>(this);
     }
   }
 }
