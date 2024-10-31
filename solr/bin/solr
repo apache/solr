@@ -724,6 +724,10 @@ if [ $# -gt 0 ]; then
             shift 2
         ;;
         --data-home)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_usage "$SCRIPT_CMD" "Data home directory is required when using the $1 option!"
+              exit 1
+            fi        
             SOLR_DATA_HOME="$2"
             shift 2
         ;;
@@ -791,7 +795,6 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             ADDITIONAL_JETTY_CONFIG="$2"
-            PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
         -k|--key)
