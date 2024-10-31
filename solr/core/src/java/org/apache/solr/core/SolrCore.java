@@ -128,13 +128,9 @@ import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -296,9 +292,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return packageListeners;
   }
 
-  static int boolean_query_max_clause_count = Integer.MIN_VALUE;
-
-  private ExecutorService coreAsyncTaskExecutor =
+  private final ExecutorService coreAsyncTaskExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
 
   public final SolrCore.Provider coreProvider;
@@ -3017,10 +3011,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
-    m.put("python", new PythonResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
     m.put("cbor", new CborResponseWriter());
@@ -3595,7 +3585,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @param r the task to run
    */
   public void runAsync(Runnable r) {
-    coreAsyncTaskExecutor.submit(r);
+    coreAsyncTaskExecutor.execute(r);
   }
 
   /**
