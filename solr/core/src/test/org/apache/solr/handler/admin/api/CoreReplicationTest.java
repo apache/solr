@@ -37,10 +37,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link CoreReplicationAPI} */
-public class CoreReplicationAPITest extends SolrTestCaseJ4 {
+/** Unit tests for {@link CoreReplication} */
+public class CoreReplicationTest extends SolrTestCaseJ4 {
 
-  private CoreReplicationAPI coreReplicationAPI;
+  private CoreReplication coreReplication;
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
   private SolrQueryRequest mockQueryRequest;
@@ -61,16 +61,16 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     mockQueryRequest = mock(SolrQueryRequest.class);
     when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
-    coreReplicationAPI = new CoreReplicationAPIMock(mockCore, mockQueryRequest, queryResponse);
+    coreReplication = new CoreReplicationMock(mockCore, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testGetIndexVersion() throws Exception {
-    CoreReplicationAPI.IndexVersionResponse expected =
-        new CoreReplicationAPI.IndexVersionResponse(123L, 123L, "testGeneration");
+    CoreReplication.IndexVersionResponse expected =
+        new CoreReplication.IndexVersionResponse(123L, 123L, "testGeneration");
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-    CoreReplicationAPI.IndexVersionResponse actual = coreReplicationAPI.doFetchIndexVersion();
+    CoreReplication.IndexVersionResponse actual = coreReplication.doFetchIndexVersion();
     assertEquals(expected.indexVersion, actual.indexVersion);
     assertEquals(expected.generation, actual.generation);
     assertEquals(expected.status, actual.status);
@@ -79,7 +79,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings("unchecked")
   public void testFetchFiles() throws Exception {
-    CoreReplicationAPI.FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
+    CoreReplication.FileListResponse actualResponse = coreReplication.fetchFileList(-1);
     assertEquals(123, actualResponse.fileList.get(0).size);
     assertEquals("test", actualResponse.fileList.get(0).name);
     assertEquals(123456789, actualResponse.fileList.get(0).checksum);
@@ -90,8 +90,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     String expected = "Random output stream data";
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     String actual =
-        coreReplicationAPI.doFetchFile(
-            "_0_Lucene99_0.tmd", "file", null, null, false, false, 0, null);
+        coreReplication.doFetchFile("_0_Lucene99_0.tmd", "file", null, null, false, false, 0, null);
     assertEquals(expected, actual);
   }
 
@@ -101,8 +100,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
   }
 
-  private static class CoreReplicationAPIMock extends CoreReplicationAPI {
-    public CoreReplicationAPIMock(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+  private static class CoreReplicationMock extends CoreReplication {
+    public CoreReplicationMock(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
       super(solrCore, req, rsp);
     }
 
