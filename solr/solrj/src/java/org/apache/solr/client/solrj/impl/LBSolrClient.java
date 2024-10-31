@@ -480,15 +480,15 @@ public abstract class LBSolrClient extends SolrClient {
     return timeAllowedNano > 0 && System.nanoTime() > timeOutTime;
   }
 
-  private NamedList<Object> doMakeRequest(Endpoint endpoint, SolrRequest<?> solrRequest)
+  private NamedList<Object> doRequest(Endpoint endpoint, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
     final var solrClient = getClient(endpoint);
-    return doMakeRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
+    return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
   }
 
   // TODO This special casing can be removed if either: (1) SOLR-16367 is completed, or (2)
   // LBHttp2SolrClient.getClient() is modified to return a client already pointed at the correct URL
-  private NamedList<Object> doMakeRequest(
+  private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
     // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
@@ -499,6 +499,7 @@ public abstract class LBSolrClient extends SolrClient {
       return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
     }
 
+    // Assume provided client already uses 'baseUrl'
     return solrClient.request(solrRequest, collection);
   }
 
@@ -508,7 +509,7 @@ public abstract class LBSolrClient extends SolrClient {
     Exception ex = null;
     try {
       rsp.server = baseUrl.toString();
-      rsp.rsp = doMakeRequest(baseUrl, req.getRequest());
+      rsp.rsp = doRequest(baseUrl, req.getRequest());
       if (isZombie) {
         zombieServers.remove(baseUrl.toString());
       }
@@ -610,7 +611,7 @@ public abstract class LBSolrClient extends SolrClient {
       final String effectiveCollection =
           Objects.requireNonNullElse(zombieEndpoint.getCore(), getDefaultCollection());
       final var responseRaw =
-          doMakeRequest(
+          doRequest(
               getClient(zombieEndpoint),
               zombieEndpoint.getBaseUrl(),
               effectiveCollection,
@@ -718,8 +719,7 @@ public abstract class LBSolrClient extends SolrClient {
         // Choose the endpoint's core/collection over any specified by the user
         final var effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        return doMakeRequest(
-            getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+        return doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -752,7 +752,7 @@ public abstract class LBSolrClient extends SolrClient {
         final String effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
         NamedList<Object> rsp =
-            doMakeRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+            doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
         // remove from zombie list *before* adding to the alive list to avoid a race that could lose
         // a server
         zombieServers.remove(endpoint.getUrl());

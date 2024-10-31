@@ -223,7 +223,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     public <R> R requestWithBaseUrl(
         String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
         throws SolrServerException, IOException {
-      // This use of 'tmpBaseUrl' is thread unsafe, but that's fine for our purposes here.
+      // This use of 'tmpBaseUrl' is NOT thread safe, but that's fine for our purposes here.
       try {
         tmpBaseUrl = baseUrl;
         return clientFunction.apply(this);

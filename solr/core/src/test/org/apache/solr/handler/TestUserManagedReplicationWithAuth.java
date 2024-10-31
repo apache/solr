@@ -248,7 +248,6 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     QueryRequest req = getQueryRequestForFetchIndex(authEnabled, srcUrl);
     final var baseUrl = buildUrl(destSolr.getLocalPort());
     followerClient.requestWithBaseUrl(baseUrl, DEFAULT_TEST_CORENAME, req);
-    followerClient.request(req, DEFAULT_TEST_CORENAME);
   }
 
   private QueryRequest getQueryRequestForFetchIndex(boolean authEnabled, String srcUrl) {
