@@ -16,6 +16,18 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -32,19 +44,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for LBHttp2SolrClient
@@ -89,6 +88,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       addDocs(solr[i]);
     }
   }
+
   private void addDocs(SolrInstance solrInstance) throws IOException, SolrServerException {
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
@@ -118,8 +118,9 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   }
 
   private LBClientHolder client(LBSolrClient.Endpoint... baseSolrEndpoints) {
-    if(random().nextBoolean()) {
-      var delegateClient = new Http2SolrClient.Builder()
+    if (random().nextBoolean()) {
+      var delegateClient =
+          new Http2SolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
               .build();
@@ -130,7 +131,8 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
               .build();
       return new LBClientHolder(lbClient, delegateClient);
     } else {
-      var delegateClient = new HttpJdkSolrClient.Builder()
+      var delegateClient =
+          new HttpJdkSolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
               .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
@@ -234,7 +236,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   // wait maximum ms for serverName to come back up
   private void waitForServer(
-          int maxSeconds, LBHttp2SolrClient<?> client, int nServers, String serverName)
+      int maxSeconds, LBHttp2SolrClient<?> client, int nServers, String serverName)
       throws Exception {
     final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
@@ -366,7 +368,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       lbClient.close();
       try {
         delegate.close();
-      } catch(IOException ioe) {
+      } catch (IOException ioe) {
         throw new UncheckedIOException(ioe);
       }
     }

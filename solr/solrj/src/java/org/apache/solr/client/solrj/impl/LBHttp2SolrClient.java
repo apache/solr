@@ -140,59 +140,59 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
     CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
     Rsp rsp = new Rsp();
     boolean isNonRetryable =
-            req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
+        req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     EndpointIterator it = new EndpointIterator(req, zombieServers);
     AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
     RetryListener retryListener =
-            new RetryListener() {
+        new RetryListener() {
 
-              @Override
-              public void onSuccess(Rsp rsp) {
-                apiFuture.complete(rsp);
-              }
+          @Override
+          public void onSuccess(Rsp rsp) {
+            apiFuture.complete(rsp);
+          }
 
-              @Override
-              public void onFailure(Exception e, boolean retryReq) {
-                if (retryReq) {
-                  Endpoint url;
-                  try {
-                    url = it.nextOrError(e);
-                  } catch (SolrServerException ex) {
-                    apiFuture.completeExceptionally(e);
-                    return;
-                  }
-                  MDC.put("LBSolrClient.url", url.toString());
-                  if (!apiFuture.isCancelled()) {
-                    CompletableFuture<NamedList<Object>> future =
-                            doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
-                    currentFuture.set(future);
-                  }
-                } else {
-                  apiFuture.completeExceptionally(e);
-                }
+          @Override
+          public void onFailure(Exception e, boolean retryReq) {
+            if (retryReq) {
+              Endpoint url;
+              try {
+                url = it.nextOrError(e);
+              } catch (SolrServerException ex) {
+                apiFuture.completeExceptionally(e);
+                return;
               }
-            };
+              MDC.put("LBSolrClient.url", url.toString());
+              if (!apiFuture.isCancelled()) {
+                CompletableFuture<NamedList<Object>> future =
+                    doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+                currentFuture.set(future);
+              }
+            } else {
+              apiFuture.completeExceptionally(e);
+            }
+          }
+        };
     try {
       CompletableFuture<NamedList<Object>> future =
-              doAsyncRequest(
-                      it.nextOrError(),
-                      req,
-                      rsp,
-                      isNonRetryable,
-                      it.isServingZombieServer(),
-                      retryListener);
+          doAsyncRequest(
+              it.nextOrError(),
+              req,
+              rsp,
+              isNonRetryable,
+              it.isServingZombieServer(),
+              retryListener);
       currentFuture.set(future);
     } catch (SolrServerException e) {
       apiFuture.completeExceptionally(e);
       return apiFuture;
     }
     apiFuture.exceptionally(
-            (error) -> {
-              if (apiFuture.isCancelled()) {
-                currentFuture.get().cancel(true);
-              }
-              return null;
-            });
+        (error) -> {
+          if (apiFuture.isCancelled()) {
+            currentFuture.get().cancel(true);
+          }
+          return null;
+        });
     return apiFuture;
   }
 
@@ -203,34 +203,34 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
   }
 
   private CompletableFuture<NamedList<Object>> doAsyncRequest(
-          Endpoint endpoint,
-          Req req,
-          Rsp rsp,
-          boolean isNonRetryable,
-          boolean isZombie,
-          RetryListener listener) {
+      Endpoint endpoint,
+      Req req,
+      Rsp rsp,
+      boolean isNonRetryable,
+      boolean isZombie,
+      RetryListener listener) {
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
     CompletableFuture<NamedList<Object>> future =
-            ((HttpSolrClientBase) getClient(endpoint)).requestAsync(req.getRequest());
+        ((HttpSolrClientBase) getClient(endpoint)).requestAsync(req.getRequest());
     future.whenComplete(
-            (result, throwable) -> {
-              if (!future.isCompletedExceptionally()) {
-                onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
-              } else if (!future.isCancelled()) {
-                onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
-              }
-            });
+        (result, throwable) -> {
+          if (!future.isCompletedExceptionally()) {
+            onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
+          } else if (!future.isCancelled()) {
+            onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
+          }
+        });
     return future;
   }
 
   private void onSuccessfulRequest(
-          NamedList<Object> result,
-          Endpoint endpoint,
-          Rsp rsp,
-          boolean isZombie,
-          RetryListener listener) {
+      NamedList<Object> result,
+      Endpoint endpoint,
+      Rsp rsp,
+      boolean isZombie,
+      RetryListener listener) {
     rsp.rsp = result;
     if (isZombie) {
       zombieServers.remove(endpoint.toString());
@@ -239,11 +239,11 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
   }
 
   private void onFailedRequest(
-          Throwable oe,
-          Endpoint endpoint,
-          boolean isNonRetryable,
-          boolean isZombie,
-          RetryListener listener) {
+      Throwable oe,
+      Endpoint endpoint,
+      boolean isNonRetryable,
+      boolean isZombie,
+      RetryListener listener) {
     try {
       throw (Exception) oe;
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
@@ -285,11 +285,12 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       listener.onFailure(new SolrServerException(e), false);
     }
   }
+
   public static class Builder<C extends HttpSolrClientBase> {
     final C solrClient;
     protected final LBSolrClient.Endpoint[] solrEndpoints;
     long aliveCheckIntervalMillis =
-            TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
     protected String defaultCollection;
 
     public LBHttp2SolrClient<C> build() {
@@ -311,15 +312,13 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
     public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
       if (aliveCheckInterval <= 0) {
         throw new IllegalArgumentException(
-                "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
       }
       this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
       return this;
     }
 
-    /**
-     * Sets a default for core or collection based requests.
-     */
+    /** Sets a default for core or collection based requests. */
     @SuppressWarnings("unchecked")
     public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
