@@ -192,9 +192,9 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setShardName("shard1");
     splitShard.setWaitForFinalState(true);
     splitShard.process(solrClient);
-    CollectionAdminRequest.deleteShard(COLLECTION_NAME, "shard1").process(solrClient);
+
     waitForState(
-        "Waiting for 2 active shards after split", COLLECTION_NAME, activeClusterShape(2, 2));
+        "Waiting for 2 active shards after split", COLLECTION_NAME, activeClusterShape(2, 3));
 
     QueryRequest req =
         new QueryRequest(new SolrQuery("type_s:parent").setFields("*", "[child]", "[shard]"));
