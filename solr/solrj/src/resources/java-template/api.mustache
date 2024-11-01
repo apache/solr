@@ -48,9 +48,21 @@ import {{import}};
 {{#operation}}
 {{#bodyParam}}
 {{#vars}}
+
+{{! Catches all model types used "directly" (i.e. not in a container) in request/response classes. }}
 {{#isModel}}
 import {{modelPackage}}.{{dataType}};
 {{/isModel}}
+
+{{! Catches all model types used in a List<Foo>, Map<Bar>, or other container in request/response classes. }}
+{{#isContainer}}
+{{#items}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/items}}
+{{/isContainer}}
+
 {{/vars}}
 {{/bodyParam}}
 {{/operation}}

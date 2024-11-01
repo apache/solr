@@ -76,7 +76,7 @@ public class GetSchemaFieldsAPITest extends SolrTestCaseJ4 {
     final var response = api.getFieldInfo("id");
 
     assertNotNull(response);
-    assertCorrectField(response.fieldInfo);
+    assertCorrectField((SimpleOrderedMap<?>) response.fieldInfo);
   }
 
   @Test
@@ -109,7 +109,7 @@ public class GetSchemaFieldsAPITest extends SolrTestCaseJ4 {
     final var response = api.getDynamicFieldInfo("id");
 
     assertNotNull(response);
-    assertCorrectField(response.dynamicFieldInfo);
+    assertCorrectField((SimpleOrderedMap<?>) response.dynamicFieldInfo);
   }
 
   @Test

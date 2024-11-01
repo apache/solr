@@ -97,8 +97,8 @@ public interface GetSchemaApi {
     @Path("/fieldtypes/{fieldTypeName}")
     @StoreApiParameters
     @Operation(
-            summary = "Get detailed info about a single field type",
-            tags = {"schema"})
+        summary = "Get detailed info about a single field type",
+        tags = {"schema"})
     SchemaGetFieldTypeInfoResponse getFieldTypeInfo(
         @PathParam("fieldTypeName") String fieldTypeName);
   }
