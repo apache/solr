@@ -215,6 +215,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
 
+* SOLR-17534: Introduce ClusterState.getCollectionNames, a convenience method (David Smiley)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
