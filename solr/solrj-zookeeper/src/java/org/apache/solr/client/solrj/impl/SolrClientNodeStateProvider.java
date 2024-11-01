@@ -39,7 +39,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -80,23 +79,18 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
-    Map<String, ClusterState.CollectionRef> all =
-        clusterStateProvider.getClusterState().getCollectionStates();
-    all.forEach(
-        (collName, ref) -> {
-          DocCollection coll = ref.get();
-          if (coll == null) return;
-          coll.forEachReplica(
-              (shard, replica) -> {
-                Map<String, Map<String, List<Replica>>> nodeData =
-                    nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(
-                        replica.getNodeName(), k -> new HashMap<>());
-                Map<String, List<Replica>> collData =
-                    nodeData.computeIfAbsent(collName, k -> new HashMap<>());
-                List<Replica> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
-                replicas.add((Replica) replica.clone());
-              });
-        });
+    clusterState.forEachCollection(
+        coll ->
+            coll.forEachReplica(
+                (shard, replica) -> {
+                  Map<String, Map<String, List<Replica>>> nodeData =
+                      nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(
+                          replica.getNodeName(), k -> new HashMap<>());
+                  Map<String, List<Replica>> collData =
+                      nodeData.computeIfAbsent(coll.getName(), k -> new HashMap<>());
+                  List<Replica> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
+                  replicas.add((Replica) replica.clone());
+                }));
   }
 
   @Override
