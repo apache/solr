@@ -36,7 +36,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
@@ -96,18 +95,6 @@ public class RunExampleTool extends ToolBase {
     return List.of(
         Option.builder("y")
             .longOpt("no-prompt")
-            .required(false)
-            .desc(
-                "Don't prompt for input; accept all defaults when running examples that accept user input.")
-            .build(),
-        Option.builder()
-            .longOpt("noprompt")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --no-prompt instead")
-                    .get())
             .required(false)
             .desc(
                 "Don't prompt for input; accept all defaults when running examples that accept user input.")
@@ -188,8 +175,7 @@ public class RunExampleTool extends ToolBase {
             .desc(
                 "Additional options to be passed to the JVM when starting example Solr server(s).")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
@@ -447,7 +433,7 @@ public class RunExampleTool extends ToolBase {
 
   protected void runCloudExample(CommandLine cli) throws Exception {
 
-    boolean prompt = !(cli.hasOption("no-prompt") || cli.hasOption("noprompt"));
+    boolean prompt = !cli.hasOption("no-prompt");
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
     int defaultPort =

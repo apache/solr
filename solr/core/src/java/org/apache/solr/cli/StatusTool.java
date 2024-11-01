@@ -236,7 +236,7 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
+  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) {
     String statusJson = null;
     try {
       statusJson = statusFromRunningSolr(solrUrl, cli);

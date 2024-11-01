@@ -78,6 +78,8 @@ Deprecation Removals
 
 * SOLR-17494: Remove language specific writer types (i.e wt= ruby, python, php, and phps). (Eric Pugh)
 
+* SOLR-17352: Remove deprecated Solr CLI options.  Run bin/solr yourcommand -h to see current options.  (Eric Pugh, Christos Malliardis)
+
 Dependency Upgrades
 ---------------------
 (No changes)
