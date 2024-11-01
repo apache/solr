@@ -32,6 +32,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.FileListResponse;
+import org.apache.solr.client.api.model.FileMetaData;
+import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -56,23 +59,21 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     this.solrQueryResponse = solrQueryResponse;
   }
 
-  protected CoreReplicationAPI.IndexVersionResponse doFetchIndexVersion() throws IOException {
+  protected IndexVersionResponse doFetchIndexVersion() throws IOException {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return replicationHandler.getIndexVersionResponse();
   }
 
-  protected CoreReplicationAPI.FileListResponse doFetchFileList(long generation) {
+  protected FileListResponse doFetchFileList(long generation) {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return getFileList(generation, replicationHandler);
   }
 
-  protected CoreReplicationAPI.FileListResponse getFileList(
-      long generation, ReplicationHandler replicationHandler) {
+  protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
-    final CoreReplicationAPI.FileListResponse filesResponse =
-        new CoreReplicationAPI.FileListResponse();
+    final FileListResponse filesResponse = new FileListResponse();
 
     IndexCommit commit = null;
     try {
@@ -96,7 +97,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       }
       assert null != commit;
 
-      List<CoreReplicationAPI.FileMetaData> result = new ArrayList<>();
+      List<FileMetaData> result = new ArrayList<>();
       Directory dir = null;
       try {
         dir =
@@ -109,7 +110,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
-            CoreReplicationAPI.FileMetaData metaData = new CoreReplicationAPI.FileMetaData();
+            FileMetaData metaData = new FileMetaData();
             metaData.name = file;
             metaData.size = dir.fileLength(file);
 
@@ -127,7 +128,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         }
 
         // add the segments_N file
-        CoreReplicationAPI.FileMetaData fileMetaData = new CoreReplicationAPI.FileMetaData();
+        FileMetaData fileMetaData = new FileMetaData();
         fileMetaData.name = infos.getSegmentsFileName();
         fileMetaData.size = dir.fileLength(infos.getSegmentsFileName());
         if (infos.getId() != null) {
@@ -186,7 +187,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   }
 
   private void reportErrorOnResponse(
-      CoreReplicationAPI.FileListResponse fileListResponse, String message, Exception e) {
+      FileListResponse fileListResponse, String message, Exception e) {
     fileListResponse.status = ERR_STATUS;
     fileListResponse.message = message;
     if (e != null) {
