@@ -58,7 +58,6 @@ import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -1231,7 +1230,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkDistributedQueue q = getOpenOverseer().getStateUpdateQueue();
             q.offer(m);
             break;
-          } catch (SolrException | KeeperException | AlreadyClosedException e) {
+          } catch (SolrException | KeeperException | IllegalStateException e) {
             log.error("error updating state", e);
           }
         }
@@ -1249,7 +1248,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | KeeperException | AlreadyClosedException e) {
+          } catch (SolrException | KeeperException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1274,7 +1273,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1294,7 +1293,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1314,7 +1313,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }

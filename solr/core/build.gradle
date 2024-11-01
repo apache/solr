@@ -49,7 +49,6 @@ dependencies {
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 
-
   api 'io.dropwizard.metrics:metrics-core'
   implementation ('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
@@ -125,6 +124,16 @@ dependencies {
   implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   // ZooKeeper
+
+  implementation('org.apache.curator:curator-framework', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  implementation('org.apache.curator:curator-client', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  testImplementation('org.apache.curator:curator-test', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
