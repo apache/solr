@@ -27,7 +27,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.ClusterPropertiesApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -172,7 +174,20 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       String path = baseUrlV2ClusterProps + "/ext.clusterPropThatDoesNotExist";
       HttpGet fetchClusterPropertyGet = new HttpGet(path);
       HttpResponse httpResponse = client.getHttpClient().execute(fetchClusterPropertyGet);
-      assertEquals(400, httpResponse.getStatusLine().getStatusCode());
+      assertEquals(404, httpResponse.getStatusLine().getStatusCode());
+    }
+  }
+
+  @Test
+  public void testClusterPropertyFetchNonExistentPropertySolrJ() throws Exception {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+      // Fetch Cluster Property that doesn't exist
+      SolrException e =
+          expectThrows(
+              SolrException.class,
+              () ->
+                  new ClusterPropertiesApi.GetClusterProperty("ext.clusterPropThatDoesNotExist")
+                      .process(client));
     }
   }
 }

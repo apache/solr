@@ -170,6 +170,7 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
+import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
@@ -201,7 +202,6 @@ import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
-import org.apache.solr.handler.admin.api.SetClusterProperty;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -771,13 +771,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERPROP_OP(
         CLUSTERPROP,
         (req, rsp, h) -> {
-          SetClusterProperty setClusterPropertyAPI = new SetClusterProperty(req.getCoreContainer());
+          ClusterProperty clusterProperty = new ClusterProperty(req.getCoreContainer(), req, rsp);
           SetClusterPropertyRequestBody setClusterPropertyRequestBody =
               new SetClusterPropertyRequestBody();
           String name = req.getParams().required().get(NAME);
           setClusterPropertyRequestBody.value = req.getParams().get(VALUE_LONG);
-          ;
-          setClusterPropertyAPI.createOrUpdateClusterProperty(name, setClusterPropertyRequestBody);
+          clusterProperty.createOrUpdateClusterProperty(name, setClusterPropertyRequestBody);
           return null;
         }),
     COLLECTIONPROP_OP(
@@ -1386,7 +1385,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshot.class,
-        DeleteCollectionSnapshot.class);
+        DeleteCollectionSnapshot.class,
+        ClusterProperty.class);
   }
 
   @Override

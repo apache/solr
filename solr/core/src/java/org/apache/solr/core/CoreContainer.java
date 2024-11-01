@@ -126,11 +126,6 @@ import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
-import org.apache.solr.handler.admin.api.DeleteClusterProperty;
-import org.apache.solr.handler.admin.api.GetClusterProperty;
-import org.apache.solr.handler.admin.api.ListClusterProperties;
-import org.apache.solr.handler.admin.api.SetClusterProperty;
-import org.apache.solr.handler.admin.api.SetNestedClusterProperty;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
@@ -912,11 +907,6 @@ public class CoreContainer {
     ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler, configSetsHandler);
     registerV2ApiIfEnabled(clusterAPI);
     registerV2ApiIfEnabled(clusterAPI.commands);
-    registerV2ApiIfEnabled(ListClusterProperties.class);
-    registerV2ApiIfEnabled(SetClusterProperty.class);
-    registerV2ApiIfEnabled(SetNestedClusterProperty.class);
-    registerV2ApiIfEnabled(GetClusterProperty.class);
-    registerV2ApiIfEnabled(DeleteClusterProperty.class);
 
     if (isZooKeeperAware()) {
       registerV2ApiIfEnabled(new SchemaDesignerAPI(this));

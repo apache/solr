@@ -23,7 +23,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.ACTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
@@ -42,9 +41,7 @@ import java.util.Set;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.api.model.SetNestedClusterPropertyRequestBody;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -60,7 +57,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.api.SetNestedClusterProperty;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.KeeperException;
@@ -274,25 +270,6 @@ public class ClusterAPI {
       RoleInfo info = obj.get();
       Map<String, Object> m = info.toMap(new HashMap<>());
       m.put("action", REMOVEROLE.toString());
-      collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
-    }
-
-    @Command(name = "set-obj-property")
-    public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
-      // Not using the object directly here because the API differentiate between {name:null} and {}
-      SetNestedClusterPropertyRequestBody setNestedClusterPropertyRequestBody =
-          new SetNestedClusterPropertyRequestBody();
-      setNestedClusterPropertyRequestBody.properties = obj.getDataMap();
-      SetNestedClusterProperty setNestedClusterPropertyAPI =
-          new SetNestedClusterProperty(getCoreContainer());
-      setNestedClusterPropertyAPI.createOrUpdateNestedClusterProperty(
-          setNestedClusterPropertyRequestBody);
-    }
-
-    @Command(name = "set-property")
-    public void setProperty(PayloadObj<Map<String, String>> obj) throws Exception {
-      Map<String, Object> m = obj.getDataMap();
-      m.put("action", CLUSTERPROP.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
