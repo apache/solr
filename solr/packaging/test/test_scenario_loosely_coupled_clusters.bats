@@ -32,7 +32,9 @@ teardown() {
   # This demonstrates traditional user managed cluster working as defined in
   # https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html 
   #
-  # We demonstrate starting up three independent Solr nodes in the Leader/Repeater/Follower pattern.
+  # See "Loosely coupled Solr Nodes" in https://github.com/apache/solr/pull/2783/files#diff-b58818a370dac65f7abb0064599f8813a56841b4a40f960ea2b81e398b820f43
+  #
+  # We demonstrate starting up three independent SolrCloud nodes in the Leader/Repeater/Follower pattern.
   # Then we create three seperate 'techproducts' collections, uploading the same configset three seperate times
   # to demonstrate that there is no interconnection or shard config between them.
   # We then index some XML data on the Leader, and then check that it flows through the Repeater to the Follower.
