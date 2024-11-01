@@ -37,7 +37,7 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
 /**
- * LBHttp2SolrClient or "LoadBalanced Http Solr Client" is a load balancing wrapper around a Http
+ * This "LoadBalanced Http Solr Client" is a load balancing wrapper around a Http
  * Solr Client. This is useful when you have multiple Solr endpoints and requests need to be Load
  * Balanced among them.
  *
@@ -294,8 +294,8 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
     protected String defaultCollection;
 
-    public Builder(C http2Client, LBSolrClient.Endpoint... endpoints) {
-      this.solrClient = http2Client;
+    public Builder(C solrClient, Endpoint... endpoints) {
+      this.solrClient = solrClient;
       this.solrEndpoints = endpoints;
     }
 
