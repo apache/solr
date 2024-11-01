@@ -35,7 +35,9 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-    <updateLog></updateLog>
+    <updateLog>
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">

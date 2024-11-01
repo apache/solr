@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,6 +24,7 @@ import java.io.Reader;
 import java.io.Writer;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -117,6 +119,10 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
       try (InputStream in = content.getStream()) {
         in.transferTo(out);
       }
+    } else if (obj != null && (obj instanceof SolrCore.RawWriter)) {
+      final var rawWriter = (SolrCore.RawWriter) obj;
+      rawWriter.write(out);
+      if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
     } else {
       QueryResponseWriterUtil.writeQueryResponse(
           out, getBaseWriter(request), request, response, getContentType(request, response));

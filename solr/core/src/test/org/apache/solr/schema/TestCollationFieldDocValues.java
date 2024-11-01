@@ -75,7 +75,8 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator =
-        (RuleBasedCollator) Collator.getInstance(new Locale("de", "DE"));
+        (RuleBasedCollator)
+            Collator.getInstance(new Locale.Builder().setLanguageTag("de-DE").build());
 
     String DIN5007_2_tailorings =
         "& ae , a\u0308 & AE , A\u0308"

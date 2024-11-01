@@ -350,7 +350,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
   protected SolrClient getHttpSolrClient(Replica replica, String coll) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + coll;
-    return getHttpSolrClient(url);
+    return getHttpSolrClient(zkProps.getBaseUrl(), coll);
   }
 }

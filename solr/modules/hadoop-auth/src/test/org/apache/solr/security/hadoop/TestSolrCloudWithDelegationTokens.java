@@ -29,7 +29,6 @@ import org.apache.http.HttpStatus;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
@@ -46,6 +45,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,7 +67,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
+    miniCluster =
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
     JettySolrRunner runnerPrimary = miniCluster.getJettySolrRunners().get(0);
     solrClientPrimary = new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString()).build();
     JettySolrRunner runnerSecondary = miniCluster.getJettySolrRunners().get(1);
@@ -77,10 +78,6 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void shutdown() throws Exception {
-    if (miniCluster != null) {
-      miniCluster.shutdown();
-      miniCluster = null;
-    }
     if (null != solrClientPrimary) {
       solrClientPrimary.close();
       solrClientPrimary = null;
@@ -88,6 +85,11 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     if (null != solrClientSecondary) {
       solrClientSecondary.close();
       solrClientSecondary = null;
+    }
+
+    if (miniCluster != null) {
+      miniCluster.shutdown();
+      miniCluster = null;
     }
     System.clearProperty("authenticationPlugin");
     System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
@@ -132,7 +134,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       DelegationTokenResponse.Renew renewResponse = renew.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
       return renewResponse.getExpirationTime();
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (SolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
       return -1;
     }
@@ -144,7 +146,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     try {
       cancel.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (SolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -225,7 +227,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       try {
         delegationTokenClient.request(req, null);
         return HttpStatus.SC_OK;
-      } catch (BaseHttpSolrClient.RemoteSolrException re) {
+      } catch (SolrClient.RemoteSolrException re) {
         return re.code();
       }
     } finally {
@@ -238,7 +240,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     try {
       client.request(request);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (SolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -249,7 +251,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     try {
       client.request(request, collectionName);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+    } catch (SolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }

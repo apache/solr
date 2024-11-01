@@ -1,4 +1,5 @@
 = Backup and Restore
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -242,12 +243,11 @@ The index files are snapshotted in the same index directory and can be reference
 
 You can trigger a snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1createsnapshot]
+[tabs#createsnapshot]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=techproducts&commitName=commit1
@@ -255,10 +255,9 @@ curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=t
 ----
 ====
 
-[example.tab-pane#v2createsnapshot]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
@@ -266,7 +265,7 @@ With the v2 API, the core and snapshot names are part of the path instead of que
 curl -X POST http://localhost:8983/api/cores/techproducts/snapshots/commit1
 ----
 ====
---
+======
 
 === CREATE Parameters
 
@@ -291,12 +290,11 @@ If the status is anything other than "success", an error message will explain wh
 
 You can trigger a list snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1listsnapshots]
+[tabs#listsnapshots]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&commitName=commit1
@@ -304,10 +302,9 @@ curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproduc
 ----
 ====
 
-[example.tab-pane#v2listsnapshots]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API the core name appears in the path, instead of as a query parameter.
 
 [source,bash]
@@ -315,7 +312,7 @@ With the v2 API the core name appears in the path, instead of as a query paramet
 curl http://localhost:8983/api/cores/techproducts/snapshots
 ----
 ====
---
+======
 
 === LIST Parameters
 
@@ -340,12 +337,11 @@ If the status is anything other than "success", an error message will explain wh
 
 You can trigger a delete snapshot with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1deletesnapshot]
+[tabs#deletesnapshot]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
@@ -353,10 +349,9 @@ curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techprodu
 ----
 ====
 
-[example.tab-pane#v2deletesnapshot]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
 [source,bash]
@@ -364,7 +359,7 @@ With the v2 API, the core and snapshot names are part of the path instead of que
 curl -X DELETE http://localhost:8983/api/cores/techproducts/snapshots/commit1
 ----
 ====
---
+======
 
 === DELETE Parameters
 

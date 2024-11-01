@@ -19,12 +19,12 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.endpoint.GetNodeCommandStatusApi;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,7 +33,6 @@ import org.junit.Test;
 public class GetNodeCommandStatusTest extends SolrTestCase {
   private CoreContainer mockCoreContainer;
   private CoreAdminHandler.CoreAdminAsyncTracker mockAsyncTracker;
-  private CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject;
   private GetNodeCommandStatusApi requestNodeCommandApi;
 
   @BeforeClass
@@ -45,7 +44,6 @@ public class GetNodeCommandStatusTest extends SolrTestCase {
   public void setupMocks() {
     mockCoreContainer = mock(CoreContainer.class);
     mockAsyncTracker = mock(CoreAdminHandler.CoreAdminAsyncTracker.class);
-    taskObject = new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(null, null, false, null);
     requestNodeCommandApi =
         new GetNodeCommandStatus(mockCoreContainer, mockAsyncTracker, null, null);
   }
@@ -89,6 +87,9 @@ public class GetNodeCommandStatusTest extends SolrTestCase {
   }
 
   private void whenTaskExistsWithStatus(String taskId, String status) {
-    when(mockAsyncTracker.getRequestStatusMap(status)).thenReturn(Map.of(taskId, taskObject));
+    TaskObject taskObject = mock(TaskObject.class);
+    when(taskObject.getStatus()).thenReturn(status);
+
+    when(mockAsyncTracker.getAsyncRequestForStatus(taskId)).thenReturn(taskObject);
   }
 }

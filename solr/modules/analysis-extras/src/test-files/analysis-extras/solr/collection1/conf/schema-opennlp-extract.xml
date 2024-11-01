@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="test-opennlp-extract" version="1.6">
+<schema name="test-opennlp-extract" version="1.7">
   <fieldType name="opennlp-en-tokenization" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.OpenNLPTokenizerFactory"

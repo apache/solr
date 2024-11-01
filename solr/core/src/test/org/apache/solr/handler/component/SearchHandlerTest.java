@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,7 +126,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testZkConnected() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig());
+        new MiniSolrCloudCluster(5, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -144,7 +145,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       QueryRequest req = new QueryRequest();
@@ -173,7 +174,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRequireZkConnected() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig());
+        new MiniSolrCloudCluster(5, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -192,7 +193,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -206,6 +207,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       Slice disconnectedSlice = getRandomEntry(slices);
       Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
       JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
+      req = new QueryRequest(params); // TODO Can be removed when SOLR-17314 fixed
       // Use the replica's core URL to avoid ZK communication
       try (SolrClient solrClient =
           new HttpSolrClient.Builder(disconnectedReplica.getBaseUrl())
@@ -227,7 +229,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRequireZkConnectedDistrib() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig());
+        new MiniSolrCloudCluster(2, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -246,7 +248,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();

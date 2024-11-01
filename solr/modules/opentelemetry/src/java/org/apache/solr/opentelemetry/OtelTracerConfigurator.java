@@ -41,7 +41,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   private final Map<String, String> currentEnv;
 
   public OtelTracerConfigurator() {
-    this(EnvUtils.getEnvs());
+    this(System.getenv());
   }
 
   OtelTracerConfigurator(Map<String, String> currentEnv) {

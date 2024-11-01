@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "status detects locally running solr" {
@@ -33,23 +33,36 @@ teardown() {
   assert_output --partial "No Solr nodes are running."
   solr start
   run solr status
-  assert_output --partial "Found 1 Solr nodes:"
+  assert_output --partial "running on port ${SOLR_PORT}"
   solr stop
   run solr status
   assert_output --partial "No Solr nodes are running."
-
 }
 
-@test "status shell script ignores passed in -solrUrl cli parameter from user" {
+@test "status with --solr-url from user" {
   solr start
-  run solr status -solrUrl http://localhost:9999/solr
-  assert_output --partial "needn't include Solr's context-root"
-  assert_output --partial "Found 1 Solr nodes:"
-  assert_output --partial "running on port ${SOLR_PORT}"
+  run solr status --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "\"solr_home\":"
+  solr stop
 }
 
-@test "status help flag outputs message highlighting not to use solrUrl." {
-  run solr status -help
-  assert_output --partial 'usage: status'
-  refute_output --partial 'ERROR'
+@test "status with --port from user" {
+  solr start
+  run solr status --port ${SOLR_PORT}
+  assert_output --partial "running on port ${SOLR_PORT}"
+  solr stop
+}
+
+@test "status with invalid --solr-url from user" {
+  solr start
+  run solr status --solr-url http://invalidhost:${SOLR_PORT}
+  assert_output --partial "Solr at http://invalidhost:${SOLR_PORT} not online"
+  solr stop
+}
+
+@test "status with --short format" {
+  solr start
+  run solr status --port ${SOLR_PORT} --short
+  assert_output --partial "http://localhost:${SOLR_PORT}/solr"
+  solr stop
 }

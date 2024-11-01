@@ -59,7 +59,7 @@ public class AffinityReplicaListTransformerFactory implements ReplicaListTransfo
    * CommonParams#Q}. Empty String is translated to null, allowing users to explicitly disable
    * hash-based stable routing.
    *
-   * @param hashParam configured hash param (null indicates unconfigured).
+   * @param hashParam configured hash param (null indicates no configuration).
    * @return translated value to be used as default hash param in RLT.
    */
   private static String translateHashParam(String hashParam) {

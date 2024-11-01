@@ -82,6 +82,11 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
+    // CURATOR-720
+    if (threadName.equals("OverseerExitThread")) {
+      return true;
+    }
+
     return threadName.startsWith("closeThreadPool");
   }
 }

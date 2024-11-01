@@ -17,19 +17,30 @@
 package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
+import org.apache.curator.framework.AuthInfo;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
-  private Collection<ZkCredentials> zkCredentials;
+  private volatile List<AuthInfo> zkCredentials;
   protected ZkCredentialsInjector zkCredentialsInjector;
 
   public DefaultZkCredentialsProvider() {
-    this(new DefaultZkCredentialsInjector());
+    this(new DefaultZkCredentialsInjector(), null);
+  }
+
+  public DefaultZkCredentialsProvider(List<AuthInfo> zkCredentials) {
+    this(new DefaultZkCredentialsInjector(), zkCredentials);
   }
 
   public DefaultZkCredentialsProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this(zkCredentialsInjector, null);
+  }
+
+  public DefaultZkCredentialsProvider(
+      ZkCredentialsInjector zkCredentialsInjector, List<AuthInfo> zkCredentials) {
     this.zkCredentialsInjector = zkCredentialsInjector;
+    this.zkCredentials = zkCredentials;
   }
 
   @Override
@@ -38,7 +49,7 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
   }
 
   @Override
-  public Collection<ZkCredentials> getCredentials() {
+  public List<AuthInfo> getCredentials() {
     if (zkCredentials == null) {
       synchronized (this) {
         if (zkCredentials == null) zkCredentials = createCredentials();
@@ -47,7 +58,7 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
     return zkCredentials;
   }
 
-  protected Collection<ZkCredentials> createCredentials() {
+  protected List<AuthInfo> createCredentials() {
     return new ArrayList<>();
   }
 }

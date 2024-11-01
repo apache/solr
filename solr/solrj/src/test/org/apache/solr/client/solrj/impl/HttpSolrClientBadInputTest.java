@@ -34,14 +34,12 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/" + ANY_COLLECTION)) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl(), ANY_COLLECTION)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

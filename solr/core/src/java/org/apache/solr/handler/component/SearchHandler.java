@@ -17,9 +17,7 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.STATUS;
 
 import com.codahale.metrics.Counter;
 import java.io.PrintWriter;
@@ -61,16 +59,16 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -118,7 +116,7 @@ public class SearchHandler extends RequestHandlerBase
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(8);
+    ArrayList<String> names = new ArrayList<>(9);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(FacetComponent.COMPONENT_NAME);
     names.add(FacetModule.COMPONENT_NAME);
@@ -325,9 +323,7 @@ public class SearchHandler extends RequestHandlerBase
       boolean requireZkConnected =
           shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
-      boolean zkConnected =
-          zkController != null
-              && !zkController.getZkClient().getConnectionManager().isLikelyExpired();
+      boolean zkConnected = zkController != null && zkController.getZkClient().isConnected();
       if (requireZkConnected && false == zkConnected) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
       } else {
@@ -381,15 +377,7 @@ public class SearchHandler extends RequestHandlerBase
         trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
       }
 
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                CircuitBreaker.getExceptionErrorCode(),
-                "Circuit Breakers tripped " + errorMessage));
-        return true;
-      }
+      return CircuitBreakerUtils.reportErrorIfBreakersTripped(rsp, trippedCircuitBreakers);
     }
     return false;
   }
@@ -458,7 +446,6 @@ public class SearchHandler extends RequestHandlerBase
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
-      SolrQueryTimeoutImpl.set(req);
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
@@ -499,12 +486,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      } finally {
-        SolrQueryTimeoutImpl.reset();
+        rb.rsp.setPartialResults(rb.req);
       }
     } else {
       // a distributed request
@@ -542,7 +524,7 @@ public class SearchHandler extends RequestHandlerBase
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.setShardAttributesToParams(sreq.purpose);
+              ShardHandler.setShardAttributesToParams(params, sreq.purpose);
 
               // Distributed request -- need to send queryID as a part of the distributed request
               params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
@@ -569,7 +551,7 @@ public class SearchHandler extends RequestHandlerBase
           // now wait for replies, but if anyone puts more requests on
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
-          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
+          boolean tolerant = HttpShardHandler.getShardsTolerantAsBool(rb.req);
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp =
                 tolerant
@@ -577,6 +559,20 @@ public class SearchHandler extends RequestHandlerBase
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
 
+            boolean anyResponsesPartial =
+                srsp.getShardRequest().responses.stream()
+                    .anyMatch(
+                        response -> {
+                          NamedList<Object> resp = response.getSolrResponse().getResponse();
+                          if (resp == null) {
+                            return false;
+                          }
+                          Object recursive = resp.findRecursive("responseHeader", "partialResults");
+                          return recursive != null;
+                        });
+            if (anyResponsesPartial) {
+              rsp.setPartialResults(rb.req);
+            }
             // Was there an exception?
             if (srsp.getException() != null) {
               // If things are not tolerant, abort everything and rethrow
@@ -597,9 +593,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.getResponseHeader()
-                      .asShallowMap()
-                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                  rsp.setPartialResults(rb.req);
                 }
               }
             }
@@ -626,8 +620,8 @@ public class SearchHandler extends RequestHandlerBase
       } while (nextStage != Integer.MAX_VALUE);
 
       if (publishCpuTime) {
-        rsp.getResponseHeader().add(ThreadStats.CPU_TIME, totalShardCpuTime);
-        rsp.addToLog(ThreadStats.CPU_TIME, totalShardCpuTime);
+        rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+        rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       }
     }
 
@@ -681,7 +675,7 @@ public class SearchHandler extends RequestHandlerBase
             (SimpleOrderedMap<Object>)
                 response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
         if (header != null) {
-          Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
+          Long shardCpuTime = (Long) header.get(ThreadCpuTimer.CPU_TIME);
           if (shardCpuTime != null) {
             totalShardCpuTime += shardCpuTime;
           }

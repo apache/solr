@@ -200,7 +200,6 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
             .withServlet(new ServletHolder(RedirectServlet.class), "/redirect/*")
             .withServlet(new ServletHolder(SlowServlet.class), "/slow/*")
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
@@ -208,13 +207,15 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
+    final var queryRequest = new QueryRequest(q);
+    queryRequest.setPath("/slow/foo" + queryRequest.getPath());
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl() + "/slow/foo")
+        new HttpSolrClient.Builder(getBaseUrl())
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(2000, TimeUnit.MILLISECONDS)
             .build()) {
       SolrServerException e =
-          expectThrows(SolrServerException.class, () -> client.query(q, METHOD.GET));
+          expectThrows(SolrServerException.class, () -> queryRequest.process(client));
       assertTrue(e.getMessage().contains("Timeout"));
     }
   }
@@ -231,10 +232,12 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         ErrorCode.UNKNOWN,
         ErrorCode.getErrorCode(status));
 
-    try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/debug/foo")) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl())) {
       DebugServlet.setErrorCode(status);
       SolrQuery q = new SolrQuery("foo");
-      SolrException e = expectThrows(SolrException.class, () -> client.query(q, METHOD.GET));
+      final var queryRequest = new QueryRequest(q);
+      queryRequest.setPath("/debug/foo" + queryRequest.getPath());
+      SolrException e = expectThrows(SolrException.class, () -> queryRequest.process(client));
       assertEquals("Unexpected exception status code", status, e.code());
     } finally {
       DebugServlet.clear();
@@ -244,12 +247,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQuery() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + "/debug/foo";
+    final String debugPath = "/debug/foo";
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
-    try (HttpSolrClient client = getHttpSolrClient(url)) {
+    final var queryRequest = new QueryRequest(q);
+    queryRequest.setPath(debugPath);
+    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl())) {
 
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.GET));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
 
       // default method
       assertEquals("get", DebugServlet.lastMethod);
@@ -278,8 +283,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       // POST
       DebugServlet.clear();
-      expectThrows(
-          BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.POST));
+      queryRequest.setMethod(METHOD.POST);
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
@@ -302,7 +307,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       // PUT
       DebugServlet.clear();
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.PUT));
+      queryRequest.setMethod(METHOD.PUT);
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
 
       assertEquals("put", DebugServlet.lastMethod);
       assertEquals(
@@ -326,10 +332,13 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     // XML
     try (HttpSolrClient client =
-        new HttpSolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withResponseParser(new XMLResponseParser())
+            .build()) {
       // XML/GET
       DebugServlet.clear();
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.GET));
+      queryRequest.setMethod(METHOD.GET); // Reset to the default here after using 'PUT' above
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
 
       assertEquals("get", DebugServlet.lastMethod);
       assertEquals(
@@ -349,8 +358,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
       // XML/POST
       DebugServlet.clear();
-      expectThrows(
-          BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.POST));
+      queryRequest.setMethod(METHOD.POST);
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
@@ -372,7 +381,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           DebugServlet.headers.get("Content-Type"));
 
       DebugServlet.clear();
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, METHOD.PUT));
+      queryRequest.setMethod(METHOD.PUT);
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
 
       assertEquals("put", DebugServlet.lastMethod);
       assertEquals(
@@ -398,9 +408,13 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + "/debug/foo";
-    try (HttpSolrClient client = getHttpSolrClient(url)) {
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteById("id"));
+    final String debugPath = "/debug/foo";
+
+    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl())) {
+      final UpdateRequest deleteById = new UpdateRequest();
+      deleteById.deleteById("id");
+      deleteById.setPath(debugPath + deleteById.getPath());
+      expectThrows(SolrClient.RemoteSolrException.class, () -> deleteById.process(client));
 
       // default method
       assertEquals("post", DebugServlet.lastMethod);
@@ -425,8 +439,15 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     // XML
     try (HttpSolrClient client =
-        new HttpSolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteByQuery("*:*"));
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withResponseParser(new XMLResponseParser())
+            .build()) {
+      final var deleteByQueryRequest = new UpdateRequest();
+      deleteByQueryRequest.setPath(debugPath + deleteByQueryRequest.getPath());
+      deleteByQueryRequest.deleteByQuery("*:*");
+      deleteByQueryRequest.setCommitWithin(-1);
+      expectThrows(
+          SolrClient.RemoteSolrException.class, () -> deleteByQueryRequest.process(client));
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
@@ -449,24 +470,24 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/debug/foo")) {
       Collection<String> ids = Collections.singletonList("a");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("a"));
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById(ids, null));
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("foo", "a"));
-      expectThrows(
-          BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("foo", ids, null));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.getById("a"));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.getById(ids, null));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.getById("foo", "a"));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.getById("foo", ids, null));
     }
   }
 
   @Test
   public void testUpdate() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + "/debug/foo";
+    final String debugPath = "/debug/foo";
 
-    try (HttpSolrClient client = getHttpSolrClient(url)) {
+    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl())) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());
+      req.setPath(debugPath + req.getPath());
       req.setParam("a", "\u1234");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> req.process(client));
 
       // default method
       assertEquals("post", DebugServlet.lastMethod);
@@ -490,15 +511,16 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     // XML response and writer
     try (HttpSolrClient client =
-        new HttpSolrClient.Builder(url)
+        new HttpSolrClient.Builder(getBaseUrl())
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());
+      req.setPath(debugPath + req.getPath());
       req.setParam("a", "\u1234");
 
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.request(req));
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
@@ -516,15 +538,16 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     // javabin request
     try (HttpSolrClient client =
-        new HttpSolrClient.Builder(url)
+        new HttpSolrClient.Builder(getBaseUrl())
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());
+      req.setPath(debugPath + req.getPath());
       req.setParam("a", "\u1234");
 
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.request(req));
 
       assertEquals("post", DebugServlet.lastMethod);
       assertEquals(
@@ -543,54 +566,61 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String redirectPath = "/redirect/foo";
     SolrQuery q = new SolrQuery("*:*");
+    final var queryRequest = new QueryRequest(q);
+    queryRequest.setPath(redirectPath + queryRequest.getPath());
 
     // default for redirect is false.
-    try (HttpSolrClient client = new HttpSolrClient.Builder(clientUrl).build()) {
-      SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+    try (HttpSolrClient client = new HttpSolrClient.Builder(getBaseUrl()).build()) {
+      SolrServerException e =
+          expectThrows(SolrServerException.class, () -> queryRequest.process(client));
       assertTrue(e.getMessage().contains("redirect"));
     }
 
     try (HttpSolrClient client =
-        new HttpSolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
+        new HttpSolrClient.Builder(getBaseUrl()).withFollowRedirects(true).build()) {
       // No exception expected
-      client.query(q);
+      queryRequest.process(client);
     }
 
     // And with explicit false:
     try (HttpSolrClient client =
-        new HttpSolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
-      SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+        new HttpSolrClient.Builder(getBaseUrl()).withFollowRedirects(false).build()) {
+      SolrServerException e =
+          expectThrows(SolrServerException.class, () -> queryRequest.process(client));
       assertTrue(e.getMessage().contains("redirect"));
     }
   }
 
   @Test
   public void testCompression() throws Exception {
+    final String debugPath = "/debug/foo";
     final SolrQuery q = new SolrQuery("*:*");
+    final var queryRequest = new QueryRequest(q);
+    queryRequest.setPath(debugPath + queryRequest.getPath());
 
-    final String clientUrl = getBaseUrl() + "/debug/foo";
-    try (SolrClient client = getHttpSolrClient(clientUrl)) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl())) {
       // verify request header gets set
       DebugServlet.clear();
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> queryRequest.process(client));
       assertNull(DebugServlet.headers.toString(), DebugServlet.headers.get("Accept-Encoding"));
     }
 
-    try (SolrClient client = new HttpSolrClient.Builder(clientUrl).allowCompression(true).build()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getBaseUrl()).allowCompression(true).build()) {
       try {
-        client.query(q);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+        queryRequest.process(client);
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertNotNull(DebugServlet.headers.get("Accept-Encoding"));
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(clientUrl).allowCompression(false).build()) {
+        new HttpSolrClient.Builder(getBaseUrl()).allowCompression(false).build()) {
       try {
-        client.query(q);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+        queryRequest.process(client);
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
     }
     assertNull(DebugServlet.headers.get("Accept-Encoding"));
@@ -621,7 +651,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
 
     // verify compressed response can be handled
-    try (SolrClient client = getHttpSolrClient(getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl(), DEFAULT_TEST_COLLECTION_NAME)) {
       QueryResponse response = client.query(new SolrQuery("foo"));
       assertEquals(0, response.getStatus());
     }
@@ -641,8 +671,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
-    final String collection1Url = getCoreUrl();
-    try (SolrClient client = getHttpSolrClient(collection1Url)) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl(), DEFAULT_TEST_CORENAME)) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
   }
@@ -651,7 +680,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testGetRawStream() throws SolrServerException, IOException {
     CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     try (SolrClient solrClient =
-        new HttpSolrClient.Builder(getCoreUrl())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withHttpClient(httpClient)
             .withResponseParser(null)
             .build(); ) {
@@ -722,14 +752,19 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     HttpClientUtil.addRequestInterceptor(changeRequestInterceptor);
     HttpClientUtil.addRequestInterceptor(cookieSettingRequestInterceptor);
 
-    final String clientUrl = getBaseUrl() + "/debug/foo";
-    try (SolrClient server = getHttpSolrClient(clientUrl)) {
+    final String debugPath = "/debug/foo";
+    try (SolrClient server = getHttpSolrClient(getBaseUrl())) {
 
       SolrQuery q = new SolrQuery("foo");
       q.setParam("a", "\u1234");
+      final var queryRequest = new QueryRequest(q);
+      queryRequest.setPath(debugPath + queryRequest.getPath());
       expectThrows(
           Exception.class,
-          () -> server.query(q, random().nextBoolean() ? METHOD.POST : METHOD.GET));
+          () -> {
+            queryRequest.setMethod(random().nextBoolean() ? METHOD.POST : METHOD.GET);
+            queryRequest.process(server);
+          });
 
       // Assert cookies from UseContextCallback
       assertNotNull(DebugServlet.cookies);
@@ -786,25 +821,26 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testQueryString() throws Exception {
-
-    final String clientUrl = getBaseUrl() + "/debug/foo";
-    HttpSolrClient.Builder builder = new HttpSolrClient.Builder(clientUrl);
+    final String debugPath = "/debug/foo";
+    HttpSolrClient.Builder builder = new HttpSolrClient.Builder(getBaseUrl());
     try (HttpSolrClient client =
         builder.withTheseParamNamesInTheUrl(Set.of("serverOnly")).build()) {
       // test without request query params
       DebugServlet.clear();
       UpdateRequest req = new UpdateRequest();
+      req.setPath(debugPath + req.getPath());
       setReqParamsOf(req, "serverOnly", "notServer");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.request(req));
       verifyServletState(client, req);
     }
     try (HttpSolrClient client = builder.withTheseParamNamesInTheUrl(Set.of()).build()) {
       // test without server query params
       DebugServlet.clear();
       UpdateRequest req2 = new UpdateRequest();
+      req2.setPath(debugPath + req2.getPath());
       req2.setQueryParams(Set.of("requestOnly"));
       setReqParamsOf(req2, "requestOnly", "notRequest");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req2));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.request(req2));
       verifyServletState(client, req2);
     }
     try (HttpSolrClient client =
@@ -812,9 +848,10 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // test with both request and server query params
       DebugServlet.clear();
       UpdateRequest req3 = new UpdateRequest();
+      req3.setPath(debugPath + req3.getPath());
       req3.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req3, "serverOnly", "requestOnly", "both", "neither");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req3));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.request(req3));
       verifyServletState(client, req3);
     }
     try (HttpSolrClient client =
@@ -822,12 +859,13 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       // test with both request and server query params with single stream
       DebugServlet.clear();
       UpdateRequest req4 = new UpdateRequest();
+      req4.setPath(debugPath + req4.getPath());
       req4.add(new SolrInputDocument());
       req4.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req4, "serverOnly", "requestOnly", "both", "neither");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(req4));
+      expectThrows(SolrClient.RemoteSolrException.class, () -> client.request(req4));
       // NOTE: single stream requests send all the params
-      // as part of the query string.  So add "neither" to the request
+      // as part of the query string.  So add "neither" to the request,
       // so it passes the verification step.
       req4.setQueryParams(Set.of("requestOnly", "both", "neither"));
       verifyServletState(client, req4);

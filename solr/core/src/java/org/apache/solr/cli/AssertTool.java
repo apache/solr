@@ -26,6 +26,7 @@ import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -62,10 +63,36 @@ public class AssertTool extends ToolBase {
     return List.of(
         Option.builder("R")
             .desc("Asserts that we are NOT the root user.")
-            .longOpt("not-root")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --not-root instead")
+                    .get())
             .build(),
-        Option.builder("r").desc("Asserts that we are the root user.").longOpt("root").build(),
+        Option.builder().desc("Asserts that we are NOT the root user.").longOpt("not-root").build(),
+        Option.builder("r")
+            .desc("Asserts that we are the root user.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --root instead")
+                    .get())
+            .build(),
+        Option.builder().desc("Asserts that we are the root user.").longOpt("root").build(),
         Option.builder("S")
+            .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --not-started instead")
+                    .get())
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder()
             .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
             .longOpt("not-started")
             .hasArg(true)
@@ -73,11 +100,22 @@ public class AssertTool extends ToolBase {
             .build(),
         Option.builder("s")
             .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --started instead")
+                    .get())
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder()
+            .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
             .longOpt("started")
             .hasArg(true)
             .argName("url")
             .build(),
-        Option.builder("u")
+        Option.builder()
             .desc("Asserts that we run as same user that owns <directory>.")
             .longOpt("same-user")
             .hasArg(true)
@@ -85,17 +123,51 @@ public class AssertTool extends ToolBase {
             .build(),
         Option.builder("x")
             .desc("Asserts that directory <directory> exists.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --exists instead")
+                    .get())
+            .hasArg(true)
+            .argName("directory")
+            .build(),
+        Option.builder()
+            .desc("Asserts that directory <directory> exists.")
             .longOpt("exists")
             .hasArg(true)
             .argName("directory")
             .build(),
         Option.builder("X")
             .desc("Asserts that directory <directory> does NOT exist.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --not-exists instead")
+                    .get())
+            .hasArg(true)
+            .argName("directory")
+            .build(),
+        Option.builder()
+            .desc("Asserts that directory <directory> does NOT exist.")
             .longOpt("not-exists")
             .hasArg(true)
             .argName("directory")
             .build(),
         Option.builder("c")
+            .desc(
+                "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --cloud instead")
+                    .get())
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder()
             .desc(
                 "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
             .longOpt("cloud")
@@ -105,17 +177,52 @@ public class AssertTool extends ToolBase {
         Option.builder("C")
             .desc(
                 "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --not-cloud instead")
+                    .get())
+            .hasArg(true)
+            .argName("url")
+            .build(),
+        Option.builder()
+            .desc(
+                "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
             .longOpt("not-cloud")
             .hasArg(true)
             .argName("url")
             .build(),
         Option.builder("m")
             .desc("Exception message to be used in place of the default error message.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --message instead")
+                    .get())
+            .hasArg(true)
+            .argName("message")
+            .build(),
+        Option.builder()
+            .desc("Exception message to be used in place of the default error message.")
             .longOpt("message")
             .hasArg(true)
             .argName("message")
             .build(),
         Option.builder("t")
+            .desc("Timeout in ms for commands supporting a timeout.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --timeout instead")
+                    .get())
+            .hasArg(true)
+            .type(Long.class)
+            .argName("ms")
+            .build(),
+        Option.builder()
             .desc("Timeout in ms for commands supporting a timeout.")
             .longOpt("timeout")
             .hasArg(true)
@@ -124,21 +231,32 @@ public class AssertTool extends ToolBase {
             .build(),
         Option.builder("e")
             .desc("Return an exit code instead of printing error message on assert fail.")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --exitcode instead")
+                    .get())
+            .build(),
+        Option.builder()
+            .desc("Return an exit code instead of printing error message on assert fail.")
             .longOpt("exitcode")
             .build(),
-        // u was taken, can we change that instead?
-        Option.builder("credentials")
-            .argName("credentials")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-            .build());
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
+  /**
+   * Returns 100 error code for a true "error", otherwise returns the number of tests that failed.
+   * Otherwise, very similar to the parent runTool method.
+   *
+   * @param cli the command line object
+   * @return 0 on success, or a number corresponding to number of tests that failed, or 100 for a
+   *     Error
+   * @throws Exception if a tool failed, e.g. authentication failure
+   */
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt());
 
     int toolExitStatus;
     try {
@@ -176,38 +294,66 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("m")) {
       message = cli.getOptionValue("m");
     }
+    if (cli.hasOption("message")) {
+      message = cli.getOptionValue("message");
+    }
     if (cli.hasOption("t")) {
       timeoutMs = Long.parseLong(cli.getOptionValue("t"));
+    }
+    if (cli.hasOption("timeout")) {
+      timeoutMs = Long.parseLong(cli.getOptionValue("timeout"));
     }
     if (cli.hasOption("e")) {
       useExitCode = true;
     }
+    if (cli.hasOption("exitcode")) {
+      useExitCode = true;
+    }
 
     int ret = 0;
-    if (cli.hasOption("r")) {
+    if (cli.hasOption("root") || cli.hasOption("r")) {
       ret += assertRootUser();
     }
-    if (cli.hasOption("R")) {
+    if (cli.hasOption("not-root") || cli.hasOption("R")) {
       ret += assertNotRootUser();
     }
     if (cli.hasOption("x")) {
       ret += assertFileExists(cli.getOptionValue("x"));
     }
+    if (cli.hasOption("exists")) {
+      ret += assertFileExists(cli.getOptionValue("exists"));
+    }
     if (cli.hasOption("X")) {
       ret += assertFileNotExists(cli.getOptionValue("X"));
     }
-    if (cli.hasOption("u")) {
-      ret += sameUser(cli.getOptionValue("u"));
+    if (cli.hasOption("not-exists")) {
+      ret += assertFileNotExists(cli.getOptionValue("not-exists"));
+    }
+    if (cli.hasOption("same-user")) {
+      ret += sameUser(cli.getOptionValue("same-user"));
     }
     if (cli.hasOption("s")) {
       ret +=
           assertSolrRunning(
               cli.getOptionValue("s"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
+    if (cli.hasOption("started")) {
+      ret +=
+          assertSolrRunning(
+              cli.getOptionValue("started"),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+    }
     if (cli.hasOption("S")) {
       ret +=
           assertSolrNotRunning(
-              cli.getOptionValue("S"), cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+              SolrCLI.getOptionWithDeprecatedAndDefault(cli, "not-started", "S", null),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+    }
+    if (cli.hasOption("not-started")) {
+      ret +=
+          assertSolrNotRunning(
+              cli.getOptionValue("not-started"),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (cli.hasOption("c")) {
       ret +=
@@ -215,10 +361,22 @@ public class AssertTool extends ToolBase {
               SolrCLI.normalizeSolrUrl(cli.getOptionValue("c")),
               cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
+    if (cli.hasOption("cloud")) {
+      ret +=
+          assertSolrRunningInCloudMode(
+              SolrCLI.normalizeSolrUrl(cli.getOptionValue("cloud")),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+    }
     if (cli.hasOption("C")) {
       ret +=
           assertSolrNotRunningInCloudMode(
               SolrCLI.normalizeSolrUrl(cli.getOptionValue("C")),
+              cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+    }
+    if (cli.hasOption("not-cloud")) {
+      ret +=
+          assertSolrNotRunningInCloudMode(
+              SolrCLI.normalizeSolrUrl(cli.getOptionValue("not-cloud")),
               cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     return ret;

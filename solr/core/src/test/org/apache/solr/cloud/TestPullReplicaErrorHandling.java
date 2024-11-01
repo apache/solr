@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -52,6 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// PRS Defaulting is currently not working, so disable for now
+@SolrCloudTestCase.NoPrs
 public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   private static final int REPLICATION_TIMEOUT_SECS = 10;
@@ -138,7 +139,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.close();
       for (int i = 1; i <= 10; i++) {
         addDocs(10 + i);
-        try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
           assertNumDocs(10 + i, leaderClient);
         }
       }
@@ -148,8 +149,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
               SolrServerException.class,
               () -> {
                 try (SolrClient pullReplicaClient =
-                    getHttpSolrClient(
-                        s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+                    getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
                   pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
                 }
               });
@@ -174,7 +174,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     }
 
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
       assertNumDocs(20, pullReplicaClient);
     }
   }
@@ -191,13 +191,13 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     try {
       // wait for replication
       try (SolrClient pullReplicaClient =
-          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
         assertNumDocs(10, pullReplicaClient);
       }
       proxy.close();
       expectThrows(SolrException.class, () -> addDocs(1));
       try (SolrClient pullReplicaClient =
-          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+          getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
         assertNumDocs(10, pullReplicaClient);
       }
       assertNumDocs(10, cluster.getSolrClient(collectionName));
@@ -227,7 +227,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
       assertNumDocs(10, pullReplicaClient);
     }
     addDocs(20);
@@ -238,7 +238,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     addDocs(40);
     waitForState("Expecting node to be reconnected", collectionName, activeReplicaCount(1, 0, 1));
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+        getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
       assertNumDocs(40, pullReplicaClient);
     }
   }
@@ -326,24 +326,24 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
+    URI baseUri = URI.create(replicaBaseUrl);
 
-    JettySolrRunner proxy = jettys.get(baseUrl.toURI());
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
+    JettySolrRunner proxy = jettys.get(baseUri);
+    assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
   }
 
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
+    URI baseUri = URI.create(replicaBaseUrl);
 
-    SocketProxy proxy = proxies.get(baseUrl.toURI());
-    if (proxy == null && !baseUrl.toExternalForm().endsWith("/")) {
-      baseUrl = new URL(baseUrl.toExternalForm() + "/");
-      proxy = proxies.get(baseUrl.toURI());
+    SocketProxy proxy = proxies.get(baseUri);
+    if (proxy == null && !baseUri.toString().endsWith("/")) {
+      baseUri = URI.create(baseUri.toString() + "/");
+      proxy = proxies.get(baseUri);
     }
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
+    assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
   }
 

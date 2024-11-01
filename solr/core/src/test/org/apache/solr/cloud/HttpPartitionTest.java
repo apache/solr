@@ -523,8 +523,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   protected SolrClient getHttpSolrClient(Replica replica, String collection) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + collection;
-    return getHttpSolrClient(url);
+    return getHttpSolrClient(zkProps.getBaseUrl(), collection);
   }
 
   // Send doc directly to a server (without going through proxy)

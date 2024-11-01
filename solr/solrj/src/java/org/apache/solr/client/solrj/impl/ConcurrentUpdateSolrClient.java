@@ -387,7 +387,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
               log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
               solrExc =
-                  new BaseHttpSolrClient.RemoteSolrException(
+                  new SolrClient.RemoteSolrException(
                       client.getBaseURL(), statusCode, msg.toString(), null);
               if (metadata != null) {
                 solrExc.setMetadata(metadata);
@@ -533,9 +533,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       int lastQueueSize = -1;
       for (; ; ) {
         synchronized (runners) {
-          // see if queue is half full and we can add more runners
+          // see if queue is half full, and we can add more runners
           // special case: if only using a threadCount of 1 and the queue
-          // is filling up, allow 1 add'l runner to help process the queue
+          // is filling up, allow 1 additional runner to help process the queue
           if (runners.isEmpty()
               || (queue.remainingCapacity() < queue.size() && runners.size() < threadCount)) {
             // We need more runners, so start a new one.
@@ -612,7 +612,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
       synchronized (runners) {
 
-        // NOTE: if the executor is shut down, runners may never become empty (a scheduled task may
+        // NOTE: if the executor is shut down, runners may never become empty. A scheduled task may
         // never be run, which means it would never remove itself from the runners list. This is why
         // we don't wait forever and periodically check if the scheduler is shutting down.
         int loopCount = 0;
@@ -756,7 +756,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   /**
-   * Intended to be used as an extension point for doing post processing after a request completes.
+   * Intended to be used as an extension point for doing post-processing after a request completes.
    */
   public void onSuccess(HttpResponse resp) {
     // no-op by design, override to add functionality
@@ -791,7 +791,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       if (internalHttpClient) IOUtils.closeQuietly(client);
       if (log.isDebugEnabled()) {
         log.debug(
-            "STATS pollInteruppts={} pollExists={} blockLoops={} emptyQueueLoops={}",
+            "STATS pollInterrupts={} pollExists={} blockLoops={} emptyQueueLoops={}",
             pollInterrupts.get(),
             pollExits.get(),
             blockLoops.get(),
@@ -844,30 +844,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     protected boolean streamDeletes;
 
     /**
-     * Create a Builder object, based on the provided Solr URL.
+     * Initialize a Builder object, based on the provided Solr URL.
      *
-     * <p>Two different paths can be specified as a part of this URL:
-     *
-     * <p>1) A path pointing directly at a particular core
+     * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr")
+     *       .withDefaultCollection("core1")
+     *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
      * </pre>
-     *
-     * Note that when a core is provided in the base URL, queries and other requests can be made
-     * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
-     *
-     * <p>2) The path of the root Solr path ("/solr")
-     *
-     * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
-     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
-     * </pre>
-     *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core be specified on all requests.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
@@ -942,7 +928,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     /**
      * Configures created clients to not stream delete requests.
      *
-     * <p>With this option set when the created ConcurrentUpdateSolrClient sents a delete request it
+     * <p>With this option set when the created ConcurrentUpdateSolrClient sends a delete request it
      * will first will lock the queue and block until all queued updates have been sent, and then
      * send the delete request.
      */

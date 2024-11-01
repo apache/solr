@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -94,7 +95,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     try (SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      ZooKeeperSaslClient saslClient = zkClient.getZooKeeper().getSaslClient();
+      ZooKeeperSaslClient saslClient =
+          zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper().getSaslClient();
       assumeFalse("Could not set up ZK with SASL", saslClient.isFailed());
       zkClient.makePath("/solr", false, true);
     } catch (KeeperException e) {
@@ -188,7 +190,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ZkACLProvider createZkACLProvider() {
+    public ZkACLProvider createACLProvider() {
       return new SaslZkACLProvider();
     }
   }
@@ -204,7 +206,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ZkACLProvider createZkACLProvider() {
+    public ACLProvider createACLProvider() {
       return new DefaultZkACLProvider();
     }
   }
@@ -242,6 +244,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         kerberosTestServices
             .getKdc()
             .createPrincipal(keytabFile, zkClientPrincipal, zkServerPrincipal);
+      } catch (RuntimeException rex) {
+        throw rex;
       } catch (Exception ex) {
         throw new RuntimeException(ex);
       }

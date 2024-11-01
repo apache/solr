@@ -27,7 +27,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateAliasAPI} */
@@ -54,9 +53,9 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     requestBody.collections = List.of("validColl1", "validColl2");
 
     final var thrown = expectThrows(SolrException.class, () -> requestBody.validate());
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("Invalid alias"));
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("some@invalid$alias"));
-    MatcherAssert.assertThat(
+    assertThat(thrown.getMessage(), containsString("Invalid alias"));
+    assertThat(thrown.getMessage(), containsString("some@invalid$alias"));
+    assertThat(
         thrown.getMessage(),
         containsString(
             "alias names must consist entirely of periods, underscores, hyphens, and alphanumerics"));
@@ -102,7 +101,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
 
     final var thrown = expectThrows(SolrException.class, () -> requestBody.validate());
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Routed alias creation requires a configset name"));
   }
 
@@ -124,7 +123,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     final var thrown = expectThrows(SolrException.class, () -> requestBody.validate());
 
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(thrown.getMessage(), containsString("cannot specify the name"));
+    assertThat(thrown.getMessage(), containsString("cannot specify the name"));
   }
 
   @Test

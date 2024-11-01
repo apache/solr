@@ -52,7 +52,9 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -161,7 +163,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       }
       Document doc = null;
       try {
-        doc = reader.document(docId);
+        doc = reader.storedFields().document(docId);
       } catch (Exception ex) {
       }
       if (doc == null) {
@@ -316,6 +318,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       Document doc, int docId, IndexReader reader, IndexSchema schema) throws IOException {
     final CharsRefBuilder spare = new CharsRefBuilder();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
+    TermVectors termVectors = null;
     for (Object o : doc.getFields()) {
       Field field = (Field) o;
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<>();
@@ -353,7 +356,8 @@ public class LukeRequestHandler extends RequestHandlerBase {
       // If we have a term vector, return that
       if (field.fieldType().storeTermVectors()) {
         try {
-          Terms v = reader.getTermVector(docId, field.name());
+          if (termVectors == null) termVectors = reader.termVectors();
+          Terms v = termVectors.get(docId, field.name());
           if (v != null) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
             final TermsEnum termsEnum = v.iterator();
@@ -462,6 +466,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     PostingsEnum postingsEnum = null;
     TermsEnum termsEnum = terms.iterator();
     BytesRef text;
+    StoredFields storedFields = reader.storedFields();
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a
     // better way?
     for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
@@ -476,7 +481,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
         if (liveDocs != null && liveDocs.get(postingsEnum.docID())) {
           continue;
         }
-        return reader.document(postingsEnum.docID());
+        return storedFields.document(postingsEnum.docID());
       }
     }
     return null;

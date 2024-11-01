@@ -52,10 +52,11 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getCoreUrl())
+    return new HttpSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(cborRequestWriter())
-        .withResponseParser(cborResponseparser())
+        .withResponseParser(cborResponseParser())
         .build();
   }
 
@@ -198,7 +199,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   @Ignore
-  public void testChildDoctransformer() {
+  public void testChildDocTransformer() {
     /*Ignore*/
   }
 
@@ -292,7 +293,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
     };
   }
 
-  private static ResponseParser cborResponseparser() {
+  private static ResponseParser cborResponseParser() {
     return new ResponseParser() {
 
       @Override

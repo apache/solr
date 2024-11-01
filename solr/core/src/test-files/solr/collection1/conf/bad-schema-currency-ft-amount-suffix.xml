@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-currency-ft-amount-suffix" version="1.4">
+<schema name="bad-schema-currency-ft-amount-suffix" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <fieldType name="plong" class="solr.LongPointField" multiValued="false"/>
   

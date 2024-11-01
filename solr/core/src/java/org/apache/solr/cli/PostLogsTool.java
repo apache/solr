@@ -36,12 +36,14 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.handler.component.ShardRequest;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
@@ -64,34 +66,66 @@ public class PostLogsTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .longOpt("url")
-            .argName("ADDRESS")
+            .longOpt("solr-collection-url")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.8")
+                    .setDescription("Use --solr-url and -c / --name instead")
+                    .get())
             .hasArg()
-            .required(true)
+            .argName("ADDRESS")
             .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
+            .build(),
+        Option.builder("c")
+            .longOpt("name")
+            .hasArg()
+            .argName("NAME")
+            .desc("Name of the collection.")
             .build(),
         Option.builder("rootdir")
             .longOpt("rootdir")
-            .argName("DIRECTORY")
             .hasArg()
+            .argName("DIRECTORY")
             .required(true)
             .desc("All files found at or below the root directory will be indexed.")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
+    String url = null;
+    if (cli.hasOption("solr-url")) {
+      if (!cli.hasOption("name")) {
+        throw new IllegalArgumentException(
+            "Must specify -c / --name parameter with --solr-url to post documents.");
+      }
+      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
+
+    } else if (cli.hasOption("solr-collection-url")) {
+      url = cli.getOptionValue("solr-collection-url");
+    } else {
+      // Swap to required Option when --solr-collection-url removed.
+      throw new IllegalArgumentException("Must specify --solr-url.");
+    }
     String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue("credentials", null);
+    String credentials = cli.getOptionValue("credentials");
     runCommand(url, rootDir, credentials);
   }
 
   public void runCommand(String baseUrl, String root, String credentials) throws IOException {
+    if (URLUtil.isBaseUrl(baseUrl)) {
+      throw new IllegalArgumentException(
+          "'url' parameter ["
+              + baseUrl
+              + "] must point to a particular collection but appears to be a Solr base URL");
+    }
 
     Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder(baseUrl)
+        new Http2SolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
+            .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(baseUrl))
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
     try (SolrClient client = builder.build()) {

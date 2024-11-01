@@ -110,7 +110,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica)) {
       String docId = String.valueOf(1);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField("id", docId);
@@ -301,7 +301,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica)) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
       if (hits.isEmpty()) fail("No results returned from query: " + query);
@@ -323,9 +323,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getHttpSolrClient(leader.getCoreUrl());
+    SolrClient leaderSolr = getHttpSolrClient(leader);
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r.getCoreUrl()));
+    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {

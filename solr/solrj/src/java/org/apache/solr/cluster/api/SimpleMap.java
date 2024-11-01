@@ -28,7 +28,7 @@ import org.apache.solr.common.MapWriter;
 
 /**
  * A simplified read-only key-value structure. It is designed to support large datasets without
- * consuming lot of memory The objective is to provide implementations that are cheap and memory
+ * consuming a lot of memory The objective is to provide implementations that are cheap and memory
  * efficient to implement and consume. The keys are always {@link CharSequence} objects, The values
  * can be of any type
  */

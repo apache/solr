@@ -31,6 +31,7 @@ import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.search.neural.KnnQParserPlugin;
+import org.apache.solr.search.neural.VectorSimilarityQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
@@ -89,6 +90,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
     map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
     map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
+    map.put(VectorSimilarityQParserPlugin.NAME, new VectorSimilarityQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

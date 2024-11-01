@@ -30,7 +30,7 @@ In addition, applications can be configured to allow users to override the defau
 
 To process a search query, a request handler calls a _query parser_, which interprets the terms and parameters of a query.
 Different query parsers support different syntax.
-Solr's default query parser is known as the xref:query-guide:standard-query-parser.adoc[],or more commonly the "lucene" query parser.
+Solr's default query parser is known as the xref:query-guide:standard-query-parser.adoc[], or more commonly, the "lucene" query parser.
 Solr also includes the xref:query-guide:dismax-query-parser.adoc[], and the xref:query-guide:edismax-query-parser.adoc[].
 
 The Standard query parser's syntax allows for greater precision in searches, but the DisMax query parser is much more tolerant of errors.

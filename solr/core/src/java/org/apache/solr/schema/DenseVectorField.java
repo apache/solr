@@ -179,6 +179,11 @@ public class DenseVectorField extends FloatPointField {
   }
 
   @Override
+  protected boolean enableDocValuesByDefault() {
+    return false;
+  }
+
+  @Override
   public void checkSchemaField(final SchemaField field) throws SolrException {
     super.checkSchemaField(field);
     if (field.multiValued()) {

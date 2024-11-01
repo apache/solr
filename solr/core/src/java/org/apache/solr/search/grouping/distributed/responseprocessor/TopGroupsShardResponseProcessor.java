@@ -34,11 +34,11 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
@@ -117,11 +117,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         }
         shardInfo.add(srsp.getShard(), individualShardInfo);
       }
-      if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      if (HttpShardHandler.getShardsTolerantAsBool(rb.req) && srsp.getException() != null) {
+        rb.rsp.setPartialResults(rb.req);
         continue; // continue if there was an error and we're tolerant.
       }
       NamedList<NamedList<?>> secondPhaseResult =

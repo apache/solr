@@ -228,7 +228,7 @@ public class UninvertingReader extends FilterLeafReader {
     ArrayList<FieldInfo> newFieldInfos = new ArrayList<>(in.getFieldInfos().size());
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = fi.getDocValuesType();
-      // fields which currently don't have docValues, but are uninvertable (indexed or points data
+      // fields which currently don't have docValues, but are uninvertible (indexed or points data
       // present)
       if (type == DocValuesType.NONE
           && (fi.getIndexOptions() != IndexOptions.NONE
@@ -298,7 +298,8 @@ public class UninvertingReader extends FilterLeafReader {
                 fi.getVectorDimension(),
                 fi.getVectorEncoding(),
                 fi.getVectorSimilarityFunction(),
-                fi.isSoftDeletesField()));
+                fi.isSoftDeletesField(),
+                fi.isParentField()));
       } else {
         newFieldInfos.add(fi);
       }

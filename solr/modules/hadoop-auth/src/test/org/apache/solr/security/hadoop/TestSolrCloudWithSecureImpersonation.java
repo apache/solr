@@ -30,7 +30,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -40,6 +39,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -113,7 +113,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
     System.setProperty("collectionsHandler", ImpersonatorCollectionsHandler.class.getName());
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
+    miniCluster =
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
   }
@@ -231,27 +232,27 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyNoConfigGroups() {
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> solrClient.request(getProxyRequest("noGroups", "bar")));
     assertTrue(e.getMessage().contains(getExpectedGroupExMsg("noGroups", "bar")));
   }
 
   @Test
   public void testProxyWrongHost() {
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> solrClient.request(getProxyRequest("wrongHost", "bar")));
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("wrongHost")));
   }
 
   @Test
   public void testProxyNoConfigHosts() {
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> solrClient.request(getProxyRequest("noHosts", "bar")));
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("noHosts")));
   }
@@ -265,9 +266,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testProxyInvalidProxyUser() {
     // wrong direction, should fail
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> solrClient.request(getProxyRequest("bar", "anyHostAnyUser")));
     assertTrue(e.getMessage().contains(getExpectedGroupExMsg("bar", "anyHostAnyUser")));
   }
@@ -287,9 +288,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyUnknownRemote() {
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               // Use a reserved ip address
               String nonProxyUserConfiguredIpAddress = "255.255.255.255";
@@ -305,9 +306,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyInvalidRemote() {
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> {
               solrClient.request(
                   getProxyRequest("localHostAnyGroup", "bar", "[ff01::114]", "[::1]"));
@@ -317,9 +318,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyInvalidGroup() {
-    BaseHttpSolrClient.RemoteSolrException e =
+    SolrClient.RemoteSolrException e =
         expectThrows(
-            BaseHttpSolrClient.RemoteSolrException.class,
+            SolrClient.RemoteSolrException.class,
             () -> solrClient.request(getProxyRequest("bogusGroup", "bar", null)));
     assertTrue(e.getMessage().contains(getExpectedGroupExMsg("bogusGroup", "bar")));
   }
@@ -327,8 +328,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testProxyNullProxyUser() {
     expectThrows(
-        BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("", "bar")));
+        SolrClient.RemoteSolrException.class, () -> solrClient.request(getProxyRequest("", "bar")));
   }
 
   @Test

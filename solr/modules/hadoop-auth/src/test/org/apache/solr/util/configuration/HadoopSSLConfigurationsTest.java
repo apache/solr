@@ -32,7 +32,6 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.hadoop.HadoopSSLCredentialProvider;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,7 +80,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW1)
         .init();
-    MatcherAssert.assertThat(EnvUtils.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
+    assertThat(EnvUtils.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
   }
 
   @Test
@@ -90,7 +89,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2)
         .init();
-    MatcherAssert.assertThat(EnvUtils.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
+    assertThat(EnvUtils.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test
@@ -98,7 +97,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -106,7 +105,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_TRUST_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getTrustStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getTrustStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -114,7 +113,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getClientKeyStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getClientKeyStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
@@ -122,14 +121,14 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getClientTrustStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getClientTrustStorePassword(), is(SAMPLE_PW3));
   }
 
   @Test
   public void testHadoopCredentialProviderPrioritySysPropAndEnvVars() throws IOException {
     SSLConfigurations sut =
         getSutWithMockedHadoopCredentialProvider(KEY_STORE_PASSWORD, SAMPLE_PW3);
-    MatcherAssert.assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
+    assertThat(sut.getKeyStorePassword(), is(SAMPLE_PW3));
   }
 
   private SSLConfigurations getSutWithMockedHadoopCredentialProvider(String key, String pw)

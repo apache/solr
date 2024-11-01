@@ -47,9 +47,11 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
   // "dead hosts", we try to keep it fast
-  permission java.net.SocketPermission "[::1]:4", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:6", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:8", "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:4", "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:6", "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:8", "connect,resolve";
+  // Used as an invalid ZK host
+  permission java.net.SocketPermission "----------:33332", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
@@ -85,10 +87,12 @@ grant {
   // needed by bytebuddy
   permission java.lang.RuntimePermission "defineClass";
   permission java.lang.RuntimePermission "net.bytebuddy.createJavaDispatcher";
+  permission java.lang.RuntimePermission "net.bytebuddy.agent.getInstrumentation";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.method";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
+
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
   permission java.lang.RuntimePermission "reflectionFactoryAccess";
@@ -107,6 +111,8 @@ grant {
   permission java.lang.RuntimePermission "writeFileDescriptor";
   // needed by hadoop http
   permission java.lang.RuntimePermission "getProtectionDomain";
+  // SolrProcessMgr to list processes
+  permission java.lang.RuntimePermission "manageProcess";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
@@ -146,11 +152,18 @@ grant {
 
   // Needed by JWT integration tests & S3 tests
   permission java.lang.RuntimePermission "setFactory";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.default";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+
+  // needed for kafka mockito
+  permission java.lang.RuntimePermission "manageProcess";
+  permission java.io.FilePermission "${/}proc${/}self${/}io", "read";
+  permission java.io.FilePermission "${java.home}${/}bin${/}java", "execute";
+  permission java.io.FilePermission "${java.home}${/}bin${/}java.exe", "execute";
 
   // SSL related properties for Solr tests
   permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
@@ -184,6 +197,19 @@ grant {
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
+
+  // for java.net.http.HttpClient.  See HttpJdkSolrClientTest
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://127.0.0.1:*", "CONNECT:*";
+
+  permission "java.net.URLPermission" "http://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://localhost:*", "CONNECT:*";
+
+  permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
 };
 
 // additional permissions based on system properties set by /bin/solr
@@ -228,6 +254,11 @@ grant {
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+
+  // Run java
+  permission java.io.FilePermission "${java.home}${/}-", "execute";
+  // Required by SolrProcessManager on Windows to find Solr processes, used by StatusTool (CLI)
+  permission java.io.FilePermission "<<ALL FILES>>", "execute";
 };
 
 // Grant all permissions to Gradle test runner classes.

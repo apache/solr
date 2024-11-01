@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -61,9 +62,11 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
@@ -103,7 +106,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.DistribFileStore;
+import org.apache.solr.filestore.FileStore;
+import org.apache.solr.filestore.NodeFileStore;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
@@ -137,6 +143,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -174,6 +181,10 @@ public class CoreContainer {
   }
 
   final SolrCores solrCores;
+
+  public Executor getIndexSearcherExecutor() {
+    return indexSearcherExecutor;
+  }
 
   public static class CoreLoadFailure {
 
@@ -225,11 +236,13 @@ public class CoreContainer {
 
   private volatile UpdateShardHandler updateShardHandler;
 
+  private volatile HttpSolrClientProvider solrClientProvider;
+
   private volatile ExecutorService coreContainerWorkExecutor =
       ExecutorUtil.newMDCAwareCachedThreadPool(
           new SolrNamedThreadFactory("coreContainerWorkExecutor"));
 
-  private final OrderedExecutor replayUpdatesExecutor;
+  private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
   protected volatile LogWatcher<?> logging = null;
 
@@ -245,8 +258,6 @@ public class CoreContainer {
   private volatile CoreSorter coreSorter;
 
   private volatile String hostName;
-
-  private final BlobRepository blobRepository = new BlobRepository(this);
 
   private volatile boolean asyncSolrCoreLoad;
 
@@ -278,6 +289,8 @@ public class CoreContainer {
 
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
 
+  private final ExecutorService indexSearcherExecutor;
+
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
           () ->
@@ -289,7 +302,8 @@ public class CoreContainer {
   private volatile ClusterEventProducer clusterEventProducer;
   private DelegatingPlacementPluginFactory placementPluginFactory;
 
-  private FileStoreAPI fileStoreAPI;
+  private DistribFileStore fileStore;
+  private ClusterFileStore clusterFileStoreAPI;
   private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
@@ -409,7 +423,7 @@ public class CoreContainer {
     this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
     this.replayUpdatesExecutor =
-        new OrderedExecutor(
+        new OrderedExecutor<>(
             cfg.getReplayUpdatesThreads(),
             ExecutorUtil.newMDCAwareCachedThreadPool(
                 cfg.getReplayUpdatesThreads(), // thread count
@@ -432,6 +446,8 @@ public class CoreContainer {
     this.allowPaths = allowPathBuilder.build();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
+
+    this.indexSearcherExecutor = SolrIndexSearcher.initCollectorExecutor(cfg);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -628,6 +644,7 @@ public class CoreContainer {
       pkiAuthenticationSecurityBuilder.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
       shardHandlerFactory.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
       updateShardHandler.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
+      solrClientProvider.setSecurityBuilder(pkiAuthenticationSecurityBuilder);
     }
   }
 
@@ -657,6 +674,7 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
+    indexSearcherExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -703,7 +721,7 @@ public class CoreContainer {
     return tracer;
   }
 
-  public OrderedExecutor getReplayUpdatesExecutor() {
+  public OrderedExecutor<BytesRef> getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;
   }
 
@@ -711,8 +729,8 @@ public class CoreContainer {
     return packageLoader;
   }
 
-  public FileStoreAPI getFileStoreAPI() {
-    return fileStoreAPI;
+  public FileStore getFileStore() {
+    return fileStore;
   }
 
   public SolrCache<?, ?> getCache(String name) {
@@ -810,8 +828,9 @@ public class CoreContainer {
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
+    solrClientProvider =
+        new HttpSolrClientProvider(cfg.getUpdateShardHandlerConfig(), solrMetricsContext);
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
-
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
@@ -844,9 +863,9 @@ public class CoreContainer {
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
-      fileStoreAPI = new FileStoreAPI(this);
-      registerV2ApiIfEnabled(fileStoreAPI.readAPI);
-      registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
+      fileStore = new DistribFileStore(this);
+      registerV2ApiIfEnabled(ClusterFileStore.class);
+      registerV2ApiIfEnabled(NodeFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
@@ -1043,7 +1062,7 @@ public class CoreContainer {
           solrCores.markCoreAsLoading(cd);
         }
         if (cd.isLoadOnStartup()) {
-          coreLoadExecutor.submit(
+          coreLoadExecutor.execute(
               () -> {
                 SolrCore core;
                 try {
@@ -1080,10 +1099,10 @@ public class CoreContainer {
 
     } finally {
       if (asyncSolrCoreLoad) {
-        coreContainerWorkExecutor.submit(
-            () -> ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor));
+        coreContainerWorkExecutor.execute(
+            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
       } else {
-        ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
+        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1135,6 +1154,15 @@ public class CoreContainer {
                 protected void configure() {
                   bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
                       .to(SolrNodeKeyPair.class)
+                      .in(Singleton.class);
+                }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                      .to(DistribFileStore.class)
                       .in(Singleton.class);
                 }
               })
@@ -1230,6 +1258,7 @@ public class CoreContainer {
     return isShutDown;
   }
 
+  /** Close / shut down. Only called by {@link org.apache.solr.servlet.CoreContainerProvider}. */
   public void shutdown() {
 
     ZkController zkController = getZkController();
@@ -1248,6 +1277,7 @@ public class CoreContainer {
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(indexSearcherExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -1316,10 +1346,7 @@ public class CoreContainer {
         solrCores.getModifyLock().notifyAll(); // wake up the thread
       }
 
-      customThreadPool.submit(
-          () -> {
-            replayUpdatesExecutor.shutdownAndAwaitTermination();
-          });
+      customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
 
       if (metricManager != null) {
         metricManager.closeReporters(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
@@ -1345,10 +1372,7 @@ public class CoreContainer {
 
       try {
         if (coreAdminHandler != null) {
-          customThreadPool.submit(
-              () -> {
-                coreAdminHandler.shutdown();
-              });
+          customThreadPool.execute(() -> coreAdminHandler.shutdown());
         }
       } catch (Exception e) {
         log.warn("Error shutting down CoreAdminHandler. Continuing to close CoreContainer.", e);
@@ -1363,15 +1387,15 @@ public class CoreContainer {
     } finally {
       try {
         if (shardHandlerFactory != null) {
-          customThreadPool.submit(
-              () -> {
-                shardHandlerFactory.close();
-              });
+          customThreadPool.execute(() -> shardHandlerFactory.close());
         }
       } finally {
         try {
           if (updateShardHandler != null) {
-            customThreadPool.submit(updateShardHandler::close);
+            customThreadPool.execute(updateShardHandler::close);
+          }
+          if (solrClientProvider != null) {
+            customThreadPool.submit(solrClientProvider::close);
           }
         } finally {
           try {
@@ -2022,9 +2046,10 @@ public class CoreContainer {
 
         DocCollection docCollection = null;
         if (getZkController() != null) {
-          docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+          docCollection =
+              getZkController().getClusterState().getCollectionOrNull(cd.getCollectionName());
           // turn off indexing now, before the new core is registered
-          if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
+          if (docCollection != null && docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
             newCore.readOnly = true;
           }
         }
@@ -2051,15 +2076,13 @@ public class CoreContainer {
         if (docCollection != null) {
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
           assert replica != null : cd.getCloudDescriptor().getCoreNodeName() + " had no replica";
-          if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
+          if (replica.getType().replicateFromLeader) {
             getZkController().stopReplicationFromLeader(core.getName());
             if (!cd.getCloudDescriptor().isLeader()) {
-              getZkController().startReplicationFromLeader(newCore.getName(), true);
+              getZkController()
+                  .startReplicationFromLeader(
+                      newCore.getName(), replica.getType().requireTransactionLog);
             }
-
-          } else if (replica.getType() == Replica.Type.PULL) {
-            getZkController().stopReplicationFromLeader(core.getName());
-            getZkController().startReplicationFromLeader(newCore.getName(), false);
           }
         }
         success = true;
@@ -2167,9 +2190,8 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
-      if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
-          || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
-        // Stop replication if this is part of a pull/tlog replica before closing the core
+      if (cd.getCloudDescriptor().getReplicaType().replicateFromLeader) {
+        // Stop replication before closing the core
         zkSys.getZkController().stopReplicationFromLeader(name);
       }
     }
@@ -2305,10 +2327,6 @@ public class CoreContainer {
     }
 
     return core;
-  }
-
-  public BlobRepository getBlobRepository() {
-    return blobRepository;
   }
 
   /**
@@ -2456,6 +2474,10 @@ public class CoreContainer {
     return status;
   }
 
+  public boolean isStatusLoadComplete() {
+    return LOAD_COMPLETE == (getStatus() & LOAD_COMPLETE);
+  }
+
   public boolean hideStackTrace() {
     return cfg.hideStackTraces();
   }
@@ -2530,6 +2552,18 @@ public class CoreContainer {
   }
 
   /**
+   * Provides the existing general-purpose HTTP/2 Solr client from {@link HttpSolrClientProvider}.
+   *
+   * <p>The caller does not need to close the client, as its lifecycle is managed by {@link
+   * HttpSolrClientProvider}.
+   *
+   * @return the existing {@link Http2SolrClient}
+   */
+  public Http2SolrClient getDefaultHttpSolrClient() {
+    return solrClientProvider.getSolrClient();
+  }
+
+  /**
    * Run an arbitrary task in its own thread. This is an expert option and is a method you should
    * use with great care. It would be bad to run something that never stopped or run something that
    * took a very long time. Typically this is intended for actions that take a few seconds, and
@@ -2556,7 +2590,7 @@ public class CoreContainer {
    * @param r the task to run
    */
   public void runAsync(Runnable r) {
-    coreContainerAsyncTaskExecutor.submit(r);
+    coreContainerAsyncTaskExecutor.execute(r);
   }
 
   public static void setWeakStringInterner() {

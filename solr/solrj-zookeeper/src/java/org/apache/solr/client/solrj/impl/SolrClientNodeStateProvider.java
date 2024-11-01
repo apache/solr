@@ -54,14 +54,14 @@ import org.slf4j.LoggerFactory;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final CloudLegacySolrClient solrClient;
+  private final CloudHttp2SolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
 
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudLegacySolrClient solrClient) {
+  public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
     this.solrClient = solrClient;
     try {
       readReplicaDetails();
@@ -115,7 +115,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     NodeValueFetcher nodeValueFetcher = new NodeValueFetcher();
     RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
-    nodeValueFetcher.getTags(node, new HashSet<>(tags), ctx);
+    nodeValueFetcher.getTags(new HashSet<>(tags), ctx);
     return ctx.tags;
   }
 
@@ -226,9 +226,9 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static class RemoteCallCtx {
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
-    CloudLegacySolrClient solrClient;
+    CloudHttp2SolrClient cloudSolrClient;
     public final Map<String, Object> tags = new HashMap<>();
-    private String node;
+    private final String node;
     public Map<String, Object> session;
 
     public boolean isNodeAlive(String node) {
@@ -238,11 +238,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return true;
     }
 
-    public RemoteCallCtx(String node, CloudLegacySolrClient solrClient) {
+    public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
       this.node = node;
-      this.solrClient = solrClient;
+      this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
-          (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
+          (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
     }
 
     /**
@@ -290,15 +290,15 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
-      try (var client =
-          new HttpSolrClient.Builder()
-              .withHttpClient(solrClient.getHttpClient())
-              .withBaseSolrUrl(url)
-              .withResponseParser(new BinaryResponseParser())
-              .build()) {
-        NamedList<Object> rsp = client.request(request);
+      request.setResponseParser(new BinaryResponseParser());
+
+      try {
+        NamedList<Object> rsp =
+            cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process).getResponse();
         request.response.setResponse(rsp);
         return request.response;
+      } catch (SolrServerException | IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }
     }
 

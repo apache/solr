@@ -63,8 +63,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
     String url = getBaseUrl();
-    collection1 = getHttpSolrClient(url + "/collection1");
-    collection2 = getHttpSolrClient(url + "/collection2");
+    collection1 = getHttpSolrClient(url, "collection1");
+    collection2 = getHttpSolrClient(url, "collection2");
 
     String urlCollection1 = getBaseUrl() + "/" + "collection1";
     String urlCollection2 = getBaseUrl() + "/" + "collection2";

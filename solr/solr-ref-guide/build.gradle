@@ -62,6 +62,7 @@ ext {
     antoraVersion = "3.1.4"
     antoraLunrExtensionVersion = "1.0.0-alpha.8"
     asciidoctorMathjaxVersion = "0.0.9"
+    asciidoctorTabsVersion = "1.0.0-beta.6"
     linkCheckerVersion = "1.4.2"
     gulpCliVersion = "2.3.0"
     // Most recent commit as of 2022-06-24, this repo does not have tags
@@ -246,6 +247,14 @@ task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
+task downloadAsciidoctorTabsExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "-D", "@asciidoctor/tabs@${project.ext.asciidoctorTabsVersion}"]
+
+    inputs.property("asciidoctor-tabs version", project.ext.asciidoctorTabsVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@asciidoctor/tabs")
+}
+
 task downloadAntora {
     group = 'Build Dependency Download'
     description "Download all Antora build dependencies for site generation."
@@ -254,6 +263,7 @@ task downloadAntora {
     dependsOn tasks.downloadAntoraSiteGenerator
     dependsOn tasks.downloadAntoraLunrExtension
     dependsOn tasks.downloadAsciidoctorMathjaxExtension
+    dependsOn tasks.downloadAsciidoctorTabsExtension
 }
 
 task downloadLinkValidator(type: NpmTask) {
