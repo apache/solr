@@ -21,18 +21,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.trace.Span;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.ReplicationFileListResponse;
+import org.apache.solr.client.api.model.ReplicationFileResponse;
+import org.apache.solr.client.api.model.ReplicationIndexVersionResponse;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.UpdateLog;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,12 +45,9 @@ import org.junit.Test;
 public class CoreReplicationTest extends SolrTestCaseJ4 {
 
   private CoreReplication coreReplication;
+
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
-  private SolrQueryRequest mockQueryRequest;
-  private SolrQueryResponse queryResponse;
-  private ReplicationAPIBase.DirectoryFileStream mockDirectoryFileStream;
-  private OutputStream outputStream;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -58,19 +59,19 @@ public class CoreReplicationTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     setUpMocks();
-    mockQueryRequest = mock(SolrQueryRequest.class);
+    SolrQueryRequest mockQueryRequest = mock(SolrQueryRequest.class);
     when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
-    queryResponse = new SolrQueryResponse();
+    SolrQueryResponse queryResponse = new SolrQueryResponse();
     coreReplication = new CoreReplicationMock(mockCore, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testGetIndexVersion() throws Exception {
-    CoreReplication.IndexVersionResponse expected =
-        new CoreReplication.IndexVersionResponse(123L, 123L, "testGeneration");
+    ReplicationIndexVersionResponse expected =
+        new ReplicationIndexVersionResponse(123L, 123L, "testGeneration");
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-    CoreReplication.IndexVersionResponse actual = coreReplication.doFetchIndexVersion();
+    ReplicationIndexVersionResponse actual = coreReplication.doFetchIndexVersion();
     assertEquals(expected.indexVersion, actual.indexVersion);
     assertEquals(expected.generation, actual.generation);
     assertEquals(expected.status, actual.status);
@@ -79,25 +80,43 @@ public class CoreReplicationTest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings("unchecked")
   public void testFetchFiles() throws Exception {
-    CoreReplication.FileListResponse actualResponse = coreReplication.fetchFileList(-1);
+    ReplicationFileListResponse actualResponse =
+        (ReplicationFileListResponse) coreReplication.fetchFileList(mockCore.getName(), -1);
     assertEquals(123, actualResponse.fileList.get(0).size);
     assertEquals("test", actualResponse.fileList.get(0).name);
     assertEquals(123456789, actualResponse.fileList.get(0).checksum);
   }
 
   @Test
-  public void testFetchFile() throws Exception {
-    String expected = "Random output stream data";
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    String actual =
-        coreReplication.doFetchFile("_0_Lucene99_0.tmd", "file", null, null, false, false, 0, null);
-    assertEquals(expected, actual);
+  public void testFetchFileStreams() throws Exception {
+    ReplicationFileResponse actual =
+        coreReplication.doFetchFile("./test", "file", null, null, false, false, 0, null);
+    assertTrue(actual.dfs instanceof ReplicationAPIBase.DirectoryFileStream);
+
+    actual = coreReplication.doFetchFile("./test", "tlogFile", null, null, false, false, 0, null);
+    assertTrue(actual.dfs instanceof ReplicationAPIBase.LocalFsTlogFileStream);
+
+    actual = coreReplication.doFetchFile("./test", "cf", null, null, false, false, 0, null);
+    assertTrue(actual.dfs instanceof ReplicationAPIBase.LocalFsConfFileStream);
   }
 
   private void setUpMocks() throws IOException {
     mockCore = mock(SolrCore.class);
     mockReplicationHandler = mock(ReplicationHandler.class);
+
+    // Mocks for LocalFsTlogFileStream
+    UpdateHandler mockUpdateHandler = mock(UpdateHandler.class);
+    UpdateLog mockUpdateLog = mock(UpdateLog.class);
+    when(mockUpdateHandler.getUpdateLog()).thenReturn(mockUpdateLog);
+    when(mockUpdateLog.getTlogDir()).thenReturn("ignore");
+
+    // Mocks for LocalFsConfFileStream
+    SolrResourceLoader mockSolrResourceLoader = mock(SolrResourceLoader.class);
+    Path mockPath = mock(Path.class);
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
+    when(mockCore.getUpdateHandler()).thenReturn(mockUpdateHandler);
+    when(mockCore.getResourceLoader()).thenReturn(mockSolrResourceLoader);
+    when(mockSolrResourceLoader.getConfigPath()).thenReturn(mockPath);
   }
 
   private static class CoreReplicationMock extends CoreReplication {
@@ -106,19 +125,13 @@ public class CoreReplicationTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
-      final FileListResponse filesResponse = new FileListResponse();
-      List<FileMetaData> fileMetaData = Arrays.asList(new FileMetaData(123, "test", 123456789));
+    protected ReplicationFileListResponse getFileList(
+        long generation, ReplicationHandler replicationHandler) {
+      final ReplicationFileListResponse filesResponse = new ReplicationFileListResponse();
+      List<ReplicationFileListResponse.FileMetaData> fileMetaData =
+          Arrays.asList(new ReplicationFileListResponse.FileMetaData(123, "test", 123456789));
       filesResponse.fileList = new ArrayList<>(fileMetaData);
       return filesResponse;
-    }
-
-    @Override
-    protected String getFile(DirectoryFileStream dfs, ByteArrayOutputStream out)
-        throws IOException {
-      String mockOutputStream = "Random output stream data";
-      out.write(mockOutputStream.getBytes(StandardCharsets.UTF_8));
-      return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
   }
 }

@@ -518,7 +518,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     }
   }
 
-  private class LocalFsTlogFileStream extends LocalFsFileStream {
+  protected class LocalFsTlogFileStream extends LocalFsFileStream {
 
     public LocalFsTlogFileStream(
         String file,
@@ -539,7 +539,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     }
   }
 
-  private class LocalFsConfFileStream extends LocalFsFileStream {
+  protected class LocalFsConfFileStream extends LocalFsFileStream {
 
     public LocalFsConfFileStream(
         String file,

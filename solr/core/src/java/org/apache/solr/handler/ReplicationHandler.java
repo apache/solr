@@ -96,7 +96,6 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
-import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.handler.admin.api.CoreReplication;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
@@ -147,7 +146,7 @@ import org.slf4j.MDC;
  * @since solr 1.4
  */
 public class ReplicationHandler extends RequestHandlerBase
-    implements SolrCoreAware, APIConfigProvider<ReplicationHandlerConfig> {
+    implements SolrCoreAware, APIConfigProvider<ReplicationHandler.ReplicationHandlerConfig> {
 
   public static final String PATH = "/replication";
 
@@ -1672,7 +1671,7 @@ public class ReplicationHandler extends RequestHandlerBase
    */
   public static final String WAIT = "wait";
 
-  public static class ReplicationHandlerConfig implements APIConfig {
+  public static class ReplicationHandlerConfig implements APIConfigProvider.APIConfig {
 
     private int numberBackupsToKeep = 0; // zero: do not delete old backups
 

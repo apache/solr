@@ -22,6 +22,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class ReplicationIndexVersionResponse extends SolrJerseyResponse {
   public ReplicationIndexVersionResponse() {}
 
+  public ReplicationIndexVersionResponse(Long indexVersion, Long generation, String status) {
+    this.indexVersion = indexVersion;
+    this.generation = generation;
+    this.status = status;
+  }
+
   @Schema(description = "A cores index version number", name = "indexversion")
   @JsonProperty("indexversion")
   public Long indexVersion;
