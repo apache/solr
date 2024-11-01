@@ -1916,7 +1916,7 @@ public class ReplicationHandler extends RequestHandlerBase
    */
   public static final String WAIT = "wait";
 
-  public static class ReplicationHandlerConfig implements APIConfig {
+  public static class ReplicationHandlerConfig implements APIConfigProvider.APIConfig {
 
     private int numberBackupsToKeep = 0; // zero: do not delete old backups
 
