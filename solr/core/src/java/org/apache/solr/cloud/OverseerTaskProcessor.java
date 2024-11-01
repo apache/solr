@@ -497,6 +497,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       } else {
         log.debug("", e);
       }
+    } catch (IllegalStateException e) {
+      success = false;
     } catch (InterruptedException e) {
       success = false;
       Thread.currentThread().interrupt();
