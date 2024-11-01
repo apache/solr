@@ -53,7 +53,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
           + "    }"
           + "  }";
   private static final String testClusterPropertyBulkAndNestedValues =
-      "{ \"properties\": {"
+      "{"
           + testClusterPropertyNestedKeyAndValue
           + ","
           + "  \""
@@ -62,7 +62,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
           + "\""
           + testClusterPropertyValue
           + "\""
-          + " } }";
+          + " }";
 
   @BeforeClass
   public static void setupCluster() throws Exception {

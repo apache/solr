@@ -8,9 +8,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import java.util.Map;
 import org.apache.solr.client.api.model.ListClusterPropertiesResponse;
 import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
-import org.apache.solr.client.api.model.SetNestedClusterPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /** Definitions for v2 JAX-RS cluster properties APIs. */
@@ -51,7 +51,7 @@ public interface ClusterPropertyApis {
       tags = {"cluster-properties"})
   SolrJerseyResponse createOrUpdateNestedClusterProperty(
       @RequestBody(description = "Property/ies to be set", required = true)
-          SetNestedClusterPropertyRequestBody requestBody)
+          Map<String, Object> propertyValuesByName)
       throws Exception;
 
   @DELETE

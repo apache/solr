@@ -6,12 +6,12 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 import org.apache.solr.client.api.endpoint.ClusterPropertyApis;
 import org.apache.solr.client.api.model.ClusterPropertyDetails;
 import org.apache.solr.client.api.model.GetClusterPropertyResponse;
 import org.apache.solr.client.api.model.ListClusterPropertiesResponse;
 import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
-import org.apache.solr.client.api.model.SetNestedClusterPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -108,10 +108,10 @@ public class ClusterProperty extends AdminAPIBase implements ClusterPropertyApis
   @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createOrUpdateNestedClusterProperty(
-      SetNestedClusterPropertyRequestBody requestBody) {
+      Map<String, Object> propertyValuesByName) {
     SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     try {
-      clusterProperties.setClusterProperties(requestBody.properties);
+      clusterProperties.setClusterProperties(propertyValuesByName);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
     }

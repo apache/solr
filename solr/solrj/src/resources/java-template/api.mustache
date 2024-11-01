@@ -121,7 +121,12 @@ public class {{classname}} {
                 {{/requiredParams}}
                 {{#bodyParam}}
                 {{^vendorExtensions.x-genericEntity}}
+                {{#isMap}}
+                    this.requestBody = new HashMap<>();
+                {{/isMap}}
+                {{^isMap}}
                     this.requestBody = new {{{dataType}}}();
+                {{/isMap}}
                     addHeader("Content-type", "application/json");
                 {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
