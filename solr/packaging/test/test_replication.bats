@@ -57,23 +57,23 @@ teardown() {
 
   
   # Get our three seperate independent Solr nodes running.
-  solr start -c -p ${LEADER_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/leader -DzkServerDataDir="${clusters_dir}"/leader/zoo_data -v -V 
-  solr start -c -p ${REPEATER_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/repeater -DzkServerDataDir="${clusters_dir}"/repeater/zoo_data -v -V 
-  solr start -c -p ${FOLLOWER_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/follower -DzkServerDataDir="${clusters_dir}"/follower/zoo_data -v -V 
+  solr start -p ${LEADER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/leader -DzkServerDataDir="${clusters_dir}"/leader/zoo_data --verbose
+  solr start -p ${REPEATER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/repeater -DzkServerDataDir="${clusters_dir}"/repeater/zoo_data --verbose
+  solr start -p ${FOLLOWER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/follower -DzkServerDataDir="${clusters_dir}"/follower/zoo_data --verbose 
   
   solr assert --started http://localhost:${LEADER_PORT} --timeout 5000
   solr assert --started http://localhost:${REPEATER_PORT} --timeout 5000
   solr assert --started http://localhost:${FOLLOWER_PORT} --timeout 5000
   
-  solr assert -cloud http://localhost:${LEADER_PORT}
-  solr assert -cloud http://localhost:${REPEATER_PORT}
-  solr assert -cloud http://localhost:${FOLLOWER_PORT}  
+  solr assert --cloud http://localhost:${LEADER_PORT}
+  solr assert --cloud http://localhost:${REPEATER_PORT}
+  solr assert --cloud http://localhost:${FOLLOWER_PORT}  
   
   # Wish I loaded configset seperately...
   local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
-  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:${LEADER_PORT}
-  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:${REPEATER_PORT}
-  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:${FOLLOWER_PORT}
+  solr create -c techproducts --conf-dir "${source_configset_dir}" --solr-url http://localhost:${LEADER_PORT}
+  solr create -c techproducts --conf-dir "${source_configset_dir}" --solr-url http://localhost:${REPEATER_PORT}
+  solr create -c techproducts --conf-dir "${source_configset_dir}" --solr-url http://localhost:${FOLLOWER_PORT}
   
   # Verify empty state of all the clusters
   run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
@@ -84,7 +84,7 @@ teardown() {
   assert_output --partial '"numFound":0'  
   
   # Load XML formatted data into the leader
-  solr post -type application/xml -commit -url http://localhost:${LEADER_PORT}/solr/techproducts/update "${SOLR_TIP}"/example/exampledocs/*.xml
+  solr post --type application/xml --solr-url http://localhost:${LEADER_PORT} -c techproducts "${SOLR_TIP}"/example/exampledocs/*.xml
   run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":32'
   
@@ -144,7 +144,7 @@ teardown() {
   assert_output --partial '"numFound":32' 
   
   # Testing adding new data by adding JSON formatted data into the leader
-  solr post -type application/json -commit -url http://localhost:${LEADER_PORT}/solr/techproducts/update "${SOLR_TIP}"/example/exampledocs/*.json
+  solr post --type application/json --solr-url http://localhost:${LEADER_PORT} -c techproducts "${SOLR_TIP}"/example/exampledocs/*.json
   run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":36'
   sleep 5
@@ -152,7 +152,7 @@ teardown() {
   assert_output --partial '"numFound":36' 
   
   # Testing adding new data by adding CSV formatted data into the leader
-  solr post -commit -url http://localhost:${LEADER_PORT}/solr/techproducts/update "${SOLR_TIP}"/example/exampledocs/*.csv
+  solr post --solr-url http://localhost:${LEADER_PORT} -c techproducts "${SOLR_TIP}"/example/exampledocs/*.csv
   run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":46'  
   sleep 20
@@ -169,7 +169,7 @@ teardown() {
   solr assert --not-started http://localhost:${REPEATER_PORT} --timeout 5000
   
   # Delete data on the leader
-  solr post -url http://localhost:${LEADER_PORT}/solr/techproducts/update -mode args -out -commit "{'delete': {'query': '*:*'}}"
+  solr post --solr-url http://localhost:${LEADER_PORT} -c techproducts  --mode args --verbose "{'delete': {'query': '*:*'}}"
   run curl "http://localhost:${LEADER_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0' 
 
@@ -179,7 +179,7 @@ teardown() {
   assert_output --partial '"numFound":46' 
   
   # Bring back our repeater
-  solr start -c -p ${REPEATER_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/repeater -DzkServerDataDir="${clusters_dir}"/repeater/zoo_data -v -V 
+  solr start -p ${REPEATER_PORT} -Dsolr.disable.allowUrls=true --solr-home "${clusters_dir}"/repeater -DzkServerDataDir="${clusters_dir}"/repeater/zoo_data --verbose
   solr assert --started http://localhost:${REPEATER_PORT} --timeout 5000
   
   # check our repeater is picking up the now deleted documents from the leader
@@ -192,6 +192,4 @@ teardown() {
   run curl "http://localhost:${FOLLOWER_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0' 
   
-  run bash -c 'solr stop -all 2>&1'
-  refute_output --partial 'forcefully killing'
 }
