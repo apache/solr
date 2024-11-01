@@ -177,6 +177,10 @@ public abstract class CloudSolrClient extends SolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
     }
+
+    public Builder(ClusterStateProvider stateProvider) {
+      super(stateProvider);
+    }
   }
 
   static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
