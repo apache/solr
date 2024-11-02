@@ -112,6 +112,12 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17494: Document deprecation status of language specific writer types (wt=python,ruby,php,phps).  (Eric Pugh)
 
+==================  9.7.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17530: Metrics: Thew new Prometheus response writer wasn't detecting TLOG or PULL replicas properly.
+  (Matthew Biscocho)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
