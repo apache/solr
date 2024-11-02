@@ -11,9 +11,7 @@ Bug Fixes
 
 * SOLR-17515: Http2SolrClient now sets its 'AuthenticationStore' in all circumstances, preventing NPE's when used with a HttpClientBuilderFactory (Jason Gerlowski)
 
-Dependency Upgrades
----------------------
-(No changes)
+* SOLR-17530: Metrics: The new Prometheus response writer wasn't detecting TLOG or PULL replicas properly. (Matthew Biscocho)
 
 ==================  9.7.0 ==================
 New Features
