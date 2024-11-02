@@ -1,9 +1,7 @@
 = Configuring Authentication and Authorization
 :page-children: basic-authentication-plugin, \
-    kerberos-authentication-plugin,  \
     jwt-authentication-plugin, \
     cert-authentication-plugin, \
-    hadoop-authentication-plugin, \
     rule-based-authorization-plugin
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

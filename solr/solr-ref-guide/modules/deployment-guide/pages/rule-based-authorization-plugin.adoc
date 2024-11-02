@@ -43,7 +43,7 @@ The users that RBAP sees come from whatever authentication plugin has been confi
 RBAP is compatible with all of the authentication plugins that Solr ships with out of the box.
 It is also compatible with any custom authentication plugins users might write, provided that the plugin sets a user principal on the HttpServletRequest it receives.
 
-The user value seen by RBAP in each case depends on the authentication plugin being used: the Kerberos principal if the xref:kerberos-authentication-plugin.adoc[] is being used, the "sub" JWT claim if the xref:jwt-authentication-plugin.adoc[] is being used, etc.
+The user value seen by RBAP in each case depends on the authentication plugin being used: the "sub" JWT claim if the xref:jwt-authentication-plugin.adoc[] is being used, etc.
 
 === Roles
 
