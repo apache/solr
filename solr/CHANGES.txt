@@ -217,6 +217,12 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
 
+==================  9.7.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17530: Metrics: Thew new Prometheus response writer wasn't detecting TLOG or PULL replicas properly.
+  (Matthew Biscocho)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
