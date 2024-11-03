@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 plugins {
   id 'base'
   id 'solr.build-infra'
-  id 'com.palantir.consistent-versions' version '2.16.0'
+  id 'com.palantir.consistent-versions' version '2.29.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
   id 'ca.cutterslade.analyze' version '1.10.0'
   id 'de.thetaphi.forbiddenapis' version '3.7' apply false
