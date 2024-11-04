@@ -59,7 +59,7 @@ public class PostLogsTool extends ToolBase {
           .build();
 
   private static final Option ROOT_DIR_OPTION =
-      Option.builder("rootdir")
+      Option.builder()
           .longOpt("rootdir")
           .hasArg()
           .argName("DIRECTORY")

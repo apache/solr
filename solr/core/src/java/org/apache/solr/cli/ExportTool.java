@@ -108,7 +108,8 @@ public class ExportTool extends ToolBase {
           .build();
 
   private static final Option FORMAT_OPTION =
-      Option.builder("format")
+      Option.builder()
+          .longOpt("format")
           .hasArg()
           .argName("FORMAT")
           .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
