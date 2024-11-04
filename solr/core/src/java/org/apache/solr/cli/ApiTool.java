@@ -20,9 +20,8 @@ package org.apache.solr.cli;
 import java.io.PrintStream;
 import java.net.URI;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
@@ -39,51 +38,13 @@ import org.noggit.JSONWriter;
  */
 public class ApiTool extends ToolBase {
 
-  /**
-   * Solr URL option that is used to provide a URL of the solr instance.
-   *
-   * @deprecated This option will be replaced by {@link ApiTool#SOLR_URL_OPTION}.
-   */
-  @Deprecated(since = "9.7", forRemoval = true)
-  private static final Option SOLR_URL_OPTION_DEP = Option.builder()
+  private static final Option SOLR_URL_OPTION = Option.builder()
       .longOpt("solr-url")
       .argName("URL")
       .hasArg()
+      .required(true)
       .desc("Send a GET request to a Solr API endpoint.")
       .build();
-
-  /**
-   * Solr URL option that is used to provide a URL of the solr instance.
-   *
-   * @deprecated This option will be replaced by {@link ApiTool#SOLR_URL_OPTION}.
-   */
-  @Deprecated(since = "9.7", forRemoval = true)
-  private static final Option SOLR_GET_OPTION = Option.builder("get")
-      .longOpt("get")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.7")
-              .setDescription("Use --solr-url instead")
-              .get())
-      .argName("URL")
-      .hasArg()
-      .desc("Send a GET request to a Solr API endpoint.")
-      .build();
-
-  /**
-   * Solr URL option group that group deprecated and non options that are used to provide a URL of
-   * the solr instance.
-   * <pr/>
-   * In future this option will be replaced with {@link CommonCLIOptions#SOLR_URL_OPTION}
-   */
-  private static final OptionGroup SOLR_URL_OPTION = new OptionGroup()
-      .addOption(SOLR_URL_OPTION_DEP)
-      .addOption(SOLR_GET_OPTION);
-
-  static {
-    SOLR_URL_OPTION.setRequired(true);
-  }
 
   public ApiTool() {
     this(CLIO.getOutStream());
@@ -101,21 +62,17 @@ public class ApiTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOptionGroup(SOLR_URL_OPTION)
+        .addOption(SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String response = null;
     String getUrl = cli.getOptionValue(SOLR_URL_OPTION);
-    if (getUrl != null) {
-      response = callGet(getUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
-    }
-    if (response != null) {
-      // pretty-print the response to stdout
-      echo(response);
-    }
+    String response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+
+    // pretty-print the response to stdout
+    echo(response);
   }
 
   protected String callGet(String url, String credentials) throws Exception {
@@ -158,7 +115,7 @@ public class ApiTool extends ToolBase {
 
   public static ModifiableSolrParams getSolrParamsFromUri(URI uri) {
     ModifiableSolrParams paramsMap = new ModifiableSolrParams();
-    String[] params = uri.getQuery() == null ? new String[]{} : uri.getQuery().split("&");
+    String[] params = uri.getQuery() == null ? new String[] {} : uri.getQuery().split("&");
     for (String param : params) {
       String[] paramSplit = param.split("=");
       paramsMap.add(paramSplit[0], paramSplit[1]);

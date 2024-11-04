@@ -48,7 +48,6 @@ public class ZkCpTool extends ToolBase {
       .longOpt("solr-home")
       .argName("DIR")
       .hasArg()
-      .required(false)
       .desc("Required to look up configuration for compressing state.json.")
       .build();
 
@@ -64,7 +63,7 @@ public class ZkCpTool extends ToolBase {
   public Options getAllOptions() {
     return super.getAllOptions()
         .addOption(SOLR_HOME_OPTION)
-        .addOption(CommonCLIOptions.RECURSE_OPTION)
+        .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
@@ -128,10 +127,10 @@ public class ZkCpTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
-    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
-    boolean recurse = cli.hasOption(CommonCLIOptions.RECURSE_OPTION);
+    boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
@@ -166,7 +165,7 @@ public class ZkCpTool extends ToolBase {
       }
 
       if (solrHome != null) {
-        echoIfVerbose("Using SolrHome: " + solrHome, cli);
+        echoIfVerbose("Using SolrHome: " + solrHome);
         try {
           // Be aware that if you start Solr and pass in some variables via -D like
           // solr start -DminStateByteLenForCompression=0 -c, this logic will not
@@ -199,7 +198,7 @@ public class ZkCpTool extends ToolBase {
       }
     }
     if (minStateByteLenForCompression > -1) {
-      echoIfVerbose("Compression of state.json has been enabled", cli);
+      echoIfVerbose("Compression of state.json has been enabled");
     }
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -208,7 +207,7 @@ public class ZkCpTool extends ToolBase {
             .withStateFileCompression(minStateByteLenForCompression, compressor)
             .build()) {
 
-      zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
+      zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recursive);
 
     } catch (Exception e) {
       log.error("Could not complete the zk operation for reason: ", e);

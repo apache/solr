@@ -88,13 +88,13 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -185,7 +185,7 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final SolrClient solrClient;
+  private final Http2SolrClient solrClient;
 
   private Integer connTimeout;
 
@@ -263,17 +263,15 @@ public class IndexFetcher {
   // It's crucial not to remove the authentication credentials as they are essential for User
   // managed replication.
   // GitHub PR #2276
-  private SolrClient createSolrClient(
+  private Http2SolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
-    Http2SolrClient httpClient =
-        new Http2SolrClient.Builder(leaderBaseUrl)
-            .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
-            .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
-            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
-            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-            .build();
-    return httpClient;
+    return new Http2SolrClient.Builder(leaderBaseUrl)
+        .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
+        .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
+        .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   public IndexFetcher(
@@ -376,10 +374,8 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-    req.setBasePath(leaderBaseUrl);
-    // TODO modify to use shardhandler
     try {
-      return solrClient.request(req, leaderCoreName);
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -397,10 +393,9 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-    req.setBasePath(leaderBaseUrl);
-    // TODO modify to use shardhandler
     try {
-      NamedList<?> response = solrClient.request(req, leaderCoreName);
+      NamedList<?> response =
+          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -1802,11 +1797,11 @@ public class IndexFetcher {
       } finally {
         cleanup();
         // if cleanup succeeds . The file is downloaded fully. do an fsync
-        fsyncService.submit(
+        fsyncService.execute(
             () -> {
               try {
                 file.sync();
-              } catch (IOException e) {
+              } catch (IOException | AlreadyClosedException e) {
                 fsyncException = e;
               }
             });
@@ -2132,9 +2127,8 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
     QueryRequest request = new QueryRequest(params);
-    request.setBasePath(leaderBaseUrl);
     // TODO use shardhandler
-    return solrClient.request(request, leaderCoreName);
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
   }
 
   public void destroy() {

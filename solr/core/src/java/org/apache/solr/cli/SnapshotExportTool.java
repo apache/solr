@@ -56,15 +56,13 @@ public class SnapshotExportTool extends ToolBase {
       .longOpt("backup-repo-name")
       .argName("DIR")
       .hasArg()
-      .required(false)
       .desc("Specifies name of the backup repository to be used during snapshot export preparation.")
       .build();
 
-  private static final Option ASYNC_ID_OPTION = Option.builder("i")
+  private static final Option ASYNC_ID_OPTION = Option.builder()
       .longOpt("async-id")
       .argName("ID")
       .hasArg()
-      .required(false)
       .desc("Specifies the async request identifier to be used during snapshot export preparation.")
       .build();
 
@@ -84,21 +82,20 @@ public class SnapshotExportTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(SNAPSHOT_NAME_OPTION)
         .addOption(DEST_DIR_OPTION)
         .addOption(BACKUP_REPO_NAME_OPTION)
         .addOption(ASYNC_ID_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    //
+
     String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     String destDir = cli.getOptionValue(DEST_DIR_OPTION);

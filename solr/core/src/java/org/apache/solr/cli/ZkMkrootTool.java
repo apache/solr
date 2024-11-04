@@ -34,7 +34,6 @@ public class ZkMkrootTool extends ToolBase {
   private static final Option FAIL_ON_EXISTS_OPTION = Option.builder()
       .longOpt("fail-on-exists")
       .hasArg()
-      .required(false)
       .desc("Raise an error if the root exists.  Defaults to false.")
       .build();
 
@@ -52,8 +51,7 @@ public class ZkMkrootTool extends ToolBase {
         .addOption(FAIL_ON_EXISTS_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -84,7 +82,7 @@ public class ZkMkrootTool extends ToolBase {
     boolean failOnExists = cli.hasOption(FAIL_ON_EXISTS_OPTION);
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
       echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
       zkClient.makePath(znode, failOnExists, true);

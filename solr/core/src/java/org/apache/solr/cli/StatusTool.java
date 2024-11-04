@@ -17,23 +17,29 @@
 
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.Options;
+
 import java.io.PrintStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
+import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
@@ -44,14 +50,28 @@ import org.noggit.JSONWriter;
  */
 public class StatusTool extends ToolBase {
 
-  private static final Option MAX_WAIT_SECS_OPTION =
-      Option.builder()
-          .longOpt("max-wait-secs")
-          .argName("SECS")
-          .hasArg()
-          .required(false)
-          .desc("Wait up to the specified number of seconds to see Solr running.")
-          .build();
+  private static final Option MAX_WAIT_SECS_OPTION = Option.builder()
+      .longOpt("max-wait-secs")
+      .argName("SECS")
+      .hasArg()
+      .deprecated() // Will make it a stealth option, not printed or complained about
+      .desc("Wait up to the specified number of seconds to see Solr running.")
+      .build();
+
+  public static final Option PORT_OPTION = Option.builder("p")
+      .longOpt("port")
+      .argName("PORT")
+      .hasArg()
+      .desc("Port on localhost to check status for")
+      .build();
+
+  public static final Option SHORT_OPTION = Option.builder()
+      .longOpt("short")
+      .argName("SHORT")
+      .desc("Short format. Prints one URL per line for running instances")
+      .build();
+
+  private final SolrProcessManager processMgr;
 
   public StatusTool() {
     this(CLIO.getOutStream());
@@ -59,6 +79,7 @@ public class StatusTool extends ToolBase {
 
   public StatusTool(PrintStream stdout) {
     super(stdout);
+    processMgr = new SolrProcessManager();
   }
 
   @Override
@@ -69,58 +90,194 @@ public class StatusTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(MAX_WAIT_SECS_OPTION);
+        .addOption(MAX_WAIT_SECS_OPTION)
+        .addOption(PORT_OPTION)
+        .addOption(SHORT_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    // Override the default help behaviour to put out a customized message that only list user
-    // settable Options.
-    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0) || cli.hasOption(CommonCLIOptions.HELP_OPTION)) {
-      final Options options = new Options();
-      options.addOption(MAX_WAIT_SECS_OPTION);
-      new HelpFormatter().printHelp("status", options);
-      return;
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
+    Integer port =
+        cli.hasOption(PORT_OPTION) ? Integer.parseInt(cli.getOptionValue(PORT_OPTION)) : null;
+    boolean shortFormat = cli.hasOption(SHORT_OPTION);
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue(MAX_WAIT_SECS_OPTION, "0"));
+
+    if (port != null && solrUrl != null) {
+      throw new IllegalArgumentException("Only one of port or url can be specified");
     }
 
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue(MAX_WAIT_SECS_OPTION, "0"));
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    if (maxWaitSecs > 0) {
-      int solrPort = new URI(solrUrl).getPort();
-      echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
-      try {
-        waitToSeeSolrUp(
-            solrUrl,
-            cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
-            maxWaitSecs,
-            TimeUnit.SECONDS);
-        echo("Started Solr server on port " + solrPort + ". Happy searching!");
-      } catch (TimeoutException timeout) {
-        throw new Exception(
-            "Solr at " + solrUrl + " did not come online within " + maxWaitSecs + " seconds!");
+    if (solrUrl != null) {
+      if (!URLUtil.hasScheme(solrUrl)) {
+        CLIO.err("Invalid URL provided: " + solrUrl);
+        System.exit(1);
+      }
+
+      // URL provided, do not consult local processes, as the URL may be remote
+      if (maxWaitSecs > 0) {
+        // Used by Windows start script when starting Solr
+        try {
+          waitForSolrUpAndPrintStatus(solrUrl, cli, maxWaitSecs);
+          System.exit(0);
+        } catch (Exception e) {
+          CLIO.err(e.getMessage());
+          System.exit(1);
+        }
+      } else {
+        boolean running = printStatusFromRunningSolr(solrUrl, cli);
+        System.exit(running ? 0 : 1);
+      }
+    }
+
+    if (port != null) {
+      Optional<SolrProcess> proc = processMgr.processForPort(port);
+      if (proc.isEmpty()) {
+        CLIO.err("Could not find a running Solr on port " + port);
+        System.exit(1);
+      } else {
+        solrUrl = proc.get().getLocalUrl();
+        if (shortFormat) {
+          CLIO.out(solrUrl);
+        } else {
+          printProcessStatus(proc.get(), cli);
+        }
+        System.exit(0);
+      }
+    }
+
+    // No URL or port, scan for running processes
+    Collection<SolrProcess> procs = processMgr.scanSolrPidFiles();
+    if (!procs.isEmpty()) {
+      for (SolrProcess process : procs) {
+        if (shortFormat) {
+          CLIO.out(process.getLocalUrl());
+        } else {
+          printProcessStatus(process, cli);
+        }
       }
     } else {
-      try {
-        CharArr arr = new CharArr();
-        new JSONWriter(arr, 2)
-            .write(getStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION)));
-        echo(arr.toString());
-      } catch (Exception exc) {
-        if (SolrCLI.exceptionIsAuthRelated(exc)) {
-          throw exc;
-        }
-        if (SolrCLI.checkCommunicationError(exc)) {
-          // this is not actually an error from the tool as it's ok if Solr is not online.
-          CLIO.err("Solr at " + solrUrl + " not online.");
-        } else {
-          throw new Exception(
-              "Failed to get system information from " + solrUrl + " due to: " + exc);
-        }
+      if (!shortFormat) {
+        CLIO.out("\nNo Solr nodes are running.\n");
       }
     }
   }
 
+  private void printProcessStatus(SolrProcess process, CommandLine cli) throws Exception {
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue(MAX_WAIT_SECS_OPTION, "0"));
+    boolean shortFormat = cli.hasOption(SHORT_OPTION);
+    String pidUrl = process.getLocalUrl();
+    if (shortFormat) {
+      CLIO.out(pidUrl);
+    } else {
+      if (maxWaitSecs > 0) {
+        waitForSolrUpAndPrintStatus(pidUrl, cli, maxWaitSecs);
+      } else {
+        CLIO.out(
+            String.format(
+                Locale.ROOT,
+                "\nSolr process %s running on port %s",
+                process.getPid(),
+                process.getPort()));
+        printStatusFromRunningSolr(pidUrl, cli);
+      }
+    }
+    CLIO.out("");
+  }
+
+  private Integer portFromUrl(String solrUrl) {
+    try {
+      URI uri = new URI(solrUrl);
+      int port = uri.getPort();
+      if (port == -1) {
+        return uri.getScheme().equals("https") ? 443 : 80;
+      } else {
+        return port;
+      }
+    } catch (URISyntaxException e) {
+      CLIO.err("Invalid URL provided, does not contain port");
+      System.exit(1);
+      return null;
+    }
+  }
+
+  public void waitForSolrUpAndPrintStatus(String solrUrl, CommandLine cli, int maxWaitSecs)
+      throws Exception {
+    int solrPort = portFromUrl(solrUrl);
+    echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
+    boolean solrUp = waitForSolrUp(solrUrl, cli, maxWaitSecs);
+    if (solrUp) {
+      echo("Started Solr server on port " + solrPort + ". Happy searching!");
+    } else {
+      throw new Exception(
+          "Solr at " + solrUrl + " did not come online within " + maxWaitSecs + " seconds!");
+    }
+  }
+
+  /**
+   * Wait for Solr to come online and return true if it does, false otherwise.
+   *
+   * @param solrUrl the URL of the Solr server
+   * @param cli the command line options
+   * @param maxWaitSecs the maximum number of seconds to wait
+   * @return true if Solr comes online, false otherwise
+   */
+  public boolean waitForSolrUp(String solrUrl, CommandLine cli, int maxWaitSecs) throws Exception {
+    try {
+      waitToSeeSolrUp(
+          solrUrl,
+          cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
+          maxWaitSecs,
+          TimeUnit.SECONDS);
+      return true;
+    } catch (TimeoutException timeout) {
+      return false;
+    }
+  }
+
+  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) {
+    String statusJson = null;
+    try {
+      statusJson = statusFromRunningSolr(solrUrl, cli);
+    } catch (Exception e) {
+      /* ignore */
+    }
+    if (statusJson != null) {
+      CLIO.out(statusJson);
+    } else {
+      CLIO.err("Solr at " + solrUrl + " not online.");
+    }
+    return statusJson != null;
+  }
+
+  /**
+   * Get the status of a Solr server and responds with a JSON status string.
+   *
+   * @param solrUrl the URL of the Solr server
+   * @param cli the command line options
+   * @return the status of the Solr server or null if the server is not online
+   * @throws Exception if there is an error getting the status
+   */
+  public String statusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
+    try {
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2)
+          .write(getStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION)));
+      return arr.toString();
+    } catch (Exception exc) {
+      if (SolrCLI.exceptionIsAuthRelated(exc)) {
+        throw exc;
+      }
+      if (SolrCLI.checkCommunicationError(exc)) {
+        // this is not actually an error from the tool as it's ok if Solr is not online.
+        return null;
+      } else {
+        throw new Exception("Failed to get system information from " + solrUrl + " due to: " + exc);
+      }
+    }
+  }
+
+  @SuppressWarnings("BusyWait")
   public Map<String, Object> waitToSeeSolrUp(
       String solrUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);

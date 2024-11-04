@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -63,29 +62,12 @@ public class PackageTool extends ToolBase {
       .desc("Specifies that this action should affect cluster-level plugins only.")
       .build();
 
-  private static final Option PARAM_OPTION_NEW = Option.builder()
+  private static final Option PARAM_OPTION = Option.builder()
       .longOpt("param")
       .hasArgs()
       .argName("PARAMS")
       .desc("List of parameters to be used with deploy command.")
       .build();
-
-  private static final Option PARAM_OPTION_DEP = Option.builder("p")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.8")
-              .setDescription("Use --param instead")
-              .get())
-      .hasArg()
-      .argName("PARAMS")
-      .required(false)
-      .desc("List of parameters to be used with deploy command.")
-      .build();
-
-  private static final OptionGroup PARAM_OPTION = new OptionGroup()
-      .addOption(PARAM_OPTION_NEW)
-      .addOption(PARAM_OPTION_DEP);
 
   private static final Option UPDATE_OPTION = Option.builder()
       .longOpt("update")
@@ -376,7 +358,7 @@ public class PackageTool extends ToolBase {
     return super.getAllOptions()
         .addOption(COLLECTIONS_OPTION)
         .addOption(CLUSTER_OPTION)
-        .addOptionGroup(PARAM_OPTION)
+        .addOption(PARAM_OPTION)
         .addOption(UPDATE_OPTION)
         .addOption(COLLECTION_OPTION)
         .addOption(NO_PROMPT_OPTION)

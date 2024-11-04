@@ -26,6 +26,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,6 +38,8 @@ public class AssertToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("removal")
+  @SuppressForbidden(reason = "Deprecated, for removal in future Java version")
   public void raisesExitCode100OnError() throws Exception {
     assumeTrue(
         "This test only works with security manager, as it raises an error accessing /tmp",
@@ -45,7 +48,7 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
-    assertEquals("Expected AssertTool to raise an error", numAssertionsFailed, 100);
+    assertEquals("Expected AssertTool to raise an error", 100, numAssertionsFailed);
   }
 
   @Test
@@ -56,7 +59,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
     assertEquals(
-        "Expected AssertTool to pass assertion that directory exists", numAssertionsFailed, 0);
+        "Expected AssertTool to pass assertion that directory exists", 0, numAssertionsFailed);
   }
 
   @Test
@@ -70,7 +73,7 @@ public class AssertToolTest extends SolrCloudTestCase {
     final int numAssertionsFailed = runAssertToolWithArgs(args);
 
     assertEquals(
-        "Expected AssertTool to fail assertion that directory exists", numAssertionsFailed, 1);
+        "Expected AssertTool to fail assertion that directory exists", 1, numAssertionsFailed);
   }
 
   @Test
@@ -82,8 +85,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
-        numAssertionsFailed,
-        1);
+        1,
+        numAssertionsFailed);
   }
 
   @Test
@@ -96,8 +99,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion that directory doesnt exist",
-        numAssertionsFailed,
-        0);
+        0,
+        numAssertionsFailed);
   }
 
   @Test
@@ -109,8 +112,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to pass assertion when Solr is running on provided URL",
-        numAssertionsFailed,
-        0);
+        0,
+        numAssertionsFailed);
   }
 
   @Test
@@ -122,8 +125,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion when Solr isn't running on provided URL",
-        numAssertionsFailed,
-        1);
+        1,
+        numAssertionsFailed);
   }
 
   @Test
@@ -135,8 +138,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to fail assertion when Solr is running on provided URL",
-        numAssertionsFailed,
-        1);
+        1,
+        numAssertionsFailed);
   }
 
   @Test
@@ -148,8 +151,8 @@ public class AssertToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "Expected AssertTool to pass assertion when Solr isn't running on provided URL",
-        numAssertionsFailed,
-        0);
+        0,
+        numAssertionsFailed);
   }
 
   private int runAssertToolWithArgs(String[] args) throws Exception {

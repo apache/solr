@@ -69,84 +69,27 @@ public class AuthTool extends ToolBase {
       .build();
 
   @Deprecated
-  private static final Option BLOCK_UNKNOWN_OPTION_NEW = Option.builder()
+  private static final Option BLOCK_UNKNOWN_OPTION = Option.builder()
       .longOpt("block-unknown")
       .desc("Blocks all access for unknown users (requires authentication for all endpoints).")
       .hasArg()
       .argName("true|false")
       .build();
 
-  @Deprecated(since = "9.8", forRemoval = true)
-  private static final Option BLOCK_UNKNOWN_OPTION_DEP = Option.builder("blockUnknown")
-      .longOpt("blockUnknown")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.8")
-              .setDescription("Use --block-unknown instead")
-              .get())
-      .hasArg()
-      .argName("true|false")
-      .required(false)
-      .desc("Blocks all access for unknown users (requires authentication for all endpoints).")
-      .build();
-
-  private static final OptionGroup BLOCK_UNKNOWN_OPTION = new OptionGroup()
-      .addOption(BLOCK_UNKNOWN_OPTION_NEW)
-      .addOption(BLOCK_UNKNOWN_OPTION_DEP);
-
-  private static final Option SOLR_INCLUDE_FILE_OPTION_NEW = Option.builder()
+  private static final Option SOLR_INCLUDE_FILE_OPTION = Option.builder()
       .longOpt("solr-include-file")
       .hasArg()
       .argName("FILE")
       .desc("The Solr include file which contains overridable environment variables for configuring Solr configurations.")
       .build();
 
-  @Deprecated(since = "9.7", forRemoval = true)
-  private static final Option SOLR_INCLUDE_FILE_OPTION_DEP = Option.builder("solrIncludeFile")
-      .longOpt("solrIncludeFile")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.7")
-              .setDescription("Use --solr-include-file instead")
-              .get())
-      .hasArg()
-      .argName("FILE")
-      .required(false)
-      .desc("The Solr include file which contains overridable environment variables for configuring Solr configurations.")
-      .build();
-
-  private static final OptionGroup SOLR_INCLUDE_FILE_OPTION = new OptionGroup()
-      .addOption(SOLR_INCLUDE_FILE_OPTION_DEP)
-      .addOption(SOLR_INCLUDE_FILE_OPTION_NEW);
-
-  private static final Option UPDATE_INCLUDE_FILE_OPTION_NEW = Option.builder()
+  private static final Option UPDATE_INCLUDE_FILE_OPTION = Option.builder()
       .longOpt("update-include-file-only")
       .desc(
           "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
               + " authentication (i.e. don't update security.json).")
       .hasArg()
       .build();
-  private static final Option UPDATE_INCLUDE_FILE_OPTION_DEP = Option.builder()
-      .longOpt("updateIncludeFileOnly")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.8")
-              .setDescription("Use --update-include-file-only instead")
-              .get())
-      .hasArg()
-      .argName("true|false")
-      .required(false)
-      .desc(
-          "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-              + " authentication (i.e. don't update security.json).")
-      .build();
-
-  private static final OptionGroup UPDATE_INCLUDE_FILE_OPTION = new OptionGroup()
-      .addOption(UPDATE_INCLUDE_FILE_OPTION_DEP)
-      .addOption(UPDATE_INCLUDE_FILE_OPTION_NEW);
 
   private static final Option AUTH_CONF_DIR_OPTION = Option.builder()
       .longOpt("auth-conf-dir")
@@ -199,9 +142,9 @@ public class AuthTool extends ToolBase {
         .addOption(TYPE_OPTION)
         .addOption(PROMPT_OPTION)
         .addOption(CONFIG_OPTION)
-        .addOptionGroup(BLOCK_UNKNOWN_OPTION)
-        .addOptionGroup(SOLR_INCLUDE_FILE_OPTION)
-        .addOptionGroup(UPDATE_INCLUDE_FILE_OPTION)
+        .addOption(BLOCK_UNKNOWN_OPTION)
+        .addOption(SOLR_INCLUDE_FILE_OPTION)
+        .addOption(UPDATE_INCLUDE_FILE_OPTION)
         .addOption(AUTH_CONF_DIR_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
@@ -218,16 +161,15 @@ public class AuthTool extends ToolBase {
     }
   }
 
-  private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, OptionGroup optionGroup) {
-    if (cli.hasOption(optionGroup)) {
-      final String value = cli.getOptionValue(optionGroup);
+  private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, Option option) {
+    if (cli.hasOption(option)) {
+      final String value = cli.getOptionValue(option);
       if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
-        echo("Argument [" + optionGroup.getNames().stream().findFirst() + "] must be either true or false, but was [" + value + "]");
+        echo("Argument [" + option.getLongOpt() + "] must be either true or false, but was [" + value + "]");
         SolrCLI.exit(1);
       }
     }
   }
-
 
   // @Override
   // public int runTool(CommandLine cli) throws Exception {
@@ -286,7 +228,7 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           if (!zkInaccessible) {
-            echoIfVerbose("Uploading following security.json: " + securityJson, cli);
+            echoIfVerbose("Uploading following security.json: " + securityJson);
             try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
@@ -447,7 +389,7 @@ public class AuthTool extends ToolBase {
         String securityJson = securityJson1.toPrettyString();
 
         if (!updateIncludeFileOnly) {
-          echoIfVerbose("Uploading following security.json: " + securityJson, cli);
+          echoIfVerbose("Uploading following security.json: " + securityJson);
           try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
             zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
           }
@@ -537,7 +479,7 @@ public class AuthTool extends ToolBase {
         SolrCLI.exit(1);
       }
 
-      echoIfVerbose("Uploading following security.json: {}", cli);
+      echoIfVerbose("Uploading following security.json: {}");
 
       try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
         zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
@@ -647,9 +589,9 @@ public class AuthTool extends ToolBase {
     Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
 
     if (basicAuthConfFile != null) {
-      echoIfVerbose("Written out credentials file: " + basicAuthConfFile, cli);
+      echoIfVerbose("Written out credentials file: " + basicAuthConfFile);
     }
-    echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath(), cli);
+    echoIfVerbose("Updated Solr include file: " + includeFile.toAbsolutePath());
   }
 
   private void updateIncludeFileDisableAuth(Path includeFile, CommandLine cli) throws IOException {
@@ -671,7 +613,7 @@ public class AuthTool extends ToolBase {
     if (hasChanged) {
       String lines = includeFileLines.stream().collect(Collectors.joining(System.lineSeparator()));
       Files.writeString(includeFile, lines, StandardCharsets.UTF_8);
-      echoIfVerbose("Commented out necessary lines from " + includeFile.toAbsolutePath(), cli);
+      echoIfVerbose("Commented out necessary lines from " + includeFile.toAbsolutePath());
     }
   }
 

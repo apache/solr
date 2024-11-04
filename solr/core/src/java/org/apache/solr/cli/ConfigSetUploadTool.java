@@ -36,57 +36,21 @@ import org.slf4j.LoggerFactory;
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option CONF_NAME_OPTION_NEW = Option.builder("n")
+  private static final Option CONF_NAME_OPTION = Option.builder("n")
       .longOpt("conf-name")
       .hasArg()
       .argName("NAME")
-      .required(false) // should be true, but we have deprecated option as well.
+      .required(true)
       .desc("Configset name in ZooKeeper.")
       .build();
 
-  private static final Option CONF_NAME_OPTION_DEP = Option.builder()
-      .longOpt("confname")
-      .hasArg()
-      .argName("NAME")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.8")
-              .setDescription("Use --conf-name instead")
-              .get())
-      .required(false)
-      .desc("Configset name in ZooKeeper.")
-      .build();
-
-  private static final OptionGroup CONF_NAME_OPTION = new OptionGroup()
-      .addOption(CONF_NAME_OPTION_NEW)
-      .addOption(CONF_NAME_OPTION_DEP);
-
-  private static final Option CONF_DIR_OPTION_NEW = Option.builder("d")
+  private static final Option CONF_DIR_OPTION = Option.builder("d")
       .longOpt("conf-dir")
       .hasArg()
       .argName("DIR")
-      .required(false) // should be true, but we have deprecated option as well.
+      .required(true)
       .desc("Local directory with configs.")
       .build();
-
-  private static final Option CONF_DIR_OPTION_DEP = Option.builder()
-      .longOpt("confdir")
-      .hasArg()
-      .argName("DIR")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.8")
-              .setDescription("Use --conf-dir instead")
-              .get())
-      .required(false)
-      .desc("Local directory with configs.")
-      .build();
-
-  private static final OptionGroup CONF_DIR_OPTION = new OptionGroup()
-      .addOption(CONF_DIR_OPTION_NEW)
-      .addOption(CONF_DIR_OPTION_DEP);
 
   public ConfigSetUploadTool() {
     this(CLIO.getOutStream());
@@ -126,9 +90,9 @@ public class ConfigSetUploadTool extends ToolBase {
 
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
     String confDir = cli.getOptionValue(CONF_DIR_OPTION);
-    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
@@ -136,7 +100,7 @@ public class ConfigSetUploadTool extends ToolBase {
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
-              + cli.getOptionValue(CONF_NAME_OPTION)
+              + confName
               + " to ZooKeeper at "
               + zkHost);
       FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);

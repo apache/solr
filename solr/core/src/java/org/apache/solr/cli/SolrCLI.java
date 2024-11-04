@@ -86,6 +86,58 @@ public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String ZK_HOST = "localhost:9983";
+
+  public static final Option OPTION_ZKHOST =
+      Option.builder("z")
+          .longOpt("zk-host")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                  + ZK_HOST
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRURL =
+      Option.builder("s")
+          .longOpt("solr-url")
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
+                  + getDefaultSolrUrl()
+                  + '.')
+          .build();
+
+  public static final Option OPTION_VERBOSE =
+      Option.builder()
+          .longOpt("verbose")
+          .required(false)
+          .desc("Enable verbose command output.")
+          .build();
+
+  public static final Option OPTION_HELP =
+      Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
+
+  public static final Option OPTION_RECURSIVE =
+      Option.builder("r")
+          .longOpt("recursive")
+          .required(false)
+          .desc("Apply the command recursively.")
+          .build();
+
+  public static final Option OPTION_CREDENTIALS =
+      Option.builder("u")
+          .longOpt("credentials")
+          .argName("credentials")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+          .build();
+
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
@@ -99,17 +151,16 @@ public class SolrCLI implements CLIO {
   public static void main(String[] args) throws Exception {
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
-    final boolean isHelpCommand =
-        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+    final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
-    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
+    if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
-      args[0] = "version";
+      args = new String[] {"version"};
     }
     if (Arrays.asList(
             "upconfig", "downconfig", "cp", "rm", "mv", "ls", "mkroot", "linkconfig", "updateacls")
@@ -122,7 +173,7 @@ public class SolrCLI implements CLIO {
         // remap our arguments to invoke the ZK tool help.
         args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
       } else if (args.length == 2) {
-        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+        if (Arrays.asList("-h", "--help").contains(args[1])) {
           // remap our arguments to invoke the ZK tool help.
           args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
         } else {
@@ -137,7 +188,7 @@ public class SolrCLI implements CLIO {
           args = remappedArgs;
         }
       } else {
-        // chop the leading zk argument so we invoke the correct zk sub tool
+        // chop the leading zk argument, so we invoke the correct zk sub tool
         String[] trimmedArgs = new String[args.length - 1];
         System.arraycopy(args, 1, trimmedArgs, 0, trimmedArgs.length);
         args = trimmedArgs;
@@ -286,10 +337,28 @@ public class SolrCLI implements CLIO {
     return options;
   }
 
-  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  /**
+   * Returns the value of the option with the given name, or the value of the deprecated option. If
+   * both values are null, then it returns the default value.
+   *
+   * <p>If this method is marked as unused by your IDE, it means we have no deprecated CLI options
+   * currently, congratulations! This method is preserved for the next time we need to deprecate a
+   * CLI option.
+   */
+  public static String getOptionWithDeprecatedAndDefault(
+      CommandLine cli, String opt, String deprecated, String def) {
+    String val = cli.getOptionValue(opt);
+    if (val == null) {
+      val = cli.getOptionValue(deprecated);
+    }
+    return val == null ? def : val;
+  }
+
+  // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
   private static void deprecatedHandlerStdErr(Option o) {
-    if (o.isDeprecated()) {
+    // Deprecated options without a description act as "stealth" options
+    if (o.isDeprecated() && !o.getDeprecated().getDescription().isBlank()) {
       final StringBuilder buf =
           new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
       if (o.getLongOpt() != null) {
@@ -316,7 +385,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "--help".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg)) {
             hasHelpArg = true;
             break;
           }
@@ -344,9 +413,6 @@ public class SolrCLI implements CLIO {
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
     Options optionsNoDeprecated = getToolOptionsForHelp(tool);
-    // tool.getOptions().stream()
-    //    .filter(option -> !option.isDeprecated())
-    //    .forEach(optionsNoDeprecated::addOption);
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
@@ -512,8 +578,10 @@ public class SolrCLI implements CLIO {
   private static void printHelp() {
 
     print("Usage: solr COMMAND OPTIONS");
+    print("       where COMMAND is one of: start, stop, restart, status, ");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, auth, assert, config, export, api, package, post, ");
+        "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, ");
+
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
@@ -527,13 +595,18 @@ public class SolrCLI implements CLIO {
         "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
     print("");
     printGreen(
-        "    ./solr start -c -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+        "    ./solr start -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print("Pass --help or -h after any COMMAND to see command-specific usage information,");
-    print("such as:    ./solr start --help or ./solr stop -h");
+    print("Global Options:");
+    print("  -v,  --version           Print version information and quit");
+    print("       --verbose           Enable verbose mode");
+    print("");
+    print("Run 'solr COMMAND --help' for more information on a command.");
+    print("");
+    print("For more help on how to use Solr, head to https://solr.apache.org/");
   }
 
   /**
@@ -740,7 +813,7 @@ public class SolrCLI implements CLIO {
     String RESET = "\u001B[0m";
 
     if (color != null) {
-      CLIO.out(color + String.valueOf(message) + RESET);
+      CLIO.out(color + message + RESET);
     } else {
       CLIO.out(String.valueOf(message));
     }

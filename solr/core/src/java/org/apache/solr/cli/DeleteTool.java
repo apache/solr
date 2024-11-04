@@ -16,16 +16,18 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -54,7 +56,7 @@ public class DeleteTool extends ToolBase {
       .desc("Name of the core / collection to delete.")
       .build();
 
-  private static final Option DELETE_CONFIG_OPTION_NEW = Option.builder("d")
+  private static final Option DELETE_CONFIG_OPTION = Option.builder()
       .longOpt("delete-config")
       .hasArg()
       .argName("true|false")
@@ -62,45 +64,11 @@ public class DeleteTool extends ToolBase {
       .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
       .build();
 
-  private static final Option DELETE_CONFIG_OPTION_DEP = Option.builder()
-      .longOpt("deleteConfig")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.7")
-              .setDescription("Use --delete-config instead")
-              .get())
-      .hasArg()
-      .argName("true|false")
-      .required(false)
-      .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
-      .build();
-
-  private static final OptionGroup DELETE_CONFIG_OPTION = new OptionGroup()
-      .addOption(DELETE_CONFIG_OPTION_NEW)
-      .addOption(DELETE_CONFIG_OPTION_DEP);
-
-  private static final Option FORCE_DELETE_CONFIG_OPTION_NEW = Option.builder("f")
-      .longOpt("force-delete-config")
+  private static final Option FORCE_OPTION = Option.builder("f")
+      .longOpt("force")
       .required(false)
       .desc("Skip safety checks when deleting the configuration directory used by a collection.")
       .build();
-
-  private static final Option FORCE_DELETE_CONFIG_OPTION_DEP = Option.builder()
-      .longOpt("forceDeleteConfig")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.7")
-              .setDescription("Use --force-delete-config instead")
-              .get())
-      .required(false)
-      .desc("Skip safety checks when deleting the configuration directory used by a collection.")
-      .build();
-
-  private static final OptionGroup FORCE_DELETE_CONFIG_OPTION = new OptionGroup()
-      .addOption(FORCE_DELETE_CONFIG_OPTION_NEW)
-      .addOption(FORCE_DELETE_CONFIG_OPTION_DEP);
 
   public DeleteTool() {
     this(CLIO.getOutStream());
@@ -120,7 +88,7 @@ public class DeleteTool extends ToolBase {
     return "Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
         + " mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
         + " delete the configuration directory from Zookeeper so long as it is not being used by another collection.\n"
-        + " You can override this behavior by passing -deleteConfig false when running this command.\n"
+        + " You can override this behavior by passing --delete-config false when running this command.\n"
         + "\n"
         + "List of options:";
   }
@@ -129,8 +97,8 @@ public class DeleteTool extends ToolBase {
   public Options getAllOptions() {
     return super.getAllOptions()
         .addOption(COLLECTION_NAME_OPTION)
-        .addOptionGroup(DELETE_CONFIG_OPTION)
-        .addOptionGroup(FORCE_DELETE_CONFIG_OPTION)
+        .addOption(DELETE_CONFIG_OPTION)
+        .addOption(FORCE_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
@@ -159,7 +127,7 @@ public class DeleteTool extends ToolBase {
 
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
-      echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+      echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);
     }
@@ -187,7 +155,7 @@ public class DeleteTool extends ToolBase {
     }
 
     if (deleteConfig && configName != null) {
-      if (cli.hasOption(FORCE_DELETE_CONFIG_OPTION)) {
+      if (cli.hasOption(FORCE_OPTION)) {
         log.warn(
             "Skipping safety checks, configuration directory {} will be deleted with impunity.",
             configName);
@@ -223,8 +191,7 @@ public class DeleteTool extends ToolBase {
       }
     }
 
-    echoIfVerbose(
-        "\nDeleting collection '" + collectionName + "' using CollectionAdminRequest", cli);
+    echoIfVerbose("\nDeleting collection '" + collectionName + "' using CollectionAdminRequest");
 
     NamedList<Object> response;
     try {
@@ -246,11 +213,11 @@ public class DeleteTool extends ToolBase {
                 + configZnode
                 + " in ZooKeeper due to: "
                 + exc.getMessage()
-                + "\nYou'll need to manually delete this znode using the zkcli script.");
+                + "\nYou'll need to manually delete this znode using the bin/solr zk rm command.");
       }
     }
 
-    if (response != null) {
+    if (isVerbose() && response != null) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
@@ -258,7 +225,7 @@ public class DeleteTool extends ToolBase {
       echo("\n");
     }
 
-    echo("Deleted collection '" + collectionName + "' using CollectionAdminRequest");
+    echo(String.format(Locale.ROOT, "\nDeleted collection '%s'", collectionName));
   }
 
   protected void deleteCore(CommandLine cli, SolrClient solrClient) throws Exception {
@@ -280,8 +247,8 @@ public class DeleteTool extends ToolBase {
     }
 
     if (response != null) {
-      echoIfVerbose((String) response.get("response"), cli);
-      echoIfVerbose("\n", cli);
+      echoIfVerbose((String) response.get("response"));
+      echoIfVerbose("\n");
     }
   }
 }

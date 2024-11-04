@@ -90,15 +90,14 @@ import org.noggit.JSONWriter;
 /** Supports export command in the bin/solr script. */
 public class ExportTool extends ToolBase {
 
-  private static final Option SOLR_URL_OPTION = Option.builder("url")
-      .longOpt("solr-collection-url")
+  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
+      .longOpt("name")
       .hasArg()
-      .argName("URL")
-      .required()
-      .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
+      .argName("NAME")
+      .desc("Name of the collection.")
       .build();
 
-  private static final Option OUTPUT_OPTION = Option.builder("out")
+  private static final Option OUTPUT_OPTION = Option.builder()
       .hasArg()
       .argName("PATH")
       .desc(
@@ -111,23 +110,27 @@ public class ExportTool extends ToolBase {
       .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
       .build();
 
-  private static final Option COMPRESS_OPTION = Option.builder("compress")
-      .desc("Compress the output.")
+  private static final Option COMPRESS_OPTION = Option.builder()
+      .longOpt("compress")
+      .desc("Compress the output. Defaults to false.")
       .build();
 
-  private static final Option LIMIT_OPTION = Option.builder("limit")
+  private static final Option LIMIT_OPTION = Option.builder()
+      .longOpt("limit")
       .hasArg()
       .argName("#")
       .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
       .build();
 
-  private static final Option QUERY_OPTION = Option.builder("query")
+  private static final Option QUERY_OPTION = Option.builder()
+      .longOpt("query")
       .hasArg()
       .argName("QUERY")
       .desc("A custom query, default is '*:*'.")
       .build();
 
-  private static final Option FIELDS_OPTION = Option.builder("fields")
+  private static final Option FIELDS_OPTION = Option.builder()
+      .longOpt("fields")
       .hasArg()
       .argName("FIELDA,FIELDB")
       .desc("Comma separated list of fields to export. By default all fields are fetched.")
@@ -141,13 +144,14 @@ public class ExportTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOption(SOLR_URL_OPTION)
+        .addOption(COLLECTION_NAME_OPTION)
         .addOption(OUTPUT_OPTION)
         .addOption(FORMAT_OPTION)
         .addOption(COMPRESS_OPTION)
         .addOption(LIMIT_OPTION)
         .addOption(QUERY_OPTION)
         .addOption(FIELDS_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
@@ -268,10 +272,22 @@ public class ExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue(SOLR_URL_OPTION);
-    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
+    String url = null;
+    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+      if (!cli.hasOption(COLLECTION_NAME_OPTION)) {
+        throw new IllegalArgumentException(
+            "Must specify -c / --name parameter with --solr-url to post documents.");
+      }
+      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+
+    } else {
+      // think about support --zk-host someday.
+      throw new IllegalArgumentException("Must specify --solr-url.");
+    }
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS);
     Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
+
     info.setOutFormat(
         cli.getOptionValue(OUTPUT_OPTION),
         cli.getOptionValue(FORMAT_OPTION),
@@ -559,7 +575,7 @@ public class ExportTool extends ToolBase {
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach(
             (s, coreHandler) ->
-                producerThreadpool.submit(
+                producerThreadpool.execute(
                     () -> {
                       try {
                         coreHandler.exportDocsFromCore();
@@ -605,7 +621,7 @@ public class ExportTool extends ToolBase {
     }
 
     private void addConsumer(CountDownLatch consumerlatch) {
-      consumerThreadpool.submit(
+      consumerThreadpool.execute(
           () -> {
             while (true) {
               SolrDocument doc;

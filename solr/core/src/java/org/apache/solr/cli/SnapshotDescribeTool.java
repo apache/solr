@@ -72,12 +72,11 @@ public class SnapshotDescribeTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(SNAPSHOT_NAME_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override

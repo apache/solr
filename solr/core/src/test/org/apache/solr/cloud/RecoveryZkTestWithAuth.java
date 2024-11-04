@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -43,6 +44,15 @@ import org.junit.Test;
 public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
+    // Periodically mimic the sysprops set by bin/solr when it knows auth is active (see SOLR-17515
+    // for context)
+    if (rarely()) {
+      System.setProperty(
+          HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
+          "org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory");
+      System.setProperty("basicauth", SecurityJson.USER_PASS);
+    }
+
     cluster =
         configureCluster(1)
             .addConfig("conf", configset("cloud-minimal"))

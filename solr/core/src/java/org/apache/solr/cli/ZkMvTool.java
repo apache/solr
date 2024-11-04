@@ -45,8 +45,7 @@ public class ZkMvTool extends ToolBase {
     return super.getAllOptions()
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -80,7 +79,7 @@ public class ZkMvTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
       String src = cli.getArgs()[0];
       String dst = cli.getArgs()[1];
 

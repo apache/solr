@@ -45,12 +45,12 @@ public class AssertTool extends ToolBase {
   private static boolean useExitCode = false;
   private static Long timeoutMs = 1000L;
 
-  private static final Option IS_NOT_ROOT_OPTION = Option.builder("R")
+  private static final Option IS_NOT_ROOT_OPTION = Option.builder()
       .desc("Asserts that we are NOT the root user.")
-            .longOpt("not-root")
-            .build();
+      .longOpt("not-root")
+      .build();
 
-  private static final Option IS_ROOT_OPTION = Option.builder("r")
+  private static final Option IS_ROOT_OPTION = Option.builder()
       .desc("Asserts that we are the root user.")
       .longOpt("root")
       .build();
@@ -59,14 +59,14 @@ public class AssertTool extends ToolBase {
       .addOption(IS_NOT_ROOT_OPTION)
       .addOption(IS_ROOT_OPTION);
 
-  private static final Option IS_NOT_RUNNING_ON_OPTION = Option.builder("S")
+  private static final Option IS_NOT_RUNNING_ON_OPTION = Option.builder()
       .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
       .longOpt("not-started")
       .hasArg(true)
       .argName("url")
       .build();
 
-  private static final Option IS_RUNNING_ON_OPTION = Option.builder("s")
+  private static final Option IS_RUNNING_ON_OPTION = Option.builder()
       .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
       .longOpt("started")
       .hasArg(true)
@@ -84,14 +84,14 @@ public class AssertTool extends ToolBase {
       .argName("directory")
       .build();
 
-  private static final Option DIRECTORY_EXISTS_OPTION = Option.builder("x")
+  private static final Option DIRECTORY_EXISTS_OPTION = Option.builder()
       .desc("Asserts that directory <directory> exists.")
       .longOpt("exists")
       .hasArg(true)
       .argName("directory")
       .build();
 
-  private static final Option DIRECTORY_NOT_EXISTS_OPTION = Option.builder("X")
+  private static final Option DIRECTORY_NOT_EXISTS_OPTION = Option.builder()
       .desc("Asserts that directory <directory> does NOT exist.")
       .longOpt("not-exists")
       .hasArg(true)
@@ -102,14 +102,14 @@ public class AssertTool extends ToolBase {
       .addOption(DIRECTORY_EXISTS_OPTION)
       .addOption(DIRECTORY_NOT_EXISTS_OPTION);
 
-  private static final Option IS_CLOUD_OPTION = Option.builder("c")
+  private static final Option IS_CLOUD_OPTION = Option.builder()
       .desc("Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
       .longOpt("cloud")
       .hasArg(true)
       .argName("url")
       .build();
 
-  private static final Option IS_NOT_CLOUD_OPTION = Option.builder("C")
+  private static final Option IS_NOT_CLOUD_OPTION = Option.builder()
       .desc("Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
       .longOpt("not-cloud")
       .hasArg(true)
@@ -120,14 +120,14 @@ public class AssertTool extends ToolBase {
       .addOption(IS_CLOUD_OPTION)
       .addOption(IS_NOT_CLOUD_OPTION);
 
-  private static final Option MESSAGE_OPTION = Option.builder("m")
+  private static final Option MESSAGE_OPTION = Option.builder()
       .desc("Exception message to be used in place of the default error message.")
       .longOpt("message")
       .hasArg(true)
       .argName("message")
       .build();
 
-  private static final Option TIMEOUT_OPTION = Option.builder("t")
+  private static final Option TIMEOUT_OPTION = Option.builder()
       .desc("Timeout in ms for commands supporting a timeout.")
       .longOpt("timeout")
       .hasArg(true)
@@ -135,7 +135,7 @@ public class AssertTool extends ToolBase {
       .argName("ms")
       .build();
 
-  private static final Option EXIT_CODE_OPTION = Option.builder("e")
+  private static final Option EXIT_CODE_OPTION = Option.builder()
       .desc("Return an exit code instead of printing error message on assert fail.")
       .longOpt("exitcode")
       .build();
@@ -167,6 +167,15 @@ public class AssertTool extends ToolBase {
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
+  /**
+   * Returns 100 error code for a true "error", otherwise returns the number of tests that failed.
+   * Otherwise, very similar to the parent runTool method.
+   *
+   * @param cli the command line object
+   * @return 0 on success, or a number corresponding to number of tests that failed, or 100 for an
+   *     Error
+   * @throws Exception if a tool failed, e.g. authentication failure
+   */
   @Override
   public int runTool(CommandLine cli) throws Exception {
     verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
@@ -208,7 +217,7 @@ public class AssertTool extends ToolBase {
       message = cli.getOptionValue(MESSAGE_OPTION);
     }
     if (cli.hasOption(TIMEOUT_OPTION)) {
-      timeoutMs = Long.parseLong(cli.getOptionValue(TIMEOUT_OPTION));
+      timeoutMs = cli.getParsedOptionValue(TIMEOUT_OPTION);
     }
     if (cli.hasOption(EXIT_CODE_OPTION)) {
       useExitCode = true;
@@ -233,12 +242,14 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
       ret +=
           assertSolrRunning(
-              cli.getOptionValue(IS_RUNNING_ON_OPTION), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+              cli.getOptionValue(IS_RUNNING_ON_OPTION),
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     if (cli.hasOption(IS_NOT_RUNNING_ON_OPTION)) {
       ret +=
           assertSolrNotRunning(
-              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION),
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     if (cli.hasOption(IS_CLOUD_OPTION)) {
       ret +=

@@ -97,46 +97,21 @@ public class PostTool extends ToolBase {
   private static final int MAX_WEB_DEPTH = 10;
   public static final String DEFAULT_CONTENT_TYPE = "application/json";
 
-  private static final Option SOLR_URL_OPTION = Option.builder("url")
-      .longOpt("solr-update-url")
-      .hasArg()
-      .argName("UPDATEURL")
-      .desc("Solr Update URL, the full url to the update handler, including the /update.")
-      .build();
-
   private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
       .longOpt("name")
       .hasArg()
       .argName("NAME")
-      .required(false)
+      .required(true)
       .desc("Name of the collection.")
       .build();
 
-  private static final Option SKIP_COMMIT_OPTION_NEW = Option.builder()
+  private static final Option SKIP_COMMIT_OPTION = Option.builder()
       .longOpt("skip-commit")
-      .required(false)
       .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
       .build();
-
-  private static final Option SKIP_COMMIT_OPTION_DEP = Option.builder()
-      .longOpt("skipcommit")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.7")
-              .setDescription("Use --skip-commit instead")
-              .get())
-      .required(false)
-      .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
-      .build();
-
-  private static final OptionGroup SKIP_COMMIT_OPTION = new OptionGroup()
-      .addOption(SKIP_COMMIT_OPTION_NEW)
-      .addOption(SKIP_COMMIT_OPTION_DEP);
 
   private static final Option OPTIMIZE_OPTION = Option.builder("o")
       .longOpt("optimize")
-      .required(false)
       .desc("Issue an optimize at end of posting documents.")
       .build();
 
@@ -144,7 +119,6 @@ public class PostTool extends ToolBase {
       .longOpt("mode")
       .hasArg()
       .argName("mode")
-      .required(false)
       .desc("Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
       .build();
 
@@ -152,7 +126,6 @@ public class PostTool extends ToolBase {
       .longOpt("recursive")
       .hasArg()
       .argName("recursive")
-      .required(false)
       .desc("For web crawl, how deep to go. default: 1")
       .build();
 
@@ -160,7 +133,6 @@ public class PostTool extends ToolBase {
       .longOpt("delay")
       .hasArg()
       .argName("delay")
-      .required(false)
       .desc("If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
       .build();
 
@@ -168,7 +140,6 @@ public class PostTool extends ToolBase {
       .longOpt("type")
       .hasArg()
       .argName("content-type")
-      .required(false)
       .desc("Specify a specific mimetype to use, such as application/json.")
       .build();
 
@@ -176,50 +147,23 @@ public class PostTool extends ToolBase {
       .longOpt("filetypes")
       .hasArg()
       .argName("<type>[,<type>,...]")
-      .required(false)
       .desc("default: " + DEFAULT_FILE_TYPES)
       .build();
 
-  private static final Option PARAMS_OPTION_NEW = Option.builder()
+  private static final Option PARAMS_OPTION = Option.builder()
       .longOpt("params")
       .hasArg()
       .argName("<key>=<value>[&<key>=<value>...]")
-      .required(false)
       .desc("Values must be URL-encoded; these pass through to Solr update request.")
       .build();
 
-  private static final Option PARAMS_OPTION_DEP = Option.builder("p")
-      .deprecated(
-          DeprecatedAttributes.builder()
-              .setForRemoval(true)
-              .setSince("9.8")
-              .setDescription("Use --params instead")
-              .get())
-      .hasArg()
-      .argName("<key>=<value>[&<key>=<value>...]")
-      .required(false)
-      .desc("Values must be URL-encoded; these pass through to Solr update request.")
-      .build();
-
-  private static final OptionGroup PARAMS_OPTION = new OptionGroup()
-      .addOption(PARAMS_OPTION_NEW)
-      .addOption(PARAMS_OPTION_DEP);
-
-  private static final Option OUTPUT_OPTION = Option.builder()
-      .longOpt("out")
-      .required(false)
-      .desc("sends Solr response outputs to console.")
-      .build();
-
-  private static final Option FORMAT_OPTION = Option.builder("f")
+  private static final Option FORMAT_OPTION = Option.builder()
       .longOpt("format")
-      .required(false)
       .desc("sends application/json content as Solr commands to /update instead of /update/json/docs.")
       .build();
 
   private static final Option DRY_RUN_OPTION = Option.builder()
       .longOpt("dry-run")
-      .required(false)
       .desc("Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
       .build();
 
@@ -300,19 +244,18 @@ public class PostTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOption(SOLR_URL_OPTION)
         .addOption(COLLECTION_NAME_OPTION)
-        .addOptionGroup(SKIP_COMMIT_OPTION)
+        .addOption(SKIP_COMMIT_OPTION)
         .addOption(OPTIMIZE_OPTION)
         .addOption(MODE_OPTION)
         .addOption(RECURSIVE_OPTION)
         .addOption(DELAY_OPTION)
         .addOption(TYPE_OPTION)
         .addOption(FILE_TYPES_OPTION)
-        .addOptionGroup(PARAMS_OPTION)
-        .addOption(OUTPUT_OPTION)
+        .addOption(PARAMS_OPTION)
         .addOption(FORMAT_OPTION)
         .addOption(DRY_RUN_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
@@ -321,15 +264,14 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
-    if (cli.hasOption(SOLR_URL_OPTION)) {
-      String url = cli.getOptionValue(SOLR_URL_OPTION);
+    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+      String url =
+          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION) + "/update";
       solrUpdateUrl = new URI(url);
-    } else if (cli.hasOption(COLLECTION_NAME_OPTION)) {
-      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION) + "/update";
-      solrUpdateUrl = new URI(url);
+
     } else {
-      throw new IllegalArgumentException(
-          "Must specify either --solr-update-url or -c parameter to post documents.");
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
+      solrUpdateUrl = new URI(url);
     }
 
     String mode = cli.getOptionValue(MODE_OPTION, DATA_MODE_FILES);
@@ -348,12 +290,13 @@ public class PostTool extends ToolBase {
     delay = Integer.parseInt(cli.getOptionValue(DELAY_OPTION, String.valueOf(defaultDelay)));
     recursive = Integer.parseInt(cli.getOptionValue(RECURSIVE_OPTION, "1"));
 
-    out = cli.hasOption(OUTPUT_OPTION) ? CLIO.getOutStream() : null;
+    out = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION) ? CLIO.getOutStream() : null;
     commit = !cli.hasOption(SKIP_COMMIT_OPTION);
     optimize = cli.hasOption(OPTIMIZE_OPTION);
 
     credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     args = cli.getArgs();
+
     params = cli.getOptionValue(PARAMS_OPTION, "");
 
     execute(mode);

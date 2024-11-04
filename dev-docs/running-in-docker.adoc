@@ -8,7 +8,7 @@ To run Solr in a container and expose the Solr port, run:
 
 In order to start Solr in cloud mode, run the following.
 
-`docker run -p 8983:8983 solr solr-fg -c`
+`docker run -p 8983:8983 solr solr-fg`
 
 For documentation on using the official docker builds, please refer to the https://hub.docker.com/_/solr[DockerHub page].
 Up-to-date documentation for running locally built images of this branch can be found in the xref:_running_solr_in_docker[local reference guide].

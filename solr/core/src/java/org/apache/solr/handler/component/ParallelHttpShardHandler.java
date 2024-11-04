@@ -17,13 +17,11 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +39,30 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public class ParallelHttpShardHandler extends HttpShardHandler {
 
+  @SuppressWarnings("unused")
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ExecutorService commExecutor;
+
+  /*
+   * Unlike the basic HttpShardHandler, this class allows us to exit submit before
+   * pending is incremented and the responseFutureMap is updated. If the runnables that
+   * do that are slow to execute the calling code could attempt to takeCompleted(),
+   * while pending is still zero. In this condition, the code would assume that all
+   * requests are processed (despite the runnables created by this class still
+   * waiting). Thus, we need to track that there are attempts still in flight.
+   *
+   * This tracking is complicated by the fact that there could be a failure in the
+   * runnable that causes the request to never be created and pending to never be
+   * incremented. Thus, we need to know that we have attempted something AND that that
+   * attempt has also been processed by the executor.
+   *
+   * This condition is added to the check that controls the loop in take via the
+   * override for #responsesPending(). We rely on calling code call submit for all
+   * requests desired before the call to takeCompleted()
+   */
+  AtomicInteger attemptStart = new AtomicInteger(0);
+  AtomicInteger attemptCount = new AtomicInteger(0);
 
   public ParallelHttpShardHandler(ParallelHttpShardHandlerFactory httpShardHandlerFactory) {
     super(httpShardHandlerFactory);
@@ -51,47 +70,47 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
   }
 
   @Override
-  public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
-    // do this outside of the callable for thread safety reasons
-    final List<String> urls = getURLs(shard);
-    final var lbReq = prepareLBRequest(sreq, shard, params, urls);
-    final var srsp = prepareShardResponse(sreq, shard);
-    final var ssr = new SimpleSolrResponse();
-    srsp.setSolrResponse(ssr);
-    pending.incrementAndGet();
+  protected boolean responsesPending() {
+    // ensure we can't exit while loop in HttpShardHandler.take(boolean) until we've completed
+    // as many Runnable actions as we created.
+    return super.responsesPending() || attemptStart.get() > attemptCount.get();
+  }
 
-    if (urls.isEmpty()) {
-      recordNoUrlShardResponse(srsp, shard);
-      return;
-    }
-
-    long startTime = System.nanoTime();
+  @Override
+  protected void makeShardRequest(
+      ShardRequest sreq,
+      String shard,
+      ModifiableSolrParams params,
+      LBSolrClient.Req lbReq,
+      SimpleSolrResponse ssr,
+      ShardResponse srsp,
+      long startTimeNS) {
     final Runnable executeRequestRunnable =
         () -> {
-          CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-          future.whenComplete(
-              (rsp, throwable) -> {
-                if (rsp != null) {
-                  ssr.nl = rsp.getResponse();
-                  srsp.setShardAddress(rsp.getServer());
-                  ssr.elapsedTime =
-                      TimeUnit.MILLISECONDS.convert(
-                          System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-                  responses.add(srsp);
-                } else if (throwable != null) {
-                  ssr.elapsedTime =
-                      TimeUnit.MILLISECONDS.convert(
-                          System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-                  srsp.setException(throwable);
-                  if (throwable instanceof SolrException) {
-                    srsp.setResponseCode(((SolrException) throwable).code());
-                  }
-                  responses.add(srsp);
-                }
-              });
-          responseFutureMap.put(srsp, future);
+          try {
+            CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
+            future.whenComplete(
+                new ShardRequestCallback(ssr, srsp, startTimeNS, sreq, shard, params));
+            synchronized (FUTURE_MAP_LOCK) {
+              // we want to ensure that there is a future in flight before incrementing
+              // pending, because there is a risk that the  request will hang forever waiting
+              // on a responses.take() in HttpShardHandler.take(boolean) if anything failed
+              // during future creation. It is not a problem if the response shows up before
+              // we increment pending. The attemptingSubmit flag guards us against inadvertently
+              // skipping the while loop in HttpShardHandler.take(boolean) until at least
+              // one runnable has been executed.
+              pending.incrementAndGet();
+              responseFutureMap.put(srsp, future);
+            }
+          } finally {
+            // it must not be possible to exit the runnable in any way without calling this.
+            attemptCount.incrementAndGet();
+          }
         };
 
+    // not clear how errors emanating from requestAsync or the whenComplete() callback
+    // are to propagated out of the runnable?
+    attemptStart.incrementAndGet();
     CompletableFuture.runAsync(executeRequestRunnable, commExecutor);
   }
 }

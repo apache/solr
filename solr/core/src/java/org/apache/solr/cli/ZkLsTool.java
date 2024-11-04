@@ -39,11 +39,10 @@ public class ZkLsTool extends ToolBase {
   @Override
   public Options getAllOptions() {
     return super.getAllOptions()
-        .addOption(CommonCLIOptions.RECURSE_OPTION)
+        .addOption(CommonCLIOptions.RECURSIVE_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-        .addOption(CommonCLIOptions.VERBOSE_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
@@ -64,18 +63,17 @@ public class ZkLsTool extends ToolBase {
     String znode = cli.getArgs()[0];
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
-      boolean recurse = cli.hasOption(CommonCLIOptions.RECURSE_OPTION);
+      boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode
               + " from ZooKeeper at "
               + zkHost
-              + " recurse: "
-              + recurse,
-          cli);
-      stdout.print(zkClient.listZnode(znode, recurse));
+              + " recursive: "
+              + recursive);
+      stdout.print(zkClient.listZnode(znode, recursive));
     } catch (Exception e) {
       log.error("Could not complete ls operation for reason: ", e);
       throw (e);
