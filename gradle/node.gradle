@@ -35,8 +35,7 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
     }
 
     ext {
-        rootNodeDir = "$rootDir/.gradle/node"
-        nodeProjectDir = file("$rootNodeDir/$project.name")
+        nodeProjectDir = layout.projectDirectory.dir(".gradle/node")
     }
 
     node {
@@ -49,10 +48,10 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         }
 
         // The directory where Node.js is unpacked (when download is true)
-        workDir = file("${project.ext.rootNodeDir}/nodejs")
+        workDir = file("${project.ext.nodeProjectDir.getAsFile().path}/nodejs")
 
         // The directory where npm is installed (when a specific version is defined)
-        npmWorkDir = file("${project.ext.rootNodeDir}/npm")
+        npmWorkDir = file("${project.ext.nodeProjectDir.getAsFile().path}/npm")
 
         // The Node.js project directory location
         // This is where the package.json file and node_modules directory are located
