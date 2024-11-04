@@ -241,7 +241,9 @@ public class CoreContainerProvider implements ServletContextListener {
 
       Builder builder = new Builder(zkClient);
 
-      this.rateLimitManager = builder.build();
+      String hostname = zkController != null ? zkController.getHostName() : "";
+
+      this.rateLimitManager = builder.build(hostname);
 
       if (zkController != null) {
         zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);

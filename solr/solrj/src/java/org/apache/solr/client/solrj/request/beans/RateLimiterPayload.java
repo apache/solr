@@ -35,6 +35,8 @@ public class RateLimiterPayload implements ReflectMapWriter {
 
   @JsonProperty public Boolean priorityBasedEnabled;
 
+  @JsonProperty public String nodesEnabled;
+
   public RateLimiterPayload copy() {
     RateLimiterPayload result = new RateLimiterPayload();
 
@@ -44,6 +46,7 @@ public class RateLimiterPayload implements ReflectMapWriter {
     result.slotBorrowingEnabled = slotBorrowingEnabled;
     result.slotAcquisitionTimeoutInMS = slotAcquisitionTimeoutInMS;
     result.priorityBasedEnabled = priorityBasedEnabled;
+    result.nodesEnabled = nodesEnabled;
     return result;
   }
 
@@ -70,5 +73,19 @@ public class RateLimiterPayload implements ReflectMapWriter {
         slotBorrowingEnabled,
         slotAcquisitionTimeoutInMS,
         priorityBasedEnabled);
+  }
+
+  public void maybeEnableForHost(String hostname) {
+    if (!this.enabled && !hostname.isEmpty()) {
+      if (this.nodesEnabled != null && !this.nodesEnabled.isEmpty()) {
+        String[] hosts = this.nodesEnabled.split(",");
+        for (String host : hosts) {
+          if (host.trim().equals(hostname)) {
+            this.enabled = true;
+            break;
+          }
+        }
+      }
+    }
   }
 }

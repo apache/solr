@@ -62,7 +62,10 @@ public class RateLimitManager implements ClusterPropertiesListener {
   public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
   private final ConcurrentHashMap<String, RequestRateLimiter> requestRateLimiterMap;
 
-  public RateLimitManager() {
+  private final String hostname;
+
+  public RateLimitManager(String hostname) {
+    this.hostname = hostname;
     this.requestRateLimiterMap = new ConcurrentHashMap<>();
   }
 
@@ -81,7 +84,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
         throw new UncheckedIOException(e);
       }
     }
-
+    rateLimiterMeta.maybeEnableForHost(hostname);
     // Hack: We only support query rate limiting for now
     requestRateLimiterMap.compute(
         rateLimiterMeta.priorityBasedEnabled
@@ -209,10 +212,10 @@ public class RateLimitManager implements ClusterPropertiesListener {
       this.solrZkClient = solrZkClient;
     }
 
-    public RateLimitManager build() {
-      RateLimitManager rateLimitManager = new RateLimitManager();
+    public RateLimitManager build(String hostname) {
+      RateLimitManager rateLimitManager = new RateLimitManager(hostname);
 
-      RateLimiterConfig rateLimiterConfig = constructQueryRateLimiterConfig(solrZkClient);
+      RateLimiterConfig rateLimiterConfig = constructQueryRateLimiterConfig(solrZkClient, hostname);
 
       if (rateLimiterConfig.priorityBasedEnabled) {
         rateLimitManager.registerRequestRateLimiter(
@@ -228,7 +231,8 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
     // To be used in initialization
     @SuppressWarnings({"unchecked"})
-    private static RateLimiterConfig constructQueryRateLimiterConfig(SolrZkClient zkClient) {
+    private static RateLimiterConfig constructQueryRateLimiterConfig(
+        SolrZkClient zkClient, String hostname) {
       try {
 
         if (zkClient == null) {
@@ -250,6 +254,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
         RateLimiterPayload rateLimiterMeta =
             mapper.readValue(configInput, RateLimiterPayload.class);
+        rateLimiterMeta.maybeEnableForHost(hostname);
         return rateLimiterMeta.priorityBasedEnabled
             ? new RateLimiterConfig(SolrRequest.SolrRequestType.PRIORITY_BASED, rateLimiterMeta)
             : new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY, rateLimiterMeta);

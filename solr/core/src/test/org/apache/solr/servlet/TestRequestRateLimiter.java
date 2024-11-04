@@ -91,7 +91,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       RateLimitManager.Builder builder =
           new MockBuilder(
               null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig));
-      RateLimitManager rateLimitManager = builder.build();
+      RateLimitManager rateLimitManager = builder.build("localhost");
 
       solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
@@ -121,7 +121,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
   @SuppressWarnings("try")
   public void testSlotBorrowingAcquisitionTimeout()
       throws InterruptedException, IOException, ExecutionException {
-    RateLimitManager mgr = new RateLimitManager();
+    RateLimitManager mgr = new RateLimitManager("localhost");
     Random r = random();
     int slotLimit = r.nextInt(20) + 1;
     int guaranteed = r.nextInt(slotLimit);
@@ -355,7 +355,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
               null /*dummy SolrZkClient */,
               new MockRequestRateLimiter(queryRateLimiterConfig),
               new MockRequestRateLimiter(indexRateLimiterConfig));
-      RateLimitManager rateLimitManager = builder.build();
+      RateLimitManager rateLimitManager = builder.build("localhost");
 
       solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
@@ -488,8 +488,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public RateLimitManager build() {
-      RateLimitManager rateLimitManager = new RateLimitManager();
+    public RateLimitManager build(String hostname) {
+      RateLimitManager rateLimitManager = new RateLimitManager("localhost");
 
       rateLimitManager.registerRequestRateLimiter(
           queryRequestRateLimiter, SolrRequest.SolrRequestType.QUERY);
@@ -632,7 +632,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Test
   public void testPriorityBasedRateLimiter() throws Exception {
-    RateLimitManager rateLimitManager = new RateLimitManager();
+    RateLimitManager rateLimitManager = new RateLimitManager("localhost");
 
     // PriorityBasedRateLimiter
     RateLimiterConfig rateLimiterConfig =
@@ -683,7 +683,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Test
   public void testPriorityBasedRateLimiterTimeout() throws Exception {
-    RateLimitManager rateLimitManager = new RateLimitManager();
+    RateLimitManager rateLimitManager = new RateLimitManager("localhost");
 
     // PriorityBasedRateLimiter
     RateLimiterConfig rateLimiterConfig =
@@ -730,7 +730,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Test
   public void testPriorityBasedRateLimiterDynamicChange() throws Exception {
-    RateLimitManager rateLimitManager = new RateLimitManager();
+    RateLimitManager rateLimitManager = new RateLimitManager("localhost");
 
     // PriorityBasedRateLimiter
     RateLimiterConfig rateLimiterConfig =
@@ -769,5 +769,48 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.PRIORITY_BASED);
 
     assertEquals(true, rateLimiter.getRateLimiterConfig().priorityBasedEnabled);
+  }
+
+  @Test
+  public void testEnableRateLimiterOnNode() throws Exception {
+    RateLimitManager rateLimitManager = new RateLimitManager("localhost");
+
+    // PriorityBasedRateLimiter
+    RateLimiterConfig rateLimiterConfig =
+        new RateLimiterConfig(
+            SolrRequest.SolrRequestType.QUERY,
+            false,
+            1,
+            10,
+            1 /* allowedRequests */,
+            true /* isSlotBorrowing */,
+            false);
+
+    QueryRateLimiter requestRateLimiter = new QueryRateLimiter(rateLimiterConfig);
+
+    rateLimitManager.registerRequestRateLimiter(
+        requestRateLimiter, SolrRequest.SolrRequestType.QUERY);
+
+    RequestRateLimiter rateLimiter =
+        rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
+    assertFalse(rateLimiter.rateLimiterConfig.isEnabled);
+
+    Map<String, Object> properties = new HashMap<>();
+    Map<String, Object> rateLimiterProps = new HashMap<>();
+    rateLimiterProps.put("enabled", false);
+    rateLimiterProps.put("guaranteedSlots", 1);
+    rateLimiterProps.put("allowedRequests", 1);
+    rateLimiterProps.put("slotBorrowingEnabled", false);
+    rateLimiterProps.put("slotAcquisitionTimeoutInMS", 100);
+    rateLimiterProps.put("priorityBasedEnabled", false);
+    rateLimiterProps.put("nodesEnabled", "localhost");
+    properties.put("rate-limiters", rateLimiterProps);
+
+    // updating rate limiter
+    rateLimitManager.onChange(properties);
+
+    rateLimiter = rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
+
+    assertTrue(rateLimiter.getRateLimiterConfig().isEnabled);
   }
 }
