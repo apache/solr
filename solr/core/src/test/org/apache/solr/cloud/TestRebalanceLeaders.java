@@ -375,7 +375,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         (liveNodes, docCollection) -> {
           for (Map.Entry<String, String> ent : expectedShardReplicaMap.entrySet()) {
             Replica rep = docCollection.getSlice(ent.getKey()).getReplica(ent.getValue());
-            if (!rep.getBool("property." + propLC, false)) {
+            if (rep.getBool("property." + propLC, false) == false) {
               return false;
             }
           }
@@ -588,7 +588,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
           for (Slice slice : docCollection.getSlices()) {
             for (Replica rep : slice.getReplicas()) {
-              if (!downJettyNodes.contains(rep.getNodeName())) {
+              if (downJettyNodes.contains(rep.getNodeName()) == false) {
                 continue; // We are on a live node
               }
               // A replica on an allegedly down node is reported as active.
@@ -613,7 +613,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
           boolean allActive = true;
           for (Slice slice : docCollection.getSlices()) {
             for (Replica rep : slice.getReplicas()) {
-              if (!rep.isActive(liveNodes)) {
+              if (rep.isActive(liveNodes) == false) {
                 allActive = false;
               }
             }
