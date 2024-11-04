@@ -166,7 +166,8 @@ public class AuthTool extends ToolBase {
 
   private int handleKerberos(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
-    boolean updateIncludeFileOnly = cli.getParsedOptionValue(UPDATE_INCLUDE_FILE_OPTION, false);
+    boolean updateIncludeFileOnly =
+        Boolean.parseBoolean(cli.getOptionValue(UPDATE_INCLUDE_FILE_OPTION, "false"));
     String securityJson =
         "{"
             + "\n  \"authentication\":{"
@@ -280,8 +281,9 @@ public class AuthTool extends ToolBase {
 
   private int handleBasicAuth(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
-    boolean prompt = cli.getParsedOptionValue(PROMPT_OPTION, false);
-    boolean updateIncludeFileOnly = cli.getParsedOptionValue(UPDATE_INCLUDE_FILE_OPTION, false);
+    boolean prompt = Boolean.parseBoolean(cli.getOptionValue(PROMPT_OPTION, "false"));
+    boolean updateIncludeFileOnly =
+        Boolean.parseBoolean(cli.getOptionValue(UPDATE_INCLUDE_FILE_OPTION, "false"));
     switch (cmd) {
       case "enable":
         if (!prompt && !cli.hasOption(CommonCLIOptions.CREDENTIALS_OPTION)) {
@@ -346,7 +348,8 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown = cli.getParsedOptionValue(BLOCK_UNKNOWN_OPTION, true);
+        boolean blockUnknown =
+            Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
