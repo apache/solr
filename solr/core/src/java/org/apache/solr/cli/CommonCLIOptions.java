@@ -17,33 +17,28 @@
 
 package org.apache.solr.cli;
 
-import java.util.Locale;
 import org.apache.commons.cli.Option;
-import org.apache.solr.common.util.EnvUtils;
 
 public final class CommonCLIOptions {
 
   private CommonCLIOptions() {}
 
-  public static final Option VERBOSE_OPTION = Option.builder("v")
-      .longOpt("verbose")
-      .desc("Enable verbose command output.")
-      .build();
+  public static final Option VERBOSE_OPTION =
+      Option.builder("v").longOpt("verbose").desc("Enable verbose command output.").build();
 
-  public static final Option HELP_OPTION = Option.builder("h")
-      .longOpt("help")
-      .desc("Print this message.")
-      .build();
+  public static final Option HELP_OPTION =
+      Option.builder("h").longOpt("help").desc("Print this message.").build();
 
-  public static final Option ZK_HOST_OPTION = Option.builder("z")
-      .longOpt("zk-host")
-      .argName("HOST")
-      .hasArg()
-      .desc(
-          "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-              + DefaultValues.ZK_HOST
-              + '.')
-      .build();
+  public static final Option ZK_HOST_OPTION =
+      Option.builder("z")
+          .longOpt("zk-host")
+          .argName("HOST")
+          .hasArg()
+          .desc(
+              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                  + DefaultValues.ZK_HOST
+                  + '.')
+          .build();
 
   public static final Option SOLR_URL_OPTION =
       Option.builder("s")
@@ -56,18 +51,17 @@ public final class CommonCLIOptions {
                   + '.')
           .build();
 
-  public static final Option RECURSE_OPTION =
-      Option.builder("r")
-          .longOpt("recurse")
-          .desc("Apply the command recursively.")
-          .build();
+  public static final Option RECURSIVE_OPTION =
+      Option.builder("r").longOpt("recursive").desc("Apply the command recursively.").build();
 
-  public static final Option CREDENTIALS_OPTION = Option.builder("u")
-      .longOpt("credentials")
-      .argName("credentials")
-      .hasArg()
-      .desc("Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-      .build();
+  public static final Option CREDENTIALS_OPTION =
+      Option.builder("u")
+          .longOpt("credentials")
+          .argName("credentials")
+          .hasArg()
+          .desc(
+              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+          .build();
 
   public static final class DefaultValues {
 
