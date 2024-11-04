@@ -26,7 +26,7 @@ setup_file() {
 
 teardown_file() {
   common_setup
-  solr stop -all
+  solr stop --all
 
 }
 
@@ -45,7 +45,7 @@ teardown() {
   run solr snapshot-create -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully created snapshot with name snapshot1 for collection films"  
   
-  run solr snapshot-delete -c films --snapshot-name snapshot1 -url http://localhost:${SOLR_PORT}
+  run solr snapshot-delete -c films --snapshot-name snapshot1 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot1 for collection films"
   
    # make sure you can create it again!
@@ -59,15 +59,16 @@ teardown() {
 @test "snapshot list" {  
   solr snapshot-create -c films --snapshot-name snapshot3 --solr-url http://localhost:${SOLR_PORT}
   
-  run solr snapshot-list -c films -url http://localhost:${SOLR_PORT}/solr
+  # Confirm that we continue to normalize away the /solr ending.
+  run solr snapshot-list -c films -s http://localhost:${SOLR_PORT}/solr
   assert_output --partial "snapshot3"
   
-  run solr snapshot-delete -c films --snapshot-name snapshot3 -url http://localhost:${SOLR_PORT}
+  run solr snapshot-delete -c films --snapshot-name snapshot3 -s http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully deleted snapshot with name snapshot3 for collection films"
 }
 
 @test "snapshot describe" {  
-  solr snapshot-create -c films --snapshot-name snapshot4 -url http://localhost:${SOLR_PORT}
+  solr snapshot-create -c films --snapshot-name snapshot4 -s http://localhost:${SOLR_PORT}
   
   run solr snapshot-describe -c films --snapshot-name snapshot4
   assert_output --partial "Name: snapshot4"

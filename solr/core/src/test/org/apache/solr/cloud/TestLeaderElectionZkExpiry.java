@@ -69,7 +69,8 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
               () -> {
                 TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
                 while (!timeout.hasTimedOut()) {
-                  server.expire(zkController.getZkClient().getZooKeeper().getSessionId());
+                  long sessionId = zkController.getZkClient().getZkSessionId();
+                  server.expire(sessionId);
                   try {
                     timeout.sleep(10);
                   } catch (InterruptedException e) {
