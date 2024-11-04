@@ -95,7 +95,8 @@ public class StatusTool extends ToolBase {
         .addOption(MAX_WAIT_SECS_OPTION)
         .addOption(PORT_OPTION)
         .addOption(SHORT_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION);
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
