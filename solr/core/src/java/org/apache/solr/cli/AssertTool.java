@@ -215,15 +215,9 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    if (cli.hasOption(MESSAGE_OPTION)) {
-      message = cli.getOptionValue(MESSAGE_OPTION);
-    }
-    if (cli.hasOption(TIMEOUT_OPTION)) {
-      timeoutMs = cli.getParsedOptionValue(TIMEOUT_OPTION);
-    }
-    if (cli.hasOption(EXIT_CODE_OPTION)) {
-      useExitCode = true;
-    }
+    message = cli.getOptionValue(MESSAGE_OPTION);
+    timeoutMs = cli.getParsedOptionValue(TIMEOUT_OPTION, timeoutMs);
+    useExitCode = cli.hasOption(EXIT_CODE_OPTION);
 
     int ret = 0;
     if (cli.hasOption(IS_ROOT_OPTION)) {

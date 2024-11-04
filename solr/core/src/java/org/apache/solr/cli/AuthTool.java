@@ -164,36 +164,6 @@ public class AuthTool extends ToolBase {
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
-  private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
-    if (cli.hasOption(argName)) {
-      final String value = cli.getOptionValue(argName);
-      if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
-        echo("Argument [" + argName + "] must be either true or false, but was [" + value + "]");
-        SolrCLI.exit(1);
-      }
-    }
-  }
-
-  private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, Option option) {
-    if (cli.hasOption(option)) {
-      final String value = cli.getOptionValue(option);
-      if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
-        echo(
-            "Argument ["
-                + option.getLongOpt()
-                + "] must be either true or false, but was ["
-                + value
-                + "]");
-        SolrCLI.exit(1);
-      }
-    }
-  }
-
-  // @Override
-  // public int runTool(CommandLine cli) throws Exception {
-
-  // }
-
   private int handleKerberos(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
     boolean updateIncludeFileOnly = cli.getParsedOptionValue(UPDATE_INCLUDE_FILE_OPTION, false);
@@ -635,9 +605,6 @@ public class AuthTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    ensureArgumentIsValidBooleanIfPresent(cli, BLOCK_UNKNOWN_OPTION);
-    ensureArgumentIsValidBooleanIfPresent(cli, UPDATE_INCLUDE_FILE_OPTION);
-
     String type = cli.getOptionValue(TYPE_OPTION, "basicAuth");
     switch (type) {
       case "basicAuth":

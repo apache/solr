@@ -148,10 +148,7 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = true;
-    if (cli.hasOption(DELETE_CONFIG_OPTION)) {
-      deleteConfig = cli.getParsedOptionValue(DELETE_CONFIG_OPTION);
-    }
+    boolean deleteConfig = cli.getParsedOptionValue(DELETE_CONFIG_OPTION, true);
 
     if (deleteConfig && configName != null) {
       if (cli.hasOption(FORCE_OPTION)) {
