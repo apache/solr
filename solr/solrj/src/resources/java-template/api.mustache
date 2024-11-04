@@ -133,11 +133,26 @@ public class {{classname}} {
                 {{/requiredParams}}
                 {{#bodyParam}}
                 {{^vendorExtensions.x-genericEntity}}
+                {{#isArray}}
+                    this.requestBody = new ArrayList<>();
+                    addHeader("Content-type", "application/json");
+                {{/isArray}}
+                {{^isArray}}
                     this.requestBody = new {{{dataType}}}();
                     addHeader("Content-type", "application/json");
+                {{/isArray}}
                 {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }
+
+            {{! If the request body is a list, provide methods to add to it}}
+            {{#bodyParam}}
+            {{#isArray}}
+            public void add{{items.dataType}}({{items.dataType}} entry) {
+                this.requestBody.add(entry);
+            }
+            {{/isArray}}
+            {{/bodyParam}}
 
             {{#optionalParams}}
             {{^isBodyParam}}
