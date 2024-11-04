@@ -60,6 +60,7 @@ public class AuthTool extends ToolBase {
       Option.builder()
           .longOpt("prompt")
           .hasArg()
+          .type(Boolean.class)
           .desc(
               "Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
           .build();
@@ -79,6 +80,7 @@ public class AuthTool extends ToolBase {
           .desc("Blocks all access for unknown users (requires authentication for all endpoints).")
           .hasArg()
           .argName("true|false")
+          .type(Boolean.class)
           .build();
 
   private static final Option SOLR_INCLUDE_FILE_OPTION =
@@ -97,6 +99,7 @@ public class AuthTool extends ToolBase {
               "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
                   + " authentication (i.e. don't update security.json).")
           .hasArg()
+          .type(Boolean.class)
           .build();
 
   private static final Option AUTH_CONF_DIR_OPTION =
@@ -193,8 +196,7 @@ public class AuthTool extends ToolBase {
 
   private int handleKerberos(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
-    boolean updateIncludeFileOnly =
-        Boolean.parseBoolean(cli.getOptionValue(UPDATE_INCLUDE_FILE_OPTION, "false"));
+    boolean updateIncludeFileOnly = cli.getParsedOptionValue(UPDATE_INCLUDE_FILE_OPTION, false);
     String securityJson =
         "{"
             + "\n  \"authentication\":{"
@@ -309,9 +311,8 @@ public class AuthTool extends ToolBase {
 
   private int handleBasicAuth(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
-    boolean prompt = Boolean.parseBoolean(cli.getOptionValue(PROMPT_OPTION, "false"));
-    boolean updateIncludeFileOnly =
-        Boolean.parseBoolean(cli.getOptionValue(UPDATE_INCLUDE_FILE_OPTION, "false"));
+    boolean prompt = cli.getParsedOptionValue(PROMPT_OPTION, false);
+    boolean updateIncludeFileOnly = cli.getParsedOptionValue(UPDATE_INCLUDE_FILE_OPTION, false);
     switch (cmd) {
       case "enable":
         if (!prompt && !cli.hasOption(CommonCLIOptions.CREDENTIALS_OPTION)) {
@@ -380,8 +381,7 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown =
-            Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
+        boolean blockUnknown = cli.getParsedOptionValue(BLOCK_UNKNOWN_OPTION, true);
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);

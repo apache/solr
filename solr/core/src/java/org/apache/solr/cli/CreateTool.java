@@ -67,6 +67,7 @@ public class CreateTool extends ToolBase {
           .longOpt("shards")
           .hasArg()
           .argName("#")
+          .type(Integer.class)
           .desc("Number of shards; default is 1.")
           .build();
 
@@ -75,6 +76,7 @@ public class CreateTool extends ToolBase {
           .longOpt("replication-factor")
           .hasArg()
           .argName("#")
+          .type(Integer.class)
           .desc(
               "Number of copies of each document across the collection (replicas per shard); default is 1.")
           .build();
@@ -253,8 +255,8 @@ public class CreateTool extends ToolBase {
     }
 
     // build a URL to create the collection
-    int numShards = Integer.parseInt(cli.getOptionValue(SHARDS_OPTION, String.valueOf(1)));
-    int replicationFactor = Integer.parseInt(cli.getOptionValue(REPLICATION_FACTOR_OPTION, "1"));
+    int numShards = cli.getParsedOptionValue(SHARDS_OPTION, 1);
+    int replicationFactor = cli.getParsedOptionValue(REPLICATION_FACTOR_OPTION, 1);
 
     boolean configExistsInZk =
         confName != null

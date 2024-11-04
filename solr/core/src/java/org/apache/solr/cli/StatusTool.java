@@ -54,6 +54,7 @@ public class StatusTool extends ToolBase {
           .longOpt("max-wait-secs")
           .hasArg()
           .argName("SECS")
+          .type(Integer.class)
           .deprecated() // Will make it a stealth option, not printed or complained about
           .desc("Wait up to the specified number of seconds to see Solr running.")
           .build();
@@ -63,6 +64,7 @@ public class StatusTool extends ToolBase {
           .longOpt("port")
           .hasArg()
           .argName("PORT")
+          .type(Integer.class)
           .desc("Port on localhost to check status for")
           .build();
 
@@ -102,10 +104,9 @@ public class StatusTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
-    Integer port =
-        cli.hasOption(PORT_OPTION) ? Integer.parseInt(cli.getOptionValue(PORT_OPTION)) : null;
+    Integer port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
     boolean shortFormat = cli.hasOption(SHORT_OPTION);
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue(MAX_WAIT_SECS_OPTION, "0"));
+    int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
 
     if (port != null && solrUrl != null) {
       throw new IllegalArgumentException("Only one of port or url can be specified");
@@ -167,7 +168,7 @@ public class StatusTool extends ToolBase {
   }
 
   private void printProcessStatus(SolrProcess process, CommandLine cli) throws Exception {
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue(MAX_WAIT_SECS_OPTION, "0"));
+    int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
     boolean shortFormat = cli.hasOption(SHORT_OPTION);
     String pidUrl = process.getLocalUrl();
     if (shortFormat) {

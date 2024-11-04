@@ -130,6 +130,7 @@ public class PostTool extends ToolBase {
           .longOpt("recursive")
           .hasArg()
           .argName("recursive")
+          .type(Integer.class)
           .desc("For web crawl, how deep to go. default: 1")
           .build();
 
@@ -138,6 +139,7 @@ public class PostTool extends ToolBase {
           .longOpt("delay")
           .hasArg()
           .argName("delay")
+          .type(Integer.class)
           .desc(
               "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
           .build();
@@ -306,8 +308,8 @@ public class PostTool extends ToolBase {
     fileTypes = cli.getOptionValue(FILE_TYPES_OPTION, PostTool.DEFAULT_FILE_TYPES);
 
     int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = Integer.parseInt(cli.getOptionValue(DELAY_OPTION, String.valueOf(defaultDelay)));
-    recursive = Integer.parseInt(cli.getOptionValue(RECURSIVE_OPTION, "1"));
+    delay = cli.getParsedOptionValue(DELAY_OPTION, defaultDelay);
+    recursive = cli.getParsedOptionValue(RECURSIVE_OPTION, 1);
 
     out = isVerbose() ? CLIO.getOutStream() : null;
     commit = !cli.hasOption(SKIP_COMMIT_OPTION);
