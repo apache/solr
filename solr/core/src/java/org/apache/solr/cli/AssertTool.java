@@ -182,8 +182,6 @@ public class AssertTool extends ToolBase {
    */
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
-
     int toolExitStatus;
     try {
       toolExitStatus = runAssert(cli);
@@ -191,7 +189,7 @@ public class AssertTool extends ToolBase {
       // since this is a CLI, spare the user the stacktrace
       String excMsg = exc.getMessage();
       if (excMsg != null) {
-        if (verbose) {
+        if (isVerbose()) {
           CLIO.err("\nERROR: " + exc + "\n");
         } else {
           CLIO.err("\nERROR: " + excMsg + "\n");

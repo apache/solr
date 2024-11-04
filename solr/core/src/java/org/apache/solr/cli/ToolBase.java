@@ -26,8 +26,8 @@ import org.apache.commons.cli.Options;
 
 public abstract class ToolBase implements Tool {
 
+  private boolean verbose = false;
   protected PrintStream stdout;
-  protected boolean verbose = false;
 
   protected ToolBase() {
     this(CLIO.getOutStream());

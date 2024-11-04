@@ -624,7 +624,7 @@ public class RunExampleTool extends ToolBase {
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "" : "--user-managed";
     String forceArg = cli.hasOption(FORCE_OPTION) ? " --force" : "";
-    String verboseArg = verbose ? "--verbose" : "";
+    String verboseArg = isVerbose() ? "--verbose" : "";
 
     String jvmOpts = cli.getOptionValue(JVM_OPTS_OPTION);
     String jvmOptsArg = (jvmOpts != null) ? " --jvm-opts \"" + jvmOpts + "\"" : "";
@@ -1007,7 +1007,7 @@ public class RunExampleTool extends ToolBase {
           }
 
         } catch (NumberFormatException nfe) {
-          if (verbose) echo(value + " is not a number!");
+          if (isVerbose()) echo(value + " is not a number!");
 
           if (min != null && max != null) {
             value =

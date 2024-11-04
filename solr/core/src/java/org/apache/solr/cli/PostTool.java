@@ -307,7 +307,7 @@ public class PostTool extends ToolBase {
     delay = Integer.parseInt(cli.getOptionValue(DELAY_OPTION, String.valueOf(defaultDelay)));
     recursive = Integer.parseInt(cli.getOptionValue(RECURSIVE_OPTION, "1"));
 
-    out = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION) ? CLIO.getOutStream() : null;
+    out = isVerbose() ? CLIO.getOutStream() : null;
     commit = !cli.hasOption(SKIP_COMMIT_OPTION);
     optimize = cli.hasOption(OPTIMIZE_OPTION);
 
