@@ -69,7 +69,7 @@ public class ApiTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String getUrl = cli.getOptionValue(SOLR_URL_OPTION);
-    String response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+    String response = callGet(getUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     // pretty-print the response to stdout
     echo(response);

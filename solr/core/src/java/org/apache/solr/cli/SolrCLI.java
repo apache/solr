@@ -85,47 +85,6 @@ public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String ZK_HOST = "localhost:9983";
-
-  public static final Option OPTION_ZKHOST =
-      Option.builder("z")
-          .longOpt("zk-host")
-          .argName("HOST")
-          .hasArg()
-          .desc(
-              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST
-                  + '.')
-          .build();
-  public static final Option OPTION_SOLRURL =
-      Option.builder("s")
-          .longOpt("solr-url")
-          .argName("HOST")
-          .hasArg()
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + getDefaultSolrUrl()
-                  + '.')
-          .build();
-
-  public static final Option OPTION_VERBOSE =
-      Option.builder().longOpt("verbose").desc("Enable verbose command output.").build();
-
-  public static final Option OPTION_HELP =
-      Option.builder("h").longOpt("help").desc("Print this message.").build();
-
-  public static final Option OPTION_RECURSIVE =
-      Option.builder("r").longOpt("recursive").desc("Apply the command recursively.").build();
-
-  public static final Option OPTION_CREDENTIALS =
-      Option.builder("u")
-          .longOpt("credentials")
-          .argName("credentials")
-          .hasArg()
-          .desc(
-              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-          .build();
-
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);

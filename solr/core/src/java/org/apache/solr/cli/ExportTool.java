@@ -288,7 +288,7 @@ public class ExportTool extends ToolBase {
       // think about support --zk-host someday.
       throw new IllegalArgumentException("Must specify --solr-url.");
     }
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
 
