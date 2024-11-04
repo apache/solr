@@ -758,7 +758,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     while (0 < maxIterations--) {
 
       final ClusterState state = stateReader.getClusterState();
-      Set<String> availableCollections = state.getCollectionsMap().keySet();
+      Set<String> availableCollections = (Set<String>) state.getCollectionNames();
       int availableCount = 0;
       for (String requiredCollection : collections) {
         stateReader.waitForState(

@@ -18,6 +18,7 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -157,7 +158,7 @@ public class DeleteTool extends ToolBase {
             configName);
       } else {
         // need to scan all Collections to see if any are using the config
-        Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
+        Collection<String> collections = zkStateReader.getClusterState().getCollectionNames();
 
         // give a little note to the user if there are many collections in case it takes a while
         if (collections.size() > 50)
