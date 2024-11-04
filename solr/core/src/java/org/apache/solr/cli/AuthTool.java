@@ -167,7 +167,12 @@ public class AuthTool extends ToolBase {
     if (cli.hasOption(option)) {
       final String value = cli.getOptionValue(option);
       if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
-        echo("Argument [" + option.getLongOpt() + "] must be either true or false, but was [" + value + "]");
+        echo(
+            "Argument ["
+                + option.getLongOpt()
+                + "] must be either true or false, but was ["
+                + value
+                + "]");
         SolrCLI.exit(1);
       }
     }
