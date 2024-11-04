@@ -2232,8 +2232,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           c -> {
             int expectedSlices = numShardsNumReplicaList.get(0);
             // The Math.min thing is here, because we expect replication-factor to be reduced to if
-            // there
-            // are not enough live nodes to spread all shards of a collection over different nodes
+            // there are not enough live nodes to spread all shards of a collection over different
+            // nodes.
             int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
             int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
 
