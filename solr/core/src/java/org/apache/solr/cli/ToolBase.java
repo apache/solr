@@ -18,8 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -61,8 +60,16 @@ public abstract class ToolBase implements Tool {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return new ArrayList<>(getAllOptions().getOptions());
+  public Options getOptions() {
+    Options options = new Options();
+
+    Collection<Option> toolOpts = getAllOptions().getOptions();
+    for (Option toolOpt : toolOpts) {
+      if (!toolOpt.isDeprecated()) {
+        options.addOption(toolOpt);
+      }
+    }
+    return options;
   }
 
   @Override

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -59,14 +58,11 @@ public interface Tool {
   Options getAllOptions();
 
   /**
-   * Retrieve a list of {@link Option}s supported by this tool.
+   * Retrieve a list of non-debrecated {@link Option}s supported by this tool.
    *
-   * @return A list of {@link Option}s this tool supports.
-   * @deprecated This method's return type will be changed in the future with {@link Options}. Use
-   *     {#getAllOptions} for the transition to avoid breaking changes.
+   * @return A list of all non-debrecated {@link Option}s of this tool.
    */
-  @Deprecated(since = "9.8")
-  List<Option> getOptions();
+  Options getOptions();
 
   int runTool(CommandLine cli) throws Exception;
 }

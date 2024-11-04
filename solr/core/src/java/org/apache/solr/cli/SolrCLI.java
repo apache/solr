@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -264,20 +263,6 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
-  /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
-  @Deprecated(since = "9.8")
-  public static Options getToolOptionsForHelp(Tool tool) {
-    Options options = new Options();
-
-    Collection<Option> toolOpts = tool.getAllOptions().getOptions();
-    for (Option toolOpt : toolOpts) {
-      if (!toolOpt.isDeprecated()) {
-        options.addOption(toolOpt);
-      }
-    }
-    return options;
-  }
-
   /**
    * Returns the value of the option with the given name, or the value of the deprecated option. If
    * both values are null, then it returns the default value.
@@ -353,13 +338,13 @@ public class SolrCLI implements CLIO {
   /** Prints tool help for a given tool */
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
-    Options optionsNoDeprecated = getToolOptionsForHelp(tool);
+
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
         usageString,
         "\n" + tool.getHeader(),
-        optionsNoDeprecated,
+        tool.getOptions(),
         tool.getFooter(),
         autoGenerateUsage);
   }
