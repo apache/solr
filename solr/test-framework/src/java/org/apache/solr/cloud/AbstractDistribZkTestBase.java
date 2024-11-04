@@ -245,7 +245,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     log.info("Will wait for a node to become leader for 15 secs");
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
-    long start = System.nanoTime();
+    long startNs = System.nanoTime();
     zkStateReader.waitForState(
         "collection1",
         15,
@@ -263,7 +263,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
                   "Old leader {}, new leader {}. New leader got elected in {} ms",
                   oldLeader,
                   slice.getLeader(),
-                  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+                  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs));
             }
             return true;
           }
