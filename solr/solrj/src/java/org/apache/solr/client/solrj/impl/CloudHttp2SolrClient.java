@@ -240,7 +240,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
     }
 
-    /* for an expert use-case */
+    /** for an expert use-case */
     public Builder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
     }

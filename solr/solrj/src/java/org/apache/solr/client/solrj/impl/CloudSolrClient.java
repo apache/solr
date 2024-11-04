@@ -178,7 +178,7 @@ public abstract class CloudSolrClient extends SolrClient {
       super(zkHosts, zkChroot);
     }
 
-    /* for an expert use-case */
+    /** for an expert use-case */
     public Builder(ClusterStateProvider stateProvider) {
       super(stateProvider);
     }
