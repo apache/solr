@@ -93,7 +93,6 @@ public class SolrCLI implements CLIO {
           .longOpt("zk-host")
           .argName("HOST")
           .hasArg()
-          .required(false)
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + ZK_HOST
@@ -104,7 +103,6 @@ public class SolrCLI implements CLIO {
           .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
-          .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + getDefaultSolrUrl()
@@ -114,17 +112,17 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_VERBOSE =
       Option.builder()
           .longOpt("verbose")
-          .required(false)
           .desc("Enable verbose command output.")
           .build();
 
-  public static final Option OPTION_HELP =
-      Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
+  public static final Option OPTION_HELP = Option.builder("h")
+      .longOpt("help")
+      .desc("Print this message.")
+      .build();
 
   public static final Option OPTION_RECURSIVE =
       Option.builder("r")
           .longOpt("recursive")
-          .required(false)
           .desc("Apply the command recursively.")
           .build();
 
@@ -133,7 +131,6 @@ public class SolrCLI implements CLIO {
           .longOpt("credentials")
           .argName("credentials")
           .hasArg()
-          .required(false)
           .desc(
               "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
           .build();

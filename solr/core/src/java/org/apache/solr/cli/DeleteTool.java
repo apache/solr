@@ -60,13 +60,11 @@ public class DeleteTool extends ToolBase {
       .longOpt("delete-config")
       .hasArg()
       .argName("true|false")
-      .required(false)
       .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
       .build();
 
   private static final Option FORCE_OPTION = Option.builder("f")
       .longOpt("force")
-      .required(false)
       .desc("Skip safety checks when deleting the configuration directory used by a collection.")
       .build();
 

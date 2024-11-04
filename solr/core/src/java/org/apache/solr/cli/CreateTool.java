@@ -91,7 +91,6 @@ public class CreateTool extends ToolBase {
       .longOpt("conf-name")
       .argName("NAME")
       .hasArg()
-      .required(false)
       .desc("Configuration name; default is the collection name.")
       .build();
 

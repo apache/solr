@@ -49,7 +49,6 @@ public class ClusterTool extends ToolBase {
       .longOpt("value")
       .hasArg()
       .argName("VALUE")
-      .required(false)
       .desc("Set the property to this value.")
       .build();
 

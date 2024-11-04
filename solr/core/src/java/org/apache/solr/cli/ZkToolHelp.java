@@ -29,12 +29,10 @@ public class ZkToolHelp extends ToolBase {
   private static final Option PRINT_ZK_SUBCOMMAND_OPTION = Option.builder()
       .longOpt("print-zk-subcommand-usage")
       .desc("Reminds user to prepend zk to invoke the command.")
-      .required(false)
       .build();
 
   private static final Option PRINT_LONG_ZK_USAGE_OPTION = Option.builder()
       .longOpt("print-long-zk-usage")
-      .required(false)
       .desc("Invokes the detailed help for zk commands.")
       .build();
 

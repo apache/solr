@@ -107,7 +107,6 @@ public class RunExampleTool extends ToolBase {
       .longOpt("example-dir")
       .hasArg()
       .argName("DIR")
-      .required(false)
       .desc("Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
       .build();
 
@@ -129,7 +128,6 @@ public class RunExampleTool extends ToolBase {
       .longOpt("host")
       .hasArg()
       .argName("HOSTNAME")
-      .required(false)
       .desc("Specify the hostname for this Solr instance.")
       .build();
 

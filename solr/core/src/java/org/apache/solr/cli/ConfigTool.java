@@ -50,7 +50,6 @@ public class ConfigTool extends ToolBase {
       .longOpt("action")
       .argName("ACTION")
       .hasArg()
-      .required(false)
       .desc("Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
       .build();
 
@@ -66,7 +65,6 @@ public class ConfigTool extends ToolBase {
       .longOpt("value")
       .argName("VALUE")
       .hasArg()
-      .required(false)
       .desc("Set the property to this value; accepts JSON objects and strings.")
       .build();
 
