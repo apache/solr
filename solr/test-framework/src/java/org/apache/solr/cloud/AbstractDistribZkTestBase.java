@@ -246,29 +246,36 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
 
     long startNs = System.nanoTime();
-    zkStateReader.waitForState(
-        "collection1",
-        15,
-        TimeUnit.SECONDS,
-        (docCollection) -> {
-          if (docCollection == null) return false;
+    try {
+      zkStateReader.waitForState(
+          "collection1",
+          15,
+          TimeUnit.SECONDS,
+          (docCollection) -> {
+            if (docCollection == null) return false;
 
-          Slice slice = docCollection.getSlice(shardName);
-          if (slice != null
-              && slice.getLeader() != null
-              && !slice.getLeader().equals(oldLeader)
-              && slice.getLeader().getState() == Replica.State.ACTIVE) {
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Old leader {}, new leader {}. New leader got elected in {} ms",
-                  oldLeader,
-                  slice.getLeader(),
-                  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs));
+            Slice slice = docCollection.getSlice(shardName);
+            if (slice != null
+                && slice.getLeader() != null
+                && !slice.getLeader().equals(oldLeader)
+                && slice.getLeader().getState() == Replica.State.ACTIVE) {
+              if (log.isInfoEnabled()) {
+                log.info(
+                    "Old leader {}, new leader {}. New leader got elected in {} ms",
+                    oldLeader,
+                    slice.getLeader(),
+                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs));
+              }
+              return true;
             }
-            return true;
-          }
-          return false;
-        });
+            return false;
+          });
+    } catch (InterruptedException | TimeoutException e) {
+      // If we failed to get a new leader, print some diagnotics before the test fails
+      Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
+      zkStateReader.getZkClient().printLayoutToStream(System.out);
+      throw e;
+    }
   }
 
   public static void verifyReplicaStatus(
