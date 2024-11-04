@@ -625,7 +625,7 @@ public class ZkStateReader implements SolrCloseable {
           collectionWatches.watchedCollections().size(),
           collectionWatches.activeCollectionCount(),
           lazyCollectionStates.keySet().size(),
-          clusterState.getCollectionStates().size());
+          clusterState.size());
     }
 
     if (log.isTraceEnabled()) {
