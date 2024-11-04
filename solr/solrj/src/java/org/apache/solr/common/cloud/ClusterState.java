@@ -382,8 +382,10 @@ public class ClusterState implements MapWriter {
   /**
    * Be aware that this may return collections which may not exist now. You can confirm that this
    * collection exists after verifying CollectionRef.get() != null
+   *
+   * @deprecated see {@link #collectionStream()}
    */
-  @Deprecated // see collectionStream()
+  @Deprecated
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
@@ -407,7 +409,10 @@ public class ClusterState implements MapWriter {
     return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
   }
 
-  /** Streams the resolved DocCollections. Use this sparingly in case there are many collections. */
+  /**
+   * Calls {@code consumer} with a resolved DocCollections for all collections. Use this sparingly
+   * in case there are many collections.
+   */
   public void forEachCollection(Consumer<DocCollection> consumer) {
     collectionStream().forEach(consumer);
   }
