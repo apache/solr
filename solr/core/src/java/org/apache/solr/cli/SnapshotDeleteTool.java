@@ -70,8 +70,6 @@ public class SnapshotDeleteTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
     String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     try (var solrClient = SolrCLI.getSolrClient(cli)) {

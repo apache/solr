@@ -262,12 +262,6 @@ public class SolrCLI implements CLIO {
     }
   }
 
-  public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(CommonCLIOptions.VERBOSE_OPTION)) {
-      StartupLoggingUtils.changeLogLevel("WARN");
-    }
-  }
-
   // Creates an instance of the requested tool, using classpath scanning if necessary
   private static Tool newTool(String toolType) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();

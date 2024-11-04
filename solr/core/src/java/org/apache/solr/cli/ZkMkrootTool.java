@@ -77,7 +77,6 @@ public class ZkMkrootTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
     String znode = cli.getArgs()[0];
     boolean failOnExists = cli.hasOption(FAIL_ON_EXISTS_OPTION);

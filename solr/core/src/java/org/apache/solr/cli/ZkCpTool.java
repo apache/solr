@@ -125,7 +125,6 @@ public class ZkCpTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");

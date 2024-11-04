@@ -82,7 +82,6 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
     final String solrInstallDir = System.getProperty("solr.install.dir");

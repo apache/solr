@@ -58,7 +58,6 @@ public class ZkLsTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
     String znode = cli.getArgs()[0];
 

@@ -101,8 +101,6 @@ public class SnapshotExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
     String snapshotName = cli.getOptionValue(SNAPSHOT_NAME_OPTION);
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     String destDir = cli.getOptionValue(DEST_DIR_OPTION);

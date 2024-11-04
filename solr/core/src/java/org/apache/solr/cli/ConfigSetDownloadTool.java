@@ -80,7 +80,6 @@ public class ConfigSetDownloadTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
     String confName = cli.getOptionValue(CONF_NAME_OPTION);

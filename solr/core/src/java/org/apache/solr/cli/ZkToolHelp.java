@@ -60,8 +60,6 @@ public class ZkToolHelp extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
     if (cli.hasOption(PRINT_ZK_SUBCOMMAND_OPTION)) {
       String scriptCommand = cli.getArgs()[0];
       print(

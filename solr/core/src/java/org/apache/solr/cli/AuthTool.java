@@ -635,8 +635,6 @@ public class AuthTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
     ensureArgumentIsValidBooleanIfPresent(cli, BLOCK_UNKNOWN_OPTION);
     ensureArgumentIsValidBooleanIfPresent(cli, UPDATE_INCLUDE_FILE_OPTION);
 

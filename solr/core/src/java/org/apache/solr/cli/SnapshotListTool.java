@@ -62,8 +62,6 @@ public class SnapshotListTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
     String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
     try (var solrClient = SolrCLI.getSolrClient(cli)) {
       listSnapshots(solrClient, collectionName);

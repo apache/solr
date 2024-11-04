@@ -274,8 +274,6 @@ public class PostTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-
     solrUpdateUrl = null;
     if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
       String url =

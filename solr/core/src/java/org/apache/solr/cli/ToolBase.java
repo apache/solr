@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool {
 
@@ -67,6 +68,7 @@ public abstract class ToolBase implements Tool {
   @Override
   public int runTool(CommandLine cli) throws Exception {
     verbose = cli.hasOption(CommonCLIOptions.VERBOSE_OPTION);
+    raiseLogLevelUnlessVerbose();
 
     int toolExitStatus = 0;
     try {
@@ -85,6 +87,12 @@ public abstract class ToolBase implements Tool {
       }
     }
     return toolExitStatus;
+  }
+
+  private void raiseLogLevelUnlessVerbose() {
+    if (!verbose) {
+      StartupLoggingUtils.changeLogLevel("WARN");
+    }
   }
 
   public abstract void runImpl(CommandLine cli) throws Exception;
