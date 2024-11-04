@@ -32,6 +32,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -195,5 +196,18 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   default CloudDescriptor getCloudDescriptor() {
     return getCore().getCoreDescriptor().getCloudDescriptor();
+  }
+
+  /** The writer to use for this request, considering {@link CommonParams#WT}. Never null. */
+  default QueryResponseWriter getResponseWriter() {
+    // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
+    SolrCore core = getCore();
+    String wt = getParams().get(CommonParams.WT);
+    if (core != null) {
+      return core.getQueryResponseWriter(wt);
+    } else {
+      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
+          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+    }
   }
 }
