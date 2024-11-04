@@ -707,12 +707,12 @@ public abstract class LBSolrClient extends SolrClient {
           throw e;
         }
       } catch (IOException e) {
-          ex = e;
-          moveAliveToDead(wrapper);
-          if (justFailed == null) {
-            justFailed = new HashMap<>();
-          }
-          justFailed.put(endpoint.getUrl(), wrapper);
+        ex = e;
+        moveAliveToDead(wrapper);
+        if (justFailed == null) {
+          justFailed = new HashMap<>();
+        }
+        justFailed.put(endpoint.getUrl(), wrapper);
       } catch (Exception e) {
         throw new SolrServerException(e);
       }
