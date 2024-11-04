@@ -54,7 +54,7 @@ public class UpdateACLTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return List.of(SolrCLI.OPTION_ZKHOST, SolrCLI.OPTION_ZKHOST_DEPRECATED);
+    return List.of(SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
