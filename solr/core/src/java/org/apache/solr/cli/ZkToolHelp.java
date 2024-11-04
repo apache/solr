@@ -16,25 +16,27 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
 import static org.apache.solr.cli.SolrCLI.print;
 
 import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 /** Supports zk help information in the bin/solr script. */
 public class ZkToolHelp extends ToolBase {
 
-  private static final Option PRINT_ZK_SUBCOMMAND_OPTION = Option.builder()
-      .longOpt("print-zk-subcommand-usage")
-      .desc("Reminds user to prepend zk to invoke the command.")
-      .build();
+  private static final Option PRINT_ZK_SUBCOMMAND_OPTION =
+      Option.builder()
+          .longOpt("print-zk-subcommand-usage")
+          .desc("Reminds user to prepend zk to invoke the command.")
+          .build();
 
-  private static final Option PRINT_LONG_ZK_USAGE_OPTION = Option.builder()
-      .longOpt("print-long-zk-usage")
-      .desc("Invokes the detailed help for zk commands.")
-      .build();
+  private static final Option PRINT_LONG_ZK_USAGE_OPTION =
+      Option.builder()
+          .longOpt("print-long-zk-usage")
+          .desc("Invokes the detailed help for zk commands.")
+          .build();
 
   public ZkToolHelp() {
     this(CLIO.getOutStream());

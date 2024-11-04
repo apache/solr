@@ -16,13 +16,13 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +31,12 @@ import org.slf4j.LoggerFactory;
 public class ZkMkrootTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option FAIL_ON_EXISTS_OPTION = Option.builder()
-      .longOpt("fail-on-exists")
-      .hasArg()
-      .desc("Raise an error if the root exists.  Defaults to false.")
-      .build();
+  private static final Option FAIL_ON_EXISTS_OPTION =
+      Option.builder()
+          .longOpt("fail-on-exists")
+          .hasArg()
+          .desc("Raise an error if the root exists.  Defaults to false.")
+          .build();
 
   public ZkMkrootTool() {
     this(CLIO.getOutStream());

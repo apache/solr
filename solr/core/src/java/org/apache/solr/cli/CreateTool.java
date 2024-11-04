@@ -26,9 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
@@ -55,44 +53,50 @@ import org.noggit.JSONWriter;
 /** Supports create command in the bin/solr script. */
 public class CreateTool extends ToolBase {
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .hasArg()
-      .argName("NAME")
-      .required(true)
-      .desc("Name of collection or core to create.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required(true)
+          .desc("Name of collection or core to create.")
+          .build();
 
-  private static final Option SHARDS_OPTION = Option.builder("sh")
-      .longOpt("shards")
-      .hasArg()
-      .argName("#")
-      .desc("Number of shards; default is 1.")
-      .build();
+  private static final Option SHARDS_OPTION =
+      Option.builder("sh")
+          .longOpt("shards")
+          .hasArg()
+          .argName("#")
+          .desc("Number of shards; default is 1.")
+          .build();
 
-  private static final Option REPLICATION_FACTOR_OPTION = Option.builder("rf")
-      .longOpt("replication-factor")
-      .hasArg()
-      .argName("#")
-      .desc("Number of copies of each document across the collection (replicas per shard); default is 1.")
-      .build();
+  private static final Option REPLICATION_FACTOR_OPTION =
+      Option.builder("rf")
+          .longOpt("replication-factor")
+          .hasArg()
+          .argName("#")
+          .desc(
+              "Number of copies of each document across the collection (replicas per shard); default is 1.")
+          .build();
 
-  private static final Option CONF_DIR_OPTION = Option.builder("d")
-      .longOpt("conf-dir")
-      .argName("DIR")
-      .hasArg()
-      .desc(
-          "Configuration directory to copy when creating the new collection; default is "
-              + DefaultValues.DEFAULT_CONFIG_SET
-              + '.')
-      .build();
+  private static final Option CONF_DIR_OPTION =
+      Option.builder("d")
+          .longOpt("conf-dir")
+          .argName("DIR")
+          .hasArg()
+          .desc(
+              "Configuration directory to copy when creating the new collection; default is "
+                  + DefaultValues.DEFAULT_CONFIG_SET
+                  + '.')
+          .build();
 
-  private static final Option CONF_NAME_OPTION = Option.builder("n")
-      .longOpt("conf-name")
-      .argName("NAME")
-      .hasArg()
-      .desc("Configuration name; default is the collection name.")
-      .build();
+  private static final Option CONF_NAME_OPTION =
+      Option.builder("n")
+          .longOpt("conf-name")
+          .argName("NAME")
+          .hasArg()
+          .desc("Configuration name; default is the collection name.")
+          .build();
 
   public CreateTool() {
     this(CLIO.getOutStream());
@@ -143,10 +147,12 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, SolrCLI.getDefaultSolrUrl());
+    String solrUrl =
+        cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    final String confDirName = cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
+    final String confDirName =
+        cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
     Path configsetDir = Paths.get(confDirName);
@@ -167,7 +173,8 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+    if (SolrCLI.safeCheckCoreExists(
+        solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -345,13 +352,15 @@ public class CreateTool extends ToolBase {
   }
 
   private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
-    final String confDirectoryName = cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
+    final String confDirectoryName =
+        cli.getOptionValue(CONF_DIR_OPTION, DefaultValues.DEFAULT_CONFIG_SET);
     final String confName = cli.getOptionValue(CONF_NAME_OPTION, "");
 
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue(COLLECTION_NAME_OPTION);
-      final String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, SolrCLI.getDefaultSolrUrl());
+      final String solrUrl =
+          cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION, SolrCLI.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,

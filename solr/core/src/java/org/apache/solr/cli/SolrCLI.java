@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.util.Collection;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -33,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -110,21 +110,13 @@ public class SolrCLI implements CLIO {
           .build();
 
   public static final Option OPTION_VERBOSE =
-      Option.builder()
-          .longOpt("verbose")
-          .desc("Enable verbose command output.")
-          .build();
+      Option.builder().longOpt("verbose").desc("Enable verbose command output.").build();
 
-  public static final Option OPTION_HELP = Option.builder("h")
-      .longOpt("help")
-      .desc("Print this message.")
-      .build();
+  public static final Option OPTION_HELP =
+      Option.builder("h").longOpt("help").desc("Print this message.").build();
 
   public static final Option OPTION_RECURSIVE =
-      Option.builder("r")
-          .longOpt("recursive")
-          .desc("Apply the command recursively.")
-          .build();
+      Option.builder("r").longOpt("recursive").desc("Apply the command recursively.").build();
 
   public static final Option OPTION_CREDENTIALS =
       Option.builder("u")

@@ -28,43 +28,50 @@ import org.apache.solr.common.params.CollectionAdminParams;
 /** Supports snapshot-export command in the bin/solr script. */
 public class SnapshotExportTool extends ToolBase {
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .argName("NAME")
-      .hasArg()
-      .required(true)
-      .desc("Name of collection to be snapshot.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of collection to be snapshot.")
+          .build();
 
-  private static final Option SNAPSHOT_NAME_OPTION = Option.builder()
-      .longOpt("snapshot-name")
-      .argName("NAME")
-      .hasArg()
-      .required(true)
-      .desc("Name of the snapshot to be exported.")
-      .build();
+  private static final Option SNAPSHOT_NAME_OPTION =
+      Option.builder()
+          .longOpt("snapshot-name")
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of the snapshot to be exported.")
+          .build();
 
-  private static final Option DEST_DIR_OPTION = Option.builder()
-      .longOpt("dest-dir")
-      .argName("DIR")
-      .hasArg()
-      .required(true)
-      .desc("Path of a temporary directory on local filesystem during snapshot export command.")
-      .build();
+  private static final Option DEST_DIR_OPTION =
+      Option.builder()
+          .longOpt("dest-dir")
+          .argName("DIR")
+          .hasArg()
+          .required(true)
+          .desc("Path of a temporary directory on local filesystem during snapshot export command.")
+          .build();
 
-  private static final Option BACKUP_REPO_NAME_OPTION = Option.builder()
-      .longOpt("backup-repo-name")
-      .argName("DIR")
-      .hasArg()
-      .desc("Specifies name of the backup repository to be used during snapshot export preparation.")
-      .build();
+  private static final Option BACKUP_REPO_NAME_OPTION =
+      Option.builder()
+          .longOpt("backup-repo-name")
+          .argName("DIR")
+          .hasArg()
+          .desc(
+              "Specifies name of the backup repository to be used during snapshot export preparation.")
+          .build();
 
-  private static final Option ASYNC_ID_OPTION = Option.builder()
-      .longOpt("async-id")
-      .argName("ID")
-      .hasArg()
-      .desc("Specifies the async request identifier to be used during snapshot export preparation.")
-      .build();
+  private static final Option ASYNC_ID_OPTION =
+      Option.builder()
+          .longOpt("async-id")
+          .argName("ID")
+          .hasArg()
+          .desc(
+              "Specifies the async request identifier to be used during snapshot export preparation.")
+          .build();
 
   public SnapshotExportTool() {
     this(CLIO.getOutStream());

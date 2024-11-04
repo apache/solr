@@ -22,7 +22,6 @@ import java.net.URI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -38,13 +37,14 @@ import org.noggit.JSONWriter;
  */
 public class ApiTool extends ToolBase {
 
-  private static final Option SOLR_URL_OPTION = Option.builder()
-      .longOpt("solr-url")
-      .argName("URL")
-      .hasArg()
-      .required(true)
-      .desc("Send a GET request to a Solr API endpoint.")
-      .build();
+  private static final Option SOLR_URL_OPTION =
+      Option.builder()
+          .longOpt("solr-url")
+          .argName("URL")
+          .hasArg()
+          .required(true)
+          .desc("Send a GET request to a Solr API endpoint.")
+          .build();
 
   public ApiTool() {
     this(CLIO.getOutStream());
@@ -89,7 +89,7 @@ public class ApiTool extends ToolBase {
               SolrRequest.METHOD.GET,
               path.substring(path.indexOf("/", path.indexOf("/") + 1)),
               getSolrParamsFromUri(uri) // .add("indent", "true")
-          );
+              );
       // Using the "smart" solr parsers won't work, because they decode into Solr objects.
       // When trying to re-write into JSON, the JSONWriter doesn't have the right info to print it
       // correctly.

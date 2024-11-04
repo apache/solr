@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
 import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.JSON;
@@ -56,6 +55,7 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -90,51 +90,55 @@ import org.noggit.JSONWriter;
 /** Supports export command in the bin/solr script. */
 public class ExportTool extends ToolBase {
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .hasArg()
-      .argName("NAME")
-      .desc("Name of the collection.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .desc("Name of the collection.")
+          .build();
 
-  private static final Option OUTPUT_OPTION = Option.builder()
-      .hasArg()
-      .argName("PATH")
-      .desc(
-          "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
-      .build();
+  private static final Option OUTPUT_OPTION =
+      Option.builder()
+          .hasArg()
+          .argName("PATH")
+          .desc(
+              "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
+          .build();
 
-  private static final Option FORMAT_OPTION = Option.builder("format")
-      .hasArg()
-      .argName("FORMAT")
-      .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-      .build();
+  private static final Option FORMAT_OPTION =
+      Option.builder("format")
+          .hasArg()
+          .argName("FORMAT")
+          .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+          .build();
 
-  private static final Option COMPRESS_OPTION = Option.builder()
-      .longOpt("compress")
-      .desc("Compress the output. Defaults to false.")
-      .build();
+  private static final Option COMPRESS_OPTION =
+      Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").build();
 
-  private static final Option LIMIT_OPTION = Option.builder()
-      .longOpt("limit")
-      .hasArg()
-      .argName("#")
-      .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-      .build();
+  private static final Option LIMIT_OPTION =
+      Option.builder()
+          .longOpt("limit")
+          .hasArg()
+          .argName("#")
+          .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+          .build();
 
-  private static final Option QUERY_OPTION = Option.builder()
-      .longOpt("query")
-      .hasArg()
-      .argName("QUERY")
-      .desc("A custom query, default is '*:*'.")
-      .build();
+  private static final Option QUERY_OPTION =
+      Option.builder()
+          .longOpt("query")
+          .hasArg()
+          .argName("QUERY")
+          .desc("A custom query, default is '*:*'.")
+          .build();
 
-  private static final Option FIELDS_OPTION = Option.builder()
-      .longOpt("fields")
-      .hasArg()
-      .argName("FIELDA,FIELDB")
-      .desc("Comma separated list of fields to export. By default all fields are fetched.")
-      .build();
+  private static final Option FIELDS_OPTION =
+      Option.builder()
+          .longOpt("fields")
+          .hasArg()
+          .argName("FIELDA,FIELDB")
+          .desc("Comma separated list of fields to export. By default all fields are fetched.")
+          .build();
 
   @Override
   public String getName() {

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -31,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -54,13 +54,14 @@ import org.slf4j.LoggerFactory;
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .hasArg()
-      .argName("COLLECTION")
-      .required(true)
-      .desc("Name of the collection to check.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("COLLECTION")
+          .required(true)
+          .desc("Name of the collection to check.")
+          .build();
 
   @Override
   public Options getAllOptions() {
@@ -171,7 +172,8 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-              SolrCLI.getSolrClient(coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+              SolrCLI.getSolrClient(
+                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =

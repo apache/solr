@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
@@ -29,6 +28,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -44,12 +44,13 @@ import org.slf4j.LoggerFactory;
 public class ZkCpTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option SOLR_HOME_OPTION = Option.builder()
-      .longOpt("solr-home")
-      .argName("DIR")
-      .hasArg()
-      .desc("Required to look up configuration for compressing state.json.")
-      .build();
+  private static final Option SOLR_HOME_OPTION =
+      Option.builder()
+          .longOpt("solr-home")
+          .argName("DIR")
+          .hasArg()
+          .desc("Required to look up configuration for compressing state.json.")
+          .build();
 
   public ZkCpTool() {
     this(CLIO.getOutStream());

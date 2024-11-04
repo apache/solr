@@ -35,10 +35,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -50,54 +48,66 @@ import org.apache.zookeeper.KeeperException;
 /** Supports auth command in the bin/solr script. */
 public class AuthTool extends ToolBase {
 
-  private static final Option TYPE_OPTION = Option.builder()
-      .longOpt("type")
-      .hasArg()
-      .desc("The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
-      .build();
+  private static final Option TYPE_OPTION =
+      Option.builder()
+          .longOpt("type")
+          .hasArg()
+          .desc(
+              "The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
+          .build();
 
-  private static final Option PROMPT_OPTION = Option.builder()
-      .longOpt("prompt")
-      .hasArg()
-      .desc("Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
-      .build();
+  private static final Option PROMPT_OPTION =
+      Option.builder()
+          .longOpt("prompt")
+          .hasArg()
+          .desc(
+              "Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
+          .build();
 
-  private static final Option CONFIG_OPTION = Option.builder()
-      .longOpt("config")
-      .hasArgs()
-      .desc("Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
-      .build();
+  private static final Option CONFIG_OPTION =
+      Option.builder()
+          .longOpt("config")
+          .hasArgs()
+          .desc(
+              "Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
+          .build();
 
   @Deprecated
-  private static final Option BLOCK_UNKNOWN_OPTION = Option.builder()
-      .longOpt("block-unknown")
-      .desc("Blocks all access for unknown users (requires authentication for all endpoints).")
-      .hasArg()
-      .argName("true|false")
-      .build();
+  private static final Option BLOCK_UNKNOWN_OPTION =
+      Option.builder()
+          .longOpt("block-unknown")
+          .desc("Blocks all access for unknown users (requires authentication for all endpoints).")
+          .hasArg()
+          .argName("true|false")
+          .build();
 
-  private static final Option SOLR_INCLUDE_FILE_OPTION = Option.builder()
-      .longOpt("solr-include-file")
-      .hasArg()
-      .argName("FILE")
-      .desc("The Solr include file which contains overridable environment variables for configuring Solr configurations.")
-      .build();
+  private static final Option SOLR_INCLUDE_FILE_OPTION =
+      Option.builder()
+          .longOpt("solr-include-file")
+          .hasArg()
+          .argName("FILE")
+          .desc(
+              "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
+          .build();
 
-  private static final Option UPDATE_INCLUDE_FILE_OPTION = Option.builder()
-      .longOpt("update-include-file-only")
-      .desc(
-          "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-              + " authentication (i.e. don't update security.json).")
-      .hasArg()
-      .build();
+  private static final Option UPDATE_INCLUDE_FILE_OPTION =
+      Option.builder()
+          .longOpt("update-include-file-only")
+          .desc(
+              "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+                  + " authentication (i.e. don't update security.json).")
+          .hasArg()
+          .build();
 
-  private static final Option AUTH_CONF_DIR_OPTION = Option.builder()
-      .longOpt("auth-conf-dir")
-      .hasArg()
-      .argName("FILE")
-      .required()
-      .desc("This is where any authentication related configuration files, if any, would be placed.")
-      .build();
+  private static final Option AUTH_CONF_DIR_OPTION =
+      Option.builder()
+          .longOpt("auth-conf-dir")
+          .hasArg()
+          .argName("FILE")
+          .required()
+          .desc(
+              "This is where any authentication related configuration files, if any, would be placed.")
+          .build();
 
   public AuthTool() {
     this(CLIO.getOutStream());
@@ -165,7 +175,12 @@ public class AuthTool extends ToolBase {
     if (cli.hasOption(option)) {
       final String value = cli.getOptionValue(option);
       if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
-        echo("Argument [" + option.getLongOpt() + "] must be either true or false, but was [" + value + "]");
+        echo(
+            "Argument ["
+                + option.getLongOpt()
+                + "] must be either true or false, but was ["
+                + value
+                + "]");
         SolrCLI.exit(1);
       }
     }
@@ -365,7 +380,8 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
+        boolean blockUnknown =
+            Boolean.parseBoolean(cli.getOptionValue(BLOCK_UNKNOWN_OPTION, "true"));
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);

@@ -16,19 +16,15 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.DeprecatedAttributes;
-import org.apache.commons.cli.OptionGroup;
-import org.apache.commons.cli.Options;
-
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -48,25 +44,30 @@ import org.slf4j.LoggerFactory;
 public class DeleteTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .argName("NAME")
-      .hasArg()
-      .required(true)
-      .desc("Name of the core / collection to delete.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of the core / collection to delete.")
+          .build();
 
-  private static final Option DELETE_CONFIG_OPTION = Option.builder()
-      .longOpt("delete-config")
-      .hasArg()
-      .argName("true|false")
-      .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
-      .build();
+  private static final Option DELETE_CONFIG_OPTION =
+      Option.builder()
+          .longOpt("delete-config")
+          .hasArg()
+          .argName("true|false")
+          .desc(
+              "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+          .build();
 
-  private static final Option FORCE_OPTION = Option.builder("f")
-      .longOpt("force")
-      .desc("Skip safety checks when deleting the configuration directory used by a collection.")
-      .build();
+  private static final Option FORCE_OPTION =
+      Option.builder("f")
+          .longOpt("force")
+          .desc(
+              "Skip safety checks when deleting the configuration directory used by a collection.")
+          .build();
 
   public DeleteTool() {
     this(CLIO.getOutStream());
@@ -121,7 +122,8 @@ public class DeleteTool extends ToolBase {
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+            .withOptionalBasicAuthCredentials(
+                cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {

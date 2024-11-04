@@ -17,8 +17,6 @@
 
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
-
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -50,26 +49,29 @@ import org.noggit.JSONWriter;
  */
 public class StatusTool extends ToolBase {
 
-  private static final Option MAX_WAIT_SECS_OPTION = Option.builder()
-      .longOpt("max-wait-secs")
-      .argName("SECS")
-      .hasArg()
-      .deprecated() // Will make it a stealth option, not printed or complained about
-      .desc("Wait up to the specified number of seconds to see Solr running.")
-      .build();
+  private static final Option MAX_WAIT_SECS_OPTION =
+      Option.builder()
+          .longOpt("max-wait-secs")
+          .argName("SECS")
+          .hasArg()
+          .deprecated() // Will make it a stealth option, not printed or complained about
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
 
-  public static final Option PORT_OPTION = Option.builder("p")
-      .longOpt("port")
-      .argName("PORT")
-      .hasArg()
-      .desc("Port on localhost to check status for")
-      .build();
+  public static final Option PORT_OPTION =
+      Option.builder("p")
+          .longOpt("port")
+          .argName("PORT")
+          .hasArg()
+          .desc("Port on localhost to check status for")
+          .build();
 
-  public static final Option SHORT_OPTION = Option.builder()
-      .longOpt("short")
-      .argName("SHORT")
-      .desc("Short format. Prints one URL per line for running instances")
-      .build();
+  public static final Option SHORT_OPTION =
+      Option.builder()
+          .longOpt("short")
+          .argName("SHORT")
+          .desc("Short format. Prints one URL per line for running instances")
+          .build();
 
   private final SolrProcessManager processMgr;
 

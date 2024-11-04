@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.OptionGroup;
-import org.apache.commons.cli.Options;
 import static org.apache.solr.cli.SolrCLI.printGreen;
 import static org.apache.solr.cli.SolrCLI.printRed;
 import static org.apache.solr.packagemanager.PackageUtils.format;
@@ -29,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
@@ -50,41 +49,48 @@ public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option COLLECTIONS_OPTION = Option.builder()
-      .longOpt("collections")
-      .hasArg()
-      .argName("COLLECTIONS")
-      .desc("Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
-      .build();
+  private static final Option COLLECTIONS_OPTION =
+      Option.builder()
+          .longOpt("collections")
+          .hasArg()
+          .argName("COLLECTIONS")
+          .desc(
+              "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
+          .build();
 
-  private static final Option CLUSTER_OPTION = Option.builder()
-      .longOpt("cluster")
-      .desc("Specifies that this action should affect cluster-level plugins only.")
-      .build();
+  private static final Option CLUSTER_OPTION =
+      Option.builder()
+          .longOpt("cluster")
+          .desc("Specifies that this action should affect cluster-level plugins only.")
+          .build();
 
-  private static final Option PARAM_OPTION = Option.builder()
-      .longOpt("param")
-      .hasArgs()
-      .argName("PARAMS")
-      .desc("List of parameters to be used with deploy command.")
-      .build();
+  private static final Option PARAM_OPTION =
+      Option.builder()
+          .longOpt("param")
+          .hasArgs()
+          .argName("PARAMS")
+          .desc("List of parameters to be used with deploy command.")
+          .build();
 
-  private static final Option UPDATE_OPTION = Option.builder()
-      .longOpt("update")
-      .desc("If a deployment is an update over a previous deployment.")
-      .build();
+  private static final Option UPDATE_OPTION =
+      Option.builder()
+          .longOpt("update")
+          .desc("If a deployment is an update over a previous deployment.")
+          .build();
 
-  private static final Option COLLECTION_OPTION = Option.builder("c")
-      .longOpt("collection")
-      .hasArg()
-      .argName("COLLECTION")
-      .desc("The collection to apply the package to, not required.")
-      .build();
+  private static final Option COLLECTION_OPTION =
+      Option.builder("c")
+          .longOpt("collection")
+          .hasArg()
+          .argName("COLLECTION")
+          .desc("The collection to apply the package to, not required.")
+          .build();
 
-  private static final Option NO_PROMPT_OPTION = Option.builder("y")
-      .longOpt("no-prompt")
-      .desc("Don't prompt for input; accept all default choices, defaults to false.")
-      .build();
+  private static final Option NO_PROMPT_OPTION =
+      Option.builder("y")
+          .longOpt("no-prompt")
+          .desc("Don't prompt for input; accept all default choices, defaults to false.")
+          .build();
 
   @SuppressForbidden(
       reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")

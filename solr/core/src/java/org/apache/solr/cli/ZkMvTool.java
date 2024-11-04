@@ -16,13 +16,13 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.Options;
 import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;

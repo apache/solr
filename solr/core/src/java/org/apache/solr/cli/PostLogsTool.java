@@ -49,21 +49,23 @@ import org.apache.solr.handler.component.ShardRequest;
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class PostLogsTool extends ToolBase {
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .hasArg()
-      .required(true)
-      .argName("NAME")
-      .desc("Name of the collection.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .required(true)
+          .argName("NAME")
+          .desc("Name of the collection.")
+          .build();
 
-  private static final Option ROOT_DIR_OPTION = Option.builder("rootdir")
-      .longOpt("rootdir")
-      .hasArg()
-      .argName("DIRECTORY")
-      .required(true)
-      .desc("All files found at or below the root directory will be indexed.")
-      .build();
+  private static final Option ROOT_DIR_OPTION =
+      Option.builder("rootdir")
+          .longOpt("rootdir")
+          .hasArg()
+          .argName("DIRECTORY")
+          .required(true)
+          .desc("All files found at or below the root directory will be indexed.")
+          .build();
 
   public PostLogsTool() {
     this(CLIO.getOutStream());

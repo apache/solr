@@ -45,100 +45,104 @@ public class AssertTool extends ToolBase {
   private static boolean useExitCode = false;
   private static Long timeoutMs = 1000L;
 
-  private static final Option IS_NOT_ROOT_OPTION = Option.builder()
-      .desc("Asserts that we are NOT the root user.")
-      .longOpt("not-root")
-      .build();
+  private static final Option IS_NOT_ROOT_OPTION =
+      Option.builder().desc("Asserts that we are NOT the root user.").longOpt("not-root").build();
 
-  private static final Option IS_ROOT_OPTION = Option.builder()
-      .desc("Asserts that we are the root user.")
-      .longOpt("root")
-      .build();
+  private static final Option IS_ROOT_OPTION =
+      Option.builder().desc("Asserts that we are the root user.").longOpt("root").build();
 
-  private static final OptionGroup ROOT_OPTION = new OptionGroup()
-      .addOption(IS_NOT_ROOT_OPTION)
-      .addOption(IS_ROOT_OPTION);
+  private static final OptionGroup ROOT_OPTION =
+      new OptionGroup().addOption(IS_NOT_ROOT_OPTION).addOption(IS_ROOT_OPTION);
 
-  private static final Option IS_NOT_RUNNING_ON_OPTION = Option.builder()
-      .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
-      .longOpt("not-started")
-      .hasArg(true)
-      .argName("url")
-      .build();
+  private static final Option IS_NOT_RUNNING_ON_OPTION =
+      Option.builder()
+          .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+          .longOpt("not-started")
+          .hasArg(true)
+          .argName("url")
+          .build();
 
-  private static final Option IS_RUNNING_ON_OPTION = Option.builder()
-      .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
-      .longOpt("started")
-      .hasArg(true)
-      .argName("url")
-      .build();
+  private static final Option IS_RUNNING_ON_OPTION =
+      Option.builder()
+          .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+          .longOpt("started")
+          .hasArg(true)
+          .argName("url")
+          .build();
 
-  private static final OptionGroup RUNNING_OPTION = new OptionGroup()
-      .addOption(IS_NOT_RUNNING_ON_OPTION)
-      .addOption(IS_RUNNING_ON_OPTION);
+  private static final OptionGroup RUNNING_OPTION =
+      new OptionGroup().addOption(IS_NOT_RUNNING_ON_OPTION).addOption(IS_RUNNING_ON_OPTION);
 
-  private static final Option SAME_USER_OPTION = Option.builder()
-      .desc("Asserts that we run as same user that owns <directory>.")
-      .longOpt("same-user")
-      .hasArg(true)
-      .argName("directory")
-      .build();
+  private static final Option SAME_USER_OPTION =
+      Option.builder()
+          .desc("Asserts that we run as same user that owns <directory>.")
+          .longOpt("same-user")
+          .hasArg(true)
+          .argName("directory")
+          .build();
 
-  private static final Option DIRECTORY_EXISTS_OPTION = Option.builder()
-      .desc("Asserts that directory <directory> exists.")
-      .longOpt("exists")
-      .hasArg(true)
-      .argName("directory")
-      .build();
+  private static final Option DIRECTORY_EXISTS_OPTION =
+      Option.builder()
+          .desc("Asserts that directory <directory> exists.")
+          .longOpt("exists")
+          .hasArg(true)
+          .argName("directory")
+          .build();
 
-  private static final Option DIRECTORY_NOT_EXISTS_OPTION = Option.builder()
-      .desc("Asserts that directory <directory> does NOT exist.")
-      .longOpt("not-exists")
-      .hasArg(true)
-      .argName("directory")
-      .build();
+  private static final Option DIRECTORY_NOT_EXISTS_OPTION =
+      Option.builder()
+          .desc("Asserts that directory <directory> does NOT exist.")
+          .longOpt("not-exists")
+          .hasArg(true)
+          .argName("directory")
+          .build();
 
-  private static final OptionGroup DIRECTORY_OPTION = new OptionGroup()
-      .addOption(DIRECTORY_EXISTS_OPTION)
-      .addOption(DIRECTORY_NOT_EXISTS_OPTION);
+  private static final OptionGroup DIRECTORY_OPTION =
+      new OptionGroup().addOption(DIRECTORY_EXISTS_OPTION).addOption(DIRECTORY_NOT_EXISTS_OPTION);
 
-  private static final Option IS_CLOUD_OPTION = Option.builder()
-      .desc("Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-      .longOpt("cloud")
-      .hasArg(true)
-      .argName("url")
-      .build();
+  private static final Option IS_CLOUD_OPTION =
+      Option.builder()
+          .desc(
+              "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+          .longOpt("cloud")
+          .hasArg(true)
+          .argName("url")
+          .build();
 
-  private static final Option IS_NOT_CLOUD_OPTION = Option.builder()
-      .desc("Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-      .longOpt("not-cloud")
-      .hasArg(true)
-      .argName("url")
-      .build();
+  private static final Option IS_NOT_CLOUD_OPTION =
+      Option.builder()
+          .desc(
+              "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+          .longOpt("not-cloud")
+          .hasArg(true)
+          .argName("url")
+          .build();
 
-  private static final OptionGroup CLOUD_OPTION = new OptionGroup()
-      .addOption(IS_CLOUD_OPTION)
-      .addOption(IS_NOT_CLOUD_OPTION);
+  private static final OptionGroup CLOUD_OPTION =
+      new OptionGroup().addOption(IS_CLOUD_OPTION).addOption(IS_NOT_CLOUD_OPTION);
 
-  private static final Option MESSAGE_OPTION = Option.builder()
-      .desc("Exception message to be used in place of the default error message.")
-      .longOpt("message")
-      .hasArg(true)
-      .argName("message")
-      .build();
+  private static final Option MESSAGE_OPTION =
+      Option.builder()
+          .desc("Exception message to be used in place of the default error message.")
+          .longOpt("message")
+          .hasArg(true)
+          .argName("message")
+          .build();
 
-  private static final Option TIMEOUT_OPTION = Option.builder()
-      .desc("Timeout in ms for commands supporting a timeout.")
-      .longOpt("timeout")
-      .hasArg(true)
-      .type(Long.class)
-      .argName("ms")
-      .build();
+  private static final Option TIMEOUT_OPTION =
+      Option.builder()
+          .desc("Timeout in ms for commands supporting a timeout.")
+          .longOpt("timeout")
+          .hasArg(true)
+          .type(Long.class)
+          .argName("ms")
+          .build();
 
-  private static final Option EXIT_CODE_OPTION = Option.builder()
-      .desc("Return an exit code instead of printing error message on assert fail.")
-      .longOpt("exitcode")
-      .build();
+  private static final Option EXIT_CODE_OPTION =
+      Option.builder()
+          .desc("Return an exit code instead of printing error message on assert fail.")
+          .longOpt("exitcode")
+          .build();
 
   public AssertTool() {
     this(CLIO.getOutStream());

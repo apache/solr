@@ -35,9 +35,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
@@ -69,86 +67,98 @@ public class RunExampleTool extends ToolBase {
   private static final String PROMPT_NUMBER_TOO_LARGE =
       "%d is too large! " + PROMPT_FOR_NUMBER_IN_RANGE;
 
-  private static final Option NO_PROMPT_OPTION = Option.builder("y")
-      .longOpt("no-prompt")
-      .desc("Don't prompt for input; accept all defaults when running examples that accept user input.")
-      .build();
+  private static final Option NO_PROMPT_OPTION =
+      Option.builder("y")
+          .longOpt("no-prompt")
+          .desc(
+              "Don't prompt for input; accept all defaults when running examples that accept user input.")
+          .build();
 
-  private static final Option EXAMPLE_OPTION = Option.builder("e")
-      .longOpt("example")
-      .hasArg()
-      .argName("NAME")
-      .required(true)
-      .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
-      .build();
+  private static final Option EXAMPLE_OPTION =
+      Option.builder("e")
+          .longOpt("example")
+          .hasArg()
+          .argName("NAME")
+          .required(true)
+          .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
+          .build();
 
-  private static final Option SCRIPT_OPTION = Option.builder()
-      .longOpt("script")
-      .hasArg()
-      .argName("PATH")
-      .desc("Path to the bin/solr script.")
-      .build();
+  private static final Option SCRIPT_OPTION =
+      Option.builder()
+          .longOpt("script")
+          .hasArg()
+          .argName("PATH")
+          .desc("Path to the bin/solr script.")
+          .build();
 
-  private static final Option SERVER_DIR_OPTION = Option.builder("d")
-      .longOpt("server-dir")
-      .hasArg()
-      .argName("DIR")
-      .required(true)
-      .desc("Path to the Solr server directory.")
-      .build();
+  private static final Option SERVER_DIR_OPTION =
+      Option.builder("d")
+          .longOpt("server-dir")
+          .hasArg()
+          .argName("DIR")
+          .required(true)
+          .desc("Path to the Solr server directory.")
+          .build();
 
-  private static final Option FORCE_OPTION = Option.builder("f")
-      .longOpt("force")
-      .argName("FORCE")
-      .desc("Force option in case Solr is run as root.")
-      .build();
+  private static final Option FORCE_OPTION =
+      Option.builder("f")
+          .longOpt("force")
+          .argName("FORCE")
+          .desc("Force option in case Solr is run as root.")
+          .build();
 
-  private static final Option EXAMPLE_DIR_OPTION = Option.builder()
-      .longOpt("example-dir")
-      .hasArg()
-      .argName("DIR")
-      .desc("Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
-      .build();
+  private static final Option EXAMPLE_DIR_OPTION =
+      Option.builder()
+          .longOpt("example-dir")
+          .hasArg()
+          .argName("DIR")
+          .desc(
+              "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
+          .build();
 
-  private static final Option URL_SCHEME_OPTION = Option.builder()
-      .longOpt("url-scheme")
-      .hasArg()
-      .argName("SCHEME")
-      .desc("Solr URL scheme: http or https, defaults to http if not specified.")
-      .build();
+  private static final Option URL_SCHEME_OPTION =
+      Option.builder()
+          .longOpt("url-scheme")
+          .hasArg()
+          .argName("SCHEME")
+          .desc("Solr URL scheme: http or https, defaults to http if not specified.")
+          .build();
 
-  private static final Option PORT_OPTION = Option.builder("p")
-      .longOpt("port")
-      .hasArg()
-      .argName("PORT")
-      .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
-      .build();
+  private static final Option PORT_OPTION =
+      Option.builder("p")
+          .longOpt("port")
+          .hasArg()
+          .argName("PORT")
+          .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
+          .build();
 
-  private static final Option HOST_OPTION = Option.builder()
-      .longOpt("host")
-      .hasArg()
-      .argName("HOSTNAME")
-      .desc("Specify the hostname for this Solr instance.")
-      .build();
+  private static final Option HOST_OPTION =
+      Option.builder()
+          .longOpt("host")
+          .hasArg()
+          .argName("HOSTNAME")
+          .desc("Specify the hostname for this Solr instance.")
+          .build();
 
-  private static final Option USER_MANAGED_OPTION = Option.builder()
-      .longOpt("user-managed")
-      .desc("Start Solr in User Managed mode.")
-      .build();
+  private static final Option USER_MANAGED_OPTION =
+      Option.builder().longOpt("user-managed").desc("Start Solr in User Managed mode.").build();
 
-  private static final Option MEMORY_OPTION = Option.builder("m")
-      .longOpt("memory")
-      .hasArg()
-      .argName("MEM")
-      .desc("Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
-      .build();
+  private static final Option MEMORY_OPTION =
+      Option.builder("m")
+          .longOpt("memory")
+          .hasArg()
+          .argName("MEM")
+          .desc(
+              "Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
+          .build();
 
-  private static final Option JVM_OPTS_OPTION = Option.builder()
-      .longOpt("jvm-opts")
-      .hasArg()
-      .argName("OPTS")
-      .desc("Additional options to be passed to the JVM when starting example Solr server(s).")
-      .build();
+  private static final Option JVM_OPTS_OPTION =
+      Option.builder()
+          .longOpt("jvm-opts")
+          .hasArg()
+          .argName("OPTS")
+          .desc("Additional options to be passed to the JVM when starting example Solr server(s).")
+          .build();
 
   protected InputStream userInput;
   protected Executor executor;
@@ -705,7 +715,8 @@ public class RunExampleTool extends ToolBase {
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
-    return getNodeStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
+    return getNodeStatus(
+        solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(

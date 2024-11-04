@@ -29,13 +29,14 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 /** Supports snapshot-list command in the bin/solr script. */
 public class SnapshotListTool extends ToolBase {
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .argName("NAME")
-      .hasArg()
-      .required(true)
-      .desc("Name of collection to list snapshots for.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of collection to list snapshots for.")
+          .build();
 
   public SnapshotListTool() {
     this(CLIO.getOutStream());

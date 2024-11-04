@@ -21,9 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -36,21 +34,23 @@ import org.slf4j.LoggerFactory;
 public class ConfigSetUploadTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Option CONF_NAME_OPTION = Option.builder("n")
-      .longOpt("conf-name")
-      .hasArg()
-      .argName("NAME")
-      .required(true)
-      .desc("Configset name in ZooKeeper.")
-      .build();
+  private static final Option CONF_NAME_OPTION =
+      Option.builder("n")
+          .longOpt("conf-name")
+          .hasArg()
+          .argName("NAME")
+          .required(true)
+          .desc("Configset name in ZooKeeper.")
+          .build();
 
-  private static final Option CONF_DIR_OPTION = Option.builder("d")
-      .longOpt("conf-dir")
-      .hasArg()
-      .argName("DIR")
-      .required(true)
-      .desc("Local directory with configs.")
-      .build();
+  private static final Option CONF_DIR_OPTION =
+      Option.builder("d")
+          .longOpt("conf-dir")
+          .hasArg()
+          .argName("DIR")
+          .required(true)
+          .desc("Local directory with configs.")
+          .build();
 
   public ConfigSetUploadTool() {
     this(CLIO.getOutStream());

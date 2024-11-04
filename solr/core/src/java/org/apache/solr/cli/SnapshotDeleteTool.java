@@ -27,21 +27,23 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 /** Supports snapshot-delete command in the bin/solr script. */
 public class SnapshotDeleteTool extends ToolBase {
 
-  private static final Option COLLECTION_NAME_OPTION = Option.builder("c")
-      .longOpt("name")
-      .argName("NAME")
-      .hasArg()
-      .required(true)
-      .desc("Name of collection to manage.")
-      .build();
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of collection to manage.")
+          .build();
 
-  private static final Option SNAPSHOT_NAME_OPTION = Option.builder()
-      .longOpt("snapshot-name")
-      .argName("NAME")
-      .hasArg()
-      .required(true)
-      .desc("Name of the snapshot to delete")
-      .build();
+  private static final Option SNAPSHOT_NAME_OPTION =
+      Option.builder()
+          .longOpt("snapshot-name")
+          .argName("NAME")
+          .hasArg()
+          .required(true)
+          .desc("Name of the snapshot to delete")
+          .build();
 
   public SnapshotDeleteTool() {
     this(CLIO.getOutStream());

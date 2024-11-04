@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -37,20 +36,22 @@ import org.apache.solr.common.cloud.SolrZkClient;
 public class ClusterTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  private static final Option PROPERTY_OPTION = Option.builder()
-      .longOpt("property")
-      .hasArg()
-      .argName("PROPERTY")
-      .required(true)
-      .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
-      .build();
+  private static final Option PROPERTY_OPTION =
+      Option.builder()
+          .longOpt("property")
+          .hasArg()
+          .argName("PROPERTY")
+          .required(true)
+          .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
+          .build();
 
-  private static final Option VALUE_OPTION = Option.builder()
-      .longOpt("value")
-      .hasArg()
-      .argName("VALUE")
-      .desc("Set the property to this value.")
-      .build();
+  private static final Option VALUE_OPTION =
+      Option.builder()
+          .longOpt("value")
+          .hasArg()
+          .argName("VALUE")
+          .desc("Set the property to this value.")
+          .build();
 
   public ClusterTool() {
     this(CLIO.getOutStream());

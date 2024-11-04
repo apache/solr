@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 
 public interface Tool {
@@ -63,8 +62,8 @@ public interface Tool {
    * Retrieve a list of {@link Option}s supported by this tool.
    *
    * @return A list of {@link Option}s this tool supports.
-   * @deprecated This method's return type will be changed in the future with {@link Options}.
-   * Use {#getAllOptions} for the transition to avoid breaking changes.
+   * @deprecated This method's return type will be changed in the future with {@link Options}. Use
+   *     {#getAllOptions} for the transition to avoid breaking changes.
    */
   @Deprecated(since = "9.8")
   List<Option> getOptions();
