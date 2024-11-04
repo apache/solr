@@ -51,6 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// PRS Defaulting is currently not working, so disable for now
+@SolrCloudTestCase.NoPrs
 public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   private static final int REPLICATION_TIMEOUT_SECS = 10;

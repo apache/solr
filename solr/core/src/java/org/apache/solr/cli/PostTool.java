@@ -67,7 +67,6 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.io.output.NullOutputStream;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -172,45 +171,25 @@ public class PostTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("url")
-            .longOpt("solr-update-url")
-            .hasArg()
-            .argName("UPDATEURL")
-            .desc("Solr Update URL, the full url to the update handler, including the /update.")
-            .build(),
         Option.builder("c")
             .longOpt("name")
             .hasArg()
+            .required(true)
             .argName("NAME")
-            .required(false)
             .desc("Name of the collection.")
             .build(),
         Option.builder()
             .longOpt("skip-commit")
-            .required(false)
-            .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
-            .build(),
-        Option.builder()
-            .longOpt("skipcommit")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --skip-commit instead")
-                    .get())
-            .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
         Option.builder("o")
             .longOpt("optimize")
-            .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
         Option.builder()
             .longOpt("mode")
             .hasArg()
             .argName("mode")
-            .required(false)
             .desc(
                 "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
             .build(),
@@ -221,7 +200,7 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
-        Option.builder("d")
+        Option.builder()
             .longOpt("delay")
             .hasArg()
             .argName("delay")
@@ -250,24 +229,7 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("Values must be URL-encoded; these pass through to Solr update request.")
             .build(),
-        Option.builder("p")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --params instead")
-                    .get())
-            .hasArg()
-            .argName("<key>=<value>[&<key>=<value>...]")
-            .required(false)
-            .desc("Values must be URL-encoded; these pass through to Solr update request.")
-            .build(),
         Option.builder()
-            .longOpt("out")
-            .required(false)
-            .desc("sends Solr response outputs to console.")
-            .build(),
-        Option.builder("f")
             .longOpt("format")
             .required(false)
             .desc(
@@ -279,6 +241,7 @@ public class PostTool extends ToolBase {
             .desc(
                 "Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
@@ -287,15 +250,14 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
-    if (cli.hasOption("solr-update-url")) {
-      String url = cli.getOptionValue("solr-update-url");
+    if (cli.hasOption("solr-url")) {
+      String url =
+          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URI(url);
-    } else if (cli.hasOption("name")) {
+
+    } else {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URI(url);
-    } else {
-      throw new IllegalArgumentException(
-          "Must specify either --solr-update-url or -c parameter to post documents.");
     }
 
     String mode = cli.getOptionValue("mode", DATA_MODE_FILES);
@@ -313,19 +275,22 @@ public class PostTool extends ToolBase {
       fileTypes = cli.getOptionValue("filetypes");
     }
 
-    int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
-    delay = Integer.parseInt(cli.getOptionValue("delay", String.valueOf(defaultDelay)));
+    delay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
+    if (cli.hasOption("delay")) {
+      delay = Integer.parseInt(cli.getOptionValue("delay"));
+    }
+
     recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
-    out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    commit = !(cli.hasOption("skipcommit") || cli.hasOption("skip-commit"));
+    out = cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt()) ? CLIO.getOutStream() : null;
+    commit = !cli.hasOption("skip-commit");
     optimize = cli.hasOption("optimize");
 
     credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
 
     args = cli.getArgs();
 
-    params = SolrCLI.getOptionWithDeprecatedAndDefault(cli, "params", "p", "");
+    params = cli.getOptionValue("params", "");
 
     execute(mode);
   }

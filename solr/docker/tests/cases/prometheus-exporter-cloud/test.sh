@@ -22,7 +22,7 @@ source "${TEST_DIR}/../../shared.sh"
 container_cleanup "${container_name}-solr"
 
 echo "Running $container_name"
-docker run --name "${container_name}-solr" -d "$tag" solr-fg -c
+docker run --name "${container_name}-solr" -d "$tag" solr-fg
 
 wait_for_container_and_solr "${container_name}-solr"
 

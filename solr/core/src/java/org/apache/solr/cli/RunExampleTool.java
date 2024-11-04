@@ -36,7 +36,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
 import org.apache.commons.exec.DefaultExecutor;
@@ -94,20 +93,8 @@ public class RunExampleTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("n")
+        Option.builder("y")
             .longOpt("no-prompt")
-            .required(false)
-            .desc(
-                "Don't prompt for input; accept all defaults when running examples that accept user input.")
-            .build(),
-        Option.builder()
-            .longOpt("noprompt")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --no-prompt instead")
-                    .get())
             .required(false)
             .desc(
                 "Don't prompt for input; accept all defaults when running examples that accept user input.")
@@ -119,14 +106,14 @@ public class RunExampleTool extends ToolBase {
             .required(true)
             .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
             .build(),
-        Option.builder("s")
+        Option.builder()
             .longOpt("script")
             .hasArg()
             .argName("PATH")
             .required(false)
             .desc("Path to the bin/solr script.")
             .build(),
-        Option.builder("d")
+        Option.builder()
             .longOpt("server-dir")
             .hasArg()
             .argName("DIR")
@@ -167,11 +154,10 @@ public class RunExampleTool extends ToolBase {
             .required(false)
             .desc("Specify the hostname for this Solr instance.")
             .build(),
-        Option.builder("c")
-            .longOpt("cloud")
+        Option.builder()
+            .longOpt("user-managed")
             .required(false)
-            .desc(
-                "Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983.")
+            .desc("Start Solr in User Managed mode.")
             .build(),
         Option.builder("m")
             .longOpt("memory")
@@ -189,8 +175,7 @@ public class RunExampleTool extends ToolBase {
             .desc(
                 "Additional options to be passed to the JVM when starting example Solr server(s).")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
@@ -263,7 +248,7 @@ public class RunExampleTool extends ToolBase {
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
 
-    boolean isCloudMode = cli.hasOption('c');
+    boolean isCloudMode = !cli.hasOption("user-managed");
     String zkHost = cli.getOptionValue('z');
     int port =
         Integer.parseInt(
@@ -334,14 +319,15 @@ public class RunExampleTool extends ToolBase {
       }
 
       if (exampledocsDir.isDirectory()) {
-        String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing tech product example docs from " + exampledocsDir.getAbsolutePath());
 
         String[] args =
             new String[] {
               "post",
-              "--solr-update-url",
-              updateUrl,
+              "--solr-url",
+              solrUrl,
+              "--name",
+              collectionName,
               "--type",
               "application/xml",
               exampledocsDir.getAbsolutePath() + "/*.xml"
@@ -416,13 +402,14 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n");
 
         File filmsJsonFile = new File(exampleDir, "films/films.json");
-        String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
         String[] args =
             new String[] {
               "post",
-              "--solr-update-url",
-              updateUrl,
+              "--solr-url",
+              solrUrl,
+              "--name",
+              collectionName,
               "--type",
               "application/json",
               filmsJsonFile.getAbsolutePath()
@@ -446,7 +433,7 @@ public class RunExampleTool extends ToolBase {
 
   protected void runCloudExample(CommandLine cli) throws Exception {
 
-    boolean prompt = !(cli.hasOption("no-prompt") || cli.hasOption("noprompt"));
+    boolean prompt = !cli.hasOption("no-prompt");
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
     int defaultPort =
@@ -612,9 +599,9 @@ public class RunExampleTool extends ToolBase {
     String hostArg = (host != null && !"localhost".equals(host)) ? " --host " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
-    String cloudModeArg = cloudMode ? "--cloud " : "";
+    String cloudModeArg = cloudMode ? "" : "--user-managed";
     String forceArg = cli.hasOption("force") ? " --force" : "";
-    String verboseArg = verbose ? "-V" : "";
+    String verboseArg = verbose ? "--verbose" : "";
 
     String jvmOpts =
         cli.hasOption("jvm-opts") ? cli.getOptionValue("jvm-opts") : cli.getOptionValue('a');
@@ -636,7 +623,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,

@@ -573,13 +573,18 @@ public class ZkStateReader implements SolrCloseable {
       }
       collectionPropertiesZkStateReader.refreshCollectionProperties();
     } catch (KeeperException.NoNodeException nne) {
+      String noNodePath = nne.getPath();
+      if (noNodePath.length() > zkClient.getCuratorFramework().getNamespace().length()) {
+        noNodePath =
+            noNodePath.substring(zkClient.getCuratorFramework().getNamespace().length() + 1);
+      }
       throw new SolrException(
           ErrorCode.SERVICE_UNAVAILABLE,
           "Cannot connect to cluster at "
               + zkClient.getZkServerAddress()
               + ": cluster not found/not ready."
               + " Expected node '"
-              + nne.getPath()
+              + noNodePath
               + "' does not exist.");
     }
   }
@@ -2032,7 +2037,8 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       }
       // Call sync() first to ensure the subsequent read (getData) is up-to-date.
-      zkClient.getZooKeeper().sync(ALIASES, null, null);
+      zkClient.runWithCorrectThrows(
+          "syncing aliases", () -> zkClient.getCuratorFramework().sync().forPath(ALIASES));
       return setIfNewer(zkClient.getNode(ALIASES, null, true));
     }
 

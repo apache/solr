@@ -64,12 +64,12 @@ public class PostLogsTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("url")
-            .longOpt("solr-collection-url")
+        Option.builder("c")
+            .longOpt("name")
             .hasArg()
-            .argName("ADDRESS")
             .required(true)
-            .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
+            .argName("NAME")
+            .desc("Name of the collection.")
             .build(),
         Option.builder("rootdir")
             .longOpt("rootdir")
@@ -78,12 +78,20 @@ public class PostLogsTool extends ToolBase {
             .required(true)
             .desc("All files found at or below the root directory will be indexed.")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
+    String url = null;
+    if (cli.hasOption("solr-url")) {
+      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
+
+    } else {
+      // Could be required arg, but maybe we want to support --zk-host option too?
+      throw new IllegalArgumentException("Must specify --solr-url.");
+    }
     String rootDir = cli.getOptionValue("rootdir");
     String credentials = cli.getOptionValue("credentials");
     runCommand(url, rootDir, credentials);

@@ -51,6 +51,7 @@ import org.apache.solr.crossdc.manager.consumer.Util;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -85,6 +86,11 @@ public class SolrAndKafkaMultiCollectionIntegrationTest extends SolrCloudTestCas
 
   private static final String COLLECTION = "collection1";
   private static final String ALT_COLLECTION = "collection2";
+
+  @BeforeClass
+  public static void beforeAll() {
+    SolrAndKafkaIntegrationTest.ensureCompatibleLocale();
+  }
 
   @Before
   public void beforeSolrAndKafkaIntegrationTest() throws Exception {

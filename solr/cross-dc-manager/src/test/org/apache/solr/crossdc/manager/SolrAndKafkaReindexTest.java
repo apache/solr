@@ -74,6 +74,8 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeSolrAndKafkaIntegrationTest() throws Exception {
+    SolrAndKafkaIntegrationTest.ensureCompatibleLocale();
+
     System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer = new Consumer();
 
@@ -140,7 +142,9 @@ public class SolrAndKafkaReindexTest extends SolrCloudTestCase {
       solrCluster2.shutdown();
     }
 
-    consumer.shutdown();
+    if (consumer != null) {
+      consumer.shutdown();
+    }
 
     try {
       if (kafkaCluster != null) {
