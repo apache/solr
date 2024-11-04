@@ -100,6 +100,7 @@ public class ExportTool extends ToolBase {
 
   private static final Option OUTPUT_OPTION =
       Option.builder()
+          .longOpt("output")
           .hasArg()
           .argName("PATH")
           .desc(
