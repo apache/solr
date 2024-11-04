@@ -73,7 +73,6 @@ public class AuthTool extends ToolBase {
               "Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
           .build();
 
-  @Deprecated
   private static final Option BLOCK_UNKNOWN_OPTION =
       Option.builder()
           .longOpt("block-unknown")
@@ -162,6 +161,16 @@ public class AuthTool extends ToolBase {
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+  }
+
+  private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, Option option) {
+    if (cli.hasOption(option)) {
+      final String value = cli.getOptionValue(option);
+      if (!"true".equalsIgnoreCase(value) && !"false".equalsIgnoreCase(value)) {
+        echo("Argument [" + option.getLongOpt() + "] must be either true or false, but was [" + value + "]");
+        SolrCLI.exit(1);
+      }
+    }
   }
 
   private int handleKerberos(CommandLine cli) throws Exception {
@@ -602,6 +611,9 @@ public class AuthTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    ensureArgumentIsValidBooleanIfPresent(cli, BLOCK_UNKNOWN_OPTION);
+    ensureArgumentIsValidBooleanIfPresent(cli, UPDATE_INCLUDE_FILE_OPTION);
+
     String type = cli.getOptionValue(TYPE_OPTION, "basicAuth");
     switch (type) {
       case "basicAuth":
