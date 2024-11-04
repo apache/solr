@@ -100,7 +100,7 @@ public class PostTool extends ToolBase {
           .longOpt("name")
           .hasArg()
           .argName("NAME")
-          .required(true)
+          .required()
           .desc("Name of the collection.")
           .build();
 

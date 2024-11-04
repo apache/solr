@@ -40,9 +40,9 @@ public class ApiTool extends ToolBase {
   private static final Option SOLR_URL_OPTION =
       Option.builder()
           .longOpt("solr-url")
-          .argName("URL")
           .hasArg()
-          .required(true)
+          .argName("URL")
+          .required()
           .desc("Send a GET request to a Solr API endpoint.")
           .build();
 

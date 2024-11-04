@@ -47,8 +47,8 @@ public class ZkCpTool extends ToolBase {
   private static final Option SOLR_HOME_OPTION =
       Option.builder()
           .longOpt("solr-home")
-          .argName("DIR")
           .hasArg()
+          .argName("DIR")
           .desc("Required to look up configuration for compressing state.json.")
           .build();
 

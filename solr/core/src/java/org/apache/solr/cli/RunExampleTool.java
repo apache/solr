@@ -79,7 +79,7 @@ public class RunExampleTool extends ToolBase {
           .longOpt("example")
           .hasArg()
           .argName("NAME")
-          .required(true)
+          .required()
           .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
           .build();
 
@@ -96,7 +96,7 @@ public class RunExampleTool extends ToolBase {
           .longOpt("server-dir")
           .hasArg()
           .argName("DIR")
-          .required(true)
+          .required()
           .desc("Path to the Solr server directory.")
           .build();
 

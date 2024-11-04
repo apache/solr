@@ -31,35 +31,35 @@ public class SnapshotExportTool extends ToolBase {
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
-          .argName("NAME")
           .hasArg()
-          .required(true)
+          .argName("NAME")
+          .required()
           .desc("Name of collection to be snapshot.")
           .build();
 
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
-          .argName("NAME")
           .hasArg()
-          .required(true)
+          .argName("NAME")
+          .required()
           .desc("Name of the snapshot to be exported.")
           .build();
 
   private static final Option DEST_DIR_OPTION =
       Option.builder()
           .longOpt("dest-dir")
-          .argName("DIR")
           .hasArg()
-          .required(true)
+          .argName("DIR")
+          .required()
           .desc("Path of a temporary directory on local filesystem during snapshot export command.")
           .build();
 
   private static final Option BACKUP_REPO_NAME_OPTION =
       Option.builder()
           .longOpt("backup-repo-name")
-          .argName("DIR")
           .hasArg()
+          .argName("DIR")
           .desc(
               "Specifies name of the backup repository to be used during snapshot export preparation.")
           .build();
@@ -67,8 +67,8 @@ public class SnapshotExportTool extends ToolBase {
   private static final Option ASYNC_ID_OPTION =
       Option.builder()
           .longOpt("async-id")
-          .argName("ID")
           .hasArg()
+          .argName("ID")
           .desc(
               "Specifies the async request identifier to be used during snapshot export preparation.")
           .build();

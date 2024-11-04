@@ -58,7 +58,7 @@ public class CreateTool extends ToolBase {
           .longOpt("name")
           .hasArg()
           .argName("NAME")
-          .required(true)
+          .required()
           .desc("Name of collection or core to create.")
           .build();
 
@@ -82,8 +82,8 @@ public class CreateTool extends ToolBase {
   private static final Option CONF_DIR_OPTION =
       Option.builder("d")
           .longOpt("conf-dir")
-          .argName("DIR")
           .hasArg()
+          .argName("DIR")
           .desc(
               "Configuration directory to copy when creating the new collection; default is "
                   + DefaultValues.DEFAULT_CONFIG_SET
@@ -93,8 +93,8 @@ public class CreateTool extends ToolBase {
   private static final Option CONF_NAME_OPTION =
       Option.builder("n")
           .longOpt("conf-name")
-          .argName("NAME")
           .hasArg()
+          .argName("NAME")
           .desc("Configuration name; default is the collection name.")
           .build();
 

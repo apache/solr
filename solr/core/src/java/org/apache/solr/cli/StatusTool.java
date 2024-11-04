@@ -52,8 +52,8 @@ public class StatusTool extends ToolBase {
   private static final Option MAX_WAIT_SECS_OPTION =
       Option.builder()
           .longOpt("max-wait-secs")
-          .argName("SECS")
           .hasArg()
+          .argName("SECS")
           .deprecated() // Will make it a stealth option, not printed or complained about
           .desc("Wait up to the specified number of seconds to see Solr running.")
           .build();
@@ -61,8 +61,8 @@ public class StatusTool extends ToolBase {
   public static final Option PORT_OPTION =
       Option.builder("p")
           .longOpt("port")
-          .argName("PORT")
           .hasArg()
+          .argName("PORT")
           .desc("Port on localhost to check status for")
           .build();
 

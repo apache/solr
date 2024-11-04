@@ -53,8 +53,8 @@ public class PostLogsTool extends ToolBase {
       Option.builder("c")
           .longOpt("name")
           .hasArg()
-          .required(true)
           .argName("NAME")
+          .required()
           .desc("Name of the collection.")
           .build();
 
@@ -63,7 +63,7 @@ public class PostLogsTool extends ToolBase {
           .longOpt("rootdir")
           .hasArg()
           .argName("DIRECTORY")
-          .required(true)
+          .required()
           .desc("All files found at or below the root directory will be indexed.")
           .build();
 

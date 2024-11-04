@@ -41,7 +41,7 @@ public class ClusterTool extends ToolBase {
           .longOpt("property")
           .hasArg()
           .argName("PROPERTY")
-          .required(true)
+          .required()
           .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
           .build();
 

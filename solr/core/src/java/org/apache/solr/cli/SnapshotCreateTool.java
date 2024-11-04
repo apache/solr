@@ -30,18 +30,18 @@ public class SnapshotCreateTool extends ToolBase {
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
-          .argName("NAME")
           .hasArg()
-          .required(true)
+          .argName("NAME")
+          .required()
           .desc("Name of collection to be snapshot.")
           .build();
 
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
           .longOpt("snapshot-name")
-          .argName("NAME")
           .hasArg()
-          .required(true)
+          .argName("NAME")
+          .required()
           .desc("Name of the snapshot to produce")
           .build();
 

@@ -32,8 +32,8 @@ public final class CommonCLIOptions {
   public static final Option ZK_HOST_OPTION =
       Option.builder("z")
           .longOpt("zk-host")
-          .argName("HOST")
           .hasArg()
+          .argName("HOST")
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + DefaultValues.ZK_HOST
@@ -43,8 +43,8 @@ public final class CommonCLIOptions {
   public static final Option SOLR_URL_OPTION =
       Option.builder("s")
           .longOpt("solr-url")
-          .argName("HOST")
           .hasArg()
+          .argName("HOST")
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + SolrCLI.getDefaultSolrUrl()
@@ -57,8 +57,8 @@ public final class CommonCLIOptions {
   public static final Option CREDENTIALS_OPTION =
       Option.builder("u")
           .longOpt("credentials")
-          .argName("credentials")
           .hasArg()
+          .argName("credentials")
           .desc(
               "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
           .build();

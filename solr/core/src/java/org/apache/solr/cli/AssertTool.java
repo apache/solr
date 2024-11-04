@@ -58,7 +58,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
           .longOpt("not-started")
-          .hasArg(true)
+          .hasArg()
           .argName("url")
           .build();
 
@@ -66,7 +66,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
           .longOpt("started")
-          .hasArg(true)
+          .hasArg()
           .argName("url")
           .build();
 
@@ -77,7 +77,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Asserts that we run as same user that owns <directory>.")
           .longOpt("same-user")
-          .hasArg(true)
+          .hasArg()
           .argName("directory")
           .build();
 
@@ -85,7 +85,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Asserts that directory <directory> exists.")
           .longOpt("exists")
-          .hasArg(true)
+          .hasArg()
           .argName("directory")
           .build();
 
@@ -93,7 +93,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Asserts that directory <directory> does NOT exist.")
           .longOpt("not-exists")
-          .hasArg(true)
+          .hasArg()
           .argName("directory")
           .build();
 
@@ -105,7 +105,7 @@ public class AssertTool extends ToolBase {
           .desc(
               "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
           .longOpt("cloud")
-          .hasArg(true)
+          .hasArg()
           .argName("url")
           .build();
 
@@ -114,7 +114,7 @@ public class AssertTool extends ToolBase {
           .desc(
               "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
           .longOpt("not-cloud")
-          .hasArg(true)
+          .hasArg()
           .argName("url")
           .build();
 
@@ -125,7 +125,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Exception message to be used in place of the default error message.")
           .longOpt("message")
-          .hasArg(true)
+          .hasArg()
           .argName("message")
           .build();
 
@@ -133,7 +133,7 @@ public class AssertTool extends ToolBase {
       Option.builder()
           .desc("Timeout in ms for commands supporting a timeout.")
           .longOpt("timeout")
-          .hasArg(true)
+          .hasArg()
           .type(Long.class)
           .argName("ms")
           .build();

@@ -39,7 +39,7 @@ public class ConfigSetUploadTool extends ToolBase {
           .longOpt("conf-name")
           .hasArg()
           .argName("NAME")
-          .required(true)
+          .required()
           .desc("Configset name in ZooKeeper.")
           .build();
 
@@ -48,7 +48,7 @@ public class ConfigSetUploadTool extends ToolBase {
           .longOpt("conf-dir")
           .hasArg()
           .argName("DIR")
-          .required(true)
+          .required()
           .desc("Local directory with configs.")
           .build();
 

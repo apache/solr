@@ -39,17 +39,17 @@ public class ConfigTool extends ToolBase {
   private static final Option COLLECTION_NAME_OPTION =
       Option.builder("c")
           .longOpt("name")
-          .argName("NAME")
           .hasArg()
-          .required(true)
+          .argName("NAME")
+          .required()
           .desc("Name of the collection.")
           .build();
 
   private static final Option ACTION_OPTION =
       Option.builder("a")
           .longOpt("action")
-          .argName("ACTION")
           .hasArg()
+          .argName("ACTION")
           .desc(
               "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
           .build();
@@ -57,9 +57,9 @@ public class ConfigTool extends ToolBase {
   private static final Option PROPERTY_OPTION =
       Option.builder()
           .longOpt("property")
-          .argName("PROP")
           .hasArg()
-          .required(true)
+          .argName("PROP")
+          .required()
           .desc(
               "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
           .build();
@@ -67,8 +67,8 @@ public class ConfigTool extends ToolBase {
   private static final Option VALUE_OPTION =
       Option.builder("v")
           .longOpt("value")
-          .argName("VALUE")
           .hasArg()
+          .argName("VALUE")
           .desc("Set the property to this value; accepts JSON objects and strings.")
           .build();
 
