@@ -46,7 +46,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -88,24 +87,6 @@ public class SolrCLI implements CLIO {
 
   public static final String ZK_HOST = "localhost:9983";
 
-  public static final Option OPTION_ZKHOST_DEPRECATED =
-      Option.builder("zkHost")
-          .longOpt("zkHost")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --zk-host instead")
-                  .get())
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST
-                  + '.')
-          .build();
-
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
           .longOpt("zk-host")
@@ -117,45 +98,12 @@ public class SolrCLI implements CLIO {
                   + ZK_HOST
                   + '.')
           .build();
-  public static final Option OPTION_SOLRURL_DEPRECATED =
-      Option.builder("solrUrl")
-          .longOpt("solrUrl")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --solr-url instead")
-                  .get())
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + getDefaultSolrUrl()
-                  + '.')
-          .build();
   public static final Option OPTION_SOLRURL =
       Option.builder("s")
           .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + getDefaultSolrUrl()
-                  + '.')
-          .build();
-  public static final Option OPTION_SOLRURL_DEPRECATED_SHORT =
-      Option.builder("url")
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use -s instead")
-                  .get())
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + getDefaultSolrUrl()
@@ -171,19 +119,6 @@ public class SolrCLI implements CLIO {
 
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
-
-  public static final Option OPTION_RECURSE_DEPRECATED =
-      Option.builder()
-          .longOpt("recurse")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.8")
-                  .setDescription("Use --recursive instead")
-                  .get())
-          .required(false)
-          .desc("Apply the command recursively.")
-          .build();
 
   public static final Option OPTION_RECURSIVE =
       Option.builder("r")
@@ -215,19 +150,13 @@ public class SolrCLI implements CLIO {
   public static void main(String[] args) throws Exception {
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
-    final boolean isHelpCommand =
-        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+    final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
-    if (Arrays.asList("-version", "version").contains(args[0])) {
-      // select the version tool to be run
-      CLIO.out("Deprecated operation as of 9.8.  Please use bin/solr --version.");
-      args = new String[] {"version"};
-    }
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
       args = new String[] {"version"};
@@ -243,7 +172,7 @@ public class SolrCLI implements CLIO {
         // remap our arguments to invoke the ZK tool help.
         args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
       } else if (args.length == 2) {
-        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+        if (Arrays.asList("-h", "--help").contains(args[1])) {
           // remap our arguments to invoke the ZK tool help.
           args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
         } else {
@@ -411,6 +340,10 @@ public class SolrCLI implements CLIO {
   /**
    * Returns the value of the option with the given name, or the value of the deprecated option. If
    * both values are null, then it returns the default value.
+   *
+   * <p>If this method is marked as unused by your IDE, it means we have no deprecated CLI options
+   * currently, congratulations! This method is preserved for the next time we need to deprecate a
+   * CLI option.
    */
   public static String getOptionWithDeprecatedAndDefault(
       CommandLine cli, String opt, String deprecated, String def) {
@@ -462,7 +395,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "--help".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg)) {
             hasHelpArg = true;
             break;
           }
@@ -739,18 +672,10 @@ public class SolrCLI implements CLIO {
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl = null;
-    if (cli.hasOption("solr-url")) {
-      solrUrl = cli.getOptionValue("solr-url");
-    } else if (cli.hasOption("solrUrl")) {
-      solrUrl = cli.getOptionValue("solrUrl");
-    } else if (cli.hasOption("url")) {
-      solrUrl = cli.getOptionValue("url");
-    }
+    String solrUrl = cli.getOptionValue("solr-url");
 
     if (solrUrl == null) {
-      String zkHost =
-          cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+      String zkHost = cli.getOptionValue("zk-host");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.err(
@@ -781,8 +706,7 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost =
-        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+    String zkHost = cli.getOptionValue("zk-host");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
