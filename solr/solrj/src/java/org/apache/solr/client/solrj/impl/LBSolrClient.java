@@ -486,8 +486,8 @@ public abstract class LBSolrClient extends SolrClient {
     return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
   }
 
-  // TODO This special casing can be removed if either: (1) SOLR-16367 is completed, or (2)
-  // LBHttp2SolrClient.getClient() is modified to return a client already pointed at the correct URL
+  // TODO SOLR-17541 should remove the need for the special-casing below; remove as a part of that
+  // ticket.
   private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
