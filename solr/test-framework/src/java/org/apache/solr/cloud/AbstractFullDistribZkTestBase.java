@@ -2561,9 +2561,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      Map<String, DocCollection> map = clusterState.getCollectionsMap();
       CharArr out = new CharArr();
-      new JSONWriter(out, 2).write(map);
+      new JSONWriter(out, 2).write(clusterState.collectionStream().iterator());
       cs = out.toString();
     }
     return cs;

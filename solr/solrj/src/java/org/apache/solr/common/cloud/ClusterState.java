@@ -173,7 +173,9 @@ public class ClusterState implements MapWriter {
    * semantics of how collection list is loaded have changed in SOLR-6629.
    *
    * @return a map of collection name vs DocCollection object
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, DocCollection> getCollectionsMap() {
     Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
@@ -415,8 +417,8 @@ public class ClusterState implements MapWriter {
   }
 
   /**
-   * Streams the resolved {@link DocCollection}s. Use this sparingly in case there are many
-   * collections.
+   * Streams the resolved {@link DocCollection}s, which will often fetch from ZooKeeper for each one
+   * for a many-collection scenario. Use this sparingly; some users have thousands of collections!
    */
   public Stream<DocCollection> collectionStream() {
     return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);

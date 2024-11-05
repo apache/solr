@@ -49,23 +49,14 @@ public class NodeMutator {
 
     log.debug("DownNode state invoked for node: {}", nodeName);
 
-    List<ZkWriteCommand> zkWriteCommands = new ArrayList<>();
-
-    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-      String collectionName = entry.getKey();
-      DocCollection docCollection = entry.getValue();
-      if (docCollection.isPerReplicaState()) continue;
-
-      Optional<ZkWriteCommand> zkWriteCommand =
-          computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
-
-      if (zkWriteCommand.isPresent()) {
-        zkWriteCommands.add(zkWriteCommand.get());
-      }
-    }
-
-    return zkWriteCommands;
+    return clusterState
+        .collectionStream()
+        .filter(entry -> !entry.isPerReplicaState())
+        .map(
+            docCollection ->
+                computeCollectionUpdate(nodeName, docCollection.getName(), docCollection, zkClient))
+        .flatMap(Optional::stream)
+        .toList();
   }
 
   /**

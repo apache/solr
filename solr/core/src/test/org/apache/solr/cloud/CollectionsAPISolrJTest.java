@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -1027,7 +1028,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     delete.setFollowAliases(false);
     delete.process(solrClient);
     ClusterState state = solrClient.getClusterState();
-    assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName1));
+    assertFalse(toString(state), state.hasCollection(collectionName1));
     // search should still work, returning results from collection 2
     assertDoc(solrClient, collectionName1, "2"); // aliased
     assertDoc(solrClient, collectionName2, "2"); // direct
@@ -1048,7 +1049,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     state = solrClient.getClusterState();
     // the collection is gone
-    assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName2));
+    assertFalse(toString(state), state.hasCollection(collectionName2));
 
     // and the alias is gone
     RetryUtil.retryUntil(
@@ -1065,6 +1066,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
             return false;
           }
         });
+  }
+
+  private static String toString(ClusterState state) {
+    return state.collectionStream().map(Object::toString).collect(Collectors.joining(","));
   }
 
   private void assertDoc(CloudSolrClient solrClient, String collection, String id)

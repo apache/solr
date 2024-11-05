@@ -1094,20 +1094,19 @@ public class HttpSolrCall {
 
   private void getSlicesForCollections(
       ClusterState clusterState, Collection<Slice> slices, boolean activeSlices) {
+
     if (activeSlices) {
-      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
-        final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        if (activeCollectionSlices != null) {
-          Collections.addAll(slices, activeCollectionSlices);
-        }
-      }
+      clusterState
+          .collectionStream()
+          .map(DocCollection::getActiveSlicesArr)
+          .filter(Objects::nonNull)
+          .forEach(them -> Collections.addAll(slices, them));
     } else {
-      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
-        final Collection<Slice> collectionSlices = entry.getValue().getSlices();
-        if (collectionSlices != null) {
-          slices.addAll(collectionSlices);
-        }
-      }
+      clusterState
+          .collectionStream()
+          .map(DocCollection::getSlices)
+          .filter(Objects::nonNull)
+          .forEach(slices::addAll);
     }
   }
 
