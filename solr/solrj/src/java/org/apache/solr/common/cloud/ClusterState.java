@@ -414,14 +414,17 @@ public class ClusterState implements MapWriter {
     return hostAllowList;
   }
 
-  /** Streams the resolved DocCollections. Use this sparingly in case there are many collections. */
+  /**
+   * Streams the resolved {@link DocCollection}s. Use this sparingly in case there are many
+   * collections.
+   */
   public Stream<DocCollection> collectionStream() {
     return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
   }
 
   /**
-   * Calls {@code consumer} with a resolved DocCollections for all collections. Use this sparingly
-   * in case there are many collections.
+   * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
+   * sparingly in case there are many collections.
    */
   public void forEachCollection(Consumer<DocCollection> consumer) {
     collectionStream().forEach(consumer);
