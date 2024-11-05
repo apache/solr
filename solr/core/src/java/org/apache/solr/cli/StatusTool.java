@@ -92,8 +92,8 @@ public class StatusTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(MAX_WAIT_SECS_OPTION)
         .addOption(PORT_OPTION)
         .addOption(SHORT_OPTION)

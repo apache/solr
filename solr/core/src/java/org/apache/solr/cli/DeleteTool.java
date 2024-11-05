@@ -95,8 +95,8 @@ public class DeleteTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(DELETE_CONFIG_OPTION)
         .addOption(FORCE_OPTION)

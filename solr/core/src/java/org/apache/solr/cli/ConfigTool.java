@@ -86,8 +86,8 @@ public class ConfigTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(ACTION_OPTION)
         .addOption(PROPERTY_OPTION)

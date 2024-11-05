@@ -18,7 +18,6 @@
 package org.apache.solr.cli;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
 public interface Tool {
@@ -54,13 +53,6 @@ public interface Tool {
    * Retrieve the {@link Options} supported by this tool.
    *
    * @return The {@link Options} this tool supports.
-   */
-  Options getAllOptions();
-
-  /**
-   * Retrieve a list of non-debrecated {@link Option}s supported by this tool.
-   *
-   * @return A list of all non-debrecated {@link Option}s of this tool.
    */
   Options getOptions();
 

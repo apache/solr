@@ -52,8 +52,8 @@ public class SnapshotListTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION)

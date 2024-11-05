@@ -18,9 +18,7 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.util.Collection;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.util.StartupLoggingUtils;
 
@@ -53,23 +51,10 @@ public abstract class ToolBase implements Tool {
   }
 
   @Override
-  public Options getAllOptions() {
+  public Options getOptions() {
     return new Options()
         .addOption(CommonCLIOptions.HELP_OPTION)
         .addOption(CommonCLIOptions.VERBOSE_OPTION);
-  }
-
-  @Override
-  public Options getOptions() {
-    Options options = new Options();
-
-    Collection<Option> toolOpts = getAllOptions().getOptions();
-    for (Option toolOpt : toolOpts) {
-      if (!toolOpt.isDeprecated()) {
-        options.addOption(toolOpt);
-      }
-    }
-    return options;
   }
 
   @Override

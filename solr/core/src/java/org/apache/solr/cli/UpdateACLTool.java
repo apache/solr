@@ -52,8 +52,8 @@ public class UpdateACLTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions().addOption(CommonCLIOptions.ZK_HOST_OPTION);
+  public Options getOptions() {
+    return super.getOptions().addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override

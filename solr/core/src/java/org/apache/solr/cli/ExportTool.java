@@ -148,8 +148,8 @@ public class ExportTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(OUTPUT_OPTION)
         .addOption(FORMAT_OPTION)

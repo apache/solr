@@ -360,8 +360,8 @@ public class PackageTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTIONS_OPTION)
         .addOption(CLUSTER_OPTION)
         .addOption(PARAM_OPTION)

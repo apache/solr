@@ -60,8 +60,8 @@ public class ApiTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(SOLR_URL_OPTION)
         .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }

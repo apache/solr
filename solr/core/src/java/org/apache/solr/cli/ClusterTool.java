@@ -67,8 +67,8 @@ public class ClusterTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
         .addOption(CommonCLIOptions.ZK_HOST_OPTION);

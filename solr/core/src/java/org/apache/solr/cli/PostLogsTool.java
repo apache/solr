@@ -81,8 +81,8 @@ public class PostLogsTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(ROOT_DIR_OPTION)
         .addOption(CommonCLIOptions.SOLR_URL_OPTION)

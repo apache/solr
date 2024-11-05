@@ -257,8 +257,8 @@ public class PostTool extends ToolBase {
   }
 
   @Override
-  public Options getAllOptions() {
-    return super.getAllOptions()
+  public Options getOptions() {
+    return super.getOptions()
         .addOption(COLLECTION_NAME_OPTION)
         .addOption(SKIP_COMMIT_OPTION)
         .addOption(OPTIMIZE_OPTION)
