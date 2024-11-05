@@ -249,9 +249,9 @@ public class TestExportTool extends SolrCloudTestCase {
         COLLECTION_NAME,
         "--credentials",
         SecurityJson.USER_PASS,
-        "-out",
+        "--output",
         outFile.getAbsolutePath(),
-        "-verbose"
+        "--verbose"
       };
 
       assertEquals(0, runTool(args));

@@ -46,7 +46,6 @@ public class SnapshotExportTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -77,7 +76,7 @@ public class SnapshotExportTool extends ToolBase {
             .desc(
                 "Specifies name of the backup repository to be used during snapshot export preparation.")
             .build(),
-        Option.builder("i")
+        Option.builder()
             .longOpt("async-id")
             .argName("ID")
             .hasArg()
@@ -91,7 +90,7 @@ public class SnapshotExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    //
+
     String snapshotName = cli.getOptionValue("snapshot-name");
     String collectionName = cli.getOptionValue("name");
     String destDir = cli.getOptionValue("dest-dir");
