@@ -221,6 +221,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17534: Introduce ClusterState.getCollectionNames, a convenience method (David Smiley)
 
+* SOLR-17535: Introduce ClusterState.collectionStream to replace getCollectionStates and getCollectionsMap (David Smiley)
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------
