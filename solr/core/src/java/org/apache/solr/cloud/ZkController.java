@@ -63,6 +63,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -881,7 +882,7 @@ public class ZkController implements Closeable {
               .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .build();
       cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(List.of(getZkServerAddress()), Optional.empty())
+          new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withHttpClient(http2SolrClient)
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
