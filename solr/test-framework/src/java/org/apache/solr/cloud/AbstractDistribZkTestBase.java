@@ -270,11 +270,11 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
             }
             return false;
           });
-    } catch (InterruptedException | TimeoutException e) {
+    } catch (TimeoutException e) {
       // If we failed to get a new leader, print some diagnotics before the test fails
       Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
       zkStateReader.getZkClient().printLayoutToStream(System.out);
-      throw e;
+      fail("Could not find new leader even after waiting for 15s");
     }
   }
 
