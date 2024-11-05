@@ -493,8 +493,7 @@ public abstract class LBSolrClient extends SolrClient {
     Exception ex = null;
     try {
       rsp.server = baseUrl;
-      req.getRequest().setBasePath(baseUrl);
-      rsp.rsp = getClient(baseUrl).request(req.getRequest(), (String) null);
+      rsp.rsp = doRequest(baseUrl, req.getRequest(), null);
       if (isZombie) {
         // TODO: zombieServers key is String not Endpoint.
         zombieServers.remove(baseUrl);
@@ -539,6 +538,25 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     return ex;
+  }
+
+  // TODO SOLR-17541 should remove the need for the special-casing below; remove as a part of that
+  // ticket
+  protected NamedList<Object> doRequest(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException {
+    final var solrClient = getClient(baseUrl);
+
+    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
+    // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
+    // the appropriate URL is provided.
+    if (solrClient instanceof Http2SolrClient) {
+      final var httpSolrClient = (Http2SolrClient) solrClient;
+      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+    }
+
+    // Assume provided client already uses 'baseUrl'
+    return solrClient.request(solrRequest, collection);
   }
 
   protected abstract SolrClient getClient(String baseUrl);
@@ -636,8 +654,9 @@ public abstract class LBSolrClient extends SolrClient {
   private void checkAZombieServer(ServerWrapper zombieServer) {
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
-      queryRequest.setBasePath(zombieServer.baseUrl);
-      QueryResponse resp = queryRequest.process(getClient(zombieServer.getBaseUrl()));
+      final var responseRaw = doRequest(zombieServer.getBaseUrl(), queryRequest, null);
+      final var resp = new QueryResponse();
+      resp.setResponse(responseRaw);
       if (resp.getStatus() == 0) {
         // server has come back up.
         // make sure to remove from zombies before adding to the alive list to avoid a race
@@ -755,8 +774,7 @@ public abstract class LBSolrClient extends SolrClient {
       ServerWrapper wrapper = pickServer(serverList, request);
       try {
         ++numServersTried;
-        request.setBasePath(wrapper.baseUrl);
-        return getClient(wrapper.getBaseUrl()).request(request, collection);
+        return doRequest(wrapper.getBaseUrl(), request, collection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -785,8 +803,7 @@ public abstract class LBSolrClient extends SolrClient {
           || (justFailed != null && justFailed.containsKey(wrapper.getBaseUrl()))) continue;
       try {
         ++numServersTried;
-        request.setBasePath(wrapper.baseUrl);
-        NamedList<Object> rsp = getClient(wrapper.baseUrl).request(request, collection);
+        final var rsp = doRequest(wrapper.baseUrl, request, collection);
         // remove from zombie list *before* adding the alive list to avoid a race that could lose a
         // server
         zombieServers.remove(wrapper.getBaseUrl());

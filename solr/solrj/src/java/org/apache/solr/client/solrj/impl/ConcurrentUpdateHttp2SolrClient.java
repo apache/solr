@@ -367,14 +367,14 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
-      collection = defaultCollection;
+    final String effectiveCollection =
+        ClientUtils.shouldApplyDefaultCollection(collection, request)
+            ? defaultCollection
+            : collection;
     if (!(request instanceof UpdateRequest)) {
-      request.setBasePath(basePath);
-      return client.request(request, collection);
+      return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
     }
     UpdateRequest req = (UpdateRequest) request;
-    req.setBasePath(basePath);
     // this happens for commit...
     if (streamDeletes) {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())
@@ -382,13 +382,14 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           && (req.getDeleteByIdMap() == null || req.getDeleteByIdMap().isEmpty())) {
         if (req.getDeleteQuery() == null) {
           blockUntilFinished();
-          return client.request(request, collection);
+          return client.requestWithBaseUrl(
+              basePath, (c) -> c.request(request, effectiveCollection));
         }
       }
     } else {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())) {
         blockUntilFinished();
-        return client.request(request, collection);
+        return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
       }
     }
 
@@ -398,7 +399,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       if (params.getBool(UpdateParams.WAIT_SEARCHER, false)) {
         log.info("blocking for commit/optimize");
         blockUntilFinished(); // empty the queue
-        return client.request(request, collection);
+        return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
       }
     }
 
@@ -408,7 +409,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         tmpLock.await();
       }
 
-      Update update = new Update(req, collection);
+      Update update = new Update(req, effectiveCollection);
       boolean success = queue.offer(update);
 
       long lastStallTime = -1;
