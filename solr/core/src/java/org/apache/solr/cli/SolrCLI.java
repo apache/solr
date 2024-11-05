@@ -297,7 +297,7 @@ public class SolrCLI implements CLIO {
 
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
-    Options options = tool.getAllOptions();
+    Options options = tool.getOptions();
 
     CommandLine cli = null;
     try {
@@ -338,13 +338,18 @@ public class SolrCLI implements CLIO {
   /** Prints tool help for a given tool */
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
+    Options nonDeprecatedOptions = new Options();
+
+    tool.getOptions().getOptions().stream()
+        .filter(option -> !option.isDeprecated())
+        .forEach(nonDeprecatedOptions::addOption);
 
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
         usageString,
         "\n" + tool.getHeader(),
-        tool.getOptions(),
+        nonDeprecatedOptions,
         tool.getFooter(),
         autoGenerateUsage);
   }
