@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.Constants;
@@ -289,7 +288,6 @@ public class AuthTool extends ToolBase {
     }
 
     CLIO.out("Options not understood.");
-    new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getOptions());
     return 1;
   }
 
@@ -302,13 +300,11 @@ public class AuthTool extends ToolBase {
       case "enable":
         if (!prompt && !cli.hasOption(CommonCLIOptions.CREDENTIALS_OPTION)) {
           CLIO.out("Option --credentials or --prompt is required with enable.");
-          new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getOptions());
           SolrCLI.exit(1);
         } else if (!prompt
             && (cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION) == null
                 || !cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION).contains(":"))) {
           CLIO.out("Option --credentials is not in correct format.");
-          new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getOptions());
           SolrCLI.exit(1);
         }
 
@@ -450,7 +446,6 @@ public class AuthTool extends ToolBase {
     }
 
     CLIO.out("Options not understood.");
-    new HelpFormatter().printHelp("bin/solr auth <enable|disable> [OPTIONS]", getOptions());
     return 1;
   }
 
