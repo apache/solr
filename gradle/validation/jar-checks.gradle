@@ -1,3 +1,5 @@
+import java.util.stream.Collectors
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -76,14 +78,14 @@ subprojects {
   // Configure jarValidation configuration for all projects. Any dependency
   // declared on this configuration (or any configuration it extends from) will
   // be verified.
-  configurations {
+  project.configurations {
     jarValidation
   }
 
   // For Java projects, add all dependencies from the following configurations
   // to jar validation
   plugins.withType(JavaPlugin) {
-    configurations {
+    project.configurations {
       jarValidation {
         extendsFrom runtimeClasspath
         extendsFrom compileClasspath
@@ -109,16 +111,24 @@ subprojects {
       }
 
       def excludeRules = configurations.jarValidation.excludeRules
+      List<Map<String, String>> excludeRuleMaps;
+      if (excludeRules && excludeRules.size() > 0) {
+        excludeRuleMaps = excludeRules.stream().map {rule ->
+          if (rule.module != null) {
+            Map.of("group", rule.group, "module", rule.module)
+          } else {
+            Map.of("group", rule.group)
+          }
+        }.collect(Collectors.toList())
+      }
 
       ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
       configurations.jarValidation.extendsFrom.each { conf ->
-        if (excludeRules) {
+        if (excludeRules && excludeRules.size() > 0) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
           conf.canBeConsumed = true
-          def newConfExcludeRules = new HashSet<>(conf.excludeRules)
-          newConfExcludeRules.addAll(excludeRules)
-          conf.excludeRules = newConfExcludeRules
+          excludeRuleMaps.forEach {conf.exclude(it)}
         }
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)

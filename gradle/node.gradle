@@ -34,7 +34,7 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         }
     }
 
-    ext {
+    project.ext {
         rootNodeDir = "$rootDir/.gradle/node"
         nodeProjectDir = file("$rootNodeDir/$project.name")
     }

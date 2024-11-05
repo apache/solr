@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# SPDX-License-Identifier: Apache-2.0
+#
 
 ##############################################################################
 #
@@ -55,7 +57,7 @@
 #       Darwin, MinGW, and NonStop.
 #
 #   (3) This script is generated from the Groovy template
-#       https://github.com/gradle/gradle/blob/HEAD/subprojects/plugins/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
+#       https://github.com/gradle/gradle/blob/HEAD/platforms/jvm/plugins-application/src/main/resources/org/gradle/api/internal/plugins/unixStartScript.txt
 #       within the Gradle project.
 #
 #       You can find Gradle at https://github.com/gradle/gradle/.
@@ -84,7 +86,8 @@ done
 # shellcheck disable=SC2034
 APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
-APP_HOME=$( cd "${APP_HOME:-./}" > /dev/null && pwd -P ) || exit
+APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s
+' "$PWD" ) || exit
 
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
@@ -161,7 +164,7 @@ if [ ! -e "$GRADLE_WRAPPER_JAR" ]; then
     "$JAVACMD" $JAVA_OPTS "$APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "$GRADLE_WRAPPER_JAR"
     WRAPPER_STATUS=$?
     if [ "$WRAPPER_STATUS" -eq 1 ]; then
-        echo "ERROR: Something went wrong. Make sure you're using Java version between 11 and 21."
+        echo "ERROR: Something went wrong. Make sure you're using Java version between 11 and 23."
         exit $WRAPPER_STATUS
     elif [ "$WRAPPER_STATUS" -ne 0 ]; then
         exit $WRAPPER_STATUS
