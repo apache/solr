@@ -396,10 +396,10 @@ public class ZkController implements Closeable {
     }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
-    this.sysPropsCacher =
-        new NodesSysPropsCacher(
-            ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient(),
-            zkStateReader);
+    final var client =
+        (Http2SolrClient)
+            ((HttpShardHandlerFactory) getCoreContainer().getShardHandlerFactory()).getClient();
+    this.sysPropsCacher = new NodesSysPropsCacher(client, zkStateReader);
     assert ObjectReleaseTracker.track(this);
   }
 
