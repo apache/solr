@@ -192,7 +192,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     String prefix = ReindexCollectionCmd.TARGET_COL_PREFIX + targetCollection;
     while (!timeOut.hasTimedOut()) {
       timeOut.sleep(500);
-      for (String name : cloudManager.getClusterState().getCollectionsMap().keySet()) {
+      for (String name : cloudManager.getClusterState().getCollectionNames()) {
         if (name.startsWith(prefix)) {
           realTargetCollection = name;
           break;

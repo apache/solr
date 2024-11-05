@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -251,9 +252,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         int index = Integer.parseInt(lastQueryReq.getParams().get("q"));
         assertNull("Found same request twice: " + index, queryRequests[index]);
         queryRequests[index] = lastQueryReq;
-        if (lastQueryReq.getBasePath().equals(ep1.toString())) {
+
+        final String lastBasePath = client.lastBasePaths.get(i);
+        if (lastBasePath.equals(ep1.toString())) {
           numEndpointOne++;
-        } else if (lastQueryReq.getBasePath().equals(ep2.toString())) {
+        } else if (lastBasePath.equals(ep2.toString())) {
           numEndpointTwo++;
         }
 
@@ -293,7 +296,10 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     public String basePathToFail = null;
 
+    public String tmpBaseUrl = null;
+
     protected MockHttpSolrClient(String serverBaseUrl, Builder builder) {
+
       // TODO: Consider creating an interface for Http*SolrClient
       // so mocks can Implement, not Extend, and not actually need to
       // build an (unused) client
@@ -312,14 +318,26 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       return generateResponse(request);
     }
 
+    public <R> R requestWithBaseUrl(
+        String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
+        throws SolrServerException, IOException {
+      // This use of 'tmpBaseUrl' is NOT thread safe, but that's fine for our purposes here.
+      try {
+        tmpBaseUrl = baseUrl;
+        return clientFunction.apply(this);
+      } finally {
+        tmpBaseUrl = null;
+      }
+    }
+
     @Override
     public CompletableFuture<NamedList<Object>> requestAsync(
         final SolrRequest<?> solrRequest, String collection) {
       CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
       lastSolrRequests.add(solrRequest);
-      lastBasePaths.add(solrRequest.getBasePath());
+      lastBasePaths.add(tmpBaseUrl);
       lastCollections.add(collection);
-      if (solrRequest.getBasePath().equals(basePathToFail)) {
+      if (tmpBaseUrl != null && tmpBaseUrl.equals(basePathToFail)) {
         cf.completeExceptionally(
             new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this."));
       } else {
