@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
@@ -93,12 +94,14 @@ public class StatusTool extends ToolBase {
 
   @Override
   public Options getOptions() {
+    OptionGroup optionGroup = new OptionGroup();
+    optionGroup.addOption(PORT_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
     return super.getOptions()
         .addOption(MAX_WAIT_SECS_OPTION)
-        .addOption(PORT_OPTION)
         .addOption(SHORT_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(optionGroup);
   }
 
   @Override
@@ -107,10 +110,6 @@ public class StatusTool extends ToolBase {
     Integer port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
     boolean shortFormat = cli.hasOption(SHORT_OPTION);
     int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
-
-    if (port != null && solrUrl != null) {
-      throw new IllegalArgumentException("Only one of port or url can be specified");
-    }
 
     if (solrUrl != null) {
       if (!URLUtil.hasScheme(solrUrl)) {
