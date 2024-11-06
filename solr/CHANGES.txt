@@ -26,6 +26,8 @@ Improvements
 * SOLR-16116: Apache Curator is now used to manage all Solr Zookeeper interactions. This should provide more stability in the Solr-Zookeeper interactions.
   The solrj-zookeeper module, now has a dependency on curator. (Houston Putman, Kevin Risden, Mike Drob, David Smiley)
 
+* SOLR-17544: Solr CLI will now warn you when you use multiple options and only one is a valid choice.  Combining -s and -z is most common example.  (Eric Pugh, Christos Malliaridis)
+
 Optimizations
 ---------------------
 (No changes)

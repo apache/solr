@@ -200,7 +200,7 @@ public class AuthTool extends ToolBase {
             CLIO.out(
                 "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
                     + securityJson
-                    + "\n");
+                    + "Dsolr.httpclient.config=[basicAuthConfFile]\n");
             zkInaccessible = true;
           }
           if (zkHost == null) {
