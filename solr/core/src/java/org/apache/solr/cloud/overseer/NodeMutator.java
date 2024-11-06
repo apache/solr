@@ -52,9 +52,7 @@ public class NodeMutator {
     return clusterState
         .collectionStream()
         .filter(entry -> !entry.isPerReplicaState())
-        .map(
-            docCollection ->
-                computeCollectionUpdate(nodeName, docCollection.getName(), docCollection, zkClient))
+        .map(docCollection -> computeCollectionUpdate(nodeName, docCollection, zkClient))
         .flatMap(Optional::stream)
         .toList();
   }
@@ -68,7 +66,7 @@ public class NodeMutator {
    *     for an update to state.json, depending on the configuration of the collection.
    */
   public static Optional<ZkWriteCommand> computeCollectionUpdate(
-      String nodeName, String collectionName, DocCollection docCollection, SolrZkClient client) {
+      String nodeName, DocCollection docCollection, SolrZkClient client) {
     boolean needToUpdateCollection = false;
     List<String> downedReplicas = new ArrayList<>();
     final Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
@@ -98,13 +96,13 @@ public class NodeMutator {
 
         return Optional.of(
             new ZkWriteCommand(
-                collectionName,
+                docCollection.getName(),
                 docCollection.copyWithSlices(slicesCopy),
                 PerReplicaStatesOps.downReplicas(downedReplicas, prs),
                 false));
       } else {
         return Optional.of(
-            new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy)));
+            new ZkWriteCommand(docCollection.getName(), docCollection.copyWithSlices(slicesCopy)));
       }
     } else {
       // No update needed for this collection

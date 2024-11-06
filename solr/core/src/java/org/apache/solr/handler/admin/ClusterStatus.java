@@ -181,11 +181,14 @@ public class ClusterStatus {
     String shard = solrParams.get(ZkStateReader.SHARD_ID_PROP);
 
     Stream<DocCollection> collectionStream;
-    if (collection == null) { // uh-oh; hopefully not a lot
+    if (collection == null) {
       collectionStream = clusterState.collectionStream();
     } else {
       DocCollection collState = clusterState.getCollectionOrNull(collection);
-      if (collState == null) { // not a collection
+      if (collState != null) {
+        collectionStream = Stream.of(collState);
+      } else { // couldn't find collection
+        // hopefully an alias...
         if (!aliasVsCollections.containsKey(collection)) { // not an alias either
           SolrException solrException =
               new SolrException(
@@ -199,10 +202,10 @@ public class ClusterStatus {
             aliasVsCollections.get(collection).stream()
                 .map(clusterState::getCollectionOrNull)
                 .filter(Objects::nonNull);
-      } else {
-        collectionStream = Stream.of(collState);
       }
     }
+
+    // TODO use an Iterable to stream the data to the client instead of gathering it all in mem
 
     NamedList<Object> collectionProps = new SimpleOrderedMap<>();
 

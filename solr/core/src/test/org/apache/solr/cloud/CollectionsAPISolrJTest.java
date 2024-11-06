@@ -1028,7 +1028,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     delete.setFollowAliases(false);
     delete.process(solrClient);
     ClusterState state = solrClient.getClusterState();
-    assertFalse(toString(state), state.hasCollection(collectionName1));
+    assertFalse(collectionNamesString(state), state.hasCollection(collectionName1));
     // search should still work, returning results from collection 2
     assertDoc(solrClient, collectionName1, "2"); // aliased
     assertDoc(solrClient, collectionName2, "2"); // direct
@@ -1049,7 +1049,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     state = solrClient.getClusterState();
     // the collection is gone
-    assertFalse(toString(state), state.hasCollection(collectionName2));
+    assertFalse(collectionNamesString(state), state.hasCollection(collectionName2));
 
     // and the alias is gone
     RetryUtil.retryUntil(
@@ -1068,7 +1068,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         });
   }
 
-  private static String toString(ClusterState state) {
+  private static String collectionNamesString(ClusterState state) {
     return state.collectionStream().map(Object::toString).collect(Collectors.joining(","));
   }
 
