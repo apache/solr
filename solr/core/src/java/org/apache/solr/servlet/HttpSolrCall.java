@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -1092,21 +1093,15 @@ public class HttpSolrCall {
     return core;
   }
 
-  private void getSlicesForCollections(
-      ClusterState clusterState, Collection<Slice> slices, boolean activeSlices) {
-
+  private List<Slice> getSlicesForAllCollections(ClusterState clusterState, boolean activeSlices) {
+    // looks across *all* collections
     if (activeSlices) {
-      clusterState
+      return clusterState
           .collectionStream()
-          .map(DocCollection::getActiveSlicesArr)
-          .filter(Objects::nonNull)
-          .forEach(them -> Collections.addAll(slices, them));
+          .flatMap(coll -> Arrays.stream(coll.getActiveSlicesArr()))
+          .toList();
     } else {
-      clusterState
-          .collectionStream()
-          .map(DocCollection::getSlices)
-          .filter(Objects::nonNull)
-          .forEach(slices::addAll);
+      return clusterState.collectionStream().flatMap(coll -> coll.getSlices().stream()).toList();
     }
   }
 
@@ -1115,20 +1110,20 @@ public class HttpSolrCall {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
-    List<Slice> activeSlices = new ArrayList<>();
+    List<Slice> activeSlices;
     boolean byCoreName = false;
 
     int totalReplicas = 0;
 
     if (slices == null) {
       byCoreName = true;
-      activeSlices = new ArrayList<>();
-      getSlicesForCollections(clusterState, activeSlices, true);
+      // all collections!
+      activeSlices = getSlicesForAllCollections(clusterState, true);
       if (activeSlices.isEmpty()) {
-        getSlicesForCollections(clusterState, activeSlices, false);
+        activeSlices = getSlicesForAllCollections(clusterState, false);
       }
     } else {
-      Collections.addAll(activeSlices, slices);
+      activeSlices = List.of(slices);
     }
 
     for (Slice s : activeSlices) {
