@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +54,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
@@ -758,7 +758,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     while (0 < maxIterations--) {
 
       final ClusterState state = stateReader.getClusterState();
-      Set<String> availableCollections = state.getCollectionsMap().keySet();
+      Set<String> availableCollections = (Set<String>) state.getCollectionNames();
       int availableCount = 0;
       for (String requiredCollection : collections) {
         stateReader.waitForState(
@@ -1942,18 +1942,18 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress)).when(zkController).getSolrCloudManager();
+    doReturn(getCloudDataProvider(reader)).when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(String zkAddress) {
+  private SolrCloudManager getCloudDataProvider(ZkStateReader zkStateReader) {
     var httpSolrClient =
         new Http2SolrClient.Builder()
             .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build();
     var cloudSolrClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
+        new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
             .withHttpClient(httpSolrClient)
             .build();
     solrClients.add(cloudSolrClient);

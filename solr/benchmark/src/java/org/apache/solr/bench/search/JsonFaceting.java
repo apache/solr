@@ -180,11 +180,13 @@ public class JsonFaceting {
       BenchState state,
       BenchState.ThreadState threadState)
       throws Exception {
+    final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
-    queryRequest.setBasePath(
-        miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount)));
-
-    NamedList<Object> result = miniClusterState.client.request(queryRequest, state.collection);
+    NamedList<Object> result =
+        miniClusterState
+            .client
+            .requestWithBaseUrl(url, state.collection, queryRequest)
+            .getResponse();
 
     // MiniClusterState.log("result: " + result);
 
