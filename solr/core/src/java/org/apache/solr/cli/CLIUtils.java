@@ -20,6 +20,7 @@ package org.apache.solr.cli;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -282,6 +283,28 @@ public final class CLIUtils {
     return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .withInternalClientBuilder(builder)
         .build();
+  }
+
+  /**
+   * <p>Extracts the port from the provided {@code solrUrl}. If a URL is provided with https scheme
+   * and not explicitly defines the port, the default port for HTTPS (443) is used.</p>
+   *
+   * <p>If URL does not contain a port nor https as scheme, it fallsback to port 80.</p>
+   *
+   * @param solrUrl the URL to extract the port from
+   * @return The port that was found or null if {@code solrUrl} is not a valid URI.
+   * @throws NullPointerException If solrUrl is null
+   * @throws URISyntaxException If the given string violates RFC 2396, as augmented by the above
+   * deviations
+   */
+  public static Integer portFromUrl(String solrUrl) throws URISyntaxException {
+    URI uri = new URI(solrUrl);
+    int port = uri.getPort();
+    if (port == -1) {
+      return uri.getScheme().equals("https") ? 443 : 80;
+    } else {
+      return port;
+    }
   }
 
   public static boolean safeCheckCollectionExists(

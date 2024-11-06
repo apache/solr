@@ -186,25 +186,15 @@ public class StatusTool extends ToolBase {
     CLIO.out("");
   }
 
-  private Integer portFromUrl(String solrUrl) {
-    try {
-      URI uri = new URI(solrUrl);
-      int port = uri.getPort();
-      if (port == -1) {
-        return uri.getScheme().equals("https") ? 443 : 80;
-      } else {
-        return port;
-      }
-    } catch (URISyntaxException e) {
-      CLIO.err("Invalid URL provided, does not contain port");
-      System.exit(1);
-      return null;
-    }
-  }
-
   public void waitForSolrUpAndPrintStatus(String solrUrl, CommandLine cli, int maxWaitSecs)
       throws Exception {
-    int solrPort = portFromUrl(solrUrl);
+    int solrPort = -1;
+    try {
+      solrPort = CLIUtils.portFromUrl(solrUrl);
+    } catch (Exception e) {
+      CLIO.err("Invalid URL provided, does not contain port");
+      SolrCLI.exit(1);
+    }
     echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
     boolean solrUp = waitForSolrUp(solrUrl, cli, maxWaitSecs);
     if (solrUp) {
