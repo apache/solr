@@ -157,9 +157,8 @@ public class AuthTool extends ToolBase {
         .addOption(SOLR_INCLUDE_FILE_OPTION)
         .addOption(UPDATE_INCLUDE_FILE_OPTION)
         .addOption(AUTH_CONF_DIR_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, Option option) {

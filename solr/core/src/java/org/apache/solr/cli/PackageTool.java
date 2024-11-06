@@ -368,8 +368,7 @@ public class PackageTool extends ToolBase {
         .addOption(UPDATE_OPTION)
         .addOption(COLLECTION_OPTION)
         .addOption(NO_PROMPT_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 }

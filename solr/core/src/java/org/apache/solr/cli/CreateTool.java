@@ -123,15 +123,17 @@ public class CreateTool extends ToolBase {
 
   @Override
   public Options getOptions() {
-    return super.getOptions()
-        .addOption(COLLECTION_NAME_OPTION)
-        .addOption(SHARDS_OPTION)
-        .addOption(REPLICATION_FACTOR_OPTION)
-        .addOption(CONF_DIR_OPTION)
-        .addOption(CONF_NAME_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+    Options opts =
+        super.getOptions()
+            .addOption(COLLECTION_NAME_OPTION)
+            .addOption(SHARDS_OPTION)
+            .addOption(REPLICATION_FACTOR_OPTION)
+            .addOption(CONF_DIR_OPTION)
+            .addOption(CONF_NAME_OPTION)
+            .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+            .addOptionGroup(getConnectionOptions());
+
+    return opts;
   }
 
   @Override

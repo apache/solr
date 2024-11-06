@@ -65,9 +65,8 @@ public class ZkCpTool extends ToolBase {
     return super.getOptions()
         .addOption(SOLR_HOME_OPTION)
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

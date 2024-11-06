@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.util.StartupLoggingUtils;
 
@@ -55,6 +56,18 @@ public abstract class ToolBase implements Tool {
     return new Options()
         .addOption(CommonCLIOptions.HELP_OPTION)
         .addOption(CommonCLIOptions.VERBOSE_OPTION);
+  }
+
+  /**
+   * Provides the two ways of connecting to Solr for CLI Tools
+   *
+   * @return OptionGroup validates that only one option is supplied by the caller.
+   */
+  public OptionGroup getConnectionOptions() {
+    OptionGroup optionGroup = new OptionGroup();
+    optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
+    optionGroup.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    return optionGroup;
   }
 
   @Override

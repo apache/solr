@@ -92,9 +92,8 @@ public class ConfigTool extends ToolBase {
         .addOption(ACTION_OPTION)
         .addOption(PROPERTY_OPTION)
         .addOption(VALUE_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override

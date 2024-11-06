@@ -42,9 +42,8 @@ public class ZkRmTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(CommonCLIOptions.RECURSIVE_OPTION)
-        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
-        .addOption(CommonCLIOptions.ZK_HOST_OPTION)
-        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
