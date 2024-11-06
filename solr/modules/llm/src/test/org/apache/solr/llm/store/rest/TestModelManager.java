@@ -31,7 +31,7 @@ public class TestModelManager extends TestLlmBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    setupTest(false, false);
+    setupTest("solrconfig-llm.xml", "schema.xml", false, false);
   }
 
   @Test
