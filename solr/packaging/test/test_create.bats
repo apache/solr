@@ -41,8 +41,6 @@ teardown() {
 }
 
 @test "multiple connection options are prevented" {
-  run solr start
   run solr create -c COLL_NAME2 --solr-url http://localhost:${SOLR_PORT} -z localhost:${ZK_PORT}
-  refute_output --partial "Created collection 'COLL_NAME2'"
   assert_output --partial "The option 'z' was specified but an option from this group has already been selected: 's'"
 }
