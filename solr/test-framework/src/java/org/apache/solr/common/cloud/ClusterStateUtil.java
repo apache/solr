@@ -52,8 +52,9 @@ public class ClusterStateUtil {
       ZkStateReader zkStateReader, String collection, int timeoutInMs) {
     return waitFor(
         zkStateReader,
-        timeoutInMs,
         collection,
+        timeoutInMs,
+        TimeUnit.MILLISECONDS,
         (liveNodes, state) ->
             replicasOfActiveSlicesStream(state)
                 .allMatch(replica -> liveAndActivePredicate(replica, liveNodes)));
@@ -74,8 +75,9 @@ public class ClusterStateUtil {
       ZkStateReader zkStateReader, String collection, int timeoutInMs) {
     return waitFor(
         zkStateReader,
-        timeoutInMs,
         collection,
+        timeoutInMs,
+        TimeUnit.MILLISECONDS,
         (liveNodes, state) ->
             replicasOfActiveSlicesStream(state)
                 .noneMatch(replica -> liveNodes.contains(replica.getNodeName())));
@@ -101,8 +103,9 @@ public class ClusterStateUtil {
       ZkStateReader zkStateReader, String collection, int replicaCount, int timeoutInMs) {
     return waitFor(
         zkStateReader,
-        timeoutInMs,
         collection,
+        timeoutInMs,
+        TimeUnit.MILLISECONDS,
         (liveNodes, state) ->
             replicasOfActiveSlicesStream(state)
                     .filter(replica -> liveAndActivePredicate(replica, liveNodes))
@@ -110,14 +113,22 @@ public class ClusterStateUtil {
                 == replicaCount);
   }
 
+  /**
+   * Calls {@link ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)} but
+   * has an alternative implementation if {@code collection} is null, in which the predicate must
+   * match *all* collections. Returns whether the predicate matches or not in the allotted time;
+   * does *NOT* throw {@link TimeoutException}.
+   */
   public static boolean waitFor(
       ZkStateReader zkStateReader,
-      long timeoutMs,
       String collection,
+      long timeout,
+      TimeUnit timeUnit,
       CollectionStatePredicate predicate) {
+    // ideally a collection is specified...
     if (collection != null) {
       try {
-        zkStateReader.waitForState(collection, timeoutMs, TimeUnit.MILLISECONDS, predicate);
+        zkStateReader.waitForState(collection, timeout, timeUnit, predicate);
         return true;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -126,19 +137,23 @@ public class ClusterStateUtil {
         return false;
       }
     }
-    // TODO first timeout on clusterState existing (add method to ZkStateReader?) then
 
-    final long timeoutAtNs =
-        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
-    while (System.nanoTime() < timeoutAtNs) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      if (clusterState != null) {
+    // otherwise we check all collections...
+
+    final long timeoutAtNs = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, timeUnit);
+    while (true) {
+      ClusterState clusterState = zkStateReader.getClusterState(); // fresh state
+      if (clusterState != null) { // it's sad to deal with this; API contract should forbid
         var liveNodes = clusterState.getLiveNodes();
         if (clusterState
             .collectionStream()
             .allMatch(state -> predicate.matches(liveNodes, state))) {
           return true;
         }
+      }
+
+      if (System.nanoTime() > timeoutAtNs) {
+        return false;
       }
 
       try {
@@ -148,7 +163,5 @@ public class ClusterStateUtil {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
       }
     }
-
-    return false;
   }
 }

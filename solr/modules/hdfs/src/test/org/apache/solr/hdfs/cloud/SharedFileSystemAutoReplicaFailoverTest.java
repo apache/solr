@@ -383,8 +383,9 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
             .collect(Collectors.toSet());
     return ClusterStateUtil.waitFor(
         zkStateReader,
-        timeoutInMs,
         null,
+        timeoutInMs,
+        TimeUnit.MILLISECONDS,
         (liveNodes, state) ->
             ClusterStateUtil.replicasOfActiveSlicesStream(state)
                 .noneMatch(
