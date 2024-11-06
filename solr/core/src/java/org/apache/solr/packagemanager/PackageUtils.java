@@ -16,7 +16,6 @@
  */
 package org.apache.solr.packagemanager;
 
-import org.apache.solr.cli.CLIUtils;
 import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validateCollectionName;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +33,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;

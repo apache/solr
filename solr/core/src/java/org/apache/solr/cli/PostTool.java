@@ -252,7 +252,7 @@ public class PostTool extends ToolBase {
     solrUpdateUrl = null;
     if (cli.hasOption("solr-url")) {
       String url =
-          SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
+          CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URI(url);
 
     } else {

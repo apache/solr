@@ -264,7 +264,7 @@ public class ExportTool extends ToolBase {
         throw new IllegalArgumentException(
             "Must specify -c / --name parameter with --solr-url to post documents.");
       }
-      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue("name");
 
     } else {
       // think about support --zk-host someday.

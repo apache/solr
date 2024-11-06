@@ -17,6 +17,11 @@
 
 package org.apache.solr.cli;
 
+import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
+import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
+
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
@@ -43,13 +48,9 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
-import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
-import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
@@ -193,11 +194,10 @@ public final class CLIUtils {
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl =
-        cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
+    String solrUrl = cli.getOptionValue("solr-url");
+
     if (solrUrl == null) {
-      String zkHost =
-          cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+      String zkHost = cli.getOptionValue("zk-host");
       if (zkHost == null) {
         solrUrl = getDefaultSolrUrl();
         CLIO.err(
@@ -228,8 +228,7 @@ public final class CLIUtils {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost =
-        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
+    String zkHost = cli.getOptionValue("zk-host");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
@@ -286,16 +285,16 @@ public final class CLIUtils {
   }
 
   /**
-   * <p>Extracts the port from the provided {@code solrUrl}. If a URL is provided with https scheme
-   * and not explicitly defines the port, the default port for HTTPS (443) is used.</p>
+   * Extracts the port from the provided {@code solrUrl}. If a URL is provided with https scheme and
+   * not explicitly defines the port, the default port for HTTPS (443) is used.
    *
-   * <p>If URL does not contain a port nor https as scheme, it fallsback to port 80.</p>
+   * <p>If URL does not contain a port nor https as scheme, it fallsback to port 80.
    *
    * @param solrUrl the URL to extract the port from
    * @return The port that was found or null if {@code solrUrl} is not a valid URI.
    * @throws NullPointerException If solrUrl is null
    * @throws URISyntaxException If the given string violates RFC 2396, as augmented by the above
-   * deviations
+   *     deviations
    */
   public static Integer portFromUrl(String solrUrl) throws URISyntaxException {
     URI uri = new URI(solrUrl);

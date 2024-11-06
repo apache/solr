@@ -17,7 +17,6 @@
 
 package org.apache.solr.packagemanager;
 
-import org.apache.solr.cli.CLIUtils;
 import static org.apache.solr.cli.SolrCLI.printGreen;
 import static org.apache.solr.cli.SolrCLI.printRed;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
@@ -41,6 +40,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;

@@ -168,7 +168,7 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-                CLIUtils.getSolrClient(
+              CLIUtils.getSolrClient(
                   coreUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
