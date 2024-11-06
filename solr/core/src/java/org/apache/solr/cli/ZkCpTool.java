@@ -62,13 +62,9 @@ public class ZkCpTool extends ToolBase {
             .required(false)
             .desc("Required to look up configuration for compressing state.json.")
             .build(),
-        SolrCLI.OPTION_RECURSE_DEPRECATED,
         SolrCLI.OPTION_RECURSIVE,
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
@@ -133,7 +129,7 @@ public class ZkCpTool extends ToolBase {
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     String src = cli.getArgs()[0];
     String dst = cli.getArgs()[1];
-    boolean recursive = cli.hasOption("recursive") || cli.hasOption("recurse");
+    boolean recursive = cli.hasOption("recursive");
     echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
     boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");

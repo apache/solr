@@ -78,6 +78,8 @@ Deprecation Removals
 
 * SOLR-17494: Remove language specific writer types (i.e wt= ruby, python, php, and phps). (Eric Pugh)
 
+* SOLR-17352: Remove deprecated Solr CLI options.  Run bin/solr yourcommand -h to see current options.  (Eric Pugh, Christos Malliardis)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -152,6 +154,8 @@ Improvements
 
 * SOLR-17528: Introduce -y short option to bin/solr start --no-prompt option. Aligns with bin/solr package tool.  (Eric Pugh)
 
+* SOLR-17390: EmbeddedSolrServer now considers the ResponseParser (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-14985: Solrj CloudSolrClient with Solr URLs had serious performance regressions (since the
@@ -214,6 +218,16 @@ tasks that were scheduled via ExecutorService#submit, the results of the task ex
 led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
+
+* SOLR-17534: Introduce ClusterState.getCollectionNames, a convenience method (David Smiley)
+
+* SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
+
+==================  9.7.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17530: Metrics: Thew new Prometheus response writer wasn't detecting TLOG or PULL replicas properly.
+  (Matthew Biscocho)
 
 ==================  9.7.0 ==================
 New Features

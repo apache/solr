@@ -248,17 +248,12 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
-REM -help is a special case to faciliate folks learning about how to use Solr.
-IF "%1"=="-help" goto run_solrcli
-IF "%1"=="-usage" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
 IF "%1"=="--help" goto run_solrcli
-IF "%1"=="-help" goto run_solrcli
-IF "%1"=="/?" goto run_solrcli
 IF "%1"=="status" goto run_solrcli
 IF "%1"=="version" goto run_solrcli
 IF "%1"=="-v" goto run_solrcli
-IF "%1"=="-version" goto run_solrcli
+IF "%1"=="--version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
 IF "%1"=="zk" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
@@ -287,11 +282,8 @@ goto parse_args
 :usage
 IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%
 IF [%FIRST_ARG%]==[] goto run_solrcli
-IF "%FIRST_ARG%"=="-help" goto run_solrcli
-IF "%FIRST_ARG%"=="-usage" goto run_solrcli
 IF "%FIRST_ARG%"=="-h" goto run_solrcli
 IF "%FIRST_ARG%"=="--help" goto run_solrcli
-IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
@@ -310,7 +302,7 @@ goto done
 @echo.
 @echo Usage: solr %SCRIPT_CMD% [-f] [--user-managed] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [--verbose]
 @echo.
-@echo   -f            Start Solr in foreground; default starts Solr in the background
+@echo   -f/--foreground Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
 @echo   --user-managed Start Solr in user managed aka standalone mode"
@@ -318,7 +310,7 @@ goto done
 @echo.
 @echo   --host host   Specify the hostname for this Solr instance
 @echo.
-@echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
+@echo   -p/--port port Specify the port to start the Solr HTTP listener on; default is 8983
 @echo                   The specified port (SOLR_PORT) will also be used to determine the stop port
 @echo                   STOP_PORT=(%%SOLR_PORT%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT%%+10000).
 @echo                   For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985
@@ -330,10 +322,10 @@ goto done
 @echo                   an embedded ZooKeeper instance will be launched.
 @echo                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
 @echo.
-@echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
+@echo   -m/--memory memory Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
-@echo   --solr.home dir  Sets the solr.solr.home system property; Solr will create core directories under
+@echo   --solr-home dir  Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the --server-dir parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
@@ -344,7 +336,7 @@ goto done
 @echo   --data-home dir Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
-@echo   -e example    Name of the example to run; available examples:
+@echo   -e/--example name Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
 @echo       schemaless:     Schema-less example (schema is inferred from data during indexing)
@@ -360,7 +352,7 @@ goto done
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   --no-prompt   Don't prompt for input; accept all defaults when running examples that accept user input
+@echo   -y/--no-prompt Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
 @echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -390,25 +382,16 @@ set "arg=%~1"
 set "firstTwo=%arg:~0,2%"
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
-IF "%1"=="-help" goto usage
+IF "%1"=="--help" goto usage
 IF "%1"=="-h" goto usage
-IF "%1"=="-usage" goto usage
-IF "%1"=="/?" goto usage
 IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
-IF "%1"=="-V" goto set_verbose
 IF "%1"=="--verbose" goto set_verbose
-IF "%1"=="-v" goto set_verbose
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn
 IF "%1"=="--user-managed" goto set_user_managed_mode
-IF "%1"=="-d" goto set_server_dir
-IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="--server-dir" goto set_server_dir
-IF "%1"=="-s" goto set_solr_home_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
-IF "%1"=="-t" goto set_solr_data_dir
-IF "%1"=="--solr-data" goto set_solr_data_dir
 IF "%1"=="--data-home" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
@@ -419,21 +402,16 @@ IF "%1"=="-p" goto set_port
 IF "%1"=="--port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
-IF "%1"=="-zkHost" goto set_zookeeper
-IF "%1"=="--zkHost" goto set_zookeeper
 IF "%1"=="-s" goto set_solr_url
 IF "%1"=="--solr-url" goto set_solr_url
-IF "%1"=="-solrUrl" goto set_solr_url
-IF "%1"=="-a" goto set_jvm_opts
 IF "%1"=="--jvm-opts" goto set_jvm_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
-IF "%1"=="--noprompt" goto set_noprompt
 IF "%1"=="--no-prompt" goto set_noprompt
+IF "%1"=="-y" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="--key" goto set_stop_key
 IF "%1"=="--all" goto set_stop_all
-IF "%1"=="-all" goto set_stop_all
 IF "%firstTwo%"=="-D" goto set_passthru
 IF NOT "%1"=="" goto invalid_cmd_line
 goto invalid_cmd_line
@@ -1180,10 +1158,7 @@ goto done
 IF [%1]==[] goto run_config
 IF "%1"=="-z" goto set_config_zk
 IF "%1"=="--zk-host" goto set_config_zk
-IF "%1"=="-zkHost" goto set_config_zk
-IF "%1"=="--zkHost" goto set_config_zk
-IF "%1"=="-s" goto set_config_url_scheme
-IF "%1"=="-scheme" goto set_config_url_scheme
+IF "%1"=="--scheme" goto set_config_url_scheme
 set "CONFIG_ARGS=!CONFIG_ARGS! %1"
 SHIFT
 goto parse_config_args

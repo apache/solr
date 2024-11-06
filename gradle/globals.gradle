@@ -37,7 +37,7 @@ allprojects {
   // so :solr:core will have solr-core.jar, etc.
   project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
 
-  ext {
+  project.ext {
     // Utility method to support passing overrides via -P or -D.
     propertyOrDefault = { propName, defValue ->
       def result

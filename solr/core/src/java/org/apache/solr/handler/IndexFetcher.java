@@ -88,6 +88,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
@@ -1800,7 +1801,7 @@ public class IndexFetcher {
             () -> {
               try {
                 file.sync();
-              } catch (IOException e) {
+              } catch (IOException | AlreadyClosedException e) {
                 fsyncException = e;
               }
             });
@@ -1979,9 +1980,8 @@ public class IndexFetcher {
       try {
         QueryRequest req = new QueryRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-        req.setBasePath(leaderBaseUrl);
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.request(req, leaderCoreName);
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
