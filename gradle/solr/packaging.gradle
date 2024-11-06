@@ -38,7 +38,7 @@
 
 configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:prometheus-exporter" || project.path == ":solr:cross-dc-manager" }) {
   plugins.withType(JavaPlugin) {
-    ext {
+    project.ext {
       packagingDir = file("${buildDir}/packaging")
       if (project.path.startsWith(":solr:prometheus-exporter") || project.path.startsWith(":solr:cross-dc-manager")) {
         deps = packagingDir

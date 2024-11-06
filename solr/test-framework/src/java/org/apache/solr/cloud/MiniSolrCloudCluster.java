@@ -585,7 +585,7 @@ public class MiniSolrCloudCluster {
 
       reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
       reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
-      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+      for (String collection : reader.getClusterState().getCollectionNames()) {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       }
 
@@ -595,7 +595,7 @@ public class MiniSolrCloudCluster {
             "Still waiting to see all collections removed from clusterstate.");
       }
 
-      for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
+      for (String collection : reader.getClusterState().getCollectionNames()) {
         reader.waitForState(collection, 15, TimeUnit.SECONDS, Objects::isNull);
       }
     }
