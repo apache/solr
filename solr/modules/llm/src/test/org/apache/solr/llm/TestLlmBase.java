@@ -55,8 +55,10 @@ public class TestLlmBase extends RestTestBase {
   protected static String vectorField2 = "vector2";
   protected static String vectorFieldByteEncoding = "vector_byte_encoding";
 
-  protected static void setupTest(boolean buildIndex, boolean persistent) throws Exception {
-    setupTest("solrconfig-llm.xml", "schema.xml", persistent);
+  public static void setupTest(String solrconfig, String schema, boolean buildIndex, boolean persistModelStore) throws Exception {
+    initFolders(persistModelStore);
+    createJettyAndHarness(
+            tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
     if (buildIndex) prepareIndex();
   }
 
@@ -66,7 +68,7 @@ public class TestLlmBase extends RestTestBase {
     }
   }
 
-  protected static void setupTestInit(boolean isPersistent)
+  protected static void initFolders(boolean isPersistent)
       throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
@@ -89,13 +91,7 @@ public class TestLlmBase extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
   }
 
-  public static void setupTest(String solrconfig, String schema, boolean persistent) throws Exception {
-    setupTestInit(persistent);
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
-  }
-
-  protected static void aftertest() throws Exception {
+  protected static void afterTest() throws Exception {
     if (null != restTestHarness) {
       restTestHarness.close();
       restTestHarness = null;
