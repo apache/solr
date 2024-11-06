@@ -368,7 +368,7 @@ public class ZkController implements Closeable {
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withReconnectListener(() -> onReconnect(descriptorsSupplier))
-            .withBeforeConnect(() -> beforeReconnect(descriptorsSupplier))
+            .withDisconnectListener(() -> onDisconnect(descriptorsSupplier))
             .withAclProvider(zkACLProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
@@ -404,7 +404,7 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  private void beforeReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
+  private void onDisconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
     try {
       overseer.close();
     } catch (Exception e) {

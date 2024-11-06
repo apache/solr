@@ -39,7 +39,7 @@ public interface OnReconnect extends ConnectionStateListener {
       if (sessionEnded.getAndSet(false)) {
         command();
       }
-    } else if (ConnectionState.LOST == newState) {
+    } else if (ConnectionState.LOST == newState || ConnectionState.SUSPENDED == newState) {
       sessionEnded.set(true);
     }
   }
