@@ -70,17 +70,6 @@ public class SolrZKMetricsListener extends AdvancedTracerDriver implements Refle
   }
 
   /*
-  This is only for MultiTransaction traces, which curator does not currently use AdvancedTraces for.
-  When that changes, this method can be removed.
-   */
-  @Override
-  public void addTrace(String name, long time, TimeUnit unit) {
-    if (name.equals("CuratorMultiTransactionImpl-Foreground")) {
-
-    }
-  }
-
-  /*
   This is used by Zookeeper for ConnectionState changes and retries.
   We currently do not record metrics for either.
    */
