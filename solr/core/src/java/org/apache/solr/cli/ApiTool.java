@@ -38,7 +38,7 @@ import org.noggit.JSONWriter;
 public class ApiTool extends ToolBase {
 
   private static final Option SOLR_URL_OPTION =
-      Option.builder()
+      Option.builder("s")
           .longOpt("solr-url")
           .hasArg()
           .argName("URL")
