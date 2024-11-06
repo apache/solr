@@ -69,6 +69,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.SnapShooter;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -125,17 +126,29 @@ public class SolrIndexSplitter {
       numPieces = cmd.ranges.size();
       rangesArr = cmd.ranges.toArray(new DocRouter.Range[0]);
     }
+
     if (cmd.routeFieldName == null) {
-      field = searcher.getSchema().getUniqueKeyField();
+      // To support routing child documents, use the root field if it exists (which would be
+      // populated with unique field), otherwise use the unique key field
+      if (searcher.getSchema().isUsableForChildDocs()) {
+        field = searcher.getSchema().getField(IndexSchema.ROOT_FIELD_NAME);
+      } else {
+        field = searcher.getSchema().getUniqueKeyField();
+      }
     } else {
+      // Custom routing
+      // If child docs are used, users must ensure that the whole nested document tree has a
+      // consistent routeField value
       field = searcher.getSchema().getField(cmd.routeFieldName);
     }
+
     if (cmd.splitKey == null) {
       splitKey = null;
     } else {
       checkRouterSupportsSplitKey(hashRouter, cmd.splitKey);
       splitKey = ((CompositeIdRouter) hashRouter).getRouteKeyNoSuffix(cmd.splitKey);
     }
+
     if (cmd.cores == null) {
       this.splitMethod = SplitMethod.REWRITE;
     } else {

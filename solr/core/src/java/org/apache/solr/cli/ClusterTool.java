@@ -66,8 +66,7 @@ public class ClusterTool extends ToolBase {
             .required(false)
             .desc("Set the property to this value.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override

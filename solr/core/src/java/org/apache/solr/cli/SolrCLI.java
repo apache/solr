@@ -33,7 +33,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -54,24 +53,6 @@ public class SolrCLI implements CLIO {
 
   public static final String ZK_HOST = "localhost:9983";
 
-  public static final Option OPTION_ZKHOST_DEPRECATED =
-      Option.builder("zkHost")
-          .longOpt("zkHost")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --zk-host instead")
-                  .get())
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST
-                  + '.')
-          .build();
-
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
           .longOpt("zk-host")
@@ -83,25 +64,8 @@ public class SolrCLI implements CLIO {
                   + ZK_HOST
                   + '.')
           .build();
-  public static final Option OPTION_SOLRURL_DEPRECATED =
-      Option.builder("solrUrl")
-          .longOpt("solrUrl")
-          .deprecated(
-              DeprecatedAttributes.builder()
-                  .setForRemoval(true)
-                  .setSince("9.7")
-                  .setDescription("Use --solr-url instead")
-                  .get())
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + CLIUtils.getDefaultSolrUrl()
-                  + '.')
-          .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("url")
+      Option.builder("s")
           .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
@@ -122,9 +86,9 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_HELP =
       Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
-  public static final Option OPTION_RECURSE =
+  public static final Option OPTION_RECURSIVE =
       Option.builder("r")
-          .longOpt("recurse")
+          .longOpt("recursive")
           .required(false)
           .desc("Apply the command recursively.")
           .build();
@@ -152,19 +116,13 @@ public class SolrCLI implements CLIO {
   public static void main(String[] args) throws Exception {
     final boolean hasNoCommand =
         args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
-    final boolean isHelpCommand =
-        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+    final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
-    if (Arrays.asList("-version", "version").contains(args[0])) {
-      // select the version tool to be run
-      CLIO.out("Deprecated operation as of 9.8.  Please use bin/solr --version.");
-      args = new String[] {"version"};
-    }
     if (Arrays.asList("-v", "--version").contains(args[0])) {
       // select the version tool to be run
       args = new String[] {"version"};
@@ -180,7 +138,7 @@ public class SolrCLI implements CLIO {
         // remap our arguments to invoke the ZK tool help.
         args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
       } else if (args.length == 2) {
-        if (Arrays.asList("-h", "--help", "/?").contains(args[1])) {
+        if (Arrays.asList("-h", "--help").contains(args[1])) {
           // remap our arguments to invoke the ZK tool help.
           args = new String[] {"zk-tool-help", "--print-long-zk-usage"};
         } else {
@@ -340,6 +298,10 @@ public class SolrCLI implements CLIO {
   /**
    * Returns the value of the option with the given name, or the value of the deprecated option. If
    * both values are null, then it returns the default value.
+   *
+   * <p>If this method is marked as unused by your IDE, it means we have no deprecated CLI options
+   * currently, congratulations! This method is preserved for the next time we need to deprecate a
+   * CLI option.
    */
   public static String getOptionWithDeprecatedAndDefault(
       CommandLine cli, String opt, String deprecated, String def) {
@@ -350,10 +312,11 @@ public class SolrCLI implements CLIO {
     return val == null ? def : val;
   }
 
-  // TODO: SOLR-17429 - remove the custom logic when CommonsCLI is upgraded and
+  // TODO: SOLR-17429 - remove the custom logic when Commons CLI is upgraded and
   // makes stderr the default, or makes Option.toDeprecatedString() public.
   private static void deprecatedHandlerStdErr(Option o) {
-    if (o.isDeprecated()) {
+    // Deprecated options without a description act as "stealth" options
+    if (o.isDeprecated() && !o.getDeprecated().getDescription().isBlank()) {
       final StringBuilder buf =
           new StringBuilder().append("Option '-").append(o.getOpt()).append('\'');
       if (o.getLongOpt() != null) {
@@ -390,7 +353,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "--help".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg)) {
             hasHelpArg = true;
             break;
           }
@@ -541,7 +504,7 @@ public class SolrCLI implements CLIO {
         "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
     print("");
     printGreen(
-        "    ./solr start -c -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+        "    ./solr start -m 1g -z localhost:2181 --jvm-opts \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
     print("");
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
@@ -553,6 +516,197 @@ public class SolrCLI implements CLIO {
     print("Run 'solr COMMAND --help' for more information on a command.");
     print("");
     print("For more help on how to use Solr, head to https://solr.apache.org/");
+  }
+
+  /**
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and warns those users. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl) {
+    return normalizeSolrUrl(solrUrl, true);
+  }
+
+  /**
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and optionally logs a warning. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @param logUrlFormatWarning If a warning message should be logged about the url format
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
+    if (solrUrl != null) {
+      URI uri = URI.create(solrUrl);
+      String urlPath = uri.getRawPath();
+      if (urlPath != null && urlPath.contains("/solr")) {
+        String newSolrUrl =
+            uri.resolve(urlPath.substring(0, urlPath.lastIndexOf("/solr") + 1)).toString();
+        if (logUrlFormatWarning) {
+          CLIO.err(
+              "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                  + solrUrl
+                  + "] to ["
+                  + newSolrUrl
+                  + "].");
+        }
+        solrUrl = newSolrUrl;
+      }
+      if (solrUrl.endsWith("/")) {
+        solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+      }
+    }
+    return solrUrl;
+  }
+
+  /**
+   * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
+   * ZooKeeper.
+   */
+  public static String normalizeSolrUrl(CommandLine cli) throws Exception {
+    String solrUrl = cli.getOptionValue("solr-url");
+
+    if (solrUrl == null) {
+      String zkHost = cli.getOptionValue("zk-host");
+      if (zkHost == null) {
+        solrUrl = SolrCLI.getDefaultSolrUrl();
+        CLIO.err(
+            "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
+                + solrUrl
+                + ".");
+      } else {
+        try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
+          cloudSolrClient.connect();
+          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+          if (liveNodes.isEmpty())
+            throw new IllegalStateException(
+                "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
+
+          String firstLiveNode = liveNodes.iterator().next();
+          solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+          solrUrl = normalizeSolrUrl(solrUrl, false);
+        }
+      }
+    }
+    solrUrl = normalizeSolrUrl(solrUrl);
+    return solrUrl;
+  }
+
+  /**
+   * Get the ZooKeeper connection string from either the zk-host command-line option or by looking
+   * it up from a running Solr instance based on the solr-url option.
+   */
+  public static String getZkHost(CommandLine cli) throws Exception {
+
+    String zkHost = cli.getOptionValue("zk-host");
+    if (zkHost != null && !zkHost.isBlank()) {
+      return zkHost;
+    }
+
+    try (SolrClient solrClient = getSolrClient(cli)) {
+      // hit Solr to get system info
+      NamedList<Object> systemInfo =
+          solrClient.request(
+              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+
+      // convert raw JSON into user-friendly output
+      StatusTool statusTool = new StatusTool();
+      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
+      if (cloud != null) {
+        String zookeeper = (String) cloud.get("ZooKeeper");
+        if (zookeeper.endsWith("(embedded)")) {
+          zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
+        }
+        zkHost = zookeeper;
+      }
+    }
+
+    return zkHost;
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli) throws Exception {
+    return getSolrZkClient(cli, getZkHost(cli));
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
+    if (zkHost == null) {
+      throw new IllegalStateException(
+          "Solr at "
+              + cli.getOptionValue("solrUrl")
+              + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
+    }
+    return new SolrZkClient.Builder()
+        .withUrl(zkHost)
+        .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
+    return getCloudHttp2SolrClient(zkHost, null);
+  }
+
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(
+      String zkHost, Http2SolrClient.Builder builder) {
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+        .withInternalClientBuilder(builder)
+        .build();
+  }
+
+  public static boolean safeCheckCollectionExists(
+      String solrUrl, String collection, String credentials) {
+    boolean exists = false;
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
+      NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
+      @SuppressWarnings("unchecked")
+      List<String> collections = (List<String>) existsCheckResult.get("collections");
+      exists = collections != null && collections.contains(collection);
+    } catch (Exception exc) {
+      // just ignore it since we're only interested in a positive result here
+    }
+    return exists;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
+    boolean exists = false;
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
+      boolean wait = false;
+      final long startWaitAt = System.nanoTime();
+      do {
+        if (wait) {
+          final int clamPeriodForStatusPollMs = 1000;
+          Thread.sleep(clamPeriodForStatusPollMs);
+        }
+        NamedList<Object> existsCheckResult =
+            CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
+        NamedList<Object> status = (NamedList<Object>) existsCheckResult.get("status");
+        NamedList<Object> coreStatus = (NamedList<Object>) status.get(coreName);
+        Map<String, Object> failureStatus =
+            (Map<String, Object>) existsCheckResult.get("initFailures");
+        String errorMsg = (String) failureStatus.get(coreName);
+        final boolean hasName = coreStatus != null && coreStatus.asMap().containsKey(NAME);
+        exists = hasName || errorMsg != null;
+        wait = hasName && errorMsg == null && "true".equals(coreStatus.get("isLoading"));
+      } while (wait && System.nanoTime() - startWaitAt < MAX_WAIT_FOR_CORE_LOAD_NANOS);
+    } catch (Exception exc) {
+      // just ignore it since we're only interested in a positive result here
+    }
+    return exists;
+  }
+
+  public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
+    NamedList<Object> systemInfo =
+        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
+    return "solrcloud".equals(systemInfo.get("mode"));
+  }
+
+  public static Path getConfigSetsDir(Path solrInstallDir) {
+    Path configSetsPath = Paths.get("server/solr/configsets/");
+    return solrInstallDir.resolve(configSetsPath);
   }
 
   public static void print(Object message) {

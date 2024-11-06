@@ -37,7 +37,7 @@ allprojects {
   // so :solr:core will have solr-core.jar, etc.
   project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
 
-  ext {
+  project.ext {
     // Utility method to support passing overrides via -P or -D.
     propertyOrDefault = { propName, defValue ->
       def result
@@ -173,5 +173,6 @@ allprojects {
     // Assign different java version for client-side modules 'api' and 'solrj*'
     var isSolrJ = project.name.matches("^(solrj.*|api)\$")
     minJavaVersion = isSolrJ ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersionDefault
+    minJavaTestVersion = rootProject.minJavaVersionDefault
   }
 }

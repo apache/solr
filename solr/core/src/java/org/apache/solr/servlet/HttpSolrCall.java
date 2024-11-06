@@ -934,13 +934,7 @@ public class HttpSolrCall {
    * returns the default query response writer Note: This method must not return null
    */
   protected QueryResponseWriter getResponseWriter() {
-    String wt = solrReq.getParams().get(CommonParams.WT);
-    if (core != null) {
-      return core.getQueryResponseWriter(wt);
-    } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
-          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
-    }
+    return solrReq.getResponseWriter();
   }
 
   protected void handleAdmin(SolrQueryResponse solrResp) {

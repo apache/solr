@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.Constants;
@@ -112,38 +111,10 @@ public class AuthTool extends ToolBase {
             .hasArg()
             .argName("true|false")
             .build(),
-        Option.builder("blockUnknown")
-            .longOpt("blockUnknown")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --block-unknown instead")
-                    .get())
-            .hasArg()
-            .argName("true|false")
-            .required(false)
-            .desc(
-                "Blocks all access for unknown users (requires authentication for all endpoints).")
-            .build(),
         Option.builder()
             .longOpt("solr-include-file")
             .hasArg()
             .argName("FILE")
-            .desc(
-                "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
-            .build(),
-        Option.builder("solrIncludeFile")
-            .longOpt("solrIncludeFile")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --solr-include-file instead")
-                    .get())
-            .hasArg()
-            .argName("FILE")
-            .required(false)
             .desc(
                 "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
             .build(),
@@ -155,21 +126,6 @@ public class AuthTool extends ToolBase {
             .hasArg()
             .build(),
         Option.builder()
-            .longOpt("updateIncludeFileOnly")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.8")
-                    .setDescription("Use --update-include-file-only instead")
-                    .get())
-            .hasArg()
-            .argName("true|false")
-            .required(false)
-            .desc(
-                "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-                    + " authentication (i.e. don't update security.json).")
-            .build(),
-        Option.builder()
             .longOpt("auth-conf-dir")
             .hasArg()
             .argName("FILE")
@@ -177,24 +133,8 @@ public class AuthTool extends ToolBase {
             .desc(
                 "This is where any authentication related configuration files, if any, would be placed.")
             .build(),
-        Option.builder("solrIncludeFile")
-            .longOpt("solrIncludeFile")
-            .deprecated(
-                DeprecatedAttributes.builder()
-                    .setForRemoval(true)
-                    .setSince("9.7")
-                    .setDescription("Use --solr-include-file instead")
-                    .get())
-            .hasArg()
-            .argName("FILE")
-            .required(false)
-            .desc(
-                "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
-            .build(),
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 

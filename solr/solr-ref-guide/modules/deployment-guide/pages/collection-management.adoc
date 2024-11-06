@@ -24,7 +24,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr start -c -e techproducts
+bin/solr start -e techproducts
 ----
 
 [[create]]
@@ -228,6 +228,7 @@ When such a collection is deleted, its autocreated configset will be deleted by 
 +
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field.
 If the field specified is null in the document, the document will be rejected.
+For nested documents, the route field must match among all the documents in the hierarchy.
 +
 Please note that xref:configuration-guide:realtime-get.adoc[] or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
@@ -989,7 +990,7 @@ There are additionally a number of optional parameters that determine the target
 If they are not specified in the request then their values are copied from the source collection.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
-`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+`shards`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
