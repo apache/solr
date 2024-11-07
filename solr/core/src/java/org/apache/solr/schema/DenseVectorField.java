@@ -364,16 +364,6 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, byte[] vectorToSearch, int topK, Query filterQuery) {
-    return new KnnByteVectorQuery(fieldName, vectorToSearch, topK, filterQuery);
-  }
-
-  public Query getKnnVectorQuery(
-      String fieldName, float[] vectorToSearch, int topK, Query filterQuery) {
-    return new KnnFloatVectorQuery(fieldName, vectorToSearch, topK, filterQuery);
-  }
-
-  public Query getKnnVectorQuery(
       String fieldName, String vectorToSearch, int topK, Query filterQuery) {
 
     DenseVectorParser vectorBuilder =

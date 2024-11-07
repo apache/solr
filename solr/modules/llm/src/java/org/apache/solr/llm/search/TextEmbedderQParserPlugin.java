@@ -18,6 +18,7 @@ package org.apache.solr.llm.search;
 
 import java.io.IOException;
 import org.apache.lucene.index.VectorEncoding;
+import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
