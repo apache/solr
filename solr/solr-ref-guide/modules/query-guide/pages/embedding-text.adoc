@@ -121,11 +121,11 @@ The identifier of your model, this is used by any component that intends to use 
 |===
 +
 Each model class has potentially different params.
-Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr (link to langChain).
+Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/embedding-models[Embedding Models in LangChain4j].
 
 
 === Supported Models
-Apache Solr uses LangChain4j (add link here) to support text embedding.
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support text embedding.
 The models currently supported are:
 
 [tabs#supported-models]
