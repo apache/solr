@@ -1,0 +1,45 @@
+{
+  "name": "solr-ui",
+  "version": "2.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "18.2.8",
+    "@angular/common": "18.2.8",
+    "@angular/compiler": "18.2.8",
+    "@angular/core": "18.2.8",
+    "@angular/forms": "18.2.8",
+    "@angular/platform-browser": "18.2.8",
+    "@angular/platform-browser-dynamic": "18.2.8",
+    "@angular/router": "18.2.8",
+    "@ngx-resource/core": "n15.0.0",
+    "@ngx-resource/handler-ngx-http": "15.0.0",
+    "rxjs": "7.8.1",
+    "tslib": "2.7.0",
+    "zone.js": "0.14.10"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "18.2.8",
+    "@angular/cli": "18.2.8",
+    "@angular/compiler-cli": "18.2.8",
+    "@types/jasmine": "5.1.4",
+    "autoprefixer": "10.4.20",
+    "cssnano": "7.0.5",
+    "jasmine-core": "5.3.0",
+    "karma": "6.4.4",
+    "karma-chrome-launcher": "3.2.0",
+    "karma-coverage": "2.2.1",
+    "karma-jasmine": "5.1.0",
+    "karma-jasmine-html-reporter": "2.1.0",
+    "postcss": "8.4.47",
+    "postcss-cli": "11.0.0",
+    "tslombok": "^1.2.6",
+    "typescript": "5.5.4"
+  }
+}

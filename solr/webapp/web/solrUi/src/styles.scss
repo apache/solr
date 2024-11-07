@@ -1,0 +1,512 @@
+/*!
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+$color_1: #333;
+$color_2: #ffffff;
+$color_3: #fff;
+$color_4: #000;
+$color_5: #998;
+$color_6: #40a070;
+$color_7: blue;
+$color_8: firebrick;
+$color_9: #d14;
+$color_10: green;
+$color_11: #900;
+$color_12: #458;
+$color_13: #000080;
+$color_14: #008080;
+$color_15: black;
+$color_16: #009926;
+$color_17: #990073;
+$color_18: #0086b3;
+$color_19: #999;
+$color_20: #aaa;
+$background-color_1: #e6e6e6;
+$background-color_2: #0064cd;
+$background-color_3: #57a957;
+$background-color_4: #c43c35;
+$background-color_5: #c37f7f;
+$background-color_6: orange;
+$background-color_7: #f5f5b2;
+$background-color_8: #cce7cc;
+$border-color_1: #f0f0f0;
+$border-color_2: #0064cd #0064cd #003f81;
+$border-color_3: rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.25 );
+$border-color_4: #57a957 #57a957 #3d773d;
+$border-color_5: #c43c35 #c43c35 #882a25;
+$border-bottom-color_1: #bbb;
+
+/* syntax */
+* {
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
+}
+body {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  padding: 30px;
+  text-align: center;
+}
+h1 {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+h2 {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+h3 {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+h4 {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+h5 {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+h6 {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+a {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+}
+button {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  cursor: pointer;
+  background-color: $background-color_1;
+  background-repeat: no-repeat;
+  background-image: -webkit-gradient( linear, 0 0, 0 100%, from( #ffffff ), color-stop( 25%, #ffffff ), to( #e6e6e6 ) );
+  background-image: -webkit-linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: -moz-linear-gradient( top, #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: -ms-linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: -o-linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#e6e6e6', GradientType=0 );
+  border: 1px solid #ccc;
+  border-bottom-color: $border-bottom-color_1;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 0 rgba( 255, 255, 255, 0.2 ), 0 1px 2px rgba( 0, 0, 0, 0.05 );
+  -moz-box-shadow: inset 0 1px 0 rgba( 255, 255, 255, 0.2 ), 0 1px 2px rgba( 0, 0, 0, 0.05 );
+  box-shadow: inset 0 1px 0 rgba( 255, 255, 255, 0.2 ), 0 1px 2px rgba( 0, 0, 0, 0.05 );
+  color: $color_1;
+  cursor: pointer;
+  display: inline-block;
+  padding: 4px 7px 5px;
+  overflow: visible;
+  text-shadow: 0 1px 1px rgba( 255, 255, 255, 0.75 );
+  -webkit-transition: 0.1s linear background-image;
+  -moz-transition: 0.1s linear background-image;
+  -ms-transition: 0.1s linear background-image;
+  -o-transition: 0.1s linear background-image;
+  transition: 0.1s linear background-image;
+  span {
+    background-position: 0 50%;
+    display: block;
+    padding-left: 21px;
+  }
+}
+input {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  border: 1px solid #c0c0c0;
+  padding: 2px;
+}
+select {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  border: 1px solid #c0c0c0;
+  padding: 2px;
+}
+option {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+textarea {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+  border: 1px solid #c0c0c0;
+  padding: 2px;
+}
+th {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+td {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+div.ui-tooltip-content {
+  color: $color_1;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+input[readonly=readonly] {
+  border-color: $border-color_1;
+}
+button[type=submit] {
+  background-color: $background-color_2;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #049cdb ), to( #0064cd ) );
+  background-image: -moz-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -ms-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #049cdb ), color-stop( 100%, #0064cd ) );
+  background-image: -webkit-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -o-linear-gradient( top, #049cdb, #0064cd );
+  background-image: linear-gradient( top, #049cdb, #0064cd );
+  border-color: $border-color_2;
+  border-color: $border-color_3;
+  color: $color_2;
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#049cdb', endColorstr='#0064cd', GradientType=0 );
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+button.primary {
+  background-color: $background-color_2;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #049cdb ), to( #0064cd ) );
+  background-image: -moz-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -ms-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #049cdb ), color-stop( 100%, #0064cd ) );
+  background-image: -webkit-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -o-linear-gradient( top, #049cdb, #0064cd );
+  background-image: linear-gradient( top, #049cdb, #0064cd );
+  border-color: $border-color_2;
+  border-color: $border-color_3;
+  color: $color_2;
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#049cdb', endColorstr='#0064cd', GradientType=0 );
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+button.success {
+  background-color: $background-color_3;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #62c462 ), to( #57a957 ) );
+  background-image: -moz-linear-gradient( top, #62c462, #57a957 );
+  background-image: -ms-linear-gradient( top, #62c462, #57a957 );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #62c462 ), color-stop( 100%, #57a957 ) );
+  background-image: -webkit-linear-gradient( top, #62c462, #57a957 );
+  background-image: -o-linear-gradient( top, #62c462, #57a957 );
+  background-image: linear-gradient( top, #62c462, #57a957 );
+  border-color: $border-color_4;
+  border-color: $border-color_3;
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#62c462', endColorstr='#57a957', GradientType=0 );
+  color: $color_2;
+  text-shadow: 0 -1px 0 rgba( 0, 0, 0, 0.25 );
+}
+button.warn {
+  background-color: $background-color_4;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #ee5f5b ), to( #c43c35 ) );
+  background-image: -moz-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: -ms-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #ee5f5b ), color-stop( 100%, #c43c35 ) );
+  background-image: -webkit-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: -o-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: linear-gradient( top, #ee5f5b, #c43c35 );
+  border-color: $border-color_5;
+  border-color: $border-color_3;
+  color: $color_2;
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ee5f5b', endColorstr='#c43c35', GradientType=0 );
+  text-shadow: 0 -1px 0 rgba( 0, 0, 0, 0.25 );
+}
+pre {
+  color: $color_1;
+  text-align: left;
+}
+abbr {
+  cursor: help;
+}
+ul {
+  list-style: none;
+}
+#environment {
+  background-image: url(../../img/ico/box.png );
+  background-position: 5px 50%;
+  font-weight: bold;
+  padding: 5px 10px 5px 26px;
+}
+.has-environment {
+  #environment {
+    display: block;
+  }
+}
+#environment.prod {
+  background-color: $background-color_5;
+  color: $color_3;
+}
+#environment.stage {
+  background-color: $background-color_6;
+  color: $color_3;
+}
+#environment.test {
+  background-color: $background-color_7;
+}
+#environment.dev {
+  background-color: $background-color_8;
+}
+pre.syntax {
+  overflow: auto;
+  code {
+    display: block;
+    color: $color_4;
+  }
+  .comment {
+    color: $color_5;
+    font-style: italic;
+  }
+  .template_comment {
+    color: $color_5;
+    font-style: italic;
+  }
+  .diff {
+    .header {
+      color: $color_5;
+      font-style: italic;
+    }
+    .change {
+      background: #0086b3;
+    }
+  }
+  .javadoc {
+    color: $color_5;
+    font-style: italic;
+  }
+  .keyword {
+    color: $color_4;
+    font-weight: bold;
+  }
+  .css {
+    .rule {
+      .keyword {
+        color: $color_4;
+        font-weight: bold;
+      }
+    }
+    .keyword {
+      color: $color_13;
+      font-weight: normal;
+    }
+  }
+  .winutils {
+    color: $color_4;
+    font-weight: bold;
+  }
+  .javascript {
+    .title {
+      color: $color_4;
+      font-weight: bold;
+      font-weight: normal;
+    }
+  }
+  .lisp {
+    .title {
+      color: $color_4;
+      font-weight: bold;
+      font-weight: normal;
+      color: $color_18;
+    }
+    .body {
+      color: $color_14;
+    }
+    .keyword {
+      color: $color_17;
+    }
+  }
+  .subst {
+    color: $color_4;
+    font-weight: bold;
+    font-weight: normal;
+  }
+  .number {
+    color: $color_6;
+  }
+  .hexcolor {
+    color: $color_6;
+  }
+  .string {
+    color: $color_9;
+  }
+  .tag {
+    .value {
+      color: $color_9;
+    }
+    color: $color_13;
+    font-weight: normal;
+    .title {
+      color: $color_13;
+      font-weight: normal;
+    }
+  }
+  .phpdoc {
+    color: $color_9;
+  }
+  .tex {
+    .formula {
+      color: $color_9;
+      opacity: 0.5;
+    }
+    .command {
+      color: $color_12;
+      font-weight: bold;
+    }
+    .special {
+      color: $color_17;
+    }
+  }
+  .title {
+    color: $color_11;
+    font-weight: bold;
+  }
+  .id {
+    color: $color_11;
+    font-weight: bold;
+  }
+  .class {
+    .title {
+      color: $color_12;
+      font-weight: bold;
+    }
+    color: $color_12;
+    font-weight: bold;
+  }
+  .html {
+    .keyword {
+      color: $color_13;
+      font-weight: normal;
+    }
+  }
+  .django {
+    .tag {
+      .keyword {
+        color: $color_13;
+        font-weight: normal;
+      }
+    }
+  }
+  .attribute {
+    color: $color_14;
+  }
+  .variable {
+    color: $color_14;
+  }
+  .instancevar {
+    color: $color_14;
+  }
+  .regexp {
+    color: $color_16;
+  }
+  .symbol {
+    color: $color_17;
+  }
+  .ruby {
+    .symbol {
+      .string {
+        color: $color_17;
+      }
+      .keyword {
+        color: $color_17;
+      }
+      .keymethods {
+        color: $color_17;
+      }
+    }
+  }
+  .builtin {
+    color: $color_18;
+  }
+  .built_in {
+    color: $color_18;
+  }
+  .preprocessor {
+    color: $color_19;
+    font-weight: bold;
+  }
+  .pi {
+    color: $color_19;
+    font-weight: bold;
+  }
+  .doctype {
+    color: $color_19;
+    font-weight: bold;
+  }
+  .shebang {
+    color: $color_19;
+    font-weight: bold;
+  }
+  .cdata {
+    color: $color_19;
+    font-weight: bold;
+  }
+  .deletion {
+    background: #fdd;
+  }
+  .addition {
+    background: #dfd;
+  }
+  .chunk {
+    color: $color_20;
+  }
+}
+pre.syntax.language-json {
+  .number {
+    color: $color_7;
+  }
+  .literal {
+    color: $color_8;
+  }
+  .string {
+    color: $color_10;
+  }
+  .attribute {
+    color: $color_15;
+    font-weight: bold;
+  }
+}
+.other-ui-link {
+  margin: 0px;
+  position: absolute;
+  right: 0px;
+  top: -20px;
+  span {
+    background-image: url(../../img/ico/information-white.png );
+    right: 0px;
+    padding-left: 16px;
+  }
+  a.ul {
+    text-decoration: underline;
+  }
+}
+.new-ui-warning {
+  span.help {
+    background-image: url(../../img/ico/information-white.png );
+    right: 0px;
+    padding-left: 16px;
+  }
+}
+
+@import "app/app.component";
+

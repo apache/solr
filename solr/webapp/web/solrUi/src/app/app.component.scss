@@ -1,0 +1,209 @@
+/*!
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+$color_1: #c0c0c0;
+$color_2: #fff;
+$color_3: #4D4D4D;
+$color_4: #00f;
+$color_5: aqua;
+$color_6: #333;
+$background-color_1: #fafafa;
+$background-color_2: #f00;
+$background-color_3: #f0f0f0;
+$border-color_1: #c0c0c0;
+
+#content-wrapper {
+  margin-left: 150px;
+  border: 1px solid #c0c0c0;
+  min-height: 500px;
+}
+#content {
+  padding: 10px;
+  >.loader {
+    background-position: 0 50%;
+    padding-left: 21px;
+  }
+  iframe {
+    border: 0;
+    display: block;
+    min-height: 400px;
+    width: 100%;
+  }
+  .block {
+    margin-bottom: 10px;
+    h2 {
+      background-color: $background-color_1;
+      background-position: 5px 50%;
+      border-bottom: 1px solid #f0f0f0;
+      font-weight: bold;
+      padding: 5px;
+      padding-left: 26px;
+    }
+    .message {
+      padding: 5px;
+    }
+    .content {
+      padding: 5px;
+    }
+  }
+  .block.disabled {
+    color: $color_1;
+    h2 {
+      color: $color_1;
+    }
+  }
+  .tree {
+    li.jstree-last {
+      background: transparent;
+    }
+    .jstree-open {
+      >ins {
+        background-position: -36px 0;
+      }
+    }
+    .jstree-closed {
+      >ins {
+        background-position: -18px 0;
+      }
+    }
+    .jstree-leaf {
+      >ins {
+        background-position: 0 0;
+      }
+      a {
+        .jstree-icon {
+          background-image: url(../../../img/ico/document-text.png );
+          background-position: unset;
+        }
+      }
+    }
+    a.active {
+      background-color: $background-color_3;
+      color: $color_4;
+    }
+    a {
+      .jstree-icon {
+        background-image: url(../../../img/ico/folder.png );
+        background-position: unset;
+      }
+    }
+    .jstree-search {
+      font-style: italic;
+    }
+    a.jstree-search {
+      color: $color_5;
+    }
+  }
+  .address-bar {
+    margin-bottom: 10px;
+    margin-top: 10px;
+    background-image: url(../../../img/ico/ui-address-bar.png );
+    background-position: 5px 50%;
+    border: 1px solid #f0f0f0;
+    box-shadow: 1px 1px 0 #f0f0f0;
+    -moz-box-shadow: 1px 1px 0 #f0f0f0;
+    -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+    color: $color_3;
+    display: block;
+    overflow: hidden;
+    padding: 5px;
+    padding-left: 26px;
+    white-space: nowrap;
+    &:focus {
+      border-color: $border-color_1;
+      box-shadow: 1px 1px 0 #d8d8d8;
+      -moz-box-shadow: 1px 1px 0 #d8d8d8;
+      -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+      color: $color_6;
+    }
+    &:hover {
+      border-color: $border-color_1;
+      box-shadow: 1px 1px 0 #d8d8d8;
+      -moz-box-shadow: 1px 1px 0 #d8d8d8;
+      -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+      color: $color_6;
+    }
+  }
+}
+.header-message {
+  border: 1px solid #f00;
+  margin-left: 150px;
+  margin-bottom: 20px;
+  h2 {
+    padding: 10px;
+    background-color: $background-color_2;
+    color: $color_2;
+    font-weight: bold;
+  }
+  ul {
+    padding: 10px;
+  }
+  p {
+    padding: 10px;
+    color: $color_3;
+    padding-top: 0;
+  }
+}
+#loading {
+  #http-exception {
+    display: none;
+  }
+}
+.clearfix {
+  &:after {
+    clear: both;
+    content: ".";
+    display: block;
+    font-size: 0;
+    height: 0;
+    visibility: hidden;
+  }
+  display: block;
+}
+#wrapper {
+  position: relative;
+  margin: 0 auto;
+  margin-bottom: 30px;
+  text-align: left;
+}
+#main {
+  min-width: 750px;
+  position: relative;
+}
+#main.error {
+  border: 0;
+  min-height: 0;
+  padding-top: 20px;
+  .message {
+    background-color: $background-color_2;
+    background-image: url(../../../img/ico/construction.png );
+    background-position: 10px 50%;
+    color: $color_2;
+    font-weight: bold;
+    margin-left: 150px;
+    margin-bottom: 20px;
+    padding: 10px;
+    padding-left: 35px;
+  }
+  .code {
+    border: 1px solid #c0c0c0;
+    padding: 5px;
+  }
+}
+
+@import "modules/dashboard/components/main/main.component";
