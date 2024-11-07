@@ -20,20 +20,25 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.output.Response;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DummyEmbeddingModel implements EmbeddingModel {
-  public DummyEmbeddingModel() {}
+  final float[] embedding;
+
+  public DummyEmbeddingModel(int[] embedding) {
+    this.embedding = new float[] {embedding[0], embedding[1], embedding[2], embedding[3]};
+  }
 
   @Override
   public Response<Embedding> embed(String text) {
-    Embedding dummy = new Embedding(new float[] {1.0f, 2.0f, 3.0f, 4.0f});
+    Embedding dummy = new Embedding(embedding);
     return new Response<Embedding>(dummy);
   }
 
   @Override
   public Response<Embedding> embed(TextSegment textSegment) {
-    Embedding dummy = new Embedding(new float[] {1.0f, 2.0f, 3.0f, 4.0f});
+    Embedding dummy = new Embedding(embedding);
     return new Response<Embedding>(dummy);
   }
 
@@ -44,7 +49,7 @@ public class DummyEmbeddingModel implements EmbeddingModel {
 
   @Override
   public int dimension() {
-    return 4;
+    return embedding.length;
   }
 
   public static DummyEmbeddingModelBuilder builder() {
@@ -52,10 +57,20 @@ public class DummyEmbeddingModel implements EmbeddingModel {
   }
 
   public static class DummyEmbeddingModelBuilder {
+    private int[] builderEmbeddings;
+
     public DummyEmbeddingModelBuilder() {}
 
+    public DummyEmbeddingModelBuilder embedding(ArrayList<Long> embeddings) {
+      this.builderEmbeddings = new int[embeddings.size()];
+      for (int i = 0; i < embeddings.size(); i++) {
+        this.builderEmbeddings[i] = embeddings.get(i).intValue();
+      }
+      return this;
+    }
+
     public DummyEmbeddingModel build() {
-      return new DummyEmbeddingModel();
+      return new DummyEmbeddingModel(this.builderEmbeddings);
     }
   }
 }
