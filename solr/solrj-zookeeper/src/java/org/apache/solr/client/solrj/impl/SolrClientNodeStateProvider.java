@@ -43,7 +43,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -287,10 +286,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new BinaryResponseParser());
 
       try {
-        NamedList<Object> rsp =
-            cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process).getResponse();
-        request.response.setResponse(rsp);
-        return request.response;
+        return cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }

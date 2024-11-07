@@ -26,6 +26,8 @@ Improvements
 * SOLR-16116: Apache Curator is now used to manage all Solr Zookeeper interactions. This should provide more stability in the Solr-Zookeeper interactions.
   The solrj-zookeeper module, now has a dependency on curator. (Houston Putman, Kevin Risden, Mike Drob, David Smiley)
 
+* SOLR-17544: Solr CLI will now stop when you combine mutually exclusive options.  Combining -s and -z options is a common example.  (Eric Pugh, Christos Malliaridis)
+
 Optimizations
 ---------------------
 (No changes)
@@ -141,7 +143,7 @@ Improvements
   when PKI is used between nodes. (Jason Gerlowski)
 
 * SOLR-17383: Resolved overlapping arguments in the Solr CLI.  Removed duplicative but differing arguments,
-  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning 
+  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning
   in command line when deprecated arguments are used. (Eric Pugh, Christos Malliaridis)
 
 * SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
@@ -178,6 +180,8 @@ Optimizations
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
 * SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+
+* SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
@@ -222,6 +226,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 * SOLR-17534: Introduce ClusterState.getCollectionNames, a convenience method (David Smiley)
 
 * SOLR-17535: Introduce ClusterState.collectionStream to replace getCollectionStates and getCollectionsMap (David Smiley)
+
+* SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
 
 ==================  9.7.1 ==================
 Bug Fixes

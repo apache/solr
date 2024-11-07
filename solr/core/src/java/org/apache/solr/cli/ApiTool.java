@@ -19,9 +19,9 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -36,6 +36,16 @@ import org.noggit.JSONWriter;
  * <p>Used to send an arbitrary HTTP request to a Solr API endpoint.
  */
 public class ApiTool extends ToolBase {
+
+  private static final Option SOLR_URL_OPTION =
+      Option.builder("s")
+          .longOpt("solr-url")
+          .hasArg()
+          .argName("URL")
+          .required()
+          .desc("Send a GET request to a Solr API endpoint.")
+          .build();
+
   public ApiTool() {
     this(CLIO.getOutStream());
   }
@@ -50,22 +60,16 @@ public class ApiTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder()
-            .longOpt("solr-url")
-            .argName("URL")
-            .hasArg()
-            .required(true)
-            .desc("Send a GET request to a Solr API endpoint.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String getUrl = cli.getOptionValue("solr-url");
-    String response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+    String getUrl = cli.getOptionValue(SOLR_URL_OPTION);
+    String response = callGet(getUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     // pretty-print the response to stdout
     echo(response);

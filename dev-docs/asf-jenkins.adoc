@@ -10,13 +10,14 @@ This file aims to document our [ASF Jenkins](https://ci-builds.apache.org/job/So
 We run a number of jobs on Jenkins, each validating an overlapping set of concerns:
 
 * `Solr-Artifacts-*` - daily jobs that run `./gradlew assemble` to ensure that build artifacts (except docker images) can be created successfully
-* `Solr-check-*` - "hourly" jobs that run all project tests and static analysis (i.e. `test`, `integrationTest`, and `check`)
+* `Solr-Lint-*` - daily jobs that run static analysis (i.e. `precommit` and `check -x test`) on a branch
+* `Solr-Test-*` - "hourly" jobs that run all (non-integration) tests (i.e. `./gradlew test`)
+* `Solr-TestIntegration-*` - daily jobs that run project integration tests (i.e. `./gradlew integrationTests`)
 * `Solr-Docker-Nightly-*` - daily jobs that `./gradlew testDocker dockerPush` to validate docker image packaging.  Snapshot images are pushed to hub.docker.com
-* `Solr-reference-guide-*` - hourly jobs that build the Solr reference guide via `./gradlew checkSite` and push the resulting artifact to the staging/preview site `nightlies.apache.org`
+* `Solr-reference-guide-*` - daily jobs that build the Solr reference guide via `./gradlew checkSite` and push the resulting artifact to the staging/preview site `nightlies.apache.org`
 * `Solr-Smoketest-*` - daily jobs that produce a snapshot release (via the `assembleRelease` task) and run the release smoketester
 
 Most jobs that validate particular build artifacts are run "daily", which is sufficient to prevent any large breaks from creeping into the build.
-
 On the other hand, jobs that run tests are triggered "hourly" in order to squeeze as many test runs as possible out of our Jenkins hardware.
 This is a necessary consequence of Solr's heavy use of randomization in its test-suite.
 "Hourly" scheduling ensures that a test run is either currently running or in the build queue at all times, and enables us to get the maximum data points from our hardware.
