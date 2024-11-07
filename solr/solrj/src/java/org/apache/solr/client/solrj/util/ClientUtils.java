@@ -29,10 +29,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -66,32 +64,23 @@ public class ClientUtils {
    * Create the full URL for a SolrRequest (excepting query parameters) as a String
    *
    * @param solrRequest the {@link SolrRequest} to build the URL for
-   * @param requestWriter a {@link RequestWriter} from the {@link SolrClient} that will be sending
-   *     the request
-   * @param serverRootUrl the root URL of the Solr server being targeted. May be overridden {@link
-   *     SolrRequest#getBasePath()}, if present.
+   * @param serverRootUrl the root URL of the Solr server being targeted.
    * @param collection the collection to send the request to. May be null if no collection is
    *     needed.
-   * @throws MalformedURLException if {@code serverRootUrl} or {@link SolrRequest#getBasePath()}
-   *     contain a malformed URL string
+   * @throws MalformedURLException if {@code serverRootUrl} contains a malformed URL string
    */
   public static String buildRequestUrl(
-      SolrRequest<?> solrRequest,
-      RequestWriter requestWriter,
-      String serverRootUrl,
-      String collection)
+      SolrRequest<?> solrRequest, String serverRootUrl, String collection)
       throws MalformedURLException {
 
-    // TODO remove getBasePath support here prior to closing SOLR-17256
-    String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
-
+    String basePath = serverRootUrl;
     if (solrRequest.getApiVersion() == SolrRequest.ApiVersion.V2) {
       basePath = addNormalV2ApiRoot(basePath);
     }
 
     if (solrRequest.requiresCollection() && collection != null) basePath += "/" + collection;
 
-    String path = requestWriter.getPath(solrRequest);
+    String path = solrRequest.getPath();
     if (path == null || !path.startsWith("/")) {
       path = DEFAULT_PATH;
     }
