@@ -23,7 +23,6 @@ import java.net.CookieManager;
 import java.net.http.HttpClient;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -35,13 +34,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Test;
 
@@ -96,11 +93,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Override
   public void testQueryXmlPut() throws Exception {
     super.testQueryXmlPut();
-  }
-
-  @Test
-  public void testOverrideBaseUrl() throws Exception {
-    super.testOverrideBaseUrl();
   }
 
   @Test

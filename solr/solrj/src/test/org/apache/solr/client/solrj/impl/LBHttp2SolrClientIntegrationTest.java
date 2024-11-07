@@ -118,7 +118,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   }
 
   private LBClientHolder client(LBSolrClient.Endpoint... baseSolrEndpoints) {
-    if (true /*NOCOMMIT random().nextBoolean()*/) {
+    if (random().nextBoolean()) {
       var delegateClient =
           new Http2SolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)

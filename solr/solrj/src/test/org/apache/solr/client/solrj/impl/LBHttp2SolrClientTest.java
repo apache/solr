@@ -312,14 +312,14 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       lastSolrRequests.add(request);
       lastBasePaths.add(request.getBasePath());
       lastCollections.add(collection);
-      if (tmpBaseUrl.equals(basePathToFail)) {
+      if (request.getBasePath().equals(basePathToFail)) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this.");
       }
       return generateResponse(request);
     }
 
     public <R> R requestWithBaseUrl(
-            String baseUrl, SolrClientFunction<? extends HttpSolrClientBase, R> clientFunction)
+        String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
         throws SolrServerException, IOException {
       // This use of 'tmpBaseUrl' is NOT thread safe, but that's fine for our purposes here.
       try {
