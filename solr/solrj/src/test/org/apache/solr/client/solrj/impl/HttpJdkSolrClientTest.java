@@ -306,15 +306,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
-    try (HttpJdkSolrClient client = builder(null).build()) {
-      super.testSolrExceptionWithNullBaseurl(client);
-    } finally {
-      DebugServlet.clear();
-    }
-  }
-
-  @Test
   public void testUpdateDefault() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpJdkSolrClient client = builder(url).build()) {

@@ -17,8 +17,6 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.OPTION_SOLRURL;
-
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -49,6 +49,33 @@ import org.noggit.JSONWriter;
  * <p>Get the status of a Solr server.
  */
 public class StatusTool extends ToolBase {
+
+  private static final Option MAX_WAIT_SECS_OPTION =
+      Option.builder()
+          .longOpt("max-wait-secs")
+          .hasArg()
+          .argName("SECS")
+          .type(Integer.class)
+          .deprecated() // Will make it a stealth option, not printed or complained about
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
+
+  public static final Option PORT_OPTION =
+      Option.builder("p")
+          .longOpt("port")
+          .hasArg()
+          .argName("PORT")
+          .type(Integer.class)
+          .desc("Port on localhost to check status for")
+          .build();
+
+  public static final Option SHORT_OPTION =
+      Option.builder()
+          .longOpt("short")
+          .argName("SHORT")
+          .desc("Short format. Prints one URL per line for running instances")
+          .build();
+
   private final SolrProcessManager processMgr;
 
   public StatusTool() {
@@ -65,49 +92,24 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  private static final Option OPTION_MAXWAITSECS =
-      Option.builder()
-          .longOpt("max-wait-secs")
-          .argName("SECS")
-          .hasArg()
-          .required(false)
-          .deprecated() // Will make it a stealth option, not printed or complained about
-          .desc("Wait up to the specified number of seconds to see Solr running.")
-          .build();
-
-  public static final Option OPTION_PORT =
-      Option.builder("p")
-          .longOpt("port")
-          .argName("PORT")
-          .required(false)
-          .hasArg()
-          .desc("Port on localhost to check status for")
-          .build();
-
-  public static final Option OPTION_SHORT =
-      Option.builder()
-          .longOpt("short")
-          .argName("SHORT")
-          .required(false)
-          .desc("Short format. Prints one URL per line for running instances")
-          .build();
-
   @Override
-  public List<Option> getOptions() {
-    return List.of(OPTION_SOLRURL, OPTION_MAXWAITSECS, OPTION_PORT, OPTION_SHORT);
+  public Options getOptions() {
+    OptionGroup optionGroup = new OptionGroup();
+    optionGroup.addOption(PORT_OPTION);
+    optionGroup.addOption(CommonCLIOptions.SOLR_URL_OPTION);
+    return super.getOptions()
+        .addOption(MAX_WAIT_SECS_OPTION)
+        .addOption(SHORT_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(optionGroup);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue(OPTION_SOLRURL);
-    Integer port =
-        cli.hasOption(OPTION_PORT) ? Integer.parseInt(cli.getOptionValue(OPTION_PORT)) : null;
-    boolean shortFormat = cli.hasOption(OPTION_SHORT);
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
-
-    if (port != null && solrUrl != null) {
-      throw new IllegalArgumentException("Only one of port or url can be specified");
-    }
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
+    Integer port = cli.hasOption(PORT_OPTION) ? cli.getParsedOptionValue(PORT_OPTION) : null;
+    boolean shortFormat = cli.hasOption(SHORT_OPTION);
+    int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
 
     if (solrUrl != null) {
       if (!URLUtil.hasScheme(solrUrl)) {
@@ -165,8 +167,8 @@ public class StatusTool extends ToolBase {
   }
 
   private void printProcessStatus(SolrProcess process, CommandLine cli) throws Exception {
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
-    boolean shortFormat = cli.hasOption(OPTION_SHORT);
+    int maxWaitSecs = cli.getParsedOptionValue(MAX_WAIT_SECS_OPTION, 0);
+    boolean shortFormat = cli.hasOption(SHORT_OPTION);
     String pidUrl = process.getLocalUrl();
     if (shortFormat) {
       CLIO.out(pidUrl);
@@ -227,7 +229,7 @@ public class StatusTool extends ToolBase {
     try {
       waitToSeeSolrUp(
           solrUrl,
-          cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+          cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION),
           maxWaitSecs,
           TimeUnit.SECONDS);
       return true;
@@ -236,7 +238,7 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) throws Exception {
+  public boolean printStatusFromRunningSolr(String solrUrl, CommandLine cli) {
     String statusJson = null;
     try {
       statusJson = statusFromRunningSolr(solrUrl, cli);
@@ -263,7 +265,7 @@ public class StatusTool extends ToolBase {
     try {
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2)
-          .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
+          .write(getStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION)));
       return arr.toString();
     } catch (Exception exc) {
       if (SolrCLI.exceptionIsAuthRelated(exc)) {
