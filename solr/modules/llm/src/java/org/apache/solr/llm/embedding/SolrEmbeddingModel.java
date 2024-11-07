@@ -37,7 +37,7 @@ public class SolrEmbeddingModel implements Accountable {
 
   protected final String name;
   private final Map<String, Object> params;
-  private EmbeddingModel embedder;
+  private final EmbeddingModel embedder;
   private Integer hashCode;
 
   public static SolrEmbeddingModel getInstance(
@@ -145,11 +145,7 @@ public class SolrEmbeddingModel implements Accountable {
   public EmbeddingModel getEmbedder() {
     return embedder;
   }
-
-  public void setEmbedder(DimensionAwareEmbeddingModel embedder) {
-    this.embedder = embedder;
-  }
-
+  
   public Map<String, Object> getParams() {
     return params;
   }
