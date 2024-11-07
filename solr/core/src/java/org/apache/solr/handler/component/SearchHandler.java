@@ -600,7 +600,8 @@ public class SearchHandler extends RequestHandlerBase
                     ? shardHandler1.takeCompletedIncludingErrors()
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
-            AtomicReference<Object> detailMesg = new AtomicReference<>(); // or perhaps new Object[1] ?
+            AtomicReference<Object> detailMesg =
+                new AtomicReference<>(); // or perhaps new Object[1] ?
 
             boolean anyResponsesPartial =
                 srsp.getShardRequest().responses.stream()
@@ -653,7 +654,6 @@ public class SearchHandler extends RequestHandlerBase
                     rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
                     rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
                   }
-                  return; // nothing for components to see, don't need to finish stages
                 }
               }
             }
