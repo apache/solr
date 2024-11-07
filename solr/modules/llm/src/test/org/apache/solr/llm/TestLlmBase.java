@@ -55,10 +55,12 @@ public class TestLlmBase extends RestTestBase {
   protected static String vectorField2 = "vector2";
   protected static String vectorFieldByteEncoding = "vector_byte_encoding";
 
-  public static void setupTest(String solrconfig, String schema, boolean buildIndex, boolean persistModelStore) throws Exception {
+  public static void setupTest(
+      String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
+      throws Exception {
     initFolders(persistModelStore);
     createJettyAndHarness(
-            tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
     if (buildIndex) prepareIndex();
   }
 
@@ -68,8 +70,7 @@ public class TestLlmBase extends RestTestBase {
     }
   }
 
-  protected static void initFolders(boolean isPersistent)
-      throws Exception {
+  protected static void initFolders(boolean isPersistent) throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
     tmpConfDir.toFile().deleteOnExit();
