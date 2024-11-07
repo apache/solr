@@ -220,7 +220,7 @@ public class DistribFileStore implements FileStore {
         persistToFile(filedata, metadata);
         return true;
       } catch (SolrServerException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
+        throw new SolrException(SERVER_ERROR, "Error fetching data", e);
       } catch (IOException ioe) {
         throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
       } finally {
