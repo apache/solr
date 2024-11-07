@@ -1634,16 +1634,27 @@ NOTE: The `export` command only works with in a Solr running in cloud mode.
 
 The `bin/solr export` command takes the following parameters:
 
-`--url <url>`::
+`-s <url>` or `--solr-url <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Fully-qualified address to a Solr.
++
+*Example*: `--solr-url http://localhost:8983`
+
+`-c <collection>`::
 +
 [%autowidth,frame=none]
 |===
 s|Required |Default: none
 |===
 +
-Fully-qualified address to a collection.
+Name of the collection to run an export against.
 +
-*Example*: `--url http://localhost:8983/solr/techproducts`
+*Example*: `bin/solr export -c gettingstarted`
 
 `--format <format>`::
 +
@@ -1656,7 +1667,7 @@ The file format of the export, `json`, `jsonl`, or `javabin`.
 Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
 `jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
 
-`--out <path>`::
+`--output <path>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1696,7 +1707,6 @@ The default is `\*:*` which will export all documents.
 Comma separated list of fields to be exported.
 By default all fields are fetched.
 
-
 `--limit <number of documents>`::
 +
 [%autowidth,frame=none]
@@ -1722,13 +1732,13 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 Export all documents from a collection `gettingstarted`:
 
 [source,bash]
-bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1
 
 Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSON file:
 
 [source,bash]
 ----
-bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1 --format json --compress --out 1MDocs
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1 --format json --compress --output 1MDocs
 ----
 
 === Importing Documents into a Collection
@@ -1741,7 +1751,7 @@ First export the documents, making sure to ignore any fields that are populated 
 
 [,console]
 ----
-$ bin/solr export --url http://localhost:8983/solr/gettingstarted --fields id,name,manu,cat,features
+$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --fields id,name,manu,cat,features
 ----
 
 Create a new collection to import the exported documents into:
@@ -1767,7 +1777,7 @@ $ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http
 
 [,console]
 ----
-$ bin/solr export --url http://localhost:8983/solr/gettingstarted --format javabin --fields id,name,manu,cat,features
+$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
 $ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
 ----
 

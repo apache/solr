@@ -692,8 +692,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     NamedList<Object> rsp;
     try {
-      ur.setBasePath(leaderUrl);
-      rsp = updateShardHandler.getUpdateOnlyHttpClient().request(ur);
+      rsp =
+          updateShardHandler
+              .getUpdateOnlyHttpClient()
+              .requestWithBaseUrl(leaderUrl, null, ur)
+              .getResponse();
     } catch (SolrServerException e) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,

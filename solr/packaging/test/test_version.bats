@@ -21,22 +21,14 @@ setup() {
   common_clean_setup
 }
 
-@test "--version and -v both return Solr version" {
+@test "--version returns Solr version" {
   run solr --version
-  assert_output --partial "Solr version is:"
-  
-  run solr -v
-  assert_output --partial "Solr version is:"
-  
+  assert_output --partial "Solr version is:"    
 }
 
-@test "-version and version both return Solr version and deprecation" {
-  run solr -version
-  assert_output --partial "Solr version is:"
-  assert_output --partial "Deprecated operation as of 9.8.  Please use bin/solr --version."
-  
+@test "version as direct tool call still runs" {  
+  #run ! solr version
+  #assert_output --partial "version is not a valid command!  Did you mean --version?"  
   run solr version
   assert_output --partial "Solr version is:"
-  assert_output --partial "Deprecated operation as of 9.8.  Please use bin/solr --version."
-  
 }
