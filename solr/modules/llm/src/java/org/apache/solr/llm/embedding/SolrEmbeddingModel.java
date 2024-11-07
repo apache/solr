@@ -94,6 +94,7 @@ public class SolrEmbeddingModel implements Accountable {
     this.name = name;
     this.embedder = embedder;
     this.params = params;
+    this.hashCode = calculateHashCode();
   }
 
   public float[] vectorise(String text) {
