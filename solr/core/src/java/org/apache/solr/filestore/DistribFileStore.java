@@ -182,8 +182,8 @@ public class DistribFileStore implements FileStore {
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(fromNode);
       if (baseUrl == null) throw new SolrException(BAD_REQUEST, "No such node");
 
-      ByteBuffer metadata = null;
-      Map<?, ?> m = null;
+      ByteBuffer metadata;
+      Map<?, ?> m;
 
       InputStream is = null;
       var solrClient = coreContainer.getDefaultHttpSolrClient();
@@ -199,11 +199,7 @@ public class DistribFileStore implements FileStore {
       } catch (SolrServerException | IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       } finally {
-        try {
-          IOUtils.close(is);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
 
       try {
@@ -223,15 +219,12 @@ public class DistribFileStore implements FileStore {
         filedata.reset();
         persistToFile(filedata, metadata);
         return true;
-
-      } catch (SolrServerException | IOException e) {
+      } catch (SolrServerException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching data", e);
+      } catch (IOException ioe) {
+        throw new SolrException(SERVER_ERROR, "Error persisting file", ioe);
       } finally {
-        try {
-          IOUtils.close(is);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+        org.apache.solr.common.util.IOUtils.closeQuietly(is);
       }
     }
 
