@@ -50,7 +50,6 @@ dependencies {
   testImplementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
   testRuntimeOnly 'org.apache.hadoop:hadoop-client-minicluster'
 
-  testImplementation 'org.slf4j:jcl-over-slf4j'
   testRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api'
 
   // classes like solr.ICUCollationField, used by NNFailoverTest for example.

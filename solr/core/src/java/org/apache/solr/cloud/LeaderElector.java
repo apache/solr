@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkController.ContextKey;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -107,7 +106,7 @@ public class LeaderElector {
 
     // If any double-registrations exist for me, remove all but this latest one!
     // TODO: can we even get into this state?
-    String prefix = zkClient.getZooKeeper().getSessionId() + "-" + context.id + "-";
+    String prefix = zkClient.getZkSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
       String elec = it.next();
@@ -227,7 +226,7 @@ public class LeaderElector {
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
 
-    long sessionId = zkClient.getZooKeeper().getSessionId();
+    long sessionId = zkClient.getZkSessionId();
     String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
     boolean cont = true;
@@ -348,7 +347,7 @@ public class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
-      } catch (AlreadyClosedException e) {
+      } catch (IllegalStateException e) {
 
       } catch (Exception e) {
         if (!zkClient.isClosed()) {

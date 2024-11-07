@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -398,16 +397,6 @@ public class ZkShardTerms implements AutoCloseable {
         return;
       } catch (KeeperException e) {
         log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
-        try {
-          zkClient.getConnectionManager().waitForConnected(zkClient.getZkClientTimeout());
-        } catch (TimeoutException te) {
-          if (Thread.interrupted()) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error watching shard term for collection: " + collection,
-                te);
-          }
-        }
       }
     }
   }
@@ -416,6 +405,10 @@ public class ZkShardTerms implements AutoCloseable {
   private void registerWatcher() throws KeeperException {
     Watcher watcher =
         event -> {
+          // Don't do anything if we are closed
+          if (isClosed.get()) {
+            return;
+          }
           // session events are not change events, and do not remove the watcher
           if (Watcher.Event.EventType.None == event.getType()) {
             return;
