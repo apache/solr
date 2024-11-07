@@ -368,7 +368,8 @@ public class ZkController implements Closeable {
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withReconnectListener(() -> onReconnect(descriptorsSupplier))
-            .withDisconnectListener(() -> onDisconnect(descriptorsSupplier))
+            .withDisconnectListener(
+                (sessionExpired) -> onDisconnect(descriptorsSupplier, sessionExpired))
             .withAclProvider(zkACLProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
@@ -404,13 +405,14 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  private void onDisconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
+  private void onDisconnect(
+      Supplier<List<CoreDescriptor>> descriptorsSupplier, boolean sessionExpired) {
     try {
       overseer.close();
     } catch (Exception e) {
       log.error("Error trying to stop any Overseer threads", e);
     }
-    closeOutstandingElections(descriptorsSupplier);
+    closeOutstandingElections(descriptorsSupplier, sessionExpired);
     markAllAsNotLeader(descriptorsSupplier);
   }
 
@@ -464,6 +466,7 @@ public class ZkController implements Closeable {
       }
 
       // we have to register as live first to pick up docs in the buffer
+      removeEphemeralLiveNode();
       createEphemeralLiveNode();
 
       List<CoreDescriptor> descriptors = descriptorsSupplier.get();
@@ -663,16 +666,17 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
-  private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
+  private void closeOutstandingElections(
+      final Supplier<List<CoreDescriptor>> registerOnReconnect, boolean sessionExpired) {
     List<CoreDescriptor> descriptors = registerOnReconnect.get();
     if (descriptors != null) {
       for (CoreDescriptor descriptor : descriptors) {
-        closeExistingElectionContext(descriptor);
+        closeExistingElectionContext(descriptor, sessionExpired);
       }
     }
   }
 
-  private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
+  private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
@@ -682,7 +686,11 @@ public class ZkController implements Closeable {
 
     if (prevContext != null) {
       prevContext.close();
-      electionContexts.remove(contextKey);
+      // Only remove the election contexts if the session expired, otherwise the ephemeral nodes
+      // will still exist
+      if (sessionExpired) {
+        electionContexts.remove(contextKey);
+      }
     }
 
     return contextKey;
@@ -1209,6 +1217,19 @@ public class ZkController implements Closeable {
     } catch (NoNodeException e) {
 
     }
+    cc.nodeRoles
+        .getRoles()
+        .forEach(
+            (role, mode) -> {
+              try {
+                zkClient.delete(
+                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName, -1, true);
+              } catch (KeeperException e) {
+
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
   }
 
   public String getNodeName() {

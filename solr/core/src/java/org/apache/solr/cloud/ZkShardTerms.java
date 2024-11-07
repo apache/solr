@@ -417,7 +417,8 @@ public class ZkShardTerms implements AutoCloseable {
           // after registering watcher
           retryRegisterWatcher();
           // Only refresh the data if the node was created or its data changed.
-          if (Watcher.Event.EventType.NodeCreated == event.getType() || Watcher.Event.EventType.NodeDataChanged == event.getType()) {
+          if (Watcher.Event.EventType.NodeCreated == event.getType()
+              || Watcher.Event.EventType.NodeDataChanged == event.getType()) {
             refreshTerms();
           }
         };

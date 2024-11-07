@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -31,16 +30,10 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 public interface OnReconnect extends ConnectionStateListener {
   void command();
 
-  AtomicBoolean sessionEnded = new AtomicBoolean(false);
-
   @Override
   default void stateChanged(CuratorFramework client, ConnectionState newState) {
     if (ConnectionState.RECONNECTED.equals(newState)) {
-      if (sessionEnded.getAndSet(false)) {
-        command();
-      }
-    } else if (ConnectionState.LOST == newState || ConnectionState.SUSPENDED == newState) {
-      sessionEnded.set(true);
+      command();
     }
   }
 }
