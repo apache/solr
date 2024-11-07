@@ -54,6 +54,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -97,7 +98,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
@@ -126,7 +126,6 @@ import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
-import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -389,18 +388,16 @@ public class HttpSolrCall {
                 + " collection: "
                 + Utils.toJSONString(rsp.getValues()));
       }
-      TimeOut timeOut = new TimeOut(3, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      for (; ; ) {
-        if (cores.getZkController().getClusterState().getCollectionOrNull(SYSTEM_COLL) != null) {
-          break;
-        } else {
-          if (timeOut.hasTimedOut()) {
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
-          }
-          timeOut.sleep(50);
-        }
+
+      try {
+        cores
+            .getZkController()
+            .getZkStateReader()
+            .waitForState(SYSTEM_COLL, 3, TimeUnit.SECONDS, Objects::nonNull);
+      } catch (TimeoutException e) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
       }
 
       action = RETRY;

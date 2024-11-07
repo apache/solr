@@ -961,7 +961,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
-    checkForCollection(collectionName, list, null);
+    checkForCollection(collectionName, list);
 
     waitForRecoveriesToFinish(false);
 
@@ -1032,7 +1032,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
-    checkForCollection(collectionName, list, null);
+    checkForCollection(collectionName, list);
 
     waitForRecoveriesToFinish(false);
 

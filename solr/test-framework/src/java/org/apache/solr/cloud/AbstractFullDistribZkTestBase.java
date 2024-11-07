@@ -44,6 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -2220,83 +2221,60 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return sdoc(fields);
   }
 
-  private String checkCollectionExpectations(
-      String collectionName,
-      List<Integer> numShardsNumReplicaList,
-      List<String> nodesAllowedToRunShards)
-      throws IOException {
-    getCommonCloudSolrClient();
-    ClusterState clusterState = cloudClient.getClusterState();
-    int expectedSlices = numShardsNumReplicaList.get(0);
-    // The Math.min thing is here, because we expect replication-factor to be reduced to if there
-    // are not enough live nodes to spread all shards of a collection over different nodes
-    int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
-    int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
-
-    //      Map<String,DocCollection> collections = clusterState
-    //          .getCollectionStates();
-    if (clusterState.hasCollection(collectionName)) {
-      Map<String, Slice> slices = clusterState.getCollection(collectionName).getSlicesMap();
-      // did we find expectedSlices slices/shards?
-      if (slices.size() != expectedSlices) {
-        return "Found new collection "
-            + collectionName
-            + ", but mismatch on number of slices. Expected: "
-            + expectedSlices
-            + ", actual: "
-            + slices.size();
-      }
-      int totalShards = 0;
-      for (String sliceName : slices.keySet()) {
-        for (Replica replica : slices.get(sliceName).getReplicas()) {
-          if (nodesAllowedToRunShards != null
-              && !nodesAllowedToRunShards.contains(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
-            return "Shard "
-                + replica.getName()
-                + " created on node "
-                + replica.getNodeName()
-                + " not allowed to run shards for the created collection "
-                + collectionName;
-          }
-        }
-        totalShards += slices.get(sliceName).getReplicas().size();
-      }
-      if (totalShards != expectedTotalShards) {
-        return "Found new collection "
-            + collectionName
-            + " with correct number of slices, but mismatch on number of shards. Expected: "
-            + expectedTotalShards
-            + ", actual: "
-            + totalShards;
-      }
-      return null;
-    } else {
-      return "Could not find new collection " + collectionName;
-    }
-  }
-
-  protected void checkForCollection(
-      String collectionName,
-      List<Integer> numShardsNumReplicaList,
-      List<String> nodesAllowedToRunShards)
+  protected void checkForCollection(String collectionName, List<Integer> numShardsNumReplicaList)
       throws Exception {
     // check for an expectedSlices new collection - we poll the state
-    final TimeOut timeout = new TimeOut(120, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    boolean success = false;
-    String checkResult = "Didnt get to perform a single check";
-    while (!timeout.hasTimedOut()) {
-      checkResult =
-          checkCollectionExpectations(
-              collectionName, numShardsNumReplicaList, nodesAllowedToRunShards);
-      if (checkResult == null) {
-        success = true;
-        break;
-      }
-      Thread.sleep(500);
-    }
-    if (!success) {
-      super.printLayout();
-      fail(checkResult);
+    ZkStateReader reader = ZkStateReader.from(cloudClient);
+
+    AtomicReference<String> message = new AtomicReference<>();
+    try {
+      reader.waitForState(
+          collectionName,
+          120,
+          TimeUnit.SECONDS,
+          c -> {
+            int expectedSlices = numShardsNumReplicaList.get(0);
+            // The Math.min thing is here, because we expect replication-factor to be reduced to if
+            // there are not enough live nodes to spread all shards of a collection over different
+            // nodes.
+            int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
+            int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
+
+            if (c != null) {
+              Collection<Slice> slices = c.getSlices();
+              // did we find expectedSlices slices/shards?
+              if (slices.size() != expectedSlices) {
+                message.set(
+                    "Found new collection "
+                        + collectionName
+                        + ", but mismatch on number of slices. Expected: "
+                        + expectedSlices
+                        + ", actual: "
+                        + slices.size());
+                return false;
+              }
+              int totalShards = 0;
+              for (Slice slice : slices) {
+                totalShards += slice.getReplicas().size();
+              }
+              if (totalShards != expectedTotalShards) {
+                message.set(
+                    "Found new collection "
+                        + collectionName
+                        + " with correct number of slices, but mismatch on number of shards. Expected: "
+                        + expectedTotalShards
+                        + ", actual: "
+                        + totalShards);
+                return false;
+              }
+              return true;
+            } else {
+              message.set("Could not find new collection " + collectionName);
+              return false;
+            }
+          });
+    } catch (TimeoutException e) {
+      fail(message.get());
     }
   }
 
