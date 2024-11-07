@@ -375,6 +375,42 @@ Here's an example of a simple `vectorSimilarity` search:
 The search results retrieved are all documents whose similarity with the input vector `[1.0, 2.0, 3.0, 4.0]` is at least `0.7` based on the `similarityFunction` configured at indexing time
 
 
+=== Which one to use?
+
+Let's see when to use each of the dense retrieval query parsers available:
+
+== knn Query Parser
+
+You should use the `knn` query parser when:
+
+* you search for the top-K closest vectors to a query vector
+* you work directly with vectors (no text encoding is involved)
+* you want to a have a fine-grained control over the way you encode text to vector and prefer to do it outside of Apache Solr
+
+
+== embed Query Parser
+
+You should use the `embed` query parser when:
+
+* you search for the top-K closest vectors to a query text
+* you work directly with text and want Solr to handle the encoding to vector behind the scenes
+* you are building demos/prototypes
+
+[IMPORTANT]
+====
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to interact with Large Language Models.
+The integration is experimental and we are going to improve our stress-test and benchmarking coverage of this query parser in future iterations: if you care about raw performance you may prefer to encode the text outside of Solr
+====
+
+== vectorSimilarity Query Parser
+
+You should use the `vectorSimilarity` query parser when:
+
+* you search for the closest vectors to a query vector within a similarity threshold
+* you work directly with vectors (no text encoding is involved)
+* you want to a have a fine-grained control over the way you encode text to vector and prefer to do it outside of Apache Solr
+
+
 === Graph Pre-Filtering
 
 Pre-Filtering the set of candidate documents considered when walking the graph can be specified either explicitly, or implicitly (based on existing `fq` params) depending on how and when these dense vector query parsers are used.
