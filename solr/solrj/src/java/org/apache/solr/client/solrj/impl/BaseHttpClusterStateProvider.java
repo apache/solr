@@ -198,8 +198,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     } else if (requestType == ClusterStateRequestType.FETCH_NODE_ROLES) {
       params.set("roles", "true");
     }
-
-    params.set("includeAll", "false");
+    if(requestType == ClusterStateRequestType.FETCH_COLLECTION && collection == null) {
+      params.set("includeAll", "true");
+    } else {
+      params.set("includeAll", "false");
+    }
     params.set("prs", "true");
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
