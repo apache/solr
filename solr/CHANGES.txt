@@ -143,7 +143,7 @@ Improvements
   when PKI is used between nodes. (Jason Gerlowski)
 
 * SOLR-17383: Resolved overlapping arguments in the Solr CLI.  Removed duplicative but differing arguments,
-  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning 
+  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning
   in command line when deprecated arguments are used. (Eric Pugh, Christos Malliaridis)
 
 * SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
@@ -180,6 +180,8 @@ Optimizations
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
 * SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+
+* SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
