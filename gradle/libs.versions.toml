@@ -86,7 +86,7 @@ fasterxml-woodstox = "7.0.0"
 flexmark = "0.64.8"
 google-api-gax = "2.33.0"
 # @keep for version alignment
-google-api-grpc-proto = "2.42.0"
+google-api-grpc-proto = "2.41.0"
 google-auth = "1.19.0"
 # @keep for version alignment
 google-autovalue = "1.10.4"
@@ -376,6 +376,8 @@ grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-util = { module = "io.grpc:grpc-util", version.ref = "grpc" }
 hamcrest-hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
 hk2-api = { module = "org.glassfish.hk2:hk2-api", version.ref = "hk2" }
+# @keep transitive dependency for version alignment
+hk2-locator = { module = "org.glassfish.hk2:hk2-locator", version.ref = "hk2" }
 hsqldb-hsqldb = { module = "org.hsqldb:hsqldb", version.ref = "hsqldb" }
 ibm-icu-icu4j = { module = "com.ibm.icu:icu4j", version.ref = "ibm-icu" }
 immutables-valueannotations = { module = "org.immutables:value-annotations", version.ref = "immutables-valueannotations" }

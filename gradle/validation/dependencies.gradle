@@ -303,6 +303,11 @@ allprojects {
                             "\n- ${getFullName(libs.apache.calcite.core)} uses 1.1.2" +
                             "\n- ${getFullName(libs.junit.junit)} (api) uses 1.1.0"
                 })
+                handler.add(conf.name, libs.hk2.locator, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- ${getFullName(libs.jersey.inject.hk2)} uses 3.0.6" +
+                            "\n- ${getFullName(libs.hk2.api)} uses 3.1.1"
+                })
             }
         }
     }
