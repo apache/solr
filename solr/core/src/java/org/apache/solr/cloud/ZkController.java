@@ -421,6 +421,8 @@ public class ZkController implements Closeable {
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
     try {
+      // Remove the live node in case it is still there
+      removeEphemeralLiveNode();
       // recreate our watchers first so that they exist even on any problems below
       zkStateReader.createClusterStateWatchersAndUpdate();
 
@@ -466,7 +468,6 @@ public class ZkController implements Closeable {
       }
 
       // we have to register as live first to pick up docs in the buffer
-      removeEphemeralLiveNode();
       createEphemeralLiveNode();
 
       List<CoreDescriptor> descriptors = descriptorsSupplier.get();
@@ -1965,7 +1966,7 @@ public class ZkController implements Closeable {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
-      checkStateInZk(cd);
+      checkStateInZk(cd, null);
 
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
@@ -2022,7 +2023,7 @@ public class ZkController implements Closeable {
     return !replica.getNodeName().equals(getNodeName());
   }
 
-  private void checkStateInZk(CoreDescriptor cd)
+  private void checkStateInZk(CoreDescriptor cd, Replica.State state)
       throws InterruptedException, NotInClusterStateException {
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
     String nodeName = cloudDesc.getCoreNodeName();
@@ -2056,6 +2057,16 @@ public class ZkController implements Closeable {
                       + " does not exist in shard "
                       + cloudDesc.getShardId()
                       + ", ignore the exception if the replica was deleted");
+              return false;
+            }
+            if (state != null && !state.equals(replica.getState())) {
+              errorMessage.set(
+                  "coreNodeName "
+                      + coreNodeName
+                      + " does not have the expected state "
+                      + state
+                      + ", found state was: "
+                      + replica.getState());
               return false;
             }
             return true;
@@ -2141,10 +2152,15 @@ public class ZkController implements Closeable {
     if (!isLeader && !SKIP_AUTO_RECOVERY) {
       if (!getShardTerms(collection, shard).canBecomeLeader(myCoreNodeName)) {
         log.debug(
-            "Term of replica {} is already less than leader, so not waiting for leader to see down state.",
+            "Term of replica {} is already less than leader, so not waiting for leader to see down state."
+                + " Instead, make sure we can see the down state in Zookeeper.",
             myCoreNodeName);
+        try {
+          checkStateInZk(descriptor, Replica.State.DOWN);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
       } else {
-
         if (log.isInfoEnabled()) {
           log.info(
               "replica={} is making a best effort attempt to wait for leader={} to see it's DOWN state.",
