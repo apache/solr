@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
-import org.apache.lucene.monitor.HighlightsMatch;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,25 +32,12 @@ class SolrMatcherSinkFactory {
 
   SolrMatcherSinkFactory() {}
 
-  SolrMatcherSink build(
-      QueryMatchType matchType,
-      DocumentBatchVisitor documentBatch,
-      Map<String, Object> monitorResult) {
-    if (matchType == QueryMatchType.SIMPLE) {
-      return buildSimple(
-          documentBatch,
-          matchingQueries ->
-              QueryMatchResponseCodec.simpleEncode(
-                  matchingQueries, monitorResult, documentBatch.size()));
-    } else if (matchType == QueryMatchType.HIGHLIGHTS) {
-      return build(
-          documentBatch,
-          HighlightsMatch.MATCHER::createMatcher,
-          matchingQueries ->
-              QueryMatchResponseCodec.highlightEncode(
-                  matchingQueries, monitorResult, documentBatch.size()));
-    }
-    return buildSimple(documentBatch, __ -> {});
+  SolrMatcherSink build(DocumentBatchVisitor documentBatch, Map<String, Object> monitorResult) {
+    return buildSimple(
+        documentBatch,
+        matchingQueries ->
+            QueryMatchResponseCodec.simpleEncode(
+                matchingQueries, monitorResult, documentBatch.size()));
   }
 
   private SolrMatcherSink buildSimple(

@@ -27,8 +27,6 @@ public class MonitorConstants {
   public static final String MONITOR_DOCUMENT_KEY = "monitorDocument";
   public static final String MONITOR_QUERIES_KEY = "queries";
   public static final String MONITOR_QUERIES_RUN = "queriesRun";
-  public static final String QUERY_MATCH_TYPE_KEY = "monitorMatchType";
   public static final String MONITOR_OUTPUT_KEY = "monitor";
   public static final String WRITE_TO_DOC_LIST_KEY = "writeToDocList";
-  public static final String HITS_KEY = "hits";
 }

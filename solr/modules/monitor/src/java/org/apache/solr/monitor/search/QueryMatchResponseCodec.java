@@ -35,20 +35,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.lucene.monitor.HighlightsMatch;
-import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.monitor.MonitorConstants;
 
 @SuppressWarnings("unchecked")
 class QueryMatchResponseCodec {
 
-  static Map<String, Object> mergeResponses(
-      List<NamedList<Object>> responses, QueryMatchType type) {
+  static Map<String, Object> mergeResponses(List<NamedList<Object>> responses) {
     Map<Integer, List<QueryMatchWrapper>> wrappedMerged = new HashMap<>();
     int queriesRun = 0;
     for (var response : responses) {
@@ -58,7 +54,7 @@ class QueryMatchResponseCodec {
             SolrException.ErrorCode.BAD_REQUEST, MONITOR_OUTPUT_KEY + " must be a map");
       }
       Map<String, Object> singleMonitorOutput = (Map<String, Object>) smq;
-      decodeToWrappers(singleMonitorOutput, wrappedMerged, type);
+      decodeToWrappers(singleMonitorOutput, wrappedMerged);
       var delta = singleMonitorOutput.get(MONITOR_QUERIES_RUN);
       if (!(delta instanceof Integer)) {
         throw new SolrException(
@@ -83,7 +79,7 @@ class QueryMatchResponseCodec {
   }
 
   private static void decodeToWrappers(
-      Object object, Map<Integer, List<QueryMatchWrapper>> output, QueryMatchType type) {
+      Object object, Map<Integer, List<QueryMatchWrapper>> output) {
     if (!(object instanceof Map)) {
       throw new IllegalArgumentException("input object should be a map");
     }
@@ -109,15 +105,9 @@ class QueryMatchResponseCodec {
       int doc = (Integer) docRaw;
       List<QueryMatchWrapper> wrappers = output.computeIfAbsent(doc, i -> new ArrayList<>());
       List<Object> serializableFormMQs = (List<Object>) monitorQueriesRaw;
-      if (type == QueryMatchType.SIMPLE) {
-        serializableFormMQs.forEach(
-            serializableForm ->
-                wrappers.add(SimpleQueryMatchWrapper.fromSerializableForm(serializableForm)));
-      } else if (type == QueryMatchType.HIGHLIGHTS) {
-        serializableFormMQs.forEach(
-            serializableForm ->
-                wrappers.add(HighlightedQueryMatchWrapper.fromSerializableForm(serializableForm)));
-      }
+      serializableFormMQs.forEach(
+          serializableForm ->
+              wrappers.add(SimpleQueryMatchWrapper.fromSerializableForm(serializableForm)));
     }
   }
 
@@ -127,14 +117,6 @@ class QueryMatchResponseCodec {
       int docBatchSize) {
     encodeMultiMatchingQuery(
         matchingQueries, output, docBatchSize, SimpleQueryMatchWrapper::fromQueryMatch);
-  }
-
-  static void highlightEncode(
-      MultiMatchingQueries<HighlightsMatch> matchingQueries,
-      Map<String, Object> output,
-      int docBatchSize) {
-    encodeMultiMatchingQuery(
-        matchingQueries, output, docBatchSize, HighlightedQueryMatchWrapper::new);
   }
 
   private static <T extends QueryMatch> void encodeMultiMatchingQuery(
@@ -210,65 +192,6 @@ class QueryMatchResponseCodec {
     @Override
     public Object toSerializableForm() {
       return queryId.utf8ToString();
-    }
-
-    @Override
-    public BytesRef queryId() {
-      return queryId;
-    }
-  }
-
-  private static class HighlightedQueryMatchWrapper implements QueryMatchWrapper {
-
-    private final BytesRef queryId;
-    private final Map<Object, Object> hits;
-
-    private HighlightedQueryMatchWrapper(HighlightsMatch highlightsMatch) {
-      this(
-          new BytesRef(highlightsMatch.getQueryId()),
-          highlightsMatch.getHits().entrySet().stream()
-              .collect(
-                  Collectors.toMap(
-                      Map.Entry::getKey,
-                      entry ->
-                          entry.getValue().stream()
-                              .map(HighlightedQueryMatchWrapper::hitMap)
-                              .collect(Collectors.toList()))));
-    }
-
-    private static Map<Object, Object> hitMap(HighlightsMatch.Hit hit) {
-      Map<Object, Object> map = new LinkedHashMap<>();
-      map.put("startPosition", hit.startPosition);
-      map.put("endPosition", hit.endPosition);
-      map.put("startOffset", hit.startOffset);
-      map.put("endOffset", hit.endOffset);
-      return map;
-    }
-
-    private HighlightedQueryMatchWrapper(BytesRef queryId, Map<Object, Object> hits) {
-      this.hits = hits;
-      this.queryId = queryId;
-    }
-
-    @Override
-    public Object toSerializableForm() {
-      Map<Object, Object> map = new LinkedHashMap<>();
-      map.put(MonitorFields.QUERY_ID, queryId.utf8ToString());
-      map.put(MonitorConstants.HITS_KEY, hits);
-      return map;
-    }
-
-    private static HighlightedQueryMatchWrapper fromSerializableForm(Object serializableForm) {
-      if (!(serializableForm instanceof Map)) {
-        decodingError(serializableForm, HighlightedQueryMatchWrapper.class);
-      }
-      Object queryId = ((Map<?, ?>) serializableForm).get(MonitorFields.QUERY_ID);
-      Object hits = ((Map<?, ?>) serializableForm).get(MonitorConstants.HITS_KEY);
-      if (!(queryId instanceof String) || !(hits instanceof Map<?, ?>)) {
-        decodingError(serializableForm, HighlightedQueryMatchWrapper.class);
-      }
-      return new HighlightedQueryMatchWrapper(
-          new BytesRef((String) queryId), (Map<Object, Object>) hits);
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.apache.solr.monitor;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_QUERIES_KEY;
-import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
 
 import java.io.IOException;
@@ -31,11 +30,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.monitor.HighlightsMatch;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -73,9 +69,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.JSON,
           read("/monitor/multi-doc-batch.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          "/reverseSearch"
         };
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
@@ -107,9 +101,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
     response = query(params);
     System.out.println("Response = " + response);
@@ -152,9 +144,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
@@ -183,9 +173,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -222,9 +210,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -257,9 +243,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -306,9 +290,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -338,9 +320,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -350,168 +330,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     System.out.println("Response = " + response);
     validate(response, 3, List.of("0", "1", "2"), writeToDocList);
     validate(response, 4, List.of("0", "1", "2"), writeToDocList);
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testDefaultQueryMatchTypeIsNone() throws Exception {
-    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator stairs\"");
-    index(id, Integer.toString(1), MonitorFields.MONITOR_QUERY, "content_s:\"something else\"");
-    commit();
-    handle.clear();
-    handle.put("responseHeader", SKIP);
-    handle.put("response", SKIP);
-
-    final boolean writeToDocList = supportsWriteToDocList();
-    Object[] params =
-        new Object[] {
-          CommonParams.SORT,
-          id + " desc",
-          CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
-          CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
-        };
-
-    QueryResponse response = query(params);
-    System.out.println("Response = " + response);
-    if (writeToDocList) {
-      assertEquals(2, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
-    assertNull(response.getResponse().get(MONITOR_OUTPUT_KEY));
-  }
-
-  @Test
-  @ShardsFixed(num = 2)
-  public void testMultiDocHighlightMatchType() throws Exception {
-    index(
-        id,
-        Integer.toString(0),
-        MonitorFields.MONITOR_QUERY,
-        "content0_offset_s:\"elevator stairs\"");
-    index(
-        id,
-        Integer.toString(1),
-        MonitorFields.MONITOR_QUERY,
-        "content0_offset_sds:highlights && content0_offset_sds:field && content0_offset_s:elevator");
-    index(
-        id,
-        Integer.toString(2),
-        MonitorFields.MONITOR_QUERY,
-        "content0_offset_sds:ignore && content0_offset_sds:field && content0_offset_s:elevator");
-    index(
-        id,
-        Integer.toString(3),
-        MonitorFields.MONITOR_QUERY,
-        "content0_offset_sds:highlights && content0_offset_sds:ignore && content0_offset_s:elevator");
-    index(id, Integer.toString(4), MonitorFields.MONITOR_QUERY, "content0_offset_s:elevator");
-    commit();
-    handle.clear();
-    handle.put("responseHeader", SKIP);
-    handle.put("response", SKIP);
-
-    final boolean writeToDocList = supportsWriteToDocList();
-    Object[] params =
-        new Object[] {
-          CommonParams.SORT,
-          id + " desc",
-          CommonParams.JSON,
-          read("/monitor/multi-doc-batch-multi-valued.json"),
-          CommonParams.QT,
-          "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "highlights",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
-        };
-
-    QueryResponse response = query(params);
-    System.out.println("Response = " + response);
-    String f1 = "content0_offset_s";
-    String f2 = "content0_offset_sds";
-
-    Map<Object, Object> queryMatch0 =
-        queryMatch("0", f1, List.of(new HighlightsMatch.Hit(0, 0, 1, 15)), f2, List.of());
-    Map<Object, Object> queryMatch1 =
-        queryMatch(
-            "1",
-            f1,
-            List.of(new HighlightsMatch.Hit(0, 0, 0, 8)),
-            f2,
-            List.of(
-                new HighlightsMatch.Hit(1, 5, 1, 15), new HighlightsMatch.Hit(106, 38, 106, 43)));
-    Map<Object, Object> queryMatch4 =
-        queryMatch("4", f1, List.of(new HighlightsMatch.Hit(0, 0, 0, 8)), f2, List.of());
-    validate(response, 0, List.of(queryMatch0, queryMatch1, queryMatch4), writeToDocList);
-    queryMatch4 = queryMatch("4", f1, List.of(new HighlightsMatch.Hit(2, 7, 2, 15)), f2, List.of());
-    validate(response, 1, List.of(queryMatch4), writeToDocList);
-    var queries = monitorQueries(response, 0);
-    assertEquals(3, queries.size());
-    queries = monitorQueries(response, 1);
-    assertEquals(1, queries.size());
-    if (writeToDocList) {
-      assertEquals(3, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
-  }
-
-  @Test
-  public void testHighlightMatchType() throws Exception {
-    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs\"");
-    index(
-        id,
-        Integer.toString(1),
-        MonitorFields.MONITOR_QUERY,
-        "content0_sds:highlights || content0_sds:field || content0_s:elevator");
-    index(
-        id,
-        Integer.toString(2),
-        MonitorFields.MONITOR_QUERY,
-        "content0_sds:ignore && content0_sds:field && content0_s:elevator");
-    commit();
-    handle.clear();
-    handle.put("responseHeader", SKIP);
-    handle.put("response", SKIP);
-
-    final boolean writeToDocList = supportsWriteToDocList();
-    Object[] params =
-        new Object[] {
-          CommonParams.SORT,
-          id + " desc",
-          CommonParams.JSON,
-          read("/monitor/single-doc-batch-multi-valued.json"),
-          CommonParams.QT,
-          "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "highlights",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
-        };
-
-    QueryResponse response = query(params);
-    System.out.println("Response = " + response);
-    String f1 = "content0_s";
-    String f2 = "content0_sds";
-
-    Map<Object, Object> queryMatch0 =
-        queryMatch("0", f1, List.of(new HighlightsMatch.Hit(0, 0, 1, 15)), f2, List.of());
-    Map<Object, Object> queryMatch1 =
-        queryMatch(
-            "1",
-            f1,
-            List.of(new HighlightsMatch.Hit(0, 0, 0, 8)),
-            f2,
-            List.of(
-                new HighlightsMatch.Hit(1, 5, 1, 15), new HighlightsMatch.Hit(106, 38, 106, 43)));
-    validate(response, 0, List.of(queryMatch0, queryMatch1), writeToDocList);
-    var queries = monitorQueries(response, 0);
-    assertEquals(2, queries.size());
-    if (writeToDocList) {
-      // The disjuncts come in as separate matches
-      // TODO is this the most desirable behavior?
-      assertEquals(4, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
   }
 
   @Test
@@ -536,9 +354,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          writeToDocList,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -551,40 +367,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     commit();
     response = query(CommonParams.Q, "*:*");
     assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
-  }
-
-  static Map<Object, Object> queryMatch(
-      String queryId,
-      String field1,
-      List<HighlightsMatch.Hit> firstFieldHits,
-      String field2,
-      List<HighlightsMatch.Hit> secondFieldHits) {
-    Map<Object, Object> queryMatch = new LinkedHashMap<>();
-    queryMatch.put(MonitorFields.QUERY_ID, queryId);
-    Map<Object, Object> matchHits = new LinkedHashMap<>();
-    var outHits1 = map(firstFieldHits);
-    if (!outHits1.isEmpty()) {
-      matchHits.put(field1, outHits1);
-    }
-    var outHits2 = map(secondFieldHits);
-    if (!outHits2.isEmpty()) {
-      matchHits.put(field2, outHits2);
-    }
-    queryMatch.put(MonitorConstants.HITS_KEY, matchHits);
-    return queryMatch;
-  }
-
-  static List<Object> map(List<HighlightsMatch.Hit> hits) {
-    List<Object> outHits = new ArrayList<>();
-    for (var hit : hits) {
-      Map<Object, Object> hit00 = new LinkedHashMap<>();
-      hit00.put("startPosition", hit.startPosition);
-      hit00.put("endPosition", hit.endPosition);
-      hit00.put("startOffset", hit.startOffset);
-      hit00.put("endOffset", hit.endOffset);
-      outHits.add(hit00);
-    }
-    return outHits;
   }
 
   void validate(QueryResponse response, int doc, Object expectedValue, boolean writeToDocList) {
