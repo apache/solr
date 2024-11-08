@@ -28,6 +28,8 @@ Improvements
 
 * SOLR-17544: Solr CLI will now stop when you combine mutually exclusive options.  Combining -s and -z options is a common example.  (Eric Pugh, Christos Malliaridis)
 
+* SOLR-17495: Change Solr CLI delete command to not delete configs by default.  Decouple lifecycle of collections from configsets. (Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
