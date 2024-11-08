@@ -57,9 +57,6 @@ public class DeleteTool extends ToolBase {
   private static final Option DELETE_CONFIG_OPTION =
       Option.builder()
           .longOpt("delete-config")
-          .hasArg()
-          .argName("true|false")
-          .type(Boolean.class)
           .desc(
               "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
           .build();
@@ -146,7 +143,7 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = Boolean.parseBoolean(cli.getOptionValue(DELETE_CONFIG_OPTION, "true"));
+    boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
 
     if (deleteConfig && configName != null) {
       if (cli.hasOption(FORCE_OPTION)) {
