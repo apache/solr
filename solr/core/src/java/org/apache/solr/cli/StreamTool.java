@@ -75,77 +75,80 @@ public class StreamTool extends ToolBase {
   }
 
   private static final Option EXECUTION_OPTION =
-          Option.builder("e")
-                  .longOpt("execution")
-                  .hasArg()
-                  .argName("CONTEXT")
-                  .required(false)
-                  .desc(
-                          "Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'")
-                  .build();
+      Option.builder("e")
+          .longOpt("execution")
+          .hasArg()
+          .argName("CONTEXT")
+          .required(false)
+          .desc(
+              "Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'")
+          .build();
 
-  private static final Option COLLECTION_OPTION = Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .desc(
-                "Name of the collection to execute on if workers are 'solr'.  Required for 'solr' worker.")
-            .build();
+  private static final Option COLLECTION_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .argName("NAME")
+          .hasArg()
+          .desc(
+              "Name of the collection to execute on if workers are 'solr'.  Required for 'solr' worker.")
+          .build();
 
-  private static final Option FIELDS_OPTION = Option.builder("f")
-            .longOpt("fields")
-            .argName("FIELDS")
-            .hasArg()
-            .required(false)
-            .desc(
-                "The fields in the tuples to output. (defaults to fields in the first tuple of result set).")
-            .build();
+  private static final Option FIELDS_OPTION =
+      Option.builder("f")
+          .longOpt("fields")
+          .argName("FIELDS")
+          .hasArg()
+          .required(false)
+          .desc(
+              "The fields in the tuples to output. (defaults to fields in the first tuple of result set).")
+          .build();
 
   private static final Option HEADER_OPTION =
-          Option.builder()
-                  .longOpt("header")
-                  .required(false)
-                  .desc("Whether or not to include a header line. (default=false)")
-                  .build();
-  private static final Option DELIMITER_OPTION = Option.builder()
-           .longOpt("delimiter")
-            .argName("CHARACTER")
-            .hasArg()
-            .required(false)
-            .desc("The output delimiter. (default=tab).")
-            .build();
-  private static final Option ARRAY_DELIMITER_OPTION = Option.builder()
-                .longOpt("array-delimiter")
-            .argName("CHARACTER")
-            .hasArg()
-            .required(false)
-            .desc("The delimiter multi-valued fields. (default=|)")
-            .build();
+      Option.builder()
+          .longOpt("header")
+          .required(false)
+          .desc("Whether or not to include a header line. (default=false)")
+          .build();
+  private static final Option DELIMITER_OPTION =
+      Option.builder()
+          .longOpt("delimiter")
+          .argName("CHARACTER")
+          .hasArg()
+          .required(false)
+          .desc("The output delimiter. (default=tab).")
+          .build();
+  private static final Option ARRAY_DELIMITER_OPTION =
+      Option.builder()
+          .longOpt("array-delimiter")
+          .argName("CHARACTER")
+          .hasArg()
+          .required(false)
+          .desc("The delimiter multi-valued fields. (default=|)")
+          .build();
 
   @Override
   public Options getOptions() {
     Options opts =
-            super.getOptions()
-                    .addOption(EXECUTION_OPTION)
-                    .addOption(COLLECTION_OPTION)
-                    .addOption(FIELDS_OPTION)
-                    .addOption(HEADER_OPTION)
-                    .addOption(DELIMITER_OPTION)
-                    .addOption(ARRAY_DELIMITER_OPTION)
-                    .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-                    .addOptionGroup(getConnectionOptions());
+        super.getOptions()
+            .addOption(EXECUTION_OPTION)
+            .addOption(COLLECTION_OPTION)
+            .addOption(FIELDS_OPTION)
+            .addOption(HEADER_OPTION)
+            .addOption(DELIMITER_OPTION)
+            .addOption(ARRAY_DELIMITER_OPTION)
+            .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+            .addOptionGroup(getConnectionOptions());
 
     return opts;
   }
-
 
   @Override
   @SuppressWarnings({"rawtypes"})
   public void runImpl(CommandLine cli) throws Exception {
 
     String expressionArgument = cli.getArgs()[0];
-    String execution = cli.getOptionValue(EXECUTION_OPTION,"solr");
-    String arrayDelimiter = cli.getOptionValue(ARRAY_DELIMITER_OPTION,"|");
+    String execution = cli.getOptionValue(EXECUTION_OPTION, "solr");
+    String arrayDelimiter = cli.getOptionValue(ARRAY_DELIMITER_OPTION, "|");
     String delimiter = cli.getOptionValue(DELIMITER_OPTION, "   ");
     boolean includeHeaders = cli.hasOption(HEADER_OPTION);
     String[] outputHeaders = getOutputFields(cli);
@@ -245,7 +248,8 @@ public class StreamTool extends ToolBase {
 
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     solrClientCache.getCloudSolrClient(zkHost);
-    solrClientCache.setBasicAuthCredentials(cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    solrClientCache.setBasicAuthCredentials(
+        cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     TupleStream stream;
     PushBackStream pushBackStream;
