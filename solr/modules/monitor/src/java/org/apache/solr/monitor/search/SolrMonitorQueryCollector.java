@@ -22,6 +22,7 @@ package org.apache.solr.monitor.search;
 import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.QCEVisitor;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
