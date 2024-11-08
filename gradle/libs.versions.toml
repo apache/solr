@@ -31,14 +31,14 @@ apache-commons-lang3 = "3.15.0"
 apache-commons-math3 = "3.6.1"
 # @keep for version alignment
 apache-commons-text = "1.12.0"
-apache-curator = "5.7.0"
-apache-hadoop = "3.3.6"
+apache-curator = "5.7.1"
+apache-hadoop = "3.4.0"
 apache-hadoop-thirdparty = "1.2.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.7.1"
-apache-kerby = "1.0.1"
+apache-kerby = "2.0.3"
 apache-log4j = "2.21.0"
 apache-lucene = "9.11.1"
 apache-opennlp = "1.9.4"
@@ -47,6 +47,8 @@ apache-rat = "0.15"
 apache-tika = "1.28.5"
 apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.2"
+# @keep for version alignment
+apiguardian = "1.1.2"
 aqute-bnd = "6.4.1"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
@@ -73,13 +75,13 @@ cutterslade-analyze = "1.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.26"
-eclipse-ecj = "3.33.0"
+eclipse-ecj = "3.39.0"
 eclipse-jetty = "10.0.22"
 eclipse-jettytoolchain = "4.0.6"
 # @keep jgit version used by git-statuts.gradle
 eclipse-jgit = "6.7.0.202309050840-r"
-fasterxml = "2.17.2"
-fasterxml-woodstox = "6.7.0"
+fasterxml = "2.18.0"
+fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
 google-api-gax = "2.33.0"
@@ -106,12 +108,12 @@ google-j2objc = "3.0.0"
 google-protobuf = "3.25.3"
 google-re2j = "1.7"
 # @keep Gradle version to run the build
-gradle = "8.4"
+gradle = "8.10"
 grpc = "1.65.1"
 # @keep Gulp version used in ref-guide
 gulp-cli = "2.3.0"
-hamcrest = "2.2"
-hk2 = "3.0.5"
+hamcrest = "3.0"
+hk2 = "3.1.1"
 hsqldb = "2.7.2"
 ibm-icu = "74.2"
 immutables-valueannotations = "2.10.1"
@@ -124,7 +126,7 @@ javacc = "7.0.12"
 jaxb = "2.3.8"
 jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
-jersey = "3.1.5"
+jersey = "3.1.9"
 # TODO Sync with jersey versions
 jersey-containers = "2.39.1"
 # @keep for version alignment
@@ -136,7 +138,8 @@ littlerobots-versioncatalogupdate = "0.8.4"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
 # @keep This is the minimum required Java version.
-minJava = "11"
+minJava = "21"
+minSolrJJava = "17"
 mockito = "5.12.0"
 morethan-jmhreport = "0.9.0"
 navsecurity = "0.5.10"
@@ -160,7 +163,7 @@ quicktheories = "0.26"
 semver4j = "5.3.0"
 slf4j = "2.0.13"
 spatial4j = "0.8"
-spotbugs = "4.8.0"
+spotbugs = "4.8.6"
 squareup-okhttp3-mockwebserver = "4.11.0"
 squareup-okhttp3-okhttp = "4.12.0"
 stephenc-jcip = "1.0-1"
@@ -215,6 +218,7 @@ apache-commons-text = { module = "org.apache.commons:commons-text", version.ref 
 apache-curator-client = { module = "org.apache.curator:curator-client", version.ref = "apache-curator" }
 apache-curator-framework = { module = "org.apache.curator:curator-framework", version.ref = "apache-curator" }
 apache-curator-recipes = { module = "org.apache.curator:curator-recipes", version.ref = "apache-curator" }
+apache-curator-test = { module = "org.apache.curator:curator-test", version.ref = "apache-curator" }
 apache-hadoop-annotations = { module = "org.apache.hadoop:hadoop-annotations", version.ref = "apache-hadoop" }
 apache-hadoop-auth = { module = "org.apache.hadoop:hadoop-auth", version.ref = "apache-hadoop" }
 apache-hadoop-client-api = { module = "org.apache.hadoop:hadoop-client-api", version.ref = "apache-hadoop" }
@@ -272,6 +276,8 @@ apache-tika-parsers = { module = "org.apache.tika:tika-parsers", version.ref = "
 apache-tomcat-annotationsapi = { module = "org.apache.tomcat:annotations-api", version.ref = "apache-tomcat" }
 apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", version.ref = "apache-zookeeper" }
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
+# @keep transitive dependency for version alignment
+apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
 aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }

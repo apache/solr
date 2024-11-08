@@ -43,6 +43,18 @@ dependencies {
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   }
+  implementation(libs.apache.curator.client) {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  }
+  implementation(libs.apache.curator.framework) {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  }
+  // Necessary because ChaosMonkey uses KillSession from curator-test
+  implementation(libs.apache.curator.test) {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+    exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'io.dropwizard.metrics', module: 'metrics-core'
+  }
 
   implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
   implementation(libs.apache.zookeeper.jute, zkExcludes)

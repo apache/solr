@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
         + "org.apache.solr.common.cloud=INFO;"
         + "org.apache.solr.cloud.api.collections=INFO;"
         + "org.apache.solr.cloud.overseer=INFO")
+@SolrCloudTestCase.NoPrs
 public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

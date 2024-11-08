@@ -50,14 +50,15 @@ dependencies {
   implementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  implementation(libs.apache.zookeeper.jute) {
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  }
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly libs.xerial.snappy.java
-  implementation libs.apache.curator.client
-  implementation libs.apache.curator.framework
-  runtimeOnly libs.apache.curator.recipes
+
+    implementation(libs.apache.curator.framework, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  runtimeOnly(libs.apache.curator.recipes, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
 
   // Hadoop auth framework
   implementation libs.apache.hadoop.annotations
@@ -99,12 +100,20 @@ dependencies {
     exclude group:'org.apache.kerby', module:'kerby-xdr'
     exclude group:'org.apache.kerby', module:'token-provider'
     exclude group:'org.slf4j', module:'slf4j-reload4j'
+    exclude group:'org.jline', module:'jline'
+    exclude group:'com.jcraft', module:'jsch'
   })
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
+  testImplementation(libs.apache.curator.client, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
+  testImplementation(libs.apache.zookeeper.jute) {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
   // required for instantiating a Zookeeper server in tests or embedded
   testRuntimeOnly(libs.xerial.snappy.java)
 }

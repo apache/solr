@@ -69,7 +69,6 @@ dependencies {
   libExt libs.apache.log4j1.api
   libExt libs.apache.log4j.api
   libExt libs.apache.log4j.core
-  libExt libs.apache.log4j.jul
   libExt libs.apache.log4j.layout.templatejson
   libExt libs.apache.log4j.slf4j2impl
   libExt libs.apache.log4j.web

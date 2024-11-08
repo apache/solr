@@ -120,21 +120,21 @@ if [[ -n "$NUM_THREADS" ]]; then
 fi
 
 if [[ -n "$ZK_HOST" ]]; then
-  EXPORTER_ARGS+=(-z "$ZK_HOST")
+  EXPORTER_ARGS+=(--zk-host "$ZK_HOST")
 elif [[ -n "$SOLR_URL" ]]; then
-  EXPORTER_ARGS+=(-b "$SOLR_URL")
+  EXPORTER_ARGS+=(--solr-url "$SOLR_URL")
 fi
 
 if [[ -n "$CLUSTER_ID" ]]; then
-  EXPORTER_ARGS+=(-i "$CLUSTER_ID")
+  EXPORTER_ARGS+=(--cluster-id "$CLUSTER_ID")
 fi
 
 if [[ -n "$CREDENTIALS" ]]; then
-  EXPORTER_ARGS+=(-u "$CREDENTIALS")
+  EXPORTER_ARGS+=(--credentials "$CREDENTIALS")
 fi
 
 if [[ -n "$SSL_ENABLED" ]]; then
-  EXPORTER_ARGS+=(-ssl "$SSL_ENABLED")
+  EXPORTER_ARGS+=(--ssl-enabled "$SSL_ENABLED")
 fi
 
 exec "$JAVACMD" \

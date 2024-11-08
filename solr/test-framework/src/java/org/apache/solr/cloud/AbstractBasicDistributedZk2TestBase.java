@@ -149,6 +149,14 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
       // expire a session...
       CloudJettyRunner cloudJetty = shardToJetty.get(SHARD1).get(0);
       chaosMonkey.expireSession(cloudJetty.jetty);
+      // Wait until the jetty is reconnected, otherwise the following index command could fail
+      cloudJetty
+          .jetty
+          .getCoreContainer()
+          .getZkController()
+          .getZkClient()
+          .getCuratorFramework()
+          .blockUntilConnected(50, TimeUnit.MILLISECONDS);
 
       indexr("id", docId + 1, t1, "slip this doc in");
 

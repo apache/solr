@@ -176,10 +176,16 @@ allprojects {
                 handler.add(conf.name, libs.apache.httpcomponents.httpmime, {
                     because 'version alignment for consistency across project'
                 })
+                handler.add(conf.name, libs.apache.kerby.core, {
+                    because 'version alignment for consistency across project'
+                })
                 handler.add(conf.name, libs.apache.zookeeper.zookeeper, {
                     because 'version alignment for consistency across project'
                 })
                 handler.add(conf.name, libs.apache.zookeeper.jute, {
+                    because 'version alignment for consistency across project'
+                })
+                handler.add(conf.name, libs.hamcrest.hamcrest, {
                     because 'version alignment for consistency across project'
                 })
 
@@ -291,6 +297,11 @@ allprojects {
                     because "transitive version alignment for consistency across project" +
                             "\n- ${getFullName(libs.google.guava)} uses 3.0.0" +
                             "\n- ${getFullName(libs.google.protobuf.javautils)} uses 2.8"
+                })
+                handler.add(conf.name, libs.apiguardian.api, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- ${getFullName(libs.apache.calcite.core)} uses 1.1.2" +
+                            "\n- ${getFullName(libs.junit.junit)} (api) uses 1.1.0"
                 })
             }
         }
