@@ -77,7 +77,6 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -167,24 +166,12 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   List<String> listCollectionsForConfig(String configSet) {
-    final List<String> collections = new ArrayList<>();
-    Map<String, ClusterState.CollectionRef> states =
-        zkStateReader().getClusterState().getCollectionStates();
-    for (Map.Entry<String, ClusterState.CollectionRef> e : states.entrySet()) {
-      final String coll = e.getKey();
-      if (coll.startsWith(DESIGNER_PREFIX)) {
-        continue; // ignore temp
-      }
-
-      try {
-        if (configSet.equals(e.getValue().get().getConfigName()) && e.getValue().get() != null) {
-          collections.add(coll);
-        }
-      } catch (Exception exc) {
-        log.warn("Failed to get config name for {}", coll, exc);
-      }
-    }
-    return collections;
+    return zkStateReader()
+        .getClusterState()
+        .collectionStream()
+        .filter(c -> configSet.equals(c.getConfigName()))
+        .map(DocCollection::getName)
+        .collect(Collectors.toList());
   }
 
   @SuppressWarnings("unchecked")
