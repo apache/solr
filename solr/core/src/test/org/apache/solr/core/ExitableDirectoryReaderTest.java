@@ -70,9 +70,23 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     // this time we should get a query cache hit and hopefully no exception?  this may change in the
     // future if time checks are put into other places.
+
     // 2024-4-15: it did change..., and now this fails with 1 or 2 ms and passes with 3ms... I see
     // no way this won't be terribly brittle. Maybe TestInjection of some sort to bring this back?
+
     // assertJQ(req("q", q, "timeAllowed", "2", "sleep", sleep), assertionString);
+
+    // The idea that the request won't time out due to caching is a flawed test methodology,
+    // It relies on the test running quickly and not stalling. The above test should possibly
+    // be doing something along the lines of this (but we lack api for it)
+    //
+    //    SolrCores solrCores = ExitableDirectoryReaderTest.h.getCoreContainer().solrCores;
+    //    List<SolrCore> cores = solrCores.getCores();
+    //    for (SolrCore core : cores) {
+    //      if (<<< find the right core >>> ) {
+    //        ((SolrCache)core.getSearcher().get().<<<check cache for a key like name:a* >>>
+    //      }
+    //    }
 
     // now do the same for the filter cache
     // 2024-4-15: this still passes probably because *:* is so fast, but it still worries me
