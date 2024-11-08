@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -73,68 +74,80 @@ public class StreamTool extends ToolBase {
     return "stream";
   }
 
-  @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("e")
-            .longOpt("execution")
-            .hasArg()
-            .argName("CONTEXT")
-            .required(false)
-            .desc(
-                "Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'")
-            .build(),
-        Option.builder("c")
+  private static final Option EXECUTION_OPTION =
+          Option.builder("e")
+                  .longOpt("execution")
+                  .hasArg()
+                  .argName("CONTEXT")
+                  .required(false)
+                  .desc(
+                          "Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'")
+                  .build();
+
+  private static final Option COLLECTION_OPTION = Option.builder("c")
             .longOpt("name")
             .argName("NAME")
             .hasArg()
             .desc(
                 "Name of the collection to execute on if workers are 'solr'.  Required for 'solr' worker.")
-            .build(),
-        Option.builder("f")
+            .build();
+
+  private static final Option FIELDS_OPTION = Option.builder("f")
             .longOpt("fields")
             .argName("FIELDS")
             .hasArg()
             .required(false)
             .desc(
                 "The fields in the tuples to output. (defaults to fields in the first tuple of result set).")
-            .build(),
-        Option.builder()
-            .longOpt("header")
-            .required(false)
-            .desc("Whether or not to include a header line. (default=false)")
-            .build(),
-        Option.builder()
-            .longOpt("delimiter")
+            .build();
+
+  private static final Option HEADER_OPTION =
+          Option.builder()
+                  .longOpt("header")
+                  .required(false)
+                  .desc("Whether or not to include a header line. (default=false)")
+                  .build();
+  private static final Option DELIMITER_OPTION = Option.builder()
+           .longOpt("delimiter")
             .argName("CHARACTER")
             .hasArg()
             .required(false)
             .desc("The output delimiter. (default=tab).")
-            .build(),
-        Option.builder()
-            .longOpt("array-delimiter")
+            .build();
+  private static final Option ARRAY_DELIMITER_OPTION = Option.builder()
+                .longOpt("array-delimiter")
             .argName("CHARACTER")
             .hasArg()
             .required(false)
             .desc("The delimiter multi-valued fields. (default=|)")
-            .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
+            .build();
+
+  @Override
+  public Options getOptions() {
+    Options opts =
+            super.getOptions()
+                    .addOption(EXECUTION_OPTION)
+                    .addOption(COLLECTION_OPTION)
+                    .addOption(FIELDS_OPTION)
+                    .addOption(HEADER_OPTION)
+                    .addOption(DELIMITER_OPTION)
+                    .addOption(ARRAY_DELIMITER_OPTION)
+                    .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+                    .addOptionGroup(getConnectionOptions());
+
+    return opts;
   }
+
 
   @Override
   @SuppressWarnings({"rawtypes"})
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     String expressionArgument = cli.getArgs()[0];
-    String execution = cli.getOptionValue("execution", "solr");
-    String arrayDelimiter = cli.getOptionValue("array-delimiter", "|");
-    String delimiter = cli.getOptionValue("delimiter", "   ");
-    boolean includeHeaders = cli.hasOption("header");
+    String execution = cli.getOptionValue(EXECUTION_OPTION,"solr");
+    String arrayDelimiter = cli.getOptionValue(ARRAY_DELIMITER_OPTION,"|");
+    String delimiter = cli.getOptionValue(DELIMITER_OPTION, "   ");
+    boolean includeHeaders = cli.hasOption(HEADER_OPTION);
     String[] outputHeaders = getOutputFields(cli);
 
     LineNumberReader bufferedReader = null;
@@ -148,7 +161,7 @@ public class StreamTool extends ToolBase {
 
       bufferedReader = new LineNumberReader(inputStream);
       expr = StreamTool.readExpression(bufferedReader, cli.getArgs());
-      echoIfVerbose("Running Expression: " + expr, cli);
+      echoIfVerbose("Running Expression: " + expr);
     } finally {
       if (bufferedReader != null) {
         bufferedReader.close();
@@ -224,15 +237,15 @@ public class StreamTool extends ToolBase {
       solrClientCache.close();
     }
 
-    echoIfVerbose("StreamTool -- Done.", cli);
+    echoIfVerbose("StreamTool -- Done.");
   }
 
   public PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
     String zkHost = SolrCLI.getZkHost(cli);
 
-    echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+    echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     solrClientCache.getCloudSolrClient(zkHost);
-    solrClientCache.setBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+    solrClientCache.setBasicAuthCredentials(cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     TupleStream stream;
     PushBackStream pushBackStream;
@@ -283,7 +296,7 @@ public class StreamTool extends ToolBase {
     final SolrStream solrStream =
         new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr));
 
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     if (credentials != null) {
       String username = credentials.split(":")[0];
       String password = credentials.split(":")[1];
