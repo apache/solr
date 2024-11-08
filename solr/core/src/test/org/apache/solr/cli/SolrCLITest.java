@@ -45,7 +45,4 @@ public class SolrCLITest extends SolrTestCase {
     assertEquals(
         "106751991167 days, 7 hours, 12 minutes, 56 seconds", SolrCLI.uptime(Long.MAX_VALUE));
   }
-
-  @Test
-  public void testGetCredentials() {}
 }

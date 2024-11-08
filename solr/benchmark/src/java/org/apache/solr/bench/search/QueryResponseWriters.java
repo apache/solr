@@ -88,7 +88,6 @@ public class QueryResponseWriters {
       q = new QueryRequest(params);
       q.setResponseParser(new NoOpResponseParser(wt));
       String base = miniClusterState.nodes.get(0);
-      q.setBasePath(base);
     }
   }
 

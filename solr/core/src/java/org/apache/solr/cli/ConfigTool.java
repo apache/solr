@@ -19,11 +19,11 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
@@ -35,6 +35,42 @@ import org.noggit.JSONWriter;
  * <p>Sends a POST to the Config API to perform a specified action.
  */
 public class ConfigTool extends ToolBase {
+
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the collection.")
+          .build();
+
+  private static final Option ACTION_OPTION =
+      Option.builder("a")
+          .longOpt("action")
+          .hasArg()
+          .argName("ACTION")
+          .desc(
+              "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
+          .build();
+
+  private static final Option PROPERTY_OPTION =
+      Option.builder()
+          .longOpt("property")
+          .hasArg()
+          .argName("PROP")
+          .required()
+          .desc(
+              "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
+          .build();
+
+  private static final Option VALUE_OPTION =
+      Option.builder("v")
+          .longOpt("value")
+          .hasArg()
+          .argName("VALUE")
+          .desc("Set the property to this value; accepts JSON objects and strings.")
+          .build();
 
   public ConfigTool() {
     this(CLIO.getOutStream());
@@ -50,50 +86,23 @@ public class ConfigTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the collection.")
-            .build(),
-        Option.builder("a")
-            .longOpt("action")
-            .argName("ACTION")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
-            .build(),
-        Option.builder()
-            .longOpt("property")
-            .argName("PROP")
-            .hasArg()
-            .required(true)
-            .desc(
-                "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
-            .build(),
-        Option.builder()
-            .longOpt("value")
-            .argName("VALUE")
-            .hasArg()
-            .required(false)
-            .desc("Set the property to this value; accepts JSON objects and strings.")
-            .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(ACTION_OPTION)
+        .addOption(PROPERTY_OPTION)
+        .addOption(VALUE_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    String action = cli.getOptionValue("action", "set-property");
-    String collection = cli.getOptionValue("name");
-    String property = cli.getOptionValue("property");
-    String value = cli.getOptionValue("value");
+    String action = cli.getOptionValue(ACTION_OPTION, "set-property");
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
+    String property = cli.getOptionValue(PROPERTY_OPTION);
+    String value = cli.getOptionValue(VALUE_OPTION);
 
     // value is required unless the property is one of the unset- type.
     if (!action.contains("unset-") && value == null) {
@@ -118,8 +127,7 @@ public class ConfigTool extends ToolBase {
     echoIfVerbose(jsonBody);
 
     try (SolrClient solrClient =
-        SolrCLI.getSolrClient(
-            solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+        SolrCLI.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
       if (statusCode == 0) {

@@ -19,10 +19,10 @@ package org.apache.solr.cli;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -35,6 +35,23 @@ import org.apache.solr.common.cloud.SolrZkClient;
  */
 public class ClusterTool extends ToolBase {
   // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
+
+  private static final Option PROPERTY_OPTION =
+      Option.builder()
+          .longOpt("property")
+          .hasArg()
+          .argName("PROPERTY")
+          .required()
+          .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
+          .build();
+
+  private static final Option VALUE_OPTION =
+      Option.builder()
+          .longOpt("value")
+          .hasArg()
+          .argName("VALUE")
+          .desc("Set the property to this value.")
+          .build();
 
   public ClusterTool() {
     this(CLIO.getOutStream());
@@ -50,30 +67,18 @@ public class ClusterTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder()
-            .longOpt("property")
-            .hasArg()
-            .argName("PROPERTY")
-            .required(true)
-            .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
-            .build(),
-        Option.builder()
-            .longOpt("value")
-            .hasArg()
-            .argName("VALUE")
-            .required(false)
-            .desc("Set the property to this value.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(PROPERTY_OPTION)
+        .addOption(VALUE_OPTION)
+        .addOption(CommonCLIOptions.ZK_HOST_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
-    String propertyName = cli.getOptionValue("property");
-    String propertyValue = cli.getOptionValue("value");
+    String propertyName = cli.getOptionValue(PROPERTY_OPTION);
+    String propertyValue = cli.getOptionValue(VALUE_OPTION);
     String zkHost = SolrCLI.getZkHost(cli);
 
     if (!ZkController.checkChrootPath(zkHost, true)) {
