@@ -118,10 +118,7 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
     miniBenchState.forceMerge(collection, 15);
 
     ModifiableSolrParams params = MiniClusterState.params("q", "*:*");
-
     QueryRequest queryRequest = new QueryRequest(params);
-    queryRequest.setBasePath(miniBenchState.nodes.get(0));
-
     QueryResponse result = queryRequest.process(miniBenchState.client, collection);
 
     BaseBenchState.log("match all query result=" + result);

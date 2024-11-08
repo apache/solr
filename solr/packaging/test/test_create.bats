@@ -29,13 +29,18 @@ teardown() {
 }
 
 @test "create for non cloud mode" {
-  run solr start
+  run solr start --user-managed
   run solr create -c COLL_NAME
   assert_output --partial "Created new core 'COLL_NAME'"
 }
 
 @test "create for cloud mode" {
-  run solr start -c
+  run solr start
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
+}
+
+@test "multiple connection options are prevented" {
+  run solr create -c COLL_NAME2 --solr-url http://localhost:${SOLR_PORT} -z localhost:${ZK_PORT}
+  assert_output --partial "The option 'z' was specified but an option from this group has already been selected: 's'"
 }

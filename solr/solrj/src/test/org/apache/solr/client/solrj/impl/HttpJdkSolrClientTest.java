@@ -39,6 +39,7 @@ import javax.net.ssl.X509ExtendedTrustManager;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -133,7 +134,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(url).build()) {
       try {
         client.deleteById("id");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
@@ -150,7 +151,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         builder(url).withResponseParser(new XMLResponseParser()).build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
@@ -194,7 +195,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync();
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    ResponseParser rp = new XMLResponseParser();
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    super.testQueryAsync(b);
   }
 
   @Test
@@ -227,7 +232,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
             builder(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0).build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+      } catch (SolrClient.RemoteSolrException ignored) {
       }
     }
   }
@@ -295,15 +300,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testSolrExceptionCodeNotFromSolr(client);
-    } finally {
-      DebugServlet.clear();
-    }
-  }
-
-  @Test
-  public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
-    try (HttpJdkSolrClient client = builder(null).build()) {
-      super.testSolrExceptionWithNullBaseurl(client);
     } finally {
       DebugServlet.clear();
     }

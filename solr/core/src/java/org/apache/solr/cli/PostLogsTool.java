@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,6 +48,24 @@ import org.apache.solr.handler.component.ShardRequest;
 
 /** A command line tool for indexing Solr logs in the out-of-the-box log format. */
 public class PostLogsTool extends ToolBase {
+
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .required()
+          .desc("Name of the collection.")
+          .build();
+
+  private static final Option ROOT_DIR_OPTION =
+      Option.builder()
+          .longOpt("rootdir")
+          .hasArg()
+          .argName("DIRECTORY")
+          .required()
+          .desc("All files found at or below the root directory will be indexed.")
+          .build();
 
   public PostLogsTool() {
     this(CLIO.getOutStream());
@@ -62,30 +81,26 @@ public class PostLogsTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("url")
-            .longOpt("solr-collection-url")
-            .hasArg()
-            .argName("ADDRESS")
-            .required(true)
-            .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
-            .build(),
-        Option.builder("rootdir")
-            .longOpt("rootdir")
-            .hasArg()
-            .argName("DIRECTORY")
-            .required(true)
-            .desc("All files found at or below the root directory will be indexed.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(ROOT_DIR_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
-    String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue("credentials");
+    String url = null;
+    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+
+    } else {
+      // Could be required arg, but maybe we want to support --zk-host option too?
+      throw new IllegalArgumentException("Must specify --solr-url.");
+    }
+    String rootDir = cli.getOptionValue(ROOT_DIR_OPTION);
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     runCommand(url, rootDir, credentials);
   }
 

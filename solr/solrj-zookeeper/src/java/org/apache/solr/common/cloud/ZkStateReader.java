@@ -573,13 +573,18 @@ public class ZkStateReader implements SolrCloseable {
       }
       collectionPropertiesZkStateReader.refreshCollectionProperties();
     } catch (KeeperException.NoNodeException nne) {
+      String noNodePath = nne.getPath();
+      if (noNodePath.length() > zkClient.getCuratorFramework().getNamespace().length()) {
+        noNodePath =
+            noNodePath.substring(zkClient.getCuratorFramework().getNamespace().length() + 1);
+      }
       throw new SolrException(
           ErrorCode.SERVICE_UNAVAILABLE,
           "Cannot connect to cluster at "
               + zkClient.getZkServerAddress()
               + ": cluster not found/not ready."
               + " Expected node '"
-              + nne.getPath()
+              + noNodePath
               + "' does not exist.");
     }
   }
@@ -620,7 +625,7 @@ public class ZkStateReader implements SolrCloseable {
           collectionWatches.watchedCollections().size(),
           collectionWatches.activeCollectionCount(),
           lazyCollectionStates.keySet().size(),
-          clusterState.getCollectionStates().size());
+          clusterState.size());
     }
 
     if (log.isTraceEnabled()) {
@@ -629,7 +634,7 @@ public class ZkStateReader implements SolrCloseable {
           collectionWatches.watchedCollections(),
           collectionWatches.activeCollections(),
           lazyCollectionStates.keySet(),
-          clusterState.getCollectionStates());
+          clusterState.collectionStream().toList());
     }
 
     notifyCloudCollectionsListeners();
@@ -790,7 +795,7 @@ public class ZkStateReader implements SolrCloseable {
       try {
         List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
         newLiveNodes = new TreeSet<>(nodeList);
-      } catch (KeeperException.NoNodeException e) {
+      } catch (KeeperException.NoNodeException | AlreadyClosedException e) {
         newLiveNodes = emptySortedSet();
       }
       lastFetchedLiveNodes.set(newLiveNodes);
@@ -1427,8 +1432,7 @@ public class ZkStateReader implements SolrCloseable {
                 zkClient,
                 Instant.ofEpochMilli(stat.getCtime()));
 
-        ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
-        return collectionRef == null ? null : collectionRef.get();
+        return state.getCollectionOrNull(coll);
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a state.json is created later.
@@ -1865,7 +1869,7 @@ public class ZkStateReader implements SolrCloseable {
       return;
     }
     try {
-      notifications.submit(new Notification(collection, collectionState));
+      notifications.execute(new Notification(collection, collectionState));
     } catch (RejectedExecutionException e) {
       if (closed == false) {
         log.error("Couldn't run collection notifications for {}", collection, e);
@@ -2032,7 +2036,8 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       }
       // Call sync() first to ensure the subsequent read (getData) is up-to-date.
-      zkClient.getZooKeeper().sync(ALIASES, null, null);
+      zkClient.runWithCorrectThrows(
+          "syncing aliases", () -> zkClient.getCuratorFramework().sync().forPath(ALIASES));
       return setIfNewer(zkClient.getNode(ALIASES, null, true));
     }
 

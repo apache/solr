@@ -51,7 +51,7 @@ teardown() {
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_HOST=localhost
 
-  solr start -c
+  solr start
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
   run solr create -c test --shards 2
@@ -89,7 +89,7 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=false
   export SOLR_HOST=127.0.0.1
 
-  solr start -c
+  solr start
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
   run solr create -c test --shards 2
@@ -119,7 +119,7 @@ teardown() {
   # Restart the server enabling the SNI hostcheck
   export SOLR_SSL_CHECK_PEER_NAME=false
   export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sniHostCheck=true"
-  solr restart -c
+  solr restart
   # This should fail the SNI Hostname check
   run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
   assert_output --partial 'Invalid SNI'
@@ -151,7 +151,7 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=true
   export SOLR_HOST=localhost
 
-  solr start -c
+  solr start
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
   solr auth enable --type basicAuth --credentials name:password
 
@@ -208,7 +208,7 @@ teardown() {
   export SOLR_HOST=localhost
   export SOLR_SECURITY_MANAGER_ENABLED=true
 
-  run solr start -c
+  run solr start
 
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
@@ -322,8 +322,8 @@ teardown() {
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
   export SOLR_HOST=localhost
 
-  solr start -c
-  solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
+  solr start
+  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
 
   # Test Client connections, which do not need the server keystore/truststore
   (
@@ -357,7 +357,7 @@ teardown() {
   # Turn on client hostname verification, and start a new Solr node since the property is a server setting.
   # Test that it fails because the client cert does not use "localhost"
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
-  solr start -c -z localhost:${ZK_PORT} -p ${SOLR3_PORT}
+  solr start -z localhost:${ZK_PORT} -p ${SOLR3_PORT}
 
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
@@ -461,8 +461,8 @@ teardown() {
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
   export SOLR_HOST=localhost
 
-  solr start -c
-  solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
+  solr start
+  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
 
   export SOLR_SSL_KEY_STORE=
   export SOLR_SSL_KEY_STORE_PASSWORD=
@@ -526,15 +526,14 @@ teardown() {
   # server1 will run on $SOLR_PORT and will use server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
-  solr start -c --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
   # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
   
-  # leaving -a instead of --jvm-opts for back compat testing.
-  solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT} -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
   # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
@@ -606,7 +605,7 @@ teardown() {
   run solr api --solr-url "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=query4"
   assert_output --partial '"numFound":0'
 
-  run solr post --solr-update-url https://localhost:${SOLR_PORT}/solr/test/update ${SOLR_TIP}/example/exampledocs/books.csv
+  run solr post --solr-url https://localhost:${SOLR_PORT} -c test ${SOLR_TIP}/example/exampledocs/books.csv
 
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":10'

@@ -1,3 +1,5 @@
+import java.util.stream.Collectors
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,8 +25,6 @@
 // WARNING: The tasks in this file share internal state between tasks without using files.
 // Because of this all tasks here must always execute together, so they cannot define task outputs.
 // TODO: Rewrite the internal state to use state files containing the ext.jarInfos and its referencedFiles
-
-import org.apache.commons.codec.digest.DigestUtils
 
 // This should be false only for debugging.
 def failOnError = true
@@ -76,14 +76,14 @@ subprojects {
   // Configure jarValidation configuration for all projects. Any dependency
   // declared on this configuration (or any configuration it extends from) will
   // be verified.
-  configurations {
+  project.configurations {
     jarValidation
   }
 
   // For Java projects, add all dependencies from the following configurations
   // to jar validation
   plugins.withType(JavaPlugin) {
-    configurations {
+    project.configurations {
       jarValidation {
         extendsFrom runtimeClasspath
         extendsFrom compileClasspath
@@ -109,16 +109,24 @@ subprojects {
       }
 
       def excludeRules = configurations.jarValidation.excludeRules
+      List<Map<String, String>> excludeRuleMaps;
+      if (excludeRules && excludeRules.size() > 0) {
+        excludeRuleMaps = excludeRules.stream().map {rule ->
+          if (rule.module != null) {
+            Map.of("group", rule.group, "module", rule.module)
+          } else {
+            Map.of("group", rule.group)
+          }
+        }.collect(Collectors.toList())
+      }
 
       ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
       configurations.jarValidation.extendsFrom.each { conf ->
-        if (excludeRules) {
+        if (excludeRules && excludeRules.size() > 0) {
           conf = conf.copyRecursive()
           conf.canBeResolved = true
           conf.canBeConsumed = true
-          def newConfExcludeRules = new HashSet<>(conf.excludeRules)
-          newConfExcludeRules.addAll(excludeRules)
-          conf.excludeRules = newConfExcludeRules
+          excludeRuleMaps.forEach {conf.exclude(it)}
         }
         if (conf.canBeResolved) {
           queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
@@ -152,7 +160,7 @@ subprojects {
                 jarName        : file.toPath().getFileName().toString(),
                 path           : file,
                 module         : resolvedArtifact.moduleVersion,
-                checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
+                checksum       : provider { buildinfra.sha1Digest().digestAsHex(file).trim() },
                 // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
                 // so that we can determine unused dangling files later on.
                 referencedFiles: []
