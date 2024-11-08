@@ -12,6 +12,8 @@ New Features
 
 * SOLR-17467: Solr CLI bin/solr start defaults to starting Solr in Cloud mode, use --user-managed switch for User Managed (aka Standalone) mode.  (Eric Pugh)
 
+* SOLR-14673: Solr CLI now has bin/solr stream tool that executates streaming expressions via command line, either locally or on solr cluster. (Eric Pugh)
+
 Improvements
 ---------------------
 
