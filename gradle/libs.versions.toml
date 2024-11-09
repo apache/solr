@@ -54,6 +54,12 @@ aqute-bnd = "6.4.1"
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
+# @keep bats-assert (node) version used in packaging
+bats-assert = "2.0.0"
+# @keep bats-core (node) version used in packaging
+bats-core = "1.8.2"
+# @keep bats-file (node) version used in packaging
+bats-file = "0.3.0"
 bc-jose4j = "0.9.6"
 benmanes-caffeine = "3.1.8"
 benmanes-versions = "0.51.0"
@@ -100,10 +106,10 @@ google-failureaccess = "1.0.2"
 # @keep for version alignment
 google-gson = "2.11.0"
 google-guava = "33.1.0-jre"
-# @keep This is GJF version for spotless/ tidy.
-google-javaformat = "1.18.1"
 # @keep for version alignment
 google-j2objc = "3.0.0"
+# @keep This is GJF version for spotless/ tidy.
+google-javaformat = "1.18.1"
 # @keep for version alignment
 google-protobuf = "3.25.3"
 google-re2j = "1.7"
@@ -139,6 +145,7 @@ lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
 # @keep This is the minimum required Java version.
 minJava = "21"
+# @keep This is the minimum required Java version for SolrJ.
 minSolrJJava = "17"
 mockito = "5.12.0"
 morethan-jmhreport = "0.9.0"
@@ -147,6 +154,8 @@ netty = "4.1.114.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
 nimbusds-josejwt = "9.30.2"
+# @keep Node JS version used in node.gradle (LTS)
+nodeJs = "16.20.2"
 nodegradle-node = "7.0.1"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"

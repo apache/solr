@@ -24,7 +24,6 @@ repositories {
   mavenCentral()
 }
 
-version = "1.0.0-SNAPSHOT"
 group = "org.apache.solr.tools"
 description = 'Doclet-based javadoc validation'
 
