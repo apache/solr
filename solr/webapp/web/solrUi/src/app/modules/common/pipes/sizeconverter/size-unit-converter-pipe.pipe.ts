@@ -41,7 +41,7 @@ export class SizeUnitConverterPipe implements PipeTransform {
 
     ;
     let power = Math.round(Math.log(sizeValue) / Math.log(this.base));
-    let unit = isLong ? this.unitNames[power].short : this.unitNames[power].long;
+    let unit = isLong ? this.unitNames[power].long : this.unitNames[power].short;
     let size = Math.round((sizeValue / Math.pow(this.base, power) ) * this.decimalBase) / this.decimalBase;
 
     return `${size} ${unit}`;
