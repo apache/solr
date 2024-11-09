@@ -413,9 +413,7 @@ public class AuthTool extends ToolBase {
             includeFile.toPath(), basicAuthConfFile.getAbsolutePath(), null);
         final String successMessage =
             String.format(
-                Locale.ROOT,
-                "Successfully enabled basic auth with username [%s].",
-                username);
+                Locale.ROOT, "Successfully enabled basic auth with username [%s].", username);
         echo(successMessage);
         return;
       case "disable":
