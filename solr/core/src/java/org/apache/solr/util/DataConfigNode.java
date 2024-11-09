@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.solr.common.ConfigNode;
@@ -140,6 +141,11 @@ public class DataConfigNode implements ConfigNode {
     @Override
     public Set<String> keySet() {
       return delegate.keySet();
+    }
+
+    @Override
+    public void forEach(BiConsumer<? super String, ? super String> action) {
+      delegate.forEach((k, v) -> action.accept(k, substituteVal(v)));
     }
 
     @Override
