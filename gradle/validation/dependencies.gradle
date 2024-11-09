@@ -280,17 +280,17 @@ allprojects {
                 })
                 handler.add(conf.name, libs.netty.tcnative.boringssl, {
                     because "transitive version alignment for consistency across project" +
-                            "\n- ${getFullName(libs.netty.bom)} uses 2.0.65.Final" +
+                            "\n- ${getFullName(libs.netty.bom)} uses 2.0.66.Final" +
                             "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 2.0.61.Final"
                 })
                 handler.add(conf.name, libs.netty.transport.classes.epoll, {
                     because "transitive version alignment for consistency across project" +
-                            "\n- ${getFullName(libs.netty.bom)} uses 4.1.112.Final" +
+                            "\n- ${getFullName(libs.netty.bom)} uses 4.1.114.Final" +
                             "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 4.1.105.Final"
                 })
                 handler.add(conf.name, libs.netty.transport.native.epoll, {
                     because "transitive version alignment for consistency across project" +
-                            "\n- ${getFullName(libs.netty.bom)} uses 4.1.112.Final" +
+                            "\n- ${getFullName(libs.netty.bom)} uses 4.1.114.Final" +
                             "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 4.1.105.Final"
                 })
                 handler.add(conf.name, libs.google.j2objc.annotations, {
