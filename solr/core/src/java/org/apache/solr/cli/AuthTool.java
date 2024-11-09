@@ -414,9 +414,8 @@ public class AuthTool extends ToolBase {
         final String successMessage =
             String.format(
                 Locale.ROOT,
-                "Successfully enabled basic auth with username [%s] and password [%s].",
-                username,
-                password);
+                "Successfully enabled basic auth with username [%s].",
+                username);
         echo(successMessage);
         return;
       case "disable":
