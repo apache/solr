@@ -24,6 +24,7 @@ dependencies {
   implementation project(':solr:solrj')
 
   implementation platform('io.opentelemetry:opentelemetry-bom')
+  implementation platform('io.netty:netty-bom')
 
   implementation 'io.opentracing:opentracing-api'
   implementation 'io.opentelemetry:opentelemetry-api'
