@@ -44,6 +44,7 @@ teardown() {
 
   solr delete -c "COLL_NAME"
   refute collection_exists "COLL_NAME"
+  assert config_exists "COLL_NAME"
 }
 
 @test "can delete collections with solr-url" {
@@ -52,13 +53,14 @@ teardown() {
 
   solr delete -c "COLL_NAME" --solr-url http://localhost:${SOLR_PORT}
   refute collection_exists "COLL_NAME"
+  assert config_exists "COLL_NAME"
 }
 
 @test "collection delete also deletes zk config" {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME"
+  solr delete -c "COLL_NAME" --delete-config
   refute config_exists "COLL_NAME"
 }
 
@@ -66,7 +68,7 @@ teardown() {
   solr create -c "COLL_NAME" -n "NONDEFAULT_CONFIG_NAME"
   assert config_exists "NONDEFAULT_CONFIG_NAME"
 
-  solr delete -c "COLL_NAME"
+  solr delete -c "COLL_NAME" --delete-config
   refute config_exists "NONDEFAULT_CONFIG_NAME"
 }
 
@@ -74,6 +76,6 @@ teardown() {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME" --delete-config false
+  solr delete -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 }

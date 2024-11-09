@@ -250,7 +250,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
     T res = createResponse(client);
-    res.setResponse(client.request(this, collection));
+    var namedList = client.request(this, collection);
+    res.setResponse(namedList);
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;

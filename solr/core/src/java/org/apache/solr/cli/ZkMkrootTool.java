@@ -20,9 +20,9 @@ import static org.apache.solr.packagemanager.PackageUtils.format;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,13 @@ import org.slf4j.LoggerFactory;
 /** Supports zk mkroot command in the bin/solr script. */
 public class ZkMkrootTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Option FAIL_ON_EXISTS_OPTION =
+      Option.builder()
+          .longOpt("fail-on-exists")
+          .hasArg()
+          .desc("Raise an error if the root exists.  Defaults to false.")
+          .build();
 
   public ZkMkrootTool() {
     this(CLIO.getOutStream());
@@ -40,20 +47,11 @@ public class ZkMkrootTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder()
-            .longOpt("fail-on-exists")
-            .hasArg()
-            .required(false)
-            .desc("Raise an error if the root exists.  Defaults to false.")
-            .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(FAIL_ON_EXISTS_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -78,10 +76,9 @@ public class ZkMkrootTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
     String znode = cli.getArgs()[0];
-    boolean failOnExists = cli.hasOption("fail-on-exists");
+    boolean failOnExists = cli.hasOption(FAIL_ON_EXISTS_OPTION);
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");

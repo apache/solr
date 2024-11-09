@@ -23,6 +23,13 @@ Improvements
 
 * SOLR-17077: When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. (Pierre Salagnac)
 
+* SOLR-16116: Apache Curator is now used to manage all Solr Zookeeper interactions. This should provide more stability in the Solr-Zookeeper interactions.
+  The solrj-zookeeper module, now has a dependency on curator. (Houston Putman, Kevin Risden, Mike Drob, David Smiley)
+
+* SOLR-17544: Solr CLI will now stop when you combine mutually exclusive options.  Combining -s and -z options is a common example.  (Eric Pugh, Christos Malliaridis)
+
+* SOLR-17495: Change Solr CLI delete command to not delete configs by default.  Decouple lifecycle of collections from configsets. (Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
@@ -74,6 +81,8 @@ Deprecation Removals
 * SOLR-17400: Remove deprecated script snapshotcli.sh.  bin/solr snapshot-* commands have replaced this. (Eric Pugh)
 
 * SOLR-17494: Remove language specific writer types (i.e wt= ruby, python, php, and phps). (Eric Pugh)
+
+* SOLR-17352: Remove deprecated Solr CLI options.  Run bin/solr yourcommand -h to see current options.  (Eric Pugh, Christos Malliardis)
 
 Dependency Upgrades
 ---------------------
@@ -135,11 +144,9 @@ Improvements
   which may help reduce distributed-search latency in collections with many shards, especially
   when PKI is used between nodes. (Jason Gerlowski)
 
-* SOLR-17382: Deprecate -a and -addlopts in favour of --jvm-opts for passing options into the JVM in bin/solr.   (Eric Pugh, Christos Malliaridis)
-
-* SOLR-17431: Deprecate -p parameter where it doesn't refer to a port in bin/solr. (Eric Pugh, Christos Malliaridis)
-
-* SOLR-17442: Resolve -v flag conflict (version, value, verbose) in bin/solr. (Eric Pugh, Christos Malliaridis)
+* SOLR-17383: Resolved overlapping arguments in the Solr CLI.  Removed duplicative but differing arguments,
+  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning
+  in command line when deprecated arguments are used. (Eric Pugh, Christos Malliaridis)
 
 * SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
   override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski,
@@ -148,6 +155,10 @@ Improvements
 * SOLR-17414: When searching with multiThreaded=true, the internal tasks may now block instead of
   enqueuing with a risk of rejection. Solr will use less resources under stress but to get the most
   of your machine, you may want to increase the thread pool. (David Smiley)
+
+* SOLR-17528: Introduce -y short option to bin/solr start --no-prompt option. Aligns with bin/solr package tool.  (Eric Pugh)
+
+* SOLR-17390: EmbeddedSolrServer now considers the ResponseParser (David Smiley)
 
 Optimizations
 ---------------------
@@ -172,6 +183,8 @@ Optimizations
 
 * SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
 
+* SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-12429: Uploading a configset with a symbolic link produces a IOException. Now a error message to user generated instead. (Eric Pugh)
@@ -188,6 +201,11 @@ Bug Fixes
 * SOLR-17464: Fixed Http2SolrClient bug in that 'requestAsync' triggered NPE when using a shared Jetty client (Jason Gerlowski, James Dyer)
 
 * SOLR-17413: Fixed UpdateLog replay bug that shared thread-unsafe SolrQueryRequest objects across threads (Jason Gerlowski, David Smiley, Houston Putman)
+
+* SOLR-11191: Splitting shards now routes child-docs with their _root_ field when available so they maintain parent relationship. (Zack Kendall)
+
+* SOLR-16976: Remove log4j-jul jar and use slf4j bridge for JUL to prevent exception from being logged when remote JMX
+  is enabled (Shawn Heisey, Stephen Zhou, Eric Pugh, Christine Poerschke, David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -206,6 +224,18 @@ tasks that were scheduled via ExecutorService#submit, the results of the task ex
 led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
+
+* SOLR-17534: Introduce ClusterState.getCollectionNames, a convenience method (David Smiley)
+
+* SOLR-17535: Introduce ClusterState.collectionStream to replace getCollectionStates and getCollectionsMap (David Smiley)
+
+* SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
+
+==================  9.7.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17530: Metrics: Thew new Prometheus response writer wasn't detecting TLOG or PULL replicas properly.
+  (Matthew Biscocho)
 
 ==================  9.7.0 ==================
 New Features

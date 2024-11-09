@@ -283,7 +283,7 @@ goto err
 @echo.
 @echo Usage: solr %SCRIPT_CMD% [-f] [--user-managed] [--host hostname] [-p port] [--server-dir directory] [-z zkHost] [-m memory] [-e example] [--solr-home solr.solr.home] [--data-home solr.data.home] [--jvm-opts "jvm-opts"] [--verbose]
 @echo.
-@echo   -f            Start Solr in foreground; default starts Solr in the background
+@echo   -f/--foreground Start Solr in foreground; default starts Solr in the background
 @echo                   and sends stdout / stderr to solr-PORT-console.log
 @echo.
 @echo   --user-managed Start Solr in user managed aka standalone mode"
@@ -291,7 +291,7 @@ goto err
 @echo.
 @echo   --host host   Specify the hostname for this Solr instance
 @echo.
-@echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
+@echo   -p/--port port Specify the port to start the Solr HTTP listener on; default is 8983
 @echo                   The specified port (SOLR_PORT) will also be used to determine the stop port
 @echo                   STOP_PORT=(%%SOLR_PORT%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT%%+10000).
 @echo                   For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985
@@ -303,10 +303,10 @@ goto err
 @echo                   an embedded ZooKeeper instance will be launched.
 @echo                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
 @echo.
-@echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
+@echo   -m/--memory memory Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
-@echo   --solr.home dir  Sets the solr.solr.home system property; Solr will create core directories under
+@echo   --solr-home dir  Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the --server-dir parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
@@ -317,7 +317,7 @@ goto err
 @echo   --data-home dir Sets the solr.data.home system property, where Solr will store index data in ^<instance_dir^>/data subdirectories.
 @echo                   If not set, Solr uses solr.solr.home for both config and data.
 @echo.
-@echo   -e example    Name of the example to run; available examples:
+@echo   -e/--example name Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
 @echo       schemaless:     Schema-less example (schema is inferred from data during indexing)
@@ -333,7 +333,7 @@ goto err
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   --no-prompt   Don't prompt for input; accept all defaults when running examples that accept user input
+@echo   -y/--no-prompt Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
 @echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -370,19 +370,12 @@ IF "%SCRIPT_CMD%"=="stop" goto parse_stop_args
 :parse_start_args
 IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
-IF "%1"=="-V" goto set_verbose
 IF "%1"=="--verbose" goto set_verbose
-IF "%1"=="-v" goto set_verbose
 IF "%1"=="-q" goto set_warn
 IF "%1"=="--quiet" goto set_warn
 IF "%1"=="--user-managed" goto set_user_managed_mode
-IF "%1"=="-d" goto set_server_dir
-IF "%1"=="--dir" goto set_server_dir
 IF "%1"=="--server-dir" goto set_server_dir
-IF "%1"=="-s" goto set_solr_home_dir
 IF "%1"=="--solr-home" goto set_solr_home_dir
-IF "%1"=="-t" goto set_solr_data_dir
-IF "%1"=="--solr-data" goto set_solr_data_dir
 IF "%1"=="--data-home" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
@@ -391,17 +384,12 @@ IF "%1"=="-m" goto set_memory
 IF "%1"=="--memory" goto set_memory
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
-IF "%1"=="-zkHost" goto set_zookeeper
-IF "%1"=="--zkHost" goto set_zookeeper
 IF "%1"=="-s" goto set_solr_url
 IF "%1"=="--solr-url" goto set_solr_url
-IF "%1"=="-solrUrl" goto set_solr_url
-IF "%1"=="-a" goto set_jvm_opts
 IF "%1"=="--jvm-opts" goto set_jvm_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
-IF "%1"=="--jetty-config" goto set_addl_jetty_config
-IF "%1"=="--noprompt" goto set_noprompt
+IF "%1"=="-y" goto set_noprompt
 IF "%1"=="--no-prompt" goto set_noprompt
 
 REM Skip stop arg parsing if not stop command
@@ -411,16 +399,12 @@ IF NOT "%SCRIPT_CMD%"=="stop" goto parse_general_args
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="--key" goto set_stop_key
 IF "%1"=="--all" goto set_stop_all
-IF "%1"=="-all" goto set_stop_all
 
 :parse_general_args
 
 REM Print usage of command in case help option included
 IF "%1"=="--help" goto usage
-IF "%1"=="-help" goto usage
 IF "%1"=="-h" goto usage
-IF "%1"=="-usage" goto usage
-IF "%1"=="/?" goto usage
 
 REM other args supported by all special commands
 IF "%1"=="-p" goto set_port
@@ -1111,7 +1095,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
 set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
-set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED% -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
+set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
@@ -1162,9 +1146,8 @@ IF "%FG%"=="1" (
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 
-  REM default to 30 seconds for backwards compatibility.
   IF "!SOLR_START_WAIT!"=="" (
-    set SOLR_START_WAIT=30
+    set SOLR_START_WAIT=180
   )
   REM now wait to see Solr come online ...
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^

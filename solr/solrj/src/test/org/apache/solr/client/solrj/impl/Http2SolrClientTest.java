@@ -30,6 +30,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -118,10 +120,22 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
+  /** test that temporary baseURL overrides are reflected in error messages */
   @Test
   public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
+    final int status = 527;
+    DebugServlet.setErrorCode(status);
+
     try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
-      super.testSolrExceptionWithNullBaseurl(client);
+      try {
+        // if client base url is null, request url will be used in exception message
+        client.requestWithBaseUrl(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
+
+        fail("Didn't get excepted exception from oversided request");
+      } catch (SolrException e) {
+        assertEquals("Unexpected exception status code", status, e.code());
+        assertTrue(e.getMessage().contains(getBaseUrl()));
+      }
     } finally {
       DebugServlet.clear();
     }
