@@ -44,6 +44,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -231,6 +232,8 @@ public abstract class RequestHandlerBase
         metrics.numTimeouts.mark();
         rsp.setHttpCaching(false);
       }
+    } catch (QueryLimitsExceededException e) {
+      rsp.setPartialResults(req);
     } catch (Exception e) {
       e = normalizeReceivedException(req, e);
       processErrorMetricsOnException(e, metrics);
