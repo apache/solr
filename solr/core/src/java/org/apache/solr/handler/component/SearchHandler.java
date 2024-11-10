@@ -647,11 +647,6 @@ public class SearchHandler extends RequestHandlerBase
                   throwSolrException(srsp.getException());
                 } else {
                   rsp.setPartialResults(rb.req);
-                  if (publishCpuTime) {
-                    totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
-                    rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
-                    rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
-                  }
                 }
               }
             }
