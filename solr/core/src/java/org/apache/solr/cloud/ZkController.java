@@ -1762,6 +1762,14 @@ public class ZkController implements Closeable {
         cd.getCloudDescriptor().setLastPublished(state);
       }
       DocCollection coll = zkStateReader.getCollection(collection);
+      // extra handling for PRS, we need to write the PRS entries from this node directly,
+      // as overseer does not and should not handle those entries
+      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
+        PerReplicaStates perReplicaStates =
+            PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
+            .persist(coll.getZNode(), zkClient);
+      }
       if (forcePublish || updateStateDotJson(coll, coreNodeName)) {
         if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
           distributedClusterStateUpdater.doSingleStateUpdate(
@@ -1772,14 +1780,6 @@ public class ZkController implements Closeable {
         } else {
           overseerJobQueue.offer(m);
         }
-      }
-      // extra handling for PRS, we need to write the PRS entries from this node directly,
-      // as overseer does not and should not handle those entries
-      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
-        PerReplicaStates perReplicaStates =
-            PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
-            .persist(coll.getZNode(), zkClient);
       }
     } finally {
       MDCLoggingContext.clear();
