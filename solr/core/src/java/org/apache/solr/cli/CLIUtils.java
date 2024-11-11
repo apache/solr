@@ -287,12 +287,12 @@ public final class CLIUtils {
    * <p>If URL does not contain a port nor https as scheme, it fallsback to port 80.
    *
    * @param solrUrl the URL to extract the port from
-   * @return The port that was found or null if {@code solrUrl} is not a valid URI.
+   * @return The port that was found.
    * @throws NullPointerException If solrUrl is null
    * @throws URISyntaxException If the given string violates RFC 2396, as augmented by the above
    *     deviations
    */
-  public static Integer portFromUrl(String solrUrl) throws URISyntaxException {
+  public static int portFromUrl(String solrUrl) throws URISyntaxException {
     URI uri = new URI(solrUrl);
     int port = uri.getPort();
     if (port == -1) {
