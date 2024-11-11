@@ -13,6 +13,8 @@ Bug Fixes
 
 * SOLR-17530: Metrics: The new Prometheus response writer wasn't detecting TLOG or PULL replicas properly. (Matthew Biscocho)
 
+* SOLR-17543: Adds input validation to zip entries used by FileSystemConfigSetService (Jason Gerlowski)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
