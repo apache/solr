@@ -44,6 +44,9 @@ Some key changes that you may run into are:
  
 To learn about the updated options in each CLI tool, use the `--help` option or look up the tool in the documentation.
 
+Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.  
+Now you have to explicitly provide a  `--delete-config` option to delete the configsets.  This decouples the lifecycle of a configset from that of a collection.
+
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.

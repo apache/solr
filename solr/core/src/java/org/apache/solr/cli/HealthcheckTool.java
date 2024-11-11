@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -53,19 +54,21 @@ import org.slf4j.LoggerFactory;
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("COLLECTION")
+          .required()
+          .desc("Name of the collection to check.")
+          .build();
+
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .hasArg()
-            .argName("COLLECTION")
-            .required(true)
-            .desc("Name of the collection to check.")
-            .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   enum ShardState {
@@ -86,7 +89,6 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = CLIUtils.getZkHost(cli);
     if (zkHost == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
@@ -105,8 +107,7 @@ public class HealthcheckTool extends ToolBase {
   }
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("name");
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -169,13 +170,13 @@ public class HealthcheckTool extends ToolBase {
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
               CLIUtils.getSolrClient(
-                  coreUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =
                 CLIUtils.getSolrClient(
                     replicaCoreProps.getBaseUrl(),
-                    cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(

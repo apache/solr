@@ -301,7 +301,7 @@ public class SolrExporter {
       }
 
       String configFile = commandLine.getOptionValue(configOption, DEFAULT_CONFIG);
-      int numberOfThreads = commandLine.getParsedOptionValue("num-threads", DEFAULT_NUM_THREADS);
+      int numberOfThreads = commandLine.getParsedOptionValue(numThreadsOption, DEFAULT_NUM_THREADS);
       int scrapeInterval =
           commandLine.getParsedOptionValue(scrapeIntervalOption, DEFAULT_SCRAPE_INTERVAL);
 

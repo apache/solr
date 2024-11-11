@@ -18,9 +18,8 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +37,11 @@ public class ZkLsTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        SolrCLI.OPTION_RECURSIVE,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(CommonCLIOptions.RECURSIVE_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -59,14 +57,13 @@ public class ZkLsTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = CLIUtils.getZkHost(cli);
     String znode = cli.getArgs()[0];
 
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
-      boolean recursive = cli.hasOption("recursive");
+      boolean recursive = cli.hasOption(CommonCLIOptions.RECURSIVE_OPTION);
       echoIfVerbose(
           "Getting listing for ZooKeeper node "
               + znode

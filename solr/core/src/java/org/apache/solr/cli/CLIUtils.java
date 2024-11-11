@@ -135,14 +135,14 @@ public final class CLIUtils {
   public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
     String solrUrl = normalizeSolrUrl(cli);
     // TODO Replace hard-coded string with Option object
-    String credentials = cli.getOptionValue("credentials");
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     return getSolrClient(solrUrl, credentials, barePath);
   }
 
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {
     String solrUrl = normalizeSolrUrl(cli);
     // TODO Replace hard-coded string with Option object
-    String credentials = cli.getOptionValue("credentials");
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     return getSolrClient(solrUrl, credentials, false);
   }
 
@@ -194,10 +194,10 @@ public final class CLIUtils {
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solr-url");
+    String solrUrl = cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION);
 
     if (solrUrl == null) {
-      String zkHost = cli.getOptionValue("zk-host");
+      String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
       if (zkHost == null) {
         solrUrl = getDefaultSolrUrl();
         CLIO.err(
@@ -228,7 +228,7 @@ public final class CLIUtils {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = cli.getOptionValue("zk-host");
+    String zkHost = cli.getOptionValue(CommonCLIOptions.ZK_HOST_OPTION);
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
@@ -256,15 +256,11 @@ public final class CLIUtils {
     return zkHost;
   }
 
-  public static SolrZkClient getSolrZkClient(CommandLine cli) throws Exception {
-    return getSolrZkClient(cli, getZkHost(cli));
-  }
-
   public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("solrUrl")
+              + cli.getOptionValue(CommonCLIOptions.SOLR_URL_OPTION)
               + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
     }
     return new SolrZkClient.Builder()

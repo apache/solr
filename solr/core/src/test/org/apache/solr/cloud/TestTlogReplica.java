@@ -815,17 +815,17 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cloudClient.request(request);
 
     // Wait until a preferredleader flag is set to the new leader candidate
-    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut()) {
-      Map<String, Slice> slices =
-          cloudClient.getClusterState().getCollection(collectionName).getSlicesMap();
-      Replica me = slices.get(slice.getName()).getReplica(newLeader.getName());
-      if (me.getBool("property.preferredleader", false)) {
-        break;
-      }
-      Thread.sleep(100);
-    }
-    assertFalse("Timeout waiting for setting preferredleader flag", timeout.hasTimedOut());
+    String newLeaderName = newLeader.getName();
+    waitForState(
+        "Waiting for setting preferredleader flag",
+        collectionName,
+        (n, c) -> {
+          Map<String, Slice> slices = c.getSlicesMap();
+          Replica me = slices.get(slice.getName()).getReplica(newLeaderName);
+          return me.getBool("property.preferredleader", false);
+        },
+        10,
+        TimeUnit.SECONDS);
 
     // Rebalance leaders
     params = new ModifiableSolrParams();
@@ -837,18 +837,17 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cloudClient.request(request);
 
     // Wait until a new leader is elected
-    timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut()) {
-      docCollection = getCollectionState(collectionName);
-      Replica leader = docCollection.getSlice(slice.getName()).getLeader();
-      if (leader != null
-          && leader.getName().equals(newLeader.getName())
-          && leader.isActive(cloudClient.getClusterState().getLiveNodes())) {
-        break;
-      }
-      Thread.sleep(100);
-    }
-    assertFalse("Timeout waiting for a new leader to be elected", timeout.hasTimedOut());
+    waitForState(
+        "Waiting for a new leader to be elected",
+        collectionName,
+        (n, c) -> {
+          Replica leader = c.getSlice(slice.getName()).getLeader();
+          return leader != null
+              && leader.getName().equals(newLeaderName)
+              && leader.isActive(cloudClient.getClusterState().getLiveNodes());
+        },
+        30,
+        TimeUnit.SECONDS);
 
     new UpdateRequest()
         .add(sdoc("id", "1"))
@@ -1027,19 +1026,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
-  private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
+  private void waitForDeletion(String collection) {
+    waitForState(
+        "Waiting for collection " + collection + " to be deleted",
+        collection,
+        (n, c) -> c == null,
+        10,
+        TimeUnit.SECONDS);
   }
 
   private DocCollection assertNumberOfReplicas(

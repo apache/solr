@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,58 +49,6 @@ import org.slf4j.LoggerFactory;
 public class SolrCLI implements CLIO {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String ZK_HOST = "localhost:9983";
-
-  public static final Option OPTION_ZKHOST =
-      Option.builder("z")
-          .longOpt("zk-host")
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST
-                  + '.')
-          .build();
-  public static final Option OPTION_SOLRURL =
-      Option.builder("s")
-          .longOpt("solr-url")
-          .argName("HOST")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + CLIUtils.getDefaultSolrUrl()
-                  + '.')
-          .build();
-
-  public static final Option OPTION_VERBOSE =
-      Option.builder()
-          .longOpt("verbose")
-          .required(false)
-          .desc("Enable verbose command output.")
-          .build();
-
-  public static final Option OPTION_HELP =
-      Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
-
-  public static final Option OPTION_RECURSIVE =
-      Option.builder("r")
-          .longOpt("recursive")
-          .required(false)
-          .desc("Apply the command recursively.")
-          .build();
-
-  public static final Option OPTION_CREDENTIALS =
-      Option.builder("u")
-          .longOpt("credentials")
-          .argName("credentials")
-          .hasArg()
-          .required(false)
-          .desc(
-              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-          .build();
 
   public static void exit(int exitStatus) {
     try {
@@ -230,12 +177,6 @@ public class SolrCLI implements CLIO {
     }
   }
 
-  public static void raiseLogLevelUnlessVerbose(CommandLine cli) {
-    if (!cli.hasOption(SolrCLI.OPTION_VERBOSE.getLongOpt())) {
-      StartupLoggingUtils.changeLogLevel("WARN");
-    }
-  }
-
   // Creates an instance of the requested tool, using classpath scanning if necessary
   private static Tool newTool(String toolType) throws Exception {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();
@@ -280,21 +221,6 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
-  /** Returns tool options for given tool, for usage display purposes. Hides deprecated options. */
-  public static Options getToolOptions(Tool tool) {
-    Options options = new Options();
-    options.addOption(OPTION_HELP);
-    options.addOption(OPTION_VERBOSE);
-
-    List<Option> toolOpts = tool.getOptions();
-    for (Option toolOpt : toolOpts) {
-      if (!toolOpt.isDeprecated()) {
-        options.addOption(toolOpt);
-      }
-    }
-    return options;
-  }
-
   /**
    * Returns the value of the option with the given name, or the value of the deprecated option. If
    * both values are null, then it returns the default value.
@@ -329,17 +255,7 @@ public class SolrCLI implements CLIO {
 
   /** Parses the command-line arguments passed by the user. */
   public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
-    List<Option> customOptions = tool.getOptions();
-    Options options = new Options();
-
-    options.addOption(OPTION_HELP);
-    options.addOption(OPTION_VERBOSE);
-
-    if (customOptions != null) {
-      for (Option customOption : customOptions) {
-        options.addOption(customOption);
-      }
-    }
+    Options options = tool.getOptions();
 
     CommandLine cli = null;
     try {
@@ -369,7 +285,7 @@ public class SolrCLI implements CLIO {
       }
     }
 
-    if (cli.hasOption("help")) {
+    if (cli.hasOption(CommonCLIOptions.HELP_OPTION)) {
       printToolHelp(tool);
       exit(0);
     }
@@ -380,16 +296,18 @@ public class SolrCLI implements CLIO {
   /** Prints tool help for a given tool */
   public static void printToolHelp(Tool tool) {
     HelpFormatter formatter = getFormatter();
-    Options optionsNoDeprecated = new Options();
-    SolrCLI.getToolOptions(tool).getOptions().stream()
+    Options nonDeprecatedOptions = new Options();
+
+    tool.getOptions().getOptions().stream()
         .filter(option -> !option.isDeprecated())
-        .forEach(optionsNoDeprecated::addOption);
+        .forEach(nonDeprecatedOptions::addOption);
+
     String usageString = tool.getUsage() == null ? "bin/solr " + tool.getName() : tool.getUsage();
     boolean autoGenerateUsage = tool.getUsage() == null;
     formatter.printHelp(
         usageString,
         "\n" + tool.getHeader(),
-        optionsNoDeprecated,
+        nonDeprecatedOptions,
         tool.getFooter(),
         autoGenerateUsage);
   }
@@ -457,8 +375,6 @@ public class SolrCLI implements CLIO {
     req.addContentStream(contentStream);
     return solrClient.request(req);
   }
-
-  public static final String DEFAULT_CONFIG_SET = "_default";
 
   private static final long MS_IN_MIN = 60 * 1000L;
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
