@@ -207,7 +207,10 @@ public class SolrQueryResponse {
    */
   public void addPartialResponseDetail(Object detail) {
     NamedList<Object> header = getResponseHeader();
-    if (header != null && detail != null) {
+    // never overwrite the original detail message. The first limit violation is the important one.
+    if (header != null
+        && detail != null
+        && header.get(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY) == null) {
       header.add(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY, detail);
     }
   }
