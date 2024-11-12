@@ -79,7 +79,7 @@ class ChangesToHtmlTask extends DefaultTask {
     
     // Check if the perl executable exists
     def perlExecutable = project.externalTool("perl")
-    if (!new File(perlExecutable).exists()) {
+    if (!file(perlExecutable).exists()) {
         logger.warn("WARNING: Perl is not installed or could not be found at: ${perlExecutable}, skipping creating Changes.html")
         return
     }
