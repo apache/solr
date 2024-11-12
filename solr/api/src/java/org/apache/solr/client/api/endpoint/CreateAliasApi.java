@@ -14,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.endpoint;
 
-package org.apache.solr.client.api.util;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import org.apache.solr.client.api.model.CreateAliasRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 
-public class Constants {
-  private Constants() {
-    /* Private ctor prevents instantiation */
-  }
-
-  public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
-  public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
-  public static final String INDEX_PATH_PREFIX =
-      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
-
-  public static final String CORE_NAME_PATH_PARAMETER = "coreName";
-
-  public static final String OMIT_FROM_CODEGEN_PROPERTY = "omitFromCodegen";
-  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
-
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+@Path("/aliases")
+public interface CreateAliasApi {
+  @POST
+  @Operation(
+      summary = "Create a traditional or 'routed' alias",
+      tags = {"aliases"})
+  SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception;
 }

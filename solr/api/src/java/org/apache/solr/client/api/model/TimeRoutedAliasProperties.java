@@ -14,23 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.api.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Constants {
-  private Constants() {
-    /* Private ctor prevents instantiation */
-  }
+public class TimeRoutedAliasProperties extends RoutedAliasProperties {
+  // Expected to be a date/time in ISO format, or 'NOW'
+  @JsonProperty(required = true)
+  public String start;
 
-  public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
-  public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
-  public static final String INDEX_PATH_PREFIX =
-      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
+  // TODO Change this to 'timezone' or something less abbreviated
+  @JsonProperty("tz")
+  public String tz;
 
-  public static final String CORE_NAME_PATH_PARAMETER = "coreName";
+  @JsonProperty(required = true)
+  public String interval;
 
-  public static final String OMIT_FROM_CODEGEN_PROPERTY = "omitFromCodegen";
-  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
+  @JsonProperty("maxFutureMs")
+  public Long maxFutureMs;
 
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  @JsonProperty("preemptiveCreateMath")
+  public String preemptiveCreateMath;
+
+  @JsonProperty("autoDeleteAge")
+  public String autoDeleteAge;
 }

@@ -17,19 +17,18 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.endpoint.GetSchemaApi;
+import org.apache.solr.client.api.model.SchemaGetDynamicFieldInfoResponse;
+import org.apache.solr.client.api.model.SchemaGetFieldInfoResponse;
+import org.apache.solr.client.api.model.SchemaGetFieldTypeInfoResponse;
+import org.apache.solr.client.api.model.SchemaListCopyFieldsResponse;
+import org.apache.solr.client.api.model.SchemaListDynamicFieldsResponse;
+import org.apache.solr.client.api.model.SchemaListFieldTypesResponse;
+import org.apache.solr.client.api.model.SchemaListFieldsResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
@@ -55,8 +54,7 @@ import org.apache.solr.security.PermissionNameProvider;
  *   <li>/fieldtypes/{fieldTypeName}
  * </ul>
  */
-@Path("/{a:cores|collections}/{collectionName}/schema")
-public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
+public class GetSchemaField extends JerseyResource implements GetSchemaApi.Fields {
 
   private final IndexSchema indexSchema;
   private final SolrParams params;
@@ -64,14 +62,12 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
   // TODO Stop using SolrParams here and instead give API methods parameters representing only those
   // query-params that they support
   @Inject
-  public GetSchemaFieldAPI(IndexSchema indexSchema, SolrParams params) {
+  public GetSchemaField(IndexSchema indexSchema, SolrParams params) {
     this.indexSchema = indexSchema;
     this.params = params;
   }
 
-  @GET
-  @Path("/fields")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaListFieldsResponse listSchemaFields() {
     SchemaListFieldsResponse response = instantiateJerseyResponse(SchemaListFieldsResponse.class);
@@ -82,16 +78,9 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
     return response;
   }
 
-  public static class SchemaListFieldsResponse extends SolrJerseyResponse {
-    @JsonProperty("fields")
-    public List<Object> fields;
-  }
-
-  @GET
-  @Path("/fields/{fieldName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public SchemaGetFieldInfoResponse getFieldInfo(@PathParam("fieldName") String fieldName) {
+  public SchemaGetFieldInfoResponse getFieldInfo(String fieldName) {
     if (fieldName == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name must not be null");
     }
@@ -107,14 +96,7 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
     throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such field [" + fieldName + "]");
   }
 
-  public static class SchemaGetFieldInfoResponse extends SolrJerseyResponse {
-    @JsonProperty("field")
-    public SimpleOrderedMap<?> fieldInfo;
-  }
-
-  @GET
-  @Path("/copyfields")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaListCopyFieldsResponse listCopyFields() {
     SchemaListCopyFieldsResponse response =
@@ -126,14 +108,7 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
     return response;
   }
 
-  public static class SchemaListCopyFieldsResponse extends SolrJerseyResponse {
-    @JsonProperty("copyFields")
-    public List<Object> copyFields;
-  }
-
-  @GET
-  @Path("/dynamicfields")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaListDynamicFieldsResponse listDynamicFields() {
     SchemaListDynamicFieldsResponse response =
@@ -145,17 +120,9 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
     return response;
   }
 
-  public static class SchemaListDynamicFieldsResponse extends SolrJerseyResponse {
-    @JsonProperty("dynamicFields")
-    public List<Object> dynamicFields;
-  }
-
-  @GET
-  @Path("/dynamicfields/{fieldName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(
-      @PathParam("fieldName") String fieldName) {
+  public SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(String fieldName) {
     if (fieldName == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Dynamic field name must not be null");
@@ -174,14 +141,7 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
         SolrException.ErrorCode.NOT_FOUND, "No such dynamic field [" + fieldName + "]");
   }
 
-  public static class SchemaGetDynamicFieldInfoResponse extends SolrJerseyResponse {
-    @JsonProperty("dynamicField")
-    public SimpleOrderedMap<?> dynamicFieldInfo;
-  }
-
-  @GET
-  @Path("/fieldtypes")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaListFieldTypesResponse listSchemaFieldTypes() {
     SchemaListFieldTypesResponse response =
@@ -193,17 +153,9 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
     return response;
   }
 
-  public static class SchemaListFieldTypesResponse extends SolrJerseyResponse {
-    @JsonProperty("fieldTypes")
-    public List<Object> fieldTypes;
-  }
-
-  @GET
-  @Path("/fieldtypes/{fieldTypeName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public SchemaGetFieldTypeInfoResponse getFieldTypeInfo(
-      @PathParam("fieldTypeName") String fieldTypeName) {
+  public SchemaGetFieldTypeInfoResponse getFieldTypeInfo(String fieldTypeName) {
     if (fieldTypeName == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Field type name must not be null");
@@ -221,11 +173,6 @@ public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
     }
     throw new SolrException(
         SolrException.ErrorCode.NOT_FOUND, "No such field type [" + fieldTypeName + "]");
-  }
-
-  public static class SchemaGetFieldTypeInfoResponse extends SolrJerseyResponse {
-    @JsonProperty("fieldType")
-    public SimpleOrderedMap<?> fieldTypeInfo;
   }
 
   private List<Object> listAllFieldsOfType(String realName, SolrParams params) {
