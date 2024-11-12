@@ -38,7 +38,7 @@ public class SolrEmbeddingModel implements Accountable {
   protected final String name;
   private final Map<String, Object> params;
   private final EmbeddingModel embedder;
-  private Integer hashCode;
+  private final Integer hashCode;
 
   public static SolrEmbeddingModel getInstance(
       String className, String name, Map<String, Object> params) throws EmbeddingModelException {
