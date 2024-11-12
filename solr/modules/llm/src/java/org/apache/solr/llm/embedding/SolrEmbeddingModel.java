@@ -139,8 +139,8 @@ public class SolrEmbeddingModel implements Accountable {
     return name;
   }
 
-  public EmbeddingModel getEmbedder() {
-    return embedder;
+  public String getEmbedderClassName() {
+    return embedder.getClass().getName();
   }
   
   public Map<String, Object> getParams() {
