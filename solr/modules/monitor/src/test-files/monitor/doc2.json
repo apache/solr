@@ -1,0 +1,10 @@
+{
+  "params": {
+    "monitorDocuments": [
+      {
+        "content_s": "more weird content",
+        "other_content_s": "solr is cool"
+      }
+    ]
+  }
+}

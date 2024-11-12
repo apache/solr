@@ -27,17 +27,19 @@ import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.search.reverse.ReverseSearchDebugInfo;
 
 class SolrMatcherSinkFactory {
 
   SolrMatcherSinkFactory() {}
 
-  SolrMatcherSink build(DocumentBatchVisitor documentBatch, Map<String, Object> monitorResult) {
+  SolrMatcherSink build(DocumentBatchVisitor documentBatch, Map<Object, Object> reqContext) {
     return buildSimple(
         documentBatch,
         matchingQueries ->
-            QueryMatchResponseCodec.simpleEncode(
-                matchingQueries, monitorResult, documentBatch.size()));
+            reqContext.put(
+                ReverseSearchDebugInfo.KEY,
+                new ReverseSearchDebugInfo(matchingQueries.getQueriesRun())));
   }
 
   private SolrMatcherSink buildSimple(

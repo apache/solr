@@ -1,0 +1,11 @@
+{
+  "params": {
+    "monitorDocuments": [
+      {
+        "id": "4",
+        "content_s": ["elevator stairs", "something else", "test test test"],
+        "other_content_s": "I'm tired"
+      }
+    ]
+  }
+}

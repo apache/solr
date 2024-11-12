@@ -22,6 +22,7 @@ package org.apache.solr.monitor.search;
 import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.QCEVisitor;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
@@ -34,13 +35,12 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
   private final SolrMonitorQueryDecoder queryDecoder;
   private final SolrMatcherSink matcherSink;
   private final MonitorDataValues dataValues = new MonitorDataValues();
-  private final boolean writeToDocList;
+  private String lastQueryId;
 
   SolrMonitorQueryCollector(CollectorContext collectorContext) {
     this.monitorQueryCache = collectorContext.queryCache;
     this.queryDecoder = collectorContext.queryDecoder;
     this.matcherSink = collectorContext.solrMatcherSink;
-    this.writeToDocList = collectorContext.writeToDocList;
   }
 
   @Override
@@ -53,7 +53,8 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     var matchQuery = new ConstantScoreQuery(originalMatchQuery);
 
     boolean isMatch = matcherSink.matchQuery(queryId, matchQuery, entry.getMetadata());
-    if (isMatch && writeToDocList) {
+    if (isMatch && !queryId.equals(lastQueryId)) {
+      lastQueryId = queryId;
       super.collect(doc);
     }
   }
@@ -90,17 +91,14 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     private final MonitorQueryCache queryCache;
     private final SolrMonitorQueryDecoder queryDecoder;
     private final SolrMatcherSink solrMatcherSink;
-    private final boolean writeToDocList;
 
     CollectorContext(
         MonitorQueryCache queryCache,
         SolrMonitorQueryDecoder queryDecoder,
-        SolrMatcherSink solrMatcherSink,
-        boolean writeToDocList) {
+        SolrMatcherSink solrMatcherSink) {
       this.queryCache = queryCache;
       this.queryDecoder = queryDecoder;
       this.solrMatcherSink = solrMatcherSink;
-      this.writeToDocList = writeToDocList;
     }
   }
 }

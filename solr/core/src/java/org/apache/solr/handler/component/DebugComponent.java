@@ -40,6 +40,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
+import org.apache.solr.search.reverse.ReverseSearchDebugInfo;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
@@ -113,6 +114,12 @@ public class DebugComponent extends SearchComponent {
       fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo-nonJson"));
       if (fdebug != null) {
         info.add("facet-debug", fdebug.getFacetDebugInfo());
+      }
+
+      ReverseSearchDebugInfo rsdebug =
+          (ReverseSearchDebugInfo) (rb.req.getContext().get(ReverseSearchDebugInfo.KEY));
+      if (rsdebug != null) {
+        info.add("reverse-search-debug", rsdebug.getReverseSearchDebugInfo());
       }
 
       if (rb.req.getJSON() != null) {

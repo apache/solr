@@ -17,11 +17,28 @@
  *
  */
 
-package org.apache.solr.monitor;
+package org.apache.solr.search.reverse;
 
-public class MonitorConstants {
+import org.apache.solr.common.util.SimpleOrderedMap;
 
-  private MonitorConstants() {}
+public class ReverseSearchDebugInfo {
 
-  public static final String MONITOR_DOCUMENTS_KEY = "monitorDocuments";
+  public static final String KEY = ReverseSearchDebugInfo.class.getSimpleName();
+
+  private final int queriesRun;
+
+  public ReverseSearchDebugInfo(int queriesRun) {
+    this.queriesRun = queriesRun;
+  }
+
+  public int getQueriesRun() {
+    return queriesRun;
+  }
+
+  public SimpleOrderedMap<Object> getReverseSearchDebugInfo() {
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
+
+    info.add("queriesRun", queriesRun);
+    return info;
+  }
 }

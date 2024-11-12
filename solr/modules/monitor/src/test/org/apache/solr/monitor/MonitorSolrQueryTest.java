@@ -19,11 +19,6 @@
 
 package org.apache.solr.monitor;
 
-import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
-import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
-import static org.apache.solr.monitor.MonitorConstants.MONITOR_QUERIES_KEY;
-import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -31,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -43,7 +37,6 @@ import org.junit.Test;
 public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
-  @ShardsFixed(num = 3)
   public void testMonitorQuery() throws Exception {
     index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator music\"");
     index(
@@ -67,56 +60,18 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.SORT,
           MonitorFields.QUERY_ID + " desc",
           CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
+          read("/monitor/doc1.json"),
           CommonParams.QT,
           "/reverseSearch"
         };
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("1", "4"), false);
-    validate(response, 1, List.of("7"), false);
-    validate(response, 2, List.of("5"), false);
-    assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
-
-    index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
-    index(id, Integer.toString(6), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is cool\"");
-    index(
-        id,
-        Integer.toString(1),
-        MonitorFields.MONITOR_QUERY,
-        "{!xmlparser}<SpanOrTerms slop=\"3\" fieldName=\"content_s\">steep hill</SpanOrTerms>");
-    index(id, Integer.toString(2), MonitorFields.MONITOR_QUERY, "content_s:elevator");
-    commit();
-    handle.clear();
-    handle.put("responseHeader", SKIP);
-    handle.put("response", SKIP);
-
-    final boolean writeToDocList = supportsWriteToDocList();
-    params =
-        new Object[] {
-          CommonParams.SORT,
-          id + " desc",
-          CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
-          CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
-        };
-    response = query(params);
-    System.out.println("Response = " + response);
-    validate(response, 0, 0, "2", writeToDocList);
-    validate(response, 0, 1, "4", writeToDocList);
-    validate(response, 1, 0, "7", writeToDocList);
-    validate(response, 2, 0, "6", writeToDocList);
-    if (writeToDocList) {
-      assertEquals(4, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
+    validateDocList(response, List.of("7"));
   }
 
   @Test
   @ShardsFixed(num = 3)
-  public void testNoDocListInResponse() throws Exception {
+  public void testMonitorQueryWithUpdate() throws Exception {
     index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator music\"");
     index(
         id,
@@ -134,24 +89,44 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = false;
     Object[] params =
         new Object[] {
           CommonParams.SORT,
-          MonitorFields.QUERY_ID + "  desc",
+          MonitorFields.QUERY_ID + " desc",
           CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
+          read("/monitor/doc0.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("1", "4"), writeToDocList);
-    validate(response, 1, List.of("7"), writeToDocList);
-    validate(response, 2, List.of("5"), writeToDocList);
-    assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
+    validateDocList(response, List.of("4", "1"));
+    assertEquals(2, ((SolrDocumentList) response.getResponse().get("response")).size());
+
+    index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
+    index(id, Integer.toString(6), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is cool\"");
+    index(
+        id,
+        Integer.toString(1),
+        MonitorFields.MONITOR_QUERY,
+        "{!xmlparser}<SpanOrTerms slop=\"3\" fieldName=\"content_s\">steep hill</SpanOrTerms>");
+    index(id, Integer.toString(2), MonitorFields.MONITOR_QUERY, "content_s:elevator");
+    commit();
+    handle.clear();
+    handle.put("responseHeader", SKIP);
+    handle.put("response", SKIP);
+
+    params =
+        new Object[] {
+          CommonParams.SORT,
+          id + " desc",
+          CommonParams.JSON,
+          read("/monitor/doc2.json"),
+          CommonParams.QT,
+          "/reverseSearch"
+        };
+    response = query(params);
+    validateDocList(response, List.of("6"));
   }
 
   @Test
@@ -163,23 +138,19 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
           id + " desc",
           CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
+          read("/monitor/multi-value-doc.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("0"), writeToDocList);
-    validate(response, 1, List.of("1"), writeToDocList);
+    validateDocList(response, List.of("1", "0"));
   }
 
   @Test
@@ -200,7 +171,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -208,17 +178,12 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.JSON,
           read("/monitor/single-doc-batch.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    if (writeToDocList) {
-      assertEquals(3, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
-    validate(response, 0, List.of("0"), writeToDocList);
+    validateDocList(response, List.of("0"));
   }
 
   @Test
@@ -233,7 +198,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -241,17 +205,12 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.JSON,
           read("/monitor/dangling-test-single-doc-batch.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    if (writeToDocList) {
-      assertEquals(1, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
-    validate(response, 0, List.of("0"), writeToDocList);
+    validateDocList(response, List.of("0"));
 
     index(
         id,
@@ -261,10 +220,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     commit();
     response = query(params);
     System.out.println("Response = " + response);
-    if (writeToDocList) {
-      assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
-    validate(response, 0, List.of(), writeToDocList);
+    validateDocList(response, List.of());
   }
 
   @Test
@@ -280,7 +236,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -288,14 +243,12 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.JSON,
           read("/monitor/single-doc-batch.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("1"), writeToDocList);
+    validateDocList(response, List.of("1"));
   }
 
   @Test
@@ -310,26 +263,19 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
           id + " desc",
           CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
+          read("/monitor/multi-value-doc.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
 
     QueryResponse response = query(params);
-    if (writeToDocList) {
-      assertEquals(3, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
     System.out.println("Response = " + response);
-    validate(response, 3, List.of("0", "1", "2"), writeToDocList);
-    validate(response, 4, List.of("0", "1", "2"), writeToDocList);
+    validateDocList(response, List.of("2", "1", "0"));
   }
 
   @Test
@@ -344,7 +290,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
-    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -352,74 +297,34 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.JSON,
           read("/monitor/dangling-test-single-doc-batch.json"),
           CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          writeToDocList
+          "/reverseSearch"
         };
 
     QueryResponse response = query(params);
-    if (writeToDocList) {
-      assertEquals(1, ((SolrDocumentList) response.getResponse().get("response")).size());
-    }
-    validate(response, 0, List.of("0"), writeToDocList);
+    validateDocList(response, List.of("0"));
 
     del(MonitorFields.QUERY_ID + ":0");
     commit();
     response = query(CommonParams.Q, "*:*");
-    assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
+    validateDocList(response, List.of());
   }
 
-  void validate(QueryResponse response, int doc, Object expectedValue, boolean writeToDocList) {
-    var monitorQueries = monitorQueries(response, doc);
-    assertEquals(expectedValue, monitorQueries);
-    if (writeToDocList) {
-      validateDocList(response, doc, expectedValue);
-    }
-  }
-
-  void validate(
-      QueryResponse response, int doc, int query, Object expectedValue, boolean writeToDocList) {
-    var monitorQueries = monitorQueries(response, doc);
-    assertTrue(monitorQueries.size() > query);
-    assertEquals(expectedValue, monitorQueries.get(query));
-    if (writeToDocList) {
-      validateDocList(response, doc, expectedValue);
-    }
-  }
-
-  void validateDocList(QueryResponse response, int doc, Object expectedValue) {
+  void validateDocList(QueryResponse response, Object expectedValue) {
     SolrDocumentList actualValues = (SolrDocumentList) response.getResponse().get("response");
     // minimal checks only so far; TODO: make this more comprehensive
     if (expectedValue instanceof List) {
       List<Object> expectedValues = (List) expectedValue;
-      if (expectedValues.size() == 1 && actualValues.size() <= 2) {
-        assertEquals(
-            expectedValues.get(0),
-            actualValues.get(actualValues.size() - 1 - doc).getFieldValue(MonitorFields.QUERY_ID));
+      int i = 0;
+      assertEquals(expectedValues.size(), actualValues.size());
+      for (var ev : expectedValues) {
+        assertEquals(ev, actualValues.get(i).getFieldValue(MonitorFields.QUERY_ID));
+        i++;
       }
     }
-  }
-
-  List<Object> monitorQueries(QueryResponse response, int doc) {
-    assertTrue(response.getResponse().get(MONITOR_OUTPUT_KEY) instanceof Map);
-    assertTrue(
-        ((Map<?, ?>) response.getResponse().get(MONITOR_OUTPUT_KEY)).get(MONITOR_DOCUMENTS_KEY)
-            instanceof Map);
-    Map<Integer, Object> monitorDocuments =
-        (Map<Integer, Object>)
-            ((Map<?, ?>) response.getResponse().get(MONITOR_OUTPUT_KEY)).get(MONITOR_DOCUMENTS_KEY);
-    assertTrue(monitorDocuments.get(doc) instanceof Map);
-    var nthDoc = (Map<String, Object>) monitorDocuments.get(doc);
-    assertTrue(nthDoc.get(MONITOR_QUERIES_KEY) instanceof List);
-    return (List<Object>) nthDoc.get(MONITOR_QUERIES_KEY);
   }
 
   protected String read(String resourceName) throws IOException, URISyntaxException {
     final URL url = getClass().getResource(resourceName);
     return Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
-  }
-
-  protected boolean supportsWriteToDocList() {
-    return true;
   }
 }

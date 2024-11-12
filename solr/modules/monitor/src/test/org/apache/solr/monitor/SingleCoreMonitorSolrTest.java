@@ -19,8 +19,6 @@
 
 package org.apache.solr.monitor;
 
-import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
-
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -59,19 +57,12 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
     addDoc(commit(), regularChain);
     addDoc(adoc("id", "1", MonitorFields.MONITOR_QUERY, "content_s:test"), monitorChain);
     addDoc(commit(), monitorChain);
-    URL url = getClass().getResource("/monitor/multi-doc-batch.json");
+    URL url = getClass().getResource("/monitor/multi-value-doc.json");
     String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     String[] params =
         new String[] {
-          CommonParams.SORT,
-          "id desc",
-          CommonParams.JSON,
-          json,
-          CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          "true"
+          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
         };
 
     assertQ(req(params), "//*[@numFound='1']");
@@ -82,19 +73,12 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
     addDoc(adoc("id", "1", MonitorFields.MONITOR_QUERY, "id:4"), monitorChain);
     addDoc(adoc("id", "2", MonitorFields.MONITOR_QUERY, "id:4"), monitorChain);
     addDoc(commit(), monitorChain);
-    URL url = getClass().getResource("/monitor/multi-doc-batch.json");
+    URL url = getClass().getResource("/monitor/multi-value-doc.json");
     String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     String[] params =
         new String[] {
-          CommonParams.SORT,
-          "id desc",
-          CommonParams.JSON,
-          json,
-          CommonParams.QT,
-          "/reverseSearch",
-          WRITE_TO_DOC_LIST_KEY,
-          "true"
+          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
         };
 
     assertQ(req(params), "//*[@numFound='2']");
@@ -152,19 +136,25 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
         adoc("id", "3", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs\""),
         monitorChain);
     addDoc(commit(), monitorChain);
-    URL url = getClass().getResource("/monitor/single-doc-batch.json");
+    URL url = getClass().getResource("/monitor/elevator-doc.json");
     String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     String[] params =
         new String[] {
-          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
+          CommonParams.SORT,
+          "id desc",
+          CommonParams.JSON,
+          json,
+          CommonParams.QT,
+          "/reverseSearch",
+          CommonParams.DEBUG_QUERY,
+          "true"
         };
 
     assertQ(
         req(params),
-        "/response/lst[@name=\"monitor\"]/int[@name=\"queriesRun\"]/text()='1'",
-        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/int[@name=\"monitorDocument\"]/text()='0'",
-        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str/text()='3'");
+        "//*[@numFound='1']",
+        "/response/lst[@name=\"debug\"]/lst[@name=\"reverse-search-debug\"]/int[@name=\"queriesRun\"]/text()='1'");
   }
 
   @Test
@@ -186,21 +176,27 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
               }
             });
     addDoc(commit(), monitorChain);
-    URL url = getClass().getResource("/monitor/multi-doc-batch.json");
+    URL url = getClass().getResource("/monitor/multi-value-doc.json");
     String json = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     String[] params =
         new String[] {
-          CommonParams.SORT, "id desc", CommonParams.JSON, json, CommonParams.QT, "/reverseSearch"
+          CommonParams.SORT,
+          "id desc",
+          CommonParams.JSON,
+          json,
+          CommonParams.QT,
+          "/reverseSearch",
+          CommonParams.DEBUG_QUERY,
+          "true"
         };
 
     assertQ(
         req(params),
-        "/response/lst[@name=\"monitor\"]/int[@name=\"queriesRun\"]/text()='" + count + "'",
-        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/int[@name=\"monitorDocument\"]/text()='0'",
-        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str/text()='0'",
-        "count(/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str)="
-            + count);
+        "//*[@numFound='" + count + "']",
+        "/response/lst[@name=\"debug\"]/lst[@name=\"reverse-search-debug\"]/int[@name=\"queriesRun\"]/text()='"
+            + count
+            + "'");
 
     IntStream.range(count / 2, count)
         .forEach(
@@ -220,10 +216,9 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
     addDoc(commit(), monitorChain);
     assertQ(
         req(params),
-        "/response/lst[@name=\"monitor\"]/int[@name=\"queriesRun\"]/text()='" + (count / 2) + "'",
-        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/int[@name=\"monitorDocument\"]/text()='0'",
-        "/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str/text()='0'",
-        "count(/response/lst[@name=\"monitor\"]/lst[@name=\"monitorDocuments\"]/lst[@name=\"0\"]/arr[@name=\"queries\"]/str)="
-            + (count / 2));
+        "//*[@numFound='" + count / 2 + "']",
+        "/response/lst[@name=\"debug\"]/lst[@name=\"reverse-search-debug\"]/int[@name=\"queriesRun\"]/text()='"
+            + count / 2
+            + "'");
   }
 }

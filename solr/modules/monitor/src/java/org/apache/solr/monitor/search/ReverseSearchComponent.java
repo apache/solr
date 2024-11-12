@@ -20,19 +20,16 @@
 package org.apache.solr.monitor.search;
 
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
-import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
-import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
 import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MonitorFields;
@@ -47,7 +44,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.monitor.AliasingPresearcher;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
@@ -62,7 +58,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 public class ReverseSearchComponent extends QueryComponent implements SolrCoreAware {
 
   public static final String COMPONENT_NAME = "reverseSearch";
-  private static final String MATCHER_THREAD_COUNT_KEY = "threadCount";
 
   private static final String SOLR_MONITOR_CACHE_NAME_KEY = "solrMonitorCacheName";
   private static final String SOLR_MONITOR_CACHE_NAME_DEFAULT = "solrMonitorCache";
@@ -88,9 +83,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   public void prepare(ResponseBuilder rb) {
     var req = rb.req;
     var documentBatch = documentBatch(req);
-    boolean writeToDocList = req.getParams().getBool(WRITE_TO_DOC_LIST_KEY, false);
-    Map<String, Object> monitorResult = new HashMap<>();
-    var matcherSink = solrMatcherSinkFactory.build(documentBatch, monitorResult);
+    var matcherSink = solrMatcherSinkFactory.build(documentBatch, rb.req.getContext());
     Query preFilterQuery = presearcher.buildQuery(documentBatch.get(), getTermAcceptor(rb.req));
     List<Query> mutableFilters =
         Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
@@ -103,9 +96,8 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     mutableFilters.add(
         new MonitorPostFilter(
             new SolrMonitorQueryCollector.CollectorContext(
-                solrMonitorCache, queryDecoder, matcherSink, writeToDocList)));
+                solrMonitorCache, queryDecoder, matcherSink)));
     rb.setFilters(mutableFilters);
-    rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -120,31 +112,21 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need documents list");
     }
     List<Document> luceneDocs = new ArrayList<>();
+    int i = 0;
     for (var document : (List<?>) documents) {
       if (!(document instanceof Map)
           || !((Map<?, ?>) document).keySet().stream().allMatch(key -> key instanceof String)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "document needs to be a string-keyed map");
       }
+      var docAsMap = (Map<Object, Object>) document;
+      docAsMap.putIfAbsent(
+          req.getSchema().getUniqueKeyField().getName(), UUID.randomUUID().toString());
       var solrInputDoc = JsonLoader.buildDoc((Map<String, Object>) document);
       var luceneDoc = DocumentBuilder.toDocument(solrInputDoc, req.getSchema());
       luceneDocs.add(luceneDoc);
     }
     return DocumentBatchVisitor.of(req.getSchema().getIndexAnalyzer(), luceneDocs);
-  }
-
-  @Override
-  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) == 0) {
-      return;
-    }
-    var responses =
-        sreq.responses.stream()
-            .map(shardResponse -> shardResponse.getSolrResponse().getResponse())
-            .collect(Collectors.toList());
-    rb.rsp.getValues().removeAll(MONITOR_OUTPUT_KEY);
-    var finalOutput = QueryMatchResponseCodec.mergeResponses(responses);
-    rb.rsp.add(MONITOR_OUTPUT_KEY, finalOutput);
   }
 
   @Override
