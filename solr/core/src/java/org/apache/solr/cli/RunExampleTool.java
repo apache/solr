@@ -46,7 +46,6 @@ import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -363,7 +362,8 @@ public class RunExampleTool extends ToolBase {
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+      try (SolrClient solrClient =
+          SolrCLI.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
