@@ -1165,9 +1165,16 @@ public class HttpSolrCall {
       boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
-    Collections.shuffle(slices, Utils.RANDOM);
 
-    for (Slice slice : slices) {
+    List<Slice> shuffledSlices;
+    if (slices.size() < 2) {
+      shuffledSlices = slices;
+    } else {
+      shuffledSlices = new ArrayList<>(slices);
+      Collections.shuffle(shuffledSlices, Utils.RANDOM);
+    }
+
+    for (Slice slice : shuffledSlices) {
       List<Replica> randomizedReplicas = new ArrayList<>(slice.getReplicas());
       Collections.shuffle(randomizedReplicas, Utils.RANDOM);
 
