@@ -176,7 +176,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.SORT,
           id + " desc",
           CommonParams.JSON,
-          read("/monitor/single-doc-batch.json"),
+          read("/monitor/elevator-doc.json"),
           CommonParams.QT,
           "/reverseSearch"
         };
@@ -241,7 +241,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.SORT,
           id + " desc",
           CommonParams.JSON,
-          read("/monitor/single-doc-batch.json"),
+          read("/monitor/elevator-doc.json"),
           CommonParams.QT,
           "/reverseSearch"
         };

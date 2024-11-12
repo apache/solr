@@ -112,7 +112,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need documents list");
     }
     List<Document> luceneDocs = new ArrayList<>();
-    int i = 0;
     for (var document : (List<?>) documents) {
       if (!(document instanceof Map)
           || !((Map<?, ?>) document).keySet().stream().allMatch(key -> key instanceof String)) {
