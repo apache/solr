@@ -293,9 +293,12 @@ public abstract class LBSolrClient extends SolrClient {
         suffix = ":" + zombieServers.keySet();
       }
       // Skipping check time exceeded for the first request
-      if (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      // Ugly string based hack but no live servers message here is VERY misleading :(
+      if ((previousEx != null && previousEx.getMessage().contains("Limits exceeded!"))
+          || (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime))) {
         throw new SolrServerException(
-            "Time allowed to handle this request exceeded" + suffix, previousEx);
+            "The processing limits for to this request were exceeded, see cause for details",
+            previousEx);
       }
       if (serverStr == null) {
         throw new SolrServerException(
