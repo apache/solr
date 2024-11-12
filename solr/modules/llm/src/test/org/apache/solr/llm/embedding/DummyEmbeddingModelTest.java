@@ -24,25 +24,25 @@ public class DummyEmbeddingModelTest extends SolrTestCase {
   @Test
   public void constructAndEmbed() throws Exception {
     assertEquals(
-        "[1.0, 2.0, 3.0, 4.0]",
-        new DummyEmbeddingModel(new int[] {1, 2, 3, 4})
-            .embed("hello")
-            .content()
-            .vectorAsList()
-            .toString());
+            "[1.0, 2.0, 3.0, 4.0]",
+            new DummyEmbeddingModel(new float[] {1, 2, 3, 4})
+                    .embed("hello")
+                    .content()
+                    .vectorAsList()
+                    .toString());
     assertEquals(
-        "[8.0, 7.0, 6.0, 5.0]",
-        new DummyEmbeddingModel(new int[] {8, 7, 6, 5})
-            .embed("world")
-            .content()
-            .vectorAsList()
-            .toString());
+            "[8.0, 7.0, 6.0, 5.0]",
+            new DummyEmbeddingModel(new float[] {8, 7, 6, 5})
+                    .embed("world")
+                    .content()
+                    .vectorAsList()
+                    .toString());
     assertEquals(
-        "[0.0, 0.0, 4.0, 2.0]",
-        new DummyEmbeddingModel(new int[] {0, 0, 4, 2})
-            .embed("answer")
-            .content()
-            .vectorAsList()
-            .toString());
+            "[0.0, 0.0, 4.0, 2.0]",
+            new DummyEmbeddingModel(new float[] {0, 0, 4, 2})
+                    .embed("answer")
+                    .content()
+                    .vectorAsList()
+                    .toString());
   }
 }

@@ -26,8 +26,8 @@ import java.util.List;
 public class DummyEmbeddingModel implements EmbeddingModel {
   final float[] embedding;
 
-  public DummyEmbeddingModel(int[] embedding) {
-    this.embedding = new float[] {embedding[0], embedding[1], embedding[2], embedding[3]};
+  public DummyEmbeddingModel(float[] embedding) {
+    this.embedding = embedding;
   }
 
   @Override
@@ -57,14 +57,14 @@ public class DummyEmbeddingModel implements EmbeddingModel {
   }
 
   public static class DummyEmbeddingModelBuilder {
-    private int[] builderEmbeddings;
+    private float[] builderEmbeddings;
 
     public DummyEmbeddingModelBuilder() {}
 
-    public DummyEmbeddingModelBuilder embedding(ArrayList<Long> embeddings) {
-      this.builderEmbeddings = new int[embeddings.size()];
+    public DummyEmbeddingModelBuilder embedding(ArrayList<Double> embeddings) {
+      this.builderEmbeddings = new float[embeddings.size()];
       for (int i = 0; i < embeddings.size(); i++) {
-        this.builderEmbeddings[i] = embeddings.get(i).intValue();
+        this.builderEmbeddings[i] = embeddings.get(i).floatValue();
       }
       return this;
     }
