@@ -84,6 +84,9 @@ Deprecation Removals
 
 * SOLR-17352: Remove deprecated Solr CLI options.  Run bin/solr yourcommand -h to see current options.  (Eric Pugh, Christos Malliardis)
 
+* SOLR-17256: Previously deprecated `SolrRequest` methods `setBasePath` and `getBasePath` have been removed.  SolrJ users
+  wishing to temporarily override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
