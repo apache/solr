@@ -266,7 +266,6 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected void runExample(CommandLine cli, String exampleName) throws Exception {
-    File exDir = setupExampleDir(serverDir, exampleDir, exampleName);
     String collectionName = "schemaless".equals(exampleName) ? "gettingstarted" : exampleName;
     String configSet =
         "techproducts".equals(exampleName) ? "sample_techproducts_configs" : "_default";
@@ -277,9 +276,9 @@ public class RunExampleTool extends ToolBase {
         Integer.parseInt(
             cli.getOptionValue(PORT_OPTION, System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
-        startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
+        startSolr(new File(serverDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
-    String solrUrl = (String) nodeStatus.get("baseUrl");
+    String solrUrl = SolrCLI.normalizeSolrUrl((String) nodeStatus.get("baseUrl"));
 
     // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.
@@ -310,7 +309,7 @@ public class RunExampleTool extends ToolBase {
       echo(
           "You may want to run 'bin/solr delete -c "
               + collectionName
-              + "' first before running the example to ensure a fresh state.");
+              + " --delete-config' first before running the example to ensure a fresh state.");
     }
 
     if (!alreadyExists) {
@@ -333,7 +332,7 @@ public class RunExampleTool extends ToolBase {
 
     if ("techproducts".equals(exampleName) && !alreadyExists) {
 
-      File exampledocsDir = new File(exampleDir, "exampledocs");
+      File exampledocsDir = new File(this.exampleDir, "exampledocs");
       if (!exampledocsDir.isDirectory()) {
         File readOnlyExampleDir = new File(serverDir.getParentFile(), "example");
         if (readOnlyExampleDir.isDirectory()) {
@@ -424,7 +423,7 @@ public class RunExampleTool extends ToolBase {
                 + "            }\n"
                 + "        }\n");
 
-        File filmsJsonFile = new File(exampleDir, "films/films.json");
+        File filmsJsonFile = new File(this.exampleDir, "films/films.json");
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
         String[] args =
             new String[] {
@@ -549,8 +548,7 @@ public class RunExampleTool extends ToolBase {
             new File(cloudDir, "node" + (n + 1) + "/solr"), true, cli, cloudPorts[n], zkHost, 30);
     }
 
-    String solrUrl = (String) nodeStatus.get("baseUrl");
-    if (solrUrl.endsWith("/")) solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+    String solrUrl = SolrCLI.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
     // wait until live nodes == numNodes
     waitToSeeLiveNodes(zkHost, numNodes);

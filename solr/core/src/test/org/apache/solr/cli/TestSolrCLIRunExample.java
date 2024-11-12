@@ -403,15 +403,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");
 
-      File exampleSolrHomeDir = new File(solrExampleDir, exampleName + "/solr");
-      assertTrue(
-          exampleSolrHomeDir.getAbsolutePath()
-              + " not found! run "
-              + exampleName
-              + " example failed; output: "
-              + toolOutput,
-          exampleSolrHomeDir.isDirectory());
-
       if ("techproducts".equals(exampleName)) {
         try (SolrClient solrClient =
             getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName)) {
