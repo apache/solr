@@ -35,7 +35,7 @@ public class SolrEmbeddingModel implements Accountable {
   private static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
   private static final String MAX_RETRIES_PARAM = "maxRetries";
 
-  protected final String name;
+  private final String name;
   private final Map<String, Object> params;
   private final EmbeddingModel embedder;
   private final Integer hashCode;
