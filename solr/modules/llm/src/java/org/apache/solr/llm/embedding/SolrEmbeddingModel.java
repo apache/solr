@@ -17,7 +17,6 @@
 package org.apache.solr.llm.embedding;
 
 import dev.langchain4j.data.embedding.Embedding;
-import dev.langchain4j.model.embedding.DimensionAwareEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import java.lang.reflect.Method;
 import java.time.Duration;
