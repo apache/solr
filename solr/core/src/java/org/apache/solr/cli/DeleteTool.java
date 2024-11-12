@@ -57,9 +57,6 @@ public class DeleteTool extends ToolBase {
   private static final Option DELETE_CONFIG_OPTION =
       Option.builder()
           .longOpt("delete-config")
-          .hasArg()
-          .argName("true|false")
-          .type(Boolean.class)
           .desc(
               "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
           .build();
@@ -86,10 +83,8 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    return "Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
-        + " mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
-        + " delete the configuration directory from Zookeeper so long as it is not being used by another collection.\n"
-        + " You can override this behavior by passing --delete-config false when running this command.\n"
+    return "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode. "
+        + "Deleting a collection does not delete it's configuration unless you pass in the --delete-config flag.\n"
         + "\n"
         + "List of options:";
   }
@@ -148,7 +143,7 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = Boolean.parseBoolean(cli.getOptionValue(DELETE_CONFIG_OPTION, "true"));
+    boolean deleteConfig = cli.hasOption(DELETE_CONFIG_OPTION);
 
     if (deleteConfig && configName != null) {
       if (cli.hasOption(FORCE_OPTION)) {

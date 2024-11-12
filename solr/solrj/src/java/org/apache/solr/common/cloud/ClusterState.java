@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -391,7 +392,10 @@ public class ClusterState implements MapWriter {
   /**
    * Be aware that this may return collections which may not exist now. You can confirm that this
    * collection exists after verifying CollectionRef.get() != null
+   *
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
@@ -411,28 +415,22 @@ public class ClusterState implements MapWriter {
   }
 
   /**
-   * Iterate over collections. Unlike {@link #getCollectionStates()} collections passed to the
-   * consumer are guaranteed to exist.
-   *
-   * @param consumer collection consumer.
+   * Streams the resolved {@link DocCollection}s. Use this sparingly in case there are many
+   * collections.
    */
+  public Stream<DocCollection> collectionStream() {
+    return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
+  }
+
+  /**
+   * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
+   * sparingly in case there are many collections.
+   *
+   * @deprecated see {@link #collectionStream()}
+   */
+  @Deprecated
   public void forEachCollection(Consumer<DocCollection> consumer) {
-    collectionStates.forEach(
-        (s, collectionRef) -> {
-          try {
-            DocCollection collection = collectionRef.get();
-            if (collection != null) {
-              consumer.accept(collection);
-            }
-          } catch (SolrException e) {
-            if (e.getCause() != null
-                && e.getCause().getClass().getName().endsWith("NoNodeException")) {
-              // don't do anything. This collection does not exist
-            } else {
-              throw e;
-            }
-          }
-        });
+    collectionStream().forEach(consumer);
   }
 
   public static class CollectionRef {
