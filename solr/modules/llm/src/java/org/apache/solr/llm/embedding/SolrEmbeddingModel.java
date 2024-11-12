@@ -116,9 +116,6 @@ public class SolrEmbeddingModel implements Accountable {
 
   @Override
   public int hashCode() {
-    if (hashCode == null) {
-      hashCode = calculateHashCode();
-    }
     return hashCode;
   }
 
