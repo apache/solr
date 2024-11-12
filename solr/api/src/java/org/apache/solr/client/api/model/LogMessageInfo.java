@@ -14,23 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.api.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
-public class Constants {
-  private Constants() {
-    /* Private ctor prevents instantiation */
-  }
+/** Metadata about the log messages returned by the 'GET /api/node/logging/messages' API */
+public class LogMessageInfo {
+  @JsonProperty("since")
+  public Long boundingTimeMillis;
 
-  public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
-  public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
-  public static final String INDEX_PATH_PREFIX =
-      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
+  @JsonProperty public Boolean found;
+  @JsonProperty public List<String> levels;
 
-  public static final String CORE_NAME_PATH_PARAMETER = "coreName";
+  @JsonProperty("last")
+  public long lastRecordTimestampMillis;
 
-  public static final String OMIT_FROM_CODEGEN_PROPERTY = "omitFromCodegen";
-  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
-
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  @JsonProperty public int buffer;
+  @JsonProperty public String threshold;
 }

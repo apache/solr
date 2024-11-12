@@ -14,23 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.api.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Constants {
-  private Constants() {
-    /* Private ctor prevents instantiation */
+/** The request body for the 'PUT /api/node/logging/messages/threshold' API. */
+public class SetThresholdRequestBody {
+  public SetThresholdRequestBody() {}
+
+  public SetThresholdRequestBody(String level) {
+    this.level = level;
   }
 
-  public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
-  public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
-  public static final String INDEX_PATH_PREFIX =
-      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
-
-  public static final String CORE_NAME_PATH_PARAMETER = "coreName";
-
-  public static final String OMIT_FROM_CODEGEN_PROPERTY = "omitFromCodegen";
-  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
-
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  @JsonProperty(required = true)
+  public String level;
 }

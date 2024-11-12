@@ -66,6 +66,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.FileMetaData;
+import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -91,11 +93,10 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
-import org.apache.solr.handler.admin.api.CoreReplicationAPI;
+import org.apache.solr.handler.admin.api.CoreReplication;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.APIConfigProvider;
-import org.apache.solr.jersey.APIConfigProvider.APIConfig;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -274,7 +275,7 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
-      final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
+      final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
       V2ApiUtils.squashIntoSolrResponseWithoutHeader(
           rsp,
           coreReplicationAPI.fetchFileList(Long.parseLong(solrParams.required().get(GENERATION))));
@@ -696,10 +697,10 @@ public class ReplicationHandler extends RequestHandlerBase
     rsp.add(STATUS, OK_STATUS);
   }
 
-  public CoreReplicationAPI.IndexVersionResponse getIndexVersionResponse() throws IOException {
+  public IndexVersionResponse getIndexVersionResponse() throws IOException {
 
     IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
-    CoreReplicationAPI.IndexVersionResponse rsp = new CoreReplicationAPI.IndexVersionResponse();
+    IndexVersionResponse rsp = new IndexVersionResponse();
     if (commitPoint == null) {
       // if this handler is 'lazy', we may not have tracked the last commit
       // because our commit listener is registered on inform
@@ -735,9 +736,9 @@ public class ReplicationHandler extends RequestHandlerBase
    * <p>The local conf files information is cached so that everytime it does not have to compute the
    * checksum. The cache is refreshed only if the lastModified of the file changes
    */
-  public List<CoreReplicationAPI.FileMetaData> getConfFileInfoFromCache(
+  public List<FileMetaData> getConfFileInfoFromCache(
       NamedList<String> nameAndAlias, final Map<String, FileInfo> confFileInfoCache) {
-    List<CoreReplicationAPI.FileMetaData> confFiles = new ArrayList<>();
+    List<FileMetaData> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
       Checksum checksum = null;
       for (int i = 0; i < nameAndAlias.size(); i++) {
@@ -758,7 +759,7 @@ public class ReplicationHandler extends RequestHandlerBase
           info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
-        CoreReplicationAPI.FileMetaData m = info.fileMetaData;
+        FileMetaData m = info.fileMetaData;
         if (nameAndAlias.getVal(i) != null) m.alias = nameAndAlias.getVal(i);
         confFiles.add(m);
       }
@@ -768,11 +769,11 @@ public class ReplicationHandler extends RequestHandlerBase
 
   static class FileInfo {
     long lastmodified;
-    CoreReplicationAPI.FileMetaData fileMetaData;
+    FileMetaData fileMetaData;
 
     public FileInfo(long lasmodified, String name, long size, long checksum) {
       this.lastmodified = lasmodified;
-      this.fileMetaData = new CoreReplicationAPI.FileMetaData(size, name, checksum);
+      this.fileMetaData = new FileMetaData(size, name, checksum);
     }
   }
 
@@ -1389,7 +1390,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(CoreReplicationAPI.class, SnapshotBackupAPI.class);
+    return List.of(CoreReplication.class, SnapshotBackupAPI.class);
   }
 
   @Override
@@ -1913,7 +1914,7 @@ public class ReplicationHandler extends RequestHandlerBase
    */
   public static final String WAIT = "wait";
 
-  public static class ReplicationHandlerConfig implements APIConfig {
+  public static class ReplicationHandlerConfig implements APIConfigProvider.APIConfig {
 
     private int numberBackupsToKeep = 0; // zero: do not delete old backups
 

@@ -25,6 +25,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.FileListResponse;
+import org.apache.solr.client.api.model.FileMetaData;
+import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,10 +36,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link CoreReplicationAPI} */
+/** Unit tests for {@link CoreReplication} */
 public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
-  private CoreReplicationAPI coreReplicationAPI;
+  private CoreReplication coreReplicationAPI;
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
   private SolrQueryRequest mockQueryRequest;
@@ -60,11 +63,10 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetIndexVersion() throws Exception {
-    CoreReplicationAPI.IndexVersionResponse expected =
-        new CoreReplicationAPI.IndexVersionResponse(123L, 123L, "testGeneration");
+    IndexVersionResponse expected = new IndexVersionResponse(123L, 123L, "testGeneration");
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-    CoreReplicationAPI.IndexVersionResponse actual = coreReplicationAPI.doFetchIndexVersion();
+    IndexVersionResponse actual = coreReplicationAPI.doFetchIndexVersion();
     assertEquals(expected.indexVersion, actual.indexVersion);
     assertEquals(expected.generation, actual.generation);
     assertEquals(expected.status, actual.status);
@@ -73,7 +75,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings("unchecked")
   public void testFetchFiles() throws Exception {
-    CoreReplicationAPI.FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
+    FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
     assertEquals(123, actualResponse.fileList.get(0).size);
     assertEquals("test", actualResponse.fileList.get(0).name);
     assertEquals(123456789, actualResponse.fileList.get(0).checksum);
@@ -85,7 +87,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
   }
 
-  private static class CoreReplicationAPIMock extends CoreReplicationAPI {
+  private static class CoreReplicationAPIMock extends CoreReplication {
     public CoreReplicationAPIMock(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
       super(solrCore, req, rsp);
     }

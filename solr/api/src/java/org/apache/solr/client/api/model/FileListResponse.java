@@ -14,23 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.api.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
-public class Constants {
-  private Constants() {
-    /* Private ctor prevents instantiation */
-  }
+/** Response body for the `GET /api/cores/coreName/replication/files` API */
+public class FileListResponse extends SolrJerseyResponse {
+  @JsonProperty("filelist")
+  public List<FileMetaData> fileList;
 
-  public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
-  public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
-  public static final String INDEX_PATH_PREFIX =
-      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
+  @JsonProperty("confFiles")
+  public List<FileMetaData> confFiles;
 
-  public static final String CORE_NAME_PATH_PARAMETER = "coreName";
+  @JsonProperty("status")
+  public String status;
 
-  public static final String OMIT_FROM_CODEGEN_PROPERTY = "omitFromCodegen";
-  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
+  @JsonProperty("message")
+  public String message;
 
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  @JsonProperty("exception")
+  public Exception exception;
 }
