@@ -170,8 +170,8 @@ public class LazySolrCluster implements SolrCluster {
       public void forEachEntry(BiConsumer<String, ? super SolrCollection> fun) {
         zkStateReader
             .getClusterState()
-            .forEachCollection(
-                coll -> fun.accept(coll.getName(), _collection(coll.getName(), coll)));
+            .collectionStream()
+            .forEach(coll -> fun.accept(coll.getName(), _collection(coll.getName(), coll)));
       }
 
       @Override
