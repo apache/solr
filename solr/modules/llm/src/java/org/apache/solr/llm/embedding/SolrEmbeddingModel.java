@@ -31,9 +31,9 @@ import org.apache.solr.llm.store.EmbeddingModelException;
 public class SolrEmbeddingModel implements Accountable {
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrEmbeddingModel.class);
-  public static final String TIMEOUT_PARAM = "timeout";
-  public static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
-  public static final String MAX_RETRIES_PARAM = "maxRetries";
+  private static final String TIMEOUT_PARAM = "timeout";
+  private static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
+  private static final String MAX_RETRIES_PARAM = "maxRetries";
 
   protected final String name;
   private final Map<String, Object> params;
