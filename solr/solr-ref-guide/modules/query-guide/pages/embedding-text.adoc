@@ -262,7 +262,7 @@ http://localhost:8983/solr/techproducts/schema/embedding-model-store
 To run a query that embeds your query text, using a model you previously uploaded is simple:
 
 [source,text]
-?q={!embed model=a-model f=vector topK=10}hello world query
+?q={!text_embedder model=a-model f=vector topK=10}hello world query
 
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
 

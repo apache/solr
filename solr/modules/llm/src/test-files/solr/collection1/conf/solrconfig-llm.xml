@@ -22,7 +22,7 @@
  </requestDispatcher>
 
  <!-- Query parser used to run neural queries-->
- <queryParser name="embed"
+ <queryParser name="text_embedder"
   class="org.apache.solr.llm.search.TextEmbedderQParserPlugin" />
 
  <query>
