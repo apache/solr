@@ -56,8 +56,6 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * Utility class that holds various helper methods for the CLI.
- *
- * @since 10.0
  */
 public final class CLIUtils {
 
@@ -134,14 +132,12 @@ public final class CLIUtils {
 
   public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
     String solrUrl = normalizeSolrUrl(cli);
-    // TODO Replace hard-coded string with Option object
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     return getSolrClient(solrUrl, credentials, barePath);
   }
 
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {
     String solrUrl = normalizeSolrUrl(cli);
-    // TODO Replace hard-coded string with Option object
     String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     return getSolrClient(solrUrl, credentials, false);
   }
@@ -284,7 +280,7 @@ public final class CLIUtils {
    * Extracts the port from the provided {@code solrUrl}. If a URL is provided with https scheme and
    * not explicitly defines the port, the default port for HTTPS (443) is used.
    *
-   * <p>If URL does not contain a port nor https as scheme, it fallsback to port 80.
+   * <p>If URL does not contain a port nor https as scheme, it falls back to port 80.
    *
    * @param solrUrl the URL to extract the port from
    * @return The port that was found.
