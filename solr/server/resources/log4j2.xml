@@ -16,7 +16,7 @@
   limitations under the License.
   -->
 
-<!-- Default production configuration is asnychronous logging -->
+<!-- Default production configuration is asynchronous logging -->
 <Configuration>
   <Appenders>
 
@@ -62,7 +62,7 @@
 
   </Appenders>
   <Loggers>
-    <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchonous logging respectively -->
+    <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchronous logging respectively -->
     <AsyncLogger name="org.apache.hadoop" level="warn"/>
     <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
     <AsyncLogger name="org.apache.zookeeper" level="warn"/>

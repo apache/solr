@@ -16,9 +16,9 @@
   limitations under the License.
   -->
 
-<!-- Use this file for logging exlusively to the console, useful for 
+<!-- Use this file for logging exclusively to the console, useful for
      some development tasks. Should not be used for production -->
-<!-- Default production configuration is asnychronous logging -->
+<!-- Default production configuration is asynchronous logging -->
 <Configuration>
   <Appenders>
     <Console name="STDERR" target="SYSTEM_ERR">
