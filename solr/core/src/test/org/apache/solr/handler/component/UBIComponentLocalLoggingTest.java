@@ -36,6 +36,9 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * This test demonstrates, well, not totally sure.  It may be we could delete this?
+ */
 public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
@@ -49,7 +52,7 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testLocalCatStream() throws Exception {
+  public void testLocalLoggingStream() throws Exception {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 1, 1, 0)
         .process(cluster.getSolrClient());
