@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiPredicate;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
@@ -52,7 +53,7 @@ import org.apache.solr.monitor.AliasingPresearcher;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.monitor.cache.MonitorQueryCache;
 import org.apache.solr.monitor.cache.SharedMonitorCache;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.util.SolrPluginUtils;
@@ -84,12 +85,23 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     super.prepare(rb);
-    var req = rb.req;
-    var documentBatch = documentBatch(req);
-    var matcherSink =
+
+    rb.setQuery(new MatchAllDocsQuery());
+
+    final DocumentBatchVisitor documentBatchVisitor =
+        documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema());
+    final LeafReader documentBatch = documentBatchVisitor.get();
+
+    final MonitorQueryCache monitorQueryCache =
+        (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
+
+    final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
+        new SolrMonitorQueryDecoder(rb.req.getCore());
+
+    final SolrMatcherSink solrMatcherSink =
         new SyncSolrMatcherSink<>(
             QueryMatch.SIMPLE_MATCHER::createMatcher,
-            new IndexSearcher(documentBatch.get()),
+            new IndexSearcher(documentBatch),
             matchingQueries -> {
               if (rb.isDebug()) {
                 rb.req
@@ -100,25 +112,34 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
                             matchingQueries.getQueriesRun()));
               }
             });
-    Query preFilterQuery = presearcher.buildQuery(documentBatch.get(), getTermAcceptor(rb.req));
-    List<Query> mutableFilters =
+
+    final SolrMonitorQueryCollector.CollectorContext collectorContext =
+        new SolrMonitorQueryCollector.CollectorContext(
+            monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
+
+    final MonitorPostFilter monitorPostFilter = new MonitorPostFilter(collectorContext);
+
+    final BiPredicate<String, BytesRef> termAcceptor;
+    if (monitorQueryCache == null) {
+      termAcceptor = (__, ___) -> true;
+    } else {
+      termAcceptor = monitorQueryCache::acceptTerm;
+    }
+    final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
+
+    final List<Query> mutableFilters =
         Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
-    rb.setQuery(new MatchAllDocsQuery());
+
     mutableFilters.add(preFilterQuery);
-    var searcher = req.getSearcher();
-    MonitorQueryCache solrMonitorCache =
-        (SharedMonitorCache) searcher.getCache(this.solrMonitorCacheName);
-    SolrMonitorQueryDecoder queryDecoder = new SolrMonitorQueryDecoder(req.getCore());
-    mutableFilters.add(
-        new MonitorPostFilter(
-            new SolrMonitorQueryCollector.CollectorContext(
-                solrMonitorCache, queryDecoder, matcherSink)));
+    mutableFilters.add(monitorPostFilter);
+
     rb.setFilters(mutableFilters);
   }
 
   @SuppressWarnings({"unchecked"})
-  private DocumentBatchVisitor documentBatch(SolrQueryRequest req) {
-    Object jsonParams = req.getJSON().get("params");
+  private static DocumentBatchVisitor documentBatchVisitor(
+      Map<String, Object> json, IndexSchema indexSchema) {
+    Object jsonParams = json.get("params");
     if (!(jsonParams instanceof Map)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need params");
     }
@@ -135,13 +156,12 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
             SolrException.ErrorCode.BAD_REQUEST, "document needs to be a string-keyed map");
       }
       var docAsMap = (Map<Object, Object>) document;
-      docAsMap.putIfAbsent(
-          req.getSchema().getUniqueKeyField().getName(), UUID.randomUUID().toString());
+      docAsMap.putIfAbsent(indexSchema.getUniqueKeyField().getName(), UUID.randomUUID().toString());
       var solrInputDoc = JsonLoader.buildDoc((Map<String, Object>) document);
-      var luceneDoc = DocumentBuilder.toDocument(solrInputDoc, req.getSchema());
+      var luceneDoc = DocumentBuilder.toDocument(solrInputDoc, indexSchema);
       luceneDocs.add(luceneDoc);
     }
-    return DocumentBatchVisitor.of(req.getSchema().getIndexAnalyzer(), luceneDocs);
+    return DocumentBatchVisitor.of(indexSchema.getIndexAnalyzer(), luceneDocs);
   }
 
   @Override
@@ -210,14 +230,5 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   public Presearcher getPresearcher() {
     return presearcher;
-  }
-
-  private BiPredicate<String, BytesRef> getTermAcceptor(SolrQueryRequest req) {
-    var searcher = req.getSearcher();
-    MonitorQueryCache cache = (MonitorQueryCache) searcher.getCache(this.solrMonitorCacheName);
-    if (cache == null) {
-      return (__, ___) -> true;
-    }
-    return cache::acceptTerm;
   }
 }
