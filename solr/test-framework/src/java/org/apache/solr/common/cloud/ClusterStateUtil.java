@@ -17,12 +17,15 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Utils;
 
 public class ClusterStateUtil {
 
@@ -163,5 +166,21 @@ public class ClusterStateUtil {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted");
       }
     }
+  }
+
+  /** Produces a String of all the collection states for debugging. ZK may be consulted. */
+  public static String toDebugAllStatesString(ClusterState clusterState) {
+    // note: ClusterState.toString prints the in-memory state info it has without consulting ZK
+
+    // Collect to a Map by name, loading each DocCollection expressed as a Map
+    var stateMap =
+        clusterState
+            .collectionStream()
+            .collect(
+                LinkedHashMap::new,
+                (map, state) -> map.put(state.getName(), state.toMap(new LinkedHashMap<>())),
+                Map::putAll);
+    // toJSON requires standard types like Map; doesn't know about DocCollection etc.
+    return Utils.toJSONString(stateMap);
   }
 }

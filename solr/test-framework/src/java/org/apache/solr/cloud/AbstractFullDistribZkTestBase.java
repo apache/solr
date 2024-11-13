@@ -69,6 +69,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -105,8 +106,6 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2539,9 +2538,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      CharArr out = new CharArr();
-      new JSONWriter(out, 2).write(clusterState.collectionStream().iterator());
-      cs = out.toString();
+      cs = ClusterStateUtil.toDebugAllStatesString(clusterState);
     }
     return cs;
   }
