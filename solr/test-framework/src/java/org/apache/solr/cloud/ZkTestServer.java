@@ -267,7 +267,7 @@ public class ZkTestServer {
       }
     }
 
-    private class TestZKDatabase extends ZKDatabase {
+    private static class TestZKDatabase extends ZKDatabase {
 
       private final WatchLimiter limiter;
 
