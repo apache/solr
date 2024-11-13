@@ -20,8 +20,11 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
-  <requestHandler name="/select"
-     class="solr.SearchHandler"></requestHandler>
+  <requestHandler name="/select" class="solr.SearchHandler">     
+     <arr name="last-components">
+      <str>ubi</str>
+    </arr>
+  </requestHandler>
 
   <!-- Used to specify an alternate directory to hold all index data.
        It defaults to "index" if not present, and should probably
@@ -38,23 +41,7 @@
     <!--str name="streamQueriesExpressionFile">ubi-query-pipeline.expr</str-->
   </searchComponent>
 
-  <!-- Log retrievedDocs -->
-  <requestHandler name="/with_ubi" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="defType">dismax</str>
-    </lst>
-    <arr name="last-components">
-      <str>ubi</str>
-    </arr>
-  </requestHandler>
-  
-  <requestHandler name="/noubi" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="defType">dismax</str>
-    </lst>
-  </requestHandler>
-
-  <initParams path="/with_ubi,/no_ubi">
+  <initParams path="/select">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>
