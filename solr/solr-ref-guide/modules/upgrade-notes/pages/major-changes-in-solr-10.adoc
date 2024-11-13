@@ -35,6 +35,18 @@ Minimum Java version for Solr 10.x is Java 21.
 The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
 Users are urged to review all use of the `bin/solr` command, such as in scripts and documentation, to ensure that the correct options are being used.
 
+Some key changes that you may run into are:
+
+ * Commands that interact with Solr now all use `--solr-url` (or `-s`) plus a `--name` (or `-c`) to specify the Solr to interact with.
+ * You may use `--zk-host` (or `-z`) in place of the `--solr-url` option to lookup the Solr host.
+ * Basic Authentication support has been added to bin/solr via the `--credentials` (or `-u`) option.
+ * Some short and single-letter options have been removed to avoid conflicts or in favor to other options.
+ 
+To learn about the updated options in each CLI tool, use the `--help` option or look up the tool in the documentation.
+
+Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.  
+Now you have to explicitly provide a  `--delete-config` option to delete the configsets.  This decouples the lifecycle of a configset from that of a collection.
+
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.

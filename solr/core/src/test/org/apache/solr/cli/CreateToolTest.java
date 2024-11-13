@@ -51,7 +51,7 @@ public class CreateToolTest extends SolrCloudTestCase {
       cluster.getZkClient().getZkServerAddress(),
       "--credentials",
       SecurityJson.USER_PASS,
-      "-verbose"
+      "--verbose"
     };
 
     assertEquals(0, runTool(args));

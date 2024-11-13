@@ -625,7 +625,7 @@ public class ZkStateReader implements SolrCloseable {
           collectionWatches.watchedCollections().size(),
           collectionWatches.activeCollectionCount(),
           lazyCollectionStates.keySet().size(),
-          clusterState.getCollectionStates().size());
+          clusterState.size());
     }
 
     if (log.isTraceEnabled()) {
@@ -634,7 +634,7 @@ public class ZkStateReader implements SolrCloseable {
           collectionWatches.watchedCollections(),
           collectionWatches.activeCollections(),
           lazyCollectionStates.keySet(),
-          clusterState.getCollectionStates());
+          clusterState.collectionStream().toList());
     }
 
     notifyCloudCollectionsListeners();
@@ -1432,8 +1432,7 @@ public class ZkStateReader implements SolrCloseable {
                 zkClient,
                 Instant.ofEpochMilli(stat.getCtime()));
 
-        ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
-        return collectionRef == null ? null : collectionRef.get();
+        return state.getCollectionOrNull(coll);
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a state.json is created later.

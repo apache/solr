@@ -25,9 +25,7 @@ import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
 import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
 import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
-import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
-import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
 import static org.apache.solr.handler.ReplicationHandler.LEGACY_LEADER_URL;
 import static org.apache.solr.handler.ReplicationHandler.LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
@@ -95,7 +93,7 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -121,8 +119,6 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.FileInfo;
-import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -305,8 +301,8 @@ public class IndexFetcher {
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
-    useInternalCompression = INTERNAL.equals(compress);
-    useExternalCompression = EXTERNAL.equals(compress);
+    useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
+    useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
 
     // allow a leader override for tests - you specify this in /replication follower section of
@@ -1577,7 +1573,7 @@ public class IndexFetcher {
     return new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(d);
   }
 
-  private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
+  private final Map<String, ReplicationHandler.FileInfo> confFileInfoCache = new HashMap<>();
 
   /**
    * The local conf files are compared with the conf files in the leader. If they are same (by
@@ -1601,10 +1597,10 @@ public class IndexFetcher {
       names.add(name, null);
     }
     // get the details of the local conf files with the same alias/name
-    List<CoreReplicationAPI.FileMetaData> localFilesInfo =
+    List<FileMetaData> localFilesInfo =
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
-    for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
+    for (FileMetaData fileInfo : localFilesInfo) {
       String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
@@ -1982,9 +1978,8 @@ public class IndexFetcher {
       try {
         QueryRequest req = new QueryRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-        req.setBasePath(leaderBaseUrl);
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.request(req, leaderCoreName);
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
@@ -2050,7 +2045,7 @@ public class IndexFetcher {
     }
   }
 
-  private class DirectoryFileFetcher extends FileFetcher {
+  protected class DirectoryFileFetcher extends FileFetcher {
     DirectoryFileFetcher(
         Directory tmpIndexDir,
         Map<String, Object> fileDetails,
@@ -2110,7 +2105,7 @@ public class IndexFetcher {
     }
   }
 
-  private class LocalFsFileFetcher extends FileFetcher {
+  protected class LocalFsFileFetcher extends FileFetcher {
     LocalFsFileFetcher(
         File dir,
         Map<String, Object> fileDetails,

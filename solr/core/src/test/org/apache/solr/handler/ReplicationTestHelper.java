@@ -33,7 +33,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -76,11 +76,11 @@ public final class ReplicationTestHelper {
    * @param baseUrl the root URL for a Solr node
    * @param collectionOrCore an optional default collection/core for the created client
    */
-  public static SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
-    return new HttpSolrClient.Builder(baseUrl)
+  public static Http2SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
+    return new Http2SolrClient.Builder(baseUrl)
         .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(90000, TimeUnit.MILLISECONDS)
         .build();
   }
 

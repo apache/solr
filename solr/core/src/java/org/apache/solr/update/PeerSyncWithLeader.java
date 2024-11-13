@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
@@ -54,7 +54,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private final SolrClient clientToLeader;
+  private final Http2SolrClient clientToLeader;
   private final String coreName;
   private final String leaderBaseUrl;
 
@@ -334,8 +334,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private NamedList<Object> request(ModifiableSolrParams params, String onFail) {
     try {
       QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
-      request.setBasePath(leaderBaseUrl);
-      QueryResponse rsp = request.process(clientToLeader, coreName);
+      QueryResponse rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);
