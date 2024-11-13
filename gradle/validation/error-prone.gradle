@@ -236,7 +236,7 @@ allprojects { prj ->
             // '-Xep:ThrowIfUncheckedKnownChecked:OFF', // we don't use this annotation
             '-Xep:ThrowNull:ERROR',
             '-Xep:TreeToString:ERROR',
-            // '-Xep:TruthSelfEquals:OFF', // we don't use truth
+            // '-Xep:SelfAssertion:OFF', // we don't use truth
             '-Xep:TryFailThrowable:ERROR',
             '-Xep:TypeParameterQualifier:ERROR',
             '-Xep:UnicodeDirectionalityCharacters:ERROR',
