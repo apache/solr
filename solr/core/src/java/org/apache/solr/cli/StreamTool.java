@@ -73,11 +73,12 @@ public class StreamTool extends ToolBase {
   public String getName() {
     return "stream";
   }
+
   @Override
   public String getUsage() {
     // Specify that the last argument is the streaming expression
-    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f\n" +
-            "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
+    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f\n"
+        + "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
   }
 
   private static final Option EXECUTION_OPTION =
@@ -488,8 +489,7 @@ public class StreamTool extends ToolBase {
     return streamFactory.constructStream(streamExpression);
   }
 
-  static String readExpression(LineNumberReader bufferedReader, String[] args)
-      throws IOException {
+  static String readExpression(LineNumberReader bufferedReader, String[] args) throws IOException {
 
     StringBuilder exprBuff = new StringBuilder();
 
