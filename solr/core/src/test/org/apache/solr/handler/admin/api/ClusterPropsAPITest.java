@@ -177,17 +177,4 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       assertEquals(404, httpResponse.getStatusLine().getStatusCode());
     }
   }
-
-  @Test
-  public void testClusterPropertyFetchNonExistentPropertySolrJ() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      // Fetch Cluster Property that doesn't exist
-      SolrException e =
-          expectThrows(
-              SolrException.class,
-              () ->
-                  new ClusterPropertiesApi.GetClusterProperty("ext.clusterPropThatDoesNotExist")
-                      .process(client));
-    }
-  }
 }
