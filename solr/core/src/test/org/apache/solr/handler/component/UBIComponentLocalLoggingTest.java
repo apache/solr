@@ -36,9 +36,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * This test demonstrates, well, not totally sure.  It may be we could delete this?
- */
+/** This test demonstrates, well, not totally sure. It may be we could delete this? */
 public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
