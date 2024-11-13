@@ -21,15 +21,13 @@ package org.apache.solr.monitor.search;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SearchHandler;
 
 public class ReverseSearchHandler extends SearchHandler {
 
   @Override
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(2);
-    names.add(QueryComponent.COMPONENT_NAME);
+    ArrayList<String> names = new ArrayList<>(1);
     names.add(ReverseSearchComponent.COMPONENT_NAME);
     return names;
   }

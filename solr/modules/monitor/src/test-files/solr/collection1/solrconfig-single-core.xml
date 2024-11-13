@@ -88,7 +88,6 @@
   </requestDispatcher>
   <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler">
     <arr name="components">
-      <str>query</str>
       <str>reverseSearch</str>
       <str>reverseDebug</str>
     </arr>

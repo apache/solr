@@ -22,6 +22,7 @@ package org.apache.solr.monitor.search;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -80,7 +81,8 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   }
 
   @Override
-  public void prepare(ResponseBuilder rb) {
+  public void prepare(ResponseBuilder rb) throws IOException {
+    super.prepare(rb);
     var req = rb.req;
     var documentBatch = documentBatch(req);
     var matcherSink = solrMatcherSinkFactory.build(documentBatch, rb.req.getContext());
