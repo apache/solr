@@ -2,10 +2,10 @@
 
 ## Building Solr from Source
 
-Download the Java 11 JDK (Java Development Kit) or later.
+Download the Java 21 JDK (Java Development Kit) or later.
 We recommend the OpenJDK distribution Eclipse Temurin available from https://adoptium.net/.
 You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bin) folder included on your command path.
-To test this, issue a "java -version" command from your shell (command prompt) and verify that the Java version is 11 or later.
+To test this, issue a "java -version" command from your shell (command prompt) and verify that the Java version is 21 or later.
 See the xref:jvms.adoc[JVM developer doc] for more information on Gradle and JVMs.
 
 Clone the latest Apache Solr source code directly from the Git repository: <https://solr.apache.org/community.html#version-control>.

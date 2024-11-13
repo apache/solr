@@ -253,10 +253,12 @@ public class SolrRequestInfo {
    */
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
-    return req == null || rsp == null
-        ? QueryLimits.NONE
-        : (QueryLimits)
-            req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req, rsp));
+    return req == null || rsp == null ? QueryLimits.NONE : getQueryLimits(req, rsp);
+  }
+
+  public static QueryLimits getQueryLimits(SolrQueryRequest request, SolrQueryResponse response) {
+    return (QueryLimits)
+        request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
   public SolrDispatchFilter.Action getAction() {

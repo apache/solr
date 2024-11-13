@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
@@ -43,6 +42,7 @@ public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 
   @Override
   protected List<ACL> createSecurityACLsToAdd() {
-    return Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
+    // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
+    return Arrays.asList(new ACL(ZooDefs.Perms.ALL, new Id("sasl", superUser)));
   }
 }

@@ -36,9 +36,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
@@ -221,24 +223,19 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         }
 
         // wait for a while until we see the collection
-        TimeOut waitUntil =
-            new TimeOut(30, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-        boolean created = false;
-        while (!waitUntil.hasTimedOut()) {
-          waitUntil.sleep(100);
-          created = ccc.getSolrCloudManager().getClusterState().hasCollection(collectionName);
-          if (created) break;
-        }
-        if (!created) {
+        try {
+          newColl =
+              zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, Objects::nonNull);
+        } catch (TimeoutException e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
-              "Could not fully create collection: " + collectionName);
+              "Could not fully create collection: " + collectionName,
+              e);
         }
 
         // refresh cluster state (value read below comes from Zookeeper watch firing following the
         // update done previously, be it by Overseer or by this thread when updates are distributed)
         clusterState = ccc.getSolrCloudManager().getClusterState();
-        newColl = clusterState.getCollection(collectionName);
       }
 
       final List<ReplicaPosition> replicaPositions;
