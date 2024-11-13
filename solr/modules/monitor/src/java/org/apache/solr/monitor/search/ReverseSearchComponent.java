@@ -36,7 +36,9 @@ import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.lucene.monitor.QueryDecomposer;
+import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.monitor.TermFilteredPresearcher;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -66,7 +68,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   private QueryDecomposer queryDecomposer;
   private Presearcher presearcher;
-  private final SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
   private PresearcherFactory.PresearcherParameters presearcherParameters;
 
   @Override
@@ -85,7 +86,20 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     super.prepare(rb);
     var req = rb.req;
     var documentBatch = documentBatch(req);
-    var matcherSink = solrMatcherSinkFactory.build(documentBatch, rb.req.getContext());
+    var matcherSink =
+        new SyncSolrMatcherSink<>(
+            QueryMatch.SIMPLE_MATCHER::createMatcher,
+            new IndexSearcher(documentBatch.get()),
+            matchingQueries -> {
+              if (rb.isDebug()) {
+                rb.req
+                    .getContext()
+                    .put(
+                        ReverseSearchDebugComponent.ReverseSearchDebugInfo.KEY,
+                        new ReverseSearchDebugComponent.ReverseSearchDebugInfo(
+                            matchingQueries.getQueriesRun()));
+              }
+            });
     Query preFilterQuery = presearcher.buildQuery(documentBatch.get(), getTermAcceptor(rb.req));
     List<Query> mutableFilters =
         Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
