@@ -234,7 +234,7 @@ public class SolrFeature extends Feature {
     }
 
     /** Scorer for a SolrFeature */
-    public static class SolrFeatureScorer extends FilterFeatureScorer {
+    public class SolrFeatureScorer extends FilterFeatureScorer {
 
       public SolrFeatureScorer(FeatureWeight weight, Scorer solrScorer) {
         super(weight, solrScorer);
