@@ -14,19 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.client.api.model;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public interface BeforeReconnect extends ConnectionStateListener {
-  public void command();
+/** Response body for the `GET /api/cores/coreName/replication/indexversion` API */
+public class IndexVersionResponse extends SolrJerseyResponse {
 
-  @Override
-  default void stateChanged(CuratorFramework client, ConnectionState newState) {
-    if (newState == ConnectionState.LOST || newState == ConnectionState.SUSPENDED) {
-      command();
-    }
+  @JsonProperty("indexversion")
+  public Long indexVersion;
+
+  @JsonProperty("generation")
+  public Long generation;
+
+  @JsonProperty("status")
+  public String status;
+
+  public IndexVersionResponse() {}
+
+  public IndexVersionResponse(Long indexVersion, Long generation, String status) {
+    this.indexVersion = indexVersion;
+    this.generation = generation;
+    this.status = status;
   }
 }
