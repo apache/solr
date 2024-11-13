@@ -143,7 +143,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     CoreContainer coreContainer = core.getCoreContainer();
     SolrClientCache solrClientCache = coreContainer.getSolrClientCache();
 
-    // do I need this check?
     if (initArgs != null) {
       log.info("Initializing UBIComponent");
       if (coreContainer.isZooKeeperAware()) {
@@ -157,7 +156,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           log.info(
               "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
           log.info(
-              "Writing out UBI query information to local log file ubi_queries.jsonl instead.");
+              "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
           expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
         } else {
           LineNumberReader bufferedReader;
@@ -288,6 +287,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     if (stream != null) {
       List<Tuple> tuples = getTuples(stream);
       log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
+    }
+    else {
+      log.error("UBI Query Stream is null, can't log query information.");
     }
   }
 

@@ -65,7 +65,6 @@ public class LoggingStream extends TupleStream implements Expressible {
   // field name in summary tuple for #docs updated in batch
   public static String BATCH_LOGGED_FIELD_NAME = "batchLogged";
 
-  private StreamContext context;
   private Path chroot;
 
   /**
@@ -139,12 +138,6 @@ public class LoggingStream extends TupleStream implements Expressible {
           SolrException.ErrorCode.BAD_REQUEST, "file to log to must be under " + chroot);
     }
 
-    //        if (!Files.exists(filePath)) {
-    //
-    //            throw new SolrException(
-    //                    SolrException.ErrorCode.BAD_REQUEST,
-    //                    "file/directory to stream doesn't exist: " + crawlRootStr);
-    //        }
     fos = new FileOutputStream(filePath.toFile());
     writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
@@ -204,9 +197,6 @@ public class LoggingStream extends TupleStream implements Expressible {
       throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(filepath);
-    // expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
-    // expression.addParameter(
-    //        new StreamExpressionNamedParameter("batchSize", Integer.toString(updateBatchSize)));
 
     if (includeStreams) {
       if (tupleSource != null) {
@@ -247,7 +237,6 @@ public class LoggingStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.context = context;
     Object solrCoreObj = context.get("solr-core");
     if (solrCoreObj == null || !(solrCoreObj instanceof SolrCore)) {
       throw new SolrException(
@@ -271,16 +260,6 @@ public class LoggingStream extends TupleStream implements Expressible {
     this.tupleSource.setStreamContext(context);
   }
 
-  private void verifyCollectionName(String collectionName, StreamExpression expression)
-      throws IOException {
-    if (null == collectionName) {
-      throw new IOException(
-          String.format(
-              Locale.ROOT,
-              "invalid expression %s - collectionName expected as first operand",
-              expression));
-    }
-  }
 
   //    private SolrInputDocument convertTupleTJson(Tuple tuple) {
   //        SolrInputDocument doc = new SolrInputDocument();
@@ -307,7 +286,7 @@ public class LoggingStream extends TupleStream implements Expressible {
   }
 
   /**
-   * This method will be called on every batch of tuples comsumed, after converting each tuple in
+   * This method will be called on every batch of tuples consumed, after converting each tuple in
    * that batch to a Solr Input Document.
    */
   protected void uploadBatchToCollection(Tuple doc) throws IOException {

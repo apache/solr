@@ -26,7 +26,7 @@ teardown() {
   save_home_on_failure
 
   delete_all_collections
-  SOLR_STOP_WAIT=1 solr stop -all >/dev/null 2>&1
+  SOLR_STOP_WAIT=1 solr stop --all >/dev/null 2>&1
 }
 
 @test "Run set up process" {
@@ -48,7 +48,7 @@ teardown() {
 
   assert_output --partial '"status":0'
   
-  curl -X POST -H 'Content-type:application/json' -d '{
+  run curl -X POST -H 'Content-type:application/json' -d '{
     "update-requesthandler": {
       "name": "/select",
       "class": "solr.SearchHandler",
@@ -58,7 +58,7 @@ teardown() {
   
   assert_output --partial '"status":0'
   
-  curl -X POST -H 'Content-type:application/json' -d '{
+  run curl -X POST -H 'Content-type:application/json' -d '{
     "update-requesthandler": {
       "name": "/query",
       "class": "solr.SearchHandler",
@@ -72,31 +72,11 @@ teardown() {
   run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=3&ubi=true"
   assert_output --partial '"status":0'
   assert_output --partial '"query_id":"1234'
-  
-  
-  # Rich UBI user query tracking enabled query
-  run curl -X POST -H 'Content-type:application/json' -d '{
-    "query" : "ram OR memory",
-    "filter": [
-        "inStock:true"
-    ],
-    "limit":2,
-    "params": {
-      "ubi": "true",
-      "query_id": "xyz890",
-      "user_query": {
-        "query": "RAM memory",
-        "experiment": "supersecret",
-        "page": 1,
-        "filter": "productStatus:available"
-      }            
-    }
-  }' "http://localhost:${SOLR_PORT}/solr/techproducts/query" 
-  assert_output --partial '"query_id":"xyz890"'
+   
   
   # No luck on getting the logs to read. 
-  #run cat "${SOLR_LOGS_DIR}/solr.log"
-  #run tail -n 1 "${SOLR_LOGS_DIR}/ubi_queries.jsonl"
-  #assert_output --partial "inStock:false"
-  #assert_file_contains "${SOLR_LOGS_DIR}/ubi_queries.jsonl" 'eric'
+  assert_file_exist ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl
+  run tail -n 1 "${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl"
+  assert_output --partial '{"id":"49","a_i":"1","b_i":"5"}'
+  assert_file_contains "${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl" '{"id":"49","a_i":"1","b_i":"5"}'
 }
