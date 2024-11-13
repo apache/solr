@@ -16,23 +16,14 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import org.apache.solr.client.api.endpoint.ReplicationApis;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -63,37 +54,17 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
     return doFetchFileList(gen);
   }
 
-  @GET
-  @Path("/files/{filePath}")
-  @Produces({MediaType.TEXT_PLAIN, BINARY_CONTENT_TYPE_V2})
-  public StreamingOutput fetchFile(
-      @PathParam("filePath") String filePath,
-      @Parameter(
-              description =
-                  "Directory type for specific filePath (cf or tlogFile). Defaults to Lucene index (file) directory if empty",
-              required = true)
-          @QueryParam("dirType")
-          String dirType,
-      @Parameter(description = "Output stream read/write offset", required = false)
-          @QueryParam("offset")
-          String offset,
-      @Parameter(required = false) @QueryParam("len") String len,
-      @Parameter(description = "Compress file output", required = false)
-          @QueryParam("compression")
-          @DefaultValue("false")
-          Boolean compression,
-      @Parameter(description = "Write checksum with output stream", required = false)
-          @QueryParam("checksum")
-          @DefaultValue("false")
-          Boolean checksum,
-      @Parameter(
-              description = "Limit data write per seconds. Defaults to no throttling",
-              required = false)
-          @QueryParam("maxWriteMBPerSec")
-          double maxWriteMBPerSec,
-      @Parameter(description = "The generation number of the index", required = false)
-          @QueryParam("generation")
-          Long gen)
+  @Override
+  @PermissionName(CORE_READ_PERM)
+  public SolrJerseyResponse fetchFile(
+      String filePath,
+      String dirType,
+      String offset,
+      String len,
+      Boolean compression,
+      Boolean checksum,
+      double maxWriteMBPerSec,
+      Long gen)
       throws IOException {
     if (dirType == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must provide a dirType ");

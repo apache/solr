@@ -18,12 +18,15 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import java.io.IOException;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
 @Path("/cores/{coreName}/replication")
@@ -47,4 +50,40 @@ public interface ReplicationApis {
       @Parameter(description = "The generation number of the index", required = true)
           @QueryParam("generation")
           long gen);
+
+  @GET
+  @CoreApiParameters
+  @Operation(
+      summary = "Get a stream of a specific file path of a core",
+      tags = {"core-replication"})
+  @Path("/files/{filePath}")
+  SolrJerseyResponse fetchFile(
+      @PathParam("filePath") String filePath,
+      @Parameter(
+              description =
+                  "Directory type for specific filePath (cf or tlogFile). Defaults to Lucene index (file) directory if empty",
+              required = true)
+          @QueryParam("dirType")
+          String dirType,
+      @Parameter(description = "Output stream read/write offset", required = false)
+          @QueryParam("offset")
+          String offset,
+      @Parameter(required = false) @QueryParam("len") String len,
+      @Parameter(description = "Compress file output", required = false)
+          @QueryParam("compression")
+          @DefaultValue("false")
+          Boolean compression,
+      @Parameter(description = "Write checksum with output stream", required = false)
+          @QueryParam("checksum")
+          @DefaultValue("false")
+          Boolean checksum,
+      @Parameter(
+              description = "Limit data write per seconds. Defaults to no throttling",
+              required = false)
+          @QueryParam("maxWriteMBPerSec")
+          double maxWriteMBPerSec,
+      @Parameter(description = "The generation number of the index", required = false)
+          @QueryParam("generation")
+          Long gen)
+      throws IOException;
 }

@@ -49,6 +49,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
+import org.apache.solr.client.api.model.ReplicationFileResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.core.DirectoryFactory;
@@ -104,7 +105,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return getFileList(generation, replicationHandler);
   }
 
-  protected StreamingOutput doFetchFile(
+  protected ReplicationFileResponse doFetchFile(
       String filePath,
       String dirType,
       String offset,
@@ -129,7 +130,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
               filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
     }
     solrQueryResponse.add(FILE_STREAM, dfs);
-    return dfs;
+    return new ReplicationFileResponse(dfs);
   }
 
   protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
