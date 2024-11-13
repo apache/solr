@@ -20,10 +20,8 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import jakarta.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.solr.client.api.endpoint.ListCollectionsApi;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.common.cloud.DocCollection;
@@ -51,10 +49,16 @@ public class ListCollections extends AdminAPIBase implements ListCollectionsApi 
         instantiateJerseyResponse(ListCollectionsResponse.class);
     validateZooKeeperAwareCoreContainer(coreContainer);
 
-    Map<String, DocCollection> collections =
-        coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionsMap();
-    List<String> collectionList = new ArrayList<>(collections.keySet());
-    Collections.sort(collectionList);
+    // resolve each name to ensure it exists.
+    //  TODO https://issues.apache.org/jira/browse/SOLR-16909 to go direct to ZK?
+    List<String> collectionList =
+        coreContainer
+            .getZkController()
+            .getClusterState()
+            .collectionStream()
+            .map(DocCollection::getName)
+            .sorted()
+            .collect(Collectors.toList());
     // XXX should we add aliases here?
     response.collections = collectionList;
 

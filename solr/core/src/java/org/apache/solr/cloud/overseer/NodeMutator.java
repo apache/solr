@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -49,23 +50,12 @@ public class NodeMutator {
 
     log.debug("DownNode state invoked for node: {}", nodeName);
 
-    List<ZkWriteCommand> zkWriteCommands = new ArrayList<>();
-
-    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-      String collectionName = entry.getKey();
-      DocCollection docCollection = entry.getValue();
-      if (docCollection.isPerReplicaState()) continue;
-
-      Optional<ZkWriteCommand> zkWriteCommand =
-          computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
-
-      if (zkWriteCommand.isPresent()) {
-        zkWriteCommands.add(zkWriteCommand.get());
-      }
-    }
-
-    return zkWriteCommands;
+    return clusterState
+        .collectionStream()
+        .filter(entry -> !entry.isPerReplicaState())
+        .map(docCollection -> computeCollectionUpdate(nodeName, docCollection, zkClient))
+        .flatMap(Optional::stream)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -77,7 +67,7 @@ public class NodeMutator {
    *     for an update to state.json, depending on the configuration of the collection.
    */
   public static Optional<ZkWriteCommand> computeCollectionUpdate(
-      String nodeName, String collectionName, DocCollection docCollection, SolrZkClient client) {
+      String nodeName, DocCollection docCollection, SolrZkClient client) {
     boolean needToUpdateCollection = false;
     List<String> downedReplicas = new ArrayList<>();
     final Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
@@ -107,13 +97,13 @@ public class NodeMutator {
 
         return Optional.of(
             new ZkWriteCommand(
-                collectionName,
+                docCollection.getName(),
                 docCollection.copyWithSlices(slicesCopy),
                 PerReplicaStatesOps.downReplicas(downedReplicas, prs),
                 false));
       } else {
         return Optional.of(
-            new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy)));
+            new ZkWriteCommand(docCollection.getName(), docCollection.copyWithSlices(slicesCopy)));
       }
     } else {
       // No update needed for this collection

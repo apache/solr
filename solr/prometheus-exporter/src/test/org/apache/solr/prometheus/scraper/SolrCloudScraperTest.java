@@ -115,17 +115,16 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     Map<String, MetricSamples> allCoreMetrics =
         solrCloudScraper.pingAllCores(configuration.getPingConfiguration().get(0));
 
-    Map<String, DocCollection> collectionStates = getClusterState().getCollectionsMap();
+    final List<DocCollection> collectionStates =
+        getClusterState().collectionStream().collect(Collectors.toList());
 
     long coreCount =
-        collectionStates.entrySet().stream()
-            .mapToInt(entry -> entry.getValue().getReplicas().size())
-            .sum();
+        collectionStates.stream().mapToInt(docColl -> docColl.getReplicas().size()).sum();
 
     assertEquals(coreCount, allCoreMetrics.size());
 
-    for (Map.Entry<String, DocCollection> entry : collectionStates.entrySet()) {
-      String coreName = entry.getValue().getReplicas().get(0).getCoreName();
+    for (DocCollection docColl : collectionStates) {
+      String coreName = docColl.getReplicas().get(0).getCoreName();
       assertTrue(allCoreMetrics.containsKey(coreName));
       List<Collector.MetricFamilySamples> coreMetrics = allCoreMetrics.get(coreName).asList();
       assertEquals(1, coreMetrics.size());

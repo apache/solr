@@ -30,13 +30,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -305,30 +304,20 @@ public class ReplicaMigrationUtils {
   }
 
   static List<Replica> getReplicasOfNodes(Collection<String> nodeNames, ClusterState state) {
-    List<Replica> sourceReplicas = new ArrayList<>();
-    for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
-      for (Slice slice : e.getValue().getSlices()) {
-        for (Replica replica : slice.getReplicas()) {
-          if (nodeNames.contains(replica.getNodeName())) {
-            sourceReplicas.add(replica);
-          }
-        }
-      }
-    }
-    return sourceReplicas;
+    return state
+        .collectionStream()
+        .flatMap(dc -> dc.getSlices().stream())
+        .flatMap(s -> s.getReplicas().stream())
+        .filter(r -> nodeNames.contains(r.getNodeName()))
+        .collect(Collectors.toList());
   }
 
   static List<Replica> getReplicasOfNode(String nodeName, ClusterState state) {
-    List<Replica> sourceReplicas = new ArrayList<>();
-    for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
-      for (Slice slice : e.getValue().getSlices()) {
-        for (Replica replica : slice.getReplicas()) {
-          if (nodeName.equals(replica.getNodeName())) {
-            sourceReplicas.add(replica);
-          }
-        }
-      }
-    }
-    return sourceReplicas;
+    return state
+        .collectionStream()
+        .flatMap(dc -> dc.getSlices().stream())
+        .flatMap(s -> s.getReplicas().stream())
+        .filter(r -> nodeName.equals(r.getNodeName()))
+        .collect(Collectors.toList());
   }
 }

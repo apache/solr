@@ -1413,16 +1413,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader.forceUpdateCollection(COLLECTION);
       ClusterState state = reader.getClusterState();
 
-      int numFound = 0;
-      Map<String, DocCollection> collectionsMap = state.getCollectionsMap();
-      for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
-        DocCollection collection = entry.getValue();
-        for (Slice slice : collection.getSlices()) {
-          if (slice.getReplicasMap().get("core_node1") != null) {
-            numFound++;
-          }
-        }
-      }
+      long numFound =
+          state
+              .collectionStream()
+              .map(DocCollection::getSlices)
+              .flatMap(Collection::stream)
+              .filter(slice -> slice.getReplicasMap().get("core_node1") != null)
+              .count();
+
       assertEquals("Shard was found more than once in ClusterState", 1, numFound);
     } finally {
       close(overseerClient);
