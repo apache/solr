@@ -73,15 +73,20 @@ public class StreamTool extends ToolBase {
   public String getName() {
     return "stream";
   }
+  @Override
+  public String getUsage() {
+    // Specify that the last argument is the streaming expression
+    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f\n" +
+            "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
+  }
 
   private static final Option EXECUTION_OPTION =
       Option.builder("e")
           .longOpt("execution")
           .hasArg()
-          .argName("CONTEXT")
-          .required(false)
+          .argName("ENVIRONMENT")
           .desc(
-              "Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'")
+              "Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr server. Default environment is 'remote'.")
           .build();
 
   private static final Option COLLECTION_OPTION =
@@ -90,7 +95,7 @@ public class StreamTool extends ToolBase {
           .argName("NAME")
           .hasArg()
           .desc(
-              "Name of the collection to execute on if workers are 'solr'.  Required for 'solr' worker.")
+              "Name of the specific collection to execute expression on if the execution is set to 'remote'. Required for 'remote' execution environment.")
           .build();
 
   private static final Option FIELDS_OPTION =
@@ -98,48 +103,40 @@ public class StreamTool extends ToolBase {
           .longOpt("fields")
           .argName("FIELDS")
           .hasArg()
-          .required(false)
           .desc(
-              "The fields in the tuples to output. (defaults to fields in the first tuple of result set).")
+              "The fields in the tuples to output. Defaults to fields in the first tuple of result set.")
           .build();
 
   private static final Option HEADER_OPTION =
-      Option.builder()
-          .longOpt("header")
-          .required(false)
-          .desc("Whether or not to include a header line. (default=false)")
-          .build();
+      Option.builder().longOpt("header").desc("Specify to include a header line.").build();
+
   private static final Option DELIMITER_OPTION =
       Option.builder()
           .longOpt("delimiter")
           .argName("CHARACTER")
           .hasArg()
-          .required(false)
-          .desc("The output delimiter. (default=tab).")
+          .desc("The output delimiter. Default to using three spaces.")
           .build();
   private static final Option ARRAY_DELIMITER_OPTION =
       Option.builder()
           .longOpt("array-delimiter")
           .argName("CHARACTER")
           .hasArg()
-          .required(false)
-          .desc("The delimiter multi-valued fields. (default=|)")
+          .desc("The delimiter multi-valued fields. Default to using a pipe (|) delimiter.")
           .build();
 
   @Override
   public Options getOptions() {
-    Options opts =
-        super.getOptions()
-            .addOption(EXECUTION_OPTION)
-            .addOption(COLLECTION_OPTION)
-            .addOption(FIELDS_OPTION)
-            .addOption(HEADER_OPTION)
-            .addOption(DELIMITER_OPTION)
-            .addOption(ARRAY_DELIMITER_OPTION)
-            .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
-            .addOptionGroup(getConnectionOptions());
 
-    return opts;
+    return super.getOptions()
+        .addOption(EXECUTION_OPTION)
+        .addOption(COLLECTION_OPTION)
+        .addOption(FIELDS_OPTION)
+        .addOption(HEADER_OPTION)
+        .addOption(DELIMITER_OPTION)
+        .addOption(ARRAY_DELIMITER_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   @Override
@@ -147,7 +144,7 @@ public class StreamTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
 
     String expressionArgument = cli.getArgs()[0];
-    String execution = cli.getOptionValue(EXECUTION_OPTION, "solr");
+    String execution = cli.getOptionValue(EXECUTION_OPTION, "remote");
     String arrayDelimiter = cli.getOptionValue(ARRAY_DELIMITER_OPTION, "|");
     String delimiter = cli.getOptionValue(DELIMITER_OPTION, "   ");
     boolean includeHeaders = cli.hasOption(HEADER_OPTION);
@@ -157,7 +154,7 @@ public class StreamTool extends ToolBase {
     String expr;
     try {
       Reader inputStream =
-          expressionArgument.toLowerCase(Locale.ROOT).endsWith("expr")
+          expressionArgument.toLowerCase(Locale.ROOT).endsWith(".expr")
               ? new InputStreamReader(
                   new FileInputStream(expressionArgument), Charset.defaultCharset())
               : new StringReader(expressionArgument);
@@ -243,7 +240,18 @@ public class StreamTool extends ToolBase {
     echoIfVerbose("StreamTool -- Done.");
   }
 
-  public PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
+  /**
+   * Runs a streaming expression in the local process of the CLI.
+   *
+   * <p>Running locally means that parallelization support or those expressions requiring access to
+   * internal Solr capabilities will not function.
+   *
+   * @param cli The CLI invoking the call
+   * @param expr The streaming expression to be parsed and in the context of the CLI process
+   * @return A connection to the streaming expression that receives Tuples as they are emitted
+   *     locally.
+   */
+  private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
     String zkHost = SolrCLI.getZkHost(cli);
 
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
@@ -283,7 +291,19 @@ public class StreamTool extends ToolBase {
     return pushBackStream;
   }
 
-  public PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
+  /**
+   * Runs a streaming expression on a Solr collection via the /stream end point and returns the
+   * results to the CLI. Requires a collection to be specified to send the expression to.
+   *
+   * <p>Running remotely allows you to use all the standard Streaming Expression capabilities as the
+   * expression is running in a Solr environment.
+   *
+   * @param cli The CLI invoking the call
+   * @param expr The streaming expression to be parsed and run remotely
+   * @return A connection to the streaming expression that receives Tuples as they are emitted from
+   *     Solr /stream.
+   */
+  private PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
 
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (!cli.hasOption("name")) {
@@ -309,7 +329,7 @@ public class StreamTool extends ToolBase {
     return new PushBackStream(solrStream);
   }
 
-  public static ModifiableSolrParams params(String... params) {
+  private static ModifiableSolrParams params(String... params) {
     if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
     ModifiableSolrParams msp = new ModifiableSolrParams();
     for (int i = 0; i < params.length; i += 2) {
@@ -385,10 +405,10 @@ public class StreamTool extends ToolBase {
     }
   }
 
-  public static String[] getOutputFields(CommandLine cli) {
-    if (cli.hasOption("fields")) {
+  static String[] getOutputFields(CommandLine cli) {
+    if (cli.hasOption(FIELDS_OPTION)) {
 
-      String fl = cli.getOptionValue("fields");
+      String fl = cli.getOptionValue(FIELDS_OPTION);
       String[] flArray = fl.split(",");
       String[] outputHeaders = new String[flArray.length];
 
@@ -438,7 +458,7 @@ public class StreamTool extends ToolBase {
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static String[] getHeadersFromFirstTuple(Tuple tuple) {
+  static String[] getHeadersFromFirstTuple(Tuple tuple) {
     Set fields = tuple.getFields().keySet();
     String[] outputHeaders = new String[fields.size()];
     int i = -1;
@@ -450,7 +470,7 @@ public class StreamTool extends ToolBase {
   }
 
   @SuppressWarnings({"rawtypes"})
-  public static String listToString(List values, String internalDelim) {
+  static String listToString(List values, String internalDelim) {
     StringBuilder buf = new StringBuilder();
     for (Object value : values) {
       if (buf.length() > 0) {
@@ -463,12 +483,12 @@ public class StreamTool extends ToolBase {
     return buf.toString();
   }
 
-  public static TupleStream constructStream(
+  private static TupleStream constructStream(
       StreamFactory streamFactory, StreamExpression streamExpression) throws IOException {
     return streamFactory.constructStream(streamExpression);
   }
 
-  public static String readExpression(LineNumberReader bufferedReader, String[] args)
+  static String readExpression(LineNumberReader bufferedReader, String[] args)
       throws IOException {
 
     StringBuilder exprBuff = new StringBuilder();

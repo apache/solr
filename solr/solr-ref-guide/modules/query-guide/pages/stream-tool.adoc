@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Stream tool allows you to run a xref:streaming-expressions.adoc[] and see the results from the command line.
+The Stream tool allows you to run a xref:streaming-expressions.adoc[] in Solr and see the results from the command line.
 It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
 Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well. 
 
@@ -30,7 +30,7 @@ To run it, open a terminal and enter:
 $ bin/solr stream --header -c techproducts --delimiter=\| 'search(techproducts,q="name:memory",fl="name,price")'
 ----
 
-This will run the provided streaming expression on the `techproducts` collection and produce:  
+This will run the provided streaming expression on the `techproducts` collection on your local Solr and produce:  
 
 [,console]
 ----
@@ -83,21 +83,24 @@ The `--help` (or simply `-h`) option will output information on its usage (i.e.,
 
 [source,plain]
 ----
-usage: bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-f <FIELDS>] [--header]
-       [-u <credentials>] [-url <HOST>] [--workers <arg>] [-z <HOST>]
+usage: bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f
+       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]
 
 List of options:
-    --array-delimiter <CHARACTER>   The delimiter multi-valued fields. (default=|)
- -c,--name <NAME>                   Name of the collection to execute on if workers are 'solr'.  Required for 'solr'
-                                    worker.
-    --delimiter <CHARACTER>         The output delimiter. (default=tab).
- -f,--fields <FIELDS>               The fields in the tuples to output. (defaults to fields in the first tuple of result
-                                    set).
-    --header                        Whether or not to include a header line. (default=false)
- -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
- -url,--solr-url <HOST>             Base Solr URL, which can be used to determine the zk-host if that's not known;
+    --array-delimiter <CHARACTER>   The delimiter multi-valued fields. Default to using a pipe (|) delimiter.
+ -c,--name <NAME>                   Name of the specific collection to execute expression on if the execution is set
+                                    to 'remote'. Required for 'remote' execution environment.
+    --delimiter <CHARACTER>         The output delimiter. Default to using three spaces.
+ -e,--execution <ENVIRONMENT>       Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr
+                                    server. Default environment is 'remote'.
+ -f,--fields <FIELDS>               The fields in the tuples to output. Defaults to fields in the first tuple of result
+                                    set.
+ -h,--help                          Print this message.
+    --header                        Specify to include a header line.
+ -s,--solr-url <HOST>               Base Solr URL, which can be used to determine the zk-host if that's not known;
                                     defaults to: http://localhost:8983.
- -e,--execution <CONTEXT>           Execution context is either 'local' (i.e CLI process) or 'solr'. Default is 'solr'
+ -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
+ -v,--verbose                       Enable verbose command output.
  -z,--zk-host <HOST>                Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;
                                     otherwise, defaults to localhost:9983.
 ----

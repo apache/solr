@@ -20,7 +20,7 @@ load bats_helper
 setup_file() {
   common_clean_setup
   solr start -e techproducts
-  solr auth enable -type basicAuth -credentials name:password
+  solr auth enable --type basicAuth --credentials name:password
 }
 
 teardown_file() {
