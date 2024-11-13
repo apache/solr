@@ -52,8 +52,10 @@ import org.junit.BeforeClass;
  * index using Streaming Expressions.
  */
 public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
-  public static final String COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION = "collection_stream_ubi_queries_to_ubi_collection";
-  public static final String COLLECTION_STREAM_UBI_QUERIES_TO_LOG = "collection_stream_ubi_queries_to_log";
+  public static final String COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION =
+      "collection_stream_ubi_queries_to_ubi_collection";
+  public static final String COLLECTION_STREAM_UBI_QUERIES_TO_LOG =
+      "collection_stream_ubi_queries_to_log";
   public static final String UBI_QUERIES_COLLECTION = "ubi_queries";
 
   /** One client per node */
@@ -79,8 +81,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     // The ubi collection itself just depends on the typical _default configset.
     configureCluster(numNodes)
         .addConfig("ubi-enabled", configset("ubi-enabled"))
-            .addConfig(
-                    "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     zkHost = cluster.getZkServer().getZkAddress();
@@ -95,26 +97,33 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals(
         "failed to create collection " + COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION,
         0,
-        CollectionAdminRequest.createCollection(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION, "ubi-enabled", numShards, numReplicas)
+        CollectionAdminRequest.createCollection(
+                COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION,
+                "ubi-enabled",
+                numShards,
+                numReplicas)
             .process(cluster.getSolrClient())
             .getStatus());
 
-    cluster.waitForActiveCollection(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION, numShards, numShards * numReplicas);
+    cluster.waitForActiveCollection(
+        COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION, numShards, numShards * numReplicas);
 
     assertEquals(
-            "failed to create collection " + COLLECTION_STREAM_UBI_QUERIES_TO_LOG,
-            0,
-            CollectionAdminRequest.createCollection(COLLECTION_STREAM_UBI_QUERIES_TO_LOG, "config", numShards, numReplicas)
-                    .process(cluster.getSolrClient())
-                    .getStatus());
+        "failed to create collection " + COLLECTION_STREAM_UBI_QUERIES_TO_LOG,
+        0,
+        CollectionAdminRequest.createCollection(
+                COLLECTION_STREAM_UBI_QUERIES_TO_LOG, "config", numShards, numReplicas)
+            .process(cluster.getSolrClient())
+            .getStatus());
 
-    cluster.waitForActiveCollection(COLLECTION_STREAM_UBI_QUERIES_TO_LOG, numShards, numShards * numReplicas);
-
+    cluster.waitForActiveCollection(
+        COLLECTION_STREAM_UBI_QUERIES_TO_LOG, numShards, numShards * numReplicas);
 
     assertEquals(
         "failed to create UBI queries collection",
         0,
-        CollectionAdminRequest.createCollection(UBI_QUERIES_COLLECTION, "_default", numShards, numReplicas)
+        CollectionAdminRequest.createCollection(
+                UBI_QUERIES_COLLECTION, "_default", numShards, numReplicas)
             .process(cluster.getSolrClient())
             .getStatus());
 
@@ -134,11 +143,25 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   @After
   public void clearCollection() throws Exception {
     assertEquals(
-        "DBQ failed", 0, cluster.getSolrClient().deleteByQuery(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION, "*:*").getStatus());
-    assertEquals("commit failed", 0, cluster.getSolrClient().commit(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
+        "DBQ failed",
+        0,
+        cluster
+            .getSolrClient()
+            .deleteByQuery(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION, "*:*")
+            .getStatus());
     assertEquals(
-        "DBQ failed", 0, cluster.getSolrClient().deleteByQuery(UBI_QUERIES_COLLECTION, "*:*").getStatus());
-    assertEquals("commit failed", 0, cluster.getSolrClient().commit(UBI_QUERIES_COLLECTION).getStatus());
+        "commit failed",
+        0,
+        cluster
+            .getSolrClient()
+            .commit(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION)
+            .getStatus());
+    assertEquals(
+        "DBQ failed",
+        0,
+        cluster.getSolrClient().deleteByQuery(UBI_QUERIES_COLLECTION, "*:*").getStatus());
+    assertEquals(
+        "commit failed", 0, cluster.getSolrClient().commit(UBI_QUERIES_COLLECTION).getStatus());
   }
 
   public void testCreatingStreamingExpression() {
@@ -164,7 +187,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
     streamContext.setSolrClientCache(solrClientCache);
 
-    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(UBI_QUERIES_COLLECTION, zkHost);
+    StreamFactory streamFactory =
+        new StreamFactory().withCollectionZkHost(UBI_QUERIES_COLLECTION, zkHost);
 
     Lang.register(streamFactory);
 
@@ -186,7 +210,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
     // Randomly grab a client, it shouldn't matter which is used to check UBI event.
     SolrClient client = getRandClient();
-    final QueryResponse responseUBI = requestFromUBICollection.process(client, UBI_QUERIES_COLLECTION);
+    final QueryResponse responseUBI =
+        requestFromUBICollection.process(client, UBI_QUERIES_COLLECTION);
     try {
       assertEquals(0, responseUBI.getStatus());
       assertEquals(1, responseUBI.getResults().getNumFound());
@@ -212,7 +237,13 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   }
 
   private static String getClause(UBIQuery ubiQuery) {
-    return "commit(" + UBI_QUERIES_COLLECTION +",update("+UBI_QUERIES_COLLECTION+",tuple(id=4.0," + ubiQuery.toTuple() + ")))";
+    return "commit("
+        + UBI_QUERIES_COLLECTION
+        + ",update("
+        + UBI_QUERIES_COLLECTION
+        + ",tuple(id=4.0,"
+        + ubiQuery.toTuple()
+        + ")))";
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -221,8 +252,14 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     final UpdateRequest ureq = new UpdateRequest();
 
     ureq.add(sdoc("id", 1, "data_s", "data_1"));
-    assertEquals("add failed", 0, ureq.process(getRandClient(), COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
-    assertEquals("commit failed", 0, getRandClient().commit(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
+    assertEquals(
+        "add failed",
+        0,
+        ureq.process(getRandClient(), COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
+    assertEquals(
+        "commit failed",
+        0,
+        getRandClient().commit(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
 
     // query our collection to generate a UBI event and then confirm it was recorded.
 
@@ -256,12 +293,12 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     // tracked.
     client = getRandClient();
     final QueryResponse responseUBI = requestUBI.process(client, UBI_QUERIES_COLLECTION);
-    //try {
-      assertEquals(0, responseUBI.getStatus());
-      assertEquals(1, responseUBI.getResults().getNumFound());
-    //} catch (AssertionError e) {
+    // try {
+    assertEquals(0, responseUBI.getStatus());
+    assertEquals(1, responseUBI.getResults().getNumFound());
+    // } catch (AssertionError e) {
     //  throw new AssertionError(responseUBI + " + " + client + " => " + e.getMessage(), e);
-    //}
+    // }
   }
 
   public void randomDocs() throws Exception {
@@ -280,9 +317,16 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
             sdoc( // NOTE: No 'id' field, SignatureUpdateProcessor fills it in for us
                 "data_s", (docCounter % uniqueMod)));
       }
-      assertEquals("add failed", 0, ureq.process(getRandClient(), COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
+      assertEquals(
+          "add failed",
+          0,
+          ureq.process(getRandClient(), COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION)
+              .getStatus());
     }
-    assertEquals("commit failed", 0, getRandClient().commit(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
+    assertEquals(
+        "commit failed",
+        0,
+        getRandClient().commit(COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION).getStatus());
 
     assertTrue(docCounter > uniqueMod);
 
@@ -294,7 +338,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
             .setLimit(0)
             .withFacet("data_facet", new TermsFacetMap("data_s").setLimit(uniqueMod + 1));
     for (SolrClient client : CLIENTS) {
-      final QueryResponse rsp = req.process(client, COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION);
+      final QueryResponse rsp =
+          req.process(client, COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION);
       try {
         assertEquals(0, rsp.getStatus());
         assertEquals(uniqueMod, rsp.getResults().getNumFound());
