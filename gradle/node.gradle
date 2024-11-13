@@ -41,7 +41,7 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
 
     node {
         download = true
-        version = libs.versions.nodeJs.get()
+        version = libs.versions.nodejs.get()
 
         def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
         if (!nodeDistUrl.isEmpty()) {

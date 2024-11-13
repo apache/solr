@@ -31,7 +31,7 @@ configure(rootProject) {
   }
 
   def currentJavaVersion = JavaVersion.current()
-  def minJavaVersion = JavaVersion.toVersion(libs.versions.minJava.get())
+  def minJavaVersion = JavaVersion.toVersion(libs.versions.java.min.get())
   if (currentJavaVersion < minJavaVersion) {
     throw new GradleException("At least Java ${minJavaVersion} is required, you are running Java ${currentJavaVersion} "
       + "[${System.getProperty('java.vm.name')} ${System.getProperty('java.vm.version')}]")

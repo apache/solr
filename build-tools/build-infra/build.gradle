@@ -35,8 +35,8 @@ tasks.register("checkJdkInternalsExportedToGradle") {}
 apply from: file('../../gradle/validation/spotless.gradle')
 
 java {
-  sourceCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
-  targetCompatibility = JavaVersion.toVersion(libs.versions.minJava.get())
+  sourceCompatibility = JavaVersion.toVersion(libs.versions.java.min.get())
+  targetCompatibility = JavaVersion.toVersion(libs.versions.java.min.get())
 }
 
 gradlePlugin {

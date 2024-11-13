@@ -24,7 +24,7 @@ configure(rootProject) {
   plugins.withType(JavaPlugin) {
     apply plugin: "eclipse"
 
-    def eclipseJavaVersion = propertyOrDefault("eclipse.javaVersion", libs.versions.minJava.get())
+    def eclipseJavaVersion = propertyOrDefault("eclipse.javaVersion", libs.versions.java.min.get())
     def relativize = { other -> rootProject.rootDir.relativePath(other).toString() }
 
     eclipse {

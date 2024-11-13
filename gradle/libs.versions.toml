@@ -127,6 +127,10 @@ j256-simplemagic = "1.17"
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 jakarta-ws = "3.1.0"
+# @keep This is the minimum required Java version for the project.
+java-min = "21"
+# @keep This is the minimum required Java version for SolrJ.
+java-solrj = "17"
 javacc = "7.0.12"
 # @keep for version alignment
 jaxb = "2.3.8"
@@ -143,10 +147,6 @@ link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.4"
 lmax-disruptor = "3.4.4"
 ltgt-errorprone = "3.1.0"
-# @keep This is the minimum required Java version.
-minJava = "21"
-# @keep This is the minimum required Java version for SolrJ.
-minSolrJJava = "17"
 mockito = "5.12.0"
 morethan-jmhreport = "0.9.0"
 navsecurity = "0.5.10"
@@ -154,9 +154,9 @@ netty = "4.1.114.Final"
 # @keep for version alignment
 netty-tcnative = "2.0.66.Final"
 nimbusds-josejwt = "9.30.2"
-# @keep Node JS version used in node.gradle (LTS)
-nodeJs = "16.20.2"
 nodegradle-node = "7.0.1"
+# @keep Node JS version used in node.gradle (LTS)
+nodejs = "16.20.2"
 openapi = "7.6.0"
 openjdk-jmh = "1.37"
 opentelemetry = "1.40.0"

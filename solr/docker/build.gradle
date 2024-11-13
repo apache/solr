@@ -22,7 +22,7 @@ import org.apache.commons.codec.digest.DigestUtils
 description = 'Solr Docker image'
 
 apply plugin: 'base'
-def javaVersion = libs.versions.minJava.get()
+def javaVersion = libs.versions.java.min.get()
 // Solr Docker inputs
 def dockerImageSolrDist = "${ -> propertyOrEnvOrDefault("solr.docker.dist", "SOLR_DOCKER_DIST", 'full') }"
 def isDistSlim = {String dist -> dist.toLowerCase(Locale.ROOT) == "slim"}
