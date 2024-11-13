@@ -195,7 +195,7 @@ public interface ConfigNode {
 
         @Override
         public Map<String, String> attributes() {
-          return empty_attrs;
+          return Map.of();
         }
 
         @Override
@@ -231,8 +231,6 @@ public interface ConfigNode {
         @Override
         public void forEachChild(Function<ConfigNode, Boolean> fun) {}
       };
-
-  Map<String, String> empty_attrs = Map.of();
 
   class Helpers {
     static boolean _bool(Object v, boolean def) {

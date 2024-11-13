@@ -156,8 +156,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
       assertTrue(
           ((NamedList<Object>)
                   response.getResponse().findRecursive("facet_counts", "facet_heatmaps", "course"))
-              .asMap(0)
-              .containsKey("counts_" + courseFormat));
+              .get("counts_" + courseFormat) != null);
     }
 
     // ------ Index data

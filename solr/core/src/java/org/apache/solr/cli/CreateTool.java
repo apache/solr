@@ -319,7 +319,7 @@ public class CreateTool extends ToolBase {
     if (isVerbose()) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asShallowMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       echo(arr.toString());
     }
     String endMessage =
