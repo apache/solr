@@ -260,7 +260,6 @@ public class LoggingStream extends TupleStream implements Expressible {
     this.tupleSource.setStreamContext(context);
   }
 
-
   //    private SolrInputDocument convertTupleTJson(Tuple tuple) {
   //        SolrInputDocument doc = new SolrInputDocument();
   //        for (String field : tuple.getFields().keySet()) {

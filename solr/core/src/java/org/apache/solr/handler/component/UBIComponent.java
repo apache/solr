@@ -287,8 +287,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     if (stream != null) {
       List<Tuple> tuples = getTuples(stream);
       log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
-    }
-    else {
+    } else {
       log.error("UBI Query Stream is null, can't log query information.");
     }
   }
