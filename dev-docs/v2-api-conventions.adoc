@@ -72,7 +72,7 @@ v2 APIs should be consistent in how they report errors.  Throwing a `SolrExcepti
 1.the error code as the HTTP response status code, as `responseHeader.status` and as `error.code`, and
 1.the error message as `error.msg`.
 
-API calls that reference a specific resource (e.g. `specificCollName`, `specificAliasName`, `specificPropertyName` and others per the above list) that do not exist should return `SolrException.ErrorCode.NOT_FOUND` (HTTP 409).
+API calls that reference a specific resource (e.g. `specificCollName`, `specificAliasName`, `specificPropertyName` and others per the above list) that do not exist should return `SolrException.ErrorCode.NOT_FOUND` (HTTP 404).
 
 == Exceptional Cases - "Command" APIs
 
