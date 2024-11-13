@@ -92,6 +92,9 @@ allprojects {
                 handler.add(conf.name, libs.google.guava, {
                     because 'version alignment for consistency across project'
                 })
+                handler.add(conf.name, libs.google.errorprone.annotations, {
+                    because 'version alignment for consistency across project'
+                })
                 handler.add(conf.name, libs.apache.commons.exec, {
                     because 'version alignment for consistency across project'
                 })
@@ -255,12 +258,6 @@ allprojects {
                     because "transitive version alignment for consistency across project" +
                             "\n- ${getFullName(libs.apache.zookeeper.zookeeper)} uses 4.1.105.Final" +
                             "\n- ${getFullName(libs.netty.codechttp)} uses 4.1.112.Final"
-                })
-                handler.add(conf.name, libs.google.errorprone.annotations, {
-                    because "transitive version alignment for consistency across project" +
-                            "\n- ${getFullName(libs.google.guava)} uses 2.26.1" +
-                            "\n- ${getFullName(libs.google.gson)} uses 2.27.0" +
-                            "\n- ${getFullName(libs.benmanes.caffeine)} uses 2.28.0"
                 })
                 handler.add(conf.name, libs.grpc.protobuf.lite, {
                     because "transitive version alignment for consistency across project" +

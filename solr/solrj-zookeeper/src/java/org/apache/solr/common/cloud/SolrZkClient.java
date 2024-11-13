@@ -93,7 +93,7 @@ public class SolrZkClient implements Closeable {
   // rather than a reference to a ZkMetrics object
   @SuppressWarnings("UnnecessaryMethodReference")
   public MapWriter getMetrics() {
-    return metrics;
+    return metrics::writeMap;
   }
 
   private final ExecutorService zkCallbackExecutor =
