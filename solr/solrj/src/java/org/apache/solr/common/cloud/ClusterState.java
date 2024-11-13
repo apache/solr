@@ -425,7 +425,10 @@ public class ClusterState implements MapWriter {
   /**
    * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
    * sparingly in case there are many collections.
+   *
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public void forEachCollection(Consumer<DocCollection> consumer) {
     collectionStream().forEach(consumer);
   }

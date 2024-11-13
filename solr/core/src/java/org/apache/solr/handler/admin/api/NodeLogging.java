@@ -17,29 +17,28 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.endpoint.NodeLoggingApis;
+import org.apache.solr.client.api.model.ListLevelsResponse;
+import org.apache.solr.client.api.model.LogLevelChange;
+import org.apache.solr.client.api.model.LogLevelInfo;
+import org.apache.solr.client.api.model.LogMessageInfo;
+import org.apache.solr.client.api.model.LogMessagesResponse;
+import org.apache.solr.client.api.model.LoggingResponse;
+import org.apache.solr.client.api.model.SetThresholdRequestBody;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.logging.LogWatcher;
 import org.slf4j.Logger;
@@ -51,8 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>These APIs ('/api/node/logging' and descendants) are analogous to the v1 /admin/info/logging.
  */
-@Path("/node/logging")
-public class NodeLoggingAPI extends JerseyResource {
+public class NodeLogging extends JerseyResource implements NodeLoggingApis {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -60,15 +58,13 @@ public class NodeLoggingAPI extends JerseyResource {
   private final LogWatcher<?> watcher;
 
   @Inject
-  public NodeLoggingAPI(CoreContainer coreContainer) {
+  public NodeLogging(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.watcher = coreContainer.getLogging();
   }
 
-  @Path("/levels")
-  @GET
+  @Override
   @PermissionName(CONFIG_READ_PERM)
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   public ListLevelsResponse listAllLoggersAndLevels() {
     ensureLogWatcherEnabled();
     final ListLevelsResponse response = instantiateLoggingResponse(ListLevelsResponse.class);
@@ -86,10 +82,8 @@ public class NodeLoggingAPI extends JerseyResource {
     return response;
   }
 
-  @Path("/levels")
-  @PUT
+  @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   public LoggingResponse modifyLocalLogLevel(List<LogLevelChange> requestBody) {
     ensureLogWatcherEnabled();
     final LoggingResponse response = instantiateLoggingResponse(LoggingResponse.class);
@@ -104,11 +98,9 @@ public class NodeLoggingAPI extends JerseyResource {
     return response;
   }
 
-  @Path("/messages")
-  @GET
+  @Override
   @PermissionName(CONFIG_READ_PERM)
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-  public LogMessagesResponse fetchLocalLogMessages(@QueryParam("since") Long boundingTimeMillis) {
+  public LogMessagesResponse fetchLocalLogMessages(Long boundingTimeMillis) {
     ensureLogWatcherEnabled();
     final LogMessagesResponse response = instantiateLoggingResponse(LogMessagesResponse.class);
     if (boundingTimeMillis == null) {
@@ -137,10 +129,8 @@ public class NodeLoggingAPI extends JerseyResource {
     return response;
   }
 
-  @Path("/messages/threshold")
-  @PUT
+  @Override
   @PermissionName(CONFIG_EDIT_PERM)
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   public LoggingResponse setMessageThreshold(SetThresholdRequestBody requestBody) {
     ensureLogWatcherEnabled();
     final LoggingResponse response = instantiateLoggingResponse(LoggingResponse.class);
@@ -175,99 +165,19 @@ public class NodeLoggingAPI extends JerseyResource {
     return response;
   }
 
-  /** Generic logging response that includes the name of the log watcher (e.g. "Log4j2") */
-  public static class LoggingResponse extends SolrJerseyResponse {
-    @JsonProperty("watcher")
-    public String watcherName;
-  }
+  public static List<LogLevelChange> parseLogLevelChanges(String[] rawChangeValues) {
+    final List<LogLevelChange> changes = new ArrayList<>();
 
-  /** A user-requested modification in the level that a specified logger reports at. */
-  public static class LogLevelChange implements JacksonReflectMapWriter {
-    public LogLevelChange() {}
-
-    public LogLevelChange(String logger, String level) {
-      this.logger = logger;
-      this.level = level;
-    }
-
-    @JsonProperty public String logger;
-    @JsonProperty public String level;
-
-    public static List<LogLevelChange> createRequestBodyFromV1Params(String[] rawChangeValues) {
-      final List<LogLevelChange> changes = new ArrayList<>();
-
-      for (String rawChange : rawChangeValues) {
-        String[] split = rawChange.split(":");
-        if (split.length != 2) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Invalid format, expected level:value, got " + rawChange);
-        }
-        changes.add(new LogLevelChange(split[0], split[1]));
+    for (String rawChange : rawChangeValues) {
+      String[] split = rawChange.split(":");
+      if (split.length != 2) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Invalid format, expected level:value, got " + rawChange);
       }
-
-      return changes;
-    }
-  }
-
-  /** The request body for the 'PUT /api/node/logging/messages/threshold' API. */
-  public static class SetThresholdRequestBody implements JacksonReflectMapWriter {
-    public SetThresholdRequestBody() {}
-
-    public SetThresholdRequestBody(String level) {
-      this.level = level;
+      changes.add(new LogLevelChange(split[0], split[1]));
     }
 
-    @JsonProperty(required = true)
-    public String level;
-  }
-
-  /** Response format for the 'GET /api/node/logging/messages' API. */
-  public static class LogMessagesResponse extends LoggingResponse {
-    @JsonProperty public LogMessageInfo info;
-
-    @JsonProperty("history")
-    public SolrDocumentList docs;
-  }
-
-  /** Metadata about the log messages returned by the 'GET /api/node/logging/messages' API */
-  public static class LogMessageInfo implements JacksonReflectMapWriter {
-    @JsonProperty("since")
-    public Long boundingTimeMillis;
-
-    @JsonProperty public Boolean found;
-    @JsonProperty public List<String> levels;
-
-    @JsonProperty("last")
-    public long lastRecordTimestampMillis;
-
-    @JsonProperty public int buffer;
-    @JsonProperty public String threshold;
-  }
-
-  /** Response format for the 'GET /api/node/logging/levels' API. */
-  public static class ListLevelsResponse extends LoggingResponse {
-    @JsonProperty public List<String> levels;
-    @JsonProperty public List<LogLevelInfo> loggers;
-  }
-
-  /** Representation of a single logger and its current state. */
-  public static class LogLevelInfo implements JacksonReflectMapWriter {
-    public LogLevelInfo() {}
-
-    public LogLevelInfo(String name, String level, boolean set) {
-      this.name = name;
-      this.level = level;
-      this.set = set;
-    }
-
-    @JsonProperty("name")
-    public String name;
-
-    @JsonProperty("level")
-    public String level;
-
-    @JsonProperty("set")
-    public boolean set;
+    return changes;
   }
 }
