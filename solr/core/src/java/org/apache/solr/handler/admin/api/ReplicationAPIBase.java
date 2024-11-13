@@ -46,9 +46,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.model.ReplicationFileListResponse;
-import org.apache.solr.client.api.model.ReplicationFileResponse;
-import org.apache.solr.client.api.model.ReplicationIndexVersionResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.core.DirectoryFactory;
@@ -92,19 +89,19 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     this.solrQueryResponse = solrQueryResponse;
   }
 
-  protected ReplicationIndexVersionResponse doFetchIndexVersion() throws IOException {
+  protected CoreReplicationAPI.IndexVersionResponse doFetchIndexVersion() throws IOException {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return replicationHandler.getIndexVersionResponse();
   }
 
-  protected ReplicationFileListResponse doFetchFileList(long generation) {
+  protected CoreReplicationAPI.FileListResponse doFetchFileList(long generation) {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return getFileList(generation, replicationHandler);
   }
 
-  protected ReplicationFileResponse doFetchFile(
+  protected StreamingOutput doFetchFile(
       String filePath,
       String dirType,
       String offset,
@@ -129,13 +126,14 @@ public abstract class ReplicationAPIBase extends JerseyResource {
               filePath, dirType, offset, len, compression, checksum, maxWriteMBPerSec, gen);
     }
     solrQueryResponse.add(FILE_STREAM, dfs);
-    return new ReplicationFileResponse(dfs);
+    return dfs;
   }
 
-  protected ReplicationFileListResponse getFileList(
+  protected CoreReplicationAPI.FileListResponse getFileList(
       long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
-    final ReplicationFileListResponse filesResponse = new ReplicationFileListResponse();
+    final CoreReplicationAPI.FileListResponse filesResponse =
+        new CoreReplicationAPI.FileListResponse();
 
     IndexCommit commit = null;
     try {
@@ -159,7 +157,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       }
       assert null != commit;
 
-      List<ReplicationFileListResponse.FileMetaData> result = new ArrayList<>();
+      List<CoreReplicationAPI.FileMetaData> result = new ArrayList<>();
       Directory dir = null;
       try {
         dir =
@@ -172,8 +170,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
-            ReplicationFileListResponse.FileMetaData metaData =
-                new ReplicationFileListResponse.FileMetaData();
+            CoreReplicationAPI.FileMetaData metaData = new CoreReplicationAPI.FileMetaData();
             metaData.name = file;
             metaData.size = dir.fileLength(file);
 
@@ -191,8 +188,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         }
 
         // add the segments_N file
-        ReplicationFileListResponse.FileMetaData fileMetaData =
-            new ReplicationFileListResponse.FileMetaData();
+        CoreReplicationAPI.FileMetaData fileMetaData = new CoreReplicationAPI.FileMetaData();
         fileMetaData.name = infos.getSegmentsFileName();
         fileMetaData.size = dir.fileLength(infos.getSegmentsFileName());
         if (infos.getId() != null) {
@@ -561,7 +557,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   }
 
   private void reportErrorOnResponse(
-      ReplicationFileListResponse fileListResponse, String message, Exception e) {
+      CoreReplicationAPI.FileListResponse fileListResponse, String message, Exception e) {
     fileListResponse.status = ERR_STATUS;
     fileListResponse.message = message;
     if (e != null) {
