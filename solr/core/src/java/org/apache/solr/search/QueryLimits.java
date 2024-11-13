@@ -16,12 +16,14 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 import static org.apache.solr.search.CpuAllowedLimit.hasCpuLimit;
 import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -113,7 +115,8 @@ public class QueryLimits implements QueryTimeout {
    * @throws QueryLimitsExceededException if {@link #allowPartialResults} is false and limits have
    *     been reached.
    */
-  public boolean maybeExitWithPartialResults(String label) throws QueryLimitsExceededException {
+  public boolean maybeExitWithPartialResults(Supplier<String> label)
+      throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
       if (allowPartialResults) {
         if (rsp != null) {
@@ -124,15 +127,23 @@ public class QueryLimits implements QueryTimeout {
                 "No request active, but attempting to exit with partial results?");
           }
           rsp.setPartialResults(requestInfo.getReq());
-          rsp.addPartialResponseDetail(formatExceptionMessage(label));
+          if (rsp.getResponseHeader().get(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY) == null) {
+            // don't want to add duplicate keys. Although technically legal, there's a strong risk
+            // that clients won't anticipate it and break.
+            rsp.addPartialResponseDetail(formatExceptionMessage(label.get()));
+          }
         }
         return true;
       } else {
-        throw new QueryLimitsExceededException(formatExceptionMessage(label));
+        throw new QueryLimitsExceededException(formatExceptionMessage(label.get()));
       }
     } else {
       return false;
     }
+  }
+
+  public boolean maybeExitWithPartialResults(String label) throws QueryLimitsExceededException {
+    return maybeExitWithPartialResults(() -> label);
   }
 
   /**

@@ -54,7 +54,11 @@ IF NOT DEFINED JAVA_HOME (
     set "JAVA_HOME=%%B"
   )
 )
-IF NOT DEFINED JAVA_HOME goto need_java_home
+IF NOT DEFINED JAVA_HOME (
+  REM Need java home
+  @echo "Please set the JAVA_HOME environment variable to the path where you installed Java !REQUIRED_JAVA_VERSION!+"
+  goto done
+)
 set JAVA_HOME=%JAVA_HOME:"=%
 IF %JAVA_HOME:~-1%==\ SET JAVA_HOME=%JAVA_HOME:~0,-1%
 IF NOT EXIST "%JAVA_HOME%\bin\java.exe" (
@@ -244,60 +248,36 @@ IF "%SOLR_JETTY_HOST%"=="" (
   set "SOLR_JETTY_HOST=127.0.0.1"
 )
 
-set FIRST_ARG=%1
 
-IF [%1]==[] goto usage
-
-IF "%1"=="-h" goto run_solrcli
-IF "%1"=="--help" goto run_solrcli
-IF "%1"=="status" goto run_solrcli
-IF "%1"=="version" goto run_solrcli
-IF "%1"=="-v" goto run_solrcli
-IF "%1"=="--version" goto run_solrcli
-IF "%1"=="assert" goto run_solrcli
-IF "%1"=="zk" goto run_solrcli
-IF "%1"=="export" goto run_solrcli
-IF "%1"=="package" goto run_solrcli
-IF "%1"=="api" goto run_solrcli
-IF "%1"=="post" goto run_solrcli
-
-REM Only allow the command to be the first argument, assume start if not supplied
+REM Handle special commands
 IF "%1"=="start" goto set_script_cmd
 IF "%1"=="stop" goto set_script_cmd
 IF "%1"=="restart" goto set_script_cmd
-IF "%1"=="healthcheck" goto run_solrcli
-IF "%1"=="create" goto run_solrcli
-IF "%1"=="delete" goto run_solrcli
-IF "%1"=="stream" goto run_solrcli
-IF "%1"=="postlogs" goto run_solrcli
+IF "%1"=="auth" goto set_script_cmd
 
-IF "%1"=="auth" (
-  set SCRIPT_CMD=auth
-  SHIFT
-  goto run_auth
+REM Handle all other commands by simply running SolrCLI
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.cli.SolrCLI %*
+if errorlevel 1 (
+   exit /b 1
 )
-IF "%1"=="config" goto run_solrcli
+goto done
 
+:set_script_cmd
+set SCRIPT_CMD=%1
+SHIFT
+IF "%SCRIPT_CMD%"=="auth" goto run_auth
 goto parse_args
 
 :usage
 IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%
-IF [%FIRST_ARG%]==[] goto run_solrcli
-IF "%FIRST_ARG%"=="-h" goto run_solrcli
-IF "%FIRST_ARG%"=="--help" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
-IF "%SCRIPT_CMD%"=="healthcheck" goto run_solrcli
-IF "%SCRIPT_CMD%"=="create" goto run_solrcli
-IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
-IF "%SCRIPT_CMD%"=="cluster" goto run_solrcli
-IF "%SCRIPT_CMD%"=="zk" goto run_solrcli
-IF "%SCRIPT_CMD%"=="auth" goto run_solrcli
-IF "%SCRIPT_CMD%"=="package" goto run_solrcli
-IF "%SCRIPT_CMD%"=="status" goto run_solrcli
-IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
-goto done
+REM Should not be reachable, but just in case
+goto err
 
 :start_usage
 @echo.
@@ -375,16 +355,19 @@ goto done
 @echo.
 goto done
 
-
-REM Really basic command-line arg parsing
+REM Parse arguments for special commands (start, stop, restart)
 :parse_args
 
 set "arg=%~1"
 set "firstTwo=%arg:~0,2%"
-IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
-IF [%1]==[] goto process_script_cmd
-IF "%1"=="--help" goto usage
-IF "%1"=="-h" goto usage
+
+REM In case no arguments left, run special command
+IF [%1]==[] goto run_special_command
+
+REM Skip start / restart arguments if stop command
+IF "%SCRIPT_CMD%"=="stop" goto parse_stop_args
+
+:parse_start_args
 IF "%1"=="-f" goto set_foreground_mode
 IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="--verbose" goto set_verbose
@@ -399,8 +382,6 @@ IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host
 IF "%1"=="-m" goto set_memory
 IF "%1"=="--memory" goto set_memory
-IF "%1"=="-p" goto set_port
-IF "%1"=="--port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-s" goto set_solr_url
@@ -408,19 +389,32 @@ IF "%1"=="--solr-url" goto set_solr_url
 IF "%1"=="--jvm-opts" goto set_jvm_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
-IF "%1"=="--no-prompt" goto set_noprompt
 IF "%1"=="-y" goto set_noprompt
+IF "%1"=="--no-prompt" goto set_noprompt
+
+REM Skip stop arg parsing if not stop command
+IF NOT "%SCRIPT_CMD%"=="stop" goto parse_general_args
+
+:parse_stop_args
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="--key" goto set_stop_key
 IF "%1"=="--all" goto set_stop_all
-IF "%firstTwo%"=="-D" goto set_passthru
-IF NOT "%1"=="" goto invalid_cmd_line
-goto invalid_cmd_line
 
-:set_script_cmd
-set SCRIPT_CMD=%1
-SHIFT
-goto parse_args
+:parse_general_args
+
+REM Print usage of command in case help option included
+IF "%1"=="--help" goto usage
+IF "%1"=="-h" goto usage
+
+REM other args supported by all special commands
+IF "%1"=="-p" goto set_port
+IF "%1"=="--port" goto set_port
+IF "%firstTwo%"=="-D" goto set_passthru
+
+REM Argument not supported / found
+IF NOT "%1"=="" goto invalid_cmd_line
+REM Not reachable, but just in case
+goto invalid_cmd_line
 
 :set_foreground_mode
 set FG=1
@@ -671,8 +665,27 @@ set "PASS_TO_RUN_EXAMPLE=--no-prompt !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 
-REM Perform the requested command after processing args
-:process_script_cmd
+REM Handle invalid arguments passed to special commands (start, stop, restart)
+:invalid_cmd_line
+@echo.
+IF "!SCRIPT_ERROR!"=="" (
+  @echo Invalid command-line option: %1
+) ELSE (
+  @echo ERROR: !SCRIPT_ERROR!
+)
+@echo.
+IF "%SCRIPT_CMD%"=="start" (
+  goto start_usage
+) ELSE IF "%SCRIPT_CMD%"=="restart" (
+  goto start_usage
+) ELSE IF "%SCRIPT_CMD%"=="stop" (
+  goto stop_usage
+)
+REM Not reachable, but just in case
+goto err
+
+REM Process special commands (start, stop, restart)
+:run_special_command
 
 IF "%verbose%"=="1" (
   CALL :safe_echo "Using Solr root directory: %SOLR_TIP%"
@@ -713,9 +726,111 @@ IF NOT EXIST "%SOLR_SERVER_DIR%" (
   goto err
 )
 
-IF NOT "%EXAMPLE%"=="" goto run_example
+IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
+
+IF NOT "%EXAMPLE%"=="" (
+  REM Run the requested example
+
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+    -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+    -Dsolr.install.symDir="%SOLR_TIP%" ^
+    -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+    org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" ^
+    --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
+
+  REM End of run_example
+  goto done
+)
+
+set IS_RESTART=0
+IF "%SCRIPT_CMD%"=="restart" (
+  IF "%SOLR_PORT%"=="" (
+    set "SCRIPT_ERROR=Must specify the port when trying to restart Solr."
+    goto err
+  )
+  set SCRIPT_CMD=stop
+  set IS_RESTART=1
+)
+
+REM Skipt to start if not stop or restart (that executes stop first)
+IF "%SCRIPT_CMD%"=="start" goto start_solr
+
+@REM stop logic here
+:stop_solr
+IF "%SOLR_STOP_WAIT%"=="" (
+  set SOLR_STOP_WAIT=180
+)
+IF "%SOLR_PORT%"=="" (
+  IF "%STOP_ALL%"=="1" (
+    REM Stop all running Solr instances
+    set found_it=0
+    for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
+      set SOME_SOLR_PORT=
+      For /F "delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
+      if NOT "!SOME_SOLR_PORT!"=="" (
+        for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
+          @REM j is the ip:port and k is the pid
+          IF NOT "%%k"=="0" (
+            IF "%%j"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
+              set found_it=1
+              @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
+              IF "%STOP_PORT%"=="" (
+                set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
+              ) else (
+                set LOCAL_STOP_PORT=%STOP_PORT%
+              )
+              "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+              del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
+              REM wait for the process to terminate
+              CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
+              REM Kill it if it is still running after the graceful shutdown
+              IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+                qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
+              ) else (
+                qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
+              )
+            )
+          )
+        )
+      )
+    )
+    if "!found_it!"=="0" echo No Solr nodes found to stop.
+  ) ELSE (
+    set "SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use --all to stop all running nodes on this host."
+    goto err
+  )
+) ELSE (
+  REM Stop Solr running on specific port
+  set found_it=0
+  For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
+    IF NOT "%%N"=="0" (
+      IF "%%M"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
+        set found_it=1
+        @echo Stopping Solr process %%N running on port %SOLR_PORT%
+        IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
+        "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+        del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
+        REM wait for the process to terminate
+        CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
+        REM Kill it if it is still running after the graceful shutdown
+        IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
+          qprocess "%%N" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%N && taskkill /f /PID %%N
+        ) else (
+          qprocess "%%N" >nul 2>nul && taskkill /f /PID %%N
+        )
+      )
+    )
+  )
+  if "!found_it!"=="0" echo No Solr found running on port %SOLR_PORT%
+)
+
+IF "!IS_RESTART!"=="0" goto done
+
+REM Clean state here, continue with starting (start or restart)
+set SCRIPT_CMD=start
 
 :start_solr
+REM Prepare for starting Solr
 IF "%SOLR_HOME%"=="" set "SOLR_HOME=%SOLR_SERVER_DIR%\solr"
 IF EXIST "%cd%\%SOLR_HOME%" set "SOLR_HOME=%cd%\%SOLR_HOME%"
 
@@ -727,8 +842,6 @@ IF NOT EXIST "%SOLR_HOME%\" (
     goto err
   )
 )
-
-IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 
 @REM This is quite hacky, but examples rely on a different log4j2.xml
 @REM so that we can write logs for examples to %SOLR_HOME%\..\logs
@@ -745,87 +858,6 @@ IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
   set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 )
 
-set IS_RESTART=0
-IF "%SCRIPT_CMD%"=="restart" (
-  IF "%SOLR_PORT%"=="" (
-    set "SCRIPT_ERROR=Must specify the port when trying to restart Solr."
-    goto err
-  )
-  set SCRIPT_CMD=stop
-  set IS_RESTART=1
-)
-
-@REM stop logic here
-IF "%SOLR_STOP_WAIT%"=="" (
-  set SOLR_STOP_WAIT=180
-)
-IF "%SCRIPT_CMD%"=="stop" (
-  IF "%SOLR_PORT%"=="" (
-    IF "%STOP_ALL%"=="1" (
-      set found_it=0
-      for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
-        set SOME_SOLR_PORT=
-        For /F "delims=" %%J In ('type "%SOLR_TIP%\bin\%%i"') do set SOME_SOLR_PORT=%%~J
-        if NOT "!SOME_SOLR_PORT!"=="" (
-          for /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":!SOME_SOLR_PORT! "') do (
-            @REM j is the ip:port and k is the pid
-            IF NOT "%%k"=="0" (
-              IF "%%j"=="%SOLR_JETTY_HOST%:!SOME_SOLR_PORT!" (
-                set found_it=1
-                @echo Stopping Solr process %%k running on port !SOME_SOLR_PORT!
-                IF "%STOP_PORT%"=="" (
-                  set /A LOCAL_STOP_PORT=!SOME_SOLR_PORT! - 1000
-                ) else (
-                  set LOCAL_STOP_PORT=%STOP_PORT%
-                )
-                "%JAVA%" %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" STOP.PORT=!LOCAL_STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-                del "%SOLR_TIP%"\bin\solr-!SOME_SOLR_PORT!.port
-                REM wait for the process to terminate
-                CALL :wait_for_process_exit %%k !SOLR_STOP_WAIT!
-                REM Kill it if it is still running after the graceful shutdown
-                IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
-                  qprocess "%%k" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%k && taskkill /f /PID %%k
-                ) else (
-                  qprocess "%%k" >nul 2>nul && taskkill /f /PID %%k
-                )
-              )
-            )
-          )
-        )
-      )
-      if "!found_it!"=="0" echo No Solr nodes found to stop.
-    ) ELSE (
-      set "SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use --all to stop all running nodes on this host."
-      goto err
-    )
-  ) ELSE (
-    set found_it=0
-    For /f "tokens=2,5" %%M in ('netstat -nao ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
-      IF NOT "%%N"=="0" (
-        IF "%%M"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
-          set found_it=1
-          @echo Stopping Solr process %%N running on port %SOLR_PORT%
-          IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
-          "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
-          del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
-          REM wait for the process to terminate
-          CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
-          REM Kill it if it is still running after the graceful shutdown
-          IF EXIST "%JAVA_HOME%\bin\jstack.exe" (
-            qprocess "%%N" >nul 2>nul && "%JAVA_HOME%\bin\jstack.exe" %%N && taskkill /f /PID %%N
-          ) else (
-            qprocess "%%N" >nul 2>nul && taskkill /f /PID %%N
-          )
-        )
-      )
-    )
-    if "!found_it!"=="0" echo No Solr found running on port %SOLR_PORT%
-  )
-
-  IF "!IS_RESTART!"=="0" goto done
-)
-
-IF "!IS_RESTART!"=="1" set SCRIPT_CMD=start
 
 IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
@@ -842,21 +874,19 @@ IF DEFINED SOLR_ZK_EMBEDDED_HOST (
   set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
 )
 
-IF "%SCRIPT_CMD%"=="start" (
-  REM see if Solr is already running using netstat
-  For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
-    IF NOT "%%k"=="0" (
-      IF "%%j"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
-        set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
-        goto err
-      )
+REM Make sure Solr is not running using netstat
+For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (
+  IF NOT "%%k"=="0" (
+    IF "%%j"=="%SOLR_JETTY_HOST%:%SOLR_PORT%" (
+      set "SCRIPT_ERROR=Process %%k is already listening on port %SOLR_PORT%. If this is Solr, please stop it first before starting (or use restart). If this is not Solr, then please choose a different port using -p PORT"
+      goto err
     )
   )
+)
 
-  IF "%EMPTY_ADDL_JVM_ARGS%"=="true" (
-    set "SCRIPT_ERROR=JVM options are required when using the -a or --jvm-opts option!"
-    goto err
-  )
+IF "%EMPTY_ADDL_JVM_ARGS%"=="true" (
+  set "SCRIPT_ERROR=JVM options are required when using the -a or --jvm-opts option!"
+  goto err
 )
 
 @REM determine if -server flag is supported by current JVM
@@ -1132,50 +1162,6 @@ IF "%FG%"=="1" (
 
 goto done
 
-:run_example
-REM Run the requested example
-
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -Dsolr.install.symDir="%SOLR_TIP%" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% --server-dir "%SOLR_SERVER_DIR%" ^
-  --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
-
-REM End of run_example
-goto done
-
-:run_solrcli
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI %*
-if errorlevel 1 (
-   exit /b 1
-)
-goto done
-
-:parse_config_args
-IF [%1]==[] goto run_config
-IF "%1"=="-z" goto set_config_zk
-IF "%1"=="--zk-host" goto set_config_zk
-IF "%1"=="--scheme" goto set_config_url_scheme
-set "CONFIG_ARGS=!CONFIG_ARGS! %1"
-SHIFT
-goto parse_config_args
-
-:set_config_zk
-set ZK_HOST=%~2
-SHIFT
-SHIFT
-goto parse_config_args
-
-:set_config_url_scheme
-set SOLR_URL_SCHEME=%~2
-SHIFT
-SHIFT
-goto parse_config_args
-
 :run_auth
 REM Options parsing.
 REM Note: With the following technique of parsing, it is not possible
@@ -1189,9 +1175,9 @@ for %%a in (%*) do (
    ) else (
       set "option!option!=%%a"
       if "!option!" equ "-s" set "SOLR_HOME=%%a"
-      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"        
+      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"
       if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
       if not "!option!" equ "-s" if not "!option!" equ "--solr-home" if not "!option!" equ "-d" if not "!option!" equ "--server-dir" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )
@@ -1232,48 +1218,11 @@ if "!AUTH_PORT!"=="" (
     --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!
 goto done
 
-
-:invalid_cmd_line
-@echo.
-IF "!SCRIPT_ERROR!"=="" (
-  @echo Invalid command-line option: %1
-) ELSE (
-  @echo ERROR: !SCRIPT_ERROR!
-)
-@echo.
-IF "%FIRST_ARG%"=="start" (
-  goto start_usage
-) ELSE IF "%FIRST_ARG:~0,1%" == "-" (
-  goto start_usage
-) ELSE IF "%FIRST_ARG%"=="restart" (
-  goto start_usage
-) ELSE IF "%FIRST_ARG%"=="stop" (
-  goto stop_usage
-) ELSE IF "%FIRST_ARG%"=="healthcheck" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="create" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="zk" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="auth" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="status" (
-  goto run_solrcli
-)
-
-:need_java_home
-@echo Please set the JAVA_HOME environment variable to the path where you installed Java 21+
-goto done
-
 :err
 @echo.
 @echo ERROR: !SCRIPT_ERROR!
 @echo.
 exit /b 1
-
-:done
-ENDLOCAL
-exit /b 0
 
 REM Tests what Java we have and sets some global variables
 :resolve_java_info
@@ -1348,3 +1297,7 @@ GOTO :eof
       )
   )
 GOTO :eof
+
+:done
+ENDLOCAL
+exit /b 0
