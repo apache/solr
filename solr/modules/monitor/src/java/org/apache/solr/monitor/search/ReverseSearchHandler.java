@@ -21,7 +21,6 @@ package org.apache.solr.monitor.search;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SearchHandler;
 
@@ -32,7 +31,6 @@ public class ReverseSearchHandler extends SearchHandler {
     ArrayList<String> names = new ArrayList<>(2);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(ReverseSearchComponent.COMPONENT_NAME);
-    names.add(DebugComponent.COMPONENT_NAME);
     return names;
   }
 }

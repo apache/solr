@@ -27,7 +27,6 @@ import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.search.reverse.ReverseSearchDebugInfo;
 
 class SolrMatcherSinkFactory {
 
@@ -38,8 +37,9 @@ class SolrMatcherSinkFactory {
         documentBatch,
         matchingQueries ->
             reqContext.put(
-                ReverseSearchDebugInfo.KEY,
-                new ReverseSearchDebugInfo(matchingQueries.getQueriesRun())));
+                ReverseSearchDebugComponent.ReverseSearchDebugInfo.KEY,
+                new ReverseSearchDebugComponent.ReverseSearchDebugInfo(
+                    matchingQueries.getQueriesRun())));
   }
 
   private SolrMatcherSink buildSimple(

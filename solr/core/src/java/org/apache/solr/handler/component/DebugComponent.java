@@ -40,7 +40,6 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.FacetDebugInfo;
-import org.apache.solr.search.reverse.ReverseSearchDebugInfo;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
@@ -106,21 +105,7 @@ public class DebugComponent extends SearchComponent {
         info.addAll(stdinfo);
       }
 
-      FacetDebugInfo fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo"));
-      if (fdebug != null) {
-        info.add("facet-trace", fdebug.getFacetDebugInfo());
-      }
-
-      fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo-nonJson"));
-      if (fdebug != null) {
-        info.add("facet-debug", fdebug.getFacetDebugInfo());
-      }
-
-      ReverseSearchDebugInfo rsdebug =
-          (ReverseSearchDebugInfo) (rb.req.getContext().get(ReverseSearchDebugInfo.KEY));
-      if (rsdebug != null) {
-        info.add("reverse-search-debug", rsdebug.getReverseSearchDebugInfo());
-      }
+      addCustomInfo(rb, info);
 
       if (rb.req.getJSON() != null) {
         info.add(JSON, rb.req.getJSON());
@@ -143,6 +128,18 @@ public class DebugComponent extends SearchComponent {
         // Add this directly here?
         rb.rsp.add("debug", rb.getDebugInfo());
       }
+    }
+  }
+
+  protected void addCustomInfo(ResponseBuilder rb, NamedList<Object> info) {
+    FacetDebugInfo fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo"));
+    if (fdebug != null) {
+      info.add("facet-trace", fdebug.getFacetDebugInfo());
+    }
+
+    fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo-nonJson"));
+    if (fdebug != null) {
+      info.add("facet-debug", fdebug.getFacetDebugInfo());
     }
   }
 

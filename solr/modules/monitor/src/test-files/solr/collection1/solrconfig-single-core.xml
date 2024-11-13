@@ -86,7 +86,13 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
+  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler">
+    <arr name="components">
+      <str>query</str>
+      <str>reverseSearch</str>
+      <str>reverseDebug</str>
+    </arr>
+  </requestHandler>
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -127,6 +133,10 @@
     <str name="presearcherType">MultipassTermFilteredPresearcher</str>
     <bool name="applyFieldNameAlias">true</bool>
     <int name="numberOfPasses">4</int>
+  </searchComponent>
+
+  <searchComponent name="reverseDebug"
+    class="org.apache.solr.monitor.search.ReverseSearchDebugComponent">
   </searchComponent>
 
   <schemaFactory class="ClassicIndexSchemaFactory"/>
