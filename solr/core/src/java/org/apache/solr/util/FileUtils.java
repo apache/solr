@@ -103,4 +103,28 @@ public class FileUtils {
     }
     return Files.createDirectories(path);
   }
+
+  /**
+   * Checks whether a child path falls under a particular parent
+   *
+   * <p>Useful for validating user-provided relative paths, which generally aren't expected to
+   * "escape" a given parent/root directory. Parent and child paths are "normalized" by {@link
+   * Path#normalize()}. This removes explicit backtracking (e.g. "../") though it will not resolve
+   * symlinks if any are present in the provided Paths, so some forms of parent "escape" remain
+   * undetected. Paths needn't exist as a file or directory for comparison purposes.
+   *
+   * <p>Note, this method does not consult the file system
+   *
+   * @param parent the path of a 'parent' node. Path must be syntactically valid but needn't exist.
+   * @param potentialChild the path of a potential child. Typically obtained via:
+   *     parent.resolve(relativeChildPath). Path must be syntactically valid but needn't exist.
+   * @return true if 'potentialChild' nests under the provided 'parent', false otherwise.
+   */
+  public static boolean isPathAChildOfParent(Path parent, Path potentialChild) {
+    final var normalizedParent = parent.toAbsolutePath().normalize();
+    final var normalizedChild = potentialChild.toAbsolutePath().normalize();
+
+    return normalizedChild.startsWith(normalizedParent)
+        && !normalizedChild.equals(normalizedParent);
+  }
 }

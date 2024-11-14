@@ -120,7 +120,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       log.info("tearDown deleting collection");
       CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
       log.info("Collection deleted");
-      waitForDeletion(collectionName);
+      TestPullReplica.waitForDeletion(collectionName);
     }
     collectionName = null;
     super.tearDown();
@@ -345,22 +345,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     }
     assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
-  }
-
-  private void waitForDeletion(String collection) throws InterruptedException, KeeperException {
-    TimeOut t = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (cluster.getSolrClient().getClusterState().hasCollection(collection)) {
-      log.info("Collection not yet deleted");
-      try {
-        Thread.sleep(100);
-        if (t.hasTimedOut()) {
-          fail("Timed out waiting for collection " + collection + " to be deleted.");
-        }
-        cluster.getZkStateReader().forceUpdateCollection(collection);
-      } catch (SolrException e) {
-        return;
-      }
-    }
   }
 
   private CollectionStatePredicate activeReplicaCount(
