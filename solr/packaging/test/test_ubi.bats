@@ -29,14 +29,11 @@ teardown() {
   SOLR_STOP_WAIT=1 solr stop --all >/dev/null 2>&1
 }
 
-@test "Run set up process" {
+@test "Track query using UBI with log file." {
   solr start -e techproducts
   
   run solr healthcheck -c techproducts
   refute_output --partial 'error'
-
-  # No luck with this
-  # assert [ -e ${SOLR_LOGS_DIR}/solr_ubi_queries.log ]
 
   run curl -X POST -H 'Content-type:application/json' -d '{
     "add-searchcomponent": {
@@ -57,18 +54,8 @@ teardown() {
   }' "http://localhost:${SOLR_PORT}/api/collections/techproducts/config"
   
   assert_output --partial '"status":0'
-  
-  run curl -X POST -H 'Content-type:application/json' -d '{
-    "update-requesthandler": {
-      "name": "/query",
-      "class": "solr.SearchHandler",
-      "last-components":["ubi"]
-    }
-  }' "http://localhost:${SOLR_PORT}/api/collections/techproducts/config"  
-  
-  assert_output --partial '"status":0'
 
-  # Simple ubi enabled query
+  # Simple UBI enabled query
   run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=3&ubi=true&user_query=give%20me%20all&query_id=5678"
   assert_output --partial '"status":0'
   assert_output --partial '"query_id":"5678'
@@ -77,7 +64,7 @@ teardown() {
   assert_file_exist ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl
   assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"5678"'
   
-  # Rich UBI user query tracking enabled query
+  # Rich UBI user query tracking enabled query with JSON Query
   run curl -X POST -H 'Content-type:application/json' -d '{
     "query" : "ram OR memory",
     "filter": [
@@ -98,7 +85,9 @@ teardown() {
   }' "http://localhost:${SOLR_PORT}/solr/techproducts/query" 
   assert_output --partial '"query_id":"xyz890"'
   
+  # Check UBI query record was written out to default location
   assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"xyz890"'
+  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"experiment": "supersecret"'
   
   
 }

@@ -160,15 +160,15 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
               "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
           log.info(
               "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
-          // Most simplisitic version
-          // expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
+          // Most simplistic version
+          // expr = "logging(ubi_queries.jsonl, tuple(query_id=49,user_query=\"RAM memory\"))";
 
           // The real version
           expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
 
-          // feels like stream or something should let me create a tuple out of something in the
-          // context.
-          // expr = "logging(ubi_queries.jsonl," + "get(ubi-core)" + ")";
+          // feels like 'stream' or 'get' or something should let me create a tuple out of something in the
+          // streamContext.   That would turn the "ubi-query" object in the context into a nice tuple and return it.
+          // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
         } else {
           LineNumberReader bufferedReader;
 
@@ -184,8 +184,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
             bufferedReader.close();
 
-            // not sure if I need this?  Except maybe, we assume let?
-            // Map params = validateLetAndGetParams(stream, expr);
 
           } catch (IOException ioe) {
             throw new SolrException(
@@ -206,14 +204,12 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
                   + streamExpression
                   + " must include the 'ubiQueryTuple()' to record UBI queries.");
         }
-        System.out.println("streamExpression is " + streamExpression);
+
         streamFactory = new DefaultStreamFactory();
         streamFactory.withFunctionName("logging", LoggingStream.class);
         streamFactory.withFunctionName("ubiQueryTuple", UBIQueryStream.class);
 
         streamFactory.withDefaultZkHost(defaultZkHost);
-
-        // Lang.register(streamFactory);
 
       } else {
         log.info("UBI query data collection is only available in SolrCloud mode.");
