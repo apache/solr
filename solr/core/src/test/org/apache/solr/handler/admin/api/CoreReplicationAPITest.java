@@ -30,7 +30,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
-import org.apache.solr.client.api.model.ReplicationFileResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.ReplicationHandler;
@@ -87,16 +86,16 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testFetchFile() throws Exception {
-    ReplicationFileResponse actual =
+    var actual =
         coreReplicationAPI.doFetchFile("./test", "file", null, null, false, false, 0, null);
-    assertTrue(actual.dfs instanceof ReplicationAPIBase.DirectoryFileStream);
+    assertTrue(actual instanceof ReplicationAPIBase.DirectoryFileStream);
 
     actual =
         coreReplicationAPI.doFetchFile("./test", "tlogFile", null, null, false, false, 0, null);
-    assertTrue(actual.dfs instanceof ReplicationAPIBase.LocalFsTlogFileStream);
+    assertTrue(actual instanceof ReplicationAPIBase.LocalFsTlogFileStream);
 
     actual = coreReplicationAPI.doFetchFile("./test", "cf", null, null, false, false, 0, null);
-    assertTrue(actual.dfs instanceof ReplicationAPIBase.LocalFsConfFileStream);
+    assertTrue(actual instanceof ReplicationAPIBase.LocalFsConfFileStream);
   }
 
   private void setUpMocks() throws IOException {

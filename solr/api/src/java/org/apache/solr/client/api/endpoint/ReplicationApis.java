@@ -16,17 +16,21 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.util.CoreApiParameters;
 
 @Path("/cores/{coreName}/replication")
@@ -55,9 +59,13 @@ public interface ReplicationApis {
   @CoreApiParameters
   @Operation(
       summary = "Get a stream of a specific file path of a core",
-      tags = {"core-replication"})
+      tags = {"core-replication"},
+      extensions = { // TODO Remove as a part of SOLR-17562
+        @Extension(
+            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      })
   @Path("/files/{filePath}")
-  SolrJerseyResponse fetchFile(
+  StreamingOutput fetchFile(
       @PathParam("filePath") String filePath,
       @Parameter(
               description =
@@ -84,6 +92,5 @@ public interface ReplicationApis {
           double maxWriteMBPerSec,
       @Parameter(description = "The generation number of the index", required = false)
           @QueryParam("generation")
-          Long gen)
-      throws IOException;
+          Long gen);
 }

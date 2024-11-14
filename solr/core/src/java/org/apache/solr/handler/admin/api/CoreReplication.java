@@ -19,11 +19,11 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import org.apache.solr.client.api.endpoint.ReplicationApis;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
@@ -56,7 +56,7 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
 
   @Override
   @PermissionName(CORE_READ_PERM)
-  public SolrJerseyResponse fetchFile(
+  public StreamingOutput fetchFile(
       String filePath,
       String dirType,
       String offset,
@@ -64,8 +64,7 @@ public class CoreReplication extends ReplicationAPIBase implements ReplicationAp
       Boolean compression,
       Boolean checksum,
       double maxWriteMBPerSec,
-      Long gen)
-      throws IOException {
+      Long gen) {
     if (dirType == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must provide a dirType ");
     }
