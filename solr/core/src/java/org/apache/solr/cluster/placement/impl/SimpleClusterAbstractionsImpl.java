@@ -93,7 +93,8 @@ class SimpleClusterAbstractionsImpl {
 
     @Override
     public Iterator<SolrCollection> iterator() {
-      return clusterState.getCollectionsMap().values().stream()
+      return clusterState
+          .collectionStream()
           .map(SolrCollectionImpl::fromDocCollection)
           .collect(Collectors.toSet())
           .iterator();
