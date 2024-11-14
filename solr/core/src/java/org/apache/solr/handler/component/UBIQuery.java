@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Handles all the data required for tracking a query using User Behavior Insights.
  *
@@ -24,9 +27,11 @@ package org.apache.solr.handler.component;
  */
 public class UBIQuery {
 
+  private String application;
   private String queryId;
   private String userQuery;
   private Object queryAttributes;
+  private String docIds;
 
   public UBIQuery(String queryId) {
 
@@ -34,6 +39,14 @@ public class UBIQuery {
       queryId = "1234";
     }
     this.queryId = queryId;
+  }
+
+  public void setApplication(String application) {
+    this.application = application;
+  }
+
+  public String getApplication() {
+    return this.application;
   }
 
   public String getQueryId() {
@@ -60,6 +73,14 @@ public class UBIQuery {
     this.queryAttributes = queryAttributes;
   }
 
+  public String getDocIds() {
+    return docIds;
+  }
+
+  public void setDocIds(String docIds) {
+    this.docIds = docIds;
+  }
+
   /**
    * Convert the UBIQuery into the format consumed by a streaming expression tuple()
    *
@@ -72,6 +93,22 @@ public class UBIQuery {
         + ","
         + UBIComponent.USER_QUERY
         + "="
-        + this.userQuery;
+        + this.userQuery
+        + ","
+        + UBIComponent.APPLICATION
+        + "="
+        + this.application;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public Map toMap() {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    Map map = new HashMap();
+    map.put(UBIComponent.QUERY_ID, this.queryId);
+    map.put(UBIComponent.APPLICATION, this.application);
+    map.put(UBIComponent.USER_QUERY, this.userQuery);
+    // map.put(UBIComponent.QUERY_ATTRIBUTES, this.queryAttributes);
+
+    return map;
   }
 }

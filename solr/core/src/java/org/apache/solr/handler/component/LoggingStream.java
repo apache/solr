@@ -138,7 +138,7 @@ public class LoggingStream extends TupleStream implements Expressible {
           SolrException.ErrorCode.BAD_REQUEST, "file to log to must be under " + chroot);
     }
 
-    fos = new FileOutputStream(filePath.toFile());
+    fos = new FileOutputStream(filePath.toFile(), true);
     writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
     tupleSource.open();

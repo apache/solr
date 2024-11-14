@@ -124,12 +124,15 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   public static final String QUERY_ID = "query_id";
   public static final String QUERY_ATTRIBUTES = "query_attributes";
   public static final String USER_QUERY = "user_query";
+  public static final String APPLICATION = "application";
 
   protected PluginInfo info = PluginInfo.EMPTY_INFO;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private TupleStream stream;
+  private StreamContext streamContext;
+  private StreamExpression streamExpression;
+  private StreamFactory streamFactory;
 
   protected SolrParams initArgs;
 
@@ -157,7 +160,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
               "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
           log.info(
               "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
-          expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
+          // expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
+          expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
         } else {
           LineNumberReader bufferedReader;
 
@@ -184,28 +188,29 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           }
         }
 
-        StreamContext streamContext = new StreamContext();
+        streamContext = new StreamContext();
         streamContext.put("solr-core", core);
         streamContext.setSolrClientCache(solrClientCache);
 
-        StreamExpression streamExpression = StreamExpressionParser.parse(expr);
-        StreamFactory streamFactory = new StreamFactory();
+        streamExpression = StreamExpressionParser.parse(expr);
+        streamFactory = new StreamFactory();
         streamFactory.withFunctionName("logging", LoggingStream.class);
+        streamFactory.withFunctionName("ubiQueryTuple", UBIQueryTupleStream.class);
 
         streamFactory.withDefaultZkHost(defaultZkHost);
 
         Lang.register(streamFactory);
 
-        try {
-          stream = constructStream(streamFactory, streamExpression);
-        } catch (IOException exception) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Error constructing stream for processing UBI data collection: "
-                  + UBIComponent.class.getSimpleName(),
-              exception);
-        }
-        stream.setStreamContext(streamContext);
+        //        try {
+        //          stream = constructStream(streamFactory, streamExpression);
+        //        } catch (IOException exception) {
+        //          throw new SolrException(
+        //              SolrException.ErrorCode.SERVER_ERROR,
+        //              "Error constructing stream for processing UBI data collection: "
+        //                  + UBIComponent.class.getSimpleName(),
+        //              exception);
+        //        }
+        //        stream.setStreamContext(streamContext);
 
       } else {
         log.info("UBI query data collection is only available in SolrCloud mode.");
@@ -232,6 +237,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     UBIQuery ubiQuery = new UBIQuery(params.get(QUERY_ID));
 
     ubiQuery.setUserQuery(params.get(USER_QUERY));
+    ubiQuery.setApplication(params.get(APPLICATION));
 
     Object queryAttributes = params.get(QUERY_ATTRIBUTES);
 
@@ -251,18 +257,53 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     }
 
     ResultContext rc = (ResultContext) rb.rsp.getResponse();
-
     DocList docs = rc.getDocList();
 
-    processIds(rb, docs, ubiQuery, schema, searcher);
+    String docIds = extractDocIds(docs, schema, searcher);
+    ubiQuery.setDocIds(docIds);
+
+    addUBIClauseToResponse(ubiQuery, rb);
+    recordUBIData(ubiQuery);
   }
 
-  protected void processIds(
-      ResponseBuilder rb,
-      DocList dl,
-      UBIQuery ubiQuery,
-      IndexSchema schema,
-      SolrIndexSearcher searcher)
+  private void recordUBIData(UBIQuery ubiQuery) throws IOException {
+    SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
+
+    // Maybe ubiQueryLogInfo should be a ubiQuery?  But what about the doc_ids?
+    // ubiQueryLogInfo.add(QUERY_ID, ubiQuery.getQueryId());
+    // ubiQueryLogInfo.add(USER_QUERY, ubiQuery.getUserQuery());
+    // ubiQueryLogInfo.add(QUERY_ATTRIBUTES, ubiQuery.getQueryAttributes());
+    // ubiQueryLogInfo.add("doc_ids", ubiQuery.getDocIds());
+
+    TupleStream stream;
+    try {
+      stream = constructStream(streamFactory, streamExpression);
+    } catch (IOException exception) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error constructing stream for processing UBI data collection: "
+              + UBIComponent.class.getSimpleName(),
+          exception);
+    }
+    streamContext.put("ubi-query", ubiQuery);
+    stream.setStreamContext(streamContext);
+
+    if (stream != null) {
+      List<Tuple> tuples = getTuples(stream);
+      log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
+    } else {
+      log.error("UBI Query Stream is null, can't log query information.");
+    }
+  }
+
+  private void addUBIClauseToResponse(UBIQuery ubiQuery, ResponseBuilder rb) {
+    SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
+
+    ubiResponseInfo.add(QUERY_ID, ubiQuery.getQueryId());
+    rb.rsp.add("ubi", ubiResponseInfo);
+  }
+
+  protected String extractDocIds(DocList dl, IndexSchema schema, SolrIndexSearcher searcher)
       throws IOException {
     StringBuilder sb = new StringBuilder();
 
@@ -273,23 +314,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     }
     String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
 
-    SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
-    SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
-    ubiResponseInfo.add(QUERY_ID, ubiQuery.getQueryId());
-    rb.rsp.add("ubi", ubiResponseInfo);
-
-    // Maybe ubiQueryLogInfo should be a ubiQuery?  But what about the doc_ids?
-    ubiQueryLogInfo.add(QUERY_ID, ubiQuery.getQueryId());
-    ubiQueryLogInfo.add(USER_QUERY, ubiQuery.getUserQuery());
-    ubiQueryLogInfo.add(QUERY_ATTRIBUTES, ubiQuery.getQueryAttributes());
-    ubiQueryLogInfo.add("doc_ids", docIds);
-
-    if (stream != null) {
-      List<Tuple> tuples = getTuples(stream);
-      log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
-    } else {
-      log.error("UBI Query Stream is null, can't log query information.");
-    }
+    return docIds;
   }
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

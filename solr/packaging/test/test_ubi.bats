@@ -69,14 +69,36 @@ teardown() {
   assert_output --partial '"status":0'
 
   # Simple ubi enabled query
-  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=3&ubi=true"
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=3&ubi=true&user_query=give%20me%20all&query_id=5678"
   assert_output --partial '"status":0'
-  assert_output --partial '"query_id":"1234'
+  assert_output --partial '"query_id":"5678'
    
-  
-  # No luck on getting the logs to read. 
+  # Check UBI query record was written out to default location
   assert_file_exist ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl
-  run tail -n 1 "${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl"
-  assert_output --partial '{"id":"49","a_i":"1","b_i":"5"}'
-  assert_file_contains "${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl" '{"id":"49","a_i":"1","b_i":"5"}'
+  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '{"query_id":"5678","application":null,"user_query":"give me all"}'
+  
+  # Rich UBI user query tracking enabled query
+  run curl -X POST -H 'Content-type:application/json' -d '{
+    "query" : "ram OR memory",
+    "filter": [
+        "inStock:true"
+    ],
+    "limit":2,
+    "params": {
+      "ubi": "true",
+      "application":"primary_search",
+      "query_id": "xyz890",
+      "user_query":"RAM memory",
+      "query_attributes": {
+        "experiment": "supersecret",
+        "page": 1,
+        "filter": "productStatus:available"
+      }            
+    }
+  }' "http://localhost:${SOLR_PORT}/solr/techproducts/query" 
+  assert_output --partial '"query_id":"xyz890"'
+  
+  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '{"query_id":"xyz890","application":"primary_search","user_query":"RAM memory"}'
+  
+  
 }
