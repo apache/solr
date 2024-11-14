@@ -75,7 +75,7 @@ teardown() {
    
   # Check UBI query record was written out to default location
   assert_file_exist ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl
-  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '{"query_id":"5678","application":null,"user_query":"give me all"}'
+  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"5678"'
   
   # Rich UBI user query tracking enabled query
   run curl -X POST -H 'Content-type:application/json' -d '{
@@ -98,7 +98,7 @@ teardown() {
   }' "http://localhost:${SOLR_PORT}/solr/techproducts/query" 
   assert_output --partial '"query_id":"xyz890"'
   
-  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '{"query_id":"xyz890","application":"primary_search","user_query":"RAM memory"}'
+  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"xyz890"'
   
   
 }

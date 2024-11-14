@@ -33,14 +33,17 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 /**
  * Converts a UBIQuery that is stored in the StreamContext under the key 'ubi-query' into a Tuple
  * and returns it.
+ *
+ * <p>I suspect that if I had the right magic with a LetStream or a GetStream, I could somehow just
+ * use that to say "pluck the 'ubi-query' object out of the StreamContext and call .toTuple or make
+ * a map of it and that would be my tuple'.
  */
-public class UBIQueryTupleStream extends TupleStream implements Expressible {
+public class UBIQueryStream extends TupleStream implements Expressible {
 
   private StreamContext streamContext;
   private boolean finished;
 
-  public UBIQueryTupleStream(StreamExpression expression, StreamFactory factory)
-      throws IOException {}
+  public UBIQueryStream(StreamExpression expression, StreamFactory factory) throws IOException {}
 
   @Override
   public StreamExpression toExpression(StreamFactory factory) throws IOException {

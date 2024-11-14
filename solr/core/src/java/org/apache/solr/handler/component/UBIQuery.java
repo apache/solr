@@ -81,25 +81,6 @@ public class UBIQuery {
     this.docIds = docIds;
   }
 
-  /**
-   * Convert the UBIQuery into the format consumed by a streaming expression tuple()
-   *
-   * @return String The tuple specific formatted data similar to "query_id=123,user_query=foo"
-   */
-  public String toTuple() {
-    return UBIComponent.QUERY_ID
-        + "="
-        + this.queryId
-        + ","
-        + UBIComponent.USER_QUERY
-        + "="
-        + this.userQuery
-        + ","
-        + UBIComponent.APPLICATION
-        + "="
-        + this.application;
-  }
-
   @SuppressWarnings({"rawtypes", "unchecked"})
   public Map toMap() {
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -107,7 +88,7 @@ public class UBIQuery {
     map.put(UBIComponent.QUERY_ID, this.queryId);
     map.put(UBIComponent.APPLICATION, this.application);
     map.put(UBIComponent.USER_QUERY, this.userQuery);
-    // map.put(UBIComponent.QUERY_ATTRIBUTES, this.queryAttributes);
+    map.put(UBIComponent.QUERY_ATTRIBUTES, this.queryAttributes);
 
     return map;
   }

@@ -26,11 +26,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -160,8 +160,15 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
               "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
           log.info(
               "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
+          // Most simplisitic version
           // expr = "logging(ubi_queries.jsonl," + "tuple(id=49,a_i=1,b_i=5)" + ")";
+
+          // The real version
           expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
+
+          // feels like stream or something should let me create a tuple out of something in the
+          // context.
+          // expr = "logging(ubi_queries.jsonl," + "get(ubi-core)" + ")";
         } else {
           LineNumberReader bufferedReader;
 
@@ -193,24 +200,20 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
         streamContext.setSolrClientCache(solrClientCache);
 
         streamExpression = StreamExpressionParser.parse(expr);
-        streamFactory = new StreamFactory();
+        if (!streamExpression.toString().contains("ubiQueryTuple")) {
+          log.error(
+              "The streaming expression "
+                  + streamExpression
+                  + " must include the 'ubiQueryTuple()' to record UBI queries.");
+        }
+        System.out.println("streamExpression is " + streamExpression);
+        streamFactory = new DefaultStreamFactory();
         streamFactory.withFunctionName("logging", LoggingStream.class);
-        streamFactory.withFunctionName("ubiQueryTuple", UBIQueryTupleStream.class);
+        streamFactory.withFunctionName("ubiQueryTuple", UBIQueryStream.class);
 
         streamFactory.withDefaultZkHost(defaultZkHost);
 
-        Lang.register(streamFactory);
-
-        //        try {
-        //          stream = constructStream(streamFactory, streamExpression);
-        //        } catch (IOException exception) {
-        //          throw new SolrException(
-        //              SolrException.ErrorCode.SERVER_ERROR,
-        //              "Error constructing stream for processing UBI data collection: "
-        //                  + UBIComponent.class.getSimpleName(),
-        //              exception);
-        //        }
-        //        stream.setStreamContext(streamContext);
+        // Lang.register(streamFactory);
 
       } else {
         log.info("UBI query data collection is only available in SolrCloud mode.");
@@ -262,41 +265,36 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     String docIds = extractDocIds(docs, schema, searcher);
     ubiQuery.setDocIds(docIds);
 
-    addUBIClauseToResponse(ubiQuery, rb);
-    recordUBIData(ubiQuery);
+    addUserBehaviorInsightsToResponse(ubiQuery, rb);
+    recordQuery(ubiQuery);
   }
 
-  private void recordUBIData(UBIQuery ubiQuery) throws IOException {
-    SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
-
-    // Maybe ubiQueryLogInfo should be a ubiQuery?  But what about the doc_ids?
-    // ubiQueryLogInfo.add(QUERY_ID, ubiQuery.getQueryId());
-    // ubiQueryLogInfo.add(USER_QUERY, ubiQuery.getUserQuery());
-    // ubiQueryLogInfo.add(QUERY_ATTRIBUTES, ubiQuery.getQueryAttributes());
-    // ubiQueryLogInfo.add("doc_ids", ubiQuery.getDocIds());
-
+  private void recordQuery(UBIQuery ubiQuery) throws IOException {
     TupleStream stream;
-    try {
-      stream = constructStream(streamFactory, streamExpression);
-    } catch (IOException exception) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Error constructing stream for processing UBI data collection: "
-              + UBIComponent.class.getSimpleName(),
-          exception);
-    }
+    // try {
+    stream = constructStream(streamFactory, streamExpression);
+    // } catch (IOException exception) {
+    //   throw new SolrException(
+    //       SolrException.ErrorCode.SERVER_ERROR,
+    //       "Error constructing stream for processing UBI data collection: "
+    //           + UBIComponent.class.getSimpleName(),
+    //      exception);
+    // }
     streamContext.put("ubi-query", ubiQuery);
     stream.setStreamContext(streamContext);
 
-    if (stream != null) {
-      List<Tuple> tuples = getTuples(stream);
-      log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
-    } else {
-      log.error("UBI Query Stream is null, can't log query information.");
-    }
+    // if (stream != null) {
+    // We could just call getTuple since there is only one, it's one per query unless we
+    // have a component level stream that is opened...
+    getTuple(stream);
+    // List<Tuple> tuples = getTuples(stream);
+    // log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
+    // } else {
+    //  log.error("UBI Query Stream is null, can't log query information.");
+    // }
   }
 
-  private void addUBIClauseToResponse(UBIQuery ubiQuery, ResponseBuilder rb) {
+  private void addUserBehaviorInsightsToResponse(UBIQuery ubiQuery, ResponseBuilder rb) {
     SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
 
     ubiResponseInfo.add(QUERY_ID, ubiQuery.getQueryId());
@@ -367,7 +365,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       }
 
       // Substitute parameters
-
       if (line.length() > 0) {
         for (int i = 1; i < args.length; i++) {
           String arg = args[i];
@@ -381,9 +378,18 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     return exprBuff.toString();
   }
 
-  public static TupleStream constructStream(
+  private static TupleStream constructStream(
       StreamFactory streamFactory, StreamExpression streamExpression) throws IOException {
-    return streamFactory.constructStream(streamExpression);
+    try {
+      return streamFactory.constructStream(streamExpression);
+    } catch (IOException exception) {
+      // Throw or just log an error?
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error constructing stream for processing UBI data collection: "
+              + UBIComponent.class.getSimpleName(),
+          exception);
+    }
   }
 
   /*
@@ -399,6 +405,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   */
   @Override
   public String getDescription() {
-    return "A component that tracks original user query and the resulting documents returned.";
+    return "A component that tracks the original user query and the resulting documents returned.";
   }
 }

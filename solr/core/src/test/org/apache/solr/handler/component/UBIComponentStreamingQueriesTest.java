@@ -50,6 +50,8 @@ import org.junit.BeforeClass;
 /**
  * Tests the ability for {@link UBIComponent} to stream the gathered query data to another Solr
  * index using Streaming Expressions.
+ *
+ * <p>This guy needs simplification!!!!!!!!! Needs to look more like some of the tests Joel wrote.
  */
 public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   public static final String COLLECTION_STREAM_UBI_QUERIES_TO_UBI_COLLECTION =
@@ -242,8 +244,22 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
         + ",update("
         + UBI_QUERIES_COLLECTION
         + ",tuple(id=4.0,"
-        + ubiQuery.toTuple()
+        + toTuple(ubiQuery)
         + ")))";
+  }
+
+  public static String toTuple(UBIQuery ubiQuery) {
+    return UBIComponent.QUERY_ID
+        + "="
+        + ubiQuery.getQueryId()
+        + ","
+        + UBIComponent.USER_QUERY
+        + "="
+        + ubiQuery.getUserQuery()
+        + ","
+        + UBIComponent.APPLICATION
+        + "="
+        + ubiQuery.getApplication();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

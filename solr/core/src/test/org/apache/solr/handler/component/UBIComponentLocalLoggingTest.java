@@ -85,13 +85,12 @@ public class UBIComponentLocalLoggingTest extends SolrCloudTestCase {
 
     StreamFactory streamFactory = new StreamFactory();
 
-    // LocalCatStream extends CatStream and disables the Solr cluster specific
-    // logic about where to read data from.
+    // LoggingStream lets us write out tuples in jsonl format to a file in userfiles space.
     streamFactory.withFunctionName("logging", LoggingStream.class);
 
     Lang.register(streamFactory);
 
-    String clause = "logging(bob.txt,echo(\"bob\"))";
+    String clause = "logging(bob.jsonl,echo(\"bob\"))";
     stream = streamFactory.constructStream(clause);
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);

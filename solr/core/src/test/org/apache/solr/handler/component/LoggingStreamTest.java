@@ -80,36 +80,37 @@ public class LoggingStreamTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testLogStreamExpressionToExpression() throws Exception {
+  public void testLoggingStreamExpressionToExpression() throws Exception {
     String expressionString;
 
     // Basic test
     try (LoggingStream stream =
         new LoggingStream(
-            StreamExpressionParser.parse("logging(bob.txt,echo(\"bob\"))"), factory)) {
+            StreamExpressionParser.parse("logging(bob.jsonl,echo(\"bob\"))"), factory)) {
       expressionString = stream.toExpression(factory).toString();
-      assertTrue(expressionString.contains("logging(bob.txt,"));
+      assertTrue(expressionString.contains("logging(bob.jsonl,"));
       assertTrue(expressionString.contains("echo(\"bob"));
     }
 
     // Unwrap double quotes around file name test
     try (LoggingStream stream =
         new LoggingStream(
-            StreamExpressionParser.parse("logging(\"outputs/bob.txt\",echo(\"bob\"))"), factory)) {
+            StreamExpressionParser.parse("logging(\"outputs/bob.jsonl\",echo(\"bob\"))"),
+            factory)) {
       expressionString = stream.toExpression(factory).toString();
-      assertTrue(expressionString.contains("logging(outputs/bob.txt,"));
+      assertTrue(expressionString.contains("logging(outputs/bob.jsonl,"));
       assertTrue(expressionString.contains("echo(\"bob"));
     }
   }
 
   @Test
-  public void testLogStreamExpressionToExplanation() throws Exception {
+  public void testLoggingStreamExpressionToExplanation() throws Exception {
 
     try (LoggingStream stream =
         new LoggingStream(
-            StreamExpressionParser.parse("logging(bob.txt,echo(\"bob\"))"), factory)) {
+            StreamExpressionParser.parse("logging(bob.jsonl,echo(\"bob\"))"), factory)) {
       Explanation explanation = stream.toExplanation(factory);
-      assertEquals("logging (bob.txt)", explanation.getFunctionName());
+      assertEquals("logging (bob.jsonl)", explanation.getFunctionName());
       assertEquals(LoggingStream.class.getName(), explanation.getImplementingClass());
     }
   }
@@ -119,7 +120,7 @@ public class LoggingStreamTest extends SolrCloudTestCase {
 
     LoggingStream stream =
         new LoggingStream(
-            StreamExpressionParser.parse("logging(/tmp/bob.txt,echo(\"bob\"))"), factory);
+            StreamExpressionParser.parse("logging(/tmp/bob.jsonl,echo(\"bob\"))"), factory);
     stream.setStreamContext(context);
 
     LoggingStream finalStream1 = stream;
@@ -132,7 +133,7 @@ public class LoggingStreamTest extends SolrCloudTestCase {
 
     stream =
         new LoggingStream(
-            StreamExpressionParser.parse("logging(../bob.txt,echo(\"bob\"))"), factory);
+            StreamExpressionParser.parse("logging(../bob.jsonl,echo(\"bob\"))"), factory);
     stream.setStreamContext(context);
 
     LoggingStream finalStream2 = stream;
@@ -145,7 +146,7 @@ public class LoggingStreamTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testLoggingStreamCombinedWithCatAndJsonStream() throws Exception {
+  public void testLoggingStreamCombinedSourcedFromCSV() throws Exception {
     String expr =
         "logging(parsed_csv_output.jsonl,"
             + "parseCSV(list(tuple(file=\"file1\", line=\"a,b,c\"), "
