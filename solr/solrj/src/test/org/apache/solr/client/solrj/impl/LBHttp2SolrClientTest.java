@@ -98,7 +98,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
   }
 
   @Test
-  public void testSynchronousWihFalures() throws Exception {
+  public void testSynchronousWithFalures() throws Exception {
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
@@ -310,9 +310,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     public NamedList<Object> request(final SolrRequest<?> request, String collection)
         throws SolrServerException, IOException {
       lastSolrRequests.add(request);
-      lastBasePaths.add(request.getBasePath());
+      lastBasePaths.add(tmpBaseUrl);
       lastCollections.add(collection);
-      if (request.getBasePath().equals(basePathToFail)) {
+      if (tmpBaseUrl.equals(basePathToFail)) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this.");
       }
       return generateResponse(request);
