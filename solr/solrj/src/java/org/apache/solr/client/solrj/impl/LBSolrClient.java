@@ -500,6 +500,8 @@ public abstract class LBSolrClient extends SolrClient {
     if (solrClient instanceof Http2SolrClient) {
       final var httpSolrClient = (Http2SolrClient) solrClient;
       return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+    } else if(solrClient instanceof HttpJdkSolrClient) {
+      return((HttpJdkSolrClient) solrClient).requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
     // Assume provided client already uses 'baseUrl'
