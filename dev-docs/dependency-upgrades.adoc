@@ -34,13 +34,36 @@ In order to upgrade a dependency, you need to run through a number of steps:
    the locked version of other dependencies also change.
 4. In case of a conflict, resolve the conflict according to `help/dependencies.txt`
 5. Check if there are any constraints that are obsolete after the dependency update
-6. Update the license and notice files of the changed dependencies if necessary. See `help/dependencies.txt` for
+6. Update the license and notice files of the changed dependencies. See `help/dependencies.txt` for
    details.
 7. Run `./gradlew updateLicenses` to re-generate SHA1 checksums of the new jar files.
 8. Once in a while, a new version of a dependency will transitively bring in brand-new dependencies.
    You'll need to decide whether to keep or exclude them. See `help/dependencies.txt` for details.
 
+=== Reviewing Constraints
+
+The constraints are defined in gradle/validation/dependencies.gradle. There, if the updated dependency is listed,
+the constraint can be reviewed, updated or removed.
+
+The constraints fall into two "groups". In the first group there are dependency constraints from dependencies
+that our project directly includes and require version alignment to sync the versions across all transitive
+dependencies. In the second group are dependencies that are only present as transitive dependencies.
+There, we try to follow the convention to provide additional information with "which dependencies use what version",
+so that the next person reviewing the constraint does not have to look it up. However, this is quite time-consuming
+to analyze the dependencies and therefore subject to change.
+
+In order to review a constraint, you have to check if the updated dependency is mentioned in any of the constraints,
+either as a reason for another dependency constraint or as the constraint's dependency. Removing temporarily
+a constraint, the task writeLocks will fail if the constraint is still required.
+
+This process and the constraints of dependencies.gradle are not optimal, as it is quite time-consuming and not obvious
+by just looking at it. We just haven't found yet a more efficient way to maintain these constraints.
+
 == Renovate bot Pull Requests
+
+The renovate bot may be replaced in the future with dependabot and this section may only be relevant for older
+versions (<10.0). See https://lists.apache.org/thread/1sb9ttv3lp57z2yod1htx1fykp5sj73z for updates.
+
 A member of the Solr community operates a Github bot running https://github.com/renovatebot/renovate[Renovate], which
 files Pull Requests to Solr with dependency upgrade proposals. The PRs are labeled `dependencies` and do include
 changes resulting from `./gradlew writeLocks` and `updateLicenses`.

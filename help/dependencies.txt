@@ -261,6 +261,14 @@ To update JAR checksums (sha1) for licenses use:
 
 gradlew updateLicenses
 
+Note that this Gradle task does only update the checksums and does not make
+any changes to license or notice files.
+
+Whenever the library's LICENSE or NOTICE file changes, these changes should
+be reflected in our copies under solr/licenses. Currently it is necessary to
+manually review and update these files. This process is subject to change,
+progress can be tracked in SOLR-15929.
+
 License and notice files may be picked from the libraries' repositories.
 When looking up the libraries in Maven Central (https://search.maven.org)
 almost all projects have a direct reference to the source code (right side),
@@ -271,7 +279,9 @@ Remember to check out the correct tag / release before copying any license
 or notice file. Some multi-module projects that publish multiple artifacts
 may have subdirectories for each artifact. These directories sometimes
 hold a different license for that specific artifact, so make sure to copy
-the right license file.
+the right license file. Other multi-module projects may have only a single
+license and notice file for all modules, like netty, so multiple dependencies
+fromt he same group may reference the same license and notice file.
 
 Other places where you may find a license and notice file are in the pom.xml
 file as a URL under a <license> tag if there is no reference to a repository
