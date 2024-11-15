@@ -84,6 +84,9 @@ public class SolrZkClient implements Closeable {
   private Compressor compressor;
   private int minStateByteLenForCompression;
 
+  // Allow method reference to return a reference to a functional interface (Mapwriter),
+  // rather than a reference to a ZkMetrics object
+  @SuppressWarnings("UnnecessaryMethodReference")
   public MapWriter getMetrics() {
     return metrics::writeMap;
   }
