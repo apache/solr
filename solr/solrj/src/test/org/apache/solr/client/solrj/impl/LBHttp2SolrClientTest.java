@@ -318,6 +318,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       return generateResponse(request);
     }
 
+    @Override
     public <R> R requestWithBaseUrl(
         String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
         throws SolrServerException, IOException {
