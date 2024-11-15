@@ -1,5 +1,3 @@
-import io.swagger.v3.plugins.gradle.tasks.ResolveTask
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +16,8 @@ import io.swagger.v3.plugins.gradle.tasks.ResolveTask
  */
 
 plugins {
-  alias(libs.plugins.swagger3Core)
-  alias(libs.plugins.openapiGenerator)
+  alias(libs.plugins.swagger3.core)
+  alias(libs.plugins.openapi.generator)
 }
 
 apply plugin: 'java-library'
@@ -47,9 +45,7 @@ configurations {
         canBeResolved = false
     }
 
-    swaggerBuild {
-        extendsFrom implementation
-    }
+    swaggerBuild.extendsFrom implementation
 }
 
 resolve {
@@ -59,22 +55,21 @@ resolve {
   outputDir = file(project.openApiSpecDir)
   outputFileName = "solr-openapi-${version}"
   prettyPrint = true
-  outputFormat = ResolveTask.Format.JSONANDYAML
 }
 
 dependencies {
-    runtimeOnly 'org.slf4j:slf4j-api'
+    runtimeOnly libs.slf4j.api
     
-    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations'
-    api 'io.swagger.core.v3:swagger-annotations-jakarta'
-    implementation 'org.semver4j:semver4j'
+    implementation libs.jakarta.ws.rsapi
+    implementation libs.fasterxml.jackson.core.annotations
+    api libs.swagger3.annotations.jakarta
+    implementation libs.semver4j.semver4j
 
     testImplementation project(':solr:test-framework')
     testImplementation project(':solr:api')
-    testImplementation 'org.apache.lucene:lucene-test-framework'
+    testImplementation libs.apache.lucene.testframework
 
-    swaggerBuild 'io.swagger.core.v3:swagger-jaxrs2-jakarta'
+    swaggerBuild libs.swagger3.jaxrs2.jakarta
 }
 
 // Non-Java client generation tasks below:
