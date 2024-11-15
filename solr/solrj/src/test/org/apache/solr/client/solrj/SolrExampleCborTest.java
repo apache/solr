@@ -278,18 +278,6 @@ public class SolrExampleCborTest extends SolrExampleTests {
       public String getUpdateContentType() {
         return "application/cbor";
       }
-
-      @Override
-      public String getPath(SolrRequest<?> req) {
-        if (req instanceof UpdateRequest) {
-          UpdateRequest updateRequest = (UpdateRequest) req;
-          List<SolrInputDocument> docs = updateRequest.getDocuments();
-          if (docs == null || docs.isEmpty()) return super.getPath(req);
-          return "/update/cbor";
-        } else {
-          return super.getPath(req);
-        }
-      }
     };
   }
 

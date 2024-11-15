@@ -14,20 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-// Declare script dependency versions outside of palantir's
-// version unification control. These are not our main dependencies
-// but are reused in buildSrc and across applied scripts.
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 
-ext {
-  scriptDepVersions = [
-      "min-java-version": "21",
-      "min-solrj-java-version" : "17",
-      "apache-rat": "0.15",
-      "commons-codec": "1.16.0",
-      "ecj": "3.39.0",
-      "javacc": "7.0.12",
-      "jgit": "6.7.0.202309050840-r",
-      "flexmark": "0.64.8",
-  ]
+public class SchemaListFieldTypesResponse extends SolrJerseyResponse {
+  @JsonProperty("fieldTypes")
+  public List<Object> fieldTypes;
 }

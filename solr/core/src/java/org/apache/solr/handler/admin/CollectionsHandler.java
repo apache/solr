@@ -119,6 +119,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
@@ -172,7 +173,7 @@ import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
-import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.CreateAlias;
 import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackup;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
@@ -614,10 +615,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATEALIAS_OP(
         CREATEALIAS,
         (req, rsp, h) -> {
-          final CreateAliasAPI.CreateAliasRequestBody reqBody =
-              CreateAliasAPI.createFromSolrParams(req.getParams());
+          final CreateAliasRequestBody reqBody = CreateAlias.createFromSolrParams(req.getParams());
           final SolrJerseyResponse response =
-              new CreateAliasAPI(h.coreContainer, req, rsp).createAlias(reqBody);
+              new CreateAlias(h.coreContainer, req, rsp).createAlias(reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1356,7 +1356,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUnique.class,
-        CreateAliasAPI.class,
+        CreateAlias.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
         CreateShard.class,

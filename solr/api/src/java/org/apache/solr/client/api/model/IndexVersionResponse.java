@@ -14,22 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-// This ensures 'versions.props' file is sorted lexicographically.
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.stream.Collectors
+/** Response body for the `GET /api/cores/coreName/replication/indexversion` API */
+public class IndexVersionResponse extends SolrJerseyResponse {
 
-configure(rootProject) {
-  task versionsPropsAreSorted() {
-    doFirst {
-      def versionsProps = file('versions.props')
-      // remove # commented lines and blank lines
-      def lines = versionsProps.readLines("UTF-8").stream().filter(l -> !l.matches(/^(#.*|\s*)$/)).collect(Collectors.toList())
-      def sorted = lines.toSorted()
+  @JsonProperty("indexversion")
+  public Long indexVersion;
 
-      if (!Objects.equals(lines, sorted)) {
-        throw new GradleException("${versionsProps} file is not sorted lexicographically.")
-      }
-    }
+  @JsonProperty("generation")
+  public Long generation;
+
+  @JsonProperty("status")
+  public String status;
+
+  public IndexVersionResponse() {}
+
+  public IndexVersionResponse(Long indexVersion, Long generation, String status) {
+    this.indexVersion = indexVersion;
+    this.generation = generation;
+    this.status = status;
   }
 }
