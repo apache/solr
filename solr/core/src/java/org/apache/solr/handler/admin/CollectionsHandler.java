@@ -201,7 +201,7 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
-import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
+import org.apache.solr.handler.admin.api.RestoreCollection;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -1063,7 +1063,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     RESTORE_OP(
         RESTORE,
         (req, rsp, h) -> {
-          final var response = RestoreCollectionAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+          final var response = RestoreCollection.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1375,7 +1375,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ReplaceNode.class,
         MigrateReplicas.class,
         BalanceReplicas.class,
-        RestoreCollectionAPI.class,
+        RestoreCollection.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,

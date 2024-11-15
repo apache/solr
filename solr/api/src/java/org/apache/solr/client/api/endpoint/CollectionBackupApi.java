@@ -21,23 +21,38 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
+import org.apache.solr.client.api.model.RestoreCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /**
  * V2 API definition for creating a new "backup" of a specified collection
  *
  * <p>This API is analogous to the v1 /admin/collections?action=BACKUP command.
  */
-@Path("/collections/{collectionName}/backups/{backupName}/versions")
-public interface CreateCollectionBackupApi {
+public interface CollectionBackupApi {
 
-  @POST
-  @Operation(
-      summary = "Creates a new backup point for a collection",
-      tags = {"collection-backups"})
-  SolrJerseyResponse createCollectionBackup(
-      @PathParam("collectionName") String collectionName,
-      @PathParam("backupName") String backupName,
-      CreateCollectionBackupRequestBody requestBody)
-      throws Exception;
+  @Path("/collections/{collectionName}/backups/{backupName}/versions")
+  interface Create {
+    @POST
+    @Operation(
+        summary = "Creates a new backup point for a collection",
+        tags = {"collection-backups"})
+    SolrJerseyResponse createCollectionBackup(
+        @PathParam("collectionName") String collectionName,
+        @PathParam("backupName") String backupName,
+        CreateCollectionBackupRequestBody requestBody)
+        throws Exception;
+  }
+
+  @Path("/backups/{backupName}/restore")
+  interface Restore {
+    @POST
+    @Operation(
+        summary = "Restores an existing backup point to a (potentially new) collection.",
+        tags = {"collection-backups"})
+    SubResponseAccumulatingJerseyResponse restoreCollection(
+        @PathParam("backupName") String backupName, RestoreCollectionRequestBody requestBody)
+        throws Exception;
+  }
 }
