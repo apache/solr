@@ -123,6 +123,7 @@ import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
@@ -191,7 +192,7 @@ import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
-import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
+import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicas;
@@ -1148,15 +1149,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP);
 
-          final ListCollectionSnapshotsAPI listCollectionSnapshotsAPI =
-              new ListCollectionSnapshotsAPI(h.coreContainer, req, rsp);
+          final ListCollectionSnapshots listCollectionSnapshotsAPI =
+              new ListCollectionSnapshots(h.coreContainer, req, rsp);
 
-          final ListCollectionSnapshotsAPI.ListSnapshotsResponse response =
+          final ListCollectionSnapshotsResponse response =
               listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
 
           NamedList<Object> snapshots = new NamedList<>();
-          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
-            snapshots.add(meta.getName(), meta.toNamedList());
+          for (Object meta : response.snapshots.values()) {
+            final var metaTyped = (CollectionSnapshotMetaData) meta;
+            snapshots.add(metaTyped.getName(), metaTyped.toNamedList());
           }
 
           rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
@@ -1381,7 +1383,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteNode.class,
         ListAliases.class,
         AliasProperty.class,
-        ListCollectionSnapshotsAPI.class,
+        ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class);
   }
