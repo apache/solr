@@ -53,11 +53,14 @@ teardown() {
   solr stop
 }
 
+@test "multiple connection options are prevented" {
+  run solr status --port ${SOLR_PORT} --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "The option 's' was specified but an option from this group has already been selected: 'p'"
+}
+
 @test "status with invalid --solr-url from user" {
-  solr start
   run solr status --solr-url http://invalidhost:${SOLR_PORT}
   assert_output --partial "Solr at http://invalidhost:${SOLR_PORT} not online"
-  solr stop
 }
 
 @test "status with --short format" {

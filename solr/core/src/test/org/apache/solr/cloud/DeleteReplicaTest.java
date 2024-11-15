@@ -488,11 +488,13 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   private void waitForNodeLeave(String lostNodeName) throws InterruptedException {
-    ZkStateReader reader = cluster.getZkStateReader();
-    TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (reader.getClusterState().getLiveNodes().contains(lostNodeName)) {
-      Thread.sleep(100);
-      if (timeOut.hasTimedOut()) fail("Wait for " + lostNodeName + " to leave failed!");
+
+    try {
+      cluster
+          .getZkStateReader()
+          .waitForLiveNodes(20, TimeUnit.SECONDS, (o, n) -> !n.contains(lostNodeName));
+    } catch (TimeoutException e) {
+      fail("Wait for " + lostNodeName + " to leave failed!");
     }
   }
 

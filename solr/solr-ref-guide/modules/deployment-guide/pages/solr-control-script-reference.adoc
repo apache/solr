@@ -794,10 +794,10 @@ The `delete` command detects the mode that Solr is running in and then deletes t
 
 `bin/solr delete --help`
 
-If you're deleting a collection in SolrCloud mode, the default behavior is to also delete the configuration directory from Zookeeper so long as it is not being used by another collection.
+If you're deleting a collection in SolrCloud mode, the default behavior is to leave the configuration directory in Zookeeper. If you want to delete the configuration then you need to pass in `--delete-config` as well.
 
-For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
-If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing `--delete-config false` when running this command.atom
+For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts --delete-config` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
+If not, then the `/configs/contacts` directory is removed from ZooKeeper.
 
 ==== Delete Collection or Core Parameters
 
@@ -816,14 +816,14 @@ Name of the collection or core to delete.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `true`
+|Optional |Default: none
 |===
 +
-Whether or not the configuration directory should also be deleted from ZooKeeper.
+Specify the configuration directory should also be deleted from ZooKeeper.
 +
-If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--delete-config` as `true`.
+If the configuration directory is being used by another collection, then it will not be deleted.
 +
-*Example*: `bin/solr delete --delete-config false`
+*Example*: `bin/solr delete --delete-config`
 
 `-f` or `--force`::
 +
@@ -1634,16 +1634,27 @@ NOTE: The `export` command only works with in a Solr running in cloud mode.
 
 The `bin/solr export` command takes the following parameters:
 
-`--url <url>`::
+`-s <url>` or `--solr-url <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Fully-qualified address to a Solr.
++
+*Example*: `--solr-url http://localhost:8983`
+
+`-c <collection>`::
 +
 [%autowidth,frame=none]
 |===
 s|Required |Default: none
 |===
 +
-Fully-qualified address to a collection.
+Name of the collection to run an export against.
 +
-*Example*: `--url http://localhost:8983/solr/techproducts`
+*Example*: `bin/solr export -c gettingstarted`
 
 `--format <format>`::
 +
@@ -1656,7 +1667,7 @@ The file format of the export, `json`, `jsonl`, or `javabin`.
 Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
 `jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
 
-`--out <path>`::
+`--output <path>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1696,7 +1707,6 @@ The default is `\*:*` which will export all documents.
 Comma separated list of fields to be exported.
 By default all fields are fetched.
 
-
 `--limit <number of documents>`::
 +
 [%autowidth,frame=none]
@@ -1722,13 +1732,13 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 Export all documents from a collection `gettingstarted`:
 
 [source,bash]
-bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1
 
 Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSON file:
 
 [source,bash]
 ----
-bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1 --format json --compress --out 1MDocs
+bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1 --format json --compress --output 1MDocs
 ----
 
 === Importing Documents into a Collection
@@ -1741,7 +1751,7 @@ First export the documents, making sure to ignore any fields that are populated 
 
 [,console]
 ----
-$ bin/solr export --url http://localhost:8983/solr/gettingstarted --fields id,name,manu,cat,features
+$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --fields id,name,manu,cat,features
 ----
 
 Create a new collection to import the exported documents into:
@@ -1767,7 +1777,7 @@ $ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http
 
 [,console]
 ----
-$ bin/solr export --url http://localhost:8983/solr/gettingstarted --format javabin --fields id,name,manu,cat,features
+$ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --format javabin --fields id,name,manu,cat,features
 $ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
 ----
 
@@ -1869,10 +1879,10 @@ Use the export command to take :
 
 [,console]
 ----
-$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [-i <ID>] --snapshot-name <NAME>
+$ bin/solr snapshot-export [--backup-repo-name <DIR>] -c <NAME> --dest-dir <DIR> [--async-id <ID>] --snapshot-name <NAME>
 ----
 
-The `-i` parameter specifies that this is an asynchronous process.
+The `--async-id` parameter specifies that this is an asynchronous process.
 
 
 === Delete a Snapshot

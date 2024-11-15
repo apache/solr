@@ -47,6 +47,8 @@
     <Set name="detailedDump">false</Set>
   </Get>
 
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="removeHandlersForRootLogger"/>
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install"/>
 
   <!-- =========================================================== -->
   <!-- Http Configuration.                                         -->

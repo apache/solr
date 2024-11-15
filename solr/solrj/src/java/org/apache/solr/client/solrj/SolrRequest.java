@@ -250,7 +250,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
     T res = createResponse(client);
-    res.setResponse(client.request(this, collection));
+    var namedList = client.request(this, collection);
+    res.setResponse(namedList);
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
@@ -270,18 +271,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public String getCollection() {
     return getParams() == null ? null : getParams().get("collection");
-  }
-
-  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
-  public void setBasePath(String path) {
-    if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
-
-    this.basePath = path;
-  }
-
-  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
-  public String getBasePath() {
-    return basePath;
   }
 
   public void addHeader(String key, String value) {

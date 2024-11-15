@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -652,8 +650,7 @@ public class JdbcTest extends SolrCloudTestCase {
       solrClient.connect();
       ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
 
-      Set<String> collectionsSet = zkStateReader.getClusterState().getCollectionsMap().keySet();
-      SortedSet<String> tables = new TreeSet<>(collectionsSet);
+      var tables = new TreeSet<String>(zkStateReader.getClusterState().getCollectionNames());
 
       Aliases aliases = zkStateReader.getAliases();
       tables.addAll(aliases.getCollectionAliasListMap().keySet());
