@@ -157,8 +157,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-
-  protected NamedList<Object> requestWithBaseUrl(String baseUrl, SolrRequest<?> solrRequest, String collection)
+  protected NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
     HttpResponse<InputStream> response = null;
@@ -193,18 +193,20 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public NamedList<Object> request(SolrRequest<?> solrRequest, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException {
     return requestWithBaseUrl(null, solrRequest, collection);
   }
 
-  private PreparedRequest prepareRequest(SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
+  private PreparedRequest prepareRequest(
+      SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
       throws SolrServerException, IOException {
     checkClosed();
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
     String url;
-    if(overrideBaseUrl != null) {
+    if (overrideBaseUrl != null) {
       url = ClientUtils.buildRequestUrl(solrRequest, overrideBaseUrl, collection);
     } else {
       url = getRequestUrl(solrRequest, collection);

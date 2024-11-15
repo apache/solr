@@ -164,11 +164,12 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
 
-    HttpJdkSolrClient.Builder b = builder(someOtherUrl).withResponseParser(new BinaryResponseParser());
+    HttpJdkSolrClient.Builder b =
+        builder(someOtherUrl).withResponseParser(new BinaryResponseParser());
     try (HttpJdkSolrClient client = b.build()) {
       client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
       assertEquals(
-              client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
     }
   }
 
