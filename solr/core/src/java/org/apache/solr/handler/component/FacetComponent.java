@@ -51,7 +51,10 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.AbstractFacetComponent;
 import org.apache.solr.search.facet.FacetDebugInfo;
+import org.apache.solr.search.facet.FacetRequest;
+import org.apache.solr.search.facet.OneFacetParser;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrResponseUtil;
 import org.slf4j.Logger;
@@ -62,7 +65,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
-public class FacetComponent extends SearchComponent {
+public class FacetComponent extends AbstractFacetComponent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String COMPONENT_NAME = "facet";
@@ -107,7 +110,13 @@ public class FacetComponent extends SearchComponent {
   /* Custom facet components can return a custom SimpleFacets object */
   protected SimpleFacets newSimpleFacets(
       SolrQueryRequest req, DocSet docSet, SolrParams params, ResponseBuilder rb) {
-    return new SimpleFacets(req, docSet, params, rb);
+    return new SimpleFacets(req, docSet, params, rb) {
+      @Override
+      public FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) {
+        OneFacetParser facetRequestFactory = createFacetRequestFactory(req, jsonFacet);
+        return facetRequestFactory.parseOneFacetReq(req, jsonFacet);
+      }
+    };
   }
 
   /**
@@ -284,7 +293,13 @@ public class FacetComponent extends SearchComponent {
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
-            new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
+            new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb) {
+              @Override
+              public FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) {
+                OneFacetParser facetRequestFactory = createFacetRequestFactory(req, jsonFacet);
+                return facetRequestFactory.parseOneFacetReq(req, jsonFacet);
+              }
+            };
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
         if (v != null) {
           counts.add(PIVOT_KEY, v);
@@ -311,7 +326,6 @@ public class FacetComponent extends SearchComponent {
    *
    * @see SimpleFacets#getFacetQueryCounts
    * @see SimpleFacets#getFacetFieldCounts
-   * @see RangeFacetProcessor#getFacetRangeCounts
    * @see RangeFacetProcessor#getFacetIntervalCounts
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
@@ -325,7 +339,13 @@ public class FacetComponent extends SearchComponent {
             simpleFacets.getRequest(),
             simpleFacets.getDocsOrig(),
             simpleFacets.getGlobalParams(),
-            simpleFacets.getResponseBuilder());
+            simpleFacets.getResponseBuilder()) {
+
+          @Override
+          public FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) {
+            return simpleFacets.parseOneFacetReq(req,jsonFacet);
+          }
+        };
     NamedList<Object> counts = new SimpleOrderedMap<>();
     try {
       counts.add(FACET_QUERY_KEY, simpleFacets.getFacetQueryCounts());
@@ -540,7 +560,7 @@ public class FacetComponent extends SearchComponent {
 
       FacetInfo fi = rb._facetInfo;
       if (fi == null) {
-        rb._facetInfo = fi = new FacetInfo();
+        rb._facetInfo = fi = new FacetInfo(createFacetRequestFactory(rb.req, null));
         fi.parse(rb.req.getParams(), rb);
       }
 
@@ -1246,6 +1266,7 @@ public class FacetComponent extends SearchComponent {
    * @see org.apache.solr.handler.component.FacetComponent.FacetContext
    */
   public static class FacetInfo {
+    private final OneFacetParser facetRequestFactory;
     /**
      * Incremented counter used to track the values being refined in a given request. This counter
      * is used in conjunction with {@link PivotFacet#REFINE_PARAM} to identify which refinement
@@ -1261,6 +1282,10 @@ public class FacetComponent extends SearchComponent {
     public SimpleOrderedMap<SimpleOrderedMap<Integer>> intervalFacets = new SimpleOrderedMap<>();
     public SimpleOrderedMap<PivotFacet> pivotFacets = new SimpleOrderedMap<>();
     public LinkedHashMap<String, SpatialHeatmapFacets.HeatmapFacet> heatmapFacets;
+
+    public FacetInfo(OneFacetParser facetRequestFactory) {
+      this.facetRequestFactory = facetRequestFactory;
+    }
 
     void parse(SolrParams params, ResponseBuilder rb) {
       queryFacets = new LinkedHashMap<>();
@@ -1299,7 +1324,7 @@ public class FacetComponent extends SearchComponent {
         }
       }
 
-      heatmapFacets = SpatialHeatmapFacets.distribParse(params, rb);
+      heatmapFacets = SpatialHeatmapFacets.distribParse(this.facetRequestFactory, params, rb);
     }
   }
 

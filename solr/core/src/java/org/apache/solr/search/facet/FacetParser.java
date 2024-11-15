@@ -138,25 +138,7 @@ public abstract class FacetParser<T extends FacetRequest> {
     return parseFacetOrStat(key, type, args);
   }
 
-  public Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError {
-    // TODO: a place to register all these facet types?
-
-    switch (type) {
-      case "field":
-      case "terms":
-        return new FacetFieldParser(this, key).parse(args);
-      case "query":
-        return new FacetQueryParser(this, key).parse(args);
-      case "range":
-        return new FacetRangeParser(this, key).parse(args);
-      case "heatmap":
-        return new FacetHeatmap.Parser(this, key).parse(args);
-      case "func":
-        return parseStat(key, args);
-    }
-
-    throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
-  }
+  public abstract Object parseFacetOrStat(String key, String type, Object args) throws SyntaxError ;
 
   public Object parseStringFacetOrStat(String key, String s) throws SyntaxError {
     // "avg(myfield)"
@@ -174,7 +156,7 @@ public abstract class FacetParser<T extends FacetRequest> {
   }
 
   /** Parses simple strings like "avg(x)" or robust Maps that may contain local params */
-  private AggValueSource parseStat(String key, Object args) throws SyntaxError {
+  protected AggValueSource parseStat(String key, Object args) throws SyntaxError {
     assert null != args;
 
     if (args instanceof CharSequence) {
@@ -459,7 +441,7 @@ public abstract class FacetParser<T extends FacetRequest> {
 
   // TODO Make this private (or at least not static) and introduce
   // a newInstance method on FacetParser that returns one of these?
-  static class FacetTopParser extends FacetParser<FacetQuery> {
+  static abstract class FacetTopParser extends FacetParser<FacetQuery> {
     private SolrQueryRequest req;
 
     public FacetTopParser(SolrQueryRequest req) {
@@ -485,7 +467,7 @@ public abstract class FacetParser<T extends FacetRequest> {
     }
   }
 
-  static class FacetQueryParser extends FacetParser<FacetQuery> {
+  static abstract class FacetQueryParser extends FacetParser<FacetQuery> {
     public FacetQueryParser(FacetParser<?> parent, String key) {
       super(parent, key);
       facet = new FacetQuery();
@@ -532,7 +514,7 @@ public abstract class FacetParser<T extends FacetRequest> {
     }
   }
 
-  static class FacetFieldParser extends FacetParser<FacetField> {
+  static abstract class FacetFieldParser extends FacetParser<FacetField> {
     public FacetFieldParser(FacetParser<?> parent, String key) {
       super(parent, key);
       facet = new FacetField();

@@ -91,7 +91,9 @@ import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
+import org.apache.solr.search.facet.FacetParserFactory;
 import org.apache.solr.search.facet.FacetRequest;
+import org.apache.solr.search.facet.OneFacetParser;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.RTimer;
@@ -104,7 +106,7 @@ import org.slf4j.LoggerFactory;
  * <p>More advanced facet implementations may compose or subclass this class to leverage any of its
  * functionality.
  */
-public class SimpleFacets {
+public abstract class SimpleFacets implements OneFacetParser {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** The main set of documents all facet counts should be relative to */
@@ -627,7 +629,7 @@ public class SimpleFacets {
 
           // TODO do we handle debug?  Should probably already be handled by the legacy code
 
-          Object resObj = FacetRequest.parseOneFacetReq(req, jsonFacet).process(req, docs);
+          Object resObj = parseOneFacetReq(req, jsonFacet).process(req, docs);
           // Go through the response to build the expected output for SimpleFacets
           counts = new NamedList<>();
           if (resObj != null) {
@@ -673,6 +675,8 @@ public class SimpleFacets {
 
     return counts;
   }
+
+  public abstract FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) ;
 
   /**
    * @param existsRequested facet.exists=true is passed for the given field
@@ -1362,7 +1366,7 @@ public class SimpleFacets {
 
       resOuter.add(
           parsed.key,
-          SpatialHeatmapFacets.getHeatmapForField(
+          SpatialHeatmapFacets.getHeatmapForField(this,
               parsed.key, parsed.facetValue, rb, parsed.params, parsed.docs));
     }
     return resOuter;

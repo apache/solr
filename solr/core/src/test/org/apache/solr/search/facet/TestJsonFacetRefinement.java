@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
@@ -124,13 +126,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     return ob.getObject();
   }
 
+  @SuppressWarnings("unchecked")
   void doTestRefine(String facet, String... responsesAndTests) throws Exception {
     SolrQueryRequest req = req();
     try {
       int nShards = responsesAndTests.length / 2;
       Object jsonFacet = Utils.fromJSONString(facet);
-      FacetParser<FacetQuery> parser = new FacetParser.FacetTopParser(req);
-      FacetRequest facetRequest = parser.parse(jsonFacet);
+      FacetParserFactory facetParserFactory = new FacetParserFactory();
+      FacetRequest facetRequest  = facetParserFactory.parseRequest(req, (Map<String, Object>) jsonFacet);
 
       FacetMerger merger = null;
       FacetMerger.Context ctx = new FacetMerger.Context(nShards);

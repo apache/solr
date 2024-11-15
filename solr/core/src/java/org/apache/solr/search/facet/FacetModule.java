@@ -42,7 +42,7 @@ import org.apache.solr.search.QueryContext;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-public class FacetModule extends SearchComponent {
+public class FacetModule extends AbstractFacetComponent {
 
   public static final String COMPONENT_NAME = "facet_module";
 
@@ -106,7 +106,8 @@ public class FacetModule extends SearchComponent {
     rb.setNeedDocSet(true);
 
     // Parse the facet in the prepare phase?
-    FacetRequest facetRequest = FacetRequest.parse(rb.req, jsonFacet);
+    FacetParserFactory requestFactory = createFacetRequestFactory(rb.req, jsonFacet);
+    FacetRequest facetRequest = requestFactory.parseRequest(rb.req, jsonFacet);
 
     FacetComponentState fcState = new FacetComponentState();
     fcState.rb = rb;
