@@ -21,15 +21,20 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.core.snapshots.SolrSnapshotManager.SHARD_ID;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
+import org.apache.solr.client.api.model.CollectionSnapshotMetaData.SnapshotStatus;
+import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -44,9 +49,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
@@ -153,13 +155,13 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
         resp.add(SolrSnapshotManager.SHARD_ID, slice.getName());
         resp.add(SolrSnapshotManager.LEADER, leader);
 
-        CoreSnapshotMetaData c = new CoreSnapshotMetaData(resp);
+        CoreSnapshotMetaData c = createCoreSnapshotMetadataFrom(resp);
         replicas.add(c);
         if (log.isInfoEnabled()) {
           log.info(
               "Snapshot with commitName {} is created successfully for core {}",
               commitName,
-              c.getCoreName());
+              c.core);
         }
       }
     }
@@ -202,7 +204,7 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
             "Saved following snapshot information for collection={} with commitName={} in Zookeeper : {}",
             collectionName,
             commitName,
-            meta.toNamedList());
+            meta);
       }
     } else {
       log.warn(
@@ -220,10 +222,21 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
             "Saved following snapshot information for collection={} with commitName={} in Zookeeper : {}",
             collectionName,
             commitName,
-            meta.toNamedList());
+            meta);
       }
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Failed to create snapshot on shards " + failedShards);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static CoreSnapshotMetaData createCoreSnapshotMetadataFrom(NamedList<?> resp) {
+    return new CoreSnapshotMetaData(
+        (String) resp.get(CoreAdminParams.CORE),
+        (String) resp.get(SolrSnapshotManager.INDEX_DIR_PATH),
+        (Long) resp.get(SolrSnapshotManager.GENERATION_NUM),
+        (String) resp.get(SHARD_ID),
+        (Boolean) resp.get(SolrSnapshotManager.LEADER),
+        (Collection<String>) resp.get(SolrSnapshotManager.FILE_LIST));
   }
 }

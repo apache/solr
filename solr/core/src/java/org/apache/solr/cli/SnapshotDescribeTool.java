@@ -22,16 +22,18 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
+import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 
 /** Supports snapshot-describe command in the bin/solr script. */
@@ -94,24 +96,14 @@ public class SnapshotDescribeTool extends ToolBase {
       Collection<CollectionSnapshotMetaData> snaps =
           listCollectionSnapshots(solrClient, collectionName);
       for (CollectionSnapshotMetaData m : snaps) {
-        if (snapshotName.equals(m.getName())) {
-          echo("Name: " + m.getName());
-          echo("Status: " + m.getStatus());
-          echo("Time of creation: " + dateFormat.format(m.getCreationDate()));
-          echo("Total number of cores with snapshot: " + m.getReplicaSnapshots().size());
+        if (snapshotName.equals(m.name)) {
+          echo("Name: " + m.name);
+          echo("Status: " + m.status);
+          echo("Time of creation: " + dateFormat.format(new Date(m.creationDate)));
+          echo("Total number of cores with snapshot: " + m.getReplicas().size());
           echo("-----------------------------------");
-          for (CollectionSnapshotMetaData.CoreSnapshotMetaData n : m.getReplicaSnapshots()) {
-            String builder =
-                "Core [name="
-                    + n.getCoreName()
-                    + ", leader="
-                    + n.isLeader()
-                    + ", generation="
-                    + n.getGenerationNumber()
-                    + ", indexDirPath="
-                    + n.getIndexDirPath()
-                    + "]\n";
-            echo(builder);
+          for (CoreSnapshotMetaData n : m.getReplicas()) {
+            echo(n + "\n");
           }
         }
       }
@@ -131,12 +123,17 @@ public class SnapshotDescribeTool extends ToolBase {
           "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
     }
 
+    // TODO All the response inspection, casting, reformatting makes it a good candidate for using
+    // the strongly-typed response returned by the v2 API.
     NamedList<?> apiResult =
         (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
     for (int i = 0; i < apiResult.size(); i++) {
-      result.add(new CollectionSnapshotMetaData((NamedList<?>) apiResult.getVal(i)));
+      final var collSnapshotMetadata =
+          SolrSnapshotManager.createCollectionSnapshotMetadataFrom(
+              (NamedList<?>) apiResult.getVal(i));
+      result.add(collSnapshotMetadata);
     }
 
     return result;

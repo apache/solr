@@ -24,10 +24,14 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
+import org.apache.solr.client.api.model.CollectionSnapshotMetaData.SnapshotStatus;
+import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -42,9 +46,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
-import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
@@ -94,9 +95,9 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     Set<String> coresWithSnapshot = new HashSet<>();
-    for (CoreSnapshotMetaData m : meta.get().getReplicaSnapshots()) {
-      if (existingCores.contains(m.getCoreName())) {
-        coresWithSnapshot.add(m.getCoreName());
+    for (CoreSnapshotMetaData m : meta.get().getReplicas()) {
+      if (existingCores.contains(m.core)) {
+        coresWithSnapshot.add(m.core);
       }
     }
 
@@ -114,7 +115,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
         // Note - when a snapshot is found in_progress state - it is the result of overseer
         // failure while handling the snapshot creation. Since we don't know the exact set of
         // replicas to contact at this point, we try on all replicas.
-        if (meta.get().getStatus() == SnapshotStatus.InProgress
+        if (meta.get().status == SnapshotStatus.InProgress
             || coresWithSnapshot.contains(replica.getCoreName())) {
           String coreName = replica.getStr(CORE_NAME_PROP);
 
@@ -151,8 +152,8 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
           coresWithSnapshot);
 
       List<CoreSnapshotMetaData> replicasWithSnapshot = new ArrayList<>();
-      for (CoreSnapshotMetaData m : meta.get().getReplicaSnapshots()) {
-        if (coresWithSnapshot.contains(m.getCoreName())) {
+      for (CoreSnapshotMetaData m : meta.get().getReplicas()) {
+        if (coresWithSnapshot.contains(m.core)) {
           replicasWithSnapshot.add(m);
         }
       }
@@ -161,9 +162,9 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
       // figure out which cores still contain the named snapshot.
       CollectionSnapshotMetaData newResult =
           new CollectionSnapshotMetaData(
-              meta.get().getName(),
+              meta.get().name,
               SnapshotStatus.Failed,
-              meta.get().getCreationDate(),
+              new Date(meta.get().creationDate),
               replicasWithSnapshot);
       SolrSnapshotManager.updateCollectionLevelSnapshot(zkClient, collectionName, newResult);
       if (log.isInfoEnabled()) {

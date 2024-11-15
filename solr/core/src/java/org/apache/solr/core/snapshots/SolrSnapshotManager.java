@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,11 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
+import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
@@ -89,7 +94,7 @@ public class SolrSnapshotManager {
   public static void createCollectionLevelSnapshot(
       SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
       throws KeeperException, InterruptedException {
-    String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.getName()));
+    String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.name));
     zkClient.makePath(zkPath, Utils.toJSON(meta), CreateMode.PERSISTENT, true);
   }
 
@@ -105,7 +110,7 @@ public class SolrSnapshotManager {
   public static void updateCollectionLevelSnapshot(
       SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
       throws KeeperException, InterruptedException {
-    String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.getName()));
+    String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.name));
     zkClient.setData(zkPath, Utils.toJSON(meta), -1, true);
   }
 
@@ -181,7 +186,7 @@ public class SolrSnapshotManager {
       @SuppressWarnings({"unchecked"})
       Map<String, Object> data =
           (Map<String, Object>) Utils.fromJSON(zkClient.getData(zkPath, null, null, true));
-      return Optional.of(new CollectionSnapshotMetaData(data));
+      return Optional.of(createCollectionSnapshotMetadataFrom(data));
     } catch (KeeperException ex) {
       // Gracefully handle the case when the zk node for a specific
       // snapshot doesn't exist (e.g. due to a concurrent delete operation).
@@ -328,5 +333,40 @@ public class SolrSnapshotManager {
       return "/snapshots/" + collectionName + "/" + commitName.get();
     }
     return "/snapshots/" + collectionName;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static CollectionSnapshotMetaData createCollectionSnapshotMetadataFrom(
+      NamedList<?> snapshotMetaUntyped) {
+    return createCollectionSnapshotMetadataFrom((Map<String, Object>) snapshotMetaUntyped.asMap());
+  }
+
+  @SuppressWarnings("unchecked")
+  public static CollectionSnapshotMetaData createCollectionSnapshotMetadataFrom(
+      Map<String, Object> snapshotMetadataUntyped) {
+    final var collSnapshotMetadata =
+        new CollectionSnapshotMetaData(
+            (String) snapshotMetadataUntyped.get(CoreAdminParams.NAME),
+            CollectionSnapshotMetaData.SnapshotStatus.valueOf(
+                (String) snapshotMetadataUntyped.get(SolrSnapshotManager.SNAPSHOT_STATUS)),
+            new Date((Long) snapshotMetadataUntyped.get(SolrSnapshotManager.CREATION_DATE)),
+            new ArrayList<>());
+
+    List<Object> r =
+        (List<Object>) snapshotMetadataUntyped.get(SolrSnapshotManager.SNAPSHOT_REPLICAS);
+    for (Object x : r) {
+      Map<String, Object> info = (Map<String, Object>) x;
+      String coreName = (String) info.get(CoreAdminParams.CORE);
+      String indexDirPath = (String) info.get(SolrSnapshotManager.INDEX_DIR_PATH);
+      long generationNumber = (Long) info.get(SolrSnapshotManager.GENERATION_NUM);
+      String shardId = (String) info.get(SHARD_ID);
+      boolean leader = (Boolean) info.get(SolrSnapshotManager.LEADER);
+      Collection<String> files = (Collection<String>) info.get(SolrSnapshotManager.FILE_LIST);
+      collSnapshotMetadata.replicas.add(
+          new CoreSnapshotMetaData(
+              coreName, indexDirPath, generationNumber, shardId, leader, files));
+    }
+
+    return collSnapshotMetadata;
   }
 }
