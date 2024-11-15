@@ -54,9 +54,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
-/**
- * Utility class that holds various helper methods for the CLI.
- */
+/** Utility class that holds various helper methods for the CLI. */
 public final class CLIUtils {
 
   private CLIUtils() {}
