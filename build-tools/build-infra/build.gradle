@@ -17,7 +17,7 @@
 
 plugins {
   id "java-gradle-plugin"
-  id 'com.diffplug.spotless' version '6.5.2' apply false
+  alias(libs.plugins.diffplug.spotless) apply false
 }
 
 repositories {
@@ -34,12 +34,9 @@ apply from: file('../../gradle/validation/check-environment.gradle')
 tasks.register("checkJdkInternalsExportedToGradle") {}
 apply from: file('../../gradle/validation/spotless.gradle')
 
-// Load common script dependencies.
-apply from: file("../scriptDepVersions.gradle")
-
 java {
-  sourceCompatibility = scriptDepVersions['min-java-version']
-  targetCompatibility = scriptDepVersions['min-java-version']
+  sourceCompatibility = JavaVersion.toVersion(libs.versions.java.min.get())
+  targetCompatibility = JavaVersion.toVersion(libs.versions.java.min.get())
 }
 
 gradlePlugin {
@@ -57,5 +54,5 @@ dependencies {
   implementation gradleApi()
   implementation localGroovy()
 
-  implementation "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+  implementation libs.commonscodec.commonscodec
 }
