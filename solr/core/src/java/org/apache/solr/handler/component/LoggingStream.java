@@ -77,7 +77,6 @@ public class LoggingStream extends TupleStream implements Expressible {
 
   private int batchNumber;
   private long totalDocsIndex;
-  // private PushBackStream tupleSource;
   private TupleStream tupleSource;
   private List<SolrInputDocument> documentBatch = new ArrayList<>();
 
