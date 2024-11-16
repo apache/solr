@@ -228,7 +228,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       return;
     }
 
-    UBIQuery ubiQuery = new UBIQuery(params.get(QUERY_ID));
+    String queryId = params.get(QUERY_ID);
+    UBIQuery ubiQuery = new UBIQuery(queryId);
 
     ubiQuery.setUserQuery(params.get(USER_QUERY));
     ubiQuery.setApplication(params.get(APPLICATION));
@@ -262,15 +263,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   private void recordQuery(UBIQuery ubiQuery) throws IOException {
     TupleStream stream;
-    // try {
+
     stream = constructStream(streamFactory, streamExpression);
-    // } catch (IOException exception) {
-    //   throw new SolrException(
-    //       SolrException.ErrorCode.SERVER_ERROR,
-    //       "Error constructing stream for processing UBI data collection: "
-    //           + UBIComponent.class.getSimpleName(),
-    //      exception);
-    // }
+
     streamContext.put("ubi-query", ubiQuery);
     stream.setStreamContext(streamContext);
 
