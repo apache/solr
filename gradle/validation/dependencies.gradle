@@ -44,10 +44,10 @@ allprojects {
                 "testCompileClasspath",
                 "testRuntimeClasspath",
                 // KMP configurations
-                "desktopCompileClasspath",
-                "desktopRuntimeClasspath",
-                "desktopTestCompileClasspath",
-                "desktopTestRuntimeClasspath",
+                // Note that JVM configurations in Kotlin multiplatform projects may result in
+                // platform-specific JAR files being locked, causing inconsistencies when
+                // writing and checking locks. only wasmJs configurations are the same between
+                // machines and can therefore be added to lock state.
                 "wasmJsCompileClasspath",
                 "wasmJsRuntimeClasspath",
                 "wasmJsTestCompileClasspath",
