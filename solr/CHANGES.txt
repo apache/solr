@@ -237,6 +237,9 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
 
+* SOLR-17556: Examples should run with the standard & recommended Solr home and solr data dir (except for
+   bin/solr start -e cloud). (Eric Pugh, Houston Putman)
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------
