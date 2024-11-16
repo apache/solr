@@ -246,6 +246,7 @@ public class SolrCLI implements CLIO {
     else if ("post".equals(toolType)) return new PostTool();
     else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
+    else if ("stream".equals(toolType)) return new StreamTool();
     else if ("snapshot-create".equals(toolType)) return new SnapshotCreateTool();
     else if ("snapshot-delete".equals(toolType)) return new SnapshotDeleteTool();
     else if ("snapshot-list".equals(toolType)) return new SnapshotListTool();
@@ -511,8 +512,7 @@ public class SolrCLI implements CLIO {
     print("Usage: solr COMMAND OPTIONS");
     print("       where COMMAND is one of: start, stop, restart, status, ");
     print(
-        "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, ");
-
+        "                                healthcheck, create, delete, auth, assert, config, export, api, package, post, stream,");
     print(
         "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
