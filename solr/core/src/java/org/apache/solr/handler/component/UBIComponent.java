@@ -166,8 +166,10 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           // The real version
           expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
 
-          // feels like 'stream' or 'get' or something should let me create a tuple out of something in the
-          // streamContext.   That would turn the "ubi-query" object in the context into a nice tuple and return it.
+          // feels like 'stream' or 'get' or something should let me create a tuple out of something
+          // in the
+          // streamContext.   That would turn the "ubi-query" object in the context into a nice
+          // tuple and return it.
           // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
         } else {
           LineNumberReader bufferedReader;
@@ -183,7 +185,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
             expr = readExpression(bufferedReader, args);
 
             bufferedReader.close();
-
 
           } catch (IOException ioe) {
             throw new SolrException(
