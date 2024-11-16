@@ -17,8 +17,6 @@
 
 package org.apache.solr.hdfs.snapshots;
 
-import static org.apache.solr.core.snapshots.SolrSnapshotManager.createCollectionSnapshotMetadataFrom;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -44,8 +42,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.cli.CLIO;
-import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
-import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -55,6 +51,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +117,7 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
     Collection<CollectionSnapshotMetaData> snaps = listCollectionSnapshots(collectionName);
     CollectionSnapshotMetaData meta = null;
     for (CollectionSnapshotMetaData m : snaps) {
-      if (snapshotName.equals(m.name)) {
+      if (snapshotName.equals(m.getName())) {
         meta = m;
       }
     }
@@ -136,7 +134,7 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
       // after the snapshot creation).
       List<CoreSnapshotMetaData> availableReplicas = new ArrayList<>();
       for (CoreSnapshotMetaData m : replicaSnaps) {
-        if (isReplicaAvailable(s, m.core)) {
+        if (isReplicaAvailable(s, m.getCoreName())) {
           availableReplicas.add(m);
         }
       }
@@ -154,19 +152,19 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
       // Prefer a leader replica (at the time when the snapshot was created).
       CoreSnapshotMetaData coreSnap = availableReplicas.get(0);
       for (CoreSnapshotMetaData m : availableReplicas) {
-        if (m.leader) {
+        if (m.isLeader()) {
           coreSnap = m;
         }
       }
 
-      String indexDirPath = coreSnap.indexDirPath;
+      String indexDirPath = coreSnap.getIndexDirPath();
       if (pathPrefix != null) {
         // If the path prefix is specified, rebuild the path to the index directory.
-        indexDirPath = new Path(pathPrefix, coreSnap.indexDirPath).toString();
+        indexDirPath = new Path(pathPrefix, coreSnap.getIndexDirPath()).toString();
       }
 
       List<String> paths = new ArrayList<>();
-      for (String fileName : coreSnap.files) {
+      for (String fileName : coreSnap.getFiles()) {
         Path p = new Path(indexDirPath, fileName);
         paths.add(p.toString());
       }
@@ -348,7 +346,6 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
     return false;
   }
 
-  @SuppressWarnings("unchecked")
   private Collection<CollectionSnapshotMetaData> listCollectionSnapshots(String collectionName)
       throws SolrServerException, IOException {
     CollectionAdminRequest.ListSnapshots listSnapshots =
@@ -362,7 +359,7 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
     for (int i = 0; i < apiResult.size(); i++) {
-      result.add(createCollectionSnapshotMetadataFrom((NamedList<Object>) apiResult.getVal(i)));
+      result.add(new CollectionSnapshotMetaData((NamedList<?>) apiResult.getVal(i)));
     }
 
     return result;

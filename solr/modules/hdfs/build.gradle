@@ -22,7 +22,6 @@ description = 'HDFS Module'
 dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
-  implementation project(':solr:api')
 
   implementation 'org.apache.lucene:lucene-core'
 

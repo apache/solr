@@ -164,6 +164,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
@@ -1153,7 +1155,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final ListCollectionSnapshotsResponse response =
               listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
 
-          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          NamedList<Object> snapshots = new NamedList<>();
+          for (Object meta : response.snapshots.values()) {
+            final var metaTyped = (CollectionSnapshotMetaData) meta;
+            snapshots.add(metaTyped.getName(), metaTyped.toNamedList());
+          }
+
+          rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
           return null;
         }),
     REPLACENODE_OP(

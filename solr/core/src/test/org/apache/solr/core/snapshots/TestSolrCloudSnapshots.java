@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core.snapshots;
 
-import static org.apache.solr.core.snapshots.SolrSnapshotManager.createCollectionSnapshotMetadataFrom;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,8 +27,6 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
-import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -45,6 +41,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
 import org.junit.AfterClass;
@@ -146,11 +143,12 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         listCollectionSnapshots(solrClient, collectionName);
     assertEquals(1, collectionSnaps.size());
     CollectionSnapshotMetaData meta = collectionSnaps.iterator().next();
-    assertEquals(commitName, meta.name);
-    assertEquals(CollectionSnapshotMetaData.SnapshotStatus.Successful, meta.status);
-    assertEquals(expectedCoresWithSnapshot, meta.getReplicas().size());
+    assertEquals(commitName, meta.getName());
+    assertEquals(CollectionSnapshotMetaData.SnapshotStatus.Successful, meta.getStatus());
+    assertEquals(expectedCoresWithSnapshot, meta.getReplicaSnapshots().size());
     Map<String, CoreSnapshotMetaData> snapshotByCoreName =
-        meta.getReplicas().stream().collect(Collectors.toMap(md -> md.core, Function.identity()));
+        meta.getReplicaSnapshots().stream()
+            .collect(Collectors.toMap(CoreSnapshotMetaData::getCoreName, Function.identity()));
 
     DocCollection collectionState = solrClient.getClusterState().getCollection(collectionName);
     assertEquals(2, collectionState.getActiveSlices().size());
@@ -172,8 +170,8 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           Optional<SnapshotMetaData> metaData =
               snapshots.stream().filter(x -> commitName.equals(x.getName())).findFirst();
           assertTrue("Snapshot not created for core " + coreName, metaData.isPresent());
-          assertEquals(coreSnapshot.indexDirPath, metaData.get().getIndexDirPath());
-          assertEquals(coreSnapshot.generation, metaData.get().getGenerationNumber());
+          assertEquals(coreSnapshot.getIndexDirPath(), metaData.get().getIndexDirPath());
+          assertEquals(coreSnapshot.getGenerationNumber(), metaData.get().getGenerationNumber());
         }
       }
     }
@@ -253,11 +251,11 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         collectionState = solrClient.getClusterState().getCollection(collectionName);
         for (Slice s : collectionState.getSlices()) {
           for (Replica r : s.getReplicas()) {
-            if (r.getCoreName().equals(replicaToDelete.core)) {
+            if (r.getCoreName().equals(replicaToDelete.getCoreName())) {
               log.info("Deleting replica {}", r);
               CollectionAdminRequest.DeleteReplica delReplica =
                   CollectionAdminRequest.deleteReplica(
-                      collectionName, replicaToDelete.shardId, r.getName());
+                      collectionName, replicaToDelete.getShardId(), r.getName());
               delReplica.process(solrClient);
               // The replica deletion will clean up the snapshot meta-data.
               snapshotByCoreName.remove(r.getCoreName());
@@ -312,7 +310,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       Collection<CollectionSnapshotMetaData> collectionSnaps_2 =
           listCollectionSnapshots(solrClient, collectionName);
       assertEquals(1, collectionSnaps.size());
-      assertEquals(commitName_2, collectionSnaps_2.iterator().next().name);
+      assertEquals(commitName_2, collectionSnaps_2.iterator().next().getName());
 
       // Delete collection
       CollectionAdminRequest.Delete deleteCol =
@@ -338,7 +336,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
     for (int i = 0; i < apiResult.size(); i++) {
-      result.add(createCollectionSnapshotMetadataFrom((NamedList<Object>) apiResult.getVal(i)));
+      result.add(new CollectionSnapshotMetaData((NamedList<Object>) apiResult.getVal(i)));
     }
 
     return result;

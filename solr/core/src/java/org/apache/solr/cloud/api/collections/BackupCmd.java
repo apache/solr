@@ -31,9 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.solr.client.api.model.CollectionSnapshotMetaData;
-import org.apache.solr.client.api.model.CollectionSnapshotMetaData.SnapshotStatus;
-import org.apache.solr.client.api.model.CoreSnapshotMetaData;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -55,6 +52,9 @@ import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
+import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
@@ -254,15 +254,15 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         snapshotMeta.getReplicaSnapshotsForShard(slice.getName());
 
     Optional<CoreSnapshotMetaData> leaderCore =
-        snapshots.stream().filter(md -> md.leader).findFirst();
+        snapshots.stream().filter(CoreSnapshotMetaData::isLeader).findFirst();
     if (leaderCore.isPresent()) {
       if (log.isInfoEnabled()) {
         log.info(
             "Replica {} was the leader when snapshot {} was created.",
-            leaderCore.get().core,
-            snapshotMeta.name);
+            leaderCore.get().getCoreName(),
+            snapshotMeta.getName());
       }
-      Replica r = slice.getReplica(leaderCore.get().core);
+      Replica r = slice.getReplica(leaderCore.get().getCoreName());
       if ((r != null) && !r.getState().equals(State.DOWN)) {
         return r;
       }
@@ -272,15 +272,14 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         slice.getReplicas().stream()
             .filter(
                 x ->
-                    x.getState() != State.DOWN
-                        && snapshotMeta.isSnapshotExists(slice.getName(), x.getCoreName()))
+                    x.getState() != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), x))
             .findFirst();
 
     if (!r.isPresent()) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
           "Unable to find any live replica with a snapshot named "
-              + snapshotMeta.name
+              + snapshotMeta.getName()
               + " for shard "
               + slice.getName());
     }
@@ -461,7 +460,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                 + " does not exist for collection "
                 + collectionName);
       }
-      if (snapshotMeta.get().status != SnapshotStatus.Successful) {
+      if (snapshotMeta.get().getStatus() != SnapshotStatus.Successful) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
             "Snapshot with name "
@@ -469,7 +468,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
                 + " for collection "
                 + collectionName
                 + " has not completed successfully. The status is "
-                + snapshotMeta.get().status);
+                + snapshotMeta.get().getStatus());
       }
     }
 
@@ -497,7 +496,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
               "Skipping the backup for shard {} since it wasn't part of the collection {} when snapshot {} was created.",
               slice.getName(),
               collectionName,
-              snapshotMeta.get().name);
+              snapshotMeta.get().getName());
           continue;
         }
         replica = selectReplicaWithSnapshot(snapshotMeta.get(), slice);
@@ -520,7 +519,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
           coreBackupParams(
               backupPath, repoName, slice, coreName, false /*non-incremental backup */);
       if (snapshotMeta.isPresent()) {
-        params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().name);
+        params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
       }
 
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
