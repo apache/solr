@@ -209,8 +209,8 @@ apply from: file('gradle/hacks/gradle-archives.gradle')
 
 apply from: file('gradle/hacks/wipe-temp.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
-//apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
-//apply from: file('gradle/hacks/dummy-outputs.gradle')
+apply from: file('gradle/hacks/turbocharge-jvm-opts.gradle')
+apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
