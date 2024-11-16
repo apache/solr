@@ -43,6 +43,15 @@ allprojects {
                 "solrSlimTgz",
                 "testCompileClasspath",
                 "testRuntimeClasspath",
+                // KMP configurations
+                "desktopCompileClasspath",
+                "desktopRuntimeClasspath",
+                "desktopTestCompileClasspath",
+                "desktopTestRuntimeClasspath",
+                "wasmJsCompileClasspath",
+                "wasmJsRuntimeClasspath",
+                "wasmJsTestCompileClasspath",
+                "wasmJsTestRuntimeClasspath",
         ]
     }
 
@@ -191,6 +200,16 @@ allprojects {
                 handler.add(conf.name, libs.hamcrest.hamcrest, {
                     because 'version alignment for consistency across project'
                 })
+                handler.add(conf.name, libs.kotlin.stdlib, {
+                    because "version alignment for consistency across project" +
+                            "\n- Kotlin multiplatform plugin used by compose-ui module uses 2.0.21"
+                            "\n- ${getFullName(libs.squareup.okhttp3.okhttp)} uses 1.9.10"
+                })
+                handler.add(conf.name, libs.jetbrains.annotations, {
+                    because "version alignment for consistency across project" +
+                            "\n- Kotlin multiplatform plugin used by compose-ui module uses 23.0.0"
+                    "\n- ${getFullName(libs.squareup.okhttp3.okhttp)} uses 13.0"
+                })
 
                 // Add transitive dependencies as constraints to align versions
                 handler.add(conf.name, libs.checkerframework.qual, {
@@ -304,6 +323,14 @@ allprojects {
                     because "transitive version alignment for consistency across project" +
                             "\n- ${getFullName(libs.jersey.inject.hk2)} uses 3.0.6" +
                             "\n- ${getFullName(libs.hk2.api)} uses 3.1.1"
+                })
+                handler.add(conf.name, libs.kotlinx.browser, {
+                    because "transitive version alignment for consistency across project" +
+                            "\n- org.jetbrains.compose.*:* uses 0.1"
+                    "\n- ${getFullName(libs.ktor.client.core)} uses 0.2"
+                })
+                handler.add(conf.name, libs.kotlinx.atomicfu, {
+                    because "Targets desktop and wasm of compose-ui use different versions"
                 })
             }
         }

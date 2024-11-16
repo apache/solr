@@ -26,8 +26,8 @@ plugins {
   alias(libs.plugins.owasp.dependencycheck)
   alias(libs.plugins.cutterslade.analyze)
   alias(libs.plugins.benmanes.versions)
-  alias(libs.plugins.kotlinMultiplatform) apply false
-  alias(libs.plugins.jetbrainsCompose) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
+  alias(libs.plugins.jetbrains.compose) apply false
   alias(libs.plugins.littlerobots.versioncatalogupdate) apply false
   alias(libs.plugins.thetaphi.forbiddenapis) apply false
   alias(libs.plugins.undercouch.download) apply false
