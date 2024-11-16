@@ -59,7 +59,7 @@ fun main() {
     val httpClient = getDefaultClient()
 
     val root: RootComponent = runOnUiThread {
-        setMainThreadId(Thread.currentThread().id)
+        setMainThreadId(Thread.currentThread().threadId())
 
         SimpleRootComponent(
             componentContext = componentContext,
