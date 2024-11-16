@@ -36,8 +36,11 @@ import androidx.compose.material.icons.rounded.ImageNotSupported
 import androidx.compose.material.icons.rounded.Support
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -127,15 +130,17 @@ private fun FooterAction(
     stringRes: StringResource,
     iconOnly: Boolean = false,
     onClick: () -> Unit = {},
-) = Row(
-    modifier = Modifier.clickable(onClick = onClick)
-        .padding(horizontal = 16.dp, vertical = 12.dp),
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
-    verticalAlignment = Alignment.CenterVertically,
-) {
-    Icon(
-        imageVector = imageVector,
-        contentDescription = null,
-    )
-    if (!iconOnly) Text(stringResource(stringRes))
+) = CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+    Row(
+        modifier = Modifier.clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = null,
+        )
+        if (!iconOnly) Text(stringResource(stringRes))
+    }
 }
