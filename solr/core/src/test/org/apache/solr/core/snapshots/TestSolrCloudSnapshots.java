@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
-@LuceneTestCase.Nightly
+//@LuceneTestCase.Nightly
 public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static long docsSeed; // see indexDocs()
@@ -332,13 +332,15 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp = listSnapshots.process(adminClient);
 
-    assertTrue(resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList);
-    NamedList<?> apiResult =
-        (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
+    // TODO 1. Understand why I can't "DEBUG" tests following the switch to Java 21
+    //      2. Finish updating this snippet to expect the modified response types, or switch it to using the v2 API altogether
+    System.out.println(resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO).getClass().getName());
+    assertTrue(resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof Map);
+    final var apiResult = (Map<String, Object>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     Collection<CollectionSnapshotMetaData> result = new ArrayList<>();
-    for (int i = 0; i < apiResult.size(); i++) {
-      result.add(createCollectionSnapshotMetadataFrom((NamedList<Object>) apiResult.getVal(i)));
+    for (Map.Entry<String, Object> entry : apiResult.entrySet()) {
+      result.add(createCollectionSnapshotMetadataFrom((Map<String, Object>) entry.getValue()));
     }
 
     return result;

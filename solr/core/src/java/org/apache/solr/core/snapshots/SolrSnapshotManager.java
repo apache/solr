@@ -17,6 +17,7 @@
 package org.apache.solr.core.snapshots;
 
 import static org.apache.solr.client.api.model.Constants.SNAPSHOT_GENERATION_NUM;
+import static org.apache.solr.client.solrj.JacksonContentWriter.DEFAULT_MAPPER;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -28,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -111,7 +115,11 @@ public class SolrSnapshotManager {
       SolrZkClient zkClient, String collectionName, CollectionSnapshotMetaData meta)
       throws KeeperException, InterruptedException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(meta.name));
-    zkClient.setData(zkPath, Utils.toJSON(meta), -1, true);
+    try {
+      zkClient.setData(zkPath, DEFAULT_MAPPER.writeValueAsBytes(meta), -1, true);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -344,13 +352,10 @@ public class SolrSnapshotManager {
   @SuppressWarnings("unchecked")
   public static CollectionSnapshotMetaData createCollectionSnapshotMetadataFrom(
       Map<String, Object> snapshotMetadataUntyped) {
-    final var collSnapshotMetadata =
-        new CollectionSnapshotMetaData(
-            (String) snapshotMetadataUntyped.get(CoreAdminParams.NAME),
-            CollectionSnapshotMetaData.SnapshotStatus.valueOf(
-                (String) snapshotMetadataUntyped.get(SolrSnapshotManager.SNAPSHOT_STATUS)),
-            new Date((Long) snapshotMetadataUntyped.get(SolrSnapshotManager.CREATION_DATE)),
-            new ArrayList<>());
+
+    final var statusUntyped = snapshotMetadataUntyped.get(SolrSnapshotManager.SNAPSHOT_STATUS);
+    final var status = (statusUntyped instanceof CollectionSnapshotMetaData.SnapshotStatus) ? statusUntyped : CollectionSnapshotMetaData.SnapshotStatus.valueOf((String)statusUntyped);
+    final var collSnapshotMetadata = new CollectionSnapshotMetaData((String) snapshotMetadataUntyped.get(CoreAdminParams.NAME), (CollectionSnapshotMetaData.SnapshotStatus) status, new Date((Long) snapshotMetadataUntyped.get(SolrSnapshotManager.CREATION_DATE)), new ArrayList<>());
 
     List<Object> r =
         (List<Object>) snapshotMetadataUntyped.get(SolrSnapshotManager.SNAPSHOT_REPLICAS);
