@@ -26,6 +26,7 @@ dependencies {
   implementation platform('io.opentelemetry:opentelemetry-bom')
   implementation 'org.slf4j:slf4j-api'
 
+  implementation platform('io.netty:netty-bom')
   implementation 'io.opentelemetry:opentelemetry-api'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'

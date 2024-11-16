@@ -12,6 +12,8 @@ New Features
 
 * SOLR-17467: Solr CLI bin/solr start defaults to starting Solr in Cloud mode, use --user-managed switch for User Managed (aka Standalone) mode.  (Eric Pugh)
 
+* SOLR-14673: Solr CLI now has bin/solr stream tool that executates streaming expressions via command line, either locally or on solr cluster. (Eric Pugh)
+
 Improvements
 ---------------------
 
@@ -25,6 +27,10 @@ Improvements
 
 * SOLR-16116: Apache Curator is now used to manage all Solr Zookeeper interactions. This should provide more stability in the Solr-Zookeeper interactions.
   The solrj-zookeeper module, now has a dependency on curator. (Houston Putman, Kevin Risden, Mike Drob, David Smiley)
+
+* SOLR-17544: Solr CLI will now stop when you combine mutually exclusive options.  Combining -s and -z options is a common example.  (Eric Pugh, Christos Malliaridis)
+
+* SOLR-17495: Change Solr CLI delete command to not delete configs by default.  Decouple lifecycle of collections from configsets. (Eric Pugh)
 
 Optimizations
 ---------------------
@@ -79,6 +85,9 @@ Deprecation Removals
 * SOLR-17494: Remove language specific writer types (i.e wt= ruby, python, php, and phps). (Eric Pugh)
 
 * SOLR-17352: Remove deprecated Solr CLI options.  Run bin/solr yourcommand -h to see current options.  (Eric Pugh, Christos Malliardis)
+
+* SOLR-17256: Previously deprecated `SolrRequest` methods `setBasePath` and `getBasePath` have been removed.  SolrJ users
+  wishing to temporarily override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
@@ -141,7 +150,7 @@ Improvements
   when PKI is used between nodes. (Jason Gerlowski)
 
 * SOLR-17383: Resolved overlapping arguments in the Solr CLI.  Removed duplicative but differing arguments,
-  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning 
+  consolidated use of short form arguments -v to not have differing meanings based on tool.  Provide deprecation warning
   in command line when deprecated arguments are used. (Eric Pugh, Christos Malliaridis)
 
 * SOLR-17256: Deprecate SolrRequest `setBasePath` and `getBasePath` methods.  SolrJ users wishing to temporarily
@@ -153,6 +162,8 @@ Improvements
   of your machine, you may want to increase the thread pool. (David Smiley)
 
 * SOLR-17528: Introduce -y short option to bin/solr start --no-prompt option. Aligns with bin/solr package tool.  (Eric Pugh)
+
+* SOLR-17390: EmbeddedSolrServer now considers the ResponseParser (David Smiley)
 
 Optimizations
 ---------------------
@@ -176,6 +187,8 @@ Optimizations
 * SOLR-17441: Improve system metrics collection by skipping unreadable MXBean properties, making /admin/info/system calls faster (Haythem Khiri)
 
 * SOLR-16503: Switched from HTTP1 to HTTP2 in SolrClientCloudManager by replacing CloudLegacySolrClient with CloudHttp2SolrClient. (Sanjay Dutt, David Smiley)
+
+* SOLR-17453: Leverage waitForState() instead of busy waiting in CREATE, MIGRATE, REINDEXCOLLECTION, MOVEREPLICA commands, and in some tests. (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
@@ -216,6 +229,13 @@ tasks that were scheduled via ExecutorService#submit, the results of the task ex
 led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-11318: Introduce unit testing for AssertTool. (Eric Pugh, Jason Gerlowski)
+
+* SOLR-17534: Introduce ClusterState.getCollectionNames, a convenience method (David Smiley)
+
+* SOLR-17535: Introduce ClusterState.collectionStream to replace getCollectionStates, getCollectionsMap,
+  and forEachCollection, which are now deprecated. (David Smiley)
+
+* SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
 
 ==================  9.7.1 ==================
 Bug Fixes

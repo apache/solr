@@ -303,7 +303,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
       List<Integer> numShardsNumReplicas = new ArrayList<>(2);
       numShardsNumReplicas.add(1);
       numShardsNumReplicas.add(1);
-      checkForCollection("testcollection", numShardsNumReplicas, null);
+      checkForCollection("testcollection", numShardsNumReplicas);
 
       testSuccessful = true;
     } finally {

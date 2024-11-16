@@ -113,7 +113,8 @@ public class CatStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    final List<CrawlFile> initialCrawlSeeds = validateAndSetFilepathsInSandbox();
+    final List<CrawlFile> initialCrawlSeeds =
+        validateAndSetFilepathsInSandbox(this.commaDelimitedFilepaths);
 
     final List<CrawlFile> filesToCrawl = new ArrayList<>();
     for (CrawlFile crawlSeed : initialCrawlSeeds) {
@@ -163,7 +164,7 @@ public class CatStream extends TupleStream implements Expressible {
         .withExpression(toExpression(factory).toString());
   }
 
-  private List<CrawlFile> validateAndSetFilepathsInSandbox() {
+  protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
     final List<CrawlFile> crawlSeeds = new ArrayList<>();
     for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
       Path crawlRootPath = chroot.resolve(crawlRootStr).normalize();
