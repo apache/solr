@@ -116,7 +116,7 @@ import org.slf4j.LoggerFactory;
  *
  * Notice that we are enabling UBI query tracking, we are providing an explicit query_id and passing
  * in the user's specific choices for querying. The user_query parameters are not specific to Solr
- * syntax, they are defined by the front end user interface.
+ * syntax, they are defined by the creator of the search request.
  */
 public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
@@ -143,78 +143,72 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   @Override
   public void inform(SolrCore core) {
+    log.info("Initializing UBIComponent");
+
     CoreContainer coreContainer = core.getCoreContainer();
     SolrClientCache solrClientCache = coreContainer.getSolrClientCache();
 
-    if (initArgs != null) {
-      log.info("Initializing UBIComponent");
-      if (coreContainer.isZooKeeperAware()) {
-        String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();
-        String ubiQueryStreamProcessingExpression =
-            initArgs.get("ubiQueryStreamProcessingExpression");
+    String expr;
+    String ubiQueryStreamProcessingExpression = initArgs.get("ubiQueryStreamProcessingExpression");
 
-        String expr;
+    if (ubiQueryStreamProcessingExpression == null) {
+      log.info(
+          "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
+      log.info(
+          "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
+      // Most simplistic version
+      // expr = "logging(ubi_queries.jsonl, tuple(query_id=49,user_query=\"RAM memory\"))";
 
-        if (ubiQueryStreamProcessingExpression == null) {
-          log.info(
-              "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
-          log.info(
-              "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
-          // Most simplistic version
-          // expr = "logging(ubi_queries.jsonl, tuple(query_id=49,user_query=\"RAM memory\"))";
+      // The real version
+      expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
 
-          // The real version
-          expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
+      // feels like 'stream' or 'get' or something should let me create a tuple out of something
+      // in the
+      // streamContext.   That would turn the "ubi-query" object in the context into a nice
+      // tuple and return it.
+      // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
+    } else {
+      LineNumberReader bufferedReader;
 
-          // feels like 'stream' or 'get' or something should let me create a tuple out of something
-          // in the
-          // streamContext.   That would turn the "ubi-query" object in the context into a nice
-          // tuple and return it.
-          // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
-        } else {
-          LineNumberReader bufferedReader;
+      try {
+        bufferedReader =
+            new LineNumberReader(
+                new InputStreamReader(
+                    core.getResourceLoader().openResource(ubiQueryStreamProcessingExpression),
+                    StandardCharsets.UTF_8));
 
-          try {
-            bufferedReader =
-                new LineNumberReader(
-                    new InputStreamReader(
-                        core.getResourceLoader().openResource(ubiQueryStreamProcessingExpression),
-                        StandardCharsets.UTF_8));
+        String[] args = {}; // maybe we have variables?
+        expr = readExpression(bufferedReader, args);
 
-            String[] args = {}; // maybe we have variables?
-            expr = readExpression(bufferedReader, args);
+        bufferedReader.close();
 
-            bufferedReader.close();
-
-          } catch (IOException ioe) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error reading file " + ubiQueryStreamProcessingExpression,
-                ioe);
-          }
-        }
-
-        streamContext = new StreamContext();
-        streamContext.put("solr-core", core);
-        streamContext.setSolrClientCache(solrClientCache);
-
-        streamExpression = StreamExpressionParser.parse(expr);
-        if (!streamExpression.toString().contains("ubiQueryTuple")) {
-          log.error(
-              "The streaming expression "
-                  + streamExpression
-                  + " must include the 'ubiQueryTuple()' to record UBI queries.");
-        }
-
-        streamFactory = new DefaultStreamFactory();
-        streamFactory.withFunctionName("logging", LoggingStream.class);
-        streamFactory.withFunctionName("ubiQueryTuple", UBIQueryStream.class);
-
-        streamFactory.withDefaultZkHost(defaultZkHost);
-
-      } else {
-        log.info("UBI query data collection is only available in SolrCloud mode.");
+      } catch (IOException ioe) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error reading file " + ubiQueryStreamProcessingExpression,
+            ioe);
       }
+    }
+
+    streamContext = new StreamContext();
+    streamContext.put("solr-core", core);
+    streamContext.setSolrClientCache(solrClientCache);
+
+    streamExpression = StreamExpressionParser.parse(expr);
+    if (!streamExpression.toString().contains("ubiQueryTuple")) {
+      log.error(
+          "The streaming expression "
+              + streamExpression
+              + " must include the 'ubiQueryTuple()' to record UBI queries.");
+    }
+
+    streamFactory = new DefaultStreamFactory();
+    streamFactory.withFunctionName("logging", LoggingStream.class);
+    streamFactory.withFunctionName("ubiQueryTuple", UBIQueryStream.class);
+
+    if (coreContainer.isZooKeeperAware()) {
+      String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();
+      streamFactory.withDefaultZkHost(defaultZkHost);
     }
   }
 
