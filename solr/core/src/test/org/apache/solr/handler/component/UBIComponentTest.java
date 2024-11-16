@@ -36,7 +36,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
     assertQ(
         "Make sure we generate a query id",
         req("q", "aa", "rows", "2", "ubi", "true"),
-        "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
+        "count(//lst[@name='ubi']/str[@name='query_id'])=1");
   }
 
   @Test
@@ -45,7 +45,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
         "Make sure we generate a query id even when no results are returned",
         req("q", "abcdefgxyz", "rows", "0", "ubi", "true"),
         "//*[@numFound='0']",
-        "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
+        "count(//lst[@name='ubi']/str[@name='query_id'])=1");
   }
 
   @Test
@@ -57,32 +57,34 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGenerateQueryId() {
+  public void testGenerateQueryIdZeroRowsRequested() {
     assertQ(
         "Make sure we generate a query id if one is not passed in",
         req("q", "aa", "rows", "0", "ubi", "true"),
-        "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
+        "count(//lst[@name='ubi']/str[@name='query_id'])=1");
   }
 
   @Test
-  public void testJSONQuerySyntax() throws Exception {
-    assertJQ(
-        req(
-            "json",
-            "{\n"
-                + "    'query': 'aa',\n"
-                + "    'fields': '*',\n"
-                + "    'offset': 0,\n"
-                + "    'limit': 2,\n"
-                + "    'params': {\n"
-                + "    'df': 'subject',\n"
-                + "    'qt': '/with_ubi',\n"
-                + "    'ubi': 'true'\n"
-                + "   }\n"
-                + "}"),
-        "response/numFound==3",
-        "ubi/query_id=='1234'");
+  public void testJSONQuerySyntaWithJustUBI() throws Exception {
+    String response =
+        JQ(
+            req(
+                "json",
+                "{\n"
+                    + "    'query': 'aa',\n"
+                    + "    'fields': '*',\n"
+                    + "    'offset': 0,\n"
+                    + "    'limit': 2,\n"
+                    + "    'params': {\n"
+                    + "        'df': 'subject',\n"
+                    + "        'ubi': 'true'\n"
+                    + "   }\n"
+                    + "}"));
+    assertTrue(response.indexOf("query_id") != -1);
+  }
 
+  @Test
+  public void testJSONQuerySyntaxWithNestedUBI() throws Exception {
     assertJQ(
         req(
             "json",

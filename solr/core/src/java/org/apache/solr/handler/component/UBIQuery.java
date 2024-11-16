@@ -17,7 +17,9 @@
 package org.apache.solr.handler.component;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Handles all the data required for tracking a query using User Behavior Insights.
@@ -36,7 +38,7 @@ public class UBIQuery {
   public UBIQuery(String queryId) {
 
     if (queryId == null) {
-      queryId = "1234";
+      queryId = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     }
     this.queryId = queryId;
   }
