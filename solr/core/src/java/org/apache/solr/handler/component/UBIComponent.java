@@ -174,20 +174,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       // tuple and return it.
       // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
     } else {
-      LineNumberReader bufferedReader;
 
-      try {
-        bufferedReader =
-            new LineNumberReader(
-                new InputStreamReader(
-                    core.getResourceLoader().openResource(ubiQueryStreamProcessingExpression),
-                    StandardCharsets.UTF_8));
-
-        String[] args = {}; // maybe we have variables?
+      String[] args = {}; // maybe we have variables?
+      try (LineNumberReader bufferedReader =
+          new LineNumberReader(
+              new InputStreamReader(
+                  core.getResourceLoader().openResource(ubiQueryStreamProcessingExpression),
+                  StandardCharsets.UTF_8))) {
         expr = readExpression(bufferedReader, args);
-
-        bufferedReader.close();
-
       } catch (IOException ioe) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,

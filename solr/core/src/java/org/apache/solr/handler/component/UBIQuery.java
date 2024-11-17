@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -90,7 +92,15 @@ public class UBIQuery {
     map.put(UBIComponent.QUERY_ID, this.queryId);
     map.put(UBIComponent.APPLICATION, this.application);
     map.put(UBIComponent.USER_QUERY, this.userQuery);
-    map.put(UBIComponent.QUERY_ATTRIBUTES, this.queryAttributes);
+    if (this.queryAttributes != null) {
+      ObjectMapper objectMapper = new ObjectMapper();
+      try {
+        map.put(
+            UBIComponent.QUERY_ATTRIBUTES, objectMapper.writeValueAsString(this.queryAttributes));
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();
+      }
+    }
 
     return map;
   }

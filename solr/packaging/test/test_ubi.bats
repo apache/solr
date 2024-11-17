@@ -39,7 +39,6 @@ teardown() {
     "add-searchcomponent": {
       "name": "ubi",
       "class": "solr.UBIComponent",
-      "defaults":{ }
     }
   }' "http://localhost:${SOLR_PORT}/api/collections/techproducts/config"
 
@@ -87,7 +86,7 @@ teardown() {
   
   # Check UBI query record was written out to default location with additional metadata
   assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"xyz890"'
-  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"experiment":"supersecret"'
+  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl 'supersecret'
   
   
 }
