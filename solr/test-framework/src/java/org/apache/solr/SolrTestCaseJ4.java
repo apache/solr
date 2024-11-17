@@ -42,7 +42,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -76,7 +75,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.client.HttpClient;
-import org.apache.logging.log4j.Level;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
@@ -110,7 +108,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -139,18 +136,14 @@ import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
 import org.apache.solr.util.ExternalPaths;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SSLTestConfig;
-import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -187,8 +180,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
-
-  private static String initialRootLogLevel;
 
   protected static volatile ExecutorService testExecutor;
 
@@ -258,8 +249,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   @BeforeClass
   public static void setupTestCases() {
-    initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
-    initClassLogLevels();
     resetExceptionIgnores();
 
     testExecutor =
@@ -351,10 +340,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       testSolrHome = null;
 
       IpTables.unblockAllPorts();
-
-      LogLevel.Configurer.restoreLogLevels(savedClassLogLevels);
-      savedClassLogLevels.clear();
-      StartupLoggingUtils.changeLogLevel(initialRootLogLevel);
     }
   }
 
@@ -392,38 +377,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (ReflectiveOperationException e) {
       fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
     }
-  }
-
-  @SuppressForbidden(reason = "Using the Level class from log4j2 directly")
-  private static Map<String, Level> savedClassLogLevels = new HashMap<>();
-
-  public static void initClassLogLevels() {
-    Class<?> currentClass = RandomizedContext.current().getTargetClass();
-    LogLevel annotation = currentClass.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedClassLogLevels.putAll(previousLevels);
-  }
-
-  private Map<String, Level> savedMethodLogLevels = new HashMap<>();
-
-  @Before
-  public void initMethodLogLevels() {
-    Method method = RandomizedContext.current().getTargetMethod();
-    LogLevel annotation = method.getAnnotation(LogLevel.class);
-    if (annotation == null) {
-      return;
-    }
-    Map<String, Level> previousLevels = LogLevel.Configurer.setLevels(annotation.value());
-    savedMethodLogLevels.putAll(previousLevels);
-  }
-
-  @After
-  public void restoreMethodLogLevels() {
-    LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
-    savedMethodLogLevels.clear();
   }
 
   protected static boolean isSSLMode() {
