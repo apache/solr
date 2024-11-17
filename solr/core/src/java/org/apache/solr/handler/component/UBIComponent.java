@@ -55,16 +55,21 @@ import org.slf4j.LoggerFactory;
  * User Behavior Insights (UBI) is an open standard for gathering query and event data from users
  * and storing it in a structured format. UBI can be used for in session personalization, implicit
  * judgements, powering recommendation systems among others. Learn more about the UBI standard at <a
- * href="https://github.com/o19s/ubi">https://github.com/o19s/ubi</a>.
+ * href="https://ubisearch.dev">https://ubisearch.dev</a>.
  *
  * <p>The response from Solr is augmented by this component, and optionally the query details can be
  * tracked and logged to various systems including log files or other backend systems.
  *
- * <p>Data tracked is the collection name, the end user query, as a JSON blob, and the resulting
- * document id's.
+ * <p>Data tracked is a unique query_id for the search request, the end user's query, metadata about
+ * the query as a JSON map, and the resulting document id's.
  *
  * <p>You provide a streaming expression that is parsed and loaded by the component to stream query
- * data to a target of your choice.
+ * data to a target of your choice. If you do not, then the default expression of
+ * 'logging(ubi_queries.jsonl,ubiQueryTuple())"' is used which logs data to
+ * $SOLR_HOME/userfiles/ubi_queries.jsonl file.
+ *
+ * <p>You must source your streaming events using the 'ubiQueryTuple()' streaming expression to
+ * retrieve the {@link UBIQuery} object that contains the data for recording.
  *
  * <p>Event data is tracked by letting the user write events directly to the event repository of
  * your choice, it could be a Solr collection, it could be a file or S3 bucket, and that is NOT
@@ -160,8 +165,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       // Most simplistic version
       // expr = "logging(ubi_queries.jsonl, tuple(query_id=49,user_query=\"RAM memory\"))";
 
-      // The real version
-      expr = "logging(ubi_queries.jsonl," + "ubiQueryTuple()" + ")";
+      // The default version
+      expr = "logging(ubi_queries.jsonl,ubiQueryTuple())";
 
       // feels like 'stream' or 'get' or something should let me create a tuple out of something
       // in the
@@ -270,15 +275,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     streamContext.put("ubi-query", ubiQuery);
     stream.setStreamContext(streamContext);
 
-    // if (stream != null) {
-    // We could just call getTuple since there is only one, it's one per query unless we
-    // have a component level stream that is opened...
     getTuple(stream);
-    // List<Tuple> tuples = getTuples(stream);
-    // log.error("Here are the tuples (" + tuples.size() + "):" + tuples);
-    // } else {
-    //  log.error("UBI Query Stream is null, can't log query information.");
-    // }
   }
 
   private void addUserBehaviorInsightsToResponse(UBIQuery ubiQuery, ResponseBuilder rb) {
