@@ -217,8 +217,7 @@ public class StreamTool extends ToolBase {
 
               Object o = tuple.get(outputHeaders[i]);
               if (o != null) {
-                if (o instanceof List) {
-                  List outfields = (List) o;
+                if (o instanceof List outfields) {
                   outLine.append(listToString(outfields, arrayDelimiter));
                 } else {
                   outLine.append(o);

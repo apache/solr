@@ -555,10 +555,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof WeightedNode)) {
+      if (!(o instanceof WeightedNode on)) {
         return false;
       } else {
-        WeightedNode on = (WeightedNode) o;
         if (this.node == null) {
           return on.node == null;
         } else {

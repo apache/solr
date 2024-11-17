@@ -363,8 +363,7 @@ public class ExportTool extends ToolBase {
               }
             }
             field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
+            if (field instanceof List<?> list) {
               if (hasdate(list)) {
                 ArrayList<Object> listCopy = new ArrayList<>(list.size());
                 for (Object o : list) listCopy.add(constructDateStr(o));
@@ -443,8 +442,7 @@ public class ExportTool extends ToolBase {
               }
             }
             field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
+            if (field instanceof List<?> list) {
               if (hasdate(list)) {
                 ArrayList<Object> listCopy = new ArrayList<>(list.size());
                 for (Object o : list) listCopy.add(constructDateStr(o));

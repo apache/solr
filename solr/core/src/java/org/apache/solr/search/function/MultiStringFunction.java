@@ -134,8 +134,7 @@ public abstract class MultiStringFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof MultiStringFunction)) return false;
-    MultiStringFunction other = (MultiStringFunction) o;
+    if (!(o instanceof MultiStringFunction other)) return false;
     return Objects.equals(this.name(), other.name()) && Arrays.equals(this.sources, other.sources);
   }
 

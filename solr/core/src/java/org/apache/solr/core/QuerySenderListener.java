@@ -82,13 +82,11 @@ public class QuerySenderListener extends AbstractSolrEventListener {
           for (int i = 0; i < values.size(); i++) {
             Object o = values.getVal(i);
             SolrDocumentFetcher docFetcher = null;
-            if (o instanceof ResultContext) {
-              ResultContext ctx = (ResultContext) o;
+            if (o instanceof ResultContext ctx) {
               o = ctx.getDocList();
               docFetcher = ctx.getDocFetcher();
             }
-            if (o instanceof DocList) {
-              DocList docs = (DocList) o;
+            if (o instanceof DocList docs) {
               if (docFetcher == null) {
                 docFetcher = newSearcher.getDocFetcher();
               }

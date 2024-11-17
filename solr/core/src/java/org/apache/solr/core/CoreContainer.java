@@ -592,9 +592,8 @@ public class CoreContainer {
   }
 
   private void setupHttpClientForAuthPlugin(Object authcPlugin) {
-    if (authcPlugin instanceof HttpClientBuilderPlugin) {
+    if (authcPlugin instanceof HttpClientBuilderPlugin builderPlugin) {
       // Setup HttpClient for internode communication
-      HttpClientBuilderPlugin builderPlugin = ((HttpClientBuilderPlugin) authcPlugin);
       SolrHttpClientBuilder builder =
           builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
 
@@ -822,8 +821,7 @@ public class CoreContainer {
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
-    if (shardHandlerFactory instanceof SolrMetricProducer) {
-      SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
+    if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
       metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
     }
 
@@ -1127,8 +1125,7 @@ public class CoreContainer {
           .forEach(
               handlerName -> {
                 SolrRequestHandler handler = containerHandlers.get(handlerName);
-                if (handler instanceof ClusterSingleton) {
-                  ClusterSingleton singleton = (ClusterSingleton) handler;
+                if (handler instanceof ClusterSingleton singleton) {
                   clusterSingletons.getSingletons().put(singleton.getName(), singleton);
                 }
               });

@@ -84,8 +84,7 @@ public class ReRankScaler {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof ReRankScaler) {
-      ReRankScaler _reRankScaler = (ReRankScaler) o;
+    if (o instanceof ReRankScaler _reRankScaler) {
       if (mainQueryMin == _reRankScaler.mainQueryMin
           && mainQueryMax == _reRankScaler.mainQueryMax
           && reRankQueryMin == _reRankScaler.reRankQueryMin

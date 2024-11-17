@@ -1314,8 +1314,7 @@ public class ReplicationHandler extends RequestHandlerBase
       if (replicateOnOptimize) {
         IndexDeletionPolicyWrapper wrapper = core.getDeletionPolicy();
         IndexDeletionPolicy policy = wrapper == null ? null : wrapper.getWrappedDeletionPolicy();
-        if (policy instanceof SolrDeletionPolicy) {
-          SolrDeletionPolicy solrPolicy = (SolrDeletionPolicy) policy;
+        if (policy instanceof SolrDeletionPolicy solrPolicy) {
           if (solrPolicy.getMaxOptimizedCommitsToKeep() < 1) {
             solrPolicy.setMaxOptimizedCommitsToKeep(1);
           }
