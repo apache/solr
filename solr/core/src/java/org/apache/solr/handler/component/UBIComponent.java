@@ -223,10 +223,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     }
 
     SolrIndexSearcher searcher = rb.req.getSearcher();
-    IndexSchema schema = searcher.getSchema();
-    if (schema.getUniqueKeyField() == null) {
-      return;
-    }
 
     String queryId = params.get(QUERY_ID);
     UBIQuery ubiQuery = new UBIQuery(queryId);
@@ -254,7 +250,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     ResultContext rc = (ResultContext) rb.rsp.getResponse();
     DocList docs = rc.getDocList();
 
-    String docIds = extractDocIds(docs, schema, searcher);
+    String docIds = extractDocIds(docs, searcher);
     ubiQuery.setDocIds(docIds);
 
     addUserBehaviorInsightsToResponse(ubiQuery, rb);
@@ -279,8 +275,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     rb.rsp.add("ubi", ubiResponseInfo);
   }
 
-  protected String extractDocIds(DocList dl, IndexSchema schema, SolrIndexSearcher searcher)
-      throws IOException {
+  protected String extractDocIds(DocList dl, SolrIndexSearcher searcher) throws IOException {
+    IndexSchema schema = searcher.getSchema();
+
+    if (schema.getUniqueKeyField() == null) {
+      log.error("Can't track documents for query without unique field.");
+      return "";
+    }
     StringBuilder sb = new StringBuilder();
 
     Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
@@ -357,30 +358,18 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   }
 
   private static TupleStream constructStream(
-      StreamFactory streamFactory, StreamExpression streamExpression) throws IOException {
+      StreamFactory streamFactory, StreamExpression streamExpression) {
     try {
       return streamFactory.constructStream(streamExpression);
     } catch (IOException exception) {
-      // Throw or just log an error?
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Error constructing stream for processing UBI data collection: "
-              + UBIComponent.class.getSimpleName(),
+          "Error constructing stream for processing UBI data collection using expression "
+              + streamExpression,
           exception);
     }
   }
 
-  /*
-    @SuppressWarnings({"rawtypes"})
-    public static Map validateLetAndGetParams(TupleStream stream, String expr) throws IOException {
-      if (stream instanceof LetStream) {
-        LetStream mainStream = (LetStream) stream;
-        return mainStream.getLetParams();
-      } else {
-        throw new IOException("No enclosing let function found in expression:" + expr);
-      }
-    }
-  */
   @Override
   public String getDescription() {
     return "A component that tracks the original user query and the resulting documents returned.";

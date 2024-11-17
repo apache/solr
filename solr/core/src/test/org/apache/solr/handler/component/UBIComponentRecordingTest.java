@@ -16,11 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.MapSolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,6 +57,7 @@ public class UBIComponentRecordingTest extends SolrCloudTestCase {
   @Test
   public void testRecordingUBIQueries() throws Exception {
 
+    // Create the collection that will generate UBI events
     assertEquals(
         "failed to create collection " + COLLECTION,
         0,
@@ -62,6 +65,8 @@ public class UBIComponentRecordingTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .getStatus());
 
+    // Create the collection that will recieve UBI events through the ubi-query-pipeline.expr
+    // streaming expression
     assertEquals(
         "failed to create collection " + UBI_QUERIES_COLLECTION,
         0,
@@ -79,16 +84,23 @@ public class UBIComponentRecordingTest extends SolrCloudTestCase {
     //            req("q", "aa", "rows", "2", "ubi", "true"),
     //            "count(//lst[@name='ubi']/str[@name='query_id'])=1");
 
-    // query our collection and confirm no duplicates on the signature field (using faceting)
-    // Check every (node) for consistency...
-    final ModifiableSolrParams overrideParams = new ModifiableSolrParams();
-    overrideParams.set("ubi", true);
-    final JsonQueryRequest req =
-        new JsonQueryRequest(overrideParams)
-            .setQuery("*:*")
-            // .setUBI(true)
-            .setLimit(0);
-    QueryResponse queryResponse = req.process(cluster.getSolrClient(), COLLECTION);
+    final Map<String, String> queryParamMap = new HashMap<>();
+    queryParamMap.put("q", "*:*");
+    queryParamMap.put("ubi", "true");
+    MapSolrParams queryParams = new MapSolrParams(queryParamMap);
+    final QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION, queryParams);
+    final SolrDocumentList documents = queryResponse.getResults();
+
+    //
+    //
+    //    final ModifiableSolrParams overrideParams = new ModifiableSolrParams();
+    //    overrideParams.set("ubi", true);
+    //    final JsonQueryRequest req =
+    //        new JsonQueryRequest(overrideParams)
+    //            .setQuery("*:*")
+    //            // .setUBI(true)
+    //            .setLimit(0);
+    //    QueryResponse queryResponse = req.process(cluster.getSolrClient(), COLLECTION);
     // assertResponseFoundNumDocs(queryResponse, expectedResults);
     System.out.println(queryResponse);
   }
