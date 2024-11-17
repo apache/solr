@@ -39,7 +39,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.handler.LoggingStream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -56,7 +56,6 @@ import org.slf4j.LoggerFactory;
  * <p>Is this generically useful to be added to the streaming jar and Lang?
  *
  * <p>WriterStream? LoggingStream? FileoutputStream? JsonOutputStream? LoggingStream??
- *
  */
 public class LoggingStream extends TupleStream implements Expressible {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

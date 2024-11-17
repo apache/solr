@@ -25,7 +25,7 @@ import java.util.UUID;
  * Handles all the data required for tracking a query using User Behavior Insights.
  *
  * <p>Compatible with the
- * https://github.com/o19s/ubi/blob/main/schema/1.0.0/query.request.schema.json.
+ * https://github.com/o19s/ubi/blob/main/schema/1.2.0/query.request.schema.json.
  */
 public class UBIQuery {
 
