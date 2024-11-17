@@ -65,11 +65,11 @@ import org.slf4j.LoggerFactory;
  *
  * <p>You provide a streaming expression that is parsed and loaded by the component to stream query
  * data to a target of your choice. If you do not, then the default expression of
- * 'logging(ubi_queries.jsonl,ubiQueryTuple())"' is used which logs data to
+ * 'logging(ubi_queries.jsonl,ubiQuery())"' is used which logs data to
  * $SOLR_HOME/userfiles/ubi_queries.jsonl file.
  *
- * <p>You must source your streaming events using the 'ubiQueryTuple()' streaming expression to
- * retrieve the {@link UBIQuery} object that contains the data for recording.
+ * <p>You must source your streaming events using the 'ubiQuery()' streaming expression to retrieve
+ * the {@link UBIQuery} object that contains the data for recording.
  *
  * <p>Event data is tracked by letting the user write events directly to the event repository of
  * your choice, it could be a Solr collection, it could be a file or S3 bucket, and that is NOT
@@ -166,7 +166,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       // expr = "logging(ubi_queries.jsonl, tuple(query_id=49,user_query=\"RAM memory\"))";
 
       // The default version
-      expr = "logging(ubi_queries.jsonl,ubiQueryTuple())";
+      expr = "logging(ubi_queries.jsonl,ubiQuery())";
 
       // feels like 'stream' or 'get' or something should let me create a tuple out of something
       // in the
@@ -195,16 +195,16 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     streamContext.setSolrClientCache(solrClientCache);
 
     streamExpression = StreamExpressionParser.parse(expr);
-    if (!streamExpression.toString().contains("ubiQueryTuple")) {
+    if (!streamExpression.toString().contains("ubiQuery")) {
       log.error(
           "The streaming expression "
               + streamExpression
-              + " must include the 'ubiQueryTuple()' to record UBI queries.");
+              + " must include the 'ubiQuery()' to record UBI queries.");
     }
 
     streamFactory = new DefaultStreamFactory();
     streamFactory.withFunctionName("logging", LoggingStream.class);
-    streamFactory.withFunctionName("ubiQueryTuple", UBIQueryStream.class);
+    streamFactory.withFunctionName("ubiQuery", UBIQueryStream.class);
 
     if (coreContainer.isZooKeeperAware()) {
       String defaultZkHost = core.getCoreContainer().getZkController().getZkServerAddress();

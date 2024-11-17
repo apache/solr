@@ -16,7 +16,7 @@
 commit(ubi_queries,
   update(ubi_queries,
     select(
-      ubiQueryTuple(),
+      ubiQuery(),
       query_id as id,
       application,
       user_query

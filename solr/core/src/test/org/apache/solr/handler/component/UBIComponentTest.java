@@ -66,7 +66,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJSONQuerySyntaWithJustUBI() throws Exception {
+  public void testJSONQuerySyntaxWithJustUBI() throws Exception {
     String response =
         JQ(
             req(
@@ -81,7 +81,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
                     + "        'ubi': 'true'\n"
                     + "   }\n"
                     + "}"));
-    assertTrue(response.indexOf("query_id") != -1);
+    assertTrue(response.contains("query_id"));
   }
 
   @Test

@@ -98,7 +98,7 @@ public class UBIQuery {
         map.put(
             UBIComponent.QUERY_ATTRIBUTES, objectMapper.writeValueAsString(this.queryAttributes));
       } catch (JsonProcessingException e) {
-        e.printStackTrace();
+        // eat it.
       }
     }
 
