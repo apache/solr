@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.LoggingStream;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
