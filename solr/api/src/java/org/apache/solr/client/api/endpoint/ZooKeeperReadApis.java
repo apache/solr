@@ -21,7 +21,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import org.apache.solr.client.api.model.ZooKeeperFileResponse;
 import org.apache.solr.client.api.model.ZooKeeperListChildrenResponse;
 
@@ -34,6 +36,7 @@ public interface ZooKeeperReadApis {
   @Operation(
       summary = "Return the data stored in a specified ZooKeeper node",
       tags = {"zookeeper-read"})
+  @Produces({"application/vnd.apache.solr.raw", MediaType.APPLICATION_JSON})
   ZooKeeperFileResponse readNode(
       @Parameter(description = "The path of the node to read from ZooKeeper") @PathParam("zkPath")
           String zkPath);
@@ -44,10 +47,12 @@ public interface ZooKeeperReadApis {
   // security.json), but it's the same logical API expressed by the 'readNode' signature above.
   @GET
   @Path("/data/security.json")
+  @Produces({"application/vnd.apache.solr.raw", MediaType.APPLICATION_JSON})
   ZooKeeperFileResponse readSecurityJsonNode();
 
   @GET
   @Path("/children{zkPath:.*}")
+  @Produces({"application/json", "application/javabin"})
   @Operation(
       summary = "List and stat all children of a specified ZooKeeper node",
       tags = {"zookeeper-read"})
