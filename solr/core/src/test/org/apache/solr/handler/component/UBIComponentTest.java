@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/** Tests that the UBI Component augments the response properly **/
 public class UBIComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
