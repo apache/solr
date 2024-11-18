@@ -107,8 +107,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
-      final SolrEmbeddingModel embedder = fromEmbeddingModelMap(modelMap);
-      addModel(embedder);
+      addModel(fromEmbeddingModelMap(modelMap));
     } catch (final EmbeddingModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
@@ -186,12 +185,10 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
   @SuppressWarnings("unchecked")
   public static SolrEmbeddingModel fromEmbeddingModelMap(Map<String, Object> embeddingModel) {
-    final SolrEmbeddingModel embedder =
-        SolrEmbeddingModel.getInstance(
+        return SolrEmbeddingModel.getInstance(
             (String) embeddingModel.get(CLASS_KEY), // modelClassName
             (String) embeddingModel.get(NAME_KEY), // modelName
             (Map<String, Object>) embeddingModel.get(PARAMS_KEY));
-    return embedder;
   }
 
   private static LinkedHashMap<String, Object> toEmbeddingModelMap(SolrEmbeddingModel model) {
