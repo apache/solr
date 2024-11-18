@@ -256,9 +256,9 @@ public class StreamTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
 
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    solrClientCache.getCloudSolrClient(zkHost);
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    solrClientCache.getCloudSolrClient(zkHost);
 
     TupleStream stream;
     PushBackStream pushBackStream;
@@ -440,7 +440,7 @@ public class StreamTool extends ToolBase {
     }
 
     @Override
-    protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
+    protected List<CrawlFile> validateAndSetFilepathsInSandbox() {
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
       for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
         Path crawlRootPath = Paths.get(crawlRootStr).normalize();
