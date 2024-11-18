@@ -102,14 +102,14 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
         new SyncSolrMatcherSink<>(
             QueryMatch.SIMPLE_MATCHER::createMatcher,
             new IndexSearcher(documentBatch),
-            matchingQueries -> {
+            matcherSink -> {
               if (rb.isDebug()) {
                 rb.req
                     .getContext()
                     .put(
                         ReverseSearchDebugComponent.ReverseSearchDebugInfo.KEY,
                         new ReverseSearchDebugComponent.ReverseSearchDebugInfo(
-                            matchingQueries.getQueriesRun()));
+                            matcherSink.getQueriesRun()));
               }
             });
 

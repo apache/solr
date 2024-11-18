@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.lucene.monitor.CandidateMatcher;
-import org.apache.lucene.monitor.MatchesAggregator;
-import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -36,14 +34,14 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
   private final Function<IndexSearcher, CandidateMatcher<T>> matcherFactory;
   private final IndexSearcher docBatchSearcher;
-  private final Consumer<MultiMatchingQueries<T>> queriesConsumer;
+  private final Consumer<SyncSolrMatcherSink<T>> queriesConsumer;
   private final List<CandidateMatcher<T>> matchers = new ArrayList<>();
-  private int queryCount;
+  private int queriesRun;
 
   SyncSolrMatcherSink(
       Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
       IndexSearcher docBatchSearcher,
-      Consumer<MultiMatchingQueries<T>> queriesConsumer) {
+      Consumer<SyncSolrMatcherSink<T>> queriesConsumer) {
     this.matcherFactory = matcherFactory;
     this.docBatchSearcher = docBatchSearcher;
     this.queriesConsumer = queriesConsumer;
@@ -52,7 +50,7 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
   @Override
   public boolean matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
       throws IOException {
-    queryCount++;
+    queriesRun++;
     var matcher = matcherFactory.apply(docBatchSearcher);
     matchers.add(matcher);
     matcher.matchQuery(queryId, matchQuery, metadata);
@@ -68,7 +66,10 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
   @Override
   public void complete() {
-    queriesConsumer.accept(
-        MatchesAggregator.aggregate(matchers, matcherFactory.apply(docBatchSearcher), queryCount));
+    queriesConsumer.accept(this);
+  }
+
+  public int getQueriesRun() {
+    return queriesRun;
   }
 }
