@@ -96,7 +96,8 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void vectorByteEncodingField_shouldRaiseException() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector_byte_encoding topK=5}hello world";
+    final String solrQuery =
+        "{!text_embedder model=dummy-1 f=vector_byte_encoding topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -255,7 +256,8 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void embeddedQueryAsSubQuery() throws Exception {
-    final String solrQuery = "*:* AND {!text_embedder model=dummy-1 f=vector topK=5 v='hello world'}";
+    final String solrQuery =
+        "*:* AND {!text_embedder model=dummy-1 f=vector topK=5 v='hello world'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.setFilterQueries("id:(2 4 7 9 8 20 3)");
