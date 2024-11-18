@@ -481,7 +481,7 @@ http://_host:port_/api/cores/_core_name_/replication/files/<_file-path_>&dirType
 ----
 ====
 +
-Directory type is required for both V1 and V2 with 3 parameter supported types:
+Directory type is required for both V1 and V2 with these supported types:
 
 * `file` Read from Lucene index file directory
 
@@ -490,7 +490,7 @@ Directory type is required for both V1 and V2 with 3 parameter supported types:
 * `tlogFile` Read from Tlog file directory
 
 +
-There are several supported optional request parameters:
+There are several optional parameters:
 
 * `offset` Output stream read offset
 
