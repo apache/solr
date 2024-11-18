@@ -110,9 +110,9 @@ import org.slf4j.LoggerFactory;
  *      ]
  *     params: {
  *       "ubi": "true"
- *       "query_id": "xyz890",
- *       "user_query": {
- *         "query": "Apple iPod",
+ *       "user_query": "Apple iPod",
+ *       "query_attributes": {
+ *         "experiment_name": "super_secret",
  *         "page": 2,
  *         "in_stock": "true"
  *       }
@@ -120,9 +120,10 @@ import org.slf4j.LoggerFactory;
  *   }
  * </pre>
  *
- * Notice that we are enabling UBI query tracking, we are providing an explicit query_id and passing
- * in the user's specific choices for querying. The user_query parameters are not specific to Solr
- * syntax, they are defined by the creator of the search request.
+ * <p>Refer to <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/user-behavior-insights.html">
+ * https://solr.apache.org/guide/solr/latest/query-guide/user-behavior-insights.html</a> for more
+ * details
  */
 public class UBIComponent extends SearchComponent implements SolrCoreAware {
 

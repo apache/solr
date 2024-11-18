@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -115,8 +116,11 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
 
       assertEquals(1, tuples.size());
-      assertFields(tuples, "query_id");
+      assertFields(tuples, "query_id", "timestamp");
       assertString(tuples.get(0), "query_id", "123");
+
+      assertNotNull(Instant.parse(tuples.get(0).getString("timestamp")));
+
       // assertNotFields(tuples, "user_query", "event_attributes");
 
       // Include another field to see what is returned
@@ -129,7 +133,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
 
       assertEquals(1, tuples.size());
-      assertFields(tuples, "query_id", "application");
+      assertFields(tuples, "query_id", "timestamp", "application");
       assertString(tuples.get(0), "query_id", "234");
       assertString(tuples.get(0), "application", "typeahead");
 
@@ -148,7 +152,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
 
       assertEquals(1, tuples.size());
-      assertFields(tuples, "query_id", "query_attributes");
+      assertFields(tuples, "query_id", "timestamp", "query_attributes");
       assertString(tuples.get(0), "query_id", "345");
       assertString(tuples.get(0), "query_attributes", "{\"attribute1\":\"one\",\"attribute2\":2}");
     }
@@ -204,13 +208,13 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
         assertNotNull(jsonLine);
         ObjectMapper objectMapper = new ObjectMapper();
         @SuppressWarnings({"unchecked", "rawtypes"})
-        Map myObject = objectMapper.readValue(jsonLine, Map.class);
-        assertEquals(ubiQuery.getQueryId(), myObject.get("query_id"));
-        assertEquals(ubiQuery.getApplication(), myObject.get("application"));
-        // assertEquals(ubiQuery.getQueryAttributes(), myObject.get("query_attributes"));
+        Map ubiQueryAsMap = objectMapper.readValue(jsonLine, Map.class);
+        assertEquals(ubiQuery.getQueryId(), ubiQueryAsMap.get("query_id"));
+        assertEquals(ubiQuery.getApplication(), ubiQueryAsMap.get("application"));
+        assertNotNull(ubiQueryAsMap.get("timestamp"));
         assertEquals(
             "{\"experiment\":\"secret\",\"marginBoost\":2.1,\"parsed_query\":\"memory OR ram\"}",
-            myObject.get("query_attributes"));
+            ubiQueryAsMap.get("query_attributes"));
       }
     }
   }
@@ -255,6 +259,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
                   + ", batchSize=5, select(\n"
                   + "      ubiQuery(),\n"
                   + "      query_id as id,\n"
+                  + "      timestamp,\n"
                   + "      application,\n"
                   + "      user_query,\n"
                   + "      query_attributes\n"
@@ -284,6 +289,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       Tuple tuple = tuples.get(0);
       assertEquals(ubiQuery.getQueryId(), tuple.get("id"));
       assertEquals(ubiQuery.getApplication(), tuple.get("application"));
+      assertEquals(ubiQuery.getUserQuery(), tuple.get("user_query"));
+      assertEquals(ubiQuery.getTimestamp(), tuple.getDate("timestamp"));
       assertEquals(
           "{\"experiment\":\"secret\",\"marginBoost\":2.1,\"parsed_query\":\"memory OR ram\"}",
           tuple.get("query_attributes"));

@@ -18,15 +18,10 @@ commit(ubi_queries,
     select(
       ubiQuery(),
       query_id as id,
+      timestamp,
       application,
-      user_query
+      user_query,
+      query_attributes
     )
   )
 )
-
-#let(cli-zkhost="localhost:9983",    
-#   commit(ubi,
-#    update(ubi,
-#           tuple(id=49,a_i=1,b_i=5))
-#           )
-#)

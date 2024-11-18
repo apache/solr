@@ -18,6 +18,9 @@ package org.apache.solr.handler.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -34,6 +37,7 @@ public class UBIQuery {
   private String application;
   private String queryId;
   private String userQuery;
+  private Date timestamp;
 
   @SuppressWarnings("rawtypes")
   private Map queryAttributes;
@@ -46,6 +50,11 @@ public class UBIQuery {
       queryId = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     }
     this.queryId = queryId;
+    this.timestamp = new Date();
+  }
+
+  public Date getTimestamp() {
+    return timestamp;
   }
 
   public void setApplication(String application) {
@@ -95,6 +104,9 @@ public class UBIQuery {
     @SuppressWarnings({"rawtypes", "unchecked"})
     Map map = new HashMap();
     map.put(UBIComponent.QUERY_ID, this.queryId);
+    map.put(
+        "timestamp",
+        DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(this.timestamp.getTime())));
     if (this.application != null) {
       map.put(UBIComponent.APPLICATION, this.application);
     }
