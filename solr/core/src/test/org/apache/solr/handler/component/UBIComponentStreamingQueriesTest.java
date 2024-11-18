@@ -290,7 +290,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       assertEquals(ubiQuery.getQueryId(), tuple.get("id"));
       assertEquals(ubiQuery.getApplication(), tuple.get("application"));
       assertEquals(ubiQuery.getUserQuery(), tuple.get("user_query"));
-      assertEquals(ubiQuery.getTimestamp(), tuple.getDate("timestamp"));
+      assertEquals(ubiQuery.getTimestamp().toInstant(), tuple.getDate("timestamp").toInstant());
       assertEquals(
           "{\"experiment\":\"secret\",\"marginBoost\":2.1,\"parsed_query\":\"memory OR ram\"}",
           tuple.get("query_attributes"));
