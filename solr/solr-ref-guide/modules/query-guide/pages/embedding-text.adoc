@@ -67,11 +67,11 @@ Large-Language-Model is a module and therefore its plugins must be configured in
 
 === Minimum Requirements
 
-* Declaration of the `embed` query parser.
+* Declaration of the `text_to_vector` query parser.
 +
 [source,xml]
 ----
-<queryParser name="embed" class="org.apache.solr.llm.search.TextEmbedderQParserPlugin"/>
+<queryParser name="text_to_vector" class="org.apache.solr.llm.search.TextToVectorQParserPlugin"/>
 ----
 
 == Text Embedding Lifecycle
@@ -111,7 +111,7 @@ Accepted values:
 s|Required |Default: none
 |===
 +
-The identifier of your model, this is used by any component that intends to use the model (`embed` query parser).
+The identifier of your model, this is used by any component that intends to use the model (`text_to_vector` query parser).
 
 `params`::
 +
@@ -262,7 +262,7 @@ http://localhost:8983/solr/techproducts/schema/embedding-model-store
 To run a query that embeds your query text, using a model you previously uploaded is simple:
 
 [source,text]
-?q={!text_embedder model=a-model f=vector topK=10}hello world query
+?q={!text_to_vector model=a-model f=vector topK=10}hello world query
 
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
 
