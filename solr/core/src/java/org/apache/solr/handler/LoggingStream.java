@@ -71,6 +71,8 @@ public class LoggingStream extends TupleStream implements Expressible {
    */
   private String filepath;
 
+  private Path filePath;
+
   private int updateBatchSize;
 
   private int batchNumber;
@@ -122,14 +124,14 @@ public class LoggingStream extends TupleStream implements Expressible {
     this.tupleSource = tupleSource;
   }
 
-  /** The name of the file being updated */
-  protected String getFilePath() {
-    return filepath;
+  /** The path of the file being logged to */
+  public Path getFilePath() {
+    return filePath;
   }
 
   @Override
   public void open() throws IOException {
-    Path filePath = chroot.resolve(filepath).normalize();
+    filePath = chroot.resolve(filepath).normalize();
     if (!filePath.startsWith(chroot)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "file to log to must be under " + chroot);

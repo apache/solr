@@ -34,7 +34,10 @@ public class UBIQuery {
   private String application;
   private String queryId;
   private String userQuery;
-  private Object queryAttributes;
+
+  @SuppressWarnings("rawtypes")
+  private Map queryAttributes;
+
   private String docIds;
 
   public UBIQuery(String queryId) {
@@ -69,11 +72,13 @@ public class UBIQuery {
     this.userQuery = userQuery;
   }
 
-  public Object getQueryAttributes() {
+  @SuppressWarnings("rawtypes")
+  public Map getQueryAttributes() {
     return queryAttributes;
   }
 
-  public void setQueryAttributes(Object queryAttributes) {
+  @SuppressWarnings("rawtypes")
+  public void setQueryAttributes(Map queryAttributes) {
     this.queryAttributes = queryAttributes;
   }
 
@@ -90,9 +95,14 @@ public class UBIQuery {
     @SuppressWarnings({"rawtypes", "unchecked"})
     Map map = new HashMap();
     map.put(UBIComponent.QUERY_ID, this.queryId);
-    map.put(UBIComponent.APPLICATION, this.application);
-    map.put(UBIComponent.USER_QUERY, this.userQuery);
+    if (this.application != null) {
+      map.put(UBIComponent.APPLICATION, this.application);
+    }
+    if (this.userQuery != null) {
+      map.put(UBIComponent.USER_QUERY, this.userQuery);
+    }
     if (this.queryAttributes != null) {
+
       ObjectMapper objectMapper = new ObjectMapper();
       try {
         map.put(

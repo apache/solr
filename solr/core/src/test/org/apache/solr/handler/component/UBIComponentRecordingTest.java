@@ -91,6 +91,8 @@ public class UBIComponentRecordingTest extends SolrCloudTestCase {
     final QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION, queryParams);
     final SolrDocumentList documents = queryResponse.getResults();
 
+
+
     //
     //
     //    final ModifiableSolrParams overrideParams = new ModifiableSolrParams();
@@ -102,6 +104,6 @@ public class UBIComponentRecordingTest extends SolrCloudTestCase {
     //            .setLimit(0);
     //    QueryResponse queryResponse = req.process(cluster.getSolrClient(), COLLECTION);
     // assertResponseFoundNumDocs(queryResponse, expectedResults);
-    System.out.println(queryResponse);
+    //System.out.println(queryResponse);
   }
 }

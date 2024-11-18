@@ -230,7 +230,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     ubiQuery.setUserQuery(params.get(USER_QUERY));
     ubiQuery.setApplication(params.get(APPLICATION));
 
-    Object queryAttributes = params.get(QUERY_ATTRIBUTES);
+    String queryAttributes = params.get(QUERY_ATTRIBUTES);
 
     if (queryAttributes != null && queryAttributes.toString().startsWith("{")) {
       // Look up the original nested JSON format, typically passed in
@@ -241,8 +241,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
         @SuppressWarnings("rawtypes")
         Map paramsProperties = (Map) jsonProperties.get("params");
         if (paramsProperties.containsKey(QUERY_ATTRIBUTES)) {
-          queryAttributes = paramsProperties.get(QUERY_ATTRIBUTES);
-          ubiQuery.setQueryAttributes(queryAttributes);
+          @SuppressWarnings("rawtypes")
+          Map queryAttributesAsMap = (Map) paramsProperties.get(QUERY_ATTRIBUTES);
+          ubiQuery.setQueryAttributes(queryAttributesAsMap);
         }
       }
     }
