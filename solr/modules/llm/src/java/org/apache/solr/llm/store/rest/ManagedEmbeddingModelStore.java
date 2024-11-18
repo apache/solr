@@ -39,52 +39,76 @@ import org.slf4j.LoggerFactory;
 /** Managed resource for storing a model */
 public class ManagedEmbeddingModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  /** the model store rest endpoint */
+  public static final String REST_END_POINT = "/schema/embedding-model-store";
+  /** Managed model store: the name of the attribute containing all the models of a model store */
+  private static final String MODELS_JSON_FIELD = "models";
+  /** name of the attribute containing a class */
+  static final String CLASS_KEY = "class";
+  /** name of the attribute containing a name */
+  static final String NAME_KEY = "name";
+  /** name of the attribute containing parameters */
+  static final String PARAMS_KEY = "params";
 
   public static void registerManagedEmbeddingModelStore(
-      SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
+          SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
     solrResourceLoader
-        .getManagedResourceRegistry()
-        .registerManagedResource(
-            REST_END_POINT, ManagedEmbeddingModelStore.class, managedResourceObserver);
+            .getManagedResourceRegistry()
+            .registerManagedResource(
+                    REST_END_POINT, ManagedEmbeddingModelStore.class, managedResourceObserver);
   }
 
   public static ManagedEmbeddingModelStore getManagedModelStore(SolrCore core) {
     return (ManagedEmbeddingModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
-  /** the model store rest endpoint */
-  public static final String REST_END_POINT = "/schema/embedding-model-store";
+  /**
+   * Returns the available models as a list of Maps objects. After an update the managed resources
+   * needs to return the resources in this format in order to store in json somewhere (zookeeper,
+   * disk...)
+   *
+   * @return the available models as a list of Maps objects
+   */
+  private static List<Object> modelsAsManagedResources(List<SolrEmbeddingModel> models) {
+    final List<Object> list = new ArrayList<>(models.size());
+    for (final SolrEmbeddingModel model : models) {
+      list.add(toEmbeddingModelMap(model));
+    }
+    return list;
+  }
 
-  /** Managed model store: the name of the attribute containing all the models of a model store */
-  private static final String MODELS_JSON_FIELD = "models";
+  @SuppressWarnings("unchecked")
+  public static SolrEmbeddingModel fromEmbeddingModelMap(Map<String, Object> embeddingModel) {
+    return SolrEmbeddingModel.getInstance(
+            (String) embeddingModel.get(CLASS_KEY), // modelClassName
+            (String) embeddingModel.get(NAME_KEY), // modelName
+            (Map<String, Object>) embeddingModel.get(PARAMS_KEY));
+  }
 
-  /** name of the attribute containing a class */
-  static final String CLASS_KEY = "class";
-
-  /** name of the attribute containing a name */
-  static final String NAME_KEY = "name";
-
-  /** name of the attribute containing parameters */
-  static final String PARAMS_KEY = "params";
+  private static LinkedHashMap<String, Object> toEmbeddingModelMap(SolrEmbeddingModel model) {
+    final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
+    modelMap.put(NAME_KEY, model.getName());
+    modelMap.put(CLASS_KEY, model.getEmbeddingModelClassName());
+    modelMap.put(PARAMS_KEY, model.getParams());
+    return modelMap;
+  }
 
   private final EmbeddingModelStore store;
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private Object managedData;
+  
   public ManagedEmbeddingModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
     store = new EmbeddingModelStore();
   }
-
+  
   @Override
   protected ManagedResourceStorage createStorage(
       ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
     return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
   }
-
-  private Object managedData;
 
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)
@@ -113,7 +137,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
     }
   }
 
-  public synchronized void addModel(SolrEmbeddingModel model) throws EmbeddingModelException {
+  public void addModel(SolrEmbeddingModel model) throws EmbeddingModelException {
     try {
       if (log.isInfoEnabled()) {
         log.info("adding model {}", model.getName());
@@ -143,7 +167,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   }
 
   @Override
-  public synchronized void doDeleteChild(BaseSolrResource endpoint, String childId) {
+  public void doDeleteChild(BaseSolrResource endpoint, String childId) {
     store.delete(childId);
     storeManagedData(applyUpdatesToManagedData(null));
   }
@@ -154,7 +178,6 @@ public class ManagedEmbeddingModelStore extends ManagedResource
    */
   @Override
   public void doGet(BaseSolrResource endpoint, String childId) {
-
     final SolrQueryResponse response = endpoint.getSolrResponse();
     response.add(MODELS_JSON_FIELD, modelsAsManagedResources(store.getModels()));
   }
@@ -166,36 +189,5 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   @Override
   public String toString() {
     return "ManagedModelStore [store=" + store + "]";
-  }
-
-  /**
-   * Returns the available models as a list of Maps objects. After an update the managed resources
-   * needs to return the resources in this format in order to store in json somewhere (zookeeper,
-   * disk...)
-   *
-   * @return the available models as a list of Maps objects
-   */
-  private static List<Object> modelsAsManagedResources(List<SolrEmbeddingModel> models) {
-    final List<Object> list = new ArrayList<>(models.size());
-    for (final SolrEmbeddingModel model : models) {
-      list.add(toEmbeddingModelMap(model));
-    }
-    return list;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static SolrEmbeddingModel fromEmbeddingModelMap(Map<String, Object> embeddingModel) {
-        return SolrEmbeddingModel.getInstance(
-            (String) embeddingModel.get(CLASS_KEY), // modelClassName
-            (String) embeddingModel.get(NAME_KEY), // modelName
-            (Map<String, Object>) embeddingModel.get(PARAMS_KEY));
-  }
-
-  private static LinkedHashMap<String, Object> toEmbeddingModelMap(SolrEmbeddingModel model) {
-    final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
-    modelMap.put(NAME_KEY, model.getName());
-    modelMap.put(CLASS_KEY, model.getEmbeddingModelClassName());
-    modelMap.put(PARAMS_KEY, model.getParams());
-    return modelMap;
   }
 }
