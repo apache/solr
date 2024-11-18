@@ -42,10 +42,22 @@ public class SolrEmbeddingModel implements Accountable {
   public static SolrEmbeddingModel getInstance(
       String className, String name, Map<String, Object> params) throws EmbeddingModelException {
     try {
+      /*
+       * The idea herea is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
+       * of control.
+       * Each model has its own list of parameters we don't know beforehand, but each {@link dev.langchain4j.model.embedding.EmbeddingModel} class
+       * has its own builder that uses setters with the same name of the parameter in input.
+       * */
       EmbeddingModel embedder;
       Class<?> modelClass = Class.forName(className);
       var builder = modelClass.getMethod("builder").invoke(null);
       if (params != null) {
+        /**
+         * Some {@link dev.langchain4j.model.embedding.EmbeddingModel} classes have params of
+         * specific types that must be constructed, for primitive types we can resort to the
+         * default. N.B. when adding support to new models, pay attention to all the parameters they
+         * support, some of them may require to be handled in here as separate switch cases
+         */
         for (String paramName : params.keySet()) {
           switch (paramName) {
             case TIMEOUT_PARAM:
@@ -65,14 +77,14 @@ public class SolrEmbeddingModel implements Accountable {
                   .invoke(builder, ((Long) params.get(paramName)).intValue());
               break;
             default:
-              ArrayList<Method> methods = new ArrayList<>();
+              ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
                 if (paramName.equals(method.getName()) && method.getParameterCount() == 1) {
-                  methods.add(method);
+                  paramNameMatches.add(method);
                 }
               }
-              if (methods.size() == 1) {
-                methods.get(0).invoke(builder, params.get(paramName));
+              if (paramNameMatches.size() == 1) {
+                paramNameMatches.get(0).invoke(builder, params.get(paramName));
               } else {
                 builder
                     .getClass()
@@ -141,7 +153,7 @@ public class SolrEmbeddingModel implements Accountable {
   public String getEmbedderClassName() {
     return embedder.getClass().getName();
   }
-  
+
   public Map<String, Object> getParams() {
     return params;
   }
