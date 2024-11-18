@@ -28,10 +28,10 @@ public class EmbeddingModelStore {
   private final Map<String, SolrEmbeddingModel> availableModels;
 
   public EmbeddingModelStore() {
-    availableModels = new LinkedHashMap<>();
+    availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
   }
 
-  public synchronized SolrEmbeddingModel getModel(String name) {
+  public SolrEmbeddingModel getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -54,7 +54,7 @@ public class EmbeddingModelStore {
     return availableModels.remove(modelName);
   }
 
-  public synchronized void addModel(SolrEmbeddingModel modeldata) throws EmbeddingModelException {
+  public void addModel(SolrEmbeddingModel modeldata) throws EmbeddingModelException {
     final String name = modeldata.getName();
     if (availableModels.containsKey(name)) {
       throw new EmbeddingModelException(
