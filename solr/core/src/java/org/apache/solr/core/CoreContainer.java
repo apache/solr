@@ -2063,22 +2063,8 @@ public class CoreContainer {
 
         // force commit on old core if the new one is readOnly and prevent any new updates
         if (newCore.readOnly) {
-          RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
-          if (iwRef != null) {
-            IndexWriter iw = iwRef.get();
-            try {
-              if (iw != null) {
-                SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-                CommitUpdateCommand cmd =
-                    new DirectUpdateHandler2.ClosingCommitUpdateCommand(req, false);
-                core.getUpdateHandler().commit(cmd);
-              }
-            } finally {
-              // switch old core to readOnly
-              core.readOnly = true;
-              iwRef.decref();
-            }
-          }
+          SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+          core.getUpdateHandler().commit(CommitUpdateCommand.closeOnCommit(req, false));
         }
 
         if (docCollection != null) {

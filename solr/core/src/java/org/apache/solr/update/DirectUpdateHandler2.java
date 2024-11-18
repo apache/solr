@@ -738,6 +738,9 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
+        if (cmd.isClosingOnCommit()) {
+          core.readOnly = true;
+        }
         IndexWriter writer = iw.get();
         if (cmd.optimize) {
           writer.forceMerge(cmd.maxOptimizeSegments);
@@ -786,7 +789,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
           if (ulog != null) ulog.preSoftCommit(cmd);
           if (cmd.openSearcher) {
             core.getSearcher(true, false, waitSearcher);
-          } else if (!(cmd instanceof ClosingCommitUpdateCommand)) {
+          } else if (!cmd.isClosingOnCommit()) {
             // force open a new realtime searcher so realtime-get and versioning code can see the
             // latest
             RefCounted<SolrIndexSearcher> searchHolder = core.openNewSearcher(true, true);
@@ -1116,24 +1119,5 @@ public class DirectUpdateHandler2 extends UpdateHandler
   // allow access for tests
   public CommitTracker getSoftCommitTracker() {
     return softCommitTracker;
-  }
-
-  /**
-   * The purpose of this {@link CommitUpdateCommand} extension is to indicate that the {@link
-   * #commit(CommitUpdateCommand)} caller is closing the core and does not want to open any
-   * searcher. Because even if {@link CommitUpdateCommand#openSearcher} is false, a new real-time
-   * searcher will be opened with a standard {@link CommitUpdateCommand}. This internal {@link
-   * ClosingCommitUpdateCommand} is a way to not add another public flag to {@link
-   * CommitUpdateCommand}.
-   *
-   * @lucene.internal
-   */
-  public static class ClosingCommitUpdateCommand extends CommitUpdateCommand {
-
-    public ClosingCommitUpdateCommand(SolrQueryRequest req, boolean optimize) {
-      super(req, optimize);
-      openSearcher = false;
-      waitSearcher = false;
-    }
   }
 }
