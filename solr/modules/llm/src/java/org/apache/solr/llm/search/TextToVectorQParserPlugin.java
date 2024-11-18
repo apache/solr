@@ -39,11 +39,11 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.neural.KnnQParser;
 
 /**
- * A neural query parser that embed the query and then run K-nearest neighbors search on Dense
- * Vector fields. See Wiki page
+ * A neural query parser that encode the query to a vector and then run K-nearest neighbors search
+ * on Dense Vector fields. See Wiki page
  * https://solr.apache.org/guide/solr/latest/query-guide/dense-vector-search.html
  */
-public class TextEmbedderQParserPlugin extends QParserPlugin
+public class TextToVectorQParserPlugin extends QParserPlugin
     implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String EMBEDDING_MODEL_PARAM = "model";
   private ManagedEmbeddingModelStore modelStore = null;
@@ -51,7 +51,7 @@ public class TextEmbedderQParserPlugin extends QParserPlugin
   @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new TextEmbedderQParser(qstr, localParams, params, req);
+    return new TextToVectorQParser(qstr, localParams, params, req);
   }
 
   @Override
@@ -67,26 +67,25 @@ public class TextEmbedderQParserPlugin extends QParserPlugin
       modelStore = (ManagedEmbeddingModelStore) res;
     }
     if (modelStore != null) {
-      // now we can safely load the models
       modelStore.loadStoredModels();
     }
   }
 
-  public class TextEmbedderQParser extends KnnQParser {
+  public class TextToVectorQParser extends KnnQParser {
 
-    public TextEmbedderQParser(
-        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-      super(qstr, localParams, params, req);
+    public TextToVectorQParser(
+        String queryString, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(queryString, localParams, params, req);
     }
 
     @Override
     public Query parse() throws SyntaxError {
-      checkParam(qstr, "Query string is empty, nothing to embed");
+      checkParam(qstr, "Query string is empty, nothing to vectorise");
       final String embeddingModelName = localParams.get(EMBEDDING_MODEL_PARAM);
       checkParam(embeddingModelName, "The 'model' parameter is missing");
-      SolrEmbeddingModel embedder = modelStore.getModel(embeddingModelName);
+      SolrEmbeddingModel textToVector = modelStore.getModel(embeddingModelName);
 
-      if (embedder != null) {
+      if (textToVector != null) {
         final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
         final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
         int fieldDimensions = denseVectorType.getDimension();
@@ -96,7 +95,7 @@ public class TextEmbedderQParserPlugin extends QParserPlugin
         switch (vectorEncoding) {
           case FLOAT32:
             {
-              float[] vectorToSearch = embedder.vectorise(qstr);
+              float[] vectorToSearch = textToVector.vectorise(qstr);
               checkVectorDimension(vectorToSearch.length, fieldDimensions);
               return new KnnFloatVectorQuery(
                   schemaField.getName(), vectorToSearch, topK, getFilterQuery());

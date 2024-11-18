@@ -22,8 +22,8 @@
  </requestDispatcher>
 
  <!-- Query parser used to run neural queries-->
- <queryParser name="text_embedder"
-  class="org.apache.solr.llm.search.TextEmbedderQParserPlugin" />
+ <queryParser name="text_to_vector"
+  class="org.apache.solr.llm.search.TextToVectorQParserPlugin" />
 
  <query>
   <filterCache class="solr.CaffeineCache" size="4096"

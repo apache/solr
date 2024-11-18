@@ -22,7 +22,7 @@ import org.apache.solr.llm.TestLlmBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TextEmbedderQParserTest extends TestLlmBase {
+public class TextToVectorQParserTest extends TestLlmBase {
   @BeforeClass
   public static void init() throws Exception {
     setupTest("solrconfig-llm.xml", "schema.xml", true, false);
@@ -31,7 +31,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void notExistentModel_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder model=not-exist f=vector topK=5}hello world";
+    final String solrQuery = "{!text_to_vector model=not-exist f=vector topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -44,7 +44,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void missingModelParam_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder f=vector topK=5}hello world";
+    final String solrQuery = "{!text_to_vector f=vector topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -57,7 +57,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void incorrectVectorFieldType_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=id topK=5}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=id topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -70,7 +70,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void undefinedVectorField_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=notExistent topK=5}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=notExistent topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -83,7 +83,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void missingVectorFieldParam_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 topK=5}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -97,7 +97,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void vectorByteEncodingField_shouldRaiseException() throws Exception {
     final String solrQuery =
-        "{!text_embedder model=dummy-1 f=vector_byte_encoding topK=5}hello world";
+        "{!text_to_vector model=dummy-1 f=vector_byte_encoding topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -110,20 +110,21 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void missingQueryToEmbed_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=5}";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=5}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "/error/msg=='Query string is empty, nothing to embed'",
+        "/error/msg=='Query string is empty, nothing to vectorise'",
         "/error/code==400");
   }
 
   @Test
   public void incorrectVectorToSearchDimension_shouldThrowException() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=2048_float_vector topK=5}hello world";
+    final String solrQuery =
+        "{!text_to_vector model=dummy-1 f=2048_float_vector topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -136,7 +137,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void topK_shouldEmbedAndReturnOnlyTopKResults() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=5}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -153,7 +154,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void vectorFieldParam_shouldSearchOnThatField() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector2 topK=5}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector2 topK=5}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -168,7 +169,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void embeddedQuery_shouldRankBySimilarityFunction() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=10}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=10}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -191,7 +192,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void embeddedQueryUsedInFilter_shouldFilterResultsBeforeTheQueryExecution()
       throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=4}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=4}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:(3 4 9 2)");
     query.setFilterQueries(solrQuery);
@@ -207,7 +208,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void embeddedQueryUsedInFilters_shouldFilterResultsBeforeTheQueryExecution()
       throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=4}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=4}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:(3 4 9 2)");
     query.setFilterQueries(solrQuery, "id:(4 20 9)");
@@ -222,7 +223,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   public void embeddedQueryUsedInFiltersWithPreFilter_shouldFilterResultsBeforeTheQueryExecution()
       throws Exception {
     final String solrQuery =
-        "{!text_embedder model=dummy-1 f=vector topK=4 preFilter='id:(1 4 7 8 9)'}hello world";
+        "{!text_to_vector model=dummy-1 f=vector topK=4 preFilter='id:(1 4 7 8 9)'}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery("id:(3 4 9 2)");
     query.setFilterQueries(solrQuery, "id:(4 20 9)");
@@ -240,8 +241,8 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   public void embeddedQueryUsedInFilters_rejectIncludeExclude() throws Exception {
     for (String fq :
         Arrays.asList(
-            "{!text_embedder model=dummy-1 f=vector topK=5 includeTags=xxx}hello world",
-            "{!text_embedder model=dummy-1 f=vector topK=5 excludeTags=xxx}hello world")) {
+            "{!text_to_vector model=dummy-1 f=vector topK=5 includeTags=xxx}hello world",
+            "{!text_to_vector model=dummy-1 f=vector topK=5 excludeTags=xxx}hello world")) {
       final SolrQuery query = new SolrQuery();
       query.setQuery("*:*");
       query.setFilterQueries(fq);
@@ -257,7 +258,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void embeddedQueryAsSubQuery() throws Exception {
     final String solrQuery =
-        "*:* AND {!text_embedder model=dummy-1 f=vector topK=5 v='hello world'}";
+        "*:* AND {!text_to_vector model=dummy-1 f=vector topK=5 v='hello world'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.setFilterQueries("id:(2 4 7 9 8 20 3)");
@@ -276,7 +277,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void embeddedQueryAsSubQuery_withPreFilter() throws Exception {
     final String solrQuery =
-        "*:* AND {!text_embedder model=dummy-1 f=vector topK=5 preFilter='id:(2 4 7 9 8 20 3)' v='hello world'}";
+        "*:* AND {!text_to_vector model=dummy-1 f=vector topK=5 preFilter='id:(2 4 7 9 8 20 3)' v='hello world'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.add("fl", "id");
@@ -297,8 +298,8 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   public void embeddedQueryAsSubQuery_rejectIncludeExclude() throws Exception {
     for (String q :
         Arrays.asList(
-            "{!text_embedder model=dummy-1 f=vector topK=5 includeTags=xxx}hello world",
-            "{!text_embedder model=dummy-1 f=vector topK=5 excludeTags=xxx}hello world")) {
+            "{!text_to_vector model=dummy-1 f=vector topK=5 includeTags=xxx}hello world",
+            "{!text_to_vector model=dummy-1 f=vector topK=5 excludeTags=xxx}hello world")) {
       final SolrQuery query = new SolrQuery();
       query.setQuery("*:* OR " + q);
       query.add("fl", "id");
@@ -312,7 +313,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
 
   @Test
   public void embeddedQueryWithCostlyFq_shouldPerformKnnSearchWithPostFilter() throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=10}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=10}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.setFilterQueries("{!frange cache=false l=0.99}$q");
@@ -331,7 +332,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void embeddedQueryWithFilterQueries_shouldPerformKnnSearchWithPreFiltersAndPostFilters()
       throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=4}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=4}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.setFilterQueries("id:(3 4 9 2)", "{!frange cache=false l=0.99}$q");
@@ -347,7 +348,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   @Test
   public void embeddedQueryWithNegativeFilterQuery_shouldPerformKnnSearchInPreFilteredResults()
       throws Exception {
-    final String solrQuery = "{!text_embedder model=dummy-1 f=vector topK=4}hello world";
+    final String solrQuery = "{!text_to_vector model=dummy-1 f=vector topK=4}hello world";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
     query.setFilterQueries("-id:4");
@@ -370,7 +371,7 @@ public class TextEmbedderQParserTest extends TestLlmBase {
   public void embeddedQueryAsRerank_shouldAddSimilarityFunctionScore() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.set("rq", "{!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=1}");
-    query.set("rqq", "{!text_embedder model=dummy-1 f=vector topK=4}hello world");
+    query.set("rqq", "{!text_to_vector model=dummy-1 f=vector topK=4}hello world");
     query.setQuery("id:(3 4 9 2)");
     query.add("fl", "id");
 

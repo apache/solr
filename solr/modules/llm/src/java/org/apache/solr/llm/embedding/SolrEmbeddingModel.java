@@ -36,19 +36,19 @@ public class SolrEmbeddingModel implements Accountable {
 
   private final String name;
   private final Map<String, Object> params;
-  private final EmbeddingModel embedder;
+  private final EmbeddingModel textToVector;
   private final Integer hashCode;
 
   public static SolrEmbeddingModel getInstance(
       String className, String name, Map<String, Object> params) throws EmbeddingModelException {
     try {
       /*
-       * The idea herea is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
+       * The idea here is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
        * of control.
        * Each model has its own list of parameters we don't know beforehand, but each {@link dev.langchain4j.model.embedding.EmbeddingModel} class
        * has its own builder that uses setters with the same name of the parameter in input.
        * */
-      EmbeddingModel embedder;
+      EmbeddingModel textToVector;
       Class<?> modelClass = Class.forName(className);
       var builder = modelClass.getMethod("builder").invoke(null);
       if (params != null) {
@@ -94,22 +94,22 @@ public class SolrEmbeddingModel implements Accountable {
           }
         }
       }
-      embedder = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
-      return new SolrEmbeddingModel(name, embedder, params);
+      textToVector = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
+      return new SolrEmbeddingModel(name, textToVector, params);
     } catch (final Exception e) {
       throw new EmbeddingModelException("Model loading failed for " + className, e);
     }
   }
 
-  public SolrEmbeddingModel(String name, EmbeddingModel embedder, Map<String, Object> params) {
+  public SolrEmbeddingModel(String name, EmbeddingModel textToVector, Map<String, Object> params) {
     this.name = name;
-    this.embedder = embedder;
+    this.textToVector = textToVector;
     this.params = params;
     this.hashCode = calculateHashCode();
   }
 
   public float[] vectorise(String text) {
-    Embedding vector = embedder.embed(text).content();
+    Embedding vector = textToVector.embed(text).content();
     return vector.vector();
   }
 
@@ -122,7 +122,7 @@ public class SolrEmbeddingModel implements Accountable {
   public long ramBytesUsed() {
     return BASE_RAM_BYTES
         + RamUsageEstimator.sizeOfObject(name)
-        + RamUsageEstimator.sizeOfObject(embedder);
+        + RamUsageEstimator.sizeOfObject(textToVector);
   }
 
   @Override
@@ -134,7 +134,7 @@ public class SolrEmbeddingModel implements Accountable {
     final int prime = 31;
     int result = 1;
     result = (prime * result) + Objects.hashCode(name);
-    result = (prime * result) + Objects.hashCode(embedder);
+    result = (prime * result) + Objects.hashCode(textToVector);
     return result;
   }
 
@@ -143,15 +143,15 @@ public class SolrEmbeddingModel implements Accountable {
     if (this == obj) return true;
     if (!(obj instanceof SolrEmbeddingModel)) return false;
     final SolrEmbeddingModel other = (SolrEmbeddingModel) obj;
-    return Objects.equals(embedder, other.embedder) && Objects.equals(name, other.name);
+    return Objects.equals(textToVector, other.textToVector) && Objects.equals(name, other.name);
   }
 
   public String getName() {
     return name;
   }
 
-  public String getEmbedderClassName() {
-    return embedder.getClass().getName();
+  public String getEmbeddingModelClassName() {
+    return textToVector.getClass().getName();
   }
 
   public Map<String, Object> getParams() {

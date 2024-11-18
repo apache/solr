@@ -20,7 +20,7 @@ import dev.langchain4j.model.cohere.CohereEmbeddingModel;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.TestLlmBase;
-import org.apache.solr.llm.search.TextEmbedderQParserPlugin;
+import org.apache.solr.llm.search.TextToVectorQParserPlugin;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
@@ -44,7 +44,7 @@ public class TestModelManager extends TestLlmBase {
 
     final String resourceId = "/schema/mstore1";
     registry.registerManagedResource(
-        resourceId, ManagedEmbeddingModelStore.class, new TextEmbedderQParserPlugin());
+        resourceId, ManagedEmbeddingModelStore.class, new TextToVectorQParserPlugin());
 
     final NamedList<String> initArgs = new NamedList<>();
 

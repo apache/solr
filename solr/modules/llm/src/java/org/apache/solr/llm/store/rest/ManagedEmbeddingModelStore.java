@@ -197,7 +197,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   private static LinkedHashMap<String, Object> toEmbeddingModelMap(SolrEmbeddingModel model) {
     final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
     modelMap.put(NAME_KEY, model.getName());
-    modelMap.put(CLASS_KEY, model.getEmbedderClassName());
+    modelMap.put(CLASS_KEY, model.getEmbeddingModelClassName());
     modelMap.put(PARAMS_KEY, model.getParams());
     return modelMap;
   }
