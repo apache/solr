@@ -60,8 +60,8 @@ public class CommitUpdateCommand extends UpdateCommand {
   }
 
   /**
-   * Creates a {@link CommitUpdateCommand} to commit before closing the core and also prevent any new update
-   * by set the core in read-only mode. Does not open a new searcher.
+   * Creates a {@link CommitUpdateCommand} to commit before closing the core and also prevent any
+   * new update by set the core in read-only mode. Does not open a new searcher.
    */
   public static CommitUpdateCommand closeOnCommit(SolrQueryRequest req, boolean optimize) {
     CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize);
@@ -72,8 +72,8 @@ public class CommitUpdateCommand extends UpdateCommand {
   }
 
   /**
-   * Indicates whether this command is a commit before the core is closed. Any new updates must be prevented
-   * after the commit.
+   * Indicates whether this command is a commit before the core is closed. Any new updates must be
+   * prevented after the commit.
    */
   public boolean isClosingOnCommit() {
     return closeSearcher;

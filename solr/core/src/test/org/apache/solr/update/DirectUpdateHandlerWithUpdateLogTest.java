@@ -28,9 +28,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Tests {@link DirectUpdateHandler2} with update log enabled.
- */
+/** Tests {@link DirectUpdateHandler2} with update log enabled. */
 @LogLevel("org.apache.solr.update=INFO")
 public class DirectUpdateHandlerWithUpdateLogTest extends SolrTestCaseJ4 {
 
