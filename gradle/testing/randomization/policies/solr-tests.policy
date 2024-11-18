@@ -37,6 +37,9 @@ grant {
   permission java.io.FilePermission "/path/to/myinst/conf/solrcore.properties", "read";
   // TestConfigSets messes with these (wtf?)
   permission java.io.FilePermission "/path/to/solr/home/lib", "read";
+  
+  // Needed by org.apache.solr.handler.component.UBIComponentTest
+  permission java.io.FilePermission "${common-solr.dir}/core/build/resources/test/solr/userfiles/ubi_queries.jsonl", "write";
 
   permission java.nio.file.LinkPermission "hard";
 
