@@ -211,7 +211,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId() + "-datastore");
 
     explanation.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
-    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setImplementingClass("Solr/Lucene");
     explanation.setExpressionType(ExpressionType.DATASTORE);
     explanation.setExpression("Update into " + collection);
 
