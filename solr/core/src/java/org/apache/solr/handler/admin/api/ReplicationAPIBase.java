@@ -304,7 +304,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         checksum = new Adler32();
       }
       // No throttle if MAX_WRITE_PER_SECOND is not specified
-      if (maxWriteMBPerSec == 0) { // CHECK THIS
+      if (maxWriteMBPerSec == 0) {
         this.rateLimiter = new RateLimiter.SimpleRateLimiter(Double.MAX_VALUE);
       } else {
         this.rateLimiter = new RateLimiter.SimpleRateLimiter(maxWriteMBPerSec);

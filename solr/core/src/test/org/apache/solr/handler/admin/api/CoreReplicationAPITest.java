@@ -86,9 +86,9 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testFetchFile() throws Exception {
-    var actual =
+    ReplicationAPIBase.DirectoryFileStream actual =
         coreReplicationAPI.doFetchFile("./test", "file", null, null, false, false, 0, null);
-    assertTrue(actual instanceof ReplicationAPIBase.DirectoryFileStream);
+    assertNotNull(actual);
 
     actual =
         coreReplicationAPI.doFetchFile("./test", "tlogFile", null, null, false, false, 0, null);
