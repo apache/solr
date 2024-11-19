@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.llm.store.EmbeddingModelException;
 import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
 
@@ -45,7 +46,11 @@ public class SolrEmbeddingModel implements Accountable {
   private final Integer hashCode;
 
   public static SolrEmbeddingModel getInstance(
-      String className, String name, Map<String, Object> params) throws EmbeddingModelException {
+      SolrResourceLoader solrResourceLoader,
+      String className,
+      String name,
+      Map<String, Object> params)
+      throws EmbeddingModelException {
     try {
       /*
        * The idea here is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
@@ -54,7 +59,7 @@ public class SolrEmbeddingModel implements Accountable {
        * has its own builder that uses setters with the same name of the parameter in input.
        * */
       EmbeddingModel textToVector;
-      Class<?> modelClass = Class.forName(className);
+      Class<?> modelClass = solrResourceLoader.findClass(className, EmbeddingModel.class);
       var builder = modelClass.getMethod("builder").invoke(null);
       if (params != null) {
         /**

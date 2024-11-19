@@ -122,7 +122,7 @@ public class TestModelManager extends TestLlmBase {
 
   @Test
   public void loadModel_cohere_shouldLoadModelConfig() throws Exception {
-    loadModels("cohere-model.json");
+    loadModel("cohere-model.json");
 
     final String modelName = "cohere-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -146,7 +146,7 @@ public class TestModelManager extends TestLlmBase {
 
   @Test
   public void loadModel_openAi_shouldLoadModelConfig() throws Exception {
-    loadModels("openai-model.json");
+    loadModel("openai-model.json");
 
     final String modelName = "openai-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -168,7 +168,7 @@ public class TestModelManager extends TestLlmBase {
 
   @Test
   public void loadModel_mistralAi_shouldLoadModelConfig() throws Exception {
-    loadModels("mistralai-model.json");
+    loadModel("mistralai-model.json");
 
     final String modelName = "mistralai-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
@@ -189,7 +189,7 @@ public class TestModelManager extends TestLlmBase {
 
   @Test
   public void loadModel_huggingface_shouldLoadModelConfig() throws Exception {
-    loadModels("huggingface-model.json");
+    loadModel("huggingface-model.json");
 
     final String modelName = "huggingface-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");

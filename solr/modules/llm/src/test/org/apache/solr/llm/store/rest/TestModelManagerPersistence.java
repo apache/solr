@@ -66,7 +66,7 @@ public class TestModelManagerPersistence extends TestLlmBase {
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/==[]");
 
     // load models and features from files
-    loadModels("cohere-model.json");
+    loadModel("cohere-model.json");
 
     final String modelName = "cohere-1";
     assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
