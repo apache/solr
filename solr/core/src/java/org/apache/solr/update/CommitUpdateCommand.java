@@ -61,7 +61,7 @@ public class CommitUpdateCommand extends UpdateCommand {
 
   /**
    * Creates a {@link CommitUpdateCommand} to commit before closing the core and also prevent any
-   * new update by set the core in read-only mode. Does not open a new searcher.
+   * new update by setting the core in read-only mode. Does not open a new searcher.
    */
   public static CommitUpdateCommand closeOnCommit(SolrQueryRequest req, boolean optimize) {
     CommitUpdateCommand cmd = new CommitUpdateCommand(req, optimize);
