@@ -1821,21 +1821,21 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       leaderJetty.stop();
       final TimeOut waitForLeaderToShutdown =
-              new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+          new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       waitForLeaderToShutdown.waitFor(
-              "Gave up after waiting an obscene amount of time for leader to shut down",
-              () -> leaderJetty.isStopped());
+          "Gave up after waiting an obscene amount of time for leader to shut down",
+          () -> leaderJetty.isStopped());
 
       leaderJetty.start();
       final TimeOut waitForLeaderToStart = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       waitForLeaderToStart.waitFor(
-              "Gave up after waiting an obscene amount of time for leader to start",
-              () -> leaderJetty.isRunning());
+          "Gave up after waiting an obscene amount of time for leader to start",
+          () -> leaderJetty.isRunning());
 
       // close and re-create leader client because its connection pool has stale connections
       leaderClient.close();
       leaderClient =
-              createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       NamedList<Object> leaderQueryRsp = rQuery(0, "*:*", leaderClient);
       SolrDocumentList leaderQueryResult = (SolrDocumentList) leaderQueryRsp.get("response");
@@ -1846,14 +1846,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       SolrDocumentList followerQueryResult = (SolrDocumentList) followerQueryRsp.get("response");
       assertEquals(0, numFound(followerQueryRsp));
 
-
       // compare results
-      String cmp = BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
+      String cmp =
+          BaseDistributedSearchTestCase.compare(leaderQueryResult, followerQueryResult, 0, null);
       assertNull(cmp);
 
       nDocs--;
-      for (int i = 0; i < nDocs; i++)
-        index(leaderClient, "id", i, "name", "name = " + i);
+      for (int i = 0; i < nDocs; i++) index(leaderClient, "id", i, "name", "name = " + i);
 
       leaderClient.commit();
 
@@ -1891,28 +1890,28 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerJetty.stop();
 
       invokeReplicationCommand(
-              buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, replicationCmd);
+          buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME, replicationCmd);
 
       final TimeOut waitForFollowerToShutdown =
-              new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+          new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       waitForFollowerToShutdown.waitFor(
-              "Gave up after waiting an obscene amount of time for leader to shut down",
-              () -> followerJetty.isStopped());
-
+          "Gave up after waiting an obscene amount of time for leader to shut down",
+          () -> followerJetty.isStopped());
 
       log.info("FOLLOWER START ********************************************");
       followerJetty.start();
 
-      final TimeOut waitForFollowerToStart = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      final TimeOut waitForFollowerToStart =
+          new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       waitForFollowerToStart.waitFor(
-              "Gave up after waiting an obscene amount of time for leader to start",
-              () -> followerJetty.isRunning());
+          "Gave up after waiting an obscene amount of time for leader to start",
+          () -> followerJetty.isRunning());
 
       // poll interval on follower is 1 second, so we just sleep for a few seconds
       Thread.sleep(3000);
       followerClient.close();
       followerClient =
-              createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
       NamedList<Object> details = getDetails(followerClient);
 
       leaderQueryRsp = rQuery(nDocs, "*:*", leaderClient);
