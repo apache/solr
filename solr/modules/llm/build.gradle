@@ -20,6 +20,7 @@ apply plugin: 'java-library'
 description = 'Indexing/Query time integration with LLM'
 
 dependencies {
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 

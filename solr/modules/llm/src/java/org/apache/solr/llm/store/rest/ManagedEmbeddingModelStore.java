@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -36,7 +37,8 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Managed resource for storing a model */
+/** Managed Resource wrapper for the the {@link EmbeddingModelStore} to expose it via REST */
+@ThreadSafe
 public class ManagedEmbeddingModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
