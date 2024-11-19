@@ -82,7 +82,7 @@ public class StreamTool extends ToolBase {
   }
 
   private static final Option EXECUTION_OPTION =
-      Option.builder("e")
+      Option.builder()
           .longOpt("execution")
           .hasArg()
           .argName("ENVIRONMENT")
@@ -100,7 +100,7 @@ public class StreamTool extends ToolBase {
           .build();
 
   private static final Option FIELDS_OPTION =
-      Option.builder("f")
+      Option.builder()
           .longOpt("fields")
           .argName("FIELDS")
           .hasArg()
@@ -307,11 +307,11 @@ public class StreamTool extends ToolBase {
   private PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
 
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-    if (!cli.hasOption("name")) {
+    if (!cli.hasOption(COLLECTION_OPTION)) {
       throw new IllegalStateException(
-          "You must provide --name COLLECTION with --worker solr parameter.");
+          "You must provide --name COLLECTION with --execution remote parameter.");
     }
-    String collection = cli.getOptionValue("name");
+    String collection = cli.getOptionValue(COLLECTION_OPTION);
 
     if (expr.toLowerCase(Locale.ROOT).contains("stdin(")) {
       throw new IllegalStateException(

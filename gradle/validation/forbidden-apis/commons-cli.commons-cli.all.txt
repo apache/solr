@@ -1,0 +1,5 @@
+@defaultMessage Use a org.apache.commons.cli.Option instead of a String value
+org.apache.commons.cli.CommandLine#hasOption(java.lang.String)
+org.apache.commons.cli.CommandLine#getOptionValue(java.lang.String)
+org.apache.commons.cli.CommandLine#getOptionValue(java.lang.String, java.lang.String)
+org.apache.commons.cli.CommandLine#getParsedOptionValue(java.lang.String, java.lang.Object)
