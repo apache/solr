@@ -84,3 +84,17 @@ teardown() {
   assert_output --partial 'Apple 60 GB iPod'
   refute_output --partial 'ERROR'
 }
+
+@test "searching solr without credentials fails with error" {
+
+  local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"
+  echo 'search(techproducts,' > "${solr_stream_file}"
+  echo 'q="name:memory",' >> "${solr_stream_file}"
+  echo 'fl="name,price",' >> "${solr_stream_file}"
+  echo 'sort="price desc"' >> "${solr_stream_file}"
+  echo ')' >> "${solr_stream_file}"
+
+  run solr stream --execution local --header ${solr_stream_file}
+
+  assert_output --partial 'ERROR'
+}
