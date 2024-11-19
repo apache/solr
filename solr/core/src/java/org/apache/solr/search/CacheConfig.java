@@ -87,7 +87,7 @@ public class CacheConfig implements MapSerializable {
     for (ConfigNode node : nodes) {
       if (node.boolAttr("enabled", true)) {
         CacheConfig config =
-            getConfig(loader, solrConfig, node.name(), node.attributes().asMap(), configPath);
+            getConfig(loader, solrConfig, node.name(), node.attributes(), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
@@ -98,7 +98,7 @@ public class CacheConfig implements MapSerializable {
     if (!node.boolAttr("enabled", true) || !node.exists()) {
       return null;
     }
-    return getConfig(solrConfig, node.name(), node.attributes().asMap(), xpath);
+    return getConfig(solrConfig, node.name(), node.attributes(), xpath);
   }
 
   public static CacheConfig getConfig(

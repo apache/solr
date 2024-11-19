@@ -212,7 +212,7 @@ public class PerReplicaStatesOps {
         new PerReplicaStatesOps(
             prs -> {
               List<PerReplicaStates.Operation> result = new ArrayList<>();
-              prs.states.forEachEntry(
+              prs.states.forEach(
                   (s, state) ->
                       result.add(
                           new PerReplicaStates.Operation(

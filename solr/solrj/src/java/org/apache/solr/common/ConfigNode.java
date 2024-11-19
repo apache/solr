@@ -26,12 +26,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.solr.cluster.api.SimpleMap;
-import org.apache.solr.common.util.WrappedSimpleMap;
 
 /**
  * A generic interface that represents a config file, mostly XML Please note that this is an
@@ -44,7 +43,7 @@ public interface ConfigNode {
   String name();
 
   /** Attributes */
-  SimpleMap<String> attributes();
+  Map<String, String> attributes();
 
   /** Child by name */
   default ConfigNode child(String name) {
@@ -195,8 +194,8 @@ public interface ConfigNode {
         }
 
         @Override
-        public SimpleMap<String> attributes() {
-          return empty_attrs;
+        public Map<String, String> attributes() {
+          return Map.of();
         }
 
         @Override
@@ -232,8 +231,6 @@ public interface ConfigNode {
         @Override
         public void forEachChild(Function<ConfigNode, Boolean> fun) {}
       };
-
-  SimpleMap<String> empty_attrs = new WrappedSimpleMap<>(Collections.emptyMap());
 
   class Helpers {
     static boolean _bool(Object v, boolean def) {
