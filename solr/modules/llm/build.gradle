@@ -20,13 +20,13 @@ apply plugin: 'java-library'
 description = 'Indexing/Query time integration with LLM'
 
 dependencies {
-  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+  compileOnly libs.stephenc.jcip.annotations
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
   implementation libs.apache.lucene.core
 
-  implementation libs.langchain4j
+  implementation libs.langchain4j.core
   implementation libs.langchain4j.cohere
   implementation libs.langchain4j.hugging.face
   implementation libs.langchain4j.mistral.ai
@@ -34,9 +34,8 @@ dependencies {
 
   implementation libs.slf4j.api
 
-  testImplementation libs.apache.solr.testframework
+  testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
   testImplementation libs.commonsio.commonsio
-  
 }
