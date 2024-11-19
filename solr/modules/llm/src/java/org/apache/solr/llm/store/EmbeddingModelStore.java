@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.llm.embedding.SolrEmbeddingModel;
 
+/** Simple store to manage CRUD operations on the {@link SolrEmbeddingModel} */
 public class EmbeddingModelStore {
 
   private final Map<String, SolrEmbeddingModel> availableModels;
