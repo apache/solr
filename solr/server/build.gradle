@@ -75,6 +75,7 @@ dependencies {
 
   libExt(libs.dropwizard.metrics.core, {
     exclude group: "com.rabbitmq", module: "amqp-client"
+
   })
   libExt(libs.dropwizard.metrics.graphite, {
     exclude group: "com.rabbitmq", module: "amqp-client"
@@ -83,6 +84,7 @@ dependencies {
     exclude group: "org.eclipse.jetty", module: "*"
     exclude group: "org.eclipse.jetty.http2", module: "*"
     exclude group: "org.eclipse.jetty.toolchain", module: "*"
+    exclude group: 'jakarta.servlet', module: 'jakarta.servlet-api'
   })
   libExt libs.dropwizard.metrics.jvm
   libExt libs.dropwizard.metrics.jmx

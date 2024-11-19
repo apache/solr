@@ -21,7 +21,7 @@ import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
 import org.junit.BeforeClass;
 
 /**

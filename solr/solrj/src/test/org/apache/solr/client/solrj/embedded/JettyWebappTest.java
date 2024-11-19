@@ -30,12 +30,13 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
+import org.eclipse.jetty.ee8.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.SessionHandler;
 
 /**
  * @since solr 1.3
@@ -60,7 +61,8 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
 
     server = new Server(port);
     // insecure: only use for tests!!!!
-    server.setSessionIdManager(
+    var sessionHandler = new SessionHandler();
+    sessionHandler.setSessionIdManager(
         new DefaultSessionIdManager(server, new Random(random().nextLong())));
     new WebAppContext(server, path, "/solr");
 

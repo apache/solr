@@ -81,7 +81,8 @@ cybozulabs-langdetect = "1.1-20120112"
 diffplug-spotless = "6.5.2"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
-eclipse-jetty = "10.0.22"
+# eclipse-jetty = "10.0.22"
+eclipse-jetty = "12.0.10"
 eclipse-jettytoolchain = "4.0.6"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "6.7.0.202309050840-r"
@@ -137,7 +138,7 @@ jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
 jersey = "3.1.9"
 # TODO Sync with jersey versions
-jersey-containers = "2.39.1"
+jersey-containers = "3.1.0"
 # @keep for version alignment
 joda-time = "2.8.1"
 junit = "4.13.2"
@@ -289,7 +290,7 @@ bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref 
 carrot2-core = { module = "org.carrot2:carrot2-core", version.ref = "carrot2-core" }
 carrotsearch-hppc = { module = "com.carrotsearch:hppc", version.ref = "carrotsearch-hppc" }
 carrotsearch-randomizedtesting-runner = { module = "com.carrotsearch.randomizedtesting:randomizedtesting-runner", version.ref = "carrotsearch-randomizedtesting" }
-# @keep transitive dependency for version alignment
+# @keep transitive depenxdency for version alignment
 checkerframework-qual = { module = "org.checkerframework:checker-qual", version.ref = "checkerframework" }
 codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", version.ref = "codehaus-woodstox" }
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
@@ -299,7 +300,7 @@ commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-graphite = { module = "io.dropwizard.metrics:metrics-graphite", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty10 = { module = "io.dropwizard.metrics:metrics-jetty10", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jvm = { module = "io.dropwizard.metrics:metrics-jvm", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard-metrics" }
@@ -309,23 +310,25 @@ eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-ser
 eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee8-nested = { module = "org.eclipse.jetty.ee8:jetty-ee8-nested", version.ref = "eclipse-jetty" }
 eclipse-jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:http2-client", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:http2-common", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-hpack = { module = "org.eclipse.jetty.http2:http2-hpack", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:http2-http-client-transport", version.ref = "eclipse-jetty" }
-eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:http2-server", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:jetty-http2-client", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:jetty-http2-common", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-hpack = { module = "org.eclipse.jetty.http2:jetty-http2-hpack", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:jetty-http2-client-transport", version.ref = "eclipse-jetty" }
+eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:jetty-http2-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-io = { module = "org.eclipse.jetty:jetty-io", version.ref = "eclipse-jetty" }
 eclipse-jetty-jmx = { module = "org.eclipse.jetty:jetty-jmx", version.ref = "eclipse-jetty" }
 eclipse-jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "eclipse-jetty" }
 eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "eclipse-jetty" }
 eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlets = { module = "org.eclipse.jetty:jetty-servlets", version.ref = "eclipse-jetty" }
+eclipse-jetty-servlet = { module = "org.eclipse.jetty.ee8:jetty-ee8-servlet", version.ref = "eclipse-jetty" }
+eclipse-jetty-servlets = { module = "org.eclipse.jetty.ee8:jetty-ee8-servlets", version.ref = "eclipse-jetty" }
+eclipse-jetty-session = { module = "org.eclipse.jetty:jetty-session", version.ref = "eclipse-jetty" }
 eclipse-jetty-start = { module = "org.eclipse.jetty:jetty-start", version.ref = "eclipse-jetty" }
 eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-servlet-api", version.ref = "eclipse-jettytoolchain" }
 eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
-eclipse-jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp", version.ref = "eclipse-jetty" }
+eclipse-jetty-webapp = { module = "org.eclipse.jetty.ee8:jetty-ee8-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
 fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "fasterxml" }

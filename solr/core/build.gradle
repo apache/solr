@@ -195,6 +195,7 @@ dependencies {
 
   testImplementation libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.servlet
+  testImplementation libs.eclipse.jetty.util
 
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit

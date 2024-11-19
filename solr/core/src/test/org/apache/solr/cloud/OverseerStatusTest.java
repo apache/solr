@@ -24,6 +24,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+// @LogLevel("org.eclipse.jetty=DEBUG")
 public class OverseerStatusTest extends SolrCloudTestCase {
 
   @BeforeClass

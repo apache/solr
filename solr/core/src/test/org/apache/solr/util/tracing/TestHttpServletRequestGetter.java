@@ -27,7 +27,6 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import org.apache.solr.SolrTestCase;
-import org.eclipse.jetty.server.Request;
 import org.junit.Test;
 
 public class TestHttpServletRequestGetter extends SolrTestCase {
@@ -41,7 +40,7 @@ public class TestHttpServletRequestGetter extends SolrTestCase {
             "c", Set.of("2"));
 
     HttpServletRequest req =
-        new HttpServletRequestWrapper(new Request(null, null)) {
+        new HttpServletRequestWrapper(null) {
 
           @Override
           public String getHeader(String name) {
