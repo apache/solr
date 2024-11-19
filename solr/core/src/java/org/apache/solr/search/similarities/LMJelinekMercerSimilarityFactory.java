@@ -16,9 +16,8 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
+import org.apache.lucene.search.similarities.LMSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
@@ -53,17 +52,7 @@ public class LMJelinekMercerSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    return new LMJelinekMercerSimilarity(lambda) {
-      private final Similarity computeNormProxySimilarity = new ClassicSimilarity(discountOverlaps);
-
-      @Override
-      public long computeNorm(FieldInvertState state) {
-        return computeNormProxySimilarity.computeNorm(state);
-      }
-    };
-
-    // TODO: when available, use a constructor with 'discountOverlaps' parameter and remove above
-    // TODO: hack
-    // return new LMJelinekMercerSimilarity(lambda, discountOverlaps);
+    LMSimilarity.CollectionModel model = new LMSimilarity.DefaultCollectionModel();
+    return new LMJelinekMercerSimilarity(model, discountOverlaps, lambda);
   }
 }

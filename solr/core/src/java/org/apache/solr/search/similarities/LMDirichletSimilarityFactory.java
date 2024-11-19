@@ -16,9 +16,8 @@
  */
 package org.apache.solr.search.similarities;
 
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.LMDirichletSimilarity;
+import org.apache.lucene.search.similarities.LMSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
@@ -53,33 +52,13 @@ public class LMDirichletSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    return (mu != null)
-        ? new ComputeNormProxyLMDirichletSimilarity(mu, discountOverlaps)
-        : new ComputeNormProxyLMDirichletSimilarity(discountOverlaps);
 
-    // TODO: when available, use a constructor with 'discountOverlaps' parameter and remove above
-    // TODO: hack
-    // return (mu != null)
-    //     ? new LMDirichletSimilarity(mu, discountOverlaps)
-    //     : new LMDirichletSimilarity(discountOverlaps);
-  }
-
-  private static class ComputeNormProxyLMDirichletSimilarity extends LMDirichletSimilarity {
-    private final Similarity computeNormProxySimilarity;
-
-    private ComputeNormProxyLMDirichletSimilarity(boolean discountOverlaps) {
-      super();
-      computeNormProxySimilarity = new ClassicSimilarity(discountOverlaps);
+    // Default μ is 2000 is Lucene. Unfortunately, there is no constant we can use
+    if (mu == null) {
+      mu = 2000f;
     }
 
-    private ComputeNormProxyLMDirichletSimilarity(float mu, boolean discountOverlaps) {
-      super(mu);
-      computeNormProxySimilarity = new ClassicSimilarity(discountOverlaps);
-    }
-
-    @Override
-    public long computeNorm(FieldInvertState state) {
-      return computeNormProxySimilarity.computeNorm(state);
-    }
+    LMSimilarity.CollectionModel model = new LMSimilarity.DefaultCollectionModel();
+    return new LMDirichletSimilarity(model, discountOverlaps, mu);
   }
 }
