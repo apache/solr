@@ -253,7 +253,7 @@ public class StreamTool extends ToolBase {
    *     locally.
    */
   private PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
     solrClientCache.getCloudSolrClient(zkHost);
@@ -306,7 +306,7 @@ public class StreamTool extends ToolBase {
    */
   private PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
 
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
     if (!cli.hasOption("name")) {
       throw new IllegalStateException(
           "You must provide --name COLLECTION with --worker solr parameter.");

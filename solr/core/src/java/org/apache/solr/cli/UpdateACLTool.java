@@ -59,7 +59,7 @@ public class UpdateACLTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
 
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
     String path = cli.getArgs()[0];
 
     if (!ZkController.checkChrootPath(zkHost, true)) {

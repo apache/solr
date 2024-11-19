@@ -286,7 +286,7 @@ public class RunExampleTool extends ToolBase {
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
-      if (SolrCLI.safeCheckCollectionExists(
+      if (CLIUtils.safeCheckCollectionExists(
           solrUrl, collectionName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         alreadyExists = true;
         echo(
@@ -296,7 +296,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (SolrCLI.safeCheckCoreExists(
+      if (CLIUtils.safeCheckCoreExists(
           solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         alreadyExists = true;
         echo(
@@ -800,7 +800,7 @@ public class RunExampleTool extends ToolBase {
 
         // Test for existence and then prompt to either create another collection or skip the
         // creation step
-        if (SolrCLI.safeCheckCollectionExists(solrUrl, credentials, collectionName)) {
+        if (CLIUtils.safeCheckCollectionExists(solrUrl, credentials, collectionName)) {
           echo("\nCollection '" + collectionName + "' already exists!");
           int oneOrTwo =
               promptForInt(
@@ -856,7 +856,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       // must verify if default collection exists
-      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, credentials)) {
+      if (CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, credentials)) {
         echo(
             "\nCollection '"
                 + collectionName
