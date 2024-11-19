@@ -24,13 +24,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.llm.embedding.SolrEmbeddingModel;
-import org.apache.solr.llm.store.EmbeddingModelException;
 import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
@@ -55,19 +50,13 @@ public class TestLlmBase extends RestTestBase {
   protected static String vectorField2 = "vector2";
   protected static String vectorFieldByteEncoding = "vector_byte_encoding";
 
-  public static void setupTest(
+  protected static void setupTest(
       String solrconfig, String schema, boolean buildIndex, boolean persistModelStore)
       throws Exception {
     initFolders(persistModelStore);
     createJettyAndHarness(
         tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
     if (buildIndex) prepareIndex();
-  }
-
-  public static ManagedEmbeddingModelStore getManagedModelStore() {
-    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
-      return ManagedEmbeddingModelStore.getManagedModelStore(core);
-    }
   }
 
   protected static void initFolders(boolean isPersistent) throws Exception {
@@ -105,10 +94,6 @@ public class TestLlmBase extends RestTestBase {
     System.clearProperty("managed.schema.mutable");
   }
 
-  public static void makeRestTestHarnessNull() {
-    restTestHarness = null;
-  }
-
   /** produces a model encoded in json * */
   public static String getModelInJson(String name, String className, String params) {
     final StringBuilder sb = new StringBuilder();
@@ -129,39 +114,12 @@ public class TestLlmBase extends RestTestBase {
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==0");
   }
 
-  public static void loadModels(String fileName) throws Exception {
+  public static void loadModel(String fileName) throws Exception {
     final URL url = TestLlmBase.class.getResource("/modelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
         ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
-  }
-
-  public static SolrEmbeddingModel createModelFromFiles(
-      String modelFileName, String featureFileName) throws EmbeddingModelException, Exception {
-    return createModelFromFiles(modelFileName, featureFileName);
-  }
-
-  public static SolrEmbeddingModel createModelFromFiles(String modelFileName) throws Exception {
-    URL url = TestLlmBase.class.getResource("/modelExamples/" + modelFileName);
-    final String modelJson = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
-    final ManagedEmbeddingModelStore ms = getManagedModelStore();
-
-    final SolrEmbeddingModel model =
-        ManagedEmbeddingModelStore.fromEmbeddingModelMap(mapFromJson(modelJson));
-    ms.addModel(model);
-    return model;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> mapFromJson(String json) throws EmbeddingModelException {
-    Object parsedJson = null;
-    try {
-      parsedJson = Utils.fromJSONString(json);
-    } catch (final Exception ioExc) {
-      throw new EmbeddingModelException("ObjectBuilder failed parsing json", ioExc);
-    }
-    return (Map<String, Object>) parsedJson;
   }
 
   protected static void prepareIndex() throws Exception {
@@ -227,37 +185,6 @@ public class TestLlmBase extends RestTestBase {
     docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
     docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18, 2, 4, 4));
     docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8, 3, 2, 4));
-
-    return docs;
-  }
-
-  protected static void indexWithEmbeddingGeneration() throws Exception {
-    List<SolrInputDocument> docsToIndex = prepareTextualDocs();
-    for (SolrInputDocument doc : docsToIndex) {
-      assertU(adoc(doc));
-    }
-
-    assertU(commit());
-  }
-
-  private static List<SolrInputDocument> prepareTextualDocs() {
-    int docsCount = 5;
-    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
-    for (int i = 1; i < docsCount + 1; i++) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField(IDField, i);
-      docs.add(doc);
-    }
-
-    docs.get(0)
-        .addField(
-            stringField, "Vegeta is the prince of all saiyans"); // cosine distance vector1= 1.0
-    docs.get(1)
-        .addField(
-            stringField, "Goku is a saiyan raised on earth"); // cosine distance vector1= 0.998
-    docs.get(2).addField(stringField, "Gohan is a saiyaman, son of Goku");
-    docs.get(3).addField(stringField, "Goten is a saiyaman, second son son of Goku");
-    docs.get(4).addField(stringField, "Trunks is a saiyaman, second son son of Vegeta");
 
     return docs;
   }

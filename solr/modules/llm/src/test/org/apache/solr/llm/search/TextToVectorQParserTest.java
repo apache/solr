@@ -26,7 +26,7 @@ public class TextToVectorQParserTest extends TestLlmBase {
   @BeforeClass
   public static void init() throws Exception {
     setupTest("solrconfig-llm.xml", "schema.xml", true, false);
-    loadModels("dummy-model.json");
+    loadModel("dummy-model.json");
   }
 
   @Test
