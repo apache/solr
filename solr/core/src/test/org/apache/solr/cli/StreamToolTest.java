@@ -227,7 +227,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     String[] args =
         new String[] {
           "stream",
-          "-e",
+          "--execution",
           "remote",
           "--name",
           "fakeCollection",
@@ -246,7 +246,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     String[] args =
         new String[] {
           "stream",
-          "-e",
+          "--execution",
           "local",
           "-v",
           "-z",
@@ -269,7 +269,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     // notice that we do not pass in zkHost or solrUrl for a simple echo run locally.
     String[] args = {
       "stream",
-      "-e",
+      "--execution",
       "local",
       "--verbose",
       "-zk-host",
@@ -313,7 +313,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     // test passing in the file
     String[] args = {
       "stream",
-      "-e",
+      "--execution",
       "remote",
       "-c",
       collectionName,

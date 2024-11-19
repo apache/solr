@@ -91,9 +91,9 @@ List of options:
  -c,--name <NAME>                   Name of the specific collection to execute expression on if the execution is set
                                     to 'remote'. Required for 'remote' execution environment.
     --delimiter <CHARACTER>         The output delimiter. Default to using three spaces.
- -e,--execution <ENVIRONMENT>       Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr
+    --execution <ENVIRONMENT>       Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr
                                     server. Default environment is 'remote'.
- -f,--fields <FIELDS>               The fields in the tuples to output. Defaults to fields in the first tuple of result
+    --fields <FIELDS>               The fields in the tuples to output. Defaults to fields in the first tuple of result
                                     set.
  -h,--help                          Print this message.
     --header                        Specify to include a header line.
