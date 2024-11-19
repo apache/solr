@@ -217,8 +217,7 @@ public class StreamTool extends ToolBase {
 
               Object o = tuple.get(outputHeaders[i]);
               if (o != null) {
-                if (o instanceof List) {
-                  List outfields = (List) o;
+                if (o instanceof List outfields) {
                   outLine.append(listToString(outfields, arrayDelimiter));
                 } else {
                   outLine.append(o);
@@ -278,7 +277,7 @@ public class StreamTool extends ToolBase {
 
     Lang.register(streamFactory);
 
-    stream = StreamTool.constructStream(streamFactory, streamExpression);
+    stream = streamFactory.constructStream(streamExpression);
 
     pushBackStream = new PushBackStream(stream);
 
@@ -436,11 +435,13 @@ public class StreamTool extends ToolBase {
 
     @Override
     public void setStreamContext(StreamContext context) {
-      // LocalCatStream has no Solr core to pull from the context
+      // LocalCatStream inherently has no Solr core to pull from the context
     }
 
     @Override
     protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
+      // The nature of LocalCatStream is that we don't stick to the sandboxed "userfiles" directory
+      // the way the CatStream does.
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
       for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
         Path crawlRootPath = Paths.get(crawlRootStr).normalize();
@@ -482,11 +483,6 @@ public class StreamTool extends ToolBase {
     }
 
     return buf.toString();
-  }
-
-  private static TupleStream constructStream(
-      StreamFactory streamFactory, StreamExpression streamExpression) throws IOException {
-    return streamFactory.constructStream(streamExpression);
   }
 
   static String readExpression(LineNumberReader bufferedReader, String[] args) throws IOException {

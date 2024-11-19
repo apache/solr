@@ -224,9 +224,4 @@ public class LetStream extends TupleStream implements Expressible {
   public int getCost() {
     return 0;
   }
-
-  @SuppressWarnings({"rawtypes"})
-  public Map getLetParams() {
-    return this.letParams;
-  }
 }
