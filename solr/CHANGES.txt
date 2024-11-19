@@ -123,6 +123,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
 
+* SOLR-17504: CoreContainer calls UpdateHandler.commit when closing a read-only core (Bruno Roustant)
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------
