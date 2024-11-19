@@ -501,7 +501,7 @@ public class StreamTool extends ToolBase {
         continue;
       }
 
-      if (line.trim().indexOf("*/") == 0) {
+      if (line.trim().indexOf("*/") > -1) {
         comment = false;
         continue;
       }
