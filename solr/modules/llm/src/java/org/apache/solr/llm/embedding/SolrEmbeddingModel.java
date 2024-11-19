@@ -26,7 +26,12 @@ import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.llm.store.EmbeddingModelException;
+import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
 
+/**
+ * This object wraps a {@link dev.langchain4j.model.embedding.EmbeddingModel} to encode text to
+ * vector. It's meant to be used as a managed resource with the {@link ManagedEmbeddingModelStore}
+ */
 public class SolrEmbeddingModel implements Accountable {
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(SolrEmbeddingModel.class);
