@@ -40,6 +40,7 @@ grant {
   
   // Needed by org.apache.solr.handler.component.UBIComponentTest
   permission java.io.FilePermission "${common-solr.dir}/core/build/resources/test/solr/userfiles/ubi_queries.jsonl", "write";
+  permission java.io.FilePermission "/tmp/src/solr/solr/core/build/resources/test/solr/userfile", "write";
 
   permission java.nio.file.LinkPermission "hard";
 
