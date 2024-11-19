@@ -100,8 +100,13 @@ public class StreamToolTest extends SolrCloudTestCase {
     buf.println("/*");
     buf.println("Multi-line comment Comment...");
     buf.println("*/");
+    buf.println("  /*");
+    buf.println("Multi-line comment Comment...");
+    buf.println("  */");
     buf.println("// Single line comment");
     buf.println("# Single line comment");
+    buf.println(" // Single line comment");
+    buf.println(" # Single line comment");
     buf.println("let(a=$1, b=$2,");
     buf.println("search($3))");
     buf.println(")");

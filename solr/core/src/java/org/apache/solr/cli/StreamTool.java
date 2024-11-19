@@ -77,7 +77,7 @@ public class StreamTool extends ToolBase {
   @Override
   public String getUsage() {
     // Specify that the last argument is the streaming expression
-    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f\n"
+    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields\n"
         + "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
   }
 
@@ -496,17 +496,17 @@ public class StreamTool extends ToolBase {
         break;
       }
 
-      if (line.indexOf("/*") == 0) {
+      if (line.trim().indexOf("/*") == 0) {
         comment = true;
         continue;
       }
 
-      if (line.indexOf("*/") == 0) {
+      if (line.trim().indexOf("*/") == 0) {
         comment = false;
         continue;
       }
 
-      if (comment || line.startsWith("#") || line.startsWith("//")) {
+      if (comment || line.trim().startsWith("#") || line.trim().startsWith("//")) {
         continue;
       }
 
