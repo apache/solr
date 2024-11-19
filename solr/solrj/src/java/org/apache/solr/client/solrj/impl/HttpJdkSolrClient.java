@@ -138,7 +138,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   public CompletableFuture<NamedList<Object>> requestAsync(
       final SolrRequest<?> solrRequest, String collection) {
     try {
-      PreparedRequest pReq = prepareRequest(solrRequest, collection);
+      PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
       return httpClient
           .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
           .thenApply(
@@ -157,10 +157,10 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-  @Override
-  public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
+  protected NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    PreparedRequest pReq = prepareRequest(solrRequest, collection);
+    PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
     HttpResponse<InputStream> response = null;
     try {
       response = httpClient.send(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
@@ -173,8 +173,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
           "Timeout occurred while waiting response from server at: " + pReq.url, e);
     } catch (SolrException se) {
       throw se;
-    } catch (RuntimeException re) {
-      throw new SolrServerException(re);
+    } catch (RuntimeException e) {
+      throw new SolrServerException(e);
     } finally {
       if (pReq.contentWritingFuture != null) {
         pReq.contentWritingFuture.cancel(true);
@@ -192,13 +192,25 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-  private PreparedRequest prepareRequest(SolrRequest<?> solrRequest, String collection)
+  @Override
+  public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException {
+    return requestWithBaseUrl(null, solrRequest, collection);
+  }
+
+  private PreparedRequest prepareRequest(
+      SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
       throws SolrServerException, IOException {
     checkClosed();
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
-    String url = getRequestUrl(solrRequest, collection);
+    String url;
+    if (overrideBaseUrl != null) {
+      url = ClientUtils.buildRequestUrl(solrRequest, overrideBaseUrl, collection);
+    } else {
+      url = getRequestUrl(solrRequest, collection);
+    }
     ResponseParser parserToUse = responseParser(solrRequest);
     ModifiableSolrParams queryParams = initializeSolrParams(solrRequest, parserToUse);
     var reqb = HttpRequest.newBuilder();
