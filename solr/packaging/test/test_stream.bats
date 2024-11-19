@@ -94,7 +94,7 @@ teardown() {
   echo 'sort="price desc"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
 
-  run solr stream --execution local --header ${solr_stream_file}
+  run ! solr stream --execution local --header ${solr_stream_file}
 
   assert_output --partial 'ERROR'
 }
