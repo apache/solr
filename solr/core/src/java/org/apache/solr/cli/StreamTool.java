@@ -440,7 +440,7 @@ public class StreamTool extends ToolBase {
     }
 
     @Override
-    protected List<CrawlFile> validateAndSetFilepathsInSandbox() {
+    protected List<CrawlFile> validateAndSetFilepathsInSandbox(String commaDelimitedFilepaths) {
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
       for (String crawlRootStr : commaDelimitedFilepaths.split(",")) {
         Path crawlRootPath = Paths.get(crawlRootStr).normalize();
