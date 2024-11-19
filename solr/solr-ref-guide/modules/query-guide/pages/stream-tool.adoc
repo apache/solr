@@ -59,7 +59,7 @@ search(
   techproducts,
   q="name:memory",
   fl="name,price",
-  sort="price $1"
+  sort="price desc"
 )
 
 // the end
@@ -71,7 +71,7 @@ Then you can run it on the Solr collection `techproducts`, specifying you want a
 
 [,console]
 ----
-$ bin/solr stream --header -c techproducts stream.expr desc
+$ bin/solr stream --header -c techproducts stream.expr
 ----
 
 And this will produce:
