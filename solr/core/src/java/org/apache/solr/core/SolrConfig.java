@@ -817,6 +817,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final String commitPollInterval;
     public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
@@ -832,7 +833,8 @@ public class SolrConfig implements MapSerializable {
         boolean openSearcher,
         int autoSoftCommmitMaxDocs,
         int autoSoftCommmitMaxTime,
-        boolean commitWithinSoftCommit) {
+        boolean commitWithinSoftCommit,
+        String commitPollInterval) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
@@ -843,6 +845,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.commitPollInterval = commitPollInterval;
       this.aggregateNodeLevelMetricsEnabled = false;
     }
 
@@ -858,6 +861,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
       this.commitWithinSoftCommit =
           updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.commitPollInterval = updateHandler.get("commitPollInterval").txt();
       this.aggregateNodeLevelMetricsEnabled =
           updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
@@ -874,6 +878,7 @@ public class SolrConfig implements MapSerializable {
       map.put(
           "autoSoftCommit",
           Map.of("maxDocs", autoSoftCommmitMaxDocs, "maxTime", autoSoftCommmitMaxTime));
+      map.put("commitPollInterval", commitPollInterval);
       return map;
     }
   }
