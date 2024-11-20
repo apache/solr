@@ -194,7 +194,7 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           try {
-            zkHost = SolrCLI.getZkHost(cli);
+            zkHost = CLIUtils.getZkHost(cli);
           } catch (Exception ex) {
             CLIO.out(
                 "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
@@ -214,7 +214,7 @@ public class AuthTool extends ToolBase {
 
           // check if security is already enabled or not
           if (!zkInaccessible) {
-            try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+            try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
               checkSecurityJsonExists(zkClient);
             } catch (Exception ex) {
               CLIO.out(
@@ -229,7 +229,7 @@ public class AuthTool extends ToolBase {
         if (!updateIncludeFileOnly) {
           if (!zkInaccessible) {
             echoIfVerbose("Uploading following security.json: " + securityJson);
-            try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+            try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             } catch (Exception ex) {
@@ -309,7 +309,7 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           try {
-            zkHost = SolrCLI.getZkHost(cli);
+            zkHost = CLIUtils.getZkHost(cli);
           } catch (Exception ex) {
             if (cli.hasOption(CommonCLIOptions.ZK_HOST_OPTION)) {
               CLIO.out(
@@ -332,7 +332,7 @@ public class AuthTool extends ToolBase {
           }
 
           // check if security is already enabled or not
-          try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+          try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
             checkSecurityJsonExists(zkClient);
           }
         }
@@ -381,7 +381,7 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           echoIfVerbose("Uploading following security.json: " + securityJson);
-          try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+          try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
             zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
           }
         }
@@ -460,7 +460,7 @@ public class AuthTool extends ToolBase {
   private void clearSecurityJson(CommandLine cli, boolean updateIncludeFileOnly) throws Exception {
     String zkHost;
     if (!updateIncludeFileOnly) {
-      zkHost = SolrCLI.getZkHost(cli);
+      zkHost = CLIUtils.getZkHost(cli);
       if (zkHost == null) {
         stdout.print("ZK Host not found. Solr should be running in cloud mode.");
         SolrCLI.exit(1);
@@ -468,7 +468,7 @@ public class AuthTool extends ToolBase {
 
       echoIfVerbose("Uploading following security.json: {}");
 
-      try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
+      try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
         zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
       }
     }

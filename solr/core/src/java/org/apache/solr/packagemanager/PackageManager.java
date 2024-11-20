@@ -40,6 +40,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.solr.cli.CLIUtils;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
@@ -680,7 +681,7 @@ public class PackageManager implements Closeable {
     boolean shouldExecute = true;
     if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
       PackageUtils.print(
-          SolrCLI.YELLOW,
+          CLIUtils.YELLOW,
           "Execute this command. (If you choose no, you can manually deploy/undeploy this plugin later) (y/n): ");
       try (Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8)) {
         String userInput = scanner.next();
@@ -954,7 +955,7 @@ public class PackageManager implements Closeable {
             shouldInstallClusterPlugins,
             parameters);
     PackageUtils.print(
-        res ? SolrCLI.GREEN : SolrCLI.RED, res ? "Deployment successful" : "Deployment failed");
+        res ? CLIUtils.GREEN : CLIUtils.RED, res ? "Deployment successful" : "Deployment failed");
   }
 
   /** Undeploys a package from given collections. */
