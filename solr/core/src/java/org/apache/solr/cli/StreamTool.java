@@ -229,11 +229,7 @@ public class StreamTool extends ToolBase {
         }
       }
     } finally {
-
-      if (pushBackStream != null) {
-        pushBackStream.close();
-      }
-
+      pushBackStream.close();
       solrClientCache.close();
     }
 
@@ -305,7 +301,7 @@ public class StreamTool extends ToolBase {
    */
   private PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
 
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
     if (!cli.hasOption(COLLECTION_OPTION)) {
       throw new IllegalStateException(
           "You must provide --name COLLECTION with --execution remote parameter.");
@@ -440,7 +436,8 @@ public class StreamTool extends ToolBase {
 
     @Override
     protected List<CrawlFile> validateAndSetFilepathsInSandbox() {
-      // The nature of LocalCatStream is that we are not limited to the sandboxed "userfiles" directory
+      // The nature of LocalCatStream is that we are not limited to the sandboxed "userfiles"
+      // directory
       // the way the CatStream does.
 
       final List<CrawlFile> crawlSeeds = new ArrayList<>();
@@ -502,7 +499,7 @@ public class StreamTool extends ToolBase {
         continue;
       }
 
-      if (line.trim().indexOf("*/") > -1) {
+      if (line.trim().contains("*/")) {
         comment = false;
         continue;
       }
