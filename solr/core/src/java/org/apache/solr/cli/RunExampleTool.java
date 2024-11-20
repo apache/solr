@@ -277,7 +277,7 @@ public class RunExampleTool extends ToolBase {
     Map<String, Object> nodeStatus =
         startSolr(new File(serverDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
-    String solrUrl = SolrCLI.normalizeSolrUrl((String) nodeStatus.get("baseUrl"));
+    String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"));
 
     // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.
@@ -363,7 +363,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
       try (SolrClient solrClient =
-          SolrCLI.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+          CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
@@ -548,7 +548,7 @@ public class RunExampleTool extends ToolBase {
             new File(cloudDir, "node" + (n + 1) + "/solr"), true, cli, cloudPorts[n], zkHost, 30);
     }
 
-    String solrUrl = SolrCLI.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
+    String solrUrl = CLIUtils.normalizeSolrUrl((String) nodeStatus.get("baseUrl"), false);
 
     // wait until live nodes == numNodes
     waitToSeeLiveNodes(zkHost, numNodes);
