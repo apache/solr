@@ -98,7 +98,7 @@ public class ConfigTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String solrUrl = CLIUtils.normalizeSolrUrl(cli);
     String action = cli.getOptionValue(ACTION_OPTION, "set-property");
     String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
     String property = cli.getOptionValue(PROPERTY_OPTION);
@@ -127,7 +127,7 @@ public class ConfigTool extends ToolBase {
     echoIfVerbose(jsonBody);
 
     try (SolrClient solrClient =
-        SolrCLI.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+        CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
       if (statusCode == 0) {

@@ -47,7 +47,7 @@ public final class CommonCLIOptions {
           .argName("HOST")
           .desc(
               "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
-                  + SolrCLI.getDefaultSolrUrl()
+                  + CLIUtils.getDefaultSolrUrl()
                   + '.')
           .build();
 
