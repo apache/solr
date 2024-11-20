@@ -78,7 +78,7 @@ public class LinkConfigTool extends ToolBase {
 
     String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
     String confName = cli.getOptionValue(CONF_NAME_OPTION);
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
