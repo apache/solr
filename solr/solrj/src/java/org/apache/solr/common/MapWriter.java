@@ -18,7 +18,6 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -158,5 +157,9 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
     }
   }
 
-  MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
+  /**
+   * @deprecated Use {@link MapWriters#EMPTY} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
+  MapWriter EMPTY = MapWriters.EMPTY;
 }
