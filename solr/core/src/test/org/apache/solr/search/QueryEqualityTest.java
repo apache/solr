@@ -36,8 +36,8 @@ import org.junit.BeforeClass;
  * new default QParser or ValueSourceParser, you will most likely get a failure from {@link
  * #testParserCoverage} until you add a new test method to this class.
  *
- * @see ValueSourceParser#standardValueSourceParsers
- * @see QParserPlugin#standardPlugins
+ * @see ValueSourceParsers#standardValueSourceParsers
+ * @see QParserPlugins#standardPlugins
  * @see QueryUtils
  */
 public class QueryEqualityTest extends SolrTestCaseJ4 {
@@ -54,13 +54,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public static void afterClassParserCoverageTest() {
 
     if (!doAssertParserCoverage) return;
-    for (String name : QParserPlugin.standardPlugins.keySet()) {
+    for (String name : QParserPlugins.standardPlugins.keySet()) {
       assertTrue(
           "testParserCoverage was run w/o any other method explicitly testing qparser: " + name,
           qParsersTested.contains(name));
     }
 
-    for (final String name : ValueSourceParser.standardValueSourceParsers.keySet()) {
+    for (final String name : ValueSourceParsers.standardValueSourceParsers.keySet()) {
       assertTrue(
           "testParserCoverage was run w/o any other method explicitly testing val parser: " + name,
           valParsersTested.contains(name));

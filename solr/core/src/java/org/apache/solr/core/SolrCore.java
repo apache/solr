@@ -144,6 +144,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QParserPlugins;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
@@ -1128,7 +1129,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       initIndex(prev != null, reload);
 
       initWriters();
-      qParserPlugins.init(QParserPlugin.standardPlugins, this);
+      qParserPlugins.init(QParserPlugins.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
