@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -367,11 +368,10 @@ public class StreamTool extends ToolBase {
       }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Tuple read() throws IOException {
       String line = reader.readLine();
-      HashMap map = new HashMap();
+      Map<String,?> map = new HashMap<>();
       Tuple tuple = new Tuple(map);
       if (line != null) {
         tuple.put("line", line);
