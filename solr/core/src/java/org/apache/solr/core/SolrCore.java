@@ -148,6 +148,7 @@ import org.apache.solr.search.QParserPlugins;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.ValueSourceParsers;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
@@ -1130,7 +1131,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       initWriters();
       qParserPlugins.init(QParserPlugins.standardPlugins, this);
-      valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
+      valueSourceParsers.init(ValueSourceParsers.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       loadSearchComponents();
       updateProcessors.init(Collections.emptyMap(), this);

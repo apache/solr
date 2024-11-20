@@ -398,7 +398,7 @@ public class FunctionQParser extends QParser {
     if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
       Number num = sp.getNumber();
       if (num instanceof Long) {
-        valueSource = new ValueSourceParser.LongConstValueSource(num.longValue());
+        valueSource = new ValueSourceParsers.LongConstValueSource(num.longValue());
       } else if (num instanceof Double) {
         valueSource = new DoubleConstValueSource(num.doubleValue());
       } else {
@@ -482,9 +482,9 @@ public class FunctionQParser extends QParser {
         sp.expect(")");
       } else {
         if ("true".equals(id)) {
-          valueSource = ValueSourceParser.BoolConstValueSource.TRUE;
+          valueSource = ValueSourceParsers.BoolConstValueSource.TRUE;
         } else if ("false".equals(id)) {
-          valueSource = ValueSourceParser.BoolConstValueSource.FALSE;
+          valueSource = ValueSourceParsers.BoolConstValueSource.FALSE;
         } else {
           if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0) {
             // Don't try to create a ValueSource for the field, just use a placeholder.
