@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter.Range;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -38,7 +39,7 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 public class TestHashPartitioner extends SolrTestCaseJ4 {
 
   public void testMapHashes() {
-    DocRouter hp = DocRouter.DEFAULT;
+    DocRouter hp = DocRouters.DEFAULT;
     List<Range> ranges;
 
     // make sure the partitioner uses the "natural" boundaries and doesn't suffer from an off-by-one
@@ -118,7 +119,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   }
 
   public void testHashCodes() {
-    DocRouter router = DocRouter.getDocRouter(PlainIdRouter.NAME);
+    DocRouter router = DocRouters.getDocRouter(PlainIdRouter.NAME);
     assertTrue(router instanceof PlainIdRouter);
     DocCollection coll = createCollection(4, router);
     doNormalIdHashing(coll);
@@ -161,9 +162,9 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   }
 
   public void testCompositeHashCodes() {
-    DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
+    DocRouter router = DocRouters.getDocRouter(CompositeIdRouter.NAME);
     assertTrue(router instanceof CompositeIdRouter);
-    router = DocRouter.DEFAULT;
+    router = DocRouters.DEFAULT;
     assertTrue(router instanceof CompositeIdRouter);
 
     DocCollection coll = createCollection(4, router);
@@ -203,7 +204,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
   /** Make sure CompositeIdRouter doesn't throw exceptions for non-conforming IDs */
   public void testNonConformingCompositeIds() throws Exception {
-    DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
+    DocRouter router = DocRouters.getDocRouter(CompositeIdRouter.NAME);
     DocCollection coll = createCollection(4, router);
     String[] ids = {
       "A!B!C!D",
@@ -229,7 +230,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
   /** Make sure CompositeIdRouter can route random IDs without throwing exceptions */
   public void testRandomCompositeIds() throws Exception {
-    DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
+    DocRouter router = DocRouters.getDocRouter(CompositeIdRouter.NAME);
     DocCollection coll = createCollection(TestUtil.nextInt(random(), 1, 10), router);
     StringBuilder idBuilder = new StringBuilder();
     for (int i = 0; i < 10000; ++i) {

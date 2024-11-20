@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -39,7 +39,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       assertEquals(1, clusterState.size());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
-      assertEquals(DocRouter.DEFAULT, collection1.getRouter());
+      assertEquals(DocRouters.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
       assertEquals(1, collection1.getSlices().size());
       Slice slice1 = collection1.getSlice("slice1");
@@ -65,7 +65,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       assertEquals(1, clusterState.size());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
-      assertEquals(DocRouter.DEFAULT, collection1.getRouter());
+      assertEquals(DocRouters.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
       assertEquals(1, collection1.getSlices().size());
       Slice slice1 = collection1.getSlice("slice1");
@@ -86,7 +86,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       assertEquals(1, clusterState.size());
       DocCollection collection1 = clusterState.getCollectionOrNull("collection1");
       assertNotNull(collection1);
-      assertEquals(DocRouter.DEFAULT, collection1.getRouter());
+      assertEquals(DocRouters.DEFAULT, collection1.getRouter());
       assertEquals(1, collection1.getActiveSlices().size());
       assertEquals(1, collection1.getSlices().size());
       Slice slice1 = collection1.getSlice("slice1");

@@ -51,7 +51,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -113,7 +113,7 @@ public class CollectionHandlingUtils {
     Map<String, Object> propsAndDefaults =
         Utils.makeMap(
             CollectionStateProps.DOC_ROUTER,
-            (Object) DocRouter.DEFAULT_NAME,
+            (Object) DocRouters.DEFAULT_NAME,
             CollectionStateProps.REPLICATION_FACTOR,
             "1",
             CollectionStateProps.PER_REPLICA_STATE,

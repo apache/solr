@@ -45,7 +45,7 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
@@ -151,7 +151,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 "c1",
                 new HashMap<>(),
                 Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                DocRouter.DEFAULT,
+                DocRouters.DEFAULT,
                 0,
                 Instant.now(),
                 PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -179,7 +179,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -199,7 +199,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             props,
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -241,7 +241,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -284,7 +284,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                 ConfigSetsHandler.DEFAULT_CONFIGSET_NAME,
                 DocCollection.CollectionStateProps.PER_REPLICA_STATE,
                 "true"),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -405,7 +405,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -428,7 +428,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             ref.get().getZNodeVersion(),
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -452,7 +452,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c2",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -493,7 +493,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             null);
@@ -515,7 +515,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             ref.get().getZNodeVersion(),
             Instant.now(),
             null);
@@ -538,7 +538,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c2",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             null);
@@ -575,7 +575,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c1",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -586,7 +586,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             "c2",
             new HashMap<>(),
             Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -642,7 +642,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
                         Map.of(
                             ZkStateReader.CONFIGNAME_PROP,
                             ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-                        DocRouter.DEFAULT,
+                        DocRouters.DEFAULT,
                         currentVersion,
                         Instant.now(),
                         PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -751,7 +751,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
               "c1",
               new HashMap<>(),
               Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT,
+              DocRouters.DEFAULT,
               dataVersion,
               Instant.now(),
               PerReplicaStatesOps.getZkClientPrsSupplier(
@@ -794,7 +794,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             collectionName,
             Map.of(sliceName, slice),
             Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
-            DocRouter.DEFAULT,
+            DocRouters.DEFAULT,
             0,
             Instant.now(),
             PerReplicaStatesOps.getZkClientPrsSupplier(

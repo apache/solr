@@ -48,6 +48,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -255,7 +256,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, coll.getActiveSlices().size());
     DocRouter router = coll.getRouter();
     if (router == null) {
-      router = DocRouter.DEFAULT;
+      router = DocRouters.DEFAULT;
     }
 
     String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, coll.getConfigName());

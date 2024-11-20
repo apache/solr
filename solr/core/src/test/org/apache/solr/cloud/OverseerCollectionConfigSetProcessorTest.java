@@ -61,7 +61,7 @@ import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -687,7 +687,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
                       collName,
                       new HashMap<>(),
                       props.getProperties(),
-                      DocRouter.DEFAULT,
+                      DocRouters.DEFAULT,
                       0,
                       Instant.EPOCH,
                       distribStateManagerMock.getPrsSupplier(collName))));

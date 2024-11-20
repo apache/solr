@@ -19,13 +19,11 @@ package org.apache.solr.common.cloud;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cluster.api.HashRange;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.params.SolrParams;
@@ -38,14 +36,24 @@ import org.noggit.JSONWriter;
  * @lucene.experimental
  */
 public abstract class DocRouter {
-  public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
-  public static final DocRouter DEFAULT;
+  /**
+   * @deprecated Use {@link DocRouters#DEFAULT_NAME} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
+  public static final String DEFAULT_NAME = DocRouters.DEFAULT_NAME;
 
+  /**
+   * @deprecated Use {@link DocRouters#DEFAULT} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
+  public static final DocRouter DEFAULT = DocRouters.DEFAULT;
+
+  /**
+   * @deprecated Use {@link DocRouters#getDocRouter(String)} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static DocRouter getDocRouter(String routerName) {
-    DocRouter router = routerMap.get(routerName);
-    if (router != null) return router;
-    throw new SolrException(
-        SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '" + routerName + "'");
+    return DocRouters.getDocRouter(routerName);
   }
 
   public String getRouteField(DocCollection coll) {
@@ -67,23 +75,6 @@ public abstract class DocRouter {
       map.put("name", DEFAULT_NAME);
     }
     return map;
-  }
-
-  // currently just an implementation detail...
-  private static final Map<String, DocRouter> routerMap;
-
-  static {
-    routerMap = new HashMap<>();
-    PlainIdRouter plain = new PlainIdRouter();
-    // instead of doing back compat this way, we could always convert the clusterstate on first read
-    // to "plain" if it doesn't have any properties.
-    routerMap.put(null, plain); // back compat with 4.0
-    routerMap.put(PlainIdRouter.NAME, plain);
-    routerMap.put(CompositeIdRouter.NAME, new CompositeIdRouter());
-    routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
-    // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
-
-    DEFAULT = routerMap.get(DEFAULT_NAME);
   }
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
