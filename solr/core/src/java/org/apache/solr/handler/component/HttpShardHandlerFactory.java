@@ -84,7 +84,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   protected volatile Http2SolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
-  protected LBHttp2SolrClient loadbalancer;
+  protected LBHttp2SolrClient<Http2SolrClient> loadbalancer;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -314,7 +314,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
+    this.loadbalancer = new LBHttp2SolrClient.Builder<Http2SolrClient>(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 

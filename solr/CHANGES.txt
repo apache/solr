@@ -32,6 +32,8 @@ Improvements
 
 * SOLR-17495: Change Solr CLI delete command to not delete configs by default.  Decouple lifecycle of collections from configsets. (Eric Pugh)
 
+* SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
+
 Optimizations
 ---------------------
 (No changes)
@@ -71,7 +73,7 @@ Deprecation Removals
   in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
 
 * SOLR-14763: Remove deprecated asynchronous request methods from `Http2SolrClient`, `HttpJdkSolrClient` and `LBHttp2SolrClient`
-  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
+  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and `Cancellable`
   (James Dyer)
 
 * SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
@@ -236,6 +238,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
   and forEachCollection, which are now deprecated. (David Smiley)
 
 * SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
+
+* SOLR-17504: CoreContainer calls UpdateHandler.commit when closing a read-only core (Bruno Roustant)
 
 ==================  9.7.1 ==================
 Bug Fixes
