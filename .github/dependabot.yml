@@ -1,0 +1,67 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # 1. Security updates (daily, no PR limit)
+  # This configuration is used for security-critical dependency updates.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[SECURITY]"
+    labels:
+      - "dependencies"
+      - "security"
+
+  # 2. Non-security updates (bi-weekly, max 100 PRs)
+  # This configuration is used for regular dependency updates.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day:
+        - "tuesday"
+        - "friday"
+    commit-message:
+      prefix: "[DEPENDENCY]"
+    labels:
+      - "dependencies"
+      - "non-security"
+    open-pull-requests-limit: 100
+    groups:
+      # Group calcite dependencies together in same PR
+      calcite:
+        patterns:
+          - "org.apache.calcite*"
+      # Group httpcomponents dependencies together in same PR
+      httpcomponents:
+        patterns:
+          - "org.apache.httpcomponents*"
+    ignore:
+      # Ignore noisy dependencies in weekly checks
+      - dependency-name: "software.amazon.awssdk*"
+      - dependency-name: "com.google.cloud*"
+      # Ignore major version upgrades for Jetty (requires manual update)
+      - dependency-name: "org.eclipse.jetty*"
+        update-types: ["version-update:semver-major"]
+
+  # 3. Noisy non-security updates (monthly, max 100 PRs)
+  # This configuration is used for all dependencies with very frequent updates.
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "[DEPENDENCY]"
+    labels:
+      - "dependencies"
+      - "non-security"
+    open-pull-requests-limit: 100
+    allow:
+      #  Dependencies added here have to be ignored in 2. configuration
+      - dependency-name: "software.amazon.awssdk*"
+      - dependency-name: "com.google.cloud*"
