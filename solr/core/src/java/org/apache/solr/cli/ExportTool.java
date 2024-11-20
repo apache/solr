@@ -284,7 +284,7 @@ public class ExportTool extends ToolBase {
         throw new IllegalArgumentException(
             "Must specify -c / --name parameter with --solr-url to post documents.");
       }
-      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
       // think about support --zk-host someday.
@@ -662,7 +662,7 @@ public class ExportTool extends ToolBase {
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
-        try (SolrClient client = SolrCLI.getSolrClient(baseurl, credentials)) {
+        try (SolrClient client = CLIUtils.getSolrClient(baseurl, credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
           QueryRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();

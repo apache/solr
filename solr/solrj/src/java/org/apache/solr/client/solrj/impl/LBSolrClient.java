@@ -498,6 +498,8 @@ public abstract class LBSolrClient extends SolrClient {
     // the appropriate URL is provided.
     if (solrClient instanceof Http2SolrClient httpSolrClient) {
       return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+    } else if (solrClient instanceof HttpJdkSolrClient) {
+      return ((HttpJdkSolrClient) solrClient).requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
     // Assume provided client already uses 'baseUrl'
@@ -728,11 +730,20 @@ public abstract class LBSolrClient extends SolrClient {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           moveAliveToDead(wrapper);
-          if (justFailed == null) justFailed = new HashMap<>();
+          if (justFailed == null) {
+            justFailed = new HashMap<>();
+          }
           justFailed.put(endpoint.getUrl(), wrapper);
         } else {
           throw e;
         }
+      } catch (IOException e) {
+        ex = e;
+        moveAliveToDead(wrapper);
+        if (justFailed == null) {
+          justFailed = new HashMap<>();
+        }
+        justFailed.put(endpoint.getUrl(), wrapper);
       } catch (Exception e) {
         throw new SolrServerException(e);
       }
