@@ -256,9 +256,9 @@ public class StreamTool extends ToolBase {
     String zkHost = CLIUtils.getZkHost(cli);
 
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    solrClientCache.getCloudSolrClient(zkHost);
     solrClientCache.setBasicAuthCredentials(
         cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
+    solrClientCache.getCloudSolrClient(zkHost);
 
     TupleStream stream;
     PushBackStream pushBackStream;
