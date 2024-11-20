@@ -61,10 +61,12 @@ jobs:
         run: ./gradlew updateLicenses
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5.0.1
-        with:
-          commit_message: Write locks and update checksums
-          branch: ${{ github.head_ref }}
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Write locks and update checksums"
+          git push origin ${{ github.head_ref }}
 
   test:
     name: gradle check
