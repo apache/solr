@@ -55,7 +55,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -430,7 +430,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   }
 
   private int waitForAliasesUpdate(int lastVersion, ZkStateReader zkStateReader) throws Exception {
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       zkStateReader.aliasesManager.update();
       Aliases aliases = zkStateReader.getAliases();

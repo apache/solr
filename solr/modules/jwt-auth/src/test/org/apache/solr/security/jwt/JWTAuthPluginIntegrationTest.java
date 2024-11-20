@@ -61,7 +61,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RTimer;
@@ -479,7 +479,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     Utils.consumeFully(r.getEntity());
 
     // HACK (continued)...
-    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeout.waitFor(
         "core containers never fully updated their auth plugins",
         () -> {

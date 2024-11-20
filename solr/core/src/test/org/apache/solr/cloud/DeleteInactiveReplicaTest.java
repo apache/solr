@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -101,7 +101,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
     cluster.startJettySolrRunner(jetty);
     log.info("restarted jetty");
-    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeOut.waitFor(
         "Expected data dir and instance dir of " + replica.getName() + " is deleted",
         () ->

@@ -25,9 +25,9 @@ public class TestTimeSource extends SolrTestCaseJ4 {
 
   @Test
   public void testEpochTime() throws Exception {
-    doTestEpochTime(TimeSource.CURRENT_TIME);
-    doTestEpochTime(TimeSource.NANO_TIME);
-    doTestEpochTime(TimeSource.get("simTime:50"));
+    doTestEpochTime(TimeSources.CURRENT_TIME);
+    doTestEpochTime(TimeSources.NANO_TIME);
+    doTestEpochTime(TimeSources.get("simTime:50"));
   }
 
   private void doTestEpochTime(TimeSource ts) throws Exception {

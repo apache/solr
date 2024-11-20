@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -367,7 +367,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   protected void waitForQueueToDrain(int timeoutSeconds) {
     if (async && executorService != null) {
-      TimeOut timeOut = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeOut = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       while ((!queue.isEmpty() || auditsInFlight.get() > 0) && !timeOut.hasTimedOut()) {
         try {
           if (log.isInfoEnabled()) {

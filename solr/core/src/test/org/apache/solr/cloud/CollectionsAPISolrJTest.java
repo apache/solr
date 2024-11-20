@@ -64,7 +64,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -188,7 +188,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient());
       // we use a timeout so that the change made in ZK is reflected in the watched copy inside
       // ZkStateReader
-      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
+      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSources.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty =
             cluster
@@ -205,7 +205,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
               .build()
               .process(cluster.getSolrClient());
       // assert that it is really gone in both old and new paths
-      timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSource.NanoTimeSource());
+      timeOut = new TimeOut(5, TimeUnit.SECONDS, new TimeSources.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty =
             cluster
@@ -558,7 +558,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   private void checkCollectionProperty(String collection, String propertyName, String propertyValue)
       throws InterruptedException {
-    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.MILLISECONDS, TimeSources.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       Thread.sleep(10);
       if (Objects.equals(

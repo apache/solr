@@ -26,7 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.TimeOut;
@@ -67,7 +67,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
                 cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
           threadExecutor.execute(
               () -> {
-                TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+                TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
                 while (!timeout.hasTimedOut()) {
                   long sessionId = zkController.getZkClient().getZkSessionId();
                   server.expire(sessionId);
@@ -85,7 +85,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
                   .withTimeout(LeaderElectionTest.TIMEOUT, TimeUnit.MILLISECONDS)
                   .build()) {
             boolean found = false;
-            TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+            TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
             while (!timeout.hasTimedOut()) {
               try {
                 String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);

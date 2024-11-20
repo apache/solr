@@ -29,7 +29,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.BinaryQueryResponseWriter;
@@ -75,7 +75,7 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
       log.warn(msg);
 
       // Loop to give the logger time to process the async message and notify the new watcher.
-      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       boolean foundNewMsg = false;
       boolean foundOldMessage = false;
       // In local testing this loop usually succeeds 1-2 tries, so it's not very expensive to loop.

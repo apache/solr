@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
@@ -234,7 +234,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
     waitForReplicationFromReplicas(
         DEFAULT_COLLECTION,
         ZkStateReader.from(cloudClient),
-        new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+        new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME));
     //    waitForAllWarmingSearchers();
 
     checkShardConsistency(batchSize == 1, true);

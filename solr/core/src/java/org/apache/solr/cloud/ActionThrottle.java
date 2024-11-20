@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ public class ActionThrottle {
   private final TimeSource timeSource;
 
   public ActionThrottle(String name, long minMsBetweenActions) {
-    this(name, minMsBetweenActions, TimeSource.NANO_TIME);
+    this(name, minMsBetweenActions, TimeSources.NANO_TIME);
   }
 
   public ActionThrottle(String name, long minMsBetweenActions, TimeSource timeSource) {
@@ -43,7 +44,7 @@ public class ActionThrottle {
   }
 
   public ActionThrottle(String name, long minMsBetweenActions, long lastActionStartedAt) {
-    this(name, minMsBetweenActions, lastActionStartedAt, TimeSource.NANO_TIME);
+    this(name, minMsBetweenActions, lastActionStartedAt, TimeSources.NANO_TIME);
   }
 
   public ActionThrottle(

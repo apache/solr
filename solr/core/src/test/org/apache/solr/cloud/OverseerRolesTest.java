@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -47,7 +47,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   public static void waitForNewOverseer(
       int seconds, Predicate<String> state, boolean failOnIntermediateTransition) throws Exception {
-    TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(seconds, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     String current = null;
     while (timeout.hasTimedOut() == false) {
       String prev = current;

@@ -40,7 +40,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -680,7 +680,7 @@ public class ChaosMonkey {
    */
   public static void wait(long runLength, String collectionName, ZkStateReader zkStateReader)
       throws InterruptedException {
-    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    TimeOut t = new TimeOut(runLength, TimeUnit.MILLISECONDS, TimeSources.NANO_TIME);
     while (!t.hasTimedOut()) {
       Thread.sleep(Math.min(1000, t.timeLeft(TimeUnit.MILLISECONDS)));
       logCollectionStateSummary(collectionName, zkStateReader);

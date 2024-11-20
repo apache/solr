@@ -66,7 +66,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexWriter;
@@ -268,7 +268,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
-    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     for (Replica r : s.getReplicas(EnumSet.of(Replica.Type.TLOG))) {
       // TODO: assert replication < REPLICATION_TIMEOUT_SECS
       try (SolrClient tlogReplicaClient = getHttpSolrClient(r)) {
@@ -608,7 +608,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     waitForNumDocsInAllActiveReplicas(2);
     // There are a small delay between new searcher and copy over old updates operation
-    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       if (assertCopyOverOldUpdates(1, timeCopyOverPerCores)) {
         break;
@@ -1001,7 +1001,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private void waitForNumDocsInAllReplicas(
       int numDocs, Collection<Replica> replicas, String query, int timeout)
       throws IOException, SolrServerException, InterruptedException {
-    TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     for (Replica r : replicas) {
       if (!r.isActive(cluster.getSolrClient().getClusterState().getLiveNodes())) {
         continue;

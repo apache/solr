@@ -22,12 +22,13 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 
 /** Base class for overriding some behavior of {@link SolrCloudManager}. */
 public class DelegatingCloudManager implements SolrCloudManager {
   protected final SolrCloudManager delegate;
   private ObjectCache objectCache = new ObjectCache();
-  private TimeSource timeSource = TimeSource.NANO_TIME;
+  private TimeSource timeSource = TimeSources.NANO_TIME;
 
   public DelegatingCloudManager(SolrCloudManager delegate) {
     this.delegate = delegate;

@@ -49,7 +49,7 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -142,7 +142,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
            */
           @Override
           public void makeBackup(final String backupName, final String snapName) throws Exception {
-            final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+            final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
             ModifiableSolrParams p =
                 params(
                     "command",

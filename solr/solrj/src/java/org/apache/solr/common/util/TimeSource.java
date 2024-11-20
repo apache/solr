@@ -16,12 +16,7 @@
  */
 package org.apache.solr.common.util;
 
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Source of time.
@@ -31,12 +26,14 @@ import org.slf4j.LoggerFactory;
  * always monotonically increasing.
  */
 public abstract class TimeSource {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Implementation that uses {@link System#currentTimeMillis()}. This implementation's {@link
    * #getTimeNs()} returns the same values as {@link #getEpochTimeNs()}.
+   *
+   * @deprecated Use {@link TimeSources.CurrentTimeSource} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static final class CurrentTimeSource extends TimeSource {
 
     @Override
@@ -71,13 +68,16 @@ public abstract class TimeSource {
    * Implementation that uses {@link System#nanoTime()}. Epoch time is initialized using {@link
    * CurrentTimeSource}, and then calculated as the elapsed number of nanoseconds as measured by
    * this implementation.
+   *
+   * @deprecated Use {@link TimeSources.NanoTimeSource} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static final class NanoTimeSource extends TimeSource {
     private final long epochStart;
     private final long nanoStart;
 
     public NanoTimeSource() {
-      epochStart = CURRENT_TIME.getTimeNs();
+      epochStart = TimeSources.CURRENT_TIME.getTimeNs();
       nanoStart = System.nanoTime();
     }
 
@@ -108,7 +108,12 @@ public abstract class TimeSource {
     }
   }
 
-  /** Implementation that uses {@link #NANO_TIME} accelerated by a double multiplier. */
+  /**
+   * Implementation that uses {@link TimeSources#NANO_TIME} accelerated by a double multiplier.
+   *
+   * @deprecated Use {@link TimeSources.SimTimeSource} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static final class SimTimeSource extends TimeSource {
 
     final double multiplier;
@@ -122,13 +127,14 @@ public abstract class TimeSource {
      */
     public SimTimeSource(double multiplier) {
       this.multiplier = multiplier;
-      epochStart = CURRENT_TIME.getTimeNs();
-      nanoStart = NANO_TIME.getTimeNs();
+      epochStart = TimeSources.CURRENT_TIME.getTimeNs();
+      nanoStart = TimeSources.NANO_TIME.getTimeNs();
     }
 
     @Override
     public long getTimeNs() {
-      return nanoStart + Math.round((double) (NANO_TIME.getTimeNs() - nanoStart) * multiplier);
+      return nanoStart
+          + Math.round((double) (TimeSources.NANO_TIME.getTimeNs() - nanoStart) * multiplier);
     }
 
     @Override
@@ -160,13 +166,21 @@ public abstract class TimeSource {
     }
   }
 
-  /** This instance uses {@link CurrentTimeSource} for generating timestamps. */
-  public static final TimeSource CURRENT_TIME = new CurrentTimeSource();
+  /**
+   * This instance uses {@link CurrentTimeSource} for generating timestamps.
+   *
+   * @deprecated Use {@link TimeSources#CURRENT_TIME} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
+  public static final TimeSource CURRENT_TIME = TimeSources.CURRENT_TIME;
 
-  /** This instance uses {@link NanoTimeSource} for generating timestamps. */
-  public static final TimeSource NANO_TIME = new NanoTimeSource();
-
-  private static Map<String, SimTimeSource> simTimeSources = new ConcurrentHashMap<>();
+  /**
+   * This instance uses {@link NanoTimeSource} for generating timestamps.
+   *
+   * @deprecated Use {@link TimeSources#CURRENT_TIME} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
+  public static final TimeSource NANO_TIME = TimeSources.NANO_TIME;
 
   /**
    * Obtain an instance of time source.
@@ -176,34 +190,11 @@ public abstract class TimeSource {
    *     simTime:2.5
    *     </code>
    * @return one of the supported types
+   * @deprecated Use {@link TimeSources#get(String)} instead.
    */
+  @Deprecated(since = "9.8", forRemoval = true)
   public static TimeSource get(String type) {
-    if (type == null) {
-      return NANO_TIME;
-    } else if (type.equals("currentTime") || type.equals(CurrentTimeSource.class.getSimpleName())) {
-      return CURRENT_TIME;
-    } else if (type.equals("nanoTime") || type.equals(NanoTimeSource.class.getSimpleName())) {
-      return NANO_TIME;
-    } else if (type.startsWith("simTime") || type.startsWith(SimTimeSource.class.getSimpleName())) {
-      return simTimeSources.computeIfAbsent(
-          type,
-          t -> {
-            String[] parts = t.split(":");
-            double mul = 1.0;
-            if (parts.length != 2) {
-              log.warn("Invalid simTime specification, assuming multiplier==1.0: '{}'.", type);
-            } else {
-              try {
-                mul = Double.parseDouble(parts[1]);
-              } catch (Exception e) {
-                log.warn("Invalid simTime specification, assuming multiplier==1.0: '{}'.", type);
-              }
-            }
-            return new SimTimeSource(mul);
-          });
-    } else {
-      throw new UnsupportedOperationException("Unsupported time source type '" + type + "'.");
-    }
+    return TimeSources.get(type);
   }
 
   /**

@@ -44,7 +44,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.hdfs.cloud.HdfsTestUtil;
 import org.apache.solr.hdfs.update.HdfsUpdateLog;
@@ -626,7 +626,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertFalse(ulog.existOldBufferLog());
       // Timeout for Q7 get replayed, because it was added on tlog, therefore it will be replayed on
       // restart
-      TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       timeout.waitFor(
           "Timeout waiting for finish replay updates",
           () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);

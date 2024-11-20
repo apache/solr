@@ -30,7 +30,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TimeOut;
 import org.junit.Before;
@@ -86,7 +86,7 @@ public class RequestLoggingTest extends SolrTestCaseJ4 {
     try {
       assertQ(req("q", "*:*"));
 
-      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       boolean found = false;
       Matcher matcher;
       String pat = "DEBUG.*q=\\*:\\*.*";

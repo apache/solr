@@ -36,7 +36,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -238,7 +238,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   private void waitForServer(
       int maxSeconds, LBHttp2SolrClient<?> client, int nServers, String serverName)
       throws Exception {
-    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       QueryResponse resp;
       try {

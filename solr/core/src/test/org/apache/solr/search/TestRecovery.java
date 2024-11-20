@@ -42,7 +42,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
@@ -1234,7 +1234,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       ulog.applyBufferedUpdates();
 
-      TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       timeout.waitFor(
           "Timeout waiting for finish replay updates",
           () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
@@ -1259,7 +1259,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       // Timeout for Q7 get replayed, because it was added on tlog, therefore it will be replayed on
       // restart
-      timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       timeout.waitFor(
           "Timeout waiting for finish replay updates",
           () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);

@@ -41,7 +41,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -100,7 +100,7 @@ public class SchemaManager {
 
   private List<Map<String, Object>> doOperations(List<CommandOperation> operations)
       throws InterruptedException, IOException, KeeperException {
-    TimeOut timeOut = new TimeOut(updateTimeOut, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(updateTimeOut, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     SolrCore core = req.getCore();
     String errorMsg = "Unable to persist managed schema. ";
     List<Map<String, Object>> errors = Collections.emptyList();

@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.OnDisconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -149,7 +149,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     // After draining the queue, a watcher should be set.
     assertNull(dq.peek(100));
 
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeout.waitFor(
         "Timeout waiting to see dirty=false",
         () -> {

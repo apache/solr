@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
@@ -71,7 +71,7 @@ public class DirectUpdateHandlerWithUpdateLogTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3"));
     h.close();
     // Then the shouldCommit hook is called.
-    new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME)
+    new TimeOut(10, TimeUnit.SECONDS, TimeSources.NANO_TIME)
         .waitFor(
             "Timeout waiting for should commit hook",
             () -> updater.shouldCommitCallCount.get() == 4);

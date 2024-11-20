@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -277,7 +277,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     solrClient.request(ureq, collection);
     solrClient.commit(collection);
     // verify the number of docs
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
       QueryResponse rsp = solrClient.query(collection, params("q", "*:*", "rows", "0"));
       if (rsp.getResults().getNumFound() == n) {

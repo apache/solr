@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.junit.Test;
 
 public class ActionThrottleTest extends SolrTestCaseJ4 {
@@ -52,7 +53,7 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
 
     @Override
     public void sleep(long ms) throws InterruptedException {
-      TimeSource.NANO_TIME.sleep(ms);
+      TimeSources.NANO_TIME.sleep(ms);
     }
 
     @Override
@@ -62,7 +63,7 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
   }
 
   // use the same time source as ActionThrottle
-  private static final TimeSource timeSource = TimeSource.NANO_TIME;
+  private static final TimeSource timeSource = TimeSources.NANO_TIME;
 
   @Test
   public void testBasics() throws Exception {
