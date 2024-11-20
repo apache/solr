@@ -60,7 +60,7 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.RawValueTransformerFactory;
-import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.response.transform.TransformerFactories;
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -198,11 +198,11 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    *
    * @see FlValidator#getDefaultTransformerFactoryName
    * @see #FL_VALIDATORS
-   * @see TransformerFactory#defaultFactories
+   * @see TransformerFactories#defaultFactories
    */
   public void testCoverage() {
     final Set<String> implicit = new LinkedHashSet<>();
-    for (String t : TransformerFactory.defaultFactories.keySet()) {
+    for (String t : TransformerFactories.defaultFactories.keySet()) {
       implicit.add(t);
     }
 
@@ -704,7 +704,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     /**
-     * the name of a transformer listed in {@link TransformerFactory#defaultFactories} that this
+     * the name of a transformer listed in {@link TransformerFactories#defaultFactories} that this
      * validator corresponds to, or null if not applicable. Used for testing coverage of Solr's
      * implicitly supported transformers.
      *

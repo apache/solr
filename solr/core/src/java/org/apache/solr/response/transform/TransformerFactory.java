@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response.transform;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.params.SolrParams;
@@ -105,18 +104,10 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin {
     }
   }
 
-  public static final Map<String, TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
-
-  static {
-    defaultFactories.put("explain", new ExplainAugmenterFactory());
-    defaultFactories.put("value", new ValueAugmenterFactory());
-    defaultFactories.put("docid", new DocIdAugmenterFactory());
-    defaultFactories.put("shard", new ShardAugmenterFactory());
-    defaultFactories.put("child", new ChildDocTransformerFactory());
-    defaultFactories.put("subquery", new SubQueryAugmenterFactory());
-    defaultFactories.put("json", new RawValueTransformerFactory("json"));
-    defaultFactories.put("xml", new RawValueTransformerFactory("xml"));
-    defaultFactories.put("geo", new GeoTransformerFactory());
-    defaultFactories.put("core", new CoreAugmenterFactory());
-  }
+  /**
+   * @deprecated Use {@link TransformerFactories#defaultFactories} instead.
+   */
+  @Deprecated(since = "9.8", forRemoval = true)
+  public static final Map<String, TransformerFactory> defaultFactories =
+      TransformerFactories.defaultFactories;
 }

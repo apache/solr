@@ -135,6 +135,7 @@ import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.response.transform.TransformerFactories;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -1132,7 +1133,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       initWriters();
       qParserPlugins.init(QParserPlugins.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParsers.standardValueSourceParsers, this);
-      transformerFactories.init(TransformerFactory.defaultFactories, this);
+      transformerFactories.init(TransformerFactories.defaultFactories, this);
       loadSearchComponents();
       updateProcessors.init(Collections.emptyMap(), this);
 
