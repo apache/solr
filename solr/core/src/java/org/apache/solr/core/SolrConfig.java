@@ -173,14 +173,11 @@ public class SolrConfig implements MapSerializable {
 
     ResourceProvider(InputStream in) throws IOException {
       this.in = in;
-      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-        ZkSolrResourceLoader.ZkByteArrayInputStream zkin =
-            (ZkSolrResourceLoader.ZkByteArrayInputStream) in;
+      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream zkin) {
         zkVersion = zkin.getStat().getVersion();
         hash = Objects.hash(zkin.getStat().getCtime(), zkVersion, overlay.getVersion());
         this.fileName = zkin.fileName;
-      } else if (in instanceof SolrResourceLoader.SolrFileInputStream) {
-        SolrResourceLoader.SolrFileInputStream sfin = (SolrResourceLoader.SolrFileInputStream) in;
+      } else if (in instanceof SolrResourceLoader.SolrFileInputStream sfin) {
         zkVersion = (int) sfin.getLastModified();
         hash = Objects.hash(sfin.getLastModified(), overlay.getVersion());
       }

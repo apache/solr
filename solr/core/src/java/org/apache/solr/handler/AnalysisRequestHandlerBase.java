@@ -305,8 +305,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
                 k = ATTRIBUTE_MAPPING.get(k);
               }
 
-              if (value instanceof BytesRef) {
-                final BytesRef p = (BytesRef) value;
+              if (value instanceof BytesRef p) {
                 value = p.toString();
               }
 

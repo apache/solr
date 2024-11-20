@@ -286,8 +286,7 @@ class ReplicaHealth implements Comparable<ReplicaHealth> {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (obj == null) return false;
-    if (!(obj instanceof ReplicaHealth)) return true;
-    ReplicaHealth that = (ReplicaHealth) obj;
+    if (!(obj instanceof ReplicaHealth that)) return true;
     return this.shard.equals(that.shard) && this.isLeader == that.isLeader;
   }
 

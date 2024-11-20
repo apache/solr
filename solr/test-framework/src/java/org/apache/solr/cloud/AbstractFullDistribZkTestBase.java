@@ -177,8 +177,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof CloudJettyRunner)) return false;
-      CloudJettyRunner other = (CloudJettyRunner) obj;
+      if (!(obj instanceof CloudJettyRunner other)) return false;
       return Objects.equals(url, other.url);
     }
 
@@ -215,8 +214,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof CloudSolrServerClient)) return false;
-      CloudSolrServerClient other = (CloudSolrServerClient) obj;
+      if (!(obj instanceof CloudSolrServerClient other)) return false;
       return Objects.equals(solrClient, other.solrClient);
     }
   }

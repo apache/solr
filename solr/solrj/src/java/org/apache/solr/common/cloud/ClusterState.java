@@ -379,8 +379,7 @@ public class ClusterState implements MapWriter {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof ClusterState)) return false;
-    ClusterState other = (ClusterState) obj;
+    if (!(obj instanceof ClusterState other)) return false;
     if (liveNodes == null) {
       return other.liveNodes == null;
     } else return liveNodes.equals(other.liveNodes);

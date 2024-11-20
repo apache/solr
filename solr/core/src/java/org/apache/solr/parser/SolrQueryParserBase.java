@@ -549,8 +549,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // only set slop of the phrase query was a result of this parser
     // and not a sub-parser.
     if (subQParser == null) {
-      if (query instanceof PhraseQuery) {
-        PhraseQuery pq = (PhraseQuery) query;
+      if (query instanceof PhraseQuery pq) {
         Term[] terms = pq.getTerms();
         int[] positions = pq.getPositions();
         PhraseQuery.Builder builder = new PhraseQuery.Builder();
@@ -559,8 +558,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         }
         builder.setSlop(slop);
         query = builder.build();
-      } else if (query instanceof MultiPhraseQuery) {
-        MultiPhraseQuery mpq = (MultiPhraseQuery) query;
+      } else if (query instanceof MultiPhraseQuery mpq) {
 
         if (slop != mpq.getSlop()) {
           query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
@@ -1011,9 +1009,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     }
 
     Analyzer a = fieldType.getIndexAnalyzer();
-    if (a instanceof TokenizerChain) {
+    if (a instanceof TokenizerChain tc) {
       // examine the indexing analysis chain if it supports leading wildcards
-      TokenizerChain tc = (TokenizerChain) a;
       TokenFilterFactory[] factories = tc.getTokenFilterFactories();
       for (TokenFilterFactory factory : factories) {
         if (factory instanceof ReversedWildcardFilterFactory) {
@@ -1053,8 +1050,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   // Create a "normal" query from a RawQuery (or just return the current query if it's not raw)
   Query rawToNormal(Query q) {
     Query normal = q;
-    if (q instanceof RawQuery) {
-      RawQuery rawq = (RawQuery) q;
+    if (q instanceof RawQuery rawq) {
       if (rawq.sfield.getType().isTokenized()) {
         normal =
             rawq.sfield.getType().getFieldQuery(parser, rawq.sfield, rawq.getJoinedExternalVal());

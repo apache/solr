@@ -245,8 +245,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
       @Override
       public ContentWriter getContentWriter(SolrRequest<?> request) {
-        if (request instanceof UpdateRequest) {
-          UpdateRequest updateRequest = (UpdateRequest) request;
+        if (request instanceof UpdateRequest updateRequest) {
           List<SolrInputDocument> docs = updateRequest.getDocuments();
           if (docs == null || docs.isEmpty()) return super.getContentWriter(request);
           return new ContentWriter() {
@@ -298,8 +297,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
           NamedList nl = new NamedList();
           m.forEach(
               (k, v) -> {
-                if (v instanceof Map) {
-                  Map map = (Map) v;
+                if (v instanceof Map map) {
                   if ("response".equals(k)) {
                     v = convertResponse((Map) v);
                   } else {

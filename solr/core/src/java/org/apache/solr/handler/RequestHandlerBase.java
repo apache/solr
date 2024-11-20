@@ -285,8 +285,7 @@ public abstract class RequestHandlerBase
 
   public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
     boolean isClientError = false;
-    if (e instanceof SolrException) {
-      final SolrException se = (SolrException) e;
+    if (e instanceof SolrException se) {
       if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
         return;
       } else if (se.code() >= 400 && se.code() < 500) {

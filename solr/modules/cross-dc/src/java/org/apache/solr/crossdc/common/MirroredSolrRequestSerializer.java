@@ -184,14 +184,11 @@ public class MirroredSolrRequestSerializer
       map.put("submitTimeNanos", request.getSubmitTimeNanos());
       map.put("params", solrRequest.getParams());
       map.put("type", request.getType().toString());
-      if (solrRequest instanceof UpdateRequest) {
-        UpdateRequest update = (UpdateRequest) solrRequest;
+      if (solrRequest instanceof UpdateRequest update) {
         map.put("docs", update.getDocuments());
         map.put("deletes", update.getDeleteById());
         map.put("deleteQuery", update.getDeleteQuery());
-      } else if (solrRequest instanceof MirroredSolrRequest.MirroredConfigSetRequest) {
-        MirroredSolrRequest.MirroredConfigSetRequest config =
-            (MirroredSolrRequest.MirroredConfigSetRequest) solrRequest;
+      } else if (solrRequest instanceof MirroredSolrRequest.MirroredConfigSetRequest config) {
         map.put("method", config.getMethod().toString());
         if (config.getContentStreams() != null) {
           List<Map<String, Object>> streamsList = new ArrayList<>();

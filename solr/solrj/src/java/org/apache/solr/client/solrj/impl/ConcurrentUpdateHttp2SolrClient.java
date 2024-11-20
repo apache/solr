@@ -362,10 +362,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         ClientUtils.shouldApplyDefaultCollection(collection, request)
             ? defaultCollection
             : collection;
-    if (!(request instanceof UpdateRequest)) {
+    if (!(request instanceof UpdateRequest req)) {
       return client.requestWithBaseUrl(basePath, (c) -> c.request(request, effectiveCollection));
     }
-    UpdateRequest req = (UpdateRequest) request;
     // this happens for commit...
     if (streamDeletes) {
       if ((req.getDocuments() == null || req.getDocuments().isEmpty())

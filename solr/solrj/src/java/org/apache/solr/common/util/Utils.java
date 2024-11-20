@@ -165,8 +165,7 @@ public class Utils {
 
   @SuppressWarnings({"unchecked"})
   public static void forEachMapEntry(Object o, @SuppressWarnings({"rawtypes"}) BiConsumer fun) {
-    if (o instanceof MapWriter) {
-      MapWriter m = (MapWriter) o;
+    if (o instanceof MapWriter m) {
       try {
         m.writeMap(
             new MapWriter.EntryWriter() {
@@ -530,8 +529,7 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof List) {
-            List<?> l = (List<?>) o;
+          if (o instanceof List<?> l) {
             o = idx < l.size() ? l.get(idx) : null;
           } else if (o instanceof IteratorWriter) {
             o = getValueAt((IteratorWriter) o, idx);

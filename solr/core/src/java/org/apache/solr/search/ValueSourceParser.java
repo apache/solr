@@ -541,12 +541,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
             String fieldName = fp.parseArg();
             SchemaField f = fp.getReq().getSchema().getField(fieldName);
-            if (!(f.getType() instanceof CurrencyFieldType)) {
+            if (!(f.getType() instanceof CurrencyFieldType ft)) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
                   "Currency function input must be the name of a CurrencyFieldType: " + fieldName);
             }
-            CurrencyFieldType ft = (CurrencyFieldType) f.getType();
             String code = fp.hasMoreArguments() ? fp.parseArg() : null;
             return ft.getConvertedValueSource(code, ft.getValueSource(f, fp));
           }
@@ -1606,8 +1605,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof LongConstValueSource)) return false;
-      LongConstValueSource other = (LongConstValueSource) o;
+      if (!(o instanceof LongConstValueSource other)) return false;
       return this.constant == other.constant;
     }
 
@@ -1759,8 +1757,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (!(o instanceof Function)) return false;
-        Function other = (Function) o;
+        if (!(o instanceof Function other)) return false;
         return this.a.equals(other.a) && this.b.equals(other.b);
       }
     }
@@ -1799,8 +1796,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof BoolConstValueSource)) return false;
-      BoolConstValueSource other = (BoolConstValueSource) o;
+      if (!(o instanceof BoolConstValueSource other)) return false;
       return this.constant == other.constant;
     }
 

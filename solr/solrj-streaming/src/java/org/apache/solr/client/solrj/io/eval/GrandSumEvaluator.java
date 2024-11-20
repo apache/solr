@@ -41,8 +41,7 @@ public class GrandSumEvaluator extends RecursiveObjectEvaluator implements OneVa
   public Object doWork(Object value) throws IOException {
     if (null == value) {
       return null;
-    } else if (value instanceof Matrix) {
-      Matrix matrix = (Matrix) value;
+    } else if (value instanceof Matrix matrix) {
       double[][] data = matrix.getData();
       double grandSum = 0;
       for (double[] row : data) {

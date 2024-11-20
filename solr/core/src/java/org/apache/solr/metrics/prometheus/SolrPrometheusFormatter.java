@@ -140,8 +140,7 @@ public abstract class SolrPrometheusFormatter {
       GaugeSnapshot.GaugeDataPointSnapshot dataPoint =
           createGaugeDatapoint(((Number) dropwizardMetric).doubleValue(), labels);
       collectGaugeDatapoint(metricName, dataPoint);
-    } else if (dropwizardMetric instanceof HashMap) {
-      HashMap<?, ?> itemsMap = (HashMap<?, ?>) dropwizardMetric;
+    } else if (dropwizardMetric instanceof HashMap<?, ?> itemsMap) {
       for (Object item : itemsMap.keySet()) {
         if (itemsMap.get(item) instanceof Number) {
           GaugeSnapshot.GaugeDataPointSnapshot dataPoint =
