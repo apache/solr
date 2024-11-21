@@ -371,7 +371,7 @@ public class StreamTool extends ToolBase {
     @Override
     public Tuple read() throws IOException {
       String line = reader.readLine();
-      Map<String,?> map = new HashMap<>();
+      Map<String, ?> map = new HashMap<>();
       Tuple tuple = new Tuple(map);
       if (line != null) {
         tuple.put("line", line);
