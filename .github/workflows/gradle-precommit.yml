@@ -10,7 +10,7 @@ jobs:
   # Dependabot job that runs only for dependabot PRs
   # This job is writing locks, updates checksums, and commits the changes on the dependabot PRs.
   lockAndVerify:
-    name: gradle check
+    name: Lock and verify
 
     runs-on: ubuntu-latest
 
