@@ -101,11 +101,11 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST,
           "Unknown target collection: " + sourceCollectionName);
     }
-    if (!(sourceCollection.getRouter() instanceof CompositeIdRouter)) {
+    if (!(sourceCollection.getRouter() instanceof CompositeIdRouter sourceRouter)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Source collection must use a compositeId router");
     }
-    if (!(targetCollection.getRouter() instanceof CompositeIdRouter)) {
+    if (!(targetCollection.getRouter() instanceof CompositeIdRouter targetRouter)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Target collection must use a compositeId router");
     }
@@ -115,8 +115,6 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST, "The split.key cannot be null or empty");
     }
 
-    CompositeIdRouter sourceRouter = (CompositeIdRouter) sourceCollection.getRouter();
-    CompositeIdRouter targetRouter = (CompositeIdRouter) targetCollection.getRouter();
     Collection<Slice> sourceSlices =
         sourceRouter.getSearchSlicesSingle(splitKey, null, sourceCollection);
     if (sourceSlices.isEmpty()) {

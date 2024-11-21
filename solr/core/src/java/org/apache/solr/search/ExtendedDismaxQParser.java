@@ -1236,8 +1236,7 @@ public class ExtendedDismaxQParser extends QParser {
               subs.clear();
               // Make a dismax query for each clause position in the boolean per-field queries.
               for (int n = 0; n < lst.size(); ++n) {
-                if (lst.get(n) instanceof BoostQuery) {
-                  BoostQuery boostQuery = (BoostQuery) lst.get(n);
+                if (lst.get(n) instanceof BoostQuery boostQuery) {
                   BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
                   subs.add(
                       new BoostQuery(
@@ -1440,8 +1439,7 @@ public class ExtendedDismaxQParser extends QParser {
                 BooleanQuery bq = (BooleanQuery) query;
                 query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
               }
-            } else if (query instanceof PhraseQuery) {
-              PhraseQuery pq = (PhraseQuery) query;
+            } else if (query instanceof PhraseQuery pq) {
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
               PhraseQuery.Builder builder = new PhraseQuery.Builder();
               Term[] terms = pq.getTerms();
@@ -1451,8 +1449,7 @@ public class ExtendedDismaxQParser extends QParser {
               }
               builder.setSlop(slop);
               query = builder.build();
-            } else if (query instanceof MultiPhraseQuery) {
-              MultiPhraseQuery mpq = (MultiPhraseQuery) query;
+            } else if (query instanceof MultiPhraseQuery mpq) {
               if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;
               if (slop != mpq.getSlop()) {
                 query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
@@ -1485,16 +1482,14 @@ public class ExtendedDismaxQParser extends QParser {
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();
-      if (!(qa instanceof TokenizerChain)) {
+      if (!(qa instanceof TokenizerChain tcq)) {
         return qa;
       }
 
-      TokenizerChain tcq = (TokenizerChain) qa;
       Analyzer ia = ft.getIndexAnalyzer();
-      if (ia == qa || !(ia instanceof TokenizerChain)) {
+      if (ia == qa || !(ia instanceof TokenizerChain tci)) {
         return qa;
       }
-      TokenizerChain tci = (TokenizerChain) ia;
 
       // make sure that there isn't a stop filter in the indexer
       for (TokenFilterFactory tf : tci.getTokenFilterFactories()) {

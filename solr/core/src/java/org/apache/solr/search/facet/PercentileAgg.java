@@ -86,8 +86,7 @@ public class PercentileAgg extends SimpleAggValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof PercentileAgg)) return false;
-    PercentileAgg other = (PercentileAgg) o;
+    if (!(o instanceof PercentileAgg other)) return false;
     return this.arg.equals(other.arg) && this.percentiles.equals(other.percentiles);
   }
 

@@ -192,8 +192,7 @@ public class MetricUtils {
             doc.addField(key, v);
           }
         };
-    if (o instanceof MapWriter) {
-      MapWriter writer = (MapWriter) o;
+    if (o instanceof MapWriter writer) {
       writer._forEachEntry(consumer);
     } else if (o instanceof Map) {
       @SuppressWarnings({"unchecked"})
@@ -201,8 +200,7 @@ public class MetricUtils {
       for (Map.Entry<String, Object> entry : map.entrySet()) {
         consumer.accept(entry.getKey(), entry.getValue());
       }
-    } else if (o instanceof IteratorWriter) {
-      IteratorWriter writer = (IteratorWriter) o;
+    } else if (o instanceof IteratorWriter writer) {
       final String name = prefix != null ? prefix : "value";
       try {
         writer.writeIter(
@@ -348,11 +346,9 @@ public class MetricUtils {
       boolean simple,
       String separator,
       BiConsumer<String, Object> consumer) {
-    if (metric instanceof Counter) {
-      Counter counter = (Counter) metric;
+    if (metric instanceof Counter counter) {
       convertCounter(n, counter, propertyFilter, compact, consumer);
-    } else if (metric instanceof Gauge) {
-      Gauge<?> gauge = (Gauge<?>) metric;
+    } else if (metric instanceof Gauge<?> gauge) {
       // unwrap if needed
       if (gauge instanceof SolrMetricManager.GaugeWrapper) {
         gauge = ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge();
@@ -372,11 +368,9 @@ public class MetricUtils {
           throw ie;
         }
       }
-    } else if (metric instanceof Meter) {
-      Meter meter = (Meter) metric;
+    } else if (metric instanceof Meter meter) {
       convertMeter(n, meter, propertyFilter, simple, separator, consumer);
-    } else if (metric instanceof Timer) {
-      Timer timer = (Timer) metric;
+    } else if (metric instanceof Timer timer) {
       convertTimer(n, timer, propertyFilter, skipHistograms, simple, separator, consumer);
     } else if (metric instanceof Histogram) {
       if (!skipHistograms) {

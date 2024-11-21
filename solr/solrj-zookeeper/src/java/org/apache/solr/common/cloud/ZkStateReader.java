@@ -2118,9 +2118,7 @@ public class ZkStateReader implements SolrCloseable {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof DocCollectionAndLiveNodesWatcherWrapper) {
-        DocCollectionAndLiveNodesWatcherWrapper that =
-            (DocCollectionAndLiveNodesWatcherWrapper) other;
+      if (other instanceof DocCollectionAndLiveNodesWatcherWrapper that) {
         return this.collectionName.equals(that.collectionName)
             && this.delegate.equals(that.delegate);
       }
