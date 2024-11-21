@@ -133,14 +133,18 @@ public class {{classname}} {
                 {{/requiredParams}}
                 {{#bodyParam}}
                 {{^vendorExtensions.x-genericEntity}}
+                {{#isMap}}
+                    this.requestBody = new HashMap<>();
+                {{/isMap}}
                 {{#isArray}}
                     this.requestBody = new ArrayList<>();
-                    addHeader("Content-type", "application/json");
                 {{/isArray}}
+                {{^isMap}}
                 {{^isArray}}
                     this.requestBody = new {{{dataType}}}();
-                    addHeader("Content-type", "application/json");
                 {{/isArray}}
+                {{/isMap}}
+                    addHeader("Content-type", "application/json");
                 {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }

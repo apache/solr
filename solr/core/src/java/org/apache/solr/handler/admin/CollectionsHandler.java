@@ -128,6 +128,7 @@ import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
+import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
@@ -144,7 +145,6 @@ import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetComma
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -174,6 +174,7 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUnique;
+import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAlias;
@@ -775,11 +776,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERPROP_OP(
         CLUSTERPROP,
         (req, rsp, h) -> {
+          ClusterProperty clusterProperty = new ClusterProperty(req.getCoreContainer(), req, rsp);
+          SetClusterPropertyRequestBody setClusterPropertyRequestBody =
+              new SetClusterPropertyRequestBody();
           String name = req.getParams().required().get(NAME);
-          String val = req.getParams().get(VALUE_LONG);
-          ClusterProperties cp =
-              new ClusterProperties(h.coreContainer.getZkController().getZkClient());
-          cp.setClusterProperty(name, val);
+          setClusterPropertyRequestBody.value = req.getParams().get(VALUE_LONG);
+          clusterProperty.createOrUpdateClusterProperty(name, setClusterPropertyRequestBody);
           return null;
         }),
     COLLECTIONPROP_OP(
@@ -1389,7 +1391,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AliasProperty.class,
         ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
-        DeleteCollectionSnapshot.class);
+        DeleteCollectionSnapshot.class,
+        ClusterProperty.class);
   }
 
   @Override
