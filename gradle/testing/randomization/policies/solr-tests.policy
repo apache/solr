@@ -50,6 +50,8 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:4", "connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:6", "connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:8", "connect,resolve";
+  // Used as an invalid ZK host
+  permission java.net.SocketPermission "----------:33332", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
@@ -255,7 +257,8 @@ grant {
 
   // Run java
   permission java.io.FilePermission "${java.home}${/}-", "execute";
-  permission java.io.FilePermission "C:\\Windows\\*\\wmic.exe", "execute";
+  // Required by SolrProcessManager on Windows to find Solr processes, used by StatusTool (CLI)
+  permission java.io.FilePermission "<<ALL FILES>>", "execute";
 };
 
 // Grant all permissions to Gradle test runner classes.

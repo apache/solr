@@ -129,13 +129,10 @@ public class FacetHeatmap extends FacetRequest {
       final DistanceUnits distanceUnits;
       // note: the two instanceof conditions is not ideal, versus one. If we start needing to add
       // more then refactor.
-      if ((type instanceof AbstractSpatialPrefixTreeFieldType)) {
-        AbstractSpatialPrefixTreeFieldType<?> rptType =
-            (AbstractSpatialPrefixTreeFieldType<?>) type;
+      if ((type instanceof AbstractSpatialPrefixTreeFieldType<?> rptType)) {
         strategy = rptType.getStrategy(fieldName);
         distanceUnits = rptType.getDistanceUnits();
-      } else if (type instanceof RptWithGeometrySpatialField) {
-        RptWithGeometrySpatialField rptSdvType = (RptWithGeometrySpatialField) type;
+      } else if (type instanceof RptWithGeometrySpatialField rptSdvType) {
         strategy = rptSdvType.getStrategy(fieldName).getIndexStrategy();
         distanceUnits = rptSdvType.getDistanceUnits();
       } else {

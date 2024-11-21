@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -53,22 +54,21 @@ import org.slf4j.LoggerFactory;
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("COLLECTION")
+          .required()
+          .desc("Name of the collection to check.")
+          .build();
+
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .hasArg()
-            .argName("COLLECTION")
-            .required(true)
-            .desc("Name of the collection to check.")
-            .build(),
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED,
-        SolrCLI.OPTION_SOLRURL_DEPRECATED_SHORT,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
   }
 
   enum ShardState {
@@ -89,13 +89,12 @@ public class HealthcheckTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
     if (zkHost == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       System.exit(1);
     }
-    try (CloudHttp2SolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost)) {
+    try (CloudHttp2SolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
       cloudSolrClient.connect();
       runCloudTool(cloudSolrClient, cli);
@@ -108,8 +107,7 @@ public class HealthcheckTool extends ToolBase {
   }
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("name");
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -127,7 +125,7 @@ public class HealthcheckTool extends ToolBase {
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(0);
     QueryResponse qr = cloudSolrClient.query(collection, q);
-    SolrCLI.checkCodeForAuthError(qr.getStatus());
+    CLIUtils.checkCodeForAuthError(qr.getStatus());
     String collErr = null;
     long docCount = -1;
     try {
@@ -171,14 +169,14 @@ public class HealthcheckTool extends ToolBase {
           q.setRows(0);
           q.set(DISTRIB, "false");
           try (var solrClientForCollection =
-              SolrCLI.getSolrClient(
-                  coreUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+              CLIUtils.getSolrClient(
+                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
             try (var solrClient =
-                SolrCLI.getSolrClient(
+                CLIUtils.getSolrClient(
                     replicaCoreProps.getBaseUrl(),
-                    cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+                    cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(
@@ -194,7 +192,7 @@ public class HealthcheckTool extends ToolBase {
           } catch (Exception exc) {
             log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 
-            if (SolrCLI.checkCommunicationError(exc)) {
+            if (CLIUtils.checkCommunicationError(exc)) {
               replicaStatus = Replica.State.DOWN.toString();
             } else {
               replicaStatus = "error: " + exc;
@@ -288,8 +286,7 @@ class ReplicaHealth implements Comparable<ReplicaHealth> {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (obj == null) return false;
-    if (!(obj instanceof ReplicaHealth)) return true;
-    ReplicaHealth that = (ReplicaHealth) obj;
+    if (!(obj instanceof ReplicaHealth that)) return true;
     return this.shard.equals(that.shard) && this.isLeader == that.isLeader;
   }
 

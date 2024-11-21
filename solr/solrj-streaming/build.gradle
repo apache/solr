@@ -23,26 +23,26 @@ dependencies {
   implementation project(':solr:solrj')
 
   // declare dependencies we use even though already declared by solrj-core
-  implementation 'org.slf4j:slf4j-api'
-  implementation 'org.apache.httpcomponents:httpclient'
-  implementation 'org.apache.httpcomponents:httpcore'
-  implementation 'org.apache.commons:commons-math3'
+  implementation libs.slf4j.api
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
+  implementation libs.apache.commons.math3
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj-zookeeper')
 
   testRuntimeOnly project(':solr:modules:sql')
-  testRuntimeOnly "org.hsqldb:hsqldb" // runtime because via JDBC reflection
+  testRuntimeOnly libs.hsqldb.hsqldb // runtime because via JDBC reflection
 
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'org.apache.lucene:lucene-test-framework'
-  testImplementation 'junit:junit'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.junit.junit
 
-  testImplementation('org.apache.zookeeper:zookeeper', {
+  testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
+  permitTestUnusedDeclared libs.apache.zookeeper.zookeeper
 
   permitTestUsedUndeclared project(':solr:solrj-streaming') // duh!
 }

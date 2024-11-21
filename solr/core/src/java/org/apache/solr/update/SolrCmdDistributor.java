@@ -315,8 +315,9 @@ public class SolrCmdDistributor implements Closeable {
       blockAndDoRetries();
 
       try {
-        req.uReq.setBasePath(req.node.getUrl());
-        clients.getHttpClient().request(req.uReq);
+        clients
+            .getHttpClient()
+            .requestWithBaseUrl(req.node.getBaseUrl(), req.node.getCoreName(), req.uReq);
       } catch (Exception e) {
         log.error("Exception making request", e);
         SolrError error = new SolrError();
@@ -616,8 +617,7 @@ public class SolrCmdDistributor implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof StdNode)) return false;
-      StdNode other = (StdNode) obj;
+      if (!(obj instanceof StdNode other)) return false;
       return (this.retry == other.retry)
           && (this.maxRetries == other.maxRetries)
           && Objects.equals(this.nodeProps.getBaseUrl(), other.nodeProps.getBaseUrl())
@@ -699,8 +699,7 @@ public class SolrCmdDistributor implements Closeable {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!super.equals(obj)) return false;
-      if (!(obj instanceof ForwardNode)) return false;
-      ForwardNode other = (ForwardNode) obj;
+      if (!(obj instanceof ForwardNode other)) return false;
       return Objects.equals(nodeProps.getCoreUrl(), other.nodeProps.getCoreUrl());
     }
   }

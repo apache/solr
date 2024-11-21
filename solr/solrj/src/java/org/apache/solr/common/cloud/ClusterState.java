@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -155,6 +156,16 @@ public class ClusterState implements MapWriter {
   }
 
   /**
+   * The collection names. Like a Set but might not implement it. Immutable; non-null. Some names
+   * returned might not resolve via {@link #getCollectionOrNull(String)}, so consider this a close
+   * approximation.
+   */
+  public Collection<String> getCollectionNames() {
+    // should we document we are sorted too?  Albeit that ties our hands.
+    return immutableCollectionStates.keySet();
+  }
+
+  /**
    * Get a map of collection name vs DocCollection objects
    *
    * <p>Implementation note: This method resolves the collection reference by calling {@link
@@ -162,7 +173,9 @@ public class ClusterState implements MapWriter {
    * semantics of how collection list is loaded have changed in SOLR-6629.
    *
    * @return a map of collection name vs DocCollection object
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, DocCollection> getCollectionsMap() {
     Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
@@ -366,8 +379,7 @@ public class ClusterState implements MapWriter {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof ClusterState)) return false;
-    ClusterState other = (ClusterState) obj;
+    if (!(obj instanceof ClusterState other)) return false;
     if (liveNodes == null) {
       return other.liveNodes == null;
     } else return liveNodes.equals(other.liveNodes);
@@ -381,7 +393,10 @@ public class ClusterState implements MapWriter {
   /**
    * Be aware that this may return collections which may not exist now. You can confirm that this
    * collection exists after verifying CollectionRef.get() != null
+   *
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
   }
@@ -401,28 +416,22 @@ public class ClusterState implements MapWriter {
   }
 
   /**
-   * Iterate over collections. Unlike {@link #getCollectionStates()} collections passed to the
-   * consumer are guaranteed to exist.
-   *
-   * @param consumer collection consumer.
+   * Streams the resolved {@link DocCollection}s, which will often fetch from ZooKeeper for each one
+   * for a many-collection scenario. Use this sparingly; some users have thousands of collections!
    */
+  public Stream<DocCollection> collectionStream() {
+    return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
+  }
+
+  /**
+   * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
+   * sparingly in case there are many collections.
+   *
+   * @deprecated see {@link #collectionStream()}
+   */
+  @Deprecated
   public void forEachCollection(Consumer<DocCollection> consumer) {
-    collectionStates.forEach(
-        (s, collectionRef) -> {
-          try {
-            DocCollection collection = collectionRef.get();
-            if (collection != null) {
-              consumer.accept(collection);
-            }
-          } catch (SolrException e) {
-            if (e.getCause() != null
-                && e.getCause().getClass().getName().endsWith("NoNodeException")) {
-              // don't do anything. This collection does not exist
-            } else {
-              throw e;
-            }
-          }
-        });
+    collectionStream().forEach(consumer);
   }
 
   public static class CollectionRef {
@@ -471,6 +480,7 @@ public class ClusterState implements MapWriter {
     }
   }
 
+  /** The approximate number of collections. */
   public int size() {
     return collectionStates.size();
   }

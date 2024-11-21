@@ -119,9 +119,11 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SetClusterPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -173,7 +175,7 @@ import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
-import org.apache.solr.handler.admin.api.CreateAliasAPI;
+import org.apache.solr.handler.admin.api.CreateAlias;
 import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackup;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
@@ -191,7 +193,7 @@ import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
-import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
+import org.apache.solr.handler.admin.api.ListCollectionSnapshots;
 import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicas;
@@ -201,7 +203,7 @@ import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNode;
-import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
+import org.apache.solr.handler.admin.api.RestoreCollection;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -615,10 +617,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATEALIAS_OP(
         CREATEALIAS,
         (req, rsp, h) -> {
-          final CreateAliasAPI.CreateAliasRequestBody reqBody =
-              CreateAliasAPI.createFromSolrParams(req.getParams());
+          final CreateAliasRequestBody reqBody = CreateAlias.createFromSolrParams(req.getParams());
           final SolrJerseyResponse response =
-              new CreateAliasAPI(h.coreContainer, req, rsp).createAlias(reqBody);
+              new CreateAlias(h.coreContainer, req, rsp).createAlias(reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1065,7 +1066,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     RESTORE_OP(
         RESTORE,
         (req, rsp, h) -> {
-          final var response = RestoreCollectionAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+          final var response = RestoreCollection.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1150,15 +1151,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           req.getParams().required().check(COLLECTION_PROP);
 
-          final ListCollectionSnapshotsAPI listCollectionSnapshotsAPI =
-              new ListCollectionSnapshotsAPI(h.coreContainer, req, rsp);
+          final ListCollectionSnapshots listCollectionSnapshotsAPI =
+              new ListCollectionSnapshots(h.coreContainer, req, rsp);
 
-          final ListCollectionSnapshotsAPI.ListSnapshotsResponse response =
+          final ListCollectionSnapshotsResponse response =
               listCollectionSnapshotsAPI.listSnapshots(req.getParams().get(COLLECTION_PROP));
 
           NamedList<Object> snapshots = new NamedList<>();
-          for (CollectionSnapshotMetaData meta : response.snapshots.values()) {
-            snapshots.add(meta.getName(), meta.toNamedList());
+          for (Object meta : response.snapshots.values()) {
+            final var metaTyped = (CollectionSnapshotMetaData) meta;
+            snapshots.add(metaTyped.getName(), metaTyped.toNamedList());
           }
 
           rsp.add(SolrSnapshotManager.SNAPSHOTS_INFO, snapshots);
@@ -1358,7 +1360,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUnique.class,
-        CreateAliasAPI.class,
+        CreateAlias.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
         CreateShard.class,
@@ -1377,13 +1379,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ReplaceNode.class,
         MigrateReplicas.class,
         BalanceReplicas.class,
-        RestoreCollectionAPI.class,
+        RestoreCollection.class,
         SyncShard.class,
         CollectionProperty.class,
         DeleteNode.class,
         ListAliases.class,
         AliasProperty.class,
-        ListCollectionSnapshotsAPI.class,
+        ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class,
         ClusterProperty.class);

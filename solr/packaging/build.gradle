@@ -229,9 +229,9 @@ artifacts {
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
-                     "https://github.com/bats-core/bats-assert#v2.0.0",
-                     "https://github.com/bats-core/bats-file#v0.3.0",
+  args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
+                     "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
+                     "https://github.com/bats-core/bats-file#v${libs.versions.bats.file.get()}",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")

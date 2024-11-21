@@ -111,8 +111,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // shardUnique=true for the special property preferredLeader. That was removed at one point, so
   // we're explicitly testing that as well.
   @Test
-  public void testSetArbitraryPropertySliceUnique()
-      throws IOException, SolrServerException, InterruptedException {
+  public void testSetArbitraryPropertySliceUnique() throws IOException, SolrServerException {
     // Check both special (preferredLeader) and something arbitrary.
     doTestSetArbitraryPropertySliceUnique("foo" + random().nextInt(1_000_000));
     removeAllProperties();
@@ -124,8 +123,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // individual properties on individual nodes. This one relies on Solr to pick which replicas to
   // set the property on
   @Test
-  public void testBalancePropertySliceUnique()
-      throws InterruptedException, IOException, SolrServerException {
+  public void testBalancePropertySliceUnique() throws IOException, SolrServerException {
     // Check both cases of "special" property preferred(Ll)eader
     doTestBalancePropertySliceUnique("foo" + random().nextInt(1_000_000));
     removeAllProperties();
@@ -160,7 +158,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // on an individual
   // replica.
   private void doTestSetArbitraryPropertySliceUnique(String propIn)
-      throws InterruptedException, IOException, SolrServerException {
+      throws IOException, SolrServerException {
     final String prop = (random().nextBoolean()) ? propIn : propIn.toUpperCase(Locale.ROOT);
     // First set the property in some replica in some slice
     forceUpdateCollectionStatus();
@@ -176,43 +174,29 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       Replica rep = reps[random().nextInt(reps.length)];
       // Set the property on a particular replica
       setProp(slice, rep, prop);
-      TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-
-      long count = 0;
-      boolean rightRep = false;
-      Slice modSlice;
-      DocCollection modColl = null; // keeps IDE happy
 
       // ensure that no other replica in that slice has the property when we return.
-      while (timeout.hasTimedOut() == false) {
-        forceUpdateCollectionStatus();
-        modColl = cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
-        modSlice = modColl.getSlice(slice.getName());
-        rightRep =
-            modSlice
-                .getReplica(rep.getName())
-                .getBool("property." + prop.toLowerCase(Locale.ROOT), false);
-        count =
-            modSlice.getReplicas().stream()
-                .filter(
-                    thisRep -> thisRep.getBool("property." + prop.toLowerCase(Locale.ROOT), false))
-                .count();
+      waitForState(
+          "Check property is uniquely distributed in slice: " + prop,
+          COLLECTION_NAME,
+          (n, c) -> {
+            forceUpdateCollectionStatus();
+            Slice modSlice = c.getSlice(slice.getName());
+            boolean rightRep =
+                modSlice
+                    .getReplica(rep.getName())
+                    .getBool("property." + prop.toLowerCase(Locale.ROOT), false);
+            long count =
+                modSlice.getReplicas().stream()
+                    .filter(
+                        thisRep ->
+                            thisRep.getBool("property." + prop.toLowerCase(Locale.ROOT), false))
+                    .count();
 
-        if (count == 1 && rightRep) {
-          break;
-        }
-
-        TimeUnit.MILLISECONDS.sleep(50);
-      }
-      if (count != 1 || rightRep == false) {
-        fail(
-            "The property "
-                + prop
-                + " was not uniquely distributed in slice "
-                + slice.getName()
-                + " "
-                + modColl.toString());
-      }
+            return count == 1 && rightRep;
+          },
+          timeoutMs,
+          TimeUnit.MILLISECONDS);
     }
   }
 
@@ -332,7 +316,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // re-assigned with the
   // BALANCESHARDUNIQUE command.
   private void doTestBalancePropertySliceUnique(String propIn)
-      throws InterruptedException, IOException, SolrServerException {
+      throws IOException, SolrServerException {
     final String prop = (random().nextBoolean()) ? propIn : propIn.toUpperCase(Locale.ROOT);
 
     // Concentrate the properties on as few replicas a possible
@@ -350,63 +334,55 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
   private void verifyPropCorrectlyDistributed(String prop) {
 
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-
     String propLC = prop.toLowerCase(Locale.ROOT);
-    DocCollection docCollection = null;
-    while (timeout.hasTimedOut() == false) {
-      forceUpdateCollectionStatus();
-      docCollection = cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
-      int maxPropCount = Integer.MAX_VALUE;
-      int minPropCount = Integer.MIN_VALUE;
-      for (Slice slice : docCollection.getSlices()) {
-        int repCount = 0;
-        for (Replica rep : slice.getReplicas()) {
-          if (rep.getBool("property." + propLC, false)) {
-            repCount++;
+    waitForState(
+        "Check property is distributed evenly: " + prop,
+        COLLECTION_NAME,
+        (liveNodes, docCollection) -> {
+          int maxPropCount = 0;
+          int minPropCount = Integer.MAX_VALUE;
+          for (Slice slice : docCollection.getSlices()) {
+            int repCount = 0;
+            for (Replica rep : slice.getReplicas()) {
+              if (rep.getBool("property." + propLC, false)) {
+                repCount++;
+              }
+            }
+            maxPropCount = Math.max(maxPropCount, repCount);
+            minPropCount = Math.min(minPropCount, repCount);
           }
-        }
-        maxPropCount = Math.max(maxPropCount, repCount);
-        minPropCount = Math.min(minPropCount, repCount);
-      }
-      if (Math.abs(maxPropCount - minPropCount) < 2) return;
-    }
-    log.error("Property {} is not distributed evenly. {}", prop, docCollection);
-    fail("Property is not distributed evenly " + prop);
+          return Math.abs(maxPropCount - minPropCount) < 2;
+        },
+        timeoutMs,
+        TimeUnit.MILLISECONDS);
   }
 
   // Used when we concentrate the leader on a few nodes.
   private void verifyPropDistributedAsExpected(
-      Map<String, String> expectedShardReplicaMap, String prop) throws InterruptedException {
+      Map<String, String> expectedShardReplicaMap, String prop) {
     // Make sure that the shard unique are where you expect.
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-
     String propLC = prop.toLowerCase(Locale.ROOT);
-    boolean failure = false;
-    DocCollection docCollection = null;
-    while (timeout.hasTimedOut() == false) {
-      forceUpdateCollectionStatus();
-      docCollection = cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
-      failure = false;
-      for (Map.Entry<String, String> ent : expectedShardReplicaMap.entrySet()) {
-        Replica rep = docCollection.getSlice(ent.getKey()).getReplica(ent.getValue());
-        if (rep.getBool("property." + propLC, false) == false) {
-          failure = true;
-        }
-      }
-      if (failure == false) {
-        return;
-      }
-      TimeUnit.MILLISECONDS.sleep(100);
-    }
+    String message =
+        String.format(
+            Locale.ROOT,
+            "Checking properties are on the expected replicas. Props:%s Expected:%s",
+            prop,
+            expectedShardReplicaMap.toString());
 
-    fail(
-        prop
-            + " properties are not on the expected replicas: "
-            + docCollection.toString()
-            + System.lineSeparator()
-            + "Expected "
-            + expectedShardReplicaMap.toString());
+    waitForState(
+        message,
+        COLLECTION_NAME,
+        (liveNodes, docCollection) -> {
+          for (Map.Entry<String, String> ent : expectedShardReplicaMap.entrySet()) {
+            Replica rep = docCollection.getSlice(ent.getKey()).getReplica(ent.getValue());
+            if (rep.getBool("property." + propLC, false) == false) {
+              return false;
+            }
+          }
+          return true;
+        },
+        timeoutMs,
+        TimeUnit.MILLISECONDS);
   }
 
   // Just check that the property is distributed as expectecd. This does _not_ rebalance the leaders
@@ -558,14 +534,6 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     // then start them again to concentrate the leaders. It's not necessary that all shards have a
     // leader.
 
-    ExecutorService executorService = ExecutorUtil.newMDCAwareCachedThreadPool("Start Jetty");
-
-    for (JettySolrRunner jetty : jettys) {
-      cluster.stopJettySolrRunner(jetty);
-    }
-
-    ExecutorUtil.shutdownAndAwaitTermination(executorService);
-
     for (JettySolrRunner jetty : jettys) {
       cluster.stopJettySolrRunner(jetty);
     }
@@ -575,7 +543,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     }
     checkReplicasInactive(jettys);
 
-    executorService = ExecutorUtil.newMDCAwareCachedThreadPool("Start Jetty");
+    ExecutorService executorService = ExecutorUtil.newMDCAwareCachedThreadPool("Start Jetty");
 
     for (int idx = 0; idx < jettys.size(); ++idx) {
       int finalIdx = idx;
@@ -604,74 +572,61 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
   // Since we have to restart jettys, we don't want to try re-balancing etc. until we're sure all
   // jettys that should be up are and all replicas are active.
-  private void checkReplicasInactive(List<JettySolrRunner> downJettys) throws InterruptedException {
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    DocCollection docCollection = null;
-    Set<String> liveNodes = null;
+  private void checkReplicasInactive(List<JettySolrRunner> downJettys) {
 
     Set<String> downJettyNodes = new TreeSet<>();
     for (JettySolrRunner jetty : downJettys) {
       downJettyNodes.add(
           jetty.getBaseUrl().getHost() + ":" + jetty.getBaseUrl().getPort() + "_solr");
     }
-    while (timeout.hasTimedOut() == false) {
-      forceUpdateCollectionStatus();
-      docCollection = cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
-      liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
-      boolean expectedInactive = true;
 
-      for (Slice slice : docCollection.getSlices()) {
-        for (Replica rep : slice.getReplicas()) {
-          if (downJettyNodes.contains(rep.getNodeName()) == false) {
-            continue; // We are on a live node
+    waitForState(
+        "Waiting for all replicas to become inactive",
+        COLLECTION_NAME,
+        (liveNodes, docCollection) -> {
+          boolean expectedInactive = true;
+
+          for (Slice slice : docCollection.getSlices()) {
+            for (Replica rep : slice.getReplicas()) {
+              if (downJettyNodes.contains(rep.getNodeName()) == false) {
+                continue; // We are on a live node
+              }
+              // A replica on an allegedly down node is reported as active.
+              if (rep.isActive(liveNodes)) {
+                expectedInactive = false;
+              }
+            }
           }
-          // A replica on an allegedly down node is reported as active.
-          if (rep.isActive(liveNodes)) {
-            expectedInactive = false;
-          }
-        }
-      }
-      if (expectedInactive) {
-        return;
-      }
-      TimeUnit.MILLISECONDS.sleep(100);
-    }
-    fail(
-        "timed out waiting for all replicas to become inactive: livenodes: "
-            + liveNodes
-            + " Collection state: "
-            + docCollection.toString());
+          return expectedInactive;
+        },
+        timeoutMs,
+        TimeUnit.MILLISECONDS);
   }
 
   // We need to wait around until all replicas are active before expecting rebalancing or
   // distributing shard-unique properties to work.
-  private void checkAllReplicasActive() throws InterruptedException {
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (timeout.hasTimedOut() == false) {
-      forceUpdateCollectionStatus();
-      DocCollection docCollection =
-          cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
-      Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
-      boolean allActive = true;
-      for (Slice slice : docCollection.getSlices()) {
-        for (Replica rep : slice.getReplicas()) {
-          if (rep.isActive(liveNodes) == false) {
-            allActive = false;
+  private void checkAllReplicasActive() {
+    waitForState(
+        "Waiting for all replicas to become active",
+        COLLECTION_NAME,
+        (liveNodes, docCollection) -> {
+          boolean allActive = true;
+          for (Slice slice : docCollection.getSlices()) {
+            for (Replica rep : slice.getReplicas()) {
+              if (rep.isActive(liveNodes) == false) {
+                allActive = false;
+              }
+            }
           }
-        }
-      }
-      if (allActive) {
-        return;
-      }
-      TimeUnit.MILLISECONDS.sleep(100);
-    }
-    fail("timed out waiting for all replicas to become active");
+          return allActive;
+        },
+        timeoutMs,
+        TimeUnit.MILLISECONDS);
   }
 
   // use a simple heuristic to put as many replicas with the property on as few nodes as possible.
   // The point is that then we can execute BALANCESHARDUNIQUE and be sure it worked correctly
-  private void concentrateProp(String prop)
-      throws InterruptedException, IOException, SolrServerException {
+  private void concentrateProp(String prop) throws IOException, SolrServerException {
     // find all the live nodes for each slice, assign the leader to the first replica that is in the
     // lowest position on live_nodes
     List<String> liveNodes =
@@ -704,43 +659,26 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // make sure that the property in question is unique per shard.
-  private Map<String, String> verifyPropUniquePerShard(String prop) throws InterruptedException {
-    Map<String, String> uniquePropMaps = new TreeMap<>();
+  private void verifyPropUniquePerShard(String prop) {
 
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-    while (timeout.hasTimedOut() == false) {
-      uniquePropMaps.clear();
-      if (checkUniquePropPerShard(uniquePropMaps, prop)) {
-        return uniquePropMaps;
-      }
-      TimeUnit.MILLISECONDS.sleep(10);
-    }
-    fail(
-        "There should be exactly one replica with value "
-            + prop
-            + " set to true per shard: "
-            + cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME).toString());
-    return null; // keeps IDE happy.
-  }
-
-  // return true if every shard has exactly one replica with the unique property set to "true"
-  private boolean checkUniquePropPerShard(Map<String, String> uniques, String prop) {
-    forceUpdateCollectionStatus();
-    DocCollection docCollection =
-        cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
-
-    for (Slice slice : docCollection.getSlices()) {
-      int propCount = 0;
-      for (Replica rep : slice.getReplicas()) {
-        if (rep.getBool("property." + prop.toLowerCase(Locale.ROOT), false)) {
-          propCount++;
-          uniques.put(slice.getName(), rep.getName());
-        }
-      }
-      if (1 != propCount) {
-        return false;
-      }
-    }
-    return true;
+    waitForState(
+        "Waiting to have exactly one replica with " + prop + "set per shard",
+        COLLECTION_NAME,
+        (liveNodes, docCollection) -> {
+          for (Slice slice : docCollection.getSlices()) {
+            int propCount = 0;
+            for (Replica rep : slice.getReplicas()) {
+              if (rep.getBool("property." + prop.toLowerCase(Locale.ROOT), false)) {
+                propCount++;
+              }
+            }
+            if (1 != propCount) {
+              return false;
+            }
+          }
+          return true;
+        },
+        timeoutMs,
+        TimeUnit.MILLISECONDS);
   }
 }

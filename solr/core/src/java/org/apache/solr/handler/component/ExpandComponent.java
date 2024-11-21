@@ -144,9 +144,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       if (filters != null) {
         int cost = Integer.MAX_VALUE;
         for (Query q : filters) {
-          if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter) {
-            CollapsingQParserPlugin.CollapsingPostFilter cp =
-                (CollapsingQParserPlugin.CollapsingPostFilter) q;
+          if (q instanceof CollapsingQParserPlugin.CollapsingPostFilter cp) {
             // if there are multiple collapse pick the low cost one
             // if cost are equal then first one is picked
             if (cp.getCost() < cost) {

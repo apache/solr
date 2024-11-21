@@ -88,12 +88,14 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -120,7 +122,6 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.FileInfo;
-import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -1598,10 +1599,10 @@ public class IndexFetcher {
       names.add(name, null);
     }
     // get the details of the local conf files with the same alias/name
-    List<CoreReplicationAPI.FileMetaData> localFilesInfo =
+    List<FileMetaData> localFilesInfo =
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
-    for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
+    for (FileMetaData fileInfo : localFilesInfo) {
       String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
@@ -1800,7 +1801,7 @@ public class IndexFetcher {
             () -> {
               try {
                 file.sync();
-              } catch (IOException e) {
+              } catch (IOException | AlreadyClosedException e) {
                 fsyncException = e;
               }
             });
@@ -1979,9 +1980,8 @@ public class IndexFetcher {
       try {
         QueryRequest req = new QueryRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-        req.setBasePath(leaderBaseUrl);
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.request(req, leaderCoreName);
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 

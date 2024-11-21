@@ -302,7 +302,7 @@ public abstract class Feature extends Query implements Accountable {
     }
 
     /** A 'recipe' for computing a feature */
-    public abstract class FeatureScorer extends Scorer {
+    public abstract static class FeatureScorer extends Scorer {
 
       protected final String name;
       private DocInfo docInfo;
@@ -342,7 +342,7 @@ public abstract class Feature extends Query implements Accountable {
      * A <code>FeatureScorer</code> that contains a <code>Scorer</code>, which it delegates to where
      * appropriate.
      */
-    public abstract class FilterFeatureScorer extends FeatureScorer {
+    public abstract static class FilterFeatureScorer extends FeatureScorer {
 
       protected final Scorer in;
 
@@ -380,7 +380,7 @@ public abstract class Feature extends Query implements Accountable {
      * Default FeatureScorer class that returns the score passed in. Can be used as a simple
      * ValueFeature, or to return a default scorer in case an underlying feature's scorer is null.
      */
-    public class ValueFeatureScorer extends FeatureScorer {
+    public static class ValueFeatureScorer extends FeatureScorer {
       float constScore;
 
       public ValueFeatureScorer(FeatureWeight weight, float constScore, DocIdSetIterator itr) {

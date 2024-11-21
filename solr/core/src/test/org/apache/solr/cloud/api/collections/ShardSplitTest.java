@@ -960,7 +960,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
-    checkForCollection(collectionName, list, null);
+    checkForCollection(collectionName, list);
 
     waitForRecoveriesToFinish(false);
 
@@ -1031,7 +1031,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
 
     List<Integer> list = collectionInfos.get(collectionName);
-    checkForCollection(collectionName, list, null);
+    checkForCollection(collectionName, list);
 
     waitForRecoveriesToFinish(false);
 
@@ -1320,8 +1320,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
   public static int getHashRangeIdx(DocRouter router, List<DocRouter.Range> ranges, String id) {
     int hash = 0;
-    if (router instanceof HashBasedRouter) {
-      HashBasedRouter hashBasedRouter = (HashBasedRouter) router;
+    if (router instanceof HashBasedRouter hashBasedRouter) {
       hash = hashBasedRouter.sliceHash(id, null, null, null);
     }
     for (int i = 0; i < ranges.size(); i++) {

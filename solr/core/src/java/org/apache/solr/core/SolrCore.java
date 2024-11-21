@@ -128,13 +128,9 @@ import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
-import org.apache.solr.response.PHPResponseWriter;
-import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
-import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -953,8 +949,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -999,8 +994,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -3015,10 +3009,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
-    m.put("python", new PythonResponseWriter());
-    m.put("php", new PHPResponseWriter());
-    m.put("phps", new PHPSerializedResponseWriter());
-    m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
     m.put("cbor", new CborResponseWriter());
@@ -3400,8 +3390,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * some data so that events are triggered.
    */
   private void registerConfListener() {
-    if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
-    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if (!(resourceLoader instanceof ZkSolrResourceLoader zkSolrResourceLoader)) return;
     if (zkSolrResourceLoader != null)
       zkSolrResourceLoader
           .getZkController()
@@ -3421,8 +3410,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
     String schemaRes = null;
     if (core.getLatestSchema().isMutable()
-        && core.getLatestSchema() instanceof ManagedIndexSchema) {
-      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+        && core.getLatestSchema() instanceof ManagedIndexSchema mis) {
       schemaRes = mis.getResourceName();
     }
     final String managedSchemaResourcePath =

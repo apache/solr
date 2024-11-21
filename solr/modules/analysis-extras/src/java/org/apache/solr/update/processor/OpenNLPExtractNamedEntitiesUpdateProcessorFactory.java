@@ -394,11 +394,10 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' can not be null");
           }
-          if (!(excObj instanceof NamedList)) {
+          if (!(excObj instanceof NamedList<?> exc)) {
             throw new SolrException(
                 SERVER_ERROR, "Init param '" + SOURCE_PARAM + "' child 'exclude' must be <lst/>");
           }
-          NamedList<?> exc = (NamedList<?>) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
             throw new SolrException(
@@ -445,8 +444,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
               + "for OpenNLPExtractNamedEntitiesUpdateProcessor for further details.");
     }
 
-    if (d instanceof NamedList) {
-      NamedList<?> destList = (NamedList<?>) d;
+    if (d instanceof NamedList<?> destList) {
 
       Object patt = destList.remove(PATTERN_PARAM);
       Object replacement = destList.remove(REPLACEMENT_PARAM);
