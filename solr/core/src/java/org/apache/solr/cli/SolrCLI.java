@@ -17,10 +17,11 @@
 package org.apache.solr.cli;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -159,12 +160,12 @@ public class SolrCLI implements CLIO {
     String keyStore = System.getProperty(sysProp);
     if (keyStore == null) return;
 
-    File keyStoreFile = new File(keyStore);
-    if (keyStoreFile.isFile()) return; // configured setting is OK
+    Path keyStoreFile = Path.of(keyStore);
+    if (Files.isRegularFile(keyStoreFile)) return; // configured setting is OK
 
-    keyStoreFile = new File(solrInstallDir, "server/" + keyStore);
-    if (keyStoreFile.isFile()) {
-      System.setProperty(sysProp, keyStoreFile.getAbsolutePath());
+    keyStoreFile = Path.of(solrInstallDir, "server", keyStore);
+    if (Files.isRegularFile(keyStoreFile)) {
+      System.setProperty(sysProp, keyStoreFile.toAbsolutePath().toString());
     } else {
       CLIO.err(
           "WARNING: "

@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -599,7 +598,7 @@ public class ExportTool extends ToolBase {
         consumerThreadpool.shutdownNow();
         if (failed) {
           try {
-            Files.delete(new File(out).toPath());
+            Files.delete(Path.of(out));
           } catch (IOException e) {
             // ignore
           }
