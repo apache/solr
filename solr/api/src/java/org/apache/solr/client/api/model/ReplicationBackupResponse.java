@@ -14,18 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.jersey;
+package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 
-/**
- * {@link SolrJerseyResponse} implementation with a warning field indicating that the format may
- * change
- */
-public class ExperimentalResponse extends SolrJerseyResponse {
-  @JsonProperty("WARNING")
-  public String warning =
-      "This response format is experimental.  It is likely to change in the future.";
+/** Response for the v2 "replication backup" API */
+public class ReplicationBackupResponse extends SolrJerseyResponse {
+
+  @JsonProperty("result")
+  public Object result;
+
+  @JsonProperty("status")
+  public String status;
+
+  @JsonProperty("message")
+  public String message;
+
+  @JsonProperty("exception")
+  public Exception exception;
 }
