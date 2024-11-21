@@ -83,6 +83,9 @@ jobs:
     steps:
     # Setup
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+        fetch-depth: 0
 
     - name: Set up JDK
       uses: actions/setup-java@v4
