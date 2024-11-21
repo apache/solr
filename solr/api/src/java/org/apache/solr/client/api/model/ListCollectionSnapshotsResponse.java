@@ -14,25 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.model;
-
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Map;
 
-/** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
+/** The Response for the v2 "list collection snapshots" API */
+public class ListCollectionSnapshotsResponse extends AsyncJerseyResponse {
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
-
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  // TODO In practice, map values are of the CollectionSnapshotMetaData type, but that cannot be
+  // used here until the class is made into more of a POJO and can join the 'api' module here
+  @Schema(description = "The snapshots for the collection.")
+  @JsonProperty("snapshots")
+  public Map<String, Object> snapshots;
 }

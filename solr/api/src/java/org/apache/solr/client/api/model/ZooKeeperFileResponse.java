@@ -14,25 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-/** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
+public class ZooKeeperFileResponse extends SolrJerseyResponse {
+  // TODO Should be switched over to using StreamingOutput as a part of SOLR-17562
+  @JsonProperty("content") // A flag value that RawResponseWriter handles specially
+  public Object output;
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
-
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  @JsonProperty("zkData")
+  public String zkData;
 }

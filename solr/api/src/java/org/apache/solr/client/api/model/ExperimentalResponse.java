@@ -17,22 +17,14 @@
 
 package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-/** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
-
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
-
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+/**
+ * {@link SolrJerseyResponse} implementation with a warning field indicating that the format may
+ * change
+ */
+public class ExperimentalResponse extends SolrJerseyResponse {
+  @JsonProperty("WARNING")
+  public String warning =
+      "This response format is experimental.  It is likely to change in the future.";
 }

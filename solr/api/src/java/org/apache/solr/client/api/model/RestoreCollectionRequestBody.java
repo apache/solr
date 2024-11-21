@@ -14,25 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.model;
-
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-/** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
+/** Request body for the v2 "restore collection" API. */
+public class RestoreCollectionRequestBody {
+
+  @JsonProperty(required = true)
   public String collection;
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
+  @JsonProperty public String location;
+  @JsonProperty public String repository;
+  @JsonProperty public Integer backupId;
 
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  @Schema(
+      description =
+          "Parameters to be used for any collections created by this restore.  Only used if the collection specified by the 'collection' property does not exist.",
+      name = "createCollectionParams")
+  @JsonProperty("create-collection")
+  public CreateCollectionRequestBody createCollectionParams;
+
+  @JsonProperty public String async;
 }

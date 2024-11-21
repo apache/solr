@@ -14,25 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 
-/** The Response for {@link org.apache.solr.client.api.endpoint.CollectionSnapshotApis.Delete} */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
+/** Represents the data returned by a ZooKeeper 'stat' call */
+public class ZooKeeperStat {
+  @JsonProperty("version")
+  public int version;
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
+  @JsonProperty("aversion")
+  public int aversion;
 
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  @JsonProperty("children")
+  public int children;
+
+  @JsonProperty("ctime")
+  public long ctime;
+
+  @JsonProperty("cversion")
+  public int cversion;
+
+  @JsonProperty("czxid")
+  public long czxid;
+
+  @JsonProperty("ephemeralOwner")
+  public long ephemeralOwner;
+
+  @JsonProperty("mtime")
+  public long mtime;
+
+  @JsonProperty("mzxid")
+  public long mzxid;
+
+  @JsonProperty("pzxid")
+  public long pzxid;
+
+  @JsonProperty("dataLength")
+  public int dataLength;
 }
