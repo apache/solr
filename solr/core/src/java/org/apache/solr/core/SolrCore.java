@@ -1845,13 +1845,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // Close the snapshots meta-data directory.
-    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-    try {
-      this.directoryFactory.release(snapshotsDir);
-    } catch (Throwable e) {
-      log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
-      if (e instanceof Error) {
-        throw (Error) e;
+    if (snapshotMgr != null) {
+      Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+      try {
+        this.directoryFactory.release(snapshotsDir);
+      } catch (Throwable e) {
+        log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
     }
 
