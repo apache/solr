@@ -85,3 +85,7 @@ Please note this also removes the ability to share resource intensive objects ac
 
 * The language specific Response Writers, which were deprecated in 9.8 in favour of more widely used formats like JSON have been removed.
 The removed writer types (invoked as part of the `wt` parameter) include `python`, `ruby`, `php`, and `phps`.
+
+* Support for the `<lib/>` directive, which historically could be used in solrconfig.xml to add JARs on a core-by-core basis, was deprecated in 9.8 and has now been removed.
+Users that need to vary JAR accessibility on a per-core basis can use Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
+Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.
