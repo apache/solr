@@ -122,8 +122,7 @@ public class ClientUtils {
           for (Entry<Object, Object> entry : ((Map<Object, Object>) v).entrySet()) {
             update = entry.getKey().toString();
             v = entry.getValue();
-            if (v instanceof Collection) {
-              Collection<?> values = (Collection<?>) v;
+            if (v instanceof Collection<?> values) {
               for (Object value : values) {
                 writeVal(writer, name, value, update);
               }
@@ -150,11 +149,9 @@ public class ClientUtils {
       throws IOException {
     if (v instanceof Date) {
       v = ((Date) v).toInstant().toString();
-    } else if (v instanceof byte[]) {
-      byte[] bytes = (byte[]) v;
+    } else if (v instanceof byte[] bytes) {
       v = Base64.getEncoder().encodeToString(bytes);
-    } else if (v instanceof ByteBuffer) {
-      ByteBuffer bytes = (ByteBuffer) v;
+    } else if (v instanceof ByteBuffer bytes) {
       v =
           new String(
               Base64.getEncoder()
@@ -168,8 +165,7 @@ public class ClientUtils {
     }
 
     XML.Writable valWriter = null;
-    if (v instanceof SolrInputDocument) {
-      final SolrInputDocument solrDoc = (SolrInputDocument) v;
+    if (v instanceof SolrInputDocument solrDoc) {
       valWriter = (writer1) -> writeXML(solrDoc, writer1);
     } else if (v != null) {
       final Object val = v;

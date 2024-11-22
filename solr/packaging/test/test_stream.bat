@@ -62,7 +62,7 @@ teardown() {
   echo 'sort="price desc"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
   
-  run solr stream -e remote --name techproducts --solr-url http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
+  run solr stream --name techproducts --solr-url http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
   assert_output --partial 'CORSAIR  XMS'

@@ -380,8 +380,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
         } else if (!zkHosts.isEmpty()) {
           this.stateProvider =
               ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
-          if (stateProvider instanceof SolrZkClientTimeoutAware) {
-            var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
+          if (stateProvider instanceof SolrZkClientTimeoutAware timeoutAware) {
             timeoutAware.setZkClientTimeout(zkClientTimeout);
             timeoutAware.setZkConnectTimeout(zkConnectTimeout);
           }

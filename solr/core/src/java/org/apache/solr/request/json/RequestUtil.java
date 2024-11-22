@@ -363,8 +363,7 @@ public class RequestUtil {
 
         if (val == null) {
           params.remove(key);
-        } else if (val instanceof List) {
-          List<?> lst = (List<?>) val;
+        } else if (val instanceof List<?> lst) {
           String[] vals = new String[lst.size()];
           for (int i = 0; i < vals.length; i++) {
             vals[i] = lst.get(i).toString();

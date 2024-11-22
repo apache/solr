@@ -124,7 +124,7 @@ import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocal;
 import org.apache.solr.handler.admin.SecurityConfHandlerZk;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
-import org.apache.solr.handler.admin.ZookeeperReadAPI;
+import org.apache.solr.handler.admin.ZookeeperRead;
 import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -594,9 +594,8 @@ public class CoreContainer {
   }
 
   private void setupHttpClientForAuthPlugin(Object authcPlugin) {
-    if (authcPlugin instanceof HttpClientBuilderPlugin) {
+    if (authcPlugin instanceof HttpClientBuilderPlugin builderPlugin) {
       // Setup HttpClient for internode communication
-      HttpClientBuilderPlugin builderPlugin = ((HttpClientBuilderPlugin) authcPlugin);
       SolrHttpClientBuilder builder =
           builderPlugin.getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
 
@@ -824,8 +823,7 @@ public class CoreContainer {
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
-    if (shardHandlerFactory instanceof SolrMetricProducer) {
-      SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
+    if (shardHandlerFactory instanceof SolrMetricProducer metricProducer) {
       metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
     }
 
@@ -872,7 +870,7 @@ public class CoreContainer {
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
-      registerV2ApiIfEnabled(ZookeeperReadAPI.class);
+      registerV2ApiIfEnabled(ZookeeperRead.class);
     }
 
     MDCLoggingContext.setNode(this);
@@ -1129,8 +1127,7 @@ public class CoreContainer {
           .forEach(
               handlerName -> {
                 SolrRequestHandler handler = containerHandlers.get(handlerName);
-                if (handler instanceof ClusterSingleton) {
-                  ClusterSingleton singleton = (ClusterSingleton) handler;
+                if (handler instanceof ClusterSingleton singleton) {
                   clusterSingletons.getSingletons().put(singleton.getName(), singleton);
                 }
               });

@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.model.ZooKeeperListChildrenResponse;
+import org.apache.solr.client.api.model.ZooKeeperStat;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -35,7 +37,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Integration tests for {@link ZookeeperReadAPI} */
+/** Integration tests for {@link ZookeeperRead} */
 public class ZookeeperReadAPITest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -126,13 +128,12 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
   @Test
   public void testCanListChildNodes() throws Exception {
     try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      final ZookeeperReadAPI.ListZkChildrenResponse response =
+      final ZooKeeperListChildrenResponse response =
           Utils.executeGET(
               client.getHttpClient(),
               basezkls + "/configs/_default",
               is -> {
-                return new ObjectMapper()
-                    .readValue(is, ZookeeperReadAPI.ListZkChildrenResponse.class);
+                return new ObjectMapper().readValue(is, ZooKeeperListChildrenResponse.class);
               });
 
       // At the top level, the response contains a key with the value of the specified zkPath
@@ -145,7 +146,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
       // node.
       // The actual stat values vary a good bit so aren't very useful to assert on, so let's just
       // make sure all of the expected child nodes were found.
-      final Map<String, ZookeeperReadAPI.AnnotatedStat> childStatsByPath =
+      final Map<String, ZooKeeperStat> childStatsByPath =
           response.unknownProperties().get("/configs/_default");
       assertEquals(6, childStatsByPath.size());
       assertThat(

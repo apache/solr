@@ -949,8 +949,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -995,8 +994,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -1840,13 +1838,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // Close the snapshots meta-data directory.
-    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-    try {
-      this.directoryFactory.release(snapshotsDir);
-    } catch (Throwable e) {
-      log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
-      if (e instanceof Error) {
-        throw (Error) e;
+    if (snapshotMgr != null) {
+      Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+      try {
+        this.directoryFactory.release(snapshotsDir);
+      } catch (Throwable e) {
+        log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
     }
 
@@ -3392,8 +3392,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * some data so that events are triggered.
    */
   private void registerConfListener() {
-    if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
-    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if (!(resourceLoader instanceof ZkSolrResourceLoader zkSolrResourceLoader)) return;
     if (zkSolrResourceLoader != null)
       zkSolrResourceLoader
           .getZkController()
@@ -3413,8 +3412,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
     String schemaRes = null;
     if (core.getLatestSchema().isMutable()
-        && core.getLatestSchema() instanceof ManagedIndexSchema) {
-      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+        && core.getLatestSchema() instanceof ManagedIndexSchema mis) {
       schemaRes = mis.getResourceName();
     }
     final String managedSchemaResourcePath =
