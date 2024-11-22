@@ -363,7 +363,8 @@ public class RunExampleTool extends ToolBase {
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
       try (SolrClient solrClient =
-          CLIUtils.getSolrClient(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+          CLIUtils.getSolrClient(
+              solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
         echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
