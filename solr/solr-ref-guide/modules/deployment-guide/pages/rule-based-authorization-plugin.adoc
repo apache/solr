@@ -140,18 +140,6 @@ For example:
 }
 ----
 
-`useShortName`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Determines if user-role mappings will resolve using the full principal or a shortened name provided by the authentication plugin.
-For example, the `KerberosAuthPlugin` may provide a full principal as `user@EXAMPLE.COM`, while the corresponding short name would be `user`.
-+
-For some plugins the principal name and short name may be the same.
-
 === Example for RuleBasedAuthorizationPlugin and BasicAuth
 
 This example `security.json` shows how the xref:basic-authentication-plugin.adoc[] can work with the `RuleBasedAuthorizationPlugin` plugin:
