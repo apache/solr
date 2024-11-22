@@ -109,7 +109,7 @@ public class SSLTestConfig {
 
     final String resourceName =
         checkPeerName ? TEST_KEYSTORE_LOCALHOST_RESOURCE : TEST_KEYSTORE_BOGUSHOST_RESOURCE;
-    trustStore = keyStore = ResourceFactory.root().newSystemResource(resourceName);
+    trustStore = keyStore = ResourceFactory.root().newClassLoaderResource(resourceName, true);
     if (null == keyStore || !keyStore.exists()) {
       throw new IllegalStateException(
           "Unable to locate keystore resource file in classpath: " + resourceName);
