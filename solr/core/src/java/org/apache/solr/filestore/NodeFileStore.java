@@ -17,7 +17,7 @@
 package org.apache.solr.filestore;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.apache.solr.security.PermissionNameProvider.Name.FILESTORE_READ_PERM;
 

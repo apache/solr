@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -57,6 +60,7 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.command.FourLetterCommands;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.apache.zookeeper.test.ClientBase;
@@ -380,7 +384,9 @@ public class ZkTestServer {
           try {
             int port = cnxnFactory.getLocalPort();
             if (port > 0) {
-              ClientBase.waitForServerDown(getZkHost(), 30000);
+              assertTrue(
+                  "ZK Server did not go down when expected",
+                  ClientBase.waitForServerDown(getZkHost(), 30000));
             }
           } catch (NullPointerException ignored) {
             // server never successfully started
@@ -534,6 +540,8 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
+    ensureStatCommandWhitelisted();
+
     AtomicReference<Throwable> zooError = new AtomicReference<>();
     try {
       if (zooThread != null) {
@@ -596,7 +604,8 @@ public class ZkTestServer {
       }
       log.info("start zk server on port: {}", port);
 
-      ClientBase.waitForServerUp(getZkHost(), 30000);
+      assertTrue(
+          "ZK Server did not go up when expected", ClientBase.waitForServerUp(getZkHost(), 30000));
 
       init(solrFormat);
     } catch (Exception e) {
@@ -851,5 +860,34 @@ public class ZkTestServer {
 
   public SolrZkClient getZkClient() {
     return chRootClient;
+  }
+
+  /** Ensure the {@link ClientBase} helper methods we want to use will work. */
+  private static void ensureStatCommandWhitelisted() {
+    // Use this instead of hardcoding "stat" so we get compile error if ZK removes the command
+    final String stat = FourLetterCommands.getCommandString(FourLetterCommands.statCmd);
+    if (!FourLetterCommands.isEnabled(stat)) {
+      final String original = System.getProperty(ZK_WHITELIST_PROPERTY);
+      try {
+        log.error(
+            "ZkTestServer requires the 'stat' command, temporarily manipulating your whitelist");
+        System.setProperty(ZK_WHITELIST_PROPERTY, "*");
+        FourLetterCommands.resetWhiteList();
+        // This call to isEnabled should force ZK to "re-read" the system property in it's static
+        // vrs
+        assertTrue(
+            "Temporary manipulation of ZK Whitelist didn't work?",
+            FourLetterCommands.isEnabled(stat));
+      } finally {
+        if (null == original) {
+          System.clearProperty(ZK_WHITELIST_PROPERTY);
+        } else {
+          System.setProperty(ZK_WHITELIST_PROPERTY, original);
+        }
+      }
+      assertTrue(
+          "Temporary manipulation of ZK Whitelist didn't survive re-setting original value, ZK 4LW init logic has broken this class",
+          FourLetterCommands.isEnabled(stat));
+    }
   }
 }

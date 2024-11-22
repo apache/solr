@@ -21,6 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.trace.Span;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,9 +31,12 @@ import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.UpdateLog;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,8 +47,6 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   private CoreReplication coreReplicationAPI;
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
-  private SolrQueryRequest mockQueryRequest;
-  private SolrQueryResponse queryResponse;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -55,9 +58,9 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     setUpMocks();
-    mockQueryRequest = mock(SolrQueryRequest.class);
+    final var mockQueryRequest = mock(SolrQueryRequest.class);
     when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
-    queryResponse = new SolrQueryResponse();
+    final var queryResponse = new SolrQueryResponse();
     coreReplicationAPI = new CoreReplicationAPIMock(mockCore, mockQueryRequest, queryResponse);
   }
 
@@ -81,10 +84,37 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     assertEquals(123456789, actualResponse.fileList.get(0).checksum);
   }
 
-  private void setUpMocks() {
+  @Test
+  public void testFetchFile() throws Exception {
+    ReplicationAPIBase.DirectoryFileStream actual =
+        coreReplicationAPI.doFetchFile("./test", "file", null, null, false, false, 0, null);
+    assertNotNull(actual);
+
+    actual =
+        coreReplicationAPI.doFetchFile("./test", "tlogFile", null, null, false, false, 0, null);
+    assertTrue(actual instanceof ReplicationAPIBase.LocalFsTlogFileStream);
+
+    actual = coreReplicationAPI.doFetchFile("./test", "cf", null, null, false, false, 0, null);
+    assertTrue(actual instanceof ReplicationAPIBase.LocalFsConfFileStream);
+  }
+
+  private void setUpMocks() throws IOException {
     mockCore = mock(SolrCore.class);
     mockReplicationHandler = mock(ReplicationHandler.class);
+
+    // Mocks for LocalFsTlogFileStream
+    UpdateHandler mockUpdateHandler = mock(UpdateHandler.class);
+    UpdateLog mockUpdateLog = mock(UpdateLog.class);
+    when(mockUpdateHandler.getUpdateLog()).thenReturn(mockUpdateLog);
+    when(mockUpdateLog.getTlogDir()).thenReturn("ignore");
+
+    // Mocks for LocalFsConfFileStream
+    SolrResourceLoader mockSolrResourceLoader = mock(SolrResourceLoader.class);
+    Path mockPath = mock(Path.class);
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
+    when(mockCore.getUpdateHandler()).thenReturn(mockUpdateHandler);
+    when(mockCore.getResourceLoader()).thenReturn(mockSolrResourceLoader);
+    when(mockSolrResourceLoader.getConfigPath()).thenReturn(mockPath);
   }
 
   private static class CoreReplicationAPIMock extends CoreReplication {
@@ -94,7 +124,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
     @Override
     protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
-      final FileListResponse filesResponse = new FileListResponse();
+      final var filesResponse = new FileListResponse();
       List<FileMetaData> fileMetaData = Arrays.asList(new FileMetaData(123, "test", 123456789));
       filesResponse.fileList = new ArrayList<>(fileMetaData);
       return filesResponse;
