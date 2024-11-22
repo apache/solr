@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -37,12 +36,9 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogListener;
-import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -225,7 +221,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
     try (LogListener logListener = LogListener.info().substring("distrib=false")) {
       solrInstance.startJetty();
-      while(true) {
+      while (true) {
         if (logListener.pollMessage() != null) {
           return;
         }
