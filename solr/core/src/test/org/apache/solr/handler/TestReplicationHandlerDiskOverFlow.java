@@ -214,6 +214,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
                 .add("qt", "/replication")
                 .add("command", CMD_FETCH_INDEX)
                 .add("wait", "true"));
+
     assertEquals("Replication command status", "OK", response._getStr("status", null));
 
     assertEquals(

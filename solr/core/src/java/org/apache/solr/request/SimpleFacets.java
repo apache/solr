@@ -234,8 +234,7 @@ public class SimpleFacets {
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
       if (!(olst instanceof Collection)) continue;
       for (Object o : (Collection<?>) olst) {
-        if (!(o instanceof QParser)) continue;
-        QParser qp = (QParser) o;
+        if (!(o instanceof QParser qp)) continue;
         excludeSet.put(qp.getQuery(), Boolean.TRUE);
       }
     }
@@ -1292,8 +1291,7 @@ public class SimpleFacets {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof CountPair)) return false;
-      CountPair<?, ?> that = (CountPair<?, ?>) o;
+      if (!(o instanceof CountPair<?, ?> that)) return false;
       return (this.key.equals(that.key) && this.val.equals(that.val));
     }
 

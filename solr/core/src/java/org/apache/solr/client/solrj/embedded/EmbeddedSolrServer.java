@@ -321,8 +321,7 @@ public class EmbeddedSolrServer extends SolrClient {
   /** A list of streams, non-null. */
   private List<ContentStream> getContentStreams(SolrRequest<?> request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return List.of();
-    if (request instanceof ContentStreamUpdateRequest) {
-      final ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;
+    if (request instanceof ContentStreamUpdateRequest csur) {
       final Collection<ContentStream> cs = csur.getContentStreams();
       if (cs != null) return new ArrayList<>(cs);
     }

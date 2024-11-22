@@ -1256,10 +1256,9 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
         final long version = addAndGetVersion(sdoc, null);
 
         final Object val = sdoc.getFieldValue(valField);
-        if (val instanceof Map) {
+        if (val instanceof Map<?, ?> atomicUpdate) {
           // atomic update of the field we're modeling
 
-          Map<String, ?> atomicUpdate = (Map) val;
           assertEquals(sdoc.toString(), 1, atomicUpdate.size());
           if (atomicUpdate.containsKey("inc")) {
             // Solr treats inc on a non-existing doc (or doc w/o existing value) as if existing

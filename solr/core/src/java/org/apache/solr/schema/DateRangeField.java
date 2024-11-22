@@ -75,8 +75,7 @@ public class DateRangeField
   protected String getStoredValue(Shape shape, String shapeStr) {
     // even if shapeStr is set, it might have included some dateMath, so see if we can resolve it
     // first:
-    if (shape instanceof UnitNRShape) {
-      UnitNRShape unitShape = (UnitNRShape) shape;
+    if (shape instanceof UnitNRShape unitShape) {
       if (unitShape.getLevel() == tree.getMaxLevels()) {
         // fully precise date. We can be fully compatible with DatePointField (incl. 'Z')
         return shape.toString() + 'Z';

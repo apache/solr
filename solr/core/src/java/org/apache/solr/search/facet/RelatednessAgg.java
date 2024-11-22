@@ -118,10 +118,9 @@ public class RelatednessAgg extends AggValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof RelatednessAgg)) {
+    if (!(o instanceof RelatednessAgg that)) {
       return false;
     }
-    RelatednessAgg that = (RelatednessAgg) o;
     return Objects.equals(fgQ, that.fgQ)
         && Objects.equals(bgQ, that.bgQ)
         && min_pop == that.min_pop;
@@ -571,10 +570,9 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public boolean equals(Object other) {
-      if (!(other instanceof BucketData)) {
+      if (!(other instanceof BucketData that)) {
         return false;
       }
-      BucketData that = (BucketData) other;
       // we will most certainly be compared to other buckets of the same Agg instance, so compare
       // counts first
       return this.implied == that.implied

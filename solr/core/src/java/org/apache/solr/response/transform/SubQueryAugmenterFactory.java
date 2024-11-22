@@ -274,8 +274,7 @@ class SubQueryAugmenter extends DocTransformer {
 
     private String convertFieldValue(Object val) {
 
-      if (val instanceof IndexableField) {
-        IndexableField f = (IndexableField) val;
+      if (val instanceof IndexableField f) {
         return f.stringValue();
       }
       return val.toString();

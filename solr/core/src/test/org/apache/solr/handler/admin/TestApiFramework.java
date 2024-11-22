@@ -323,8 +323,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     } else {
       api = V2HttpCall.getApiInfo(mockCC.getRequestHandlers(), fullPath, "GET", fullPath, parts);
       if (api == null) api = new CompositeApi(null);
-      if (api instanceof CompositeApi) {
-        CompositeApi compositeApi = (CompositeApi) api;
+      if (api instanceof CompositeApi compositeApi) {
         api = V2HttpCall.getApiInfo(reqHandlers, path, "GET", fullPath, parts);
         compositeApi.add(api);
         api = compositeApi;
