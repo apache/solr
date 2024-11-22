@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -39,6 +40,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.servlet.HttpSolrCall;
+import org.apache.solr.util.LogListener;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -171,10 +174,8 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       assertEquals(2, names.size());
       assertFalse(names.contains("solr1"));
 
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      Thread.sleep(1200);
+      startJettyAndWaitForAliveCheckQuery(solr[1]);
+
       names.clear();
       for (int i = 0; i < solr.length; i++) {
         resp = h.lbClient.query(solrQuery);
@@ -198,59 +199,14 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       resp = h.lbClient.query(solrQuery);
       name = resp.getResults().get(0).getFieldValue("name").toString();
       assertEquals("solr/collection11", name);
+
       solr[1].jetty.stop();
       solr[1].jetty = null;
-      solr[0].startJetty();
-      Thread.sleep(1200);
-      try {
-        resp = h.lbClient.query(solrQuery);
-      } catch (SolrServerException e) {
-        // try again after a pause in case the error is lack of time to start server
-        Thread.sleep(3000);
-        resp = h.lbClient.query(solrQuery);
-      }
+      startJettyAndWaitForAliveCheckQuery(solr[0]);
+
+      resp = h.lbClient.query(solrQuery);
       name = resp.getResults().get(0).getFieldValue("name").toString();
       assertEquals("solr/collection10", name);
-    }
-  }
-
-  public void testReliability() throws Exception {
-    final var baseSolrEndpoints = bootstrapBaseSolrEndpoints(solr.length);
-    try (var h = client(baseSolrEndpoints)) {
-
-      // Kill a server and test again
-      solr[1].jetty.stop();
-      solr[1].jetty = null;
-
-      // query the servers
-      for (int i = 0; i < solr.length; i++) {
-        h.lbClient.query(new SolrQuery("*:*"));
-      }
-
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      waitForServer(30, h.lbClient, 3, solr[1].name);
-    }
-  }
-
-  // wait maximum ms for serverName to come back up
-  private void waitForServer(
-      int maxSeconds, LBHttp2SolrClient<?> client, int nServers, String serverName)
-      throws Exception {
-    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut()) {
-      QueryResponse resp;
-      try {
-        resp = client.query(new SolrQuery("*:*"));
-      } catch (Exception e) {
-        log.warn("", e);
-        continue;
-      }
-      String name = resp.getResults().get(0).getFieldValue("name").toString();
-      if (name.equals(serverName)) return;
-
-      Thread.sleep(500);
     }
   }
 
@@ -260,6 +216,31 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       solrUrls[i] = new LBSolrClient.Endpoint(solr[i].getBaseUrl());
     }
     return solrUrls;
+  }
+
+  private void startJettyAndWaitForAliveCheckQuery(SolrInstance solrInstance) throws Exception {
+    final int pollIntervalMs = 50;
+    final int timeoutMs = 10000;
+    int waitSoFarMs = 0;
+
+    try (LogListener logListener = LogListener.info().substring("distrib=false")) {
+      solrInstance.startJetty();
+      while(true) {
+        if (logListener.pollMessage() != null) {
+          return;
+        }
+        try {
+          Thread.sleep(pollIntervalMs);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          fail("Our thread was interrupted while waiting for the alive check query");
+        }
+        waitSoFarMs += pollIntervalMs;
+        if (waitSoFarMs >= timeoutMs) {
+          fail("The alive check query was not logged within " + timeoutMs + "ms.");
+        }
+      }
+    }
   }
 
   private static class SolrInstance {
