@@ -37,6 +37,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder()
           .silent()

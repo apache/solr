@@ -163,6 +163,7 @@ grant {
 
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+  permission java.lang.RuntimePermission "accessSystemModules";
 
   // needed for kafka mockito
   permission java.lang.RuntimePermission "manageProcess";

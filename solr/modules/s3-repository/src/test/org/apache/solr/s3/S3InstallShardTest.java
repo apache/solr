@@ -54,6 +54,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder()
           .silent()

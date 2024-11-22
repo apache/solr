@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 [versions]
-adobe-testing-s3mock = "2.17.0"
-amazon-awssdk = "2.26.19"
+adobe-testing-s3mock = "3.9.1"
+amazon-awssdk = "2.28.11"
 # @keep Antora version used in ref-guide
 antora = "3.1.4"
 # @keep Most recent commit as of 2022-06-24, this repo does not have tags
@@ -310,6 +310,8 @@ eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-ser
 eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee = { module = "org.eclipse.jetty:jetty-ee", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee10-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee8-nested = { module = "org.eclipse.jetty.ee8:jetty-ee8-nested", version.ref = "eclipse-jetty" }
 eclipse-jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "eclipse-jetty" }
 eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:jetty-http2-client", version.ref = "eclipse-jetty" }
@@ -319,6 +321,8 @@ eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:je
 eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:jetty-http2-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-io = { module = "org.eclipse.jetty:jetty-io", version.ref = "eclipse-jetty" }
 eclipse-jetty-jmx = { module = "org.eclipse.jetty:jetty-jmx", version.ref = "eclipse-jetty" }
+eclipse-jetty-jndi = { module = "org.eclipse.jetty:jetty-jndi", version.ref = "eclipse-jetty" }
+eclipse-jetty-plus = { module = "org.eclipse.jetty:jetty-plus", version.ref = "eclipse-jetty" }
 eclipse-jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "eclipse-jetty" }
 eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "eclipse-jetty" }
 eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
