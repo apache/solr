@@ -290,7 +290,7 @@ To enable the plugins, please specify the `solr.ltr.enabled` JVM System Property
 
 [source,bash]
 ----
-bin/solr start -e techproducts -Dsolr.ltr.enabled=true
+bin/solr start -e techproducts -Dsolr.modules=ltr -Dsolr.ltr.enabled=true
 ----
 
 === Uploading Features
