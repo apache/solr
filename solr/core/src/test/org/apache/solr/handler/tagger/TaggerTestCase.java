@@ -241,8 +241,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof TestTag)) return false;
-      TestTag that = (TestTag) obj;
+      if (!(obj instanceof TestTag that)) return false;
       return this.startOffset == that.startOffset
           && this.endOffset == that.endOffset
           && Objects.equals(this.docName, that.docName);

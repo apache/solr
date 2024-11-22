@@ -14,18 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.jersey;
+package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 
-/**
- * {@link SolrJerseyResponse} implementation with a warning field indicating that the format may
- * change
- */
-public class ExperimentalResponse extends SolrJerseyResponse {
-  @JsonProperty("WARNING")
-  public String warning =
-      "This response format is experimental.  It is likely to change in the future.";
+/** Represents the data returned by a ZooKeeper 'stat' call */
+public class ZooKeeperStat {
+  @JsonProperty("version")
+  public int version;
+
+  @JsonProperty("aversion")
+  public int aversion;
+
+  @JsonProperty("children")
+  public int children;
+
+  @JsonProperty("ctime")
+  public long ctime;
+
+  @JsonProperty("cversion")
+  public int cversion;
+
+  @JsonProperty("czxid")
+  public long czxid;
+
+  @JsonProperty("ephemeralOwner")
+  public long ephemeralOwner;
+
+  @JsonProperty("mtime")
+  public long mtime;
+
+  @JsonProperty("mzxid")
+  public long mzxid;
+
+  @JsonProperty("pzxid")
+  public long pzxid;
+
+  @JsonProperty("dataLength")
+  public int dataLength;
 }

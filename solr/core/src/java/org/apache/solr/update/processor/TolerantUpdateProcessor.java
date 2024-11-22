@@ -238,11 +238,10 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         //
         // instead we trust the metadata that the TolerantUpdateProcessor running on the remote node
         // added to the exception when it failed.
-        if (!(error.e instanceof SolrException)) {
+        if (!(error.e instanceof SolrException remoteErr)) {
           log.error("async update exception is not SolrException, no metadata to process", error.e);
           continue;
         }
-        SolrException remoteErr = (SolrException) error.e;
         NamedList<String> remoteErrMetadata = remoteErr.getMetadata();
 
         if (null == remoteErrMetadata) {

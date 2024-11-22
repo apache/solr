@@ -23,15 +23,15 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation 'org.apache.lucene:lucene-core'
+  implementation libs.apache.lucene.core
 
-  implementation 'org.carrot2:carrot2-core'
-  implementation 'org.slf4j:slf4j-api'
+  implementation libs.carrot2.core
+  implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
-  testImplementation 'junit:junit'
-  testImplementation 'org.hamcrest:hamcrest'
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
 
-  testImplementation 'commons-io:commons-io'
+  testImplementation libs.commonsio.commonsio
 }

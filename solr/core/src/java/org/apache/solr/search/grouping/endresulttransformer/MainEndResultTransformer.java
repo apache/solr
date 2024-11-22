@@ -72,8 +72,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
         docList.setMaxScore(maxScore);
       }
       rb.rsp.addResponse(docList);
-    } else if (value instanceof QueryCommandResult) {
-      QueryCommandResult queryCommandResult = (QueryCommandResult) value;
+    } else if (value instanceof QueryCommandResult queryCommandResult) {
       SolrDocumentList docList = new SolrDocumentList();
       TopDocs topDocs = queryCommandResult.getTopDocs();
 

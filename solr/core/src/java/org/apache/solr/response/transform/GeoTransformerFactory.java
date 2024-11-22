@@ -95,7 +95,7 @@ public class GeoTransformerFactory extends TransformerFactory
           ErrorCode.BAD_REQUEST,
           this.getClass().getSimpleName() + " using unknown field: " + fname);
     }
-    if (!(sf.getType() instanceof AbstractSpatialFieldType)) {
+    if (!(sf.getType() instanceof AbstractSpatialFieldType<?> sdv)) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "GeoTransformer requested non-spatial field: "
@@ -111,7 +111,6 @@ public class GeoTransformerFactory extends TransformerFactory
     updater.display_error = display + "_error";
 
     final ShapeValuesSource shapes;
-    AbstractSpatialFieldType<?> sdv = (AbstractSpatialFieldType<?>) sf.getType();
     SpatialStrategy strategy = sdv.getStrategy(fname);
     if (strategy instanceof CompositeSpatialStrategy) {
       shapes = ((CompositeSpatialStrategy) strategy).getGeometryStrategy().makeShapeValueSource();

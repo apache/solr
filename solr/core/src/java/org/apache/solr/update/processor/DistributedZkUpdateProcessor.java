@@ -680,11 +680,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   void setupRequest(UpdateCommand cmd) {
     zkCheck(cmd);
-    if (cmd instanceof AddUpdateCommand) {
-      AddUpdateCommand acmd = (AddUpdateCommand) cmd;
+    if (cmd instanceof AddUpdateCommand acmd) {
       nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument(), null, cmd);
-    } else if (cmd instanceof DeleteUpdateCommand) {
-      DeleteUpdateCommand dcmd = (DeleteUpdateCommand) cmd;
+    } else if (cmd instanceof DeleteUpdateCommand dcmd) {
       nodes =
           setupRequest(
               dcmd.getId(),
@@ -975,8 +973,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       ClusterState cstate, DocCollection coll, String id, SolrInputDocument doc) {
     DocRouter router = coll.getRouter();
     List<SolrCmdDistributor.Node> nodes = null;
-    if (router instanceof CompositeIdRouter) {
-      CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+    if (router instanceof CompositeIdRouter compositeIdRouter) {
       String myShardId = cloudDesc.getShardId();
       Slice slice = coll.getSlice(myShardId);
       Map<String, RoutingRule> routingRules = slice.getRoutingRules();
@@ -1248,8 +1245,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       String collection = null;
       String shardId = null;
 
-      if (error.req.node instanceof SolrCmdDistributor.StdNode) {
-        SolrCmdDistributor.StdNode stdNode = (SolrCmdDistributor.StdNode) error.req.node;
+      if (error.req.node instanceof SolrCmdDistributor.StdNode stdNode) {
         collection = stdNode.getCollection();
         shardId = stdNode.getShardId();
 

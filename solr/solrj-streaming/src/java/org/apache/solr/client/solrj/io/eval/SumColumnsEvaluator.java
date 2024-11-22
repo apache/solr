@@ -46,10 +46,9 @@ public class SumColumnsEvaluator extends RecursiveObjectEvaluator implements One
   public Object doWork(Object value) throws IOException {
     if (null == value) {
       return null;
-    } else if (value instanceof Matrix) {
+    } else if (value instanceof Matrix matrix) {
 
       // First transpose the matrix
-      Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
       RealMatrix realMatrix = new Array2DRowRealMatrix(data, false);
 

@@ -384,8 +384,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof ReplicaData) {
-        ReplicaData that = (ReplicaData) other;
+      if (other instanceof ReplicaData that) {
         return this.shardName.equals(that.shardName)
             && this.coreName.equals(that.coreName)
             && (this.indexVersion == that.indexVersion)

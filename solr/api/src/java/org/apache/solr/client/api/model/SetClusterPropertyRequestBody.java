@@ -15,21 +15,13 @@
  * limitations under the License.
  */
 
-// This ensures 'versions.props' file is sorted lexicographically.
+package org.apache.solr.client.api.model;
 
-import java.util.stream.Collectors
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-configure(rootProject) {
-  task versionsPropsAreSorted() {
-    doFirst {
-      def versionsProps = file('versions.props')
-      // remove # commented lines and blank lines
-      def lines = versionsProps.readLines("UTF-8").stream().filter(l -> !l.matches(/^(#.*|\s*)$/)).collect(Collectors.toList())
-      def sorted = lines.toSorted()
-
-      if (!Objects.equals(lines, sorted)) {
-        throw new GradleException("${versionsProps} file is not sorted lexicographically.")
-      }
-    }
-  }
+public class SetClusterPropertyRequestBody {
+  @Schema(description = "The value to assign to the property.")
+  @JsonProperty("value")
+  public String value;
 }

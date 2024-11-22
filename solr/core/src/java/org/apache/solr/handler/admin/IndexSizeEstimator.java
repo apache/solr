@@ -276,13 +276,11 @@ public class IndexSizeEstimator {
   private void convert(Map<String, Object> result) {
     for (Map.Entry<String, Object> entry : result.entrySet()) {
       Object value = entry.getValue();
-      if (value instanceof ItemPriorityQueue) {
-        ItemPriorityQueue queue = (ItemPriorityQueue) value;
+      if (value instanceof ItemPriorityQueue queue) {
         Map<String, Object> map = new LinkedHashMap<>();
         queue.toMap(map);
         entry.setValue(map);
-      } else if (value instanceof MapWriterSummaryStatistics) {
-        MapWriterSummaryStatistics stats = (MapWriterSummaryStatistics) value;
+      } else if (value instanceof MapWriterSummaryStatistics stats) {
         Map<String, Object> map = new LinkedHashMap<>();
         stats.toMap(map);
         entry.setValue(map);
@@ -308,8 +306,7 @@ public class IndexSizeEstimator {
                     ((Map<String, Object>) perField)
                         .forEach(
                             (k, val) -> {
-                              if (val instanceof SummaryStatistics) {
-                                SummaryStatistics stats = (SummaryStatistics) val;
+                              if (val instanceof SummaryStatistics stats) {
                                 if (k.startsWith("lengths")) {
                                   AtomicLong total =
                                       (AtomicLong)
@@ -596,8 +593,7 @@ public class IndexSizeEstimator {
       LeafReader leafReader = context.reader();
       EstimatingVisitor visitor = new EstimatingVisitor(stats, topN, maxLength, samplingStep);
       Bits liveDocs = leafReader.getLiveDocs();
-      if (leafReader instanceof CodecReader) {
-        CodecReader codecReader = (CodecReader) leafReader;
+      if (leafReader instanceof CodecReader codecReader) {
         StoredFieldsReader storedFieldsReader = codecReader.getFieldsReader();
         // this instance may be faster for a full sequential pass
         StoredFieldsReader mergeInstance = storedFieldsReader.getMergeInstance();

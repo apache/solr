@@ -502,8 +502,7 @@ public class NamedList<T>
       }
       Object old = result.put(getName(i), val);
       if (old != null) {
-        if (old instanceof List) {
-          List list = (List) old;
+        if (old instanceof List list) {
           list.add(val);
           result.put(getName(i), old);
         } else {
@@ -529,8 +528,7 @@ public class NamedList<T>
       Object val = this.getVal(i);
       if (val instanceof String[]) {
         MultiMapSolrParams.addParam(name, (String[]) val, map);
-      } else if (val instanceof List) {
-        List l = (List) val;
+      } else if (val instanceof List l) {
         String[] s = new String[l.size()];
         for (int j = 0; j < l.size(); j++) {
           s[j] = l.get(j) == null ? null : l.get(j).toString();
@@ -813,8 +811,7 @@ public class NamedList<T>
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof NamedList)) return false;
-    NamedList<?> nl = (NamedList<?>) obj;
+    if (!(obj instanceof NamedList<?> nl)) return false;
     return this.nvPairs.equals(nl.nvPairs);
   }
 

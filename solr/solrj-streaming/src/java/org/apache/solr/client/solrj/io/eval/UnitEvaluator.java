@@ -45,8 +45,7 @@ public class UnitEvaluator extends RecursiveObjectEvaluator implements OneValueW
   public Object doWork(Object value) throws IOException {
     if (null == value) {
       return null;
-    } else if (value instanceof Matrix) {
-      Matrix matrix = (Matrix) value;
+    } else if (value instanceof Matrix matrix) {
       double[][] data = matrix.getData();
       double[][] unitData = new double[data.length][];
       for (int i = 0; i < data.length; i++) {

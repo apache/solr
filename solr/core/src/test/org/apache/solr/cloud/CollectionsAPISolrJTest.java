@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -132,10 +133,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String COLL_NAME = "CollWithDefaultClusterProperties";
     try {
       V2Response rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
               .withPayload(
-                  "{set-obj-property:{defaults : {collection:{numShards : 2 , nrtReplicas : 2}}}}")
+                  "{\"defaults\": {\"collection\": {\"numShards\": 2, \"nrtReplicas\": 2}}}")
               .build()
               .process(cluster.getSolrClient());
 
@@ -171,15 +172,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
       // unset only a single value
       rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
               .withPayload(
                   "{\n"
-                      + "  \"set-obj-property\": {\n"
-                      + "    \"defaults\" : {\n"
-                      + "      \"collection\": {\n"
-                      + "        \"nrtReplicas\": null\n"
-                      + "      }\n"
+                      + "  \"defaults\" : {\n"
+                      + "    \"collection\": {\n"
+                      + "      \"nrtReplicas\": null\n"
                       + "    }\n"
                       + "  }\n"
                       + "}")
@@ -198,9 +197,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertNull(clusterProperty);
 
       rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
-              .withPayload("{set-obj-property:{defaults: {collection:null}}}")
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
+              .withPayload("{\"defaults\": {\"collection\": null}}")
               .build()
               .process(cluster.getSolrClient());
       // assert that it is really gone in both old and new paths
@@ -215,9 +214,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertNull(clusterProperty);
     } finally {
       V2Response rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
-              .withPayload("{set-obj-property:{defaults: null}}")
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
+              .withPayload("{\"defaults\": null}")
               .build()
               .process(cluster.getSolrClient());
     }
@@ -1027,7 +1026,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     delete.setFollowAliases(false);
     delete.process(solrClient);
     ClusterState state = solrClient.getClusterState();
-    assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName1));
+    assertFalse(collectionNamesString(state), state.hasCollection(collectionName1));
     // search should still work, returning results from collection 2
     assertDoc(solrClient, collectionName1, "2"); // aliased
     assertDoc(solrClient, collectionName2, "2"); // direct
@@ -1048,7 +1047,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     state = solrClient.getClusterState();
     // the collection is gone
-    assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName2));
+    assertFalse(collectionNamesString(state), state.hasCollection(collectionName2));
 
     // and the alias is gone
     RetryUtil.retryUntil(
@@ -1065,6 +1064,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
             return false;
           }
         });
+  }
+
+  private static String collectionNamesString(ClusterState state) {
+    return state.collectionStream().map(Object::toString).collect(Collectors.joining(","));
   }
 
   private void assertDoc(CloudSolrClient solrClient, String collection, String id)

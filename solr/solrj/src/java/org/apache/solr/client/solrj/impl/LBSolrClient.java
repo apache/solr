@@ -173,8 +173,7 @@ public abstract class LBSolrClient extends SolrClient {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof Endpoint)) return false;
-      final Endpoint rhs = (Endpoint) obj;
+      if (!(obj instanceof Endpoint rhs)) return false;
 
       return Objects.equals(baseUrl, rhs.baseUrl) && Objects.equals(core, rhs.core);
     }
@@ -497,9 +496,10 @@ public abstract class LBSolrClient extends SolrClient {
     // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
     // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
     // the appropriate URL is provided.
-    if (solrClient instanceof Http2SolrClient) {
-      final var httpSolrClient = (Http2SolrClient) solrClient;
+    if (solrClient instanceof Http2SolrClient httpSolrClient) {
       return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+    } else if (solrClient instanceof HttpJdkSolrClient) {
+      return ((HttpJdkSolrClient) solrClient).requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
     // Assume provided client already uses 'baseUrl'
@@ -730,11 +730,20 @@ public abstract class LBSolrClient extends SolrClient {
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           moveAliveToDead(wrapper);
-          if (justFailed == null) justFailed = new HashMap<>();
+          if (justFailed == null) {
+            justFailed = new HashMap<>();
+          }
           justFailed.put(endpoint.getUrl(), wrapper);
         } else {
           throw e;
         }
+      } catch (IOException e) {
+        ex = e;
+        moveAliveToDead(wrapper);
+        if (justFailed == null) {
+          justFailed = new HashMap<>();
+        }
+        justFailed.put(endpoint.getUrl(), wrapper);
       } catch (Exception e) {
         throw new SolrServerException(e);
       }

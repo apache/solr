@@ -938,10 +938,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     if ((flags & FUZZY) != 0) {
-      if ((a instanceof Double && b instanceof Double)) {
-        double aaa = (Double) a;
-        double bbb = (Double) b;
-        if (aaa == bbb || (((Double) a).isNaN() && ((Double) b).isNaN())) {
+
+      if ((a instanceof Double aa && b instanceof Double bb)) {
+        double aaa = aa;
+        double bbb = bb;
+        if (aaa == bbb || (aa.isNaN() && bb.isNaN())) {
           return null;
         }
         if ((aaa == 0.0) || (bbb == 0.0)) {
