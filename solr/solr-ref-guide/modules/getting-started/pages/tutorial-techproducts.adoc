@@ -20,7 +20,7 @@
 This exercise will walk you through how to start Solr as a two-node cluster (both nodes on the same machine) and create a collection during startup.
 Then you will index some sample data that ships with Solr and do some basic searches.
 
-== Launch Solr in SolrCloud Mode
+== Launch Solr
 To launch Solr, run: `bin/solr start -e cloud` on Unix or MacOS; `bin\solr.cmd start -e cloud` on Windows.
 
 This will start an interactive session that will start two Solr "servers" on your machine.
@@ -71,14 +71,14 @@ Cloning /solr-{solr-full-version}/example/cloud/node1 into
    /solr-{solr-full-version}/example/cloud/node2
 
 Starting up Solr on port 8983 using command:
-"bin/solr" start --cloud -p 8983 -s "example/cloud/node1/solr"
+"bin/solr" start -p 8983 --solr-home "example/cloud/node1/solr"
 
 Waiting up to 180 seconds to see Solr running on port 8983 [\]
 Started Solr server on port 8983 (pid=34942). Happy searching!
 
 
 Starting up Solr on port 7574 using command:
-"bin/solr" start --cloud -p 7574 -s "example/cloud/node2/solr" -z localhost:9983
+"bin/solr" start -p 7574 --solr-home "example/cloud/node2/solr" -z localhost:9983
 
 Waiting up to 180 seconds to see Solr running on port 7574 [\]
 Started Solr server on port 7574 (pid=35036). Happy searching!
@@ -167,16 +167,9 @@ You'll need a command shell to run some of the following examples, rooted in the
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
 
-.Linux/Mac
 [,console]
 ----
 $ bin/solr post -c techproducts example/exampledocs/*
-----
-
-.Windows
-[,console]
-----
-$ bin/solr post -c techproducts example\exampledocs\*
 ----
 
 You should see output similar to the following:
@@ -202,7 +195,6 @@ POSTing file sample.html (text/html) to [base]/extract
 POSTing file sd500.xml (application/xml) to [base]
 POSTing file solr-word.pdf (application/pdf) to [base]/extract
 POSTing file solr.xml (application/xml) to [base]
-POSTing file test_utf8.sh (application/octet-stream) to [base]/extract
 POSTing file utf8-example.xml (application/xml) to [base]
 POSTing file vidcard.xml (application/xml) to [base]
 20 files indexed.
@@ -495,7 +487,7 @@ And then create a new collection:
 
 [,console]
 ----
-$ bin/solr create -c <yourCollection> -s 2 -rf 2
+$ bin/solr create -c <yourCollection> --shards 2 -rf 2
 ----
 
 To stop both of the Solr nodes we started, issue the command:

@@ -57,6 +57,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
 import org.slf4j.MDC;
@@ -403,6 +404,7 @@ public abstract class LBSolrClient extends SolrClient {
       }
       updateAliveList();
     }
+    ObjectReleaseTracker.track(this);
   }
 
   protected void updateAliveList() {
@@ -432,7 +434,7 @@ public abstract class LBSolrClient extends SolrClient {
    *
    * <p>If no live servers are found a SolrServerException is thrown.
    *
-   * @param req contains both the request as well as the list of servers to query
+   * @param req contains both the request and the list of servers to query
    * @return the result of the request
    * @throws IOException If there is a low-level I/O error.
    */
@@ -478,14 +480,36 @@ public abstract class LBSolrClient extends SolrClient {
     return timeAllowedNano > 0 && System.nanoTime() > timeOutTime;
   }
 
+  private NamedList<Object> doRequest(Endpoint endpoint, SolrRequest<?> solrRequest)
+      throws SolrServerException, IOException {
+    final var solrClient = getClient(endpoint);
+    return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
+  }
+
+  // TODO SOLR-17541 should remove the need for the special-casing below; remove as a part of that
+  // ticket.
+  private NamedList<Object> doRequest(
+      SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
+      throws SolrServerException, IOException {
+    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
+    // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
+    // the appropriate URL is provided.
+    if (solrClient instanceof Http2SolrClient) {
+      final var httpSolrClient = (Http2SolrClient) solrClient;
+      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+    }
+
+    // Assume provided client already uses 'baseUrl'
+    return solrClient.request(solrRequest, collection);
+  }
+
   protected Exception doRequest(
       Endpoint baseUrl, Req req, Rsp rsp, boolean isNonRetryable, boolean isZombie)
       throws SolrServerException, IOException {
     Exception ex = null;
     try {
       rsp.server = baseUrl.toString();
-      req.getRequest().setBasePath(baseUrl.getBaseUrl());
-      rsp.rsp = getClient(baseUrl).request(req.getRequest(), baseUrl.getCore());
+      rsp.rsp = doRequest(baseUrl, req.getRequest());
       if (isZombie) {
         zombieServers.remove(baseUrl.toString());
       }
@@ -583,14 +607,22 @@ public abstract class LBSolrClient extends SolrClient {
     final Endpoint zombieEndpoint = zombieServer.getEndpoint();
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
-      queryRequest.setBasePath(zombieEndpoint.getBaseUrl());
       // First the one on the endpoint, then the default collection
       final String effectiveCollection =
           Objects.requireNonNullElse(zombieEndpoint.getCore(), getDefaultCollection());
-      QueryResponse resp = queryRequest.process(getClient(zombieEndpoint), effectiveCollection);
+      final var responseRaw =
+          doRequest(
+              getClient(zombieEndpoint),
+              zombieEndpoint.getBaseUrl(),
+              effectiveCollection,
+              queryRequest);
+      QueryResponse resp = new QueryResponse();
+      resp.setResponse(responseRaw);
+
       if (resp.getStatus() == 0) {
         // server has come back up.
-        // make sure to remove from zombies before adding to alive to avoid a race condition
+        // make sure to remove from zombies before adding to the alive list to avoid a race
+        // condition
         // where another thread could mark it down, move it back to zombie, and then we delete
         // from zombie and lose it forever.
         EndpointWrapper wrapper = zombieServers.remove(zombieServer.getEndpoint().toString());
@@ -684,11 +716,10 @@ public abstract class LBSolrClient extends SolrClient {
       final var endpoint = wrapper.getEndpoint();
       try {
         ++numServersTried;
-        request.setBasePath(endpoint.getBaseUrl());
         // Choose the endpoint's core/collection over any specified by the user
         final var effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        return getClient(endpoint).request(request, effectiveCollection);
+        return doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -718,11 +749,12 @@ public abstract class LBSolrClient extends SolrClient {
           || (justFailed != null && justFailed.containsKey(endpoint.getUrl()))) continue;
       try {
         ++numServersTried;
-        request.setBasePath(endpoint.getBaseUrl());
         final String effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        NamedList<Object> rsp = getClient(endpoint).request(request, effectiveCollection);
-        // remove from zombie list *before* adding to alive to avoid a race that could lose a server
+        NamedList<Object> rsp =
+            doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+        // remove from zombie list *before* adding to the alive list to avoid a race that could lose
+        // a server
         zombieServers.remove(endpoint.getUrl());
         addToAlive(wrapper);
         return rsp;
@@ -764,7 +796,7 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   /**
-   * Pick a server from list to execute request. By default servers are picked in round-robin
+   * Pick a server from list to execute request. By default, servers are picked in round-robin
    * manner, custom classes can override this method for more advance logic
    *
    * @param aliveServerList list of currently alive servers
@@ -791,5 +823,6 @@ public abstract class LBSolrClient extends SolrClient {
         ExecutorUtil.shutdownAndAwaitTermination(aliveCheckExecutor);
       }
     }
+    ObjectReleaseTracker.release(this);
   }
 }

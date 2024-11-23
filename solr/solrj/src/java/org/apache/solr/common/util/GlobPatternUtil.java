@@ -48,7 +48,7 @@ public class GlobPatternUtil {
     int wcsIdx = 0;
     final Deque<int[]> backtrack = new ArrayDeque<>(wcs.length);
 
-    // loop around a backtrack stack, to handle complex * matching
+    // loop around a back track stack, to handle complex * matching
     do {
       if (!backtrack.isEmpty()) {
         final int[] array = backtrack.pop();

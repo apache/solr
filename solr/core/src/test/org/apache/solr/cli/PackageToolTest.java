@@ -157,6 +157,7 @@ public class PackageToolTest extends SolrCloudTestCase {
           SecurityJson.USER_PASS
         });
 
+    // Leaving -p in for --param to test the deprecated value continues to work.
     run(
         tool,
         new String[] {
@@ -167,7 +168,7 @@ public class PackageToolTest extends SolrCloudTestCase {
           "-y",
           "--collections",
           "abc",
-          "-p",
+          "--param",
           "RH-HANDLER-PATH=" + rhPath,
           "--credentials",
           SecurityJson.USER_PASS
@@ -263,7 +264,7 @@ public class PackageToolTest extends SolrCloudTestCase {
               "question-answer",
               "--collections",
               "abc",
-              "-p",
+              "--param",
               "RH-HANDLER-PATH=" + rhPath,
               "--credentials",
               SecurityJson.USER_PASS
@@ -374,7 +375,7 @@ public class PackageToolTest extends SolrCloudTestCase {
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 

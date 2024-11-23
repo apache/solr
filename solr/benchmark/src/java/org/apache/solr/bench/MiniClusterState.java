@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -84,7 +83,7 @@ public class MiniClusterState {
     MiniSolrCloudCluster cluster;
 
     /** The Client. */
-    public SolrClient client;
+    public Http2SolrClient client;
 
     /** The Run cnt. */
     int runCnt = 0;
@@ -288,7 +287,7 @@ public class MiniClusterState {
       }
       zkHost = cluster.getZkServer().getZkAddress();
 
-      client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
+      client = new Http2SolrClient.Builder(nodes.get(0)).useHttp1_1(useHttp1).build();
 
       log("done starting mini cluster");
       log("");
@@ -318,9 +317,8 @@ public class MiniClusterState {
 
           CollectionAdminRequest.Create request =
               CollectionAdminRequest.createCollection(collection, "conf", numShards, numReplicas);
-          request.setBasePath(nodes.get(random.nextInt(cluster.getJettySolrRunners().size())));
-
-          client.request(request);
+          client.requestWithBaseUrl(
+              nodes.get(random.nextInt(cluster.getJettySolrRunners().size())), null, request);
 
           cluster.waitForActiveCollection(
               collection, 15, TimeUnit.SECONDS, numShards, numShards * numReplicas);
@@ -368,18 +366,19 @@ public class MiniClusterState {
 
         log("committing data ...");
         UpdateRequest commitRequest = new UpdateRequest();
-        commitRequest.setBasePath(nodes.get(random.nextInt(cluster.getJettySolrRunners().size())));
+        final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
         commitRequest.setAction(UpdateRequest.ACTION.COMMIT, false, true);
-        commitRequest.process(client, collection);
+        client.requestWithBaseUrl(url, collection, commitRequest);
         log("done committing data");
       } else {
         cluster.waitForActiveCollection(collection, 15, TimeUnit.SECONDS);
       }
 
       QueryRequest queryRequest = new QueryRequest(new SolrQuery("q", "*:*", "rows", "1"));
-      queryRequest.setBasePath(nodes.get(random.nextInt(cluster.getJettySolrRunners().size())));
+      final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
+      NamedList<Object> result =
+          client.requestWithBaseUrl(url, collection, queryRequest).getResponse();
 
-      NamedList<Object> result = client.request(queryRequest, collection);
       log("sanity check of single row query result: " + result);
       log("");
 
@@ -410,22 +409,22 @@ public class MiniClusterState {
           10,
           TimeUnit.SECONDS);
       for (int i = 0; i < docCount; i++) {
-        executorService.submit(
+        executorService.execute(
             new Runnable() {
               final SplittableRandom threadRandom = random.split();
 
               @Override
               public void run() {
                 UpdateRequest updateRequest = new UpdateRequest();
-                updateRequest.setBasePath(
-                    nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size())));
+                final var url =
+                    nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size()));
                 SolrInputDocument doc = docs.inputDocument();
                 // log("add doc " + doc);
                 updateRequest.add(doc);
                 meter.mark();
 
                 try {
-                  client.request(updateRequest, collection);
+                  client.requestWithBaseUrl(url, collection, updateRequest);
                 } catch (Exception e) {
                   throw new RuntimeException(e);
                 }
@@ -452,9 +451,8 @@ public class MiniClusterState {
         batch.add(docs.inputDocument());
         if (i % batchSize == 0) {
           UpdateRequest updateRequest = new UpdateRequest();
-          updateRequest.setBasePath(nodes.get(0));
           updateRequest.add(batch);
-          client.request(updateRequest, collection);
+          client.requestWithBaseUrl(nodes.get(0), collection, updateRequest);
           meter.mark(batch.size());
           batch.clear();
           log(meter.getCount() + " docs at " + (long) meter.getMeanRate() + " doc/s");
@@ -462,9 +460,8 @@ public class MiniClusterState {
       }
       if (!batch.isEmpty()) {
         UpdateRequest updateRequest = new UpdateRequest();
-        updateRequest.setBasePath(nodes.get(0));
         updateRequest.add(batch);
-        client.request(updateRequest, collection);
+        client.requestWithBaseUrl(nodes.get(0), collection, updateRequest);
         meter.mark(batch.size());
         batch = null;
       }
@@ -500,10 +497,9 @@ public class MiniClusterState {
         }
 
         UpdateRequest optimizeRequest = new UpdateRequest();
-        optimizeRequest.setBasePath(
-            nodes.get(random.nextInt(cluster.getJettySolrRunners().size())));
+        final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
         optimizeRequest.setAction(UpdateRequest.ACTION.OPTIMIZE, false, true, maxMergeSegments);
-        optimizeRequest.process(client, collection);
+        client.requestWithBaseUrl(url, collection, optimizeRequest);
       }
     }
 

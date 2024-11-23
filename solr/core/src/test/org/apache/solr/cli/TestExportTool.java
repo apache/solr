@@ -243,13 +243,15 @@ public class TestExportTool extends SolrCloudTestCase {
 
       String[] args = {
         "export",
-        "-url",
-        cluster.getJettySolrRunner(0).getBaseUrl() + "/" + COLLECTION_NAME,
-        "-credentials",
+        "--solr-url",
+        cluster.getJettySolrRunner(0).getBaseUrl().toString(),
+        "--name",
+        COLLECTION_NAME,
+        "--credentials",
         SecurityJson.USER_PASS,
-        "-out",
+        "--output",
         outFile.getAbsolutePath(),
-        "-verbose"
+        "--verbose"
       };
 
       assertEquals(0, runTool(args));
@@ -261,7 +263,7 @@ public class TestExportTool extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof ExportTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 

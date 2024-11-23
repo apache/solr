@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.BooleanClause;
@@ -31,9 +32,11 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** */
@@ -80,6 +83,47 @@ public class QueryUtils {
       } else {
         return false;
       }
+    }
+  }
+
+  public static final int NO_PREFIX_QUERY_LENGTH_LIMIT = -1;
+
+  /**
+   * Validates that a provided prefix query obeys any limits (if configured) on the minimum
+   * allowable prefix size
+   *
+   * <p>The limit is retrieved from the provided QParser (see {@link
+   * QParser#getPrefixQueryMinPrefixLength()} for the default implementation).
+   *
+   * @param parser the QParser used to parse the query being validated. No limit will be enforced if
+   *     'null'
+   * @param query the query to validate. Limits will only be enforced if this is a {@link
+   *     PrefixQuery}
+   * @param prefix a String term included in the provided query. Its size is compared against the
+   *     configured limit
+   */
+  public static void ensurePrefixQueryObeysMinimumPrefixLength(
+      QParser parser, Query query, String prefix) {
+    if (!(query instanceof PrefixQuery)) {
+      return;
+    }
+
+    final var minPrefixLength =
+        parser != null ? parser.getPrefixQueryMinPrefixLength() : NO_PREFIX_QUERY_LENGTH_LIMIT;
+    if (minPrefixLength == NO_PREFIX_QUERY_LENGTH_LIMIT) {
+      return;
+    }
+
+    if (prefix.length() < minPrefixLength) {
+      final var message =
+          String.format(
+              Locale.ROOT,
+              "Query [%s] does not meet the minimum prefix length [%d] (actual=[%d]).  Please try with a larger prefix, or adjust %s in your solrconfig.xml",
+              query,
+              minPrefixLength,
+              prefix.length(),
+              SolrConfig.MIN_PREFIX_QUERY_TERM_LENGTH);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
     }
   }
 

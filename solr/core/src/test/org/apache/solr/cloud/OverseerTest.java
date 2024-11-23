@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -52,13 +51,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -127,7 +126,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       Collections.synchronizedList(new ArrayList<>());
   private final List<UpdateShardHandler> updateShardHandlers =
       Collections.synchronizedList(new ArrayList<>());
-  private final List<CloudSolrClient> solrClients = Collections.synchronizedList(new ArrayList<>());
+  private final List<SolrClient> solrClients = Collections.synchronizedList(new ArrayList<>());
   private static final String COLLECTION = SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME;
 
   public static class MockZKController {
@@ -393,27 +392,27 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     for (ZkController zkController : zkControllers) {
-      customThreadPool.submit(zkController::close);
+      customThreadPool.execute(zkController::close);
     }
 
     for (HttpShardHandlerFactory httpShardHandlerFactory : httpShardHandlerFactorys) {
-      customThreadPool.submit(httpShardHandlerFactory::close);
+      customThreadPool.execute(httpShardHandlerFactory::close);
     }
 
     for (UpdateShardHandler updateShardHandler : updateShardHandlers) {
-      customThreadPool.submit(updateShardHandler::close);
+      customThreadPool.execute(updateShardHandler::close);
     }
 
     for (SolrClient solrClient : solrClients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(solrClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(solrClient));
     }
 
     for (ZkStateReader reader : readers) {
-      customThreadPool.submit(reader::close);
+      customThreadPool.execute(reader::close);
     }
 
     for (SolrZkClient solrZkClient : zkClients) {
-      customThreadPool.submit(() -> IOUtils.closeQuietly(solrZkClient));
+      customThreadPool.execute(() -> IOUtils.closeQuietly(solrZkClient));
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
@@ -422,7 +421,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
     for (Overseer overseer : overseers) {
-      customThreadPool.submit(overseer::close);
+      customThreadPool.execute(overseer::close);
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
@@ -759,7 +758,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     while (0 < maxIterations--) {
 
       final ClusterState state = stateReader.getClusterState();
-      Set<String> availableCollections = state.getCollectionsMap().keySet();
+      Set<String> availableCollections = (Set<String>) state.getCollectionNames();
       int availableCount = 0;
       for (String requiredCollection : collections) {
         stateReader.waitForState(
@@ -1231,7 +1230,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkDistributedQueue q = getOpenOverseer().getStateUpdateQueue();
             q.offer(m);
             break;
-          } catch (SolrException | KeeperException | AlreadyClosedException e) {
+          } catch (SolrException | KeeperException | IllegalStateException e) {
             log.error("error updating state", e);
           }
         }
@@ -1249,7 +1248,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | KeeperException | AlreadyClosedException e) {
+          } catch (SolrException | KeeperException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1274,7 +1273,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1294,7 +1293,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1314,7 +1313,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 true,
                 getOpenOverseer());
             break;
-          } catch (SolrException | AlreadyClosedException e) {
+          } catch (SolrException | IllegalStateException e) {
             log.error("error publishing state", e);
           }
         }
@@ -1943,18 +1942,23 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress)).when(zkController).getSolrCloudManager();
+    doReturn(getCloudDataProvider(reader)).when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(String zkAddress) {
-    var client =
-        new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
-            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+  private SolrCloudManager getCloudDataProvider(ZkStateReader zkStateReader) {
+    var httpSolrClient =
+        new Http2SolrClient.Builder()
+            .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build();
-    solrClients.add(client);
-    SolrClientCloudManager sccm = new SolrClientCloudManager(client);
+    var cloudSolrClient =
+        new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
+            .withHttpClient(httpSolrClient)
+            .build();
+    solrClients.add(cloudSolrClient);
+    solrClients.add(httpSolrClient);
+    SolrClientCloudManager sccm = new SolrClientCloudManager(cloudSolrClient, null);
     sccm.getClusterStateProvider().connect();
     return sccm;
   }

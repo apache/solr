@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -383,7 +381,7 @@ public class JdbcTest extends SolrCloudTestCase {
   @Test
   public void testJDBCUrlParameters() throws Exception {
 
-    // Test JDBC paramters in URL
+    // Test JDBC parameters in URL
     try (Connection con =
         DriverManager.getConnection(
             "jdbc:solr://"
@@ -436,7 +434,7 @@ public class JdbcTest extends SolrCloudTestCase {
   @Test
   public void testJDBCPropertiesParameters() throws Exception {
 
-    // Test JDBC paramters in properties
+    // Test JDBC parameters in properties
     Properties providedProperties = new Properties();
     providedProperties.put("collection", COLLECTIONORALIAS);
     providedProperties.put("username", "");
@@ -652,8 +650,7 @@ public class JdbcTest extends SolrCloudTestCase {
       solrClient.connect();
       ZkStateReader zkStateReader = ZkStateReader.from(solrClient);
 
-      Set<String> collectionsSet = zkStateReader.getClusterState().getCollectionsMap().keySet();
-      SortedSet<String> tables = new TreeSet<>(collectionsSet);
+      var tables = new TreeSet<String>(zkStateReader.getClusterState().getCollectionNames());
 
       Aliases aliases = zkStateReader.getAliases();
       tables.addAll(aliases.getCollectionAliasListMap().keySet());

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
@@ -466,7 +467,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       CountDownLatch done = new CountDownLatch(nThreads);
       AtomicReference<Exception> exception = new AtomicReference<>();
       for (int i = 0; i < nThreads; i++) {
-        svc.submit(
+        svc.execute(
             () -> {
               int index = idx.getAndIncrement();
               latch.countDown();
@@ -514,6 +515,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
   private static class MockCoreContainer extends CoreContainer {
     UpdateShardHandler updateShardHandler =
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    Http2SolrClient solrClient;
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
@@ -522,6 +524,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       this.shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
       this.metricManager = mock(SolrMetricManager.class);
+      this.solrClient = new Http2SolrClient.Builder().build();
     }
 
     @Override
@@ -535,7 +538,13 @@ public class ZkControllerTest extends SolrCloudTestCase {
     @Override
     public void shutdown() {
       updateShardHandler.close();
+      solrClient.close();
       super.shutdown();
+    }
+
+    @Override
+    public Http2SolrClient getDefaultHttpSolrClient() {
+      return solrClient;
     }
 
     @Override

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -76,7 +75,7 @@ public class ColStatus {
     Collection<String> collections;
     String col = props.getStr(ZkStateReader.COLLECTION_PROP);
     if (col == null) {
-      collections = new HashSet<>(clusterState.getCollectionStates().keySet());
+      collections = clusterState.getCollectionNames();
     } else {
       collections = Collections.singleton(col);
     }
@@ -93,8 +92,14 @@ public class ColStatus {
     if (withRawSizeSummary || withRawSizeDetails) {
       withRawSizeInfo = true;
     }
-    if (withFieldInfo || withSizeInfo) {
-      withSegments = true;
+    boolean getSegments = false;
+    if (withFieldInfo
+        || withSizeInfo
+        || withCoreInfo
+        || withRawSizeInfo
+        || withRawSizeDetails
+        || withRawSizeSummary) {
+      getSegments = true;
     }
     for (String collection : collections) {
       DocCollection coll = clusterState.getCollectionOrNull(collection);
@@ -176,48 +181,50 @@ public class ColStatus {
         if (url == null) {
           continue;
         }
-        try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.add(CommonParams.QT, "/admin/segments");
-          params.add(FIELD_INFO_PROP, "true");
-          params.add(CORE_INFO_PROP, String.valueOf(withCoreInfo));
-          params.add(SIZE_INFO_PROP, String.valueOf(withSizeInfo));
-          params.add(RAW_SIZE_PROP, String.valueOf(withRawSizeInfo));
-          params.add(RAW_SIZE_SUMMARY_PROP, String.valueOf(withRawSizeSummary));
-          params.add(RAW_SIZE_DETAILS_PROP, String.valueOf(withRawSizeDetails));
-          if (samplingPercent != null) {
-            params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
-          }
-          QueryRequest req = new QueryRequest(params);
-          NamedList<Object> rsp = client.request(req);
-          rsp.remove("responseHeader");
-          leaderMap.add("segInfos", rsp);
-          NamedList<?> segs = (NamedList<?>) rsp.get("segments");
-          if (segs != null) {
-            for (Map.Entry<String, ?> entry : segs) {
-              NamedList<Object> fields =
-                  (NamedList<Object>) ((NamedList<Object>) entry.getValue()).get("fields");
-              if (fields != null) {
-                for (Map.Entry<String, Object> fEntry : fields) {
-                  Object nc = ((NamedList<Object>) fEntry.getValue()).get("nonCompliant");
-                  if (nc != null) {
-                    nonCompliant.add(fEntry.getKey());
+        if (getSegments) {
+          try (SolrClient client = solrClientCache.getHttpSolrClient(url)) {
+            ModifiableSolrParams params = new ModifiableSolrParams();
+            params.add(CommonParams.QT, "/admin/segments");
+            params.add(FIELD_INFO_PROP, "true");
+            params.add(CORE_INFO_PROP, String.valueOf(withCoreInfo));
+            params.add(SIZE_INFO_PROP, String.valueOf(withSizeInfo));
+            params.add(RAW_SIZE_PROP, String.valueOf(withRawSizeInfo));
+            params.add(RAW_SIZE_SUMMARY_PROP, String.valueOf(withRawSizeSummary));
+            params.add(RAW_SIZE_DETAILS_PROP, String.valueOf(withRawSizeDetails));
+            if (samplingPercent != null) {
+              params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
+            }
+            QueryRequest req = new QueryRequest(params);
+            NamedList<Object> rsp = client.request(req);
+            rsp.remove("responseHeader");
+            leaderMap.add("segInfos", rsp);
+            NamedList<?> segs = (NamedList<?>) rsp.get("segments");
+            if (segs != null) {
+              for (Map.Entry<String, ?> entry : segs) {
+                NamedList<Object> fields =
+                    (NamedList<Object>) ((NamedList<Object>) entry.getValue()).get("fields");
+                if (fields != null) {
+                  for (Map.Entry<String, Object> fEntry : fields) {
+                    Object nc = ((NamedList<Object>) fEntry.getValue()).get("nonCompliant");
+                    if (nc != null) {
+                      nonCompliant.add(fEntry.getKey());
+                    }
                   }
                 }
-              }
-              if (!withFieldInfo) {
-                ((NamedList<Object>) entry.getValue()).remove("fields");
+                if (!withFieldInfo) {
+                  ((NamedList<Object>) entry.getValue()).remove("fields");
+                }
               }
             }
+            if (!withSegments) {
+              rsp.remove("segments");
+            }
+            if (!withFieldInfo) {
+              rsp.remove("fieldInfoLegend");
+            }
+          } catch (SolrServerException | IOException e) {
+            log.warn("Error getting details of replica segments from {}", url, e);
           }
-          if (!withSegments) {
-            rsp.remove("segments");
-          }
-          if (!withFieldInfo) {
-            rsp.remove("fieldInfoLegend");
-          }
-        } catch (SolrServerException | IOException e) {
-          log.warn("Error getting details of replica segments from {}", url, e);
         }
       }
       if (nonCompliant.isEmpty()) {

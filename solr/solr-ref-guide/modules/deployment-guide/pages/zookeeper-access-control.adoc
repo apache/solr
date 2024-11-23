@@ -1,4 +1,5 @@
 = ZooKeeper Access Control
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -252,12 +253,11 @@ Below examples are for `digest` scheme.
 * ZK credentials are passed through System Properties via `DzkDigestUsername`, `DzkDigestPassword`, `DzkDigestReadonlyUsername`
 and `DzkDigestReadonlyPassword` properties names.
 
-[.dynamic-tabs]
---
-[example.tab-pane#system-props-nix]
+[tabs#system-props]
+======
+*nix::
++
 ====
-[.tab-label]**nix*
-
 .solr.in.sh
 [source,bash]
 ----
@@ -272,10 +272,9 @@ SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 ----
 ====
 
-[example.tab-pane#system-props-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
-
 .solr.in.cmd
 [source,powershell]
 ----
@@ -288,9 +287,7 @@ set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZk
 set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 ----
 ====
---
-
-
+======
 
 ==== Through a File
 
@@ -304,13 +301,11 @@ zkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
 
 * Pass the file path via System Properties:
 
-
-[.dynamic-tabs]
---
-[example.tab-pane#file-system-props-nix]
+[tabs#file-sytem-props]
+======
+*nix::
++
 ====
-[.tab-label]**nix*
-
 .solr.in.sh
 [source,bash]
 ----
@@ -325,10 +320,9 @@ SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 ----
 ====
 
-[example.tab-pane#file-system-props-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
-
 .solr.in.cmd
 [source,powershell]
 ----
@@ -340,25 +334,19 @@ set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZk
 set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 ----
 ====
---
-
-
+======
 
 ==== Through a Custom Credentials Injector
-
 
 * Alternatively, you can create your own credentials injector by
 implementing {solr-javadocs}/solrj-zookeeper/org/apache/solr/common/cloud/ZkCredentialsInjector.html[`ZkCredentialsInjector`] and pass
 it through system props using DzkCredentialsInjector variable name.
 
-
-
-[.dynamic-tabs]
---
-[example.tab-pane#custom-injector-nix]
+[tabs#custom-injector]
+======
+*nix::
++
 ====
-[.tab-label]**nix*
-
 .solr.in.sh
 [source,bash]
 ----
@@ -370,11 +358,9 @@ SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACL
 SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 ----
 ====
-
-[example.tab-pane#-custom-injector-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
-
 .solr.in.cmd
 [source,powershell]
 ----
@@ -385,9 +371,7 @@ set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZk
 set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 ----
 ====
---
-
-
+======
 
 === ZooKeeper ACLs in Solr CLI
 
@@ -398,12 +382,11 @@ These Solr scripts can enable use of ZooKeeper ACLs by setting the appropriate s
 Uncomment the following and replace the passwords with ones you choose to enable the parameters and ACL credentials providers
 in the following files:
 
-[.dynamic-tabs]
---
-[example.tab-pane#nix]
+[tabs]
+======
+*nix::
++
 ====
-[.tab-label]**nix*
-
 .solr.in.sh
 [source,bash]
 ----
@@ -417,10 +400,9 @@ in the following files:
 ----
 ====
 
-[example.tab-pane#windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
-
 .solr.in.cmd
 [source,powershell]
 ----
@@ -433,7 +415,7 @@ REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEM
 REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 ----
 ====
---
+======
 
 == Changing ACL Schemes
 
@@ -445,26 +427,26 @@ First uncomment the `SOLR_ZK_CREDS_AND_ACLS` environment variable definition in 
 
 Then run the command below appropriate for your operating system:
 
-[.dynamic-tabs]
---
-[example.tab-pane#updateacls-unix]
+[tabs#updateacls]
+======
+*nix::
++
 ====
-[.tab-label]**nix*
 [source,bash]
 ----
 $ bin/solr zk updateacls /zk-path
 ----
 ====
 
-[example.tab-pane#updateacls-windows]
+Windows::
++
 ====
-[.tab-label]*Windows*
 [source,powershell]
 ----
 $ bin/solr.cmd zk updateacls /zk-path
 ----
 ====
---
+======
 
 Changing ACLs in ZooKeeper should only be done while your SolrCloud cluster is stopped.
 Attempting to do so while Solr is running may result in inconsistent state and some nodes becoming inaccessible.

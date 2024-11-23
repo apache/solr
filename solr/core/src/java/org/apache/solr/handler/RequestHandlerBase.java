@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -43,8 +44,9 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.CpuAllowedLimit;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -62,6 +64,7 @@ public abstract class RequestHandlerBase
         ApiSupport,
         PermissionNameProvider {
 
+  public static final String REQUEST_CPU_TIMER_CONTEXT = "publishCpuTime";
   protected NamedList<?> initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
@@ -217,12 +220,8 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    ThreadCpuTimer threadCpuTimer = null;
     if (publishCpuTime) {
-      threadCpuTimer =
-          SolrRequestInfo.getRequestInfo() == null
-              ? new ThreadCpuTimer()
-              : SolrRequestInfo.getRequestInfo().getThreadCpuTimer();
+      ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
@@ -237,7 +236,8 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      if (rsp.isPartialResults()) {
+
+      if (!haveCompleteResults(rsp.getResponseHeader())) {
         metrics.numTimeouts.mark();
         rsp.setHttpCaching(false);
       }
@@ -246,21 +246,36 @@ public abstract class RequestHandlerBase
       processErrorMetricsOnException(normalized, metrics);
       rsp.setException(normalized);
     } finally {
-      long elapsed = timer.stop();
-      metrics.totalTime.inc(elapsed);
+      try {
+        long elapsed = timer.stop();
+        metrics.totalTime.inc(elapsed);
 
-      if (publishCpuTime && threadCpuTimer != null) {
-        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
-        if (cpuTime.isPresent()) {
-          // add CPU_TIME if not already added by SearchHandler
-          NamedList<Object> header = rsp.getResponseHeader();
-          if (header != null) {
-            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
-              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
-            }
+        if (publishCpuTime) {
+          Optional<Long> cpuTime = ThreadCpuTimer.readMSandReset(REQUEST_CPU_TIMER_CONTEXT);
+          if (QueryLimits.getCurrentLimits().isLimitsEnabled()) {
+            // prefer the value from the limit if available to avoid confusing users with trivial
+            // differences. Not fond of the spotless formatting here...
+            cpuTime =
+                Optional.ofNullable(
+                    (Long)
+                        QueryLimits.getCurrentLimits()
+                            .currentLimitValueFor(CpuAllowedLimit.class)
+                            .orElse(cpuTime.orElse(null)));
           }
-          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+          if (cpuTime.isPresent()) {
+            // add CPU_TIME if not already added by SearchHandler
+            NamedList<Object> header = rsp.getResponseHeader();
+            if (header != null) {
+              if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+                header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+              }
+            }
+            rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+          }
         }
+      } finally {
+        // whatever happens be sure to clear things out at end of request.
+        ThreadCpuTimer.reset();
       }
     }
   }

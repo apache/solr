@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.search.CpuAllowedLimit.TIMING_CONTEXT;
+
 import com.codahale.metrics.Gauge;
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,9 +96,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -115,6 +122,7 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,6 +216,44 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
     }
     return reader;
+  }
+
+  /**
+   * Create an {@link ExecutorService} to be used by the Lucene {@link IndexSearcher#getExecutor()}.
+   * Shared across the whole node because it's a machine CPU resource.
+   */
+  public static ExecutorService initCollectorExecutor(NodeConfig cfg) {
+    final int indexSearcherExecutorThreads = cfg.getIndexSearcherExecutorThreads();
+    if (0 >= indexSearcherExecutorThreads) {
+      return null;
+    }
+
+    return new MDCAwareThreadPoolExecutor(
+        indexSearcherExecutorThreads,
+        indexSearcherExecutorThreads,
+        0L,
+        TimeUnit.MILLISECONDS,
+        new SynchronousQueue<>(true) { // fairness
+          // a hack to force ThreadPoolExecutor to block if threads are busy
+          // -- otherwise it will throw RejectedExecutionException; unacceptable
+          @Override
+          public boolean offer(Runnable runnable) { // is supposed to not block, but we do anyway
+            try {
+              put(runnable); // blocks
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException("interrupted submitting to search multi-threaded pool", e);
+            }
+            return true;
+          }
+        },
+        new SolrNamedThreadFactory("searcherCollector")) {
+
+      @Override
+      protected void beforeExecute(Thread t, Runnable r) {
+        ThreadCpuTimer.reset(TIMING_CONTEXT);
+      }
+    };
   }
 
   /**
@@ -336,7 +382,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       boolean reserveDirectory,
       DirectoryFactory directoryFactory)
       throws IOException {
-    super(wrapReader(core, r), core.getCoreContainer().getCollectorExecutor());
+    super(wrapReader(core, r), core.getCoreContainer().getIndexSearcherExecutor());
 
     this.path = path;
     this.directoryFactory = directoryFactory;
@@ -716,6 +762,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  /** Primary entrypoint for searching, using a {@link QueryCommand}. */
+  public QueryResult search(QueryCommand cmd) throws IOException {
+    return search(new QueryResult(), cmd);
+  }
+
+  @Deprecated
   public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
     getDocListC(qr, cmd);
     return qr;
@@ -743,19 +795,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
         }
       }.searchWithTimeout();
-    }
-  }
-
-  /**
-   * Thrown when {@link org.apache.solr.common.params.CommonParams#TIME_ALLOWED} is exceeded.
-   * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
-   * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
-   */
-  public static class LimitExceededFromScorerException
-      extends ExitableDirectoryReader.ExitingReaderException {
-
-    public LimitExceededFromScorerException(String msg) {
-      super(msg);
     }
   }
 
@@ -1468,13 +1507,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query).setFilterList(filter).setSort(lsort).setOffset(offset).setLen(len);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocList();
+    return new QueryCommand()
+        .setQuery(query)
+        .setFilterList(filter)
+        .setSort(lsort)
+        .setOffset(offset)
+        .setLen(len)
+        .search(this)
+        .getDocList();
   }
 
   /**
@@ -1493,19 +1536,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocList getDocList(
       Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filterList)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
-        .setFlags(flags);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocList();
+        .setFlags(flags)
+        .search(this)
+        .getDocList();
   }
 
   public static final int NO_CHECK_QCACHE = 0x80000000;
@@ -1549,7 +1592,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * getDocList version that uses+populates query and filter caches. In the event of a timeout, the
    * cache is not populated.
    */
-  private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
+  private QueryResult getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
+    // TODO don't take QueryResult as arg; create one here
+    if (cmd.getSegmentTerminateEarly()) {
+      qr.setSegmentTerminatedEarly(Boolean.FALSE);
+    }
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key = null;
@@ -1606,7 +1653,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               out.docSet = getDocSet(newList);
             }
           }
-          return;
+          return qr;
         }
       }
 
@@ -1743,6 +1790,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (key != null && superset.size() <= queryResultMaxDocsCached && !qr.isPartialResults()) {
       queryResultCache.put(key, superset);
     }
+    return qr;
   }
 
   private Relation populateScoresIfNeeded(
@@ -1905,10 +1953,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        if (log.isDebugEnabled()) {
-          log.debug("skipping collector manager");
-        }
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
+        log.trace("SINGLE THREADED search, skipping collector manager in getDocListNC");
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
         Collector collector = topCollector;
@@ -1927,9 +1973,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        if (log.isDebugEnabled()) {
-          log.debug("using CollectorManager");
-        }
+        log.trace("MULTI-THREADED search, using CollectorManager int getDocListNC");
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
                 .searchCollectorManagers(len, cmd, query, true, needScores, false);
@@ -2030,7 +2074,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd)) {
+        log.trace("SINGLE THREADED search, skipping collector manager in getDocListAndSetNC");
+
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -2057,7 +2103,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        log.debug("using CollectorManager");
+        log.trace("MULTI-THREADED search, using CollectorManager in getDocListAndSetNC");
 
         boolean needMaxScore = needScores;
         MultiThreadedSearcher.SearchResult searchResult =
@@ -2120,12 +2166,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocList getDocList(Query query, Sort lsort, int offset, int len) throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query).setSort(lsort).setOffset(offset).setLen(len);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocList();
+    return new QueryCommand()
+        .setQuery(query)
+        .setSort(lsort)
+        .setOffset(offset)
+        .setLen(len)
+        .search(this)
+        .getDocList();
   }
 
   /**
@@ -2148,18 +2197,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filter)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2183,19 +2232,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(
       Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filter)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
         .setFlags(flags)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2218,18 +2267,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(
       Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filterList)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2254,20 +2303,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(
       Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query)
+    return new QueryCommand()
+        .setQuery(query)
         .setFilterList(filterList)
         .setSort(lsort)
         .setOffset(offset)
         .setLen(len)
         .setFlags(flags)
-        .setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   /**
@@ -2284,13 +2333,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    *     caller.
    * @throws IOException If there is a low-level I/O error.
    */
+  @Deprecated
   public DocListAndSet getDocListAndSet(Query query, Sort lsort, int offset, int len)
       throws IOException {
-    QueryCommand qc = new QueryCommand();
-    qc.setQuery(query).setSort(lsort).setOffset(offset).setLen(len).setNeedDocSet(true);
-    QueryResult qr = new QueryResult();
-    search(qr, qc);
-    return qr.getDocListAndSet();
+    return new QueryCommand()
+        .setQuery(query)
+        .setSort(lsort)
+        .setOffset(offset)
+        .setLen(len)
+        .setNeedDocSet(true)
+        .search(this)
+        .getDocListAndSet();
   }
 
   private DocList constantScoreDocList(int offset, int length, DocSet docs) {

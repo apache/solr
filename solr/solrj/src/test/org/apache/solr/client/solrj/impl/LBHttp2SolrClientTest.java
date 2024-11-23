@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,7 +28,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -82,7 +85,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
       for (int j = 0; j < 2; j++) {
-        // j: first time Endpoint One will retrun error code 500.
+        // first time Endpoint One will return error code 500.
         // second time Endpoint One will be healthy
 
         String basePathToSucceed;
@@ -163,9 +166,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         int index = Integer.parseInt(lastQueryReq.getParams().get("q"));
         assertNull("Found same request twice: " + index, queryRequests[index]);
         queryRequests[index] = lastQueryReq;
-        if (lastQueryReq.getBasePath().equals(ep1.toString())) {
+
+        final String lastBasePath = client.lastBasePaths.get(i);
+        if (lastBasePath.equals(ep1.toString())) {
           numEndpointOne++;
-        } else if (lastQueryReq.getBasePath().equals(ep2.toString())) {
+        } else if (lastBasePath.equals(ep2.toString())) {
           numEndpointTwo++;
         }
 
@@ -185,7 +190,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       }
 
       // It is the user's responsibility to shuffle the endpoints when using
-      // async.  LB Http Solr Client always will try the passed-in endpoints
+      // async.  LB Http Solr Client will always try the passed-in endpoints
       // in order.  In this case, endpoint 1 gets all the requests!
       assertEquals(limit, numEndpointOne);
       assertEquals(0, numEndpointTwo);
@@ -205,6 +210,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     public String basePathToFail = null;
 
+    public String tmpBaseUrl = null;
+
     protected MockHttp2SolrClient(String serverBaseUrl, Builder builder) {
       // TODO: Consider creating an interface for Http*SolrClient
       // so mocks can Implement, not Extend, and not actually need to
@@ -213,13 +220,26 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
 
     @Override
+    public <R> R requestWithBaseUrl(
+        String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
+        throws SolrServerException, IOException {
+      // This use of 'tmpBaseUrl' is NOT thread safe, but that's fine for our purposes here.
+      try {
+        tmpBaseUrl = baseUrl;
+        return clientFunction.apply(this);
+      } finally {
+        tmpBaseUrl = null;
+      }
+    }
+
+    @Override
     public CompletableFuture<NamedList<Object>> requestAsync(
         final SolrRequest<?> solrRequest, String collection) {
       CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
       lastSolrRequests.add(solrRequest);
-      lastBasePaths.add(solrRequest.getBasePath());
+      lastBasePaths.add(tmpBaseUrl);
       lastCollections.add(collection);
-      if (solrRequest.getBasePath().equals(basePathToFail)) {
+      if (tmpBaseUrl != null && tmpBaseUrl.equals(basePathToFail)) {
         cf.completeExceptionally(
             new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this."));
       } else {

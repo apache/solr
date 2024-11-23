@@ -41,12 +41,12 @@ import org.slf4j.LoggerFactory;
 public class ZkIndexSchemaReader implements OnReconnect {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ManagedIndexSchemaFactory managedIndexSchemaFactory;
-  private SolrZkClient zkClient;
-  private String managedSchemaPath;
+  private final SolrZkClient zkClient;
+  private final String managedSchemaPath;
   private final String
       uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
   private SchemaWatcher schemaWatcher;
-  private ZkSolrResourceLoader zkLoader;
+  private final ZkSolrResourceLoader zkLoader;
 
   public ZkIndexSchemaReader(
       ManagedIndexSchemaFactory managedIndexSchemaFactory, SolrCore solrCore) {
@@ -127,11 +127,24 @@ public class ZkIndexSchemaReader implements OnReconnect {
     @Override
     public void process(WatchedEvent event) {
       ZkIndexSchemaReader indexSchemaReader = schemaReader;
-
       if (indexSchemaReader == null) {
         return; // the core for this reader has already been removed, don't process this event
       }
 
+      try {
+        doProcess(indexSchemaReader, event);
+      } catch (Exception e) {
+        if (schemaReader == null) {
+          // the core has been removed and started shutting down while
+          // we were processing the event, so let's just log the exception
+          log.warn("", e);
+          return;
+        }
+        throw e;
+      }
+    }
+
+    private void doProcess(ZkIndexSchemaReader indexSchemaReader, WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
       if (Event.EventType.None.equals(event.getType())) {
         return;
@@ -143,6 +156,10 @@ public class ZkIndexSchemaReader implements OnReconnect {
         if (e.code() == KeeperException.Code.SESSIONEXPIRED
             || e.code() == KeeperException.Code.CONNECTIONLOSS) {
           log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK");
+          return;
+        }
+        if (e.code() == KeeperException.Code.NONODE) {
+          log.warn("ZooKeeper watch triggered, but schema does not exist in ZK - skipping update");
           return;
         }
         log.error("", e);
@@ -215,7 +232,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       // force update now as the schema may have changed while our zk session was expired
       updateSchema(null, -1);
     } catch (Exception exc) {
-      log.error("Failed to update managed schema watcher after session expiration due to: {}", exc);
+      log.error("Failed to update managed schema watcher after session expiration due to: ", exc);
     }
   }
 

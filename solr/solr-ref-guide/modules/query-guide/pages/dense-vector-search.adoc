@@ -1,4 +1,5 @@
 = Dense Vector Search
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -177,11 +178,11 @@ currently multivalue is not supported
 
 Here's how a `DenseVectorField` should be indexed:
 
-[.dynamic-tabs]
---
-[example.tab-pane#json]
+[tabs#densevectorfield-index]
+======
+JSON::
++
 ====
-[.tab-label]*JSON*
 [source,json]
 ----
 [{ "id": "1",
@@ -194,9 +195,9 @@ Here's how a `DenseVectorField` should be indexed:
 ----
 ====
 
-[example.tab-pane#xml]
+XML::
++
 ====
-[.tab-label]*XML*
 [source,xml]
 ----
 <add>
@@ -218,9 +219,9 @@ Here's how a `DenseVectorField` should be indexed:
 ----
 ====
 
-[example.tab-pane#solrj]
+SolrJ::
++
 ====
-[.tab-label]*SolrJ*
 [source,java,indent=0]
 ----
 final SolrClient client = getSolrClient();
@@ -237,7 +238,7 @@ d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
 client.add(Arrays.asList(d1, d2));
 ----
 ====
---
+======
 
 == Query Time
 

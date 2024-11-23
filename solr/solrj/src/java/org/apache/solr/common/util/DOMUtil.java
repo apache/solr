@@ -308,7 +308,7 @@ public class DOMUtil {
            match the definition of how textContent should behave
            according to the DOM Level-3 Core documentation - which
            specifies that the Attr's children should have their
-           textContent concated (Attr's can have a single child which
+           textContent contacted (Attr's can have a single child which
            is either Text node or an EntityReference).  In practice,
            DOM implementations do not seem to use child nodes of
            Attributes, storing the "text" directly as the nodeValue.
@@ -346,7 +346,7 @@ public class DOMUtil {
 
   /**
    * Replaces ${property[:default value]} references in all attributes and text nodes of supplied
-   * node. If the property is not defined neither in the given Properties instance nor in
+   * node. If the property is not defined, either in the given Properties instance nor in
    * System.getProperty and no default value is provided, a runtime exception is thrown.
    *
    * @param node DOM node to walk for substitutions
@@ -444,7 +444,7 @@ public class DOMUtil {
         fragments.add("$");
         prev = pos + 1;
       } else if (value.charAt(pos + 1) != '{') {
-        // peek ahead to see if the next char is a property or not
+        // peek ahead to see if the next char is a property or
         // not a property: insert the char as a literal
         /*
         fragments.addElement(value.substring(pos + 1, pos + 2));

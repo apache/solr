@@ -65,8 +65,8 @@ public class ExecutorUtil {
   }
 
   /**
-   * Any class which wants to carry forward the threadlocal values to the threads run by threadpools
-   * must implement this interface and the implementation should be registered here
+   * Any class which wants to carry forward the thread local values to the threads run by thread
+   * pools must implement this interface and the implementation should be registered here
    */
   public interface InheritableThreadLocalProvider {
     /**
@@ -76,13 +76,13 @@ public class ExecutorUtil {
     void store(AtomicReference<Object> ctx);
 
     /**
-     * This is invoked in the Threadpool thread. set the appropriate values in the threadlocal of
+     * This is invoked in the thread pool thread. set the appropriate values in the thread local of
      * this thread.
      */
     void set(AtomicReference<Object> ctx);
 
     /**
-     * This method is invoked in the threadpool thread after the execution clean all the variables
+     * This method is invoked in the thread pool thread after the execution clean all the variables
      * set in the set method
      */
     void clean(AtomicReference<Object> ctx);
@@ -110,7 +110,7 @@ public class ExecutorUtil {
    * Shutdown the {@link ExecutorService} and wait for 60 seconds for the threads to complete. More
    * detail on the waiting can be found in {@link #awaitTermination(ExecutorService)}.
    *
-   * @param pool The ExecutorService to shutdown and wait on
+   * @param pool The ExecutorService to shut down and wait on
    */
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
@@ -122,13 +122,13 @@ public class ExecutorUtil {
    * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
    * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
    *
-   * <p>This should likely not be used in {@code close()} methods, as we want to timebound when
+   * <p>This should likely not be used in {@code close()} methods, as we want to time bound when
    * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
    * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
    * case, this method should be used as there is no inherent time bound to waiting on those tasks
    * to complete.
    *
-   * @param pool The ExecutorService to shutdown and wait on
+   * @param pool The ExecutorService to shut down and wait on
    */
   public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
     if (pool == null) return;
@@ -225,21 +225,38 @@ public class ExecutorUtil {
     return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
-  /** See {@link java.util.concurrent.Executors#newCachedThreadPool(ThreadFactory)} */
+  /**
+   * Create a new pool of threads, with no limit for the number of threads. The pool has no task
+   * queue. Each submitted task is executed immediately, either by reusing an existing thread if one
+   * is available, or by starting a new thread. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
   }
 
+  /**
+   * Create a new pool of threads. Threads are created for new work if there is room to do so up to
+   * {@code maxThreads}. Beyond that, the queue is used up to {@code queueCapacity}. Beyond that,
+   * work is rejected with an exception. Unused threads will be closed after 60 seconds.
+   */
   public static ExecutorService newMDCAwareCachedThreadPool(
       int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
-    return new MDCAwareThreadPoolExecutor(
-        0,
-        maxThreads,
-        60L,
-        TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(queueCapacity),
-        threadFactory);
+    // Create an executor with same value of core size and max total size. With an unbounded queue,
+    // the ThreadPoolExecutor ignores the configured max value and only considers core pool size.
+    // Since we allow core threads to die when idle for too long, this ends in having a pool with
+    // lazily-initialized and cached threads.
+    MDCAwareThreadPoolExecutor executor =
+        new MDCAwareThreadPoolExecutor(
+            maxThreads,
+            maxThreads,
+            60L,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(queueCapacity),
+            threadFactory);
+    // Allow core threads to die
+    executor.allowCoreThreadTimeOut(true);
+    return executor;
   }
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")

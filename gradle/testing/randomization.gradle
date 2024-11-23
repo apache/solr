@@ -79,7 +79,7 @@ allprojects {
 // Configure test property defaults and their descriptions.
 allprojects {
   plugins.withType(JavaPlugin) {
-    ext {
+    project.ext {
       testOptions += [
           // seed, repetition and amplification.
           [propName: 'tests.seed', value: { -> rootSeed }, description: "Sets the master randomization seed."],
@@ -124,9 +124,8 @@ allprojects {
 // Add Solr-specific test configs settings.
 configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
-    ext {
+    project.ext {
       testOptions += [
-          [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
           [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
       ]
@@ -138,14 +137,14 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
 allprojects {
   plugins.withType(JavaPlugin) {
     afterEvaluate {
-      ext.testOptionsResolved = testOptions.findAll { opt ->
+      project.ext.testOptionsResolved = testOptions.findAll { opt ->
         propertyOrDefault(opt.propName, opt.value) != null
       }.collectEntries { opt ->
         [(opt.propName): Objects.toString(resolvedTestOption(opt.propName))]
       }
 
       // Compute the "reproduce with" string.
-      ext.testOptionsForReproduceLine = testOptions.findAll { opt ->
+      project.ext.testOptionsForReproduceLine = testOptions.findAll { opt ->
         if (opt["includeInReproLine"] == false) {
           return false
         }
@@ -200,7 +199,12 @@ allprojects {
 
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
-        if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
+        def useSecurityManager = Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"]);
+        // Allow the project to override this
+        if (project.ext.has("useSecurityManager")) {
+          useSecurityManager = project.ext.get("useSecurityManager")
+        }
+        if (useSecurityManager) {
           def commonSolrDir = project(':solr').layout.projectDirectory
           def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
           jvmArgumentProviders.add(

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.File;
@@ -41,7 +40,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -242,65 +240,42 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     log.info("Collection has disappeared - collection:{}", collection);
   }
 
-  static void waitForNewLeader(
-      CloudSolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
+  static void waitForNewLeader(CloudSolrClient cloudClient, String shardName, Replica oldLeader)
       throws Exception {
-    log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
+    log.info("Will wait for a node to become leader for 15 secs");
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
-    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
 
-    for (; ; ) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection coll = clusterState.getCollection("collection1");
-      Slice slice = coll.getSlice(shardName);
-      if (slice.getLeader() != null
-          && !slice.getLeader().equals(oldLeader)
-          && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        if (log.isInfoEnabled()) {
-          log.info(
-              "Old leader {}, new leader {}. New leader got elected in {} ms",
-              oldLeader,
-              slice.getLeader(),
-              timeOut.timeElapsed(MILLISECONDS));
-        }
-        break;
-      }
+    long startNs = System.nanoTime();
+    try {
+      zkStateReader.waitForState(
+          "collection1",
+          15,
+          TimeUnit.SECONDS,
+          (docCollection) -> {
+            if (docCollection == null) return false;
 
-      if (timeOut.hasTimedOut()) {
-        Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
-        zkStateReader.getZkClient().printLayoutToStream(System.out);
-        fail(
-            "Could not find new leader even after waiting for "
-                + timeOut.timeElapsed(MILLISECONDS)
-                + "ms");
-      }
-
-      Thread.sleep(100);
-    }
-
-    zkStateReader.waitForState(
-        "collection1",
-        timeOut.timeLeft(SECONDS),
-        TimeUnit.SECONDS,
-        (docCollection) -> {
-          if (docCollection == null) return false;
-
-          Slice slice = docCollection.getSlice(shardName);
-          if (slice != null
-              && slice.getLeader() != null
-              && !slice.getLeader().equals(oldLeader)
-              && slice.getLeader().getState() == Replica.State.ACTIVE) {
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "Old leader {}, new leader {}. New leader got elected in {} ms",
-                  oldLeader,
-                  slice.getLeader(),
-                  timeOut.timeElapsed(MILLISECONDS));
+            Slice slice = docCollection.getSlice(shardName);
+            if (slice != null
+                && slice.getLeader() != null
+                && !slice.getLeader().equals(oldLeader)
+                && slice.getLeader().getState() == Replica.State.ACTIVE) {
+              if (log.isInfoEnabled()) {
+                log.info(
+                    "Old leader {}, new leader {}. New leader got elected in {} ms",
+                    oldLeader,
+                    slice.getLeader(),
+                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs));
+              }
+              return true;
             }
-            return true;
-          }
-          return false;
-        });
+            return false;
+          });
+    } catch (TimeoutException e) {
+      // If we failed to get a new leader, print some diagnotics before the test fails
+      Diagnostics.logThreadDumps("Could not find new leader in specified timeout");
+      zkStateReader.getZkClient().printLayoutToStream(System.out);
+      fail("Could not find new leader even after waiting for 15s");
+    }
   }
 
   public static void verifyReplicaStatus(
@@ -421,7 +396,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();
 
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool, args));
     assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
   }
 }

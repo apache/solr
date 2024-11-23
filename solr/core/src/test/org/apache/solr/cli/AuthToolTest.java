@@ -70,7 +70,7 @@ public class AuthToolTest extends SolrCloudTestCase {
       dir.toAbsolutePath().toString(),
       "--solr-include-file",
       solrIncludeFile.toAbsolutePath().toString(),
-      "-credentials",
+      "--credentials",
       "solr:solr",
       "--block-unknown",
       "true"
@@ -81,7 +81,7 @@ public class AuthToolTest extends SolrCloudTestCase {
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof AuthTool);
-    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    CommandLine cli = parseCmdLine(tool, args);
     return tool.runTool(cli);
   }
 }

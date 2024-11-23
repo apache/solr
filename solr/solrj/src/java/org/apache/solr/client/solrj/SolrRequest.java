@@ -52,6 +52,21 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum ApiVersion {
+    V1("/solr"),
+    V2("/api");
+
+    private final String apiPrefix;
+
+    ApiVersion(String apiPrefix) {
+      this.apiPrefix = apiPrefix;
+    }
+
+    public String getApiPrefix() {
+      return apiPrefix;
+    }
+  }
+
   public enum SolrRequestType {
     QUERY,
     UPDATE,
@@ -189,6 +204,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   /**
+   * Indicates which API version this request will make
+   *
+   * <p>Defaults implementation returns 'V1'.
+   */
+  public ApiVersion getApiVersion() {
+    return ApiVersion.V1;
+  }
+
+  /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.
    */
   @Deprecated
@@ -226,7 +250,8 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       throws SolrServerException, IOException {
     long startNanos = System.nanoTime();
     T res = createResponse(client);
-    res.setResponse(client.request(this, collection));
+    var namedList = client.request(this, collection);
+    res.setResponse(namedList);
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     return res;
