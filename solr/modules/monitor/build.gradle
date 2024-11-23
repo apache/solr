@@ -23,11 +23,11 @@ dependencies {
 
     implementation project(":solr:core")
     implementation project(":solr:solrj")
-    implementation "org.apache.lucene:lucene-core"
-    implementation "org.apache.lucene:lucene-monitor"
-    implementation 'com.github.ben-manes.caffeine:caffeine'
+    implementation libs.apache.lucene.core
+    implementation libs.apache.lucene.monitor
+    implementation libs.benmanes.caffeine
     testImplementation project(':solr:test-framework')
-    testImplementation 'junit:junit'
+    testImplementation libs.junit.junit
 }
 
 

@@ -271,6 +271,7 @@ apache-lucene-grouping = { module = "org.apache.lucene:lucene-grouping", version
 apache-lucene-highlighter = { module = "org.apache.lucene:lucene-highlighter", version.ref = "apache-lucene" }
 apache-lucene-join = { module = "org.apache.lucene:lucene-join", version.ref = "apache-lucene" }
 apache-lucene-misc = { module = "org.apache.lucene:lucene-misc", version.ref = "apache-lucene" }
+apache-lucene-monitor = { module = "org.apache.lucene:lucene-monitor", version.ref = "apache-lucene" }
 apache-lucene-queries = { module = "org.apache.lucene:lucene-queries", version.ref = "apache-lucene" }
 apache-lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "apache-lucene" }
 apache-lucene-spatialextras = { module = "org.apache.lucene:lucene-spatial-extras", version.ref = "apache-lucene" }
