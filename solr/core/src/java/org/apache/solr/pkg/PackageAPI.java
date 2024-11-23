@@ -198,8 +198,7 @@ public class PackageAPI {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj instanceof PkgVersion) {
-        PkgVersion that = (PkgVersion) obj;
+      if (obj instanceof PkgVersion that) {
         return Objects.equals(this.version, that.version) && Objects.equals(this.files, that.files);
       }
       return false;

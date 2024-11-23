@@ -975,7 +975,7 @@ public class DistributedClusterStateUpdater {
       final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
       Optional<ZkWriteCommand> result =
           docCollection != null
-              ? NodeMutator.computeCollectionUpdate(nodeName, collectionName, docCollection, client)
+              ? NodeMutator.computeCollectionUpdate(nodeName, docCollection, client)
               : Optional.empty();
 
       if (docCollection == null) {

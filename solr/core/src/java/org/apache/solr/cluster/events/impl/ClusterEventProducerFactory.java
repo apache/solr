@@ -133,8 +133,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
               return;
             }
             Object instance = plugin.getInstance();
-            if (instance instanceof ClusterEventListener) {
-              ClusterEventListener listener = (ClusterEventListener) instance;
+            if (instance instanceof ClusterEventListener listener) {
               clusterEventProducer.registerListener(listener);
             } else if (instance instanceof ClusterEventProducer) {
               if (ClusterEventProducer.PLUGIN_NAME.equals(plugin.getInfo().name)) {
@@ -162,8 +161,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
               return;
             }
             Object instance = plugin.getInstance();
-            if (instance instanceof ClusterEventListener) {
-              ClusterEventListener listener = (ClusterEventListener) instance;
+            if (instance instanceof ClusterEventListener listener) {
               clusterEventProducer.unregisterListener(listener);
             } else if (instance instanceof ClusterEventProducer) {
               if (ClusterEventProducer.PLUGIN_NAME.equals(plugin.getInfo().name)) {

@@ -339,8 +339,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     Collection<ContentStream> streams =
         contentWriter == null ? requestWriter.getContentStreams(request) : null;
 
-    final String requestUrlBeforeParams =
-        ClientUtils.buildRequestUrl(request, requestWriter, baseUrl, collection);
+    final String requestUrlBeforeParams = ClientUtils.buildRequestUrl(request, baseUrl, collection);
 
     ResponseParser parser = request.getResponseParser();
     if (parser == null) {

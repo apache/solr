@@ -633,10 +633,9 @@ public class SolrIndexSplitter {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof SplittingQuery)) {
+      if (!(obj instanceof SplittingQuery q)) {
         return false;
       }
-      SplittingQuery q = (SplittingQuery) obj;
       return partition == q.partition;
     }
 

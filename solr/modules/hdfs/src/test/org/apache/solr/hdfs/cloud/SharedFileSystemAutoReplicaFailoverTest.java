@@ -47,11 +47,8 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ChaosMonkey;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClusterStateUtil;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -382,44 +379,17 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
             .filter(jetty -> jetty.getCoreContainer() != null)
             .map(JettySolrRunner::getNodeName)
             .collect(Collectors.toSet());
-    long timeout =
-        System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
-    boolean success = false;
-    while (!success && System.nanoTime() < timeout) {
-      success = true;
-      ClusterState clusterState = zkStateReader.getClusterState();
-      if (clusterState != null) {
-        Map<String, DocCollection> collections = clusterState.getCollectionsMap();
-        for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
-          DocCollection docCollection = entry.getValue();
-          Collection<Slice> slices = docCollection.getSlices();
-          for (Slice slice : slices) {
-            // only look at active shards
-            if (slice.getState() == Slice.State.ACTIVE) {
-              Collection<Replica> replicas = slice.getReplicas();
-              for (Replica replica : replicas) {
-                if (nodeNames.contains(replica.getNodeName())) {
-                  boolean live = clusterState.liveNodesContain(replica.getNodeName());
-                  if (live) {
-                    success = false;
-                  }
-                }
-              }
-            }
-          }
-        }
-        if (!success) {
-          try {
-            Thread.sleep(500);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted");
-          }
-        }
-      }
-    }
-
-    return success;
+    return ClusterStateUtil.waitFor(
+        zkStateReader,
+        null,
+        timeoutInMs,
+        TimeUnit.MILLISECONDS,
+        (liveNodes, state) ->
+            ClusterStateUtil.replicasOfActiveSlicesStream(state)
+                .noneMatch(
+                    replica ->
+                        nodeNames.contains(replica.getNodeName())
+                            && liveNodes.contains(replica.getNodeName())));
   }
 
   private void assertSliceAndReplicaCount(

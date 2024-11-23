@@ -280,8 +280,7 @@ public class MultiThreadedSearcher {
     public Object reduce(Collection collectors) throws IOException {
       final FixedBitSet reduced = new FixedBitSet(maxDoc);
       for (Object collector : collectors) {
-        if (collector instanceof FixedBitSetCollector) {
-          FixedBitSetCollector fixedBitSetCollector = (FixedBitSetCollector) collector;
+        if (collector instanceof FixedBitSetCollector fixedBitSetCollector) {
           fixedBitSetCollector.update(reduced);
         }
       }

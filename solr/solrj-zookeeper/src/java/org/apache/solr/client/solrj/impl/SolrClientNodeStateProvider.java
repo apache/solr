@@ -78,18 +78,21 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     if (clusterState == null) { // zkStateReader still initializing
       return;
     }
-    clusterState.forEachCollection(
-        coll ->
-            coll.forEachReplica(
-                (shard, replica) -> {
-                  Map<String, Map<String, List<Replica>>> nodeData =
-                      nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(
-                          replica.getNodeName(), k -> new HashMap<>());
-                  Map<String, List<Replica>> collData =
-                      nodeData.computeIfAbsent(coll.getName(), k -> new HashMap<>());
-                  List<Replica> replicas = collData.computeIfAbsent(shard, k -> new ArrayList<>());
-                  replicas.add((Replica) replica.clone());
-                }));
+    clusterState
+        .collectionStream()
+        .forEach(
+            coll ->
+                coll.forEachReplica(
+                    (shard, replica) -> {
+                      Map<String, Map<String, List<Replica>>> nodeData =
+                          nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(
+                              replica.getNodeName(), k -> new HashMap<>());
+                      Map<String, List<Replica>> collData =
+                          nodeData.computeIfAbsent(coll.getName(), k -> new HashMap<>());
+                      List<Replica> replicas =
+                          collData.computeIfAbsent(shard, k -> new ArrayList<>());
+                      replicas.add((Replica) replica.clone());
+                    }));
   }
 
   @Override

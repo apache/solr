@@ -26,7 +26,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
+import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
 import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -39,7 +39,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** V2 API impl for Deleting Collection Snapshots. */
-public class DeleteCollectionSnapshot extends AdminAPIBase implements DeleteCollectionSnapshotApi {
+public class DeleteCollectionSnapshot extends AdminAPIBase
+    implements CollectionSnapshotApis.Delete {
 
   @Inject
   public DeleteCollectionSnapshot(

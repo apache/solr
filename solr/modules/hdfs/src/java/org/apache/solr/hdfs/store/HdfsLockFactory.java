@@ -42,11 +42,10 @@ public class HdfsLockFactory extends LockFactory {
 
   @Override
   public Lock obtainLock(Directory dir, String lockName) throws IOException {
-    if (!(dir instanceof HdfsDirectory)) {
+    if (!(dir instanceof HdfsDirectory hdfsDir)) {
       throw new UnsupportedOperationException(
           "HdfsLockFactory can only be used with HdfsDirectory subclasses, got: " + dir);
     }
-    final HdfsDirectory hdfsDir = (HdfsDirectory) dir;
     final Configuration conf = hdfsDir.getConfiguration();
     final Path lockPath = hdfsDir.getHdfsDirPath();
     final Path lockFile = new Path(lockPath, lockName);

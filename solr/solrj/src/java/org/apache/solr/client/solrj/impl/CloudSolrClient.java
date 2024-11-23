@@ -453,8 +453,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
       if (exceptions.size() > 0) {
         Throwable firstException = exceptions.getVal(0);
-        if (firstException instanceof SolrException) {
-          SolrException e = (SolrException) firstException;
+        if (firstException instanceof SolrException e) {
           throw getRouteException(
               SolrException.ErrorCode.getErrorCode(e.code()), exceptions, routes);
         } else {
@@ -611,8 +610,7 @@ public abstract class CloudSolrClient extends SolrClient {
         status = s;
       }
       Object rfObj = header.get(UpdateRequest.REPFACT);
-      if (rfObj != null && rfObj instanceof Integer) {
-        Integer routeRf = (Integer) rfObj;
+      if (rfObj != null && rfObj instanceof Integer routeRf) {
         if (rf == null || routeRf < rf) rf = routeRf;
       }
 
@@ -639,10 +637,9 @@ public abstract class CloudSolrClient extends SolrClient {
       }
       for (String updateType : Arrays.asList("adds", "deletes", "deleteByQuery")) {
         Object obj = shardResponse.get(updateType);
-        if (obj instanceof NamedList) {
+        if (obj instanceof NamedList<?> nl) {
           NamedList<Object> versionsList =
               versions.containsKey(updateType) ? versions.get(updateType) : new NamedList<>();
-          NamedList<?> nl = (NamedList<?>) obj;
           versionsList.addAll(nl);
           versions.put(updateType, versionsList);
         }
@@ -732,8 +729,7 @@ public abstract class CloudSolrClient extends SolrClient {
       NamedList<String> metadata = new NamedList<String>();
       for (int i = 0; i < throwables.size(); i++) {
         Throwable t = throwables.getVal(i);
-        if (t instanceof SolrException) {
-          SolrException e = (SolrException) t;
+        if (t instanceof SolrException e) {
           NamedList<String> eMeta = e.getMetadata();
           if (null != eMeta) {
             metadata.addAll(eMeta);
@@ -825,8 +821,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
     }
 
-    if (request.getParams() instanceof ModifiableSolrParams) {
-      ModifiableSolrParams params = (ModifiableSolrParams) request.getParams();
+    if (request.getParams() instanceof ModifiableSolrParams params) {
       if (stateVerParam != null) {
         params.set(STATE_VERSION, stateVerParam);
       } else {
@@ -840,11 +835,10 @@ public abstract class CloudSolrClient extends SolrClient {
       // to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from
       // there
       Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
-      if (o != null && o instanceof Map) {
+      if (o != null && o instanceof Map<?, ?> invalidStates) {
         // remove this because no one else needs this and tests would fail if they are comparing
         // responses
         resp.remove(resp.size() - 1);
-        Map<?, ?> invalidStates = (Map<?, ?>) o;
         for (Map.Entry<?, ?> e : invalidStates.entrySet()) {
           getDocCollection((String) e.getKey(), (Integer) e.getValue());
         }

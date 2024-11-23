@@ -225,8 +225,7 @@ public class FieldCacheImpl implements FieldCache {
     /** Two of these are equal iff they reference the same field and type. */
     @Override
     public boolean equals(Object o) {
-      if (o instanceof CacheKey) {
-        CacheKey other = (CacheKey) o;
+      if (o instanceof CacheKey other) {
         if (other.field.equals(field)) {
           if (other.custom == null) {
             if (custom == null) return true;

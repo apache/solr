@@ -275,11 +275,10 @@ public class DefaultSchemaSuggester implements SchemaSuggester {
     int maxLength = -1;
     int maxTerms = -1;
     for (Object next : values) {
-      if (!(next instanceof String)) {
+      if (!(next instanceof String cs)) {
         return false;
       }
 
-      String cs = (String) next;
       int len = cs.length();
       if (len > maxLength) {
         maxLength = len;

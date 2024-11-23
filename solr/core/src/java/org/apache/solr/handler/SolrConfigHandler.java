@@ -501,8 +501,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
-      if (loader instanceof ZkSolrResourceLoader) {
-        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+      if (loader instanceof ZkSolrResourceLoader zkLoader) {
         if (ops.isEmpty()) {
           ZkController.touchConfDir(zkLoader);
         } else {

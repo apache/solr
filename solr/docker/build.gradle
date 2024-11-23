@@ -22,7 +22,7 @@ import org.apache.commons.codec.digest.DigestUtils
 description = 'Solr Docker image'
 
 apply plugin: 'base'
-def javaVersion = scriptDepVersions['min-java-version']
+def javaVersion = libs.versions.java.min.get()
 // Solr Docker inputs
 def dockerImageSolrDist = "${ -> propertyOrEnvOrDefault("solr.docker.dist", "SOLR_DOCKER_DIST", 'full') }"
 def isDistSlim = {String dist -> dist.toLowerCase(Locale.ROOT) == "slim"}
@@ -127,7 +127,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
+    classpath libs.commonscodec.commonscodec
   }
 }
 def checksum = { file ->
