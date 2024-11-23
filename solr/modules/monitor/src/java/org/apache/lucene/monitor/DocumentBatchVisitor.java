@@ -19,7 +19,6 @@
 
 package org.apache.lucene.monitor;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
@@ -28,7 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
 
-public class DocumentBatchVisitor implements Closeable, Supplier<LeafReader> {
+public class DocumentBatchVisitor implements AutoCloseable, Supplier<LeafReader> {
 
   private final DocumentBatch batch;
   private final List<Document> docs;

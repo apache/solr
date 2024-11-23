@@ -19,7 +19,6 @@
 
 package org.apache.solr.monitor.search;
 
-import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
 
 import java.io.IOException;
@@ -65,6 +64,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   private static final String SOLR_MONITOR_CACHE_NAME_KEY = "solrMonitorCacheName";
   private static final String SOLR_MONITOR_CACHE_NAME_DEFAULT = "solrMonitorCache";
+  private static final String MONITOR_DOCUMENTS_KEY = "monitorDocuments";
   private String solrMonitorCacheName = SOLR_MONITOR_CACHE_NAME_DEFAULT;
 
   private QueryDecomposer queryDecomposer;
@@ -88,13 +88,34 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
     rb.setQuery(new MatchAllDocsQuery());
 
-    final DocumentBatchVisitor documentBatchVisitor =
-        documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema());
-    final LeafReader documentBatch = documentBatchVisitor.get();
+    try (final var documentBatchVisitor =
+                 documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema())) {
+      final LeafReader documentBatch = documentBatchVisitor.get();
 
-    final MonitorQueryCache monitorQueryCache =
-        (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
+      final MonitorQueryCache monitorQueryCache =
+              (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
 
+      final MonitorPostFilter monitorPostFilter = monitorPostFilter(rb, documentBatch, monitorQueryCache);
+
+      final BiPredicate<String, BytesRef> termAcceptor;
+      if (monitorQueryCache == null) {
+        termAcceptor = (__, ___) -> true;
+      } else {
+        termAcceptor = monitorQueryCache::acceptTerm;
+      }
+      final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
+
+      final List<Query> mutableFilters =
+              Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
+
+      mutableFilters.add(preFilterQuery);
+      mutableFilters.add(monitorPostFilter);
+
+      rb.setFilters(mutableFilters);
+    }
+  }
+
+  private static MonitorPostFilter monitorPostFilter(ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
     final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
         new SolrMonitorQueryDecoder(rb.req.getCore());
 
@@ -115,25 +136,9 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
     final SolrMonitorQueryCollector.CollectorContext collectorContext =
         new SolrMonitorQueryCollector.CollectorContext(
-            monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
+                monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
 
-    final MonitorPostFilter monitorPostFilter = new MonitorPostFilter(collectorContext);
-
-    final BiPredicate<String, BytesRef> termAcceptor;
-    if (monitorQueryCache == null) {
-      termAcceptor = (__, ___) -> true;
-    } else {
-      termAcceptor = monitorQueryCache::acceptTerm;
-    }
-    final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
-
-    final List<Query> mutableFilters =
-        Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
-
-    mutableFilters.add(preFilterQuery);
-    mutableFilters.add(monitorPostFilter);
-
-    rb.setFilters(mutableFilters);
+      return new MonitorPostFilter(collectorContext);
   }
 
   @SuppressWarnings({"unchecked"})

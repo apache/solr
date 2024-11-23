@@ -19,32 +19,31 @@
 
 package org.apache.solr.monitor.search;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
   private final Function<IndexSearcher, CandidateMatcher<T>> matcherFactory;
   private final IndexSearcher docBatchSearcher;
-  private final Consumer<SyncSolrMatcherSink<T>> queriesConsumer;
-  private final List<CandidateMatcher<T>> matchers = new ArrayList<>();
+  private final Consumer<SyncSolrMatcherSink<T>> sinkConsumer;
+
   private int queriesRun;
 
   SyncSolrMatcherSink(
       Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
       IndexSearcher docBatchSearcher,
-      Consumer<SyncSolrMatcherSink<T>> queriesConsumer) {
+      Consumer<SyncSolrMatcherSink<T>> sinkConsumer) {
     this.matcherFactory = matcherFactory;
     this.docBatchSearcher = docBatchSearcher;
-    this.queriesConsumer = queriesConsumer;
+    this.sinkConsumer = sinkConsumer;
   }
 
   @Override
@@ -52,7 +51,6 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
       throws IOException {
     queriesRun++;
     var matcher = matcherFactory.apply(docBatchSearcher);
-    matchers.add(matcher);
     matcher.matchQuery(queryId, matchQuery, metadata);
     var matches = matcher.finish(Long.MIN_VALUE, 1);
     for (int doc = 0; doc < matches.getBatchSize(); doc++) {
@@ -66,7 +64,7 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
   @Override
   public void complete() {
-    queriesConsumer.accept(this);
+    sinkConsumer.accept(this);
   }
 
   public int getQueriesRun() {
