@@ -60,8 +60,8 @@ teardown() {
   assert_output --partial '"query_id":"5678'
    
   # Check UBI query record was written out to default location
-  assert_file_exist ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl
-  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"5678"'
+  assert_file_exist ${SOLR_TIP}/server/solr/userfiles/ubi_queries.jsonl
+  assert_file_contains ${SOLR_TIP}/server/solr/userfiles/ubi_queries.jsonl '"query_id":"5678"'
   
   # Rich UBI user query tracking enabled query with JSON Query
   run curl -X POST -H 'Content-type:application/json' -d '{
@@ -85,8 +85,8 @@ teardown() {
   assert_output --partial '"query_id":"xyz890"'
   
   # Check UBI query record was written out to default location with additional metadata
-  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl '"query_id":"xyz890"'
-  assert_file_contains ${SOLR_TIP}/example/techproducts/solr/userfiles/ubi_queries.jsonl 'supersecret'
+  assert_file_contains ${SOLR_TIP}/server/solr/userfiles/ubi_queries.jsonl '"query_id":"xyz890"'
+  assert_file_contains ${SOLR_TIP}/server/solr/userfiles/ubi_queries.jsonl 'supersecret'
   
   
 }
