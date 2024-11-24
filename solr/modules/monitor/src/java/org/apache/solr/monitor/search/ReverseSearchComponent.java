@@ -44,7 +44,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.loader.JsonLoader;
@@ -89,13 +91,14 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     rb.setQuery(new MatchAllDocsQuery());
 
     try (final var documentBatchVisitor =
-                 documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema())) {
+        documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema())) {
       final LeafReader documentBatch = documentBatchVisitor.get();
 
       final MonitorQueryCache monitorQueryCache =
-              (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
+          (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
 
-      final MonitorPostFilter monitorPostFilter = monitorPostFilter(rb, documentBatch, monitorQueryCache);
+      final MonitorPostFilter monitorPostFilter =
+          monitorPostFilter(rb, documentBatch, monitorQueryCache);
 
       final BiPredicate<String, BytesRef> termAcceptor;
       if (monitorQueryCache == null) {
@@ -106,7 +109,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
 
       final List<Query> mutableFilters =
-              Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
+          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
 
       mutableFilters.add(preFilterQuery);
       mutableFilters.add(monitorPostFilter);
@@ -115,7 +118,8 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     }
   }
 
-  private static MonitorPostFilter monitorPostFilter(ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
+  private static MonitorPostFilter monitorPostFilter(
+      ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
     final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
         new SolrMonitorQueryDecoder(rb.req.getCore());
 
@@ -125,20 +129,25 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
             new IndexSearcher(documentBatch),
             matcherSink -> {
               if (rb.isDebug()) {
-                rb.req
-                    .getContext()
-                    .put(
-                        ReverseSearchDebugComponent.ReverseSearchDebugInfo.KEY,
-                        new ReverseSearchDebugComponent.ReverseSearchDebugInfo(
-                            matcherSink.getQueriesRun()));
+                DebugComponent.CustomDebugInfoSources debugInfoSources =
+                    (DebugComponent.CustomDebugInfoSources)
+                        rb.req
+                            .getContext()
+                            .computeIfAbsent(
+                                DebugComponent.CustomDebugInfoSources.KEY,
+                                key -> new DebugComponent.CustomDebugInfoSources());
+                var info = new SimpleOrderedMap<>();
+                info.add("queriesRun", matcherSink.getQueriesRun());
+                debugInfoSources.add(
+                    new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
               }
             });
 
     final SolrMonitorQueryCollector.CollectorContext collectorContext =
         new SolrMonitorQueryCollector.CollectorContext(
-                monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
+            monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
 
-      return new MonitorPostFilter(collectorContext);
+    return new MonitorPostFilter(collectorContext);
   }
 
   @SuppressWarnings({"unchecked"})

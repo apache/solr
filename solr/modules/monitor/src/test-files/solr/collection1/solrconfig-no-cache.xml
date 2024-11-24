@@ -81,7 +81,11 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
+  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler">
+    <arr name="components">
+      <str>reverseSearch</str>
+    </arr>
+  </requestHandler>
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>

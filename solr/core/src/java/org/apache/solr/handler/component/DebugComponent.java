@@ -106,7 +106,23 @@ public class DebugComponent extends SearchComponent {
         info.addAll(stdinfo);
       }
 
-      addCustomInfo(rb, info);
+      FacetDebugInfo fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo"));
+      if (fdebug != null) {
+        info.add("facet-trace", fdebug.getFacetDebugInfo());
+      }
+
+      fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo-nonJson"));
+      if (fdebug != null) {
+        info.add("facet-debug", fdebug.getFacetDebugInfo());
+      }
+
+      CustomDebugInfoSources customDebugInfoSources =
+          (CustomDebugInfoSources) rb.req.getContext().get(CustomDebugInfoSources.KEY);
+      if (customDebugInfoSources != null) {
+        for (var customDebugInfoSource : customDebugInfoSources.list) {
+          info.add(customDebugInfoSource.name, customDebugInfoSource.values);
+        }
+      }
 
       if (rb.req.getJSON() != null) {
         info.add(JSON, rb.req.getJSON());
@@ -132,15 +148,25 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
-  protected void addCustomInfo(ResponseBuilder rb, NamedList<Object> info) {
-    FacetDebugInfo fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo"));
-    if (fdebug != null) {
-      info.add("facet-trace", fdebug.getFacetDebugInfo());
-    }
+  public static class CustomDebugInfoSources {
 
-    fdebug = (FacetDebugInfo) (rb.req.getContext().get("FacetDebugInfo-nonJson"));
-    if (fdebug != null) {
-      info.add("facet-debug", fdebug.getFacetDebugInfo());
+    public static final String KEY = "CustomDebugInfoSources";
+
+    private final List<CustomDebugInfoSource> list = new ArrayList<>();
+
+    public void add(CustomDebugInfoSource source) {
+      list.add(source);
+    }
+  }
+
+  public static class CustomDebugInfoSource {
+
+    private final String name;
+    private final SimpleOrderedMap<Object> values;
+
+    public CustomDebugInfoSource(String name, SimpleOrderedMap<Object> values) {
+      this.name = name;
+      this.values = values;
     }
   }
 

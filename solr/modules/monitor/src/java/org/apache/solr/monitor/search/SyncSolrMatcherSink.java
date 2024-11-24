@@ -19,15 +19,14 @@
 
 package org.apache.solr.monitor.search;
 
-import org.apache.lucene.monitor.CandidateMatcher;
-import org.apache.lucene.monitor.QueryMatch;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.lucene.monitor.CandidateMatcher;
+import org.apache.lucene.monitor.QueryMatch;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 
 class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
