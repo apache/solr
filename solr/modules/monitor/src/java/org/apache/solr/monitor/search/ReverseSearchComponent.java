@@ -97,9 +97,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       final MonitorQueryCache monitorQueryCache =
           (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
 
-//      final MonitorPostFilter monitorPostFilter =
-//          monitorPostFilter(rb, documentBatch, monitorQueryCache);
-
       final BiPredicate<String, BytesRef> termAcceptor;
       if (monitorQueryCache == null) {
         termAcceptor = (__, ___) -> true;
@@ -108,13 +105,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       }
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
       rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, monitorQueryCache));
-//      final List<Query> mutableFilters =
-//          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
-//
-//      mutableFilters.add(preFilterQuery);
-//      mutableFilters.add(monitorPostFilter);
-
-//      rb.setFilters(mutableFilters);
     }
   }
 
@@ -148,38 +138,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
     return new ReverseSearchQuery(context, preFilterQuery);
   }
-
-//  private static MonitorPostFilter monitorPostFilter(
-//      ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
-//    final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
-//        new SolrMonitorQueryDecoder(rb.req.getCore());
-//
-//    final SolrMatcherSink solrMatcherSink =
-//        new SyncSolrMatcherSink<>(
-//            QueryMatch.SIMPLE_MATCHER::createMatcher,
-//            new IndexSearcher(documentBatch),
-//            matcherSink -> {
-//              if (rb.isDebug()) {
-//                DebugComponent.CustomDebugInfoSources debugInfoSources =
-//                    (DebugComponent.CustomDebugInfoSources)
-//                        rb.req
-//                            .getContext()
-//                            .computeIfAbsent(
-//                                DebugComponent.CustomDebugInfoSources.KEY,
-//                                key -> new DebugComponent.CustomDebugInfoSources());
-//                var info = new SimpleOrderedMap<>();
-//                info.add("queriesRun", matcherSink.getQueriesRun());
-//                debugInfoSources.add(
-//                    new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
-//              }
-//            });
-//
-//    final SolrMonitorQueryCollector.CollectorContext collectorContext =
-//        new SolrMonitorQueryCollector.CollectorContext(
-//            monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
-//
-//    return new MonitorPostFilter(collectorContext);
-//  }
 
   @SuppressWarnings({"unchecked"})
   private static DocumentBatchVisitor documentBatchVisitor(

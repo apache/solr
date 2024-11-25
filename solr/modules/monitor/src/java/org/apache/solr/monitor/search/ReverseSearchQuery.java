@@ -46,11 +46,11 @@ import java.util.Objects;
 class ReverseSearchQuery extends ExtendedQueryBase {
 
     private final ReverseSearchContext reverseSearchContext;
-    private Query inner;
+    private final Query presearchQuery;
 
-    public ReverseSearchQuery(ReverseSearchContext reverseSearchContext, Query inner) {
+    public ReverseSearchQuery(ReverseSearchContext reverseSearchContext, Query presearchQuery) {
         this.reverseSearchContext = reverseSearchContext;
-        this.inner = inner;
+        this.presearchQuery = presearchQuery;
     }
 
     @Override
@@ -60,7 +60,7 @@ class ReverseSearchQuery extends ExtendedQueryBase {
 
     @Override
     public void visit(QueryVisitor visitor) {
-        inner.visit(visitor);
+        presearchQuery.visit(visitor);
     }
 
     @Override
@@ -68,47 +68,51 @@ class ReverseSearchQuery extends ExtendedQueryBase {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ReverseSearchQuery that = (ReverseSearchQuery) o;
-        return Objects.equals(reverseSearchContext, that.reverseSearchContext) && Objects.equals(inner, that.inner);
+        return Objects.equals(reverseSearchContext, that.reverseSearchContext) && Objects.equals(presearchQuery, that.presearchQuery);
     }
 
     @Override
     public Query rewrite(IndexSearcher indexSearcher) throws IOException {
-        Query rewritten = inner.rewrite(indexSearcher);
-        if (rewritten != inner){
-            return new ReverseSearchQuery(reverseSearchContext, inner.rewrite(indexSearcher));
+        Query rewritten = presearchQuery.rewrite(indexSearcher);
+        if (rewritten != presearchQuery){
+            return new ReverseSearchQuery(reverseSearchContext, presearchQuery.rewrite(indexSearcher));
         }
         return super.rewrite(indexSearcher);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(reverseSearchContext, inner);
+        return Objects.hash(reverseSearchContext, presearchQuery);
     }
 
     @Override
     public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-        return new ReverseSearchWeight(this, reverseSearchContext, inner.createWeight(searcher, scoreMode, boost));
+        return new ReverseSearchWeight(this, reverseSearchContext, presearchQuery.createWeight(searcher, scoreMode, boost));
     }
 
     static class ReverseSearchWeight extends Weight {
 
         private final ReverseSearchContext reverseSearchContext;
-        private final Weight innerWeight;
+        private final Weight presearchWeight;
 
-        ReverseSearchWeight(Query query, ReverseSearchContext reverseSearchContext, Weight innerWeight) {
+        ReverseSearchWeight(Query query, ReverseSearchContext reverseSearchContext, Weight presearchWeight) {
             super(query);
             this.reverseSearchContext = reverseSearchContext;
-            this.innerWeight = innerWeight;
+            this.presearchWeight = presearchWeight;
         }
 
         @Override
         public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-            return innerWeight.explain(context, doc);
+            return presearchWeight.explain(context, doc);
         }
 
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
-            return new ReverseSearchScorer(innerWeight.scorer(context), reverseSearchContext, context);
+            Scorer scorer = presearchWeight.scorer(context);
+            if (scorer == null) {
+                return null;
+            }
+            return new ReverseSearchScorer(scorer, reverseSearchContext, context);
         }
 
         @Override
@@ -118,7 +122,7 @@ class ReverseSearchQuery extends ExtendedQueryBase {
 
         @Override
         public int count(LeafReaderContext context) throws IOException {
-            return innerWeight.count(context);
+            return presearchWeight.count(context);
         }
 
         @Override
@@ -128,12 +132,15 @@ class ReverseSearchQuery extends ExtendedQueryBase {
 
         @Override
         public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-            ReverseSearchWeight weight = this;
+            Scorer scorer = scorer(context);
+            if (scorer == null) {
+                return null;
+            }
             return new ScorerSupplier() {
 
                 @Override
-                public Scorer get(long leadCost) throws IOException {
-                    return weight.scorer(context);
+                public Scorer get(long leadCost) {
+                    return scorer;
                 }
 
                 @Override
@@ -145,22 +152,22 @@ class ReverseSearchQuery extends ExtendedQueryBase {
 
         @Override
         public Matches matches(LeafReaderContext context, int doc) throws IOException {
-            return innerWeight.matches(context, doc);
+            return presearchWeight.matches(context, doc);
         }
     }
 
     static class ReverseSearchScorer extends Scorer {
         private static final float MATCH_COST = 100.0f;
 
-        private final Scorer inner;
+        private final Scorer presearchScorer;
         private final MonitorQueryCache monitorQueryCache;
         private final SolrMonitorQueryDecoder queryDecoder;
         private final SolrMatcherSink matcherSink;
         private final MonitorDataValues dataValues = new MonitorDataValues();
 
-        ReverseSearchScorer(Scorer inner, ReverseSearchContext reverseSearchContext, LeafReaderContext leafReaderContext) throws IOException {
-            super(inner.getWeight());
-            this.inner = inner;
+        ReverseSearchScorer(Scorer presearchScorer, ReverseSearchContext reverseSearchContext, LeafReaderContext leafReaderContext) throws IOException {
+            super(presearchScorer.getWeight());
+            this.presearchScorer = presearchScorer;
             this.monitorQueryCache = reverseSearchContext.queryCache;
             this.queryDecoder = reverseSearchContext.queryDecoder;
             this.matcherSink = reverseSearchContext.solrMatcherSink;
@@ -169,53 +176,53 @@ class ReverseSearchQuery extends ExtendedQueryBase {
 
         @Override
         public DocIdSetIterator iterator() {
-            return inner.iterator();
+            return presearchScorer.iterator();
         }
 
         @Override
         public float getMaxScore(int upTo) throws IOException {
-            return inner.getMaxScore(upTo);
+            return presearchScorer.getMaxScore(upTo);
         }
 
         @Override
         public float score() throws IOException {
-            return inner.score();
+            return presearchScorer.score();
         }
 
         @Override
         public int docID() {
-            return inner.docID();
+            return presearchScorer.docID();
         }
 
         @Override
         public Weight getWeight() {
-            return inner.getWeight();
+            return presearchScorer.getWeight();
         }
 
         @Override
         public int advanceShallow(int target) throws IOException {
-            return inner.advanceShallow(target);
+            return presearchScorer.advanceShallow(target);
         }
 
         @Override
         public float smoothingScore(int docId) throws IOException {
-            return inner.smoothingScore(docId);
+            return presearchScorer.smoothingScore(docId);
         }
 
         @Override
         public void setMinCompetitiveScore(float minScore) throws IOException {
-            inner.setMinCompetitiveScore(minScore);
+            presearchScorer.setMinCompetitiveScore(minScore);
         }
 
         @Override
         public Collection<ChildScorable> getChildren() throws IOException {
-            return inner.getChildren();
+            return presearchScorer.getChildren();
         }
 
         @Override
         public TwoPhaseIterator twoPhaseIterator() {
 
-            return new TwoPhaseIterator(inner.iterator()) {
+            return new TwoPhaseIterator(presearchScorer.iterator()) {
 
                 private String lastQueryId;
 
