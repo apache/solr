@@ -46,9 +46,9 @@ import org.apache.logging.log4j.message.Message;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * Helper code to listen for {@link LogEvent} messages (via a {@link BlockingQueue}) that you expect as a
- * result of the things you are testing, So you can make assertions about when a particular action
- * should/shouldn't cause Solr to produce a particular Log message
+ * Helper code to listen for {@link LogEvent} messages (via a {@link BlockingQueue}) that you expect
+ * as a result of the things you are testing, So you can make assertions about when a particular
+ * action should/shouldn't cause Solr to produce a particular Log message
  *
  * <p><code>
  * // simplest possible usage...
@@ -348,11 +348,12 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   /**
-   * Direct access to the Queue of Log events that have been recorded, for {@link BlockingQueue#poll}ing
-   * messages or any other inspection/manipulation.
+   * Direct access to the Queue of Log events that have been recorded, for {@link
+   * BlockingQueue#poll}ing messages or any other inspection/manipulation.
    *
    * <p>If a Log event is ever processed but can not be added to this queue (because {@link
-   * BlockingQueue#offer} returns false) then the {@link #close} method of this listener will fail the test.
+   * BlockingQueue#offer} returns false) then the {@link #close} method of this listener will fail
+   * the test.
    *
    * @see #setQueue
    * @see #pollMessage
@@ -381,7 +382,8 @@ public final class LogListener implements Closeable, AutoCloseable {
    *
    * @param timeout
    * @param unit
-   * @return the formatted message string of head of the queue, or null if the queue remained empty until the specified timeout.
+   * @return the formatted message string of head of the queue, or null if the queue remained empty
+   *     until the specified timeout.
    */
   public String pollMessage(long timeout, TimeUnit unit) {
     LogEvent event = null;
