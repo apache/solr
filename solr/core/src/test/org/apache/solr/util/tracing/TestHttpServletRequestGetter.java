@@ -33,6 +33,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestHttpServletRequestGetter extends SolrTestCaseJ4 {
+
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
