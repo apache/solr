@@ -17,6 +17,8 @@
 
 package org.apache.solr.util.tracing;
 
+import static org.mockito.Mockito.mock;
+
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -26,10 +28,16 @@ import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Before;
 import org.junit.Test;
 
-public class TestHttpServletRequestGetter extends SolrTestCase {
+public class TestHttpServletRequestGetter extends SolrTestCaseJ4 {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    assumeWorkingMockito();
+  }
 
   @Test
   public void test() {
@@ -39,8 +47,9 @@ public class TestHttpServletRequestGetter extends SolrTestCase {
             "b", Set.of("1"),
             "c", Set.of("2"));
 
+    HttpServletRequest httpServletRequestMock = mock(HttpServletRequest.class);
     HttpServletRequest req =
-        new HttpServletRequestWrapper(null) {
+        new HttpServletRequestWrapper(httpServletRequestMock) {
 
           @Override
           public String getHeader(String name) {
