@@ -40,7 +40,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -1090,38 +1089,17 @@ public class HttpSolrCall {
     return core;
   }
 
-  private List<Slice> getSlicesForAllCollections(ClusterState clusterState, boolean activeSlices) {
-    // looks across *all* collections
-    if (activeSlices) {
-      return clusterState
-          .collectionStream()
-          .flatMap(coll -> Arrays.stream(coll.getActiveSlicesArr()))
-          .toList();
-    } else {
-      return clusterState.collectionStream().flatMap(coll -> coll.getSlices().stream()).toList();
-    }
-  }
-
   protected String getRemoteCoreUrl(String collectionName, String origCorename)
       throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
-    Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
-    List<Slice> activeSlices;
+    if (docCollection == null) {
+      return null;
+    }
+    Collection<Slice> activeSlices = docCollection.getActiveSlices();
     boolean byCoreName = false;
 
     int totalReplicas = 0;
-
-    if (slices == null) {
-      byCoreName = true;
-      // all collections!
-      activeSlices = getSlicesForAllCollections(clusterState, true);
-      if (activeSlices.isEmpty()) {
-        activeSlices = getSlicesForAllCollections(clusterState, false);
-      }
-    } else {
-      activeSlices = List.of(slices);
-    }
 
     for (Slice s : activeSlices) {
       totalReplicas += s.getReplicas().size();
@@ -1145,33 +1123,31 @@ public class HttpSolrCall {
           "No active replicas found for collection: " + collectionName);
     }
 
-    String coreUrl =
-        getCoreUrl(collectionName, origCorename, clusterState, activeSlices, byCoreName, true);
+    String coreUrl = getCoreUrl(origCorename, clusterState, activeSlices, byCoreName, true);
 
     if (coreUrl == null) {
-      coreUrl =
-          getCoreUrl(collectionName, origCorename, clusterState, activeSlices, byCoreName, false);
+      coreUrl = getCoreUrl(origCorename, clusterState, activeSlices, byCoreName, false);
     }
 
     return coreUrl;
   }
 
   private String getCoreUrl(
-      String collectionName,
       String origCorename,
       ClusterState clusterState,
-      List<Slice> slices,
+      Collection<Slice> slices,
       boolean byCoreName,
       boolean activeReplicas) {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
 
-    List<Slice> shuffledSlices;
+    Collection<Slice> shuffledSlices;
     if (slices.size() < 2) {
       shuffledSlices = slices;
     } else {
-      shuffledSlices = new ArrayList<>(slices);
-      Collections.shuffle(shuffledSlices, Utils.RANDOM);
+      var shuffledSlicesL = new ArrayList<>(slices);
+      Collections.shuffle(shuffledSlicesL, Utils.RANDOM);
+      shuffledSlices = shuffledSlicesL;
     }
 
     for (Slice slice : shuffledSlices) {
