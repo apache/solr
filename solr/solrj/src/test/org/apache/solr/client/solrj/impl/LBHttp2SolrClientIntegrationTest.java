@@ -215,26 +215,10 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   }
 
   private void startJettyAndWaitForAliveCheckQuery(SolrInstance solrInstance) throws Exception {
-    final int pollIntervalMs = 50;
-    final int timeoutMs = 10000;
-    int waitSoFarMs = 0;
-
     try (LogListener logListener = LogListener.info().substring("distrib=false")) {
       solrInstance.startJetty();
-      while (true) {
-        if (logListener.pollMessage() != null) {
-          return;
-        }
-        try {
-          Thread.sleep(pollIntervalMs);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          fail("Our thread was interrupted while waiting for the alive check query");
-        }
-        waitSoFarMs += pollIntervalMs;
-        if (waitSoFarMs >= timeoutMs) {
-          fail("The alive check query was not logged within " + timeoutMs + "ms.");
-        }
+      if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
+        fail("The alive check query was not logged within 10 seconds.");
       }
     }
   }
