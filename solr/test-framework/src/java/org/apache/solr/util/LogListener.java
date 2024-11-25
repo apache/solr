@@ -380,8 +380,8 @@ public final class LogListener implements Closeable, AutoCloseable {
    * Convenience method for tests that want to assert things about the (formated) message string at
    * the head of the queue, waiting up to the specified timeout for the message to arrive.
    *
-   * @param timeout
-   * @param unit
+   * @param timeout the duation value
+   * @param unit the duration unit
    * @return the formatted message string of head of the queue, or null if the queue remained empty
    *     until the specified timeout.
    */
