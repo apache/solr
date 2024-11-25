@@ -96,7 +96,6 @@ dependencies {
 
   testImplementation libs.commonsio.commonsio
 
-  //testRuntimeOnly libs.eclipse.jetty.webapp
   testRuntimeOnly(libs.eclipse.jetty.ee10.webapp) {
     exclude group: 'org.ow2.asm', module: '*'
   }

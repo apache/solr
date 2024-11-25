@@ -194,7 +194,7 @@ dependencies {
   testImplementation libs.apache.lucene.testframework
 
   testImplementation libs.eclipse.jetty.server
-  testImplementation libs.eclipse.jetty.servlet
+  testImplementation libs.eclipse.jetty.ee8.servlet
   testImplementation libs.eclipse.jetty.util
 
   testImplementation libs.carrotsearch.randomizedtesting.runner

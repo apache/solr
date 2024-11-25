@@ -30,7 +30,7 @@ dependencies {
   implementation libs.dropwizard.metrics.core
   implementation libs.dropwizard.metrics.servlets
   implementation libs.eclipse.jetty.server
-  implementation libs.eclipse.jetty.servlet
+  implementation libs.eclipse.jetty.ee8.servlet
   implementation libs.slf4j.api
   runtimeOnly libs.google.protobuf.javautils
   runtimeOnly libs.commonscodec.commonscodec

@@ -300,7 +300,8 @@ commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 dropwizard-metrics-core = { module = "io.dropwizard.metrics:metrics-core", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-graphite = { module = "io.dropwizard.metrics:metrics-graphite", version.ref = "dropwizard-metrics" }
-dropwizard-metrics-jetty10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty12 = { module = "io.dropwizard.metrics:metrics-jetty12", version.ref = "dropwizard-metrics" }
+dropwizard-metrics-jetty12-ee10 = { module = "io.dropwizard.metrics:metrics-jetty12-ee10", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jmx = { module = "io.dropwizard.metrics:metrics-jmx", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-jvm = { module = "io.dropwizard.metrics:metrics-jvm", version.ref = "dropwizard-metrics" }
 dropwizard-metrics-servlets = { module = "io.dropwizard.metrics:metrics-servlets", version.ref = "dropwizard-metrics" }
@@ -313,6 +314,9 @@ eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref 
 eclipse-jetty-ee = { module = "org.eclipse.jetty:jetty-ee", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee8-nested = { module = "org.eclipse.jetty.ee8:jetty-ee8-nested", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee8-servlet = { module = "org.eclipse.jetty.ee8:jetty-ee8-servlet", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee8-servlets = { module = "org.eclipse.jetty.ee8:jetty-ee8-servlets", version.ref = "eclipse-jetty" }
+eclipse-jetty-ee8-webapp = { module = "org.eclipse.jetty.ee8:jetty-ee8-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "eclipse-jetty" }
 eclipse-jetty-http2-client = { module = "org.eclipse.jetty.http2:jetty-http2-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-http2-common = { module = "org.eclipse.jetty.http2:jetty-http2-common", version.ref = "eclipse-jetty" }
@@ -326,13 +330,10 @@ eclipse-jetty-plus = { module = "org.eclipse.jetty:jetty-plus", version.ref = "e
 eclipse-jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "eclipse-jetty" }
 eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "eclipse-jetty" }
 eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlet = { module = "org.eclipse.jetty.ee8:jetty-ee8-servlet", version.ref = "eclipse-jetty" }
-eclipse-jetty-servlets = { module = "org.eclipse.jetty.ee8:jetty-ee8-servlets", version.ref = "eclipse-jetty" }
 eclipse-jetty-session = { module = "org.eclipse.jetty:jetty-session", version.ref = "eclipse-jetty" }
 eclipse-jetty-start = { module = "org.eclipse.jetty:jetty-start", version.ref = "eclipse-jetty" }
 eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-servlet-api", version.ref = "eclipse-jettytoolchain" }
 eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
-eclipse-jetty-webapp = { module = "org.eclipse.jetty.ee8:jetty-ee8-webapp", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }
 fasterxml-jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "fasterxml" }

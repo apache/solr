@@ -76,8 +76,8 @@ dependencies {
   testImplementation libs.eclipse.jetty.toolchain.servletapi
 
   testImplementation libs.eclipse.jetty.server
-  testImplementation libs.eclipse.jetty.servlet
-  testImplementation libs.eclipse.jetty.webapp
+  testImplementation libs.eclipse.jetty.ee8.servlet
+  testImplementation libs.eclipse.jetty.ee8.webapp
   testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
