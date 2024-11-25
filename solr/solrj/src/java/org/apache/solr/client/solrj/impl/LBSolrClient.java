@@ -71,6 +71,8 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected static final String UPDATE_LIVE_SERVER_MESSAGE = "Updated alive server list";
 
+  private static final String UPDATE_LIVE_SERVER_LOG = UPDATE_LIVE_SERVER_MESSAGE + ": {}";
+
   // defaults
   protected static final Set<Integer> RETRY_CODES =
       new HashSet<>(Arrays.asList(404, 403, 503, 500));
@@ -420,7 +422,7 @@ public abstract class LBSolrClient extends SolrClient {
     synchronized (aliveServers) {
       aliveServerList = aliveServers.values().toArray(new EndpointWrapper[0]);
       if (log.isDebugEnabled()) {
-        log.debug(UPDATE_LIVE_SERVER_MESSAGE + ": {}", Arrays.toString(aliveServerList));
+        log.debug(UPDATE_LIVE_SERVER_LOG, Arrays.toString(aliveServerList));
       }
     }
   }
