@@ -97,8 +97,8 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       final MonitorQueryCache monitorQueryCache =
           (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
 
-      final MonitorPostFilter monitorPostFilter =
-          monitorPostFilter(rb, documentBatch, monitorQueryCache);
+//      final MonitorPostFilter monitorPostFilter =
+//          monitorPostFilter(rb, documentBatch, monitorQueryCache);
 
       final BiPredicate<String, BytesRef> termAcceptor;
       if (monitorQueryCache == null) {
@@ -107,19 +107,18 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
         termAcceptor = monitorQueryCache::acceptTerm;
       }
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
+      rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, monitorQueryCache));
+//      final List<Query> mutableFilters =
+//          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
+//
+//      mutableFilters.add(preFilterQuery);
+//      mutableFilters.add(monitorPostFilter);
 
-      final List<Query> mutableFilters =
-          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
-
-      mutableFilters.add(preFilterQuery);
-      mutableFilters.add(monitorPostFilter);
-
-      rb.setFilters(mutableFilters);
+//      rb.setFilters(mutableFilters);
     }
   }
 
-  private static MonitorPostFilter monitorPostFilter(
-      ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
+  private static ReverseSearchQuery reverseSearchQuery(Query preFilterQuery, ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
     final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
         new SolrMonitorQueryDecoder(rb.req.getCore());
 
@@ -143,12 +142,44 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
               }
             });
 
-    final SolrMonitorQueryCollector.CollectorContext collectorContext =
-        new SolrMonitorQueryCollector.CollectorContext(
+    final ReverseSearchQuery.ReverseSearchContext context =
+        new ReverseSearchQuery.ReverseSearchContext(
             monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
 
-    return new MonitorPostFilter(collectorContext);
+    return new ReverseSearchQuery(context, preFilterQuery);
   }
+
+//  private static MonitorPostFilter monitorPostFilter(
+//      ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
+//    final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
+//        new SolrMonitorQueryDecoder(rb.req.getCore());
+//
+//    final SolrMatcherSink solrMatcherSink =
+//        new SyncSolrMatcherSink<>(
+//            QueryMatch.SIMPLE_MATCHER::createMatcher,
+//            new IndexSearcher(documentBatch),
+//            matcherSink -> {
+//              if (rb.isDebug()) {
+//                DebugComponent.CustomDebugInfoSources debugInfoSources =
+//                    (DebugComponent.CustomDebugInfoSources)
+//                        rb.req
+//                            .getContext()
+//                            .computeIfAbsent(
+//                                DebugComponent.CustomDebugInfoSources.KEY,
+//                                key -> new DebugComponent.CustomDebugInfoSources());
+//                var info = new SimpleOrderedMap<>();
+//                info.add("queriesRun", matcherSink.getQueriesRun());
+//                debugInfoSources.add(
+//                    new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
+//              }
+//            });
+//
+//    final SolrMonitorQueryCollector.CollectorContext collectorContext =
+//        new SolrMonitorQueryCollector.CollectorContext(
+//            monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
+//
+//    return new MonitorPostFilter(collectorContext);
+//  }
 
   @SuppressWarnings({"unchecked"})
   private static DocumentBatchVisitor documentBatchVisitor(
