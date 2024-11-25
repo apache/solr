@@ -30,14 +30,14 @@ import org.apache.solr.common.params.CommonParams;
 
 public class MonitorDataValues {
 
-  private SortedDocValues queryIdIt;
-  private SortedDocValues cacheIdIt;
-  private SortedDocValues mqIt;
-  private NumericDocValues versionIt;
-  private int currentDoc = DocIdSetIterator.NO_MORE_DOCS;
-  private LeafReader reader;
+  private final SortedDocValues queryIdIt;
+  private final SortedDocValues cacheIdIt;
+  private final SortedDocValues mqIt;
+  private final NumericDocValues versionIt;
+  private final LeafReader reader;
+  private int currentDoc;
 
-  public void update(LeafReaderContext context) throws IOException {
+  public MonitorDataValues(LeafReaderContext context) throws IOException {
     reader = context.reader();
     cacheIdIt = reader.getSortedDocValues(MonitorFields.CACHE_ID);
     queryIdIt = reader.getSortedDocValues(MonitorFields.QUERY_ID);

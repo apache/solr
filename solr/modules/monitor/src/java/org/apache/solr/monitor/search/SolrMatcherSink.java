@@ -28,5 +28,7 @@ interface SolrMatcherSink {
   boolean matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
       throws IOException;
 
-  void complete() throws IOException;
+  void captureMetadata(ReverseSearchQuery.Metadata metadata);
+
+  ReverseSearchQuery.Metadata getMetadata();
 }
