@@ -419,7 +419,7 @@ public abstract class LBSolrClient extends SolrClient {
   protected void updateAliveList() {
     synchronized (aliveServers) {
       aliveServerList = aliveServers.values().toArray(new EndpointWrapper[0]);
-      if(log.isDebugEnabled()) {
+      if (log.isDebugEnabled()) {
         log.debug(UPDATE_LIVE_SERVER_MESSAGE + ": {}", Arrays.toString(aliveServerList));
       }
     }
