@@ -31,13 +31,13 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -153,10 +153,8 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       assertEquals(2, names.size());
       assertFalse(names.contains("solr1"));
 
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      Thread.sleep(1200);
+      startJettyAndWaitForAliveCheckQuery(solr[1]);
+
       names.clear();
       for (String ignored : solrUrls) {
         resp = client.query(solrQuery);
@@ -190,63 +188,32 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       resp = client.query(solrQuery);
       name = resp.getResults().get(0).getFieldValue("name").toString();
       assertEquals("solr/collection11", name);
+
       solr[1].jetty.stop();
       solr[1].jetty = null;
-      solr[0].startJetty();
-      Thread.sleep(1200);
-      try {
-        resp = client.query(solrQuery);
-      } catch (SolrServerException e) {
-        // try again after a pause in case the error is lack of time to start server
-        Thread.sleep(3000);
-        resp = client.query(solrQuery);
-      }
+      startJettyAndWaitForAliveCheckQuery(solr[0]);
+
+      resp = client.query(solrQuery);
       name = resp.getResults().get(0).getFieldValue("name").toString();
       assertEquals("solr/collection10", name);
     }
   }
 
-  public void testReliability() throws Exception {
-    String[] solrUrls = new String[solr.length];
-    for (int i = 0; i < solr.length; i++) {
-      solrUrls[i] = solr[i].getUrl();
+  private LBSolrClient.Endpoint[] bootstrapBaseSolrEndpoints(int max) {
+    LBSolrClient.Endpoint[] solrUrls = new LBSolrClient.Endpoint[max];
+    for (int i = 0; i < max; i++) {
+      solrUrls[i] = new LBSolrClient.Endpoint(solr[i].getBaseUrl());
     }
-
-    try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-            .build()) {
-
-      // Kill a server and test again
-      solr[1].jetty.stop();
-      solr[1].jetty = null;
-
-      // query the servers
-      for (String ignored : solrUrls) client.query(new SolrQuery("*:*"));
-
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      waitForServer(30, client, 3, solr[1].name);
-    }
+    return solrUrls;
   }
 
-  // wait maximum ms for serverName to come back up
-  private void waitForServer(
-      int maxSeconds, LBHttp2SolrClient client, int nServers, String serverName) throws Exception {
-    final TimeOut timeout = new TimeOut(maxSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeout.hasTimedOut()) {
-      QueryResponse resp;
-      try {
-        resp = client.query(new SolrQuery("*:*"));
-      } catch (Exception e) {
-        log.warn("", e);
-        continue;
+  private void startJettyAndWaitForAliveCheckQuery(SolrInstance solrInstance) throws Exception {
+    try (LogListener logListener =
+        LogListener.debug().substring(LBSolrClient.UPDATE_LIVE_SERVER_MESSAGE)) {
+      solrInstance.startJetty();
+      if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
+        fail("The alive check query was not logged within 10 seconds.");
       }
-      String name = resp.getResults().get(0).getFieldValue("name").toString();
-      if (name.equals(serverName)) return;
-
-      Thread.sleep(500);
     }
   }
 
