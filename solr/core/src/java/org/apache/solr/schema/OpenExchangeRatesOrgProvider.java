@@ -122,9 +122,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof OpenExchangeRatesOrgProvider)) return false;
+    if (!(o instanceof OpenExchangeRatesOrgProvider that)) return false;
 
-    OpenExchangeRatesOrgProvider that = (OpenExchangeRatesOrgProvider) o;
     return Objects.equals(rates, that.rates);
   }
 

@@ -53,8 +53,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     try (Http2SolrClient http2SolrClient =
             new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames).build();
-        LBHttp2SolrClient testClient =
-            new LBHttp2SolrClient.Builder(http2SolrClient, new LBSolrClient.Endpoint(url))
+        LBHttp2SolrClient<Http2SolrClient> testClient =
+            new LBHttp2SolrClient.Builder<>(http2SolrClient, new LBSolrClient.Endpoint(url))
                 .build()) {
 
       assertArrayEquals(
@@ -66,6 +66,90 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           urlParamNames.toArray(),
           http2SolrClient.getUrlParamNames().toArray());
     }
+  }
+
+  @Test
+  public void testSynchronous() throws Exception {
+    LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
+    LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
+    List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
+
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    ;
+    try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
+        LBHttp2SolrClient<MockHttpSolrClient> testClient =
+            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
+
+      String lastEndpoint = null;
+      for (int i = 0; i < 10; i++) {
+        String qValue = "Query Number: " + i;
+        QueryRequest queryRequest = new QueryRequest(new MapSolrParams(Map.of("q", qValue)));
+        LBSolrClient.Req req = new LBSolrClient.Req(queryRequest, endpointList);
+        LBSolrClient.Rsp response = testClient.request(req);
+
+        String expectedEndpoint =
+            ep1.toString().equals(lastEndpoint) ? ep2.toString() : ep1.toString();
+        assertEquals(
+            "There should be round-robin load balancing.", expectedEndpoint, response.server);
+        checkSynchonousResponseContent(response, qValue);
+      }
+    }
+  }
+
+  @Test
+  public void testSynchronousWithFalures() throws Exception {
+    LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
+    LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
+    List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
+
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    ;
+    try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
+        LBHttp2SolrClient<MockHttpSolrClient> testClient =
+            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
+
+      client.basePathToFail = ep1.getBaseUrl();
+      String basePathToSucceed = ep2.getBaseUrl();
+      String qValue = "First time";
+
+      for (int i = 0; i < 5; i++) {
+        LBSolrClient.Req req =
+            new LBSolrClient.Req(
+                new QueryRequest(new MapSolrParams(Map.of("q", qValue))), endpointList);
+        LBSolrClient.Rsp response = testClient.request(req);
+        assertEquals(
+            "The healthy node 'endpoint two' should have served the request: " + i,
+            basePathToSucceed,
+            response.server);
+        checkSynchonousResponseContent(response, qValue);
+      }
+
+      client.basePathToFail = ep2.getBaseUrl();
+      basePathToSucceed = ep1.getBaseUrl();
+      qValue = "Second time";
+
+      for (int i = 0; i < 5; i++) {
+        LBSolrClient.Req req =
+            new LBSolrClient.Req(
+                new QueryRequest(new MapSolrParams(Map.of("q", qValue))), endpointList);
+        LBSolrClient.Rsp response = testClient.request(req);
+        assertEquals(
+            "The healthy node 'endpoint one' should have served the request: " + i,
+            basePathToSucceed,
+            response.server);
+        checkSynchonousResponseContent(response, qValue);
+      }
+    }
+  }
+
+  private void checkSynchonousResponseContent(LBSolrClient.Rsp response, String qValue) {
+    assertEquals("There should be one element in the respnse.", 1, response.getResponse().size());
+    assertEquals(
+        "The response key 'response' should echo the query.",
+        qValue,
+        response.getResponse().get("response"));
   }
 
   @Test
@@ -81,8 +165,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
     ;
-    try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
+    try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
+        LBHttp2SolrClient<MockHttpSolrClient> testClient =
+            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
 
       for (int j = 0; j < 2; j++) {
         // first time Endpoint One will return error code 500.
@@ -144,8 +229,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
-    try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
+    try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
+        LBHttp2SolrClient<MockHttpSolrClient> testClient =
+            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
 
       int limit = 10; // For simplicity use an even limit
       List<CompletableFuture<LBSolrClient.Rsp>> responses = new ArrayList<>();
@@ -200,7 +286,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
   }
 
-  public static class MockHttp2SolrClient extends Http2SolrClient {
+  public static class MockHttpSolrClient extends Http2SolrClient {
 
     public List<SolrRequest<?>> lastSolrRequests = new ArrayList<>();
 
@@ -212,11 +298,24 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     public String tmpBaseUrl = null;
 
-    protected MockHttp2SolrClient(String serverBaseUrl, Builder builder) {
+    protected MockHttpSolrClient(String serverBaseUrl, Builder builder) {
+
       // TODO: Consider creating an interface for Http*SolrClient
       // so mocks can Implement, not Extend, and not actually need to
       // build an (unused) client
       super(serverBaseUrl, builder);
+    }
+
+    @Override
+    public NamedList<Object> request(final SolrRequest<?> request, String collection)
+        throws SolrServerException, IOException {
+      lastSolrRequests.add(request);
+      lastBasePaths.add(tmpBaseUrl);
+      lastCollections.add(collection);
+      if (tmpBaseUrl.equals(basePathToFail)) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this.");
+      }
+      return generateResponse(request);
     }
 
     @Override

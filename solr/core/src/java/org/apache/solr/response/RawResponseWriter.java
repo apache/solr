@@ -98,9 +98,8 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
     Object obj = response.getValues().get(CONTENT);
-    if (obj != null && (obj instanceof ContentStream)) {
+    if (obj != null && (obj instanceof ContentStream content)) {
       // copy the contents to the writer...
-      ContentStream content = (ContentStream) obj;
       try (Reader reader = content.getReader()) {
         reader.transferTo(writer);
       }
@@ -113,14 +112,12 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
     Object obj = response.getValues().get(CONTENT);
-    if (obj != null && (obj instanceof ContentStream)) {
+    if (obj != null && (obj instanceof ContentStream content)) {
       // copy the contents to the writer...
-      ContentStream content = (ContentStream) obj;
       try (InputStream in = content.getStream()) {
         in.transferTo(out);
       }
-    } else if (obj != null && (obj instanceof SolrCore.RawWriter)) {
-      final var rawWriter = (SolrCore.RawWriter) obj;
+    } else if (obj != null && (obj instanceof SolrCore.RawWriter rawWriter)) {
       rawWriter.write(out);
       if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
     } else {

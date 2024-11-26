@@ -17,7 +17,9 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.core.FileSystemConfigSetService.METADATA_FILE;
+import static org.hamcrest.Matchers.hasItem;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,12 +52,42 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testIgnoresFileUploadsOutsideOfConfigSetDirectory() throws IOException {
+    final var initialNumConfigs = fileSystemConfigSetService.listConfigs().size();
+    final String configName = "fileEscapeTestConfig";
+    final var specificConfigSetBase = configSetBase.resolve(configName);
+
+    fileSystemConfigSetService.uploadConfig(configName, configset("cloud-minimal"));
+    assertEquals(fileSystemConfigSetService.listConfigs().size(), initialNumConfigs + 1);
+    assertTrue(fileSystemConfigSetService.checkConfigExists(configName));
+
+    // This succeeds, as the file is an allowed type and the path doesn't attempt to escape the
+    // configset's root
+    byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
+    fileSystemConfigSetService.uploadFileToConfig(configName, "validPath", testdata, true);
+    final var knownFiles = fileSystemConfigSetService.getAllConfigFiles(configName);
+    assertThat(knownFiles, hasItem("validPath"));
+    assertTrue(Files.exists(specificConfigSetBase.resolve("validPath")));
+
+    // Each of these will fail "quietly" as ConfigSetService opts to log warnings but otherwise not
+    // surface validation errors to enable bulk uploading
+    final var invalidFilePaths =
+        List.of(
+            ".." + File.separator + "escapePath",
+            "foo" + File.separator + ".." + File.separator + ".." + File.separator + "bar");
+    for (String invalidFilePath : invalidFilePaths) {
+      fileSystemConfigSetService.uploadFileToConfig(configName, invalidFilePath, testdata, true);
+      assertFalse(Files.exists(specificConfigSetBase.resolve(invalidFilePath)));
+    }
+  }
+
+  @Test
   public void testUploadAndDeleteConfig() throws IOException {
+    final var initialNumConfigs = fileSystemConfigSetService.listConfigs().size();
     String configName = "testconfig";
 
     fileSystemConfigSetService.uploadConfig(configName, configset("cloud-minimal"));
-
-    assertEquals(fileSystemConfigSetService.listConfigs().size(), 1);
+    assertEquals(fileSystemConfigSetService.listConfigs().size(), initialNumConfigs + 1);
     assertTrue(fileSystemConfigSetService.checkConfigExists(configName));
 
     byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
@@ -79,7 +111,7 @@ public class TestFileSystemConfigSetService extends SolrTestCaseJ4 {
     assertEquals("[schema.xml, solrconfig.xml]", allConfigFiles.toString());
 
     fileSystemConfigSetService.copyConfig(configName, "copytestconfig");
-    assertEquals(fileSystemConfigSetService.listConfigs().size(), 2);
+    assertEquals(fileSystemConfigSetService.listConfigs().size(), initialNumConfigs + 2);
 
     allConfigFiles = fileSystemConfigSetService.getAllConfigFiles("copytestconfig");
     assertEquals("[schema.xml, solrconfig.xml]", allConfigFiles.toString());

@@ -2523,8 +2523,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
-      if (!(obj instanceof PivotField)) return false;
-      PivotField other = (PivotField) obj;
+      if (!(obj instanceof PivotField other)) return false;
       if (getCount() != other.getCount()) return false;
       if (getField() == null) {
         if (other.getField() != null) return false;
@@ -2595,8 +2594,7 @@ public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCas
     @Override
     public boolean equals(Object o) {
       boolean equal = false;
-      if (o instanceof ArrayList) {
-        List<?> otherList = (List<?>) o;
+      if (o instanceof List<?> otherList) {
         if (size() == otherList.size()) {
           equal = true;
           for (Object objectInOtherList : otherList) {

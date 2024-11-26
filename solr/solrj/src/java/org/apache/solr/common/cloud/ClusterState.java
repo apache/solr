@@ -173,7 +173,9 @@ public class ClusterState implements MapWriter {
    * semantics of how collection list is loaded have changed in SOLR-6629.
    *
    * @return a map of collection name vs DocCollection object
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public Map<String, DocCollection> getCollectionsMap() {
     Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
@@ -377,8 +379,7 @@ public class ClusterState implements MapWriter {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof ClusterState)) return false;
-    ClusterState other = (ClusterState) obj;
+    if (!(obj instanceof ClusterState other)) return false;
     if (liveNodes == null) {
       return other.liveNodes == null;
     } else return liveNodes.equals(other.liveNodes);
@@ -415,8 +416,8 @@ public class ClusterState implements MapWriter {
   }
 
   /**
-   * Streams the resolved {@link DocCollection}s. Use this sparingly in case there are many
-   * collections.
+   * Streams the resolved {@link DocCollection}s, which will often fetch from ZooKeeper for each one
+   * for a many-collection scenario. Use this sparingly; some users have thousands of collections!
    */
   public Stream<DocCollection> collectionStream() {
     return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
@@ -425,7 +426,10 @@ public class ClusterState implements MapWriter {
   /**
    * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
    * sparingly in case there are many collections.
+   *
+   * @deprecated see {@link #collectionStream()}
    */
+  @Deprecated
   public void forEachCollection(Consumer<DocCollection> consumer) {
     collectionStream().forEach(consumer);
   }

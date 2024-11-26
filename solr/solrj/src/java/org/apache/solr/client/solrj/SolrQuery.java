@@ -1362,8 +1362,7 @@ public class SolrQuery extends ModifiableSolrParams {
     @Override
     public boolean equals(Object other) {
       if (this == other) return true;
-      if (!(other instanceof SortClause)) return false;
-      final SortClause that = (SortClause) other;
+      if (!(other instanceof SortClause that)) return false;
       return this.getItem().equals(that.getItem()) && this.getOrder().equals(that.getOrder());
     }
 

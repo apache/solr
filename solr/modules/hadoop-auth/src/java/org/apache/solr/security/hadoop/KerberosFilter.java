@@ -83,8 +83,7 @@ public class KerberosFilter extends AuthenticationFilter {
   private HttpServletRequest substituteOriginalUserRequest(HttpServletRequest request) {
     final HttpServletRequest originalRequest = request;
     AuthorizationPlugin authzPlugin = coreContainer.getAuthorizationPlugin();
-    if (authzPlugin instanceof RuleBasedAuthorizationPlugin) {
-      RuleBasedAuthorizationPlugin ruleBased = (RuleBasedAuthorizationPlugin) authzPlugin;
+    if (authzPlugin instanceof RuleBasedAuthorizationPlugin ruleBased) {
       if (request.getHeader(KerberosPlugin.ORIGINAL_USER_PRINCIPAL_HEADER) != null
           && ruleBased.doesUserHavePermission(
               request.getUserPrincipal(), PermissionNameProvider.Name.ALL)) {

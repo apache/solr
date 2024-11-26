@@ -424,8 +424,7 @@ public class FunctionQParser extends QParser {
         valueSource = new FieldNameValueSource(val);
       } else {
         QParser subParser = subQuery(val, "func");
-        if (subParser instanceof FunctionQParser) {
-          FunctionQParser subFunc = (FunctionQParser) subParser;
+        if (subParser instanceof FunctionQParser subFunc) {
           subFunc.setParseMultipleSources(true);
           subFunc.setFlags(flags);
         }

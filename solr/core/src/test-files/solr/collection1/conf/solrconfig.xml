@@ -59,7 +59,7 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
+  <updateHandler class="${solr.updateHandler:solr.DirectUpdateHandler2}">
 
     <autoCommit>
       <maxTime>${solr.autoCommit.maxTime:-1}</maxTime>

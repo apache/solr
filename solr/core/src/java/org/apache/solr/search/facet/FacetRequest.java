@@ -61,8 +61,7 @@ public abstract class FacetRequest {
 
     @Override
     public boolean equals(Object other) {
-      if (other instanceof FacetSort) {
-        final FacetSort that = (FacetSort) other;
+      if (other instanceof FacetSort that) {
         return this.sortVariable.equals(that.sortVariable)
             && this.sortDirection.equals(that.sortDirection);
       }

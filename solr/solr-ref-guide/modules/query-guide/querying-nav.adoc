@@ -96,3 +96,4 @@
 ** xref:graph-traversal.adoc[]
 ** xref:stream-api.adoc[]
 ** xref:stream-screen.adoc[]
+** xref:stream-tool.adoc[]
