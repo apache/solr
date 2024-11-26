@@ -1141,20 +1141,14 @@ public class HttpSolrCall {
     String coreUrl;
     Set<String> liveNodes = clusterState.getLiveNodes();
 
-    Collection<Slice> shuffledSlices;
-    if (slices.size() < 2) {
-      shuffledSlices = slices;
-    } else {
-      var shuffledSlicesL = new ArrayList<>(slices);
-      Collections.shuffle(shuffledSlicesL, Utils.RANDOM);
-      shuffledSlices = shuffledSlicesL;
-    }
+    Iterator<Slice> shuffledSlices = new RandomIterator<>(Utils.RANDOM, slices);
+    while (shuffledSlices.hasNext()) {
+      Slice slice = shuffledSlices.next();
 
-    for (Slice slice : shuffledSlices) {
-      List<Replica> randomizedReplicas = new ArrayList<>(slice.getReplicas());
-      Collections.shuffle(randomizedReplicas, Utils.RANDOM);
+      Iterator<Replica> shuffledReplicas = new RandomIterator<>(Utils.RANDOM, slice.getReplicas());
+      while (shuffledReplicas.hasNext()) {
+        Replica replica = shuffledReplicas.next();
 
-      for (Replica replica : randomizedReplicas) {
         if (!activeReplicas
             || (liveNodes.contains(replica.getNodeName())
                 && replica.getState() == Replica.State.ACTIVE)) {
