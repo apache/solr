@@ -120,12 +120,10 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
                 + LANG_ALLOWLIST
                 + " instead."); // nowarn
       }
-      if (!params.get(LANG_ALLOWLIST, legacyAllowList).isEmpty()) {
-        Arrays.stream(params.get(LANG_ALLOWLIST, legacyAllowList).split(","))
-            .map(String::trim)
-            .filter(lang -> !lang.isEmpty())
-            .forEach(langAllowlist::add);
-      }
+      Arrays.stream(params.get(LANG_ALLOWLIST, legacyAllowList).split(","))
+          .map(String::trim)
+          .filter(lang -> !lang.isEmpty())
+          .forEach(langAllowlist::add);
 
       // Mapping params (field centric)
       enableMapping = params.getBool(MAP_ENABLE, false);
