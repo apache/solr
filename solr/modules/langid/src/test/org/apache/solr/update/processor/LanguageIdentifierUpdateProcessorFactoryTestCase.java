@@ -17,6 +17,8 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -469,10 +471,11 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
-    parameters.add("langid.allowlist", "no,en,sv"); // Any other language will fallback to EN
+    parameters.add("langid.allowlist", "no,en ,,,sv"); // Any other language will fallback to EN
     parameters.add("langid.fallback", "en");
     liProcessor = createLangIdProcessor(parameters);
 
+    assertEquals(new HashSet<>(Arrays.asList("no", "en", "sv")), liProcessor.langAllowlist);
     assertLang(
         "no",
         "id",
@@ -515,10 +518,11 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
-    parameters.add("langid.whitelist", "no,en,sv"); // Any other language will fallback to EN
+    parameters.add("langid.whitelist", "no,en ,,,sv"); // Any other language will fallback to EN
     parameters.add("langid.fallback", "en");
     liProcessor = createLangIdProcessor(parameters);
 
+    assertEquals(new HashSet<>(Arrays.asList("no", "en", "sv")), liProcessor.langAllowlist);
     assertLang(
         "no",
         "id",

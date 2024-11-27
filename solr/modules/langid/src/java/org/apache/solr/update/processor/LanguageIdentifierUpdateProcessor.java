@@ -122,7 +122,10 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       }
       if (!params.get(LANG_ALLOWLIST, legacyAllowList).isEmpty()) {
         for (String lang : params.get(LANG_ALLOWLIST, legacyAllowList).split(",")) {
-          langAllowlist.add(lang);
+          if (lang.trim().isEmpty()) {
+            continue;
+          }
+          langAllowlist.add(lang.trim());
         }
       }
 
