@@ -209,12 +209,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
 
       int schemaZkVersion = -1;
-      if (!(loader instanceof ZkSolrResourceLoader)) {
+      if (!(loader instanceof ZkSolrResourceLoader zkLoader)) {
         Entry<String, InputStream> localSchemaInput = readSchemaLocally();
         loadedResource = localSchemaInput.getKey();
         schemaInputStream = localSchemaInput.getValue();
       } else { // ZooKeeper
-        final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
         final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
         final String managedSchemaPath = lookupZKManagedSchemaPath();
         managedSchemaResourceName =
@@ -347,8 +346,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     if (!resourceName.equals(managedSchemaResourceName)) {
       boolean exists = false;
       SolrResourceLoader loader = config.getResourceLoader();
-      if (loader instanceof ZkSolrResourceLoader) {
-        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+      if (loader instanceof ZkSolrResourceLoader zkLoader) {
         String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
         try {
           exists = zkLoader.getZkController().pathExists(nonManagedSchemaPath);
@@ -544,9 +542,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   @Override
   public void inform(SolrCore core) {
     this.core = core;
-    if (loader instanceof ZkSolrResourceLoader) {
+    if (loader instanceof ZkSolrResourceLoader zkLoader) {
       this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
-      ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
       zkLoader.setZkIndexSchemaReader(this.zkIndexSchemaReader);
       try {
         zkIndexSchemaReader.refreshSchemaFromZk(-1); // update immediately if newer is available

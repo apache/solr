@@ -488,10 +488,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
-    if (!(request instanceof UpdateRequest)) {
+    if (!(request instanceof UpdateRequest req)) {
       return client.request(request, collection);
     }
-    UpdateRequest req = (UpdateRequest) request;
 
     // this happens for commit...
     if (streamDeletes) {

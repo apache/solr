@@ -25,8 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -357,22 +359,17 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       CollectionHandlingUtils.checkResults(
           "creating checkpoint collection " + chkCollection, cmdResults, true);
       // wait for a while until we see both collections
-      TimeOut waitUntil =
-          new TimeOut(30, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
-      boolean created = false;
-      while (!waitUntil.hasTimedOut()) {
-        waitUntil.sleep(100);
-        // this also refreshes our local var clusterState
-        clusterState = ccc.getSolrCloudManager().getClusterState();
-        created =
-            clusterState.hasCollection(targetCollection)
-                && clusterState.hasCollection(chkCollection);
-        if (created) break;
-      }
-      if (!created) {
+      try {
+        for (String col : List.of(targetCollection, chkCollection)) {
+          ccc.getZkStateReader().waitForState(col, 30, TimeUnit.SECONDS, Objects::nonNull);
+        }
+      } catch (TimeoutException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Could not fully create temporary collection(s)");
       }
+
+      clusterState = ccc.getSolrCloudManager().getClusterState();
+
       if (maybeAbort(collection)) {
         aborted = true;
         return;

@@ -70,8 +70,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
         }
         command.add("doclist", docList);
         commands.add(entry.getKey(), command);
-      } else if (value instanceof QueryCommandResult) {
-        QueryCommandResult queryCommandResult = (QueryCommandResult) value;
+      } else if (value instanceof QueryCommandResult queryCommandResult) {
         NamedList<Object> command = new SimpleOrderedMap<>();
         command.add("matches", queryCommandResult.getMatches());
 

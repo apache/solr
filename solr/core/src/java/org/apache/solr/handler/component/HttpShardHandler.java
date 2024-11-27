@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -113,7 +114,7 @@ public class HttpShardHandler extends ShardHandler {
   protected AtomicInteger pending;
 
   private final Map<String, List<String>> shardToURLs;
-  protected LBHttp2SolrClient lbClient;
+  protected LBHttp2SolrClient<Http2SolrClient> lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;

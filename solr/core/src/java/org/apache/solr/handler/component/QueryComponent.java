@@ -195,8 +195,7 @@ public class QueryComponent extends SearchComponent {
       if (rankQueryString != null) {
         QParser rqparser = QParser.getParser(rankQueryString, req);
         Query rq = rqparser.getQuery();
-        if (rq instanceof RankQuery) {
-          RankQuery rankQuery = (RankQuery) rq;
+        if (rq instanceof RankQuery rankQuery) {
           rb.setRankQuery(rankQuery);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if (mergeStrategy != null) {
@@ -615,17 +614,23 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) return ResponseBuilder.STAGE_PARSE_QUERY;
+    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+      return ResponseBuilder.STAGE_PARSE_QUERY;
+    }
     if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) return ResponseBuilder.STAGE_EXECUTE_QUERY;
+    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+      return ResponseBuilder.STAGE_EXECUTE_QUERY;
+    }
     if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       createMainQuery(rb);
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) return ResponseBuilder.STAGE_GET_FIELDS;
+    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_GET_FIELDS;
+    }
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
       return ResponseBuilder.STAGE_DONE;

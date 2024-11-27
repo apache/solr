@@ -22,9 +22,9 @@
 
 configure(allprojects) { prj ->
   plugins.withType(JavaPlugin) {
-    prj.apply plugin: 'com.diffplug.spotless'
+    prj.apply plugin: libs.plugins.diffplug.spotless.get().pluginId
 
-    ext {
+    project.ext {
       spotlessJavaSetup = (Action){
         it.toggleOffOn() // obviously, only to be used sparingly.
         // TODO: Work out how to support multiple different header files (we have
@@ -34,7 +34,7 @@ configure(allprojects) { prj ->
         // it.licenseHeaderFile(file("${resources}/asl-header.txt"), '^(\\s*package)')
         it.setLineEndings(Enum.valueOf(rootProject.buildscript.classLoader.loadClass("com.diffplug.spotless.LineEnding"), "UNIX"))
         it.endWithNewline()
-        it.googleJavaFormat('1.18.1')
+        it.googleJavaFormat(libs.versions.google.javaformat.get())
 
         it.custom('Refuse wildcard imports', { line ->
           // Wildcard imports can't be resolved by spotless itself.

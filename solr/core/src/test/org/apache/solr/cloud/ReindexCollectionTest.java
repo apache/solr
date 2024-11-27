@@ -367,7 +367,8 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     // verify that the target and checkpoint collections don't exist
     cloudManager
         .getClusterState()
-        .forEachCollection(
+        .collectionStream()
+        .forEach(
             coll -> {
               assertFalse(
                   coll.getName() + " still exists",

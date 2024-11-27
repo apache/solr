@@ -193,8 +193,7 @@ public final class ToleratedUpdateError {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof ToleratedUpdateError) {
-      ToleratedUpdateError that = (ToleratedUpdateError) o;
+    if (o instanceof ToleratedUpdateError that) {
       return that.type.equals(this.type)
           && that.id.equals(this.id)
           && that.message.equals(this.message);
