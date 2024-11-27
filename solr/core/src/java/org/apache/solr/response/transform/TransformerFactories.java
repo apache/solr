@@ -17,25 +17,22 @@
 
 package org.apache.solr.response.transform;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class TransformerFactories {
 
   private TransformerFactories() {}
 
-  public static final Map<String, TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
-
-  static {
-    defaultFactories.put("explain", new ExplainAugmenterFactory());
-    defaultFactories.put("value", new ValueAugmenterFactory());
-    defaultFactories.put("docid", new DocIdAugmenterFactory());
-    defaultFactories.put("shard", new ShardAugmenterFactory());
-    defaultFactories.put("child", new ChildDocTransformerFactory());
-    defaultFactories.put("subquery", new SubQueryAugmenterFactory());
-    defaultFactories.put("json", new RawValueTransformerFactory("json"));
-    defaultFactories.put("xml", new RawValueTransformerFactory("xml"));
-    defaultFactories.put("geo", new GeoTransformerFactory());
-    defaultFactories.put("core", new CoreAugmenterFactory());
-  }
+  public static final Map<String, TransformerFactory> defaultFactories =
+      Map.ofEntries(
+          Map.entry("explain", new ExplainAugmenterFactory()),
+          Map.entry("value", new ValueAugmenterFactory()),
+          Map.entry("docid", new DocIdAugmenterFactory()),
+          Map.entry("shard", new ShardAugmenterFactory()),
+          Map.entry("child", new ChildDocTransformerFactory()),
+          Map.entry("subquery", new SubQueryAugmenterFactory()),
+          Map.entry("json", new RawValueTransformerFactory("json")),
+          Map.entry("xml", new RawValueTransformerFactory("xml")),
+          Map.entry("geo", new GeoTransformerFactory()),
+          Map.entry("core", new CoreAugmenterFactory()));
 }
