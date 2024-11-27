@@ -139,10 +139,9 @@ class SimpleClusterAbstractionsImpl {
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof NodeImpl)) {
+      if (!(obj instanceof NodeImpl other)) {
         return false;
       }
-      NodeImpl other = (NodeImpl) obj;
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
@@ -307,10 +306,9 @@ class SimpleClusterAbstractionsImpl {
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof ShardImpl)) {
+      if (!(obj instanceof ShardImpl other)) {
         return false;
       }
-      ShardImpl other = (ShardImpl) obj;
       return Objects.equals(this.shardName, other.shardName)
           && Objects.equals(this.collection, other.collection)
           && Objects.equals(this.shardState, other.shardState)
@@ -467,10 +465,9 @@ class SimpleClusterAbstractionsImpl {
       if (obj == this) {
         return true;
       }
-      if (!(obj instanceof ReplicaImpl)) {
+      if (!(obj instanceof ReplicaImpl other)) {
         return false;
       }
-      ReplicaImpl other = (ReplicaImpl) obj;
       return Objects.equals(this.replicaName, other.replicaName)
           && Objects.equals(this.coreName, other.coreName)
           && Objects.equals(this.shard, other.shard)

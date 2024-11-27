@@ -887,8 +887,7 @@ public class JavaBinCodec implements PushWriter {
         if (this == obj) {
           return true;
         }
-        if (obj instanceof Map.Entry<?, ?>) {
-          Entry<?, ?> entry = (Entry<?, ?>) obj;
+        if (obj instanceof Map.Entry<?, ?> entry) {
           return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
         }
         return false;
@@ -1096,8 +1095,7 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
       return true;
-    } else if (val instanceof ByteBuffer) {
-      ByteBuffer buf = (ByteBuffer) val;
+    } else if (val instanceof ByteBuffer buf) {
       writeByteArray(buf.array(), buf.arrayOffset() + buf.position(), buf.limit() - buf.position());
       return true;
     } else if (val == END_OBJ) {

@@ -732,9 +732,7 @@ public class TestSolrConfigHandler extends RestTestBase {
       }
       Object actual = Utils.getObjectByPath(m, false, jsonPath);
 
-      if (expected instanceof ValidatingJsonMap.PredicateWithErrMsg) {
-        ValidatingJsonMap.PredicateWithErrMsg predicate =
-            (ValidatingJsonMap.PredicateWithErrMsg) expected;
+      if (expected instanceof ValidatingJsonMap.PredicateWithErrMsg predicate) {
         if (predicate.test(actual) == null) {
           success = true;
           break;
@@ -982,8 +980,7 @@ public class TestSolrConfigHandler extends RestTestBase {
             new ValidatingJsonMap.PredicateWithErrMsg<>() {
               @Override
               public String test(Object o) {
-                if (o instanceof Map) {
-                  Map<?, ?> m = (Map<?, ?>) o;
+                if (o instanceof Map<?, ?> m) {
                   if ("part1_Value".equals(m.get("part1")) && "part2_Value".equals(m.get("part2")))
                     return null;
                 }

@@ -93,7 +93,7 @@ public class PostLogsTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     String url = null;
     if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
-      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
       // Could be required arg, but maybe we want to support --zk-host option too?

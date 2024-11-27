@@ -32,6 +32,8 @@ Improvements
 
 * SOLR-17495: Change Solr CLI delete command to not delete configs by default.  Decouple lifecycle of collections from configsets. (Eric Pugh)
 
+* SOLR-17516: `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. (James Dyer)
+
 Optimizations
 ---------------------
 (No changes)
@@ -71,7 +73,7 @@ Deprecation Removals
   in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
 
 * SOLR-14763: Remove deprecated asynchronous request methods from `Http2SolrClient`, `HttpJdkSolrClient` and `LBHttp2SolrClient`
-  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
+  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and `Cancellable`
   (James Dyer)
 
 * SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
@@ -88,6 +90,8 @@ Deprecation Removals
 
 * SOLR-17256: Previously deprecated `SolrRequest` methods `setBasePath` and `getBasePath` have been removed.  SolrJ users
   wishing to temporarily override an HTTP client's base URL may use `Http2SolrClient.requestWithBaseUrl` instead. (Jason Gerlowski)
+
+* SOLR-17564: Remove code in Assign used for backwards compatibility with Collections created prior to 7.0 (Paul McArthur)
 
 Dependency Upgrades
 ---------------------
@@ -123,6 +127,8 @@ Other Changes
 * SOLR-17285: SolrJ RemoteSolrException moved to SolrClient. (@samuelrivascoding)
 
 * SOLR-17321: Minimum Java version for Apache Solr is now 21, and for SolrJ, it is 17. (Sanjay Dutt, David Smiley)
+
+* SOLR-16903: Update CLI tools to use java.nio.file.Path instead of java.io.File (Andrey Bozhko)
 
 ==================  9.8.0 ==================
 New Features
@@ -164,6 +170,15 @@ Improvements
 * SOLR-17528: Introduce -y short option to bin/solr start --no-prompt option. Aligns with bin/solr package tool.  (Eric Pugh)
 
 * SOLR-17390: EmbeddedSolrServer now considers the ResponseParser (David Smiley)
+
+* SOLR-16390: v2 "cluster prop" APIs have been updated to be more REST-ful. Cluster prop creation/update are now available
+  at `PUT /api/cluster/properties/somePropName`.  Deletion is now available at `DELETE /api/cluster/properties/somePropName`.
+  New APIs for listing-all and fetching-single cluster props are also now available at `GET /api/cluster/properties` and
+  `GET /api/cluster/properties/somePropName`, respectively. (Carlos Ugarte via Jason Gerlowski)
+
+* SOLR-16470: Replication "fetch file" API now has a v2 equivalent, available at `GET /api/cores/coreName/replication/files/fileName`
+  (Matthew Biscocho via Jason Gerlowski)
+
 
 Optimizations
 ---------------------
@@ -236,6 +251,10 @@ led to the suppression of exceptions. (Andrey Bozhko)
   and forEachCollection, which are now deprecated. (David Smiley)
 
 * SOLR-17545: Upgrade to Gradle 8.10 (Houston Putman)
+
+* SOLR-17504: CoreContainer calls UpdateHandler.commit when closing a read-only core (Bruno Roustant)
+
+* SOLR-17556: "home" and "data" directories used by Solr examples have been updated to align with documented best practices. (Eric Pugh, Houston Putman)
 
 ==================  9.7.1 ==================
 Bug Fixes

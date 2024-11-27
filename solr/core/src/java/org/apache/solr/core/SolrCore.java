@@ -106,9 +106,9 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.IndexFetcher;
-import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
@@ -949,8 +949,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -995,8 +994,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     } catch (Exception e) {
       // The JVM likes to wrap our helpful SolrExceptions in things like
       // "InvocationTargetException" that have no useful getMessage
-      if (null != e.getCause() && e.getCause() instanceof SolrException) {
-        SolrException inner = (SolrException) e.getCause();
+      if (null != e.getCause() && e.getCause() instanceof SolrException inner) {
         throw inner;
       }
 
@@ -1840,13 +1838,15 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // Close the snapshots meta-data directory.
-    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-    try {
-      this.directoryFactory.release(snapshotsDir);
-    } catch (Throwable e) {
-      log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
-      if (e instanceof Error) {
-        throw (Error) e;
+    if (snapshotMgr != null) {
+      Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+      try {
+        this.directoryFactory.release(snapshotsDir);
+      } catch (Throwable e) {
+        log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
     }
 
@@ -3018,7 +3018,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
     m.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    m.put(ReplicationHandler.FILE_STREAM, getFileStreamWriter());
+    m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
     try {
       m.put(
@@ -3037,7 +3037,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       @Override
       public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
           throws IOException {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
           rawWriter.write(out);
           if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
@@ -3046,7 +3046,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationHandler.FILE_STREAM);
+        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
         if (rawWriter != null) {
           return rawWriter.getContentType();
         } else {
@@ -3392,8 +3392,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * some data so that events are triggered.
    */
   private void registerConfListener() {
-    if (!(resourceLoader instanceof ZkSolrResourceLoader)) return;
-    final ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) resourceLoader;
+    if (!(resourceLoader instanceof ZkSolrResourceLoader zkSolrResourceLoader)) return;
     if (zkSolrResourceLoader != null)
       zkSolrResourceLoader
           .getZkController()
@@ -3413,8 +3412,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         zkSolrResourceLoader.getConfigSetZkPath() + "/" + core.getSolrConfig().getName();
     String schemaRes = null;
     if (core.getLatestSchema().isMutable()
-        && core.getLatestSchema() instanceof ManagedIndexSchema) {
-      ManagedIndexSchema mis = (ManagedIndexSchema) core.getLatestSchema();
+        && core.getLatestSchema() instanceof ManagedIndexSchema mis) {
       schemaRes = mis.getResourceName();
     }
     final String managedSchemaResourcePath =

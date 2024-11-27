@@ -81,7 +81,7 @@ public class ConfigSetUploadTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String zkHost = SolrCLI.getZkHost(cli);
+    String zkHost = CLIUtils.getZkHost(cli);
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     Path solrInstallDirPath = Paths.get(solrInstallDir);
@@ -90,8 +90,8 @@ public class ConfigSetUploadTool extends ToolBase {
     String confDir = cli.getOptionValue(CONF_DIR_OPTION);
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
+    try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
+      final Path configsetsDirPath = CLIUtils.getConfigSetsDir(solrInstallDirPath);
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echo(

@@ -195,8 +195,7 @@ public class QueryComponent extends SearchComponent {
       if (rankQueryString != null) {
         QParser rqparser = QParser.getParser(rankQueryString, req);
         Query rq = rqparser.getQuery();
-        if (rq instanceof RankQuery) {
-          RankQuery rankQuery = (RankQuery) rq;
+        if (rq instanceof RankQuery rankQuery) {
           rb.setRankQuery(rankQuery);
           MergeStrategy mergeStrategy = rankQuery.getMergeStrategy();
           if (mergeStrategy != null) {

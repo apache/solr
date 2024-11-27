@@ -112,8 +112,7 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return null;
     } else if (value instanceof VectorFunction) {
       return value;
-    } else if (value instanceof BigDecimal) {
-      BigDecimal bd = (BigDecimal) value;
+    } else if (value instanceof BigDecimal bd) {
       return bd.doubleValue();
     } else if (value instanceof Long || value instanceof Integer) {
       return ((Number) value).longValue();
@@ -125,11 +124,10 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       // normalize each value in the list
       return ((List<?>) value)
           .stream().map(innerValue -> normalizeOutputType(innerValue)).collect(Collectors.toList());
-    } else if (value instanceof Tuple && value.getClass().getEnclosingClass() == null) {
+    } else if (value instanceof Tuple tuple && value.getClass().getEnclosingClass() == null) {
       // If it's a tuple and not an inner class that has extended tuple, which occurs in a number of
       // cases so that mathematical models can be contained within a tuple.
 
-      Tuple tuple = (Tuple) value;
       Tuple newTuple = new Tuple();
       for (String s : tuple.getFields().keySet()) {
         Object v = tuple.get(s);
@@ -152,9 +150,8 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
         factory.getOperandsOfType(expression, StreamExpressionParameter.class);
 
     for (StreamExpressionParameter parameter : parameters) {
-      if (parameter instanceof StreamExpression) {
+      if (parameter instanceof StreamExpression streamExpression) {
         // possible evaluator
-        StreamExpression streamExpression = (StreamExpression) parameter;
         if (factory.doesRepresentTypes(streamExpression, RecursiveEvaluator.class)) {
           containedEvaluators.add(factory.constructEvaluator(streamExpression));
         } else if (factory.doesRepresentTypes(streamExpression, SourceEvaluator.class)) {

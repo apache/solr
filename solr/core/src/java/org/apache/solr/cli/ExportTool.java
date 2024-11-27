@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -284,7 +283,7 @@ public class ExportTool extends ToolBase {
         throw new IllegalArgumentException(
             "Must specify -c / --name parameter with --solr-url to post documents.");
       }
-      url = SolrCLI.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     } else {
       // think about support --zk-host someday.
@@ -363,8 +362,7 @@ public class ExportTool extends ToolBase {
               }
             }
             field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
+            if (field instanceof List<?> list) {
               if (hasdate(list)) {
                 ArrayList<Object> listCopy = new ArrayList<>(list.size());
                 for (Object o : list) listCopy.add(constructDateStr(o));
@@ -443,8 +441,7 @@ public class ExportTool extends ToolBase {
               }
             }
             field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
+            if (field instanceof List<?> list) {
               if (hasdate(list)) {
                 ArrayList<Object> listCopy = new ArrayList<>(list.size());
                 for (Object o : list) listCopy.add(constructDateStr(o));
@@ -601,7 +598,7 @@ public class ExportTool extends ToolBase {
         consumerThreadpool.shutdownNow();
         if (failed) {
           try {
-            Files.delete(new File(out).toPath());
+            Files.delete(Path.of(out));
           } catch (IOException e) {
             // ignore
           }
@@ -664,7 +661,7 @@ public class ExportTool extends ToolBase {
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
-        try (SolrClient client = SolrCLI.getSolrClient(baseurl, credentials)) {
+        try (SolrClient client = CLIUtils.getSolrClient(baseurl, credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
           QueryRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();

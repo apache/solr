@@ -80,12 +80,10 @@ public class WeightedSumMetric extends Metric {
   public void update(Tuple tuple) {
     Object c = tuple.get(countCol);
     Object o = tuple.get(valueCol);
-    if (c instanceof Number && o instanceof Number) {
+    if (c instanceof Number count && o instanceof Number value) {
       if (parts == null) {
         parts = new ArrayList<>();
       }
-      Number count = (Number) c;
-      Number value = (Number) o;
       parts.add(new Part(count.longValue(), value.doubleValue()));
     }
   }

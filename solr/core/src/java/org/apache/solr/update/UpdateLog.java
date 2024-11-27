@@ -1215,8 +1215,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 lookupVersion);
           }
 
-          if (obj != null && obj instanceof List) {
-            List<?> tmpEntry = (List<?>) obj;
+          if (obj != null && obj instanceof List<?> tmpEntry) {
             if (tmpEntry.size() >= 2
                 &&
                 // why not Objects.equals(lookupVersion, tmpEntry.get())?
