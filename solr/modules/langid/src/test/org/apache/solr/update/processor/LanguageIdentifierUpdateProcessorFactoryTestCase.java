@@ -470,7 +470,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
-    parameters.add("langid.allowlist", "no,en ,,,sv");
+    parameters.add("langid.allowlist", "no,en ,, ,sv, sv");
     liProcessor = createLangIdProcessor(parameters);
 
     // Make sure that empty language codes have been filtered out and others trimmed.
@@ -483,7 +483,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
-    parameters.add("langid.whitelist", "no,en ,,,sv");
+    parameters.add("langid.whitelist", "no,en ,, ,sv, sv");
     liProcessor = createLangIdProcessor(parameters);
 
     // Make sure that empty language codes have been filtered out and others trimmed.
