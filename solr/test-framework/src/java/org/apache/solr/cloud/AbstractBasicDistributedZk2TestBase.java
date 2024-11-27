@@ -205,6 +205,10 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
     SolrQuery query = new SolrQuery("*:*");
 
     try (SolrClient client = getHttpSolrClient(baseUrl, "onenodecollection")) {
+      // add a doc
+      client.add(sdoc("id", docs));
+      client.commit();
+
       QueryResponse results = client.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 
