@@ -285,7 +285,7 @@ public class AuthTool extends ToolBase {
             StandardCharsets.UTF_8);
 
         // update the solr.in.sh file to contain the necessary authentication lines
-        updateIncludeFileEnableAuth(includeFile, basicAuthConfFile.toAbsolutePath().toString());
+        updateIncludeFileEnableAuth(includeFile, basicAuthConfFile);
         final String successMessage =
             String.format(
                 Locale.ROOT,
@@ -381,7 +381,7 @@ public class AuthTool extends ToolBase {
    * @param basicAuthConfFile If basicAuth, the path of the file containing credentials. If not,
    *     null.
    */
-  private void updateIncludeFileEnableAuth(Path includeFile, String basicAuthConfFile)
+  private void updateIncludeFileEnableAuth(Path includeFile, Path basicAuthConfFile)
       throws IOException {
     List<String> includeFileLines = Files.readAllLines(includeFile, StandardCharsets.UTF_8);
     for (int i = 0; i < includeFileLines.size(); i++) {
