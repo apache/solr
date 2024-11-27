@@ -173,7 +173,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       expr = "logging(ubi_queries.jsonl,ubiQuery())";
 
       // feels like 'stream' or 'get' or something should let me create a tuple out of something
-      // in the streamContext.   That would turn the "ubi-query" object in the stream context into a nice
+      // in the streamContext.   That would turn the "ubi-query" object in the stream context into a
+      // nice
       // tuple and return it.  streamContext(ubi-query)??
       // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
     } else {
@@ -232,6 +233,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     ubiQuery.setUserQuery(params.get(USER_QUERY));
     ubiQuery.setApplication(params.get(APPLICATION));
+    if (ubiQuery.getApplication() == null){
+      ubiQuery.setApplication(rb.req.getCloudDescriptor().getCollectionName());
+    }
 
     String queryAttributes = params.get(QUERY_ATTRIBUTES);
 
