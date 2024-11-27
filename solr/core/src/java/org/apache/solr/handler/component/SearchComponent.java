@@ -105,20 +105,21 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    // By default don't register any metrics - but prepare a child context
+    // By default, don't register any metrics - but prepare a child context
     this.solrMetricsContext = parentContext.getChildContext(this);
   }
 
-  public static final Map<String, Class<? extends SearchComponent>> standard_components =
-      Map.of(
-          HighlightComponent.COMPONENT_NAME, HighlightComponent.class,
-          QueryComponent.COMPONENT_NAME, QueryComponent.class,
-          FacetComponent.COMPONENT_NAME, FacetComponent.class,
-          FacetModule.COMPONENT_NAME, FacetModule.class,
-          MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class,
-          StatsComponent.COMPONENT_NAME, StatsComponent.class,
-          DebugComponent.COMPONENT_NAME, DebugComponent.class,
-          RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class,
-          ExpandComponent.COMPONENT_NAME, ExpandComponent.class,
-          TermsComponent.COMPONENT_NAME, TermsComponent.class);
+  public static final Map<String, Class<? extends SearchComponent>> STANDARD_COMPONENTS =
+      Map.ofEntries(
+          Map.entry(HighlightComponent.COMPONENT_NAME, HighlightComponent.class),
+          Map.entry(QueryComponent.COMPONENT_NAME, QueryComponent.class),
+          Map.entry(FacetComponent.COMPONENT_NAME, FacetComponent.class),
+          Map.entry(FacetModule.COMPONENT_NAME, FacetModule.class),
+          Map.entry(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class),
+          Map.entry(StatsComponent.COMPONENT_NAME, StatsComponent.class),
+          Map.entry(DebugComponent.COMPONENT_NAME, DebugComponent.class),
+          Map.entry(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class),
+          Map.entry(ExpandComponent.COMPONENT_NAME, ExpandComponent.class),
+          Map.entry(TermsComponent.COMPONENT_NAME, TermsComponent.class),
+          Map.entry(UBIComponent.COMPONENT_NAME, UBIComponent.class));
 }

@@ -71,7 +71,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
@@ -127,18 +126,7 @@ public class SearchHandler extends RequestHandlerBase
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(9);
-    names.add(QueryComponent.COMPONENT_NAME);
-    names.add(FacetComponent.COMPONENT_NAME);
-    names.add(FacetModule.COMPONENT_NAME);
-    names.add(MoreLikeThisComponent.COMPONENT_NAME);
-    names.add(HighlightComponent.COMPONENT_NAME);
-    names.add(StatsComponent.COMPONENT_NAME);
-    names.add(DebugComponent.COMPONENT_NAME);
-    names.add(ExpandComponent.COMPONENT_NAME);
-    names.add(TermsComponent.COMPONENT_NAME);
-
-    return names;
+    return SearchComponent.STANDARD_COMPONENTS.keySet().stream().toList();
   }
 
   @Override
