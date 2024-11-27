@@ -36,7 +36,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
+ (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -127,6 +128,8 @@ Other Changes
 * SOLR-17285: SolrJ RemoteSolrException moved to SolrClient. (@samuelrivascoding)
 
 * SOLR-17321: Minimum Java version for Apache Solr is now 21, and for SolrJ, it is 17. (Sanjay Dutt, David Smiley)
+
+* SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
 
 ==================  9.8.0 ==================
 New Features
