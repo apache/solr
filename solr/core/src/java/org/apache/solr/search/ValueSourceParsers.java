@@ -1474,7 +1474,6 @@ public class ValueSourceParsers {
       return new SumFloatFunction(sources.toArray(new ValueSource[0]));
     }
   }
-  ;
 
   private static final class ProductValueParser extends ValueSourceParser {
     @Override
@@ -1483,7 +1482,6 @@ public class ValueSourceParsers {
       return new ProductFloatFunction(sources.toArray(new ValueSource[0]));
     }
   }
-  ;
 
   private static final class TotalTermFrequency extends ValueSourceParser {
     @Override
@@ -1493,7 +1491,6 @@ public class ValueSourceParsers {
           tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes.get());
     }
   }
-  ;
 
   private static final class SumTotalTermFrequency extends ValueSourceParser {
     @Override
@@ -1502,7 +1499,6 @@ public class ValueSourceParsers {
       return new SumTotalTermFreqValueSource(field);
     }
   }
-  ;
 
   // Private for now - we need to revisit how to handle typing in function queries
   static class LongConstValueSource extends ConstNumberSource {
