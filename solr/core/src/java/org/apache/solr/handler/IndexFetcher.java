@@ -27,8 +27,6 @@ import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
-import static org.apache.solr.handler.ReplicationHandler.LEGACY_LEADER_URL;
-import static org.apache.solr.handler.ReplicationHandler.LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.CHECKSUM;
@@ -53,11 +51,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -189,8 +185,6 @@ public class IndexFetcher {
 
   private Integer soTimeout;
 
-  private boolean downloadTlogFiles = false;
-
   private boolean skipCommitOnLeaderVersionZero = true;
 
   private boolean clearLocalIndexFirst = false;
@@ -211,7 +205,7 @@ public class IndexFetcher {
         new IndexFetchResult("Local index commit is already in sync with peer", true, null);
 
     public static final IndexFetchResult INDEX_FETCH_FAILURE =
-        new IndexFetchResult("Fetching lastest index is failed", false, null);
+        new IndexFetchResult("Fetching latest index is failed", false, null);
     public static final IndexFetchResult INDEX_FETCH_SUCCESS =
         new IndexFetchResult("Fetching latest index is successful", true, null);
     public static final IndexFetchResult LOCK_OBTAIN_FAILED =
@@ -226,8 +220,6 @@ public class IndexFetcher {
     public static final IndexFetchResult PEER_INDEX_COMMIT_DELETED =
         new IndexFetchResult(
             "No files to download because IndexCommit in peer was deleted", false, null);
-    public static final IndexFetchResult LOCAL_ACTIVITY_DURING_REPLICATION =
-        new IndexFetchResult("Local index modification during replication", false, null);
     public static final IndexFetchResult EXPECTING_NON_LEADER =
         new IndexFetchResult("Replicating from leader but I'm the shard leader", false, null);
     public static final IndexFetchResult LEADER_IS_NOT_ACTIVE =
@@ -279,17 +271,12 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnLeaderVersionZero =
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            initArgs,
-            SKIP_COMMIT_ON_LEADER_VERSION_ZERO,
-            LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
+    Object skipCommitOnLeaderVersionZero = initArgs.get(SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
     if (skipCommitOnLeaderVersionZero != null && skipCommitOnLeaderVersionZero instanceof Boolean) {
       this.skipCommitOnLeaderVersionZero = (boolean) skipCommitOnLeaderVersionZero;
     }
-    String leaderUrl =
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            initArgs, LEADER_URL, LEGACY_LEADER_URL);
+    String leaderUrl = (String) initArgs.get(LEADER_URL);
+
     if (leaderUrl == null && !this.fetchFromLeader)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "'leaderUrl' is required for a follower");
@@ -306,7 +293,7 @@ public class IndexFetcher {
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
 
     // allow a leader override for tests - you specify this in /replication follower section of
-    // solrconfig and some test don't want to define this
+    // solrconfig and some tests don't want to define this
     soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
     if (soTimeout == -1) {
       soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
@@ -415,7 +402,7 @@ public class IndexFetcher {
   }
 
   /**
-   * This command downloads all the necessary files from leader to install a index commit point.
+   * This command downloads all the necessary files from leader to install an index commit point.
    * Only changed files are downloaded. It also downloads the conf files (if they are modified).
    *
    * @param forceReplication force a replication in all cases
@@ -811,8 +798,7 @@ public class IndexFetcher {
       Directory indexDir,
       boolean deleteTmpIdxDir,
       File tmpTlogDir,
-      boolean successfulInstall)
-      throws IOException {
+      boolean successfulInstall) {
     try {
       if (!successfulInstall) {
         try {
@@ -1230,7 +1216,7 @@ public class IndexFetcher {
 
   private long getApproxTotalSpaceReqd(long totalSpaceRequired) {
     long approxTotalSpaceReqd = (long) (totalSpaceRequired * 1.05); // add 5% extra for safety
-    // we should have an extra of 100MB free after everything is downloaded
+    // we should have an extra of 100 MB free after everything is downloaded
     approxTotalSpaceReqd += (100 * 1024 * 1024);
     return approxTotalSpaceReqd;
   }
@@ -1381,7 +1367,7 @@ public class IndexFetcher {
    * All the files which are common between leader and follower must have same size and same
    * checksum else we assume they are not compatible (stale).
    *
-   * @return true if the index stale and we need to download a fresh copy, false otherwise.
+   * @return true if the index stale, and we need to download a fresh copy, false otherwise.
    * @throws IOException if low level io error
    */
   private boolean isIndexStale(Directory dir) throws IOException {
@@ -1468,7 +1454,7 @@ public class IndexFetcher {
     }
     // copy the segments file last
     if (segmentsFile != null) {
-      if (!moveAFile(tmpIdxDir, indexDir, segmentsFile)) return false;
+      return moveAFile(tmpIdxDir, indexDir, segmentsFile);
     }
     return true;
   }
@@ -1526,49 +1512,6 @@ public class IndexFetcher {
     }
   }
 
-  /**
-   * The tlog files are moved from the tmp dir to the tlog dir as an atomic filesystem operation. A
-   * backup of the old directory is maintained. If the directory move fails, it will try to revert
-   * back the original tlog directory.
-   */
-  private boolean copyTmpTlogFiles2Tlog(File tmpTlogDir) {
-    Path tlogDir =
-        FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
-    Path backupTlogDir =
-        FileSystems.getDefault()
-            .getPath(tlogDir.getParent().toAbsolutePath().toString(), tmpTlogDir.getName());
-
-    try {
-      Files.move(tlogDir, backupTlogDir, StandardCopyOption.ATOMIC_MOVE);
-    } catch (IOException e) {
-      log.error("Unable to rename: {} to: {}", tlogDir, backupTlogDir, e);
-      return false;
-    }
-
-    Path src =
-        FileSystems.getDefault()
-            .getPath(backupTlogDir.toAbsolutePath().toString(), tmpTlogDir.getName());
-    try {
-      Files.move(src, tlogDir, StandardCopyOption.ATOMIC_MOVE);
-    } catch (IOException e) {
-      log.error("Unable to rename: {} to: {}", src, tlogDir, e);
-
-      // In case of error, try to revert back the original tlog directory
-      try {
-        Files.move(backupTlogDir, tlogDir, StandardCopyOption.ATOMIC_MOVE);
-      } catch (IOException e2) {
-        // bad, we were not able to revert back the original tlog directory
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to rename: " + backupTlogDir + " to: " + tlogDir);
-      }
-
-      return false;
-    }
-
-    return true;
-  }
-
   private String getDateAsStr(Date d) {
     return new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(d);
   }
@@ -1609,23 +1552,6 @@ public class IndexFetcher {
       }
     }
     return nameVsFile.isEmpty() ? Collections.emptyList() : nameVsFile.values();
-  }
-
-  /**
-   * This simulates File.delete exception-wise, since this class has some strange behavior with it.
-   * The only difference is it returns null on success, throws SecurityException on
-   * SecurityException, otherwise returns Throwable preventing deletion (instead of false), for
-   * additional information.
-   */
-  static Throwable delete(File file) {
-    try {
-      Files.delete(file.toPath());
-      return null;
-    } catch (SecurityException e) {
-      throw e;
-    } catch (Throwable other) {
-      return other;
-    }
   }
 
   static boolean delTree(File dir) {
@@ -1743,8 +1669,7 @@ public class IndexFetcher {
         Map<String, Object> fileDetails,
         String saveAs,
         String solrParamOutput,
-        long latestGen)
-        throws IOException {
+        long latestGen) {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
@@ -1794,7 +1719,7 @@ public class IndexFetcher {
         }
       } finally {
         cleanup();
-        // if cleanup succeeds . The file is downloaded fully. do an fsync
+        // if cleanup succeeds then the file is downloaded fully, do a fsync.
         fsyncService.execute(
             () -> {
               try {
@@ -1898,8 +1823,8 @@ public class IndexFetcher {
     }
 
     /**
-     * The webcontainer flushes the data only after it fills the buffer size. So, all data has to be
-     * read as readFully() other wise it fails. So read everything as bytes and then extract an
+     * The web container flushes the data only after it fills the buffer size. So, all data has to
+     * be read as readFully() otherwise it fails. So read everything as bytes and then extract an
      * integer out of it
      */
     private int readInt(byte[] b) {
@@ -1966,7 +1891,7 @@ public class IndexFetcher {
       }
       // wt=filestream this is a custom protocol
       params.set(CommonParams.WT, FILE_STREAM);
-      // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures
+      // This happens if there is a failure there is a retry. the offset=<sizedownloaded> ensures
       // that the server starts from the offset
       if (bytesDownloaded > 0) {
         params.set(OFFSET, Long.toString(bytesDownloaded));
@@ -2059,16 +1984,14 @@ public class IndexFetcher {
   }
 
   private static class LocalFsFile implements FileInterface {
-    private File copy2Dir;
 
     FileChannel fileChannel;
     private FileOutputStream fileOutputStream;
     File file;
 
     LocalFsFile(File dir, String saveAs) throws IOException {
-      this.copy2Dir = dir;
 
-      this.file = new File(copy2Dir, saveAs);
+      this.file = new File(dir, saveAs);
 
       File parentDir = this.file.getParentFile();
       if (!parentDir.exists()) {

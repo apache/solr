@@ -42,7 +42,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -154,8 +153,6 @@ public class ReplicationHandler extends RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   SolrCore core;
 
-  private volatile boolean closed = false;
-
   @Override
   public Name getPermissionName(AuthorizationContext request) {
     return Name.READ_PERM;
@@ -228,8 +225,6 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private volatile long executorStartTime;
 
-  private int numTimesReplicated = 0;
-
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
 
   private Long reserveCommitDuration = readIntervalMs("00:00:10");
@@ -285,9 +280,9 @@ public class ReplicationHandler extends RequestHandlerBase
           rsp,
           coreReplicationAPI.fetchFileList(Long.parseLong(solrParams.required().get(GENERATION))));
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
-      doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
+      doSnapShoot(new ModifiableSolrParams(solrParams), rsp);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
-      restore(new ModifiableSolrParams(solrParams), rsp, req);
+      restore(new ModifiableSolrParams(solrParams), rsp);
     } else if (command.equalsIgnoreCase(CMD_RESTORE_STATUS)) {
       populateRestoreStatus(rsp);
     } else if (command.equalsIgnoreCase(CMD_DELETE_BACKUP)) {
@@ -324,8 +319,7 @@ public class ReplicationHandler extends RequestHandlerBase
    * @see IndexFetcher.LocalFsFileFetcher
    * @see IndexFetcher.DirectoryFileFetcher
    */
-  private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp, SolrQueryRequest req)
-      throws IOException {
+  private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp, SolrQueryRequest req) {
     final CoreReplication coreReplicationAPI = new CoreReplication(core, req, rsp);
     String fileName;
     String dirType;
@@ -364,16 +358,6 @@ public class ReplicationHandler extends RequestHandlerBase
         solrParams.getBool(CHECKSUM, false),
         solrParams.getDouble(MAX_WRITE_PER_SECOND, Double.MAX_VALUE),
         solrParams.getLong(GENERATION));
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <T> T getObjectWithBackwardCompatibility(
-      NamedList<?> params, String preferredKey, String alternativeKey) {
-    Object value = params.get(preferredKey);
-    if (value != null) {
-      return (T) value;
-    }
-    return (T) params.get(alternativeKey);
   }
 
   private void reportErrorOnResponse(SolrQueryResponse response, String message, Exception e) {
@@ -512,8 +496,7 @@ public class ReplicationHandler extends RequestHandlerBase
     return indexFetchLock.isLocked();
   }
 
-  private void restore(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req)
-      throws IOException {
+  private void restore(SolrParams params, SolrQueryResponse rsp) throws IOException {
     if (restoreFuture != null && !restoreFuture.isDone()) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
@@ -621,7 +604,7 @@ public class ReplicationHandler extends RequestHandlerBase
     rsp.add(STATUS, OK_STATUS);
   }
 
-  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
+  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp) {
     try {
       int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM, 0);
       String location = params.get(CoreAdminParams.BACKUP_LOCATION);
@@ -817,14 +800,6 @@ public class ReplicationHandler extends RequestHandlerBase
               executorStartTime
                   + TimeUnit.MILLISECONDS.convert(pollIntervalNs, TimeUnit.NANOSECONDS));
     return nextTime;
-  }
-
-  int getTimesReplicatedSinceStartup() {
-    return numTimesReplicated;
-  }
-
-  void setTimesReplicatedSinceStartup() {
-    numTimesReplicated++;
   }
 
   @Override
@@ -1062,7 +1037,7 @@ public class ReplicationHandler extends RequestHandlerBase
             follower.add("replicationStartTime", replicationStartTimeStamp.toString());
           }
           long elapsed = fetcher.getReplicationTimeElapsed();
-          follower.add("timeElapsed", String.valueOf(elapsed) + "s");
+          follower.add("timeElapsed", elapsed + "s");
 
           if (bytesDownloaded > 0)
             estimatedTimeRemaining =
@@ -1078,7 +1053,7 @@ public class ReplicationHandler extends RequestHandlerBase
           follower.add("currentFileSizePercent", String.valueOf(percentDownloaded));
           follower.add("bytesDownloaded", NumberUtils.readableSize(bytesDownloaded));
           follower.add("totalPercent", String.valueOf(totalPercent));
-          follower.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
+          follower.add("timeRemaining", estimatedTimeRemaining + "s");
           follower.add("downloadSpeed", NumberUtils.readableSize(downloadSpeed));
         } catch (Exception e) {
           log.error("Exception while writing replication details: ", e);
@@ -1133,7 +1108,7 @@ public class ReplicationHandler extends RequestHandlerBase
         return null;
       }
     } else if (clzz == List.class) {
-      String ss[] = s.split(",");
+      String[] ss = s.split(",");
       List<String> l = new ArrayList<>();
       for (String s1 : ss) {
         l.add(new Date(Long.parseLong(s1)).toString());
@@ -1291,11 +1266,11 @@ public class ReplicationHandler extends RequestHandlerBase
     if (enableLeader) {
       includeConfFiles = (String) leader.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
-        List<String> files = Arrays.asList(includeConfFiles.split(","));
+        String[] files = includeConfFiles.split(",");
         for (String file : files) {
           if (file.trim().length() == 0) continue;
           String[] strs = file.trim().split(":");
-          // if there is an alias add it or it is null
+          // if there is an alias add it, or it is null
           confFileNameAlias.add(strs[0], strs.length > 1 ? strs[1] : null);
         }
         log.info("Replication enabled for following config files: {}", includeConfFiles);
@@ -1366,7 +1341,7 @@ public class ReplicationHandler extends RequestHandlerBase
             }
           }
 
-          // ensure the writer is init'd so that we have a list of commit points
+          // ensure the writer is initialized so that we have a list of commit points
           RefCounted<IndexWriter> iw =
               core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
           iw.decref();
@@ -1526,7 +1501,6 @@ public class ReplicationHandler extends RequestHandlerBase
       String hr = m.group(1);
       String min = m.group(2);
       String sec = m.group(3);
-      result = 0;
       try {
         if (sec != null && sec.length() > 0) result += Integer.parseInt(sec);
         if (min != null && min.length() > 0) result += (60 * Integer.parseInt(min));
@@ -1551,19 +1525,12 @@ public class ReplicationHandler extends RequestHandlerBase
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
   // in case of TLOG replica, if leaderVersion = zero, don't do commit
-  // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data
+  // otherwise updates from current tlog won't be copied over properly to the new tlog, leading to
+  // data
   // loss
   // don't commit on leader version zero for PULL replicas as PULL should only get its index
   // state from leader
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
-
-  /**
-   * @deprecated Only used for backwards compatibility. Use {@link
-   *     #SKIP_COMMIT_ON_LEADER_VERSION_ZERO}
-   */
-  @Deprecated
-  public static final String LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO =
-      "skipCommitOnMasterVersionZero";
 
   public static final String MESSAGE = "message";
 
@@ -1602,8 +1569,6 @@ public class ReplicationHandler extends RequestHandlerBase
   public static final String SIZE = "size";
 
   public static final String ALIAS = "alias";
-
-  public static final String CONF_CHECKSUM = "confchecksum";
 
   public static final String CONF_FILES = "confFiles";
 
