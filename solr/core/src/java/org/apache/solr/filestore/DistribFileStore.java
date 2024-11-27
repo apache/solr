@@ -517,6 +517,8 @@ public class DistribFileStore implements FileStore {
         // invoke delete command on all nodes asynchronously
         solrClient.requestWithBaseUrl(baseUrl, client -> client.requestAsync(solrRequest));
       } catch (SolrServerException | IOException e) {
+        // Note: This catch block will not handle failures from the asynchronous request,
+        // as requestAsync returns immediately and does not propagate remote exceptions.
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Failed to delete " + path + " on node " + node,

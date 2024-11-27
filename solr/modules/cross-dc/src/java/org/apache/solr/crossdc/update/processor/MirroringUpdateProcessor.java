@@ -223,9 +223,8 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
         boolean done = false;
         while (!done) {
           q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-          var baseUrl = cmd.getReq().getCore().getCoreContainer().getZkController().getBaseUrl();
           var client = cmd.getReq().getCoreContainer().getDefaultHttpSolrClient();
-          QueryResponse rsp = client.requestWithBaseUrl(baseUrl, c -> c.query(collection, q));
+          QueryResponse rsp = client.query(collection, q);
           String nextCursorMark = rsp.getNextCursorMark();
 
           if (log.isDebugEnabled()) {
