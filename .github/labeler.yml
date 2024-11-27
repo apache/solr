@@ -2,7 +2,8 @@
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
-        - versions.props
+        - gradle/libs.versions.toml # Solr 10+
+        - versions.props # Solr < v10
         - versions.lock
         - solr/licenses/**
 

@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -60,9 +61,17 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public abstract class LBSolrClient extends SolrClient {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected static final String UPDATE_LIVE_SERVER_MESSAGE = "Updated alive server list";
+
+  private static final String UPDATE_LIVE_SERVER_LOG = UPDATE_LIVE_SERVER_MESSAGE + ": {}";
 
   // defaults
   protected static final Set<Integer> RETRY_CODES =
@@ -412,6 +421,9 @@ public abstract class LBSolrClient extends SolrClient {
   protected void updateAliveList() {
     synchronized (aliveServers) {
       aliveServerList = aliveServers.values().toArray(new EndpointWrapper[0]);
+      if (log.isDebugEnabled()) {
+        log.debug(UPDATE_LIVE_SERVER_LOG, Arrays.toString(aliveServerList));
+      }
     }
   }
 

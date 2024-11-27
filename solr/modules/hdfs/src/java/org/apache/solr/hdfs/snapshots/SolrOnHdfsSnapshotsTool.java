@@ -35,13 +35,14 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.cli.CLIO;
+import org.apache.solr.cli.CommonCLIOptions;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -61,28 +62,59 @@ import org.slf4j.LoggerFactory;
  * This class provides utility functions required for Solr on HDFS specific snapshots'
  * functionality.
  *
+ * <p>If HDFS remains in Solr 10, then we should migrate this to extending ToolBase
+ *
  * <p>For general purpose snapshot tooling see the related classes in the {@link
  * org.apache.solr.cli} package.
  */
 public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String PREPARE_FOR_EXPORT = "prepare-snapshot-export";
-  private static final String HELP = "help";
-  private static final String COLLECTION = "c";
-  private static final String TEMP_DIR = "t";
-  private static final String DEST_DIR = "d";
-  private static final String SOLR_ZK_ENSEMBLE = "z";
-  private static final String HDFS_PATH_PREFIX = "p";
+  private static final Option PREPARE_FOR_EXPORT_OPTION =
+      Option.builder()
+          .longOpt("prepare-snapshot-export")
+          .hasArg()
+          .desc(
+              "The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
+          .build();
+  private static final Option HDFS_PATH_PREFIX_OPTION =
+      Option.builder("p")
+          .hasArg()
+          .desc(
+              "This parameter specifies the HDFS URI prefix to be used "
+                  + "during snapshot export preparation. This is applicable only if the Solr collection index files are stored on HDFS.")
+          .build();
+
+  private static final Option TEMP_DIR_OPTION =
+      Option.builder("t")
+          .hasArg()
+          .desc(
+              "This parameter specifies the path of a temporary directory on local filesystem"
+                  + " during prepare-snapshot-export command.")
+          .build();
+  private static final Option COLLECTION_OPTION =
+      Option.builder("c")
+          .hasArg()
+          .desc(
+              "This parameter specifies the name of the collection to be used during snapshot operation")
+          .build();
+  private static final Option DEST_DIR_OPTION =
+      Option.builder("d")
+          .hasArg()
+          .desc(
+              "This parameter specifies the path on shared file-system (e.g. HDFS) where the snapshot related"
+                  + " information should be stored.")
+          .build();
+
   private static final List<String> OPTION_HELP_ORDER =
       Arrays.asList(
-          PREPARE_FOR_EXPORT,
-          HELP,
-          SOLR_ZK_ENSEMBLE,
-          COLLECTION,
-          DEST_DIR,
-          TEMP_DIR,
-          HDFS_PATH_PREFIX);
+          PREPARE_FOR_EXPORT_OPTION.getLongOpt(),
+          CommonCLIOptions.HELP_OPTION.getOpt(),
+          CommonCLIOptions.ZK_HOST_OPTION.getOpt(),
+          COLLECTION_OPTION.getOpt(),
+          DEST_DIR_OPTION.getOpt(),
+          TEMP_DIR_OPTION.getOpt(),
+          HDFS_PATH_PREFIX_OPTION.getOpt());
 
   private final CloudSolrClient solrClient;
 
@@ -248,43 +280,17 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
   }
 
   public static void main(String[] args) throws IOException {
-    CommandLineParser parser = new PosixParser();
+    CommandLineParser parser = new DefaultParser();
     Options options = new Options();
 
-    options.addOption(
-        null,
-        PREPARE_FOR_EXPORT,
-        true,
-        "This command will prepare copylistings for the specified snapshot."
-            + " This command should only be used only if Solr is deployed with Hadoop and collection index files are stored on a shared"
-            + " file-system e.g. HDFS");
+    options.addOption(PREPARE_FOR_EXPORT_OPTION);
 
-    options.addOption(
-        null,
-        HELP,
-        false,
-        "This command will print the help message for the snapshots related commands.");
-    options.addOption(
-        TEMP_DIR,
-        true,
-        "This parameter specifies the path of a temporary directory on local filesystem"
-            + " during prepare-snapshot-export command.");
-    options.addOption(
-        DEST_DIR,
-        true,
-        "This parameter specifies the path on shared file-system (e.g. HDFS) where the snapshot related"
-            + " information should be stored.");
-    options.addOption(
-        COLLECTION,
-        true,
-        "This parameter specifies the name of the collection to be used during snapshot operation");
-    options.addOption(
-        SOLR_ZK_ENSEMBLE, true, "This parameter specifies the Solr Zookeeper ensemble address");
-    options.addOption(
-        HDFS_PATH_PREFIX,
-        true,
-        "This parameter specifies the HDFS URI prefix to be used"
-            + " during snapshot export preparation. This is applicable only if the Solr collection index files are stored on HDFS.");
+    options.addOption(CommonCLIOptions.HELP_OPTION);
+    options.addOption(TEMP_DIR_OPTION);
+    options.addOption(DEST_DIR_OPTION);
+    options.addOption(COLLECTION_OPTION);
+    options.addOption(CommonCLIOptions.ZK_HOST_OPTION);
+    options.addOption(HDFS_PATH_PREFIX_OPTION);
 
     CommandLine cmd = null;
     try {
@@ -295,15 +301,15 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
       System.exit(1);
     }
 
-    if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
+    if (cmd.hasOption(PREPARE_FOR_EXPORT_OPTION)) {
       try (SolrOnHdfsSnapshotsTool tool =
-          new SolrOnHdfsSnapshotsTool(requiredArg(options, cmd, SOLR_ZK_ENSEMBLE))) {
-        if (cmd.hasOption(PREPARE_FOR_EXPORT)) {
-          String snapshotName = cmd.getOptionValue(PREPARE_FOR_EXPORT);
-          String collectionName = requiredArg(options, cmd, COLLECTION);
-          String localFsDir = requiredArg(options, cmd, TEMP_DIR);
-          String hdfsOpDir = requiredArg(options, cmd, DEST_DIR);
-          String pathPrefix = cmd.getOptionValue(HDFS_PATH_PREFIX);
+          new SolrOnHdfsSnapshotsTool(requiredArg(options, cmd, CommonCLIOptions.ZK_HOST_OPTION))) {
+        if (cmd.hasOption(PREPARE_FOR_EXPORT_OPTION)) {
+          String snapshotName = cmd.getOptionValue(PREPARE_FOR_EXPORT_OPTION);
+          String collectionName = requiredArg(options, cmd, COLLECTION_OPTION);
+          String localFsDir = requiredArg(options, cmd, TEMP_DIR_OPTION);
+          String hdfsOpDir = requiredArg(options, cmd, DEST_DIR_OPTION);
+          String pathPrefix = cmd.getOptionValue(HDFS_PATH_PREFIX_OPTION);
 
           if (pathPrefix != null) {
             try {
@@ -320,7 +326,7 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
           tool.prepareForExport(collectionName, snapshotName, localFsDir, pathPrefix, hdfsOpDir);
         }
       }
-    } else if (cmd.hasOption(HELP)) {
+    } else if (cmd.hasOption(CommonCLIOptions.HELP_OPTION)) {
       printHelp(options);
     } else {
       CLIO.out("Unknown command specified.");
@@ -328,7 +334,7 @@ public class SolrOnHdfsSnapshotsTool implements Closeable, CLIO {
     }
   }
 
-  private static String requiredArg(Options options, CommandLine cmd, String optVal) {
+  private static String requiredArg(Options options, CommandLine cmd, Option optVal) {
     if (!cmd.hasOption(optVal)) {
       CLIO.out("Please specify the value for option " + optVal);
       printHelp(options);

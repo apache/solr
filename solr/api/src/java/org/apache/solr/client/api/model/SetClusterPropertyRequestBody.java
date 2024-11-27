@@ -15,17 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-/**
- * {@link SolrJerseyResponse} implementation with a warning field indicating that the format may
- * change
- */
-public class ExperimentalResponse extends SolrJerseyResponse {
-  @JsonProperty("WARNING")
-  public String warning =
-      "This response format is experimental.  It is likely to change in the future.";
+public class SetClusterPropertyRequestBody {
+  @Schema(description = "The value to assign to the property.")
+  @JsonProperty("value")
+  public String value;
 }
