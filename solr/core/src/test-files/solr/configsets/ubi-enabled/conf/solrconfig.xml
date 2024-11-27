@@ -36,7 +36,7 @@
   </updateHandler>
   
   <searchComponent name="ubi" class="org.apache.solr.handler.component.UBIComponent" >
-    <str name="ubiQueryStreamProcessingExpression">ubi-query-pipeline.expr</str>
+    <str name="queryProcessingExpression">ubi-query-pipeline.expr</str>
   </searchComponent>
   
   <requestHandler name="/select" class="solr.SearchHandler">

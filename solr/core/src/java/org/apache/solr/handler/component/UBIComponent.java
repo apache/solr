@@ -156,11 +156,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     SolrClientCache solrClientCache = coreContainer.getSolrClientCache();
 
     String expr;
-    String ubiQueryStreamProcessingExpression = initArgs.get("ubiQueryStreamProcessingExpression");
+    String queryProcessingExpression = null;
+    if (initArgs != null) {
+      queryProcessingExpression = initArgs.get("queryProcessingExpression");
+    }
 
-    if (ubiQueryStreamProcessingExpression == null) {
+    if (queryProcessingExpression == null) {
       log.info(
-          "No 'ubiQueryStreamProcessingExpression' file provided to describe processing of UBI query information.");
+          "No 'queryProcessingExpression' file provided to describe processing of UBI query information.");
       log.info(
           "Writing out UBI query information to local $SOLR_HOME/userfiles/ubi_queries.jsonl file instead.");
       // Most simplistic version
@@ -170,9 +173,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       expr = "logging(ubi_queries.jsonl,ubiQuery())";
 
       // feels like 'stream' or 'get' or something should let me create a tuple out of something
-      // in the
-      // streamContext.   That would turn the "ubi-query" object in the context into a nice
-      // tuple and return it.
+      // in the streamContext.   That would turn the "ubi-query" object in the stream context into a nice
+      // tuple and return it.  streamContext(ubi-query)??
       // expr = "logging(ubi_queries.jsonl," + "get(ubi-query)" + ")";
     } else {
 
@@ -180,13 +182,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       try (LineNumberReader bufferedReader =
           new LineNumberReader(
               new InputStreamReader(
-                  core.getResourceLoader().openResource(ubiQueryStreamProcessingExpression),
+                  core.getResourceLoader().openResource(queryProcessingExpression),
                   StandardCharsets.UTF_8))) {
         expr = readExpression(bufferedReader, args);
       } catch (IOException ioe) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
-            "Error reading file " + ubiQueryStreamProcessingExpression,
+            "Error reading file " + queryProcessingExpression,
             ioe);
       }
     }
@@ -374,6 +376,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   @Override
   public String getDescription() {
-    return "A component that tracks the original user query and the resulting documents returned.";
+    return "A component that tracks the original user query and the resulting documents returned to understand the user.";
   }
 }
