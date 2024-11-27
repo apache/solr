@@ -370,7 +370,7 @@ goto done
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
-@echo   --solr.home dir  Sets the solr.solr.home system property; Solr will create core directories under
+@echo   --solr-home dir  Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the --server-dir parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
