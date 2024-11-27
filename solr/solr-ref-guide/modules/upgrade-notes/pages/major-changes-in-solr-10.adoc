@@ -62,8 +62,9 @@ The service installer now installs a `systemd` startup script instead of an `ini
 
 === SolrCloud request routing
 
-HTTP requests to SolrCloud that are for a specific core must be delivered to the node with that core.
-Past SolrCloud versions would scan all cores everywhere to find a node with the core, and if found then proxy the request.
+HTTP requests to SolrCloud that are for a specific core must be delivered to the node with that core, or else an HTTP 404 Not Found response will occur.
+Previously, SolrCloud would try too hard scanning the cluster's state to look for it and internally route/proxy it.
+If only one node is exposed to a client, and if the client uses the bin/solr export tool, it probably won't work.
 
 === Deprecation removals
 
