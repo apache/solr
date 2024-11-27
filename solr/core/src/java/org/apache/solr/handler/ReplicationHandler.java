@@ -302,8 +302,7 @@ public class ReplicationHandler extends RequestHandlerBase
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       populateCommitInfo(rsp);
     } else if (command.equals(CMD_DETAILS)) {
-      getReplicationDetails(
-          rsp, getBoolWithBackwardCompatibility(solrParams, "follower", "slave", true));
+      getReplicationDetails(rsp, solrParams.getBool("follower", true));
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
       rsp.add(STATUS, OK_STATUS);
@@ -311,29 +310,6 @@ public class ReplicationHandler extends RequestHandlerBase
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
     }
-  }
-
-  static boolean getBoolWithBackwardCompatibility(
-      SolrParams params, String preferredKey, String alternativeKey, boolean defaultValue) {
-    Boolean value = params.getBool(preferredKey);
-    if (value != null) {
-      return value;
-    }
-    return params.getBool(alternativeKey, defaultValue);
-  }
-
-  @SuppressWarnings("unchecked")
-  static <T> T getObjectWithBackwardCompatibility(
-      SolrParams params, String preferredKey, String alternativeKey, T defaultValue) {
-    Object value = params.get(preferredKey);
-    if (value != null) {
-      return (T) value;
-    }
-    value = params.get(alternativeKey);
-    if (value != null) {
-      return (T) value;
-    }
-    return defaultValue;
   }
 
   @SuppressWarnings("unchecked")
@@ -378,8 +354,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private void fetchIndex(SolrParams solrParams, SolrQueryResponse rsp)
       throws InterruptedException {
-    String leaderUrl =
-        getObjectWithBackwardCompatibility(solrParams, LEADER_URL, LEGACY_LEADER_URL, null);
+    String leaderUrl = solrParams.get(LEADER_URL, null);
     if (!isFollower && leaderUrl == null) {
       reportErrorOnResponse(rsp, "No follower configured or no 'leaderUrl' specified", null);
       return;
@@ -446,11 +421,7 @@ public class ReplicationHandler extends RequestHandlerBase
   private volatile IndexFetcher currentIndexFetcher;
 
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
-    String leaderUrl =
-        solrParams == null
-            ? null
-            : ReplicationHandler.getObjectWithBackwardCompatibility(
-                solrParams, LEADER_URL, LEGACY_LEADER_URL, null);
+    String leaderUrl = solrParams == null ? null : solrParams.get(LEADER_URL, null);
     if (!indexFetchLock.tryLock()) return IndexFetchResult.LOCK_OBTAIN_FAILED;
     if (core.getCoreContainer().isShutDown()) {
       log.warn("I was asked to replicate but CoreContainer is shutting down");
@@ -1259,14 +1230,14 @@ public class ReplicationHandler extends RequestHandlerBase
     } else {
       replicationHandlerConfig.numberBackupsToKeep = 0;
     }
-    NamedList<?> follower = getObjectWithBackwardCompatibility(initArgs, "follower", "slave");
+    NamedList<?> follower = (NamedList<?>) initArgs.get("follower");
     boolean enableFollower = isEnabled(follower);
     if (enableFollower) {
       currentIndexFetcher = pollingIndexFetcher = new IndexFetcher(follower, this, core);
       setupPolling((String) follower.get(POLL_INTERVAL));
       isFollower = true;
     }
-    NamedList<?> leader = getObjectWithBackwardCompatibility(initArgs, "leader", "master");
+    NamedList<?> leader = (NamedList<?>) initArgs.get("leader");
     boolean enableLeader = isEnabled(leader);
 
     if (enableLeader || (enableFollower && !currentIndexFetcher.fetchFromLeader)) {
@@ -1792,11 +1763,6 @@ public class ReplicationHandler extends RequestHandlerBase
   public static final String EXCEPTION = "exception";
 
   public static final String LEADER_URL = "leaderUrl";
-
-  /**
-   * @deprecated Only used for backwards compatibility. Use {@link #LEADER_URL}
-   */
-  @Deprecated public static final String LEGACY_LEADER_URL = "masterUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
