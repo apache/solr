@@ -111,8 +111,8 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       overwrite = params.getBool(OVERWRITE, false);
       langAllowlist = new HashSet<>();
       threshold = params.getDouble(THRESHOLD, DOCID_THRESHOLD_DEFAULT);
-      String legacyAllowList = params.get(LANG_WHITELIST, "");
-      if (legacyAllowList.length() > 0) {
+      final String legacyAllowList = params.get(LANG_WHITELIST, "").trim();
+      if (!legacyAllowList.isEmpty()) {
         // nowarn compile time string concatenation
         log.warn(
             LANG_WHITELIST
@@ -120,8 +120,8 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
                 + LANG_ALLOWLIST
                 + " instead."); // nowarn
       }
-      if (params.get(LANG_ALLOWLIST, legacyAllowList).length() > 0) {
-        for (String lang : params.get(LANG_ALLOWLIST, "").split(",")) {
+      if (!params.get(LANG_ALLOWLIST, legacyAllowList).isEmpty()) {
+        for (String lang : params.get(LANG_ALLOWLIST, legacyAllowList).split(",")) {
           langAllowlist.add(lang);
         }
       }

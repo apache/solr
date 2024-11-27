@@ -469,7 +469,53 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     ModifiableSolrParams parameters = new ModifiableSolrParams();
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
-    parameters.add("langid.allowlist", "no,en,sv");
+    parameters.add("langid.allowlist", "no,en,sv"); // Any other language will fallback to EN
+    parameters.add("langid.fallback", "en");
+    liProcessor = createLangIdProcessor(parameters);
+
+    assertLang(
+        "no",
+        "id",
+        "1no",
+        "name",
+        "Lucene",
+        "subject",
+        "Lucene er et fri/åpen kildekode programvarebibliotek for informasjonsgjenfinning, opprinnelig utviklet i programmeringsspråket Java av Doug Cutting. Lucene støttes av Apache Software Foundation og utgis under Apache-lisensen.");
+    assertLang(
+        "en",
+        "id",
+        "2en",
+        "name",
+        "Lucene",
+        "subject",
+        "Apache Lucene is a free/open source information retrieval software library, originally created in Java by Doug Cutting. It is supported by the Apache Software Foundation and is released under the Apache Software License.");
+    assertLang(
+        "sv",
+        "id",
+        "3sv",
+        "name",
+        "Maven",
+        "subject",
+        "Apache Maven är ett verktyg utvecklat av Apache Software Foundation och används inom systemutveckling av datorprogram i programspråket Java. Maven används för att automatiskt paketera (bygga) programfilerna till en distribuerbar enhet. Maven används inom samma område som Apache Ant men dess byggfiler är deklarativa till skillnad ifrån Ants skriptbaserade.");
+    // Based on our langid.allowlist config,
+    // the Thai document is an unknown language, thus, language detection must fall back to EN
+    assertLang(
+        "en",
+        "id",
+        "6th",
+        "name",
+        "บทความคัดสรรเดือนนี้",
+        "subject",
+        "อันเนอลีส มารี อันเนอ ฟรังค์ หรือมักรู้จักในภาษาไทยว่า แอนน์ แฟรงค์ เป็นเด็กหญิงชาวยิว เกิดที่เมืองแฟรงก์เฟิร์ต ประเทศเยอรมนี เธอมีชื่อเสียงโด่งดังในฐานะผู้เขียนบันทึกประจำวันซึ่งต่อมาได้รับการตีพิมพ์เป็นหนังสือ บรรยายเหตุการณ์ขณะหลบซ่อนตัวจากการล่าชาวยิวในประเทศเนเธอร์แลนด์ ระหว่างที่ถูกเยอรมนีเข้าครอบครองในช่วงสงครามโลกครั้งที่สอง");
+  }
+
+  @Test
+  public void testAllowlistBackwardsCompatabilityWithLegacyAllowlist() throws Exception {
+    // The "legacy allowlist" is "langid.whitelist"
+    ModifiableSolrParams parameters = new ModifiableSolrParams();
+    parameters.add("langid.fl", "name,subject");
+    parameters.add("langid.langField", "language_s");
+    parameters.add("langid.whitelist", "no,en,sv"); // Any other language will fallback to EN
     parameters.add("langid.fallback", "en");
     liProcessor = createLangIdProcessor(parameters);
 
