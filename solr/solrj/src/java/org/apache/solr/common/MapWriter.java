@@ -156,10 +156,4 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
       return (k, v) -> putNoEx(k, v);
     }
   }
-
-  /**
-   * @deprecated Use {@link MapWriters#EMPTY} instead.
-   */
-  @Deprecated(since = "9.8", forRemoval = true)
-  MapWriter EMPTY = MapWriters.EMPTY;
 }

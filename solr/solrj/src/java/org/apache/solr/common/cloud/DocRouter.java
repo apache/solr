@@ -36,25 +36,6 @@ import org.noggit.JSONWriter;
  * @lucene.experimental
  */
 public abstract class DocRouter {
-  /**
-   * @deprecated Use {@link DocRouters#DEFAULT_NAME} instead.
-   */
-  @Deprecated(since = "9.8", forRemoval = true)
-  public static final String DEFAULT_NAME = DocRouters.DEFAULT_NAME;
-
-  /**
-   * @deprecated Use {@link DocRouters#DEFAULT} instead.
-   */
-  @Deprecated(since = "9.8", forRemoval = true)
-  public static final DocRouter DEFAULT = DocRouters.DEFAULT;
-
-  /**
-   * @deprecated Use {@link DocRouters#getDocRouter(String)} instead.
-   */
-  @Deprecated(since = "9.8", forRemoval = true)
-  public static DocRouter getDocRouter(String routerName) {
-    return DocRouters.getDocRouter(routerName);
-  }
 
   public String getRouteField(DocCollection coll) {
     if (coll == null) return null;
@@ -72,7 +53,7 @@ public abstract class DocRouter {
       }
     }
     if (map.get("name") == null) {
-      map.put("name", DEFAULT_NAME);
+      map.put("name", DocRouters.DEFAULT_NAME);
     }
     return map;
   }

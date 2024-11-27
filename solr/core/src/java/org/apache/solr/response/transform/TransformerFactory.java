@@ -103,11 +103,4 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin {
       return true;
     }
   }
-
-  /**
-   * @deprecated Use {@link TransformerFactories#defaultFactories} instead.
-   */
-  @Deprecated(since = "9.8", forRemoval = true)
-  public static final Map<String, TransformerFactory> defaultFactories =
-      TransformerFactories.defaultFactories;
 }

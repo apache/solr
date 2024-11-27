@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -26,17 +25,6 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
   /** internal use - name of the default parser */
   public static final String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
-
-  /**
-   * Internal use - name to parser for the builtin parsers. Each query parser plugin extending
-   * {@link QParserPlugin} has own instance of standardPlugins. This leads to cyclic dependencies of
-   * static fields and to case when NAME field is not yet initialized. This result to NPE during
-   * initialization. For every plugin, listed here, NAME field has to be final and static.
-   *
-   * @deprecated Use {@link QParserPlugins#standardPlugins} instead.
-   */
-  @Deprecated(since = "9.8", forRemoval = true)
-  public static final Map<String, QParserPlugin> standardPlugins = QParserPlugins.standardPlugins;
 
   /** return a {@link QParser} */
   public abstract QParser createParser(
