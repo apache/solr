@@ -475,6 +475,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.add("langid.fallback", "en");
     liProcessor = createLangIdProcessor(parameters);
 
+    // Make sure that empty language codes have been filtered out and others trimmed.
     assertEquals(new HashSet<>(Arrays.asList("no", "en", "sv")), liProcessor.langAllowlist);
     assertLang(
         "no",
@@ -522,6 +523,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.add("langid.fallback", "en");
     liProcessor = createLangIdProcessor(parameters);
 
+    // Make sure that empty language codes have been filtered out and others trimmed.
     assertEquals(new HashSet<>(Arrays.asList("no", "en", "sv")), liProcessor.langAllowlist);
     assertLang(
         "no",
@@ -547,7 +549,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
         "Maven",
         "subject",
         "Apache Maven är ett verktyg utvecklat av Apache Software Foundation och används inom systemutveckling av datorprogram i programspråket Java. Maven används för att automatiskt paketera (bygga) programfilerna till en distribuerbar enhet. Maven används inom samma område som Apache Ant men dess byggfiler är deklarativa till skillnad ifrån Ants skriptbaserade.");
-    // Based on our langid.allowlist config,
+    // Based on our legacy langid.whitelist config,
     // the Thai document is an unknown language, thus, language detection must fall back to EN
     assertLang(
         "en",
