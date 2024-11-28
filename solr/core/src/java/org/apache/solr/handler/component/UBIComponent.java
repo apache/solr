@@ -42,7 +42,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.LoggingStream;
-import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -217,14 +216,68 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   }
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {}
-
-  @Override
-  public void process(ResponseBuilder rb) throws IOException {
+  public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
+    rb.setNeedDocList(true);
+  }
+
+  @Override
+  public void process(ResponseBuilder rb) throws IOException {
+    System.out.println("PROCESSS STAGE: " + rb.stage);
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false)) {
+      return;
+    }
+
+    doStuff(rb);
+  }
+
+  @Override
+  public int distributedProcess(ResponseBuilder rb) throws IOException {
+    System.out.println("STAGE: " + rb.stage);
+    System.out.println("STAGE rb.getResults(): " + (rb.getResults() != null));
+    System.out.println("getResponseDocs.size" + rb.getResponseDocs().size());
+
+    SolrParams params = rb.req.getParams();
+    if (!params.getBool(COMPONENT_NAME, false)) {
+      return ResponseBuilder.STAGE_DONE;
+    }
+
+    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_DONE;
+    }
+
+    doStuff(rb);
+
+    return ResponseBuilder.STAGE_DONE;
+  }
+
+  //  @Override
+  //  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+  //    SolrParams params = rb.req.getParams();
+  //    // rb.setNeedDocList(true);
+  //    if (!params.getBool(COMPONENT_NAME, false)) {
+  //      return;
+  //    }
+  //
+  //    // Turn on UBI only when retrieving fields
+  //    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
+  //      // should already be true...
+  //      sreq.params.set("ubi", "true");
+  //    } else {
+  //      sreq.params.set("ubi", "false");
+  //    }
+  //  }
+
+  public void doStuff(ResponseBuilder rb) throws IOException {
+
+    SolrParams params = rb.req.getParams();
+    // if (!params.getBool(COMPONENT_NAME, false)) {
+    //  return;
+    // }
 
     SolrIndexSearcher searcher = rb.req.getSearcher();
 
@@ -233,8 +286,11 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     ubiQuery.setUserQuery(params.get(USER_QUERY));
     ubiQuery.setApplication(params.get(APPLICATION));
-    if (ubiQuery.getApplication() == null){
-      ubiQuery.setApplication(rb.req.getCloudDescriptor().getCollectionName());
+    if (ubiQuery.getApplication() == null) {
+      ubiQuery.setApplication(
+          rb.isDistrib
+              ? rb.req.getCloudDescriptor().getCollectionName()
+              : searcher.getCore().getName());
     }
 
     String queryAttributes = params.get(QUERY_ATTRIBUTES);
@@ -255,8 +311,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       }
     }
 
-    ResultContext rc = (ResultContext) rb.rsp.getResponse();
-    DocList docs = rc.getDocList();
+    // ResultContext rc = (ResultContext) rb.rsp.getResponse();
+    // DocList docs = rc.getDocList();
+    DocList docs = rb.getResults().docList;
 
     String docIds = extractDocIds(docs, searcher);
     ubiQuery.setDocIds(docIds);
