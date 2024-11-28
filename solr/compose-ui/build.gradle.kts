@@ -52,6 +52,7 @@ kotlin {
                         add(project.projectDir.path)
                     }
                 }
+                // Note that webpack.config.d/ contains additional configuration
             }
         }
         binaries.executable()
