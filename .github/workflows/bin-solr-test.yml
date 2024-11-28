@@ -11,6 +11,12 @@ on:
       - 'solr/packaging/**'
       - 'solr/core/src/java/org/apache/solr/cli/**'
       - 'solr/prometheus-exporter/**'
+  # Wait for dependabot tasks to complete, if any
+  workflow_run:
+    workflows:
+      - Dependabot Tasks
+    types:
+      - completed
 
 jobs:
   test:
@@ -24,6 +30,9 @@ jobs:
     steps:
     # Setup
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+        fetch-depth: 0
     - name: Set up JDK
       uses: actions/setup-java@v4
       with:

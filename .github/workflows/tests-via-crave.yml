@@ -5,6 +5,12 @@ on:
     branches:
       - 'main'
       - 'branch_*'
+  # Wait for dependabot tasks to complete, if any
+  workflow_run:
+    workflows:
+      - Dependabot Tasks
+    types:
+      - completed
 
 jobs:
   test:
