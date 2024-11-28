@@ -74,7 +74,6 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.ee8.nested.SessionHandler;
 import org.eclipse.jetty.ee8.servlet.FilterHolder;
 import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee8.servlet.ServletHolder;
@@ -351,7 +350,7 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
 
       server.setConnectors(new Connector[] {connector});
-      // server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
+      server.addBean(new DefaultSessionIdManager(server, new Random()), true);
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector =
@@ -372,11 +371,6 @@ public class JettySolrRunner {
       final ServletContextHandler root =
           new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
       root.setResourceBase(".");
-      if (System.getProperty("jetty.testMode") != null) {
-        SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
-        root.setSessionHandler(sessionHandler);
-      }
       root.addEventListener(
           // Install CCP first.  Subclass CCP to do some pre-initialization
           new CoreContainerProvider() {
