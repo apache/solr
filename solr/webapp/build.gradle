@@ -94,10 +94,17 @@ task downloadBrowserify(type: NpmTask) {
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
-task generateComposeUiFiles {
-  // Generate and add files of new UI to outputs for later referencing
-  dependsOn project(":solr:compose-ui").tasks.wasmJsBrowserDistribution
+task generateComposeUiDevFiles {
+  // Generate new UI for development and add files to outputs for later referencing
+  // Development files are larger in size but have shorter compile times.
+  dependsOn project(":solr:compose-ui").tasks.wasmJsBrowserDevelopmentExecutableDistribution
+  outputs.dir(project(':solr:compose-ui').file('build/dist/wasmJs/developmentExecutable/'))
+}
 
+task generateComposeUiProdFiles {
+  // Generate new UI for production and add files to outputs for later referencing
+  // Production files are smaller in size but have longer compile times.
+  dependsOn project(":solr:compose-ui").tasks.wasmJsBrowserDistribution
   outputs.dir(project(':solr:compose-ui').file('build/dist/wasmJs/productionExecutable/'))
 }
 
@@ -145,9 +152,16 @@ war {
   })
 
   // Include new UI files in webapp
-  from (tasks.generateComposeUiFiles, {
-    into "compose"
-  })
+  // def isDevelopment = project.findProperty('development') == 'true'
+  if (project.findProperty('development')) {
+    from (tasks.generateComposeUiDevFiles) {
+      into "compose"
+    }
+  } else {
+    from (tasks.generateComposeUiProdFiles) {
+      into "compose"
+    }
+  }
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.
