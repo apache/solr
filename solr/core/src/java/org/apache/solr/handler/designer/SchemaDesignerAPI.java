@@ -354,7 +354,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
 
     if (textValue != null) {
-      Map<String, Object> analysis = configSetHelper.analyzeField(configSet, fieldName, textValue);
+      var analysis = configSetHelper.analyzeField(configSet, fieldName, textValue);
       rsp.getValues().addAll(Map.of(idField, docId, fieldName, textValue, "analysis", analysis));
     }
   }

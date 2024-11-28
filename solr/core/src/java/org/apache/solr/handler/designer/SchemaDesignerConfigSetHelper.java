@@ -18,7 +18,6 @@
 package org.apache.solr.handler.designer;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
@@ -31,8 +30,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -57,8 +54,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -74,6 +69,7 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -81,7 +77,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -124,7 +119,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   @SuppressWarnings("unchecked")
-  Map<String, Object> analyzeField(String configSet, String fieldName, String fieldText)
+  NamedList<Object> analyzeField(String configSet, String fieldName, String fieldText)
       throws IOException {
     final String mutableId = getMutableId(configSet);
     var solrParams = new ModifiableSolrParams();
@@ -134,19 +129,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/analysis/field", solrParams);
     request.withContent(fieldText.getBytes(StandardCharsets.UTF_8), "text/plain");
     request.setRequiresCollection(true);
-    request.setResponseParser(new InputStreamResponseParser(null));
-    InputStream is = null;
     try {
       var resp = request.process(cloudClient(), mutableId).getResponse();
-      is = (InputStream) resp.get("stream");
-      Map<String, Object> response =
-          (Map<String, Object>)
-              fromJSONString(new String(is.readAllBytes(), StandardCharsets.UTF_8));
-      return (Map<String, Object>) response.get("analysis");
+      return (NamedList<Object>) resp.get("analysis");
     } catch (SolrServerException e) {
-      throw new RuntimeException(e);
-    } finally {
-      IOUtils.closeQuietly(is);
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -508,21 +495,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
-    List<SolrInputDocument> docs = null;
-
-    final URI uri;
-    try {
-      uri =
-          collectionApiEndpoint(BLOB_STORE_ID, "blob", configSet + "_sample")
-              .setParameter(CommonParams.WT, "filestream")
-              .build();
-
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-    final var params = new ModifiableSolrParams();
-    var request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample", params);
+    var request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample");
     request.setRequiresCollection(true);
     request.setResponseParser(new InputStreamResponseParser("filestream"));
     InputStream inputStream = null;
@@ -536,32 +509,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     } catch (SolrServerException e) {
       throw new IOException("Failed to lookup stored docs for " + configSet + " due to: " + e);
     } finally {
-      assert inputStream != null;
-      inputStream.close();
+      IOUtils.closeQuietly(inputStream);
     }
-
-    /*HttpGet httpGet = new HttpGet(uri);
-    try {
-      HttpResponse entity =
-          ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
-      int statusCode = entity.getStatusLine().getStatusCode();
-      if (statusCode == HttpStatus.SC_OK) {
-        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
-        if (bytes.length > 0) {
-          docs = (List<SolrInputDocument>) Utils.fromJavabin(bytes);
-        }
-      } else if (statusCode != HttpStatus.SC_NOT_FOUND) {
-        byte[] bytes = readAllBytes(() -> entity.getEntity().getContent());
-        throw new IOException(
-            "Failed to lookup stored docs for "
-                + configSet
-                + " due to: "
-                + new String(bytes, StandardCharsets.UTF_8));
-      } // else not found is ok
-    } finally {
-      httpGet.releaseConnection();
-    }
-    return docs != null ? docs : Collections.emptyList();*/
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
@@ -581,33 +530,11 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     var request = new GenericSolrRequest(SolrRequest.METHOD.POST, "/blob/" + blobName);
     request.withContent(bytes, BinaryResponseParser.BINARY_CONTENT_TYPE);
     request.setRequiresCollection(true);
-
     try {
       request.process(cloudClient, BLOB_STORE_ID);
-    } catch (Exception e) {
-      // throw new IOException(e);
+    } catch (SolrServerException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
-    /*final URI uri;
-    try {
-      uri = collectionApiEndpoint(BLOB_STORE_ID, "blob", blobName).build();
-    } catch (URISyntaxException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
-
-    HttpPost httpPost = new HttpPost(uri);
-    try {
-      httpPost.setHeader("Content-Type", "application/octet-stream");
-      httpPost.setEntity(new ByteArrayEntity(bytes));
-      HttpResponse resp = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpPost);
-      int statusCode = resp.getStatusLine().getStatusCode();
-      if (statusCode != HttpStatus.SC_OK) {
-        throw new SolrException(
-            SolrException.ErrorCode.getErrorCode(statusCode),
-            EntityUtils.toString(resp.getEntity(), StandardCharsets.UTF_8));
-      }
-    } finally {
-      httpPost.releaseConnection();
-    }*/
   }
 
   private String getBaseUrl(final String collection) {
@@ -631,19 +558,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
 
     return baseUrl;
-  }
-
-  private URIBuilder collectionApiEndpoint(
-      final String collection, final String... morePathSegments) throws URISyntaxException {
-    URI baseUrl = new URI(getBaseUrl(collection));
-    // build up a list of path segments including any path in the base URL, collection, and
-    // additional segments provided by caller
-    List<String> path = new ArrayList<>(URLEncodedUtils.parsePathSegments(baseUrl.getPath()));
-    path.add(collection);
-    if (morePathSegments != null && morePathSegments.length > 0) {
-      path.addAll(Arrays.asList(morePathSegments));
-    }
-    return new URIBuilder(baseUrl).setPathSegments(path);
   }
 
   protected String getManagedSchemaZkPath(final String configSet) {
