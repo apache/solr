@@ -103,6 +103,8 @@ Bug Fixes
 * SOLR-16976: Remove log4j-jul jar and use slf4j bridge for JUL to prevent exception from being logged when remote JMX
   is enabled (Shawn Heisey, Stephen Zhou, Eric Pugh, Christine Poerschke, David Smiley)
 
+* SOLR-17575: Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid. (Jan Høydahl, Alexander Zagniotov)
+
 Dependency Upgrades
 ---------------------
 (No changes)
