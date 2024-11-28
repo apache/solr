@@ -111,8 +111,8 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
 
   public static final Map<String, Class<? extends SearchComponent>> STANDARD_COMPONENTS =
       Map.ofEntries(
-          Map.entry(HighlightComponent.COMPONENT_NAME, HighlightComponent.class),
           Map.entry(QueryComponent.COMPONENT_NAME, QueryComponent.class),
+          Map.entry(HighlightComponent.COMPONENT_NAME, HighlightComponent.class),
           Map.entry(FacetComponent.COMPONENT_NAME, FacetComponent.class),
           Map.entry(FacetModule.COMPONENT_NAME, FacetModule.class),
           Map.entry(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class),
