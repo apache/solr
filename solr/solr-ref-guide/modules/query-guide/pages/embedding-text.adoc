@@ -16,7 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-With the *Large Language Model* (or *LLM* for short) module you can interact with Large Language Models in Solr to encode text to vectors at indexing and query time.
+This module brings the power of *Large Language Models* (*LLM*s) to Solr.  More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.  The state-of-the-art of such services use an LLM, hence the name of this module. 
+_Without_ this module, vectors must be supplied _to_ Solr for indexing & searching, possibly coordinating with such services.
 
 
 == Text Embedding Concepts
