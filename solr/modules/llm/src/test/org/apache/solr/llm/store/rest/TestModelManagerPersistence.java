@@ -41,23 +41,13 @@ public class TestModelManagerPersistence extends TestLlmBase {
 
   @Test
   public void testModelAreStoredCompact() throws Exception {
-    loadModel(
-        "cohere1",
-        CohereEmbeddingModel.class.getName(),
-        "{"
-            + "baseUrl:\"https://api.cohere.ai/v1/\","
-            + "apiKey:\"cohereApiKey2\","
-            + "modelName:\"embed-english-light-v3.0\","
-            + "inputType:\"search_document\","
-            + "logRequests:true,"
-            + "logResponses:false"
-            + "}");
-
-    final String embeddingModelStoreContent =
+    loadModel("cohere-model.json");
+    
+    final String JSONOnDisk =
         Files.readString(embeddingModelStoreFile, StandardCharsets.UTF_8);
-    Object embeddingModelStoreObject = Utils.fromJSONString(embeddingModelStoreContent);
+    Object objectFromDisk = Utils.fromJSONString(JSONOnDisk);
     assertEquals(
-        new String(Utils.toJSON(embeddingModelStoreObject, -1), UTF_8), embeddingModelStoreContent);
+        new String(Utils.toJSON(objectFromDisk, -1), UTF_8), JSONOnDisk);
   }
 
   @Test
