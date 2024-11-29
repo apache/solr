@@ -43,7 +43,7 @@ public class SolrEmbeddingModel implements Accountable {
   private final String name;
   private final Map<String, Object> params;
   private final EmbeddingModel textToVector;
-  private final Integer hashCode;
+  private final int hashCode;
 
   public static SolrEmbeddingModel getInstance(
       SolrResourceLoader solrResourceLoader,
@@ -63,12 +63,21 @@ public class SolrEmbeddingModel implements Accountable {
       var builder = modelClass.getMethod("builder").invoke(null);
       if (params != null) {
         /**
-         * Some {@link dev.langchain4j.model.embedding.EmbeddingModel} classes have params of
-         * specific types that must be constructed, for primitive types we can resort to the
-         * default. N.B. when adding support to new models, pay attention to all the parameters they
-         * support, some of them may require to be handled in here as separate switch cases
+         * This block of code has the responsibility of instantiate a {@link
+         * dev.langchain4j.model.embedding.EmbeddingModel} using the params provided.classes have
+         * params of The specific implementation of {@link
+         * dev.langchain4j.model.embedding.EmbeddingModel} is not known beforehand. So we benefit of
+         * the design choice in langchain4j that each subclass implementing {@link
+         * dev.langchain4j.model.embedding.EmbeddingModel} uses setters with the same name of the
+         * param.
          */
         for (String paramName : params.keySet()) {
+          /*
+           * When a param is not primitive, we need to instantiate the object explicitly and then call the
+           * setter method.
+           * N.B. when adding support to new models, pay attention to all the parameters they
+           * support, some of them may require to be handled in here as separate switch cases
+           */
           switch (paramName) {
             case TIMEOUT_PARAM:
               Duration timeOut = Duration.ofSeconds((Long) params.get(paramName));
@@ -86,6 +95,10 @@ public class SolrEmbeddingModel implements Accountable {
                   .getMethod(paramName, Integer.class)
                   .invoke(builder, ((Long) params.get(paramName)).intValue());
               break;
+              /*
+               * For primitive params if there's only one setter available, we call it.
+               * If there's choice we default to the string one
+               */
             default:
               ArrayList<Method> paramNameMatches = new ArrayList<>();
               for (var method : builder.getClass().getMethods()) {
@@ -99,7 +112,7 @@ public class SolrEmbeddingModel implements Accountable {
                 builder
                     .getClass()
                     .getMethod(paramName, String.class)
-                    .invoke(builder, params.get(paramName));
+                    .invoke(builder, params.get(paramName).toString());
               }
           }
         }

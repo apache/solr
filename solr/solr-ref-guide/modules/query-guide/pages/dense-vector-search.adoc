@@ -340,7 +340,7 @@ Here's an example of a simple `text_to_vector` search:
 
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
 
-For more details on how to work with embedding text in Apache Solr, please refer to the dedicated page: xref:embedding-text.adoc[Embedding Text]
+For more details on how to work with embedding text in Apache Solr, please refer to the dedicated page: xref:text-to-vector.adoc[Text to Vector]
 
 === vectorSimilarity Query Parser
 
