@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
+import org.apache.solr.llm.texttovector.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.util.RestTestBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +38,13 @@ public class TestLlmBase extends RestTestBase {
   protected static Path tmpSolrHome;
   protected static Path tmpConfDir;
 
-  public static final String MODEL_FILE_NAME = "_schema_embedding-model-store.json";
+  public static final String MODEL_FILE_NAME = "_schema_text-to-vector-model-store.json";
   protected static final String COLLECTION = "collection1";
   protected static final String CONF_DIR = COLLECTION + "/conf";
 
   protected static Path embeddingModelStoreFile = null;
 
   protected static String IDField = "id";
-  protected static String stringField = "string_field";
   protected static String vectorField = "vector";
   protected static String vectorField2 = "vector2";
   protected static String vectorFieldByteEncoding = "vector_byte_encoding";
@@ -93,22 +92,23 @@ public class TestLlmBase extends RestTestBase {
     }
     System.clearProperty("managed.schema.mutable");
   }
-  
+
   public static void loadModel(String fileName, String status) throws Exception {
     final URL url = TestLlmBase.class.getResource("/modelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-            ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status=="+status);
-    
+        ManagedTextToVectorModelStore.REST_END_POINT,
+        multipleModels,
+        "/responseHeader/status==" + status);
   }
-  
+
   public static void loadModel(String fileName) throws Exception {
     final URL url = TestLlmBase.class.getResource("/modelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
 
     assertJPut(
-        ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
+        ManagedTextToVectorModelStore.REST_END_POINT, multipleModels, "/responseHeader/status==0");
   }
 
   protected static void prepareIndex() throws Exception {

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.search;
+package org.apache.solr.llm.texttovector.search;
 
 import java.util.Arrays;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -38,7 +38,7 @@ public class TextToVectorQParserTest extends TestLlmBase {
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "/error/msg=='The model requested \\'not-exist\\' can\\'t be found in the store: /schema/embedding-model-store'",
+        "/error/msg=='The model requested \\'not-exist\\' can\\'t be found in the store: /schema/text-to-vector-model-store'",
         "/error/code==400");
   }
 
@@ -104,7 +104,7 @@ public class TextToVectorQParserTest extends TestLlmBase {
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "/error/msg=='Vector Encoding not supported in automatic text embedding: BYTE'",
+        "/error/msg=='Vector Encoding not supported : BYTE'",
         "/error/code==500");
   }
 

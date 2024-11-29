@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.embedding;
+package org.apache.solr.llm.texttovector.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
@@ -26,16 +26,17 @@ import java.util.Objects;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.store.EmbeddingModelException;
-import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
+import org.apache.solr.llm.texttovector.store.TextToVectorModelException;
+import org.apache.solr.llm.texttovector.store.rest.ManagedTextToVectorModelStore;
 
 /**
  * This object wraps a {@link dev.langchain4j.model.embedding.EmbeddingModel} to encode text to
- * vector. It's meant to be used as a managed resource with the {@link ManagedEmbeddingModelStore}
+ * vector. It's meant to be used as a managed resource with the {@link
+ * ManagedTextToVectorModelStore}
  */
-public class SolrEmbeddingModel implements Accountable {
+public class SolrTextToVectorModel implements Accountable {
   private static final long BASE_RAM_BYTES =
-      RamUsageEstimator.shallowSizeOfInstance(SolrEmbeddingModel.class);
+      RamUsageEstimator.shallowSizeOfInstance(SolrTextToVectorModel.class);
   private static final String TIMEOUT_PARAM = "timeout";
   private static final String MAX_SEGMENTS_PER_BATCH_PARAM = "maxSegmentsPerBatch";
   private static final String MAX_RETRIES_PARAM = "maxRetries";
@@ -45,12 +46,12 @@ public class SolrEmbeddingModel implements Accountable {
   private final EmbeddingModel textToVector;
   private final int hashCode;
 
-  public static SolrEmbeddingModel getInstance(
+  public static SolrTextToVectorModel getInstance(
       SolrResourceLoader solrResourceLoader,
       String className,
       String name,
       Map<String, Object> params)
-      throws EmbeddingModelException {
+      throws TextToVectorModelException {
     try {
       /*
        * The idea here is to build a {@link dev.langchain4j.model.embedding.EmbeddingModel} using inversion
@@ -118,13 +119,14 @@ public class SolrEmbeddingModel implements Accountable {
         }
       }
       textToVector = (EmbeddingModel) builder.getClass().getMethod("build").invoke(builder);
-      return new SolrEmbeddingModel(name, textToVector, params);
+      return new SolrTextToVectorModel(name, textToVector, params);
     } catch (final Exception e) {
-      throw new EmbeddingModelException("Model loading failed for " + className, e);
+      throw new TextToVectorModelException("Model loading failed for " + className, e);
     }
   }
 
-  public SolrEmbeddingModel(String name, EmbeddingModel textToVector, Map<String, Object> params) {
+  public SolrTextToVectorModel(
+      String name, EmbeddingModel textToVector, Map<String, Object> params) {
     this.name = name;
     this.textToVector = textToVector;
     this.params = params;
@@ -164,8 +166,8 @@ public class SolrEmbeddingModel implements Accountable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (!(obj instanceof SolrEmbeddingModel)) return false;
-    final SolrEmbeddingModel other = (SolrEmbeddingModel) obj;
+    if (!(obj instanceof SolrTextToVectorModel)) return false;
+    final SolrTextToVectorModel other = (SolrTextToVectorModel) obj;
     return Objects.equals(textToVector, other.textToVector) && Objects.equals(name, other.name);
   }
 

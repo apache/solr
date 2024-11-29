@@ -16,6 +16,6 @@
 -->
 
 The Large Language Model module for Solr provides a set of mechanisms for plugging in third party LLM implementations.
-It currently provides embedding models and text vectorisation through langChain4j.
+It currently provides text vectorisation through langChain4j.
 
 See https://solr.apache.org/guide/solr/latest/query-guide/text-to-vector.html for how to get started.

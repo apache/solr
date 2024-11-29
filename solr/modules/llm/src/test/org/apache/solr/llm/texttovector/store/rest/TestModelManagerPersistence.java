@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.store.rest;
+package org.apache.solr.llm.texttovector.store.rest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import dev.langchain4j.model.cohere.CohereEmbeddingModel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.apache.solr.common.util.Utils;
@@ -42,87 +41,85 @@ public class TestModelManagerPersistence extends TestLlmBase {
   @Test
   public void testModelAreStoredCompact() throws Exception {
     loadModel("cohere-model.json");
-    
-    final String JSONOnDisk =
-        Files.readString(embeddingModelStoreFile, StandardCharsets.UTF_8);
+
+    final String JSONOnDisk = Files.readString(embeddingModelStoreFile, StandardCharsets.UTF_8);
     Object objectFromDisk = Utils.fromJSONString(JSONOnDisk);
-    assertEquals(
-        new String(Utils.toJSON(objectFromDisk, -1), UTF_8), JSONOnDisk);
+    assertEquals(new String(Utils.toJSON(objectFromDisk, -1), UTF_8), JSONOnDisk);
   }
 
   @Test
   public void testModelStorePersistence() throws Exception {
     // check models are empty
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/==[]");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
     // load models and features from files
     loadModel("cohere-model.json");
 
     final String modelName = "cohere-1";
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+        ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/inputType=='search_document'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // check persistence after reload
     restTestHarness.reload();
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+        ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/inputType=='search_document'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // check persistence after restart
     getJetty().stop();
     getJetty().start();
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/baseUrl=='https://api.cohere.ai/v1/'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
+        ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/apiKey=='apiKey-cohere'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/modelName=='embed-english-light-v3.0'");
     assertJQ(
-        ManagedEmbeddingModelStore.REST_END_POINT,
+        ManagedTextToVectorModelStore.REST_END_POINT,
         "/models/[0]/params/inputType=='search_document'");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/timeout==60");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logRequests==true");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/[0]/params/logResponses==true");
 
     // delete loaded models and features
-    restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/==[]");
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/" + modelName);
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
     // check persistence after reload
     restTestHarness.reload();
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/==[]");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
 
     // check persistence after restart
     getJetty().stop();
     getJetty().start();
-    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/==[]");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models/==[]");
   }
 }

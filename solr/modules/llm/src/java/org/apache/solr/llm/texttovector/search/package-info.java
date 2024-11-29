@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Contains model store related classes. */
-package org.apache.solr.llm.store;
+/** APIs and classes for implementing text to vector QueryParsers. */
+package org.apache.solr.llm.texttovector.search;
