@@ -21,7 +21,6 @@ package org.apache.solr.monitor.search;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.search.BulkScorer;
@@ -40,9 +39,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.monitor.cache.MonitorQueryCache;
-import org.apache.solr.search.ExtendedQueryBase;
 
-class ReverseSearchQuery extends ExtendedQueryBase {
+class ReverseSearchQuery extends Query {
 
   private final ReverseSearchContext reverseSearchContext;
   private final Query presearchQuery;
@@ -53,22 +51,13 @@ class ReverseSearchQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public boolean getCache() {
-    return false;
-  }
-
-  @Override
   public void visit(QueryVisitor visitor) {
     presearchQuery.visit(visitor);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ReverseSearchQuery that = (ReverseSearchQuery) o;
-    return Objects.equals(reverseSearchContext, that.reverseSearchContext)
-        && Objects.equals(presearchQuery, that.presearchQuery);
+    return this == o;
   }
 
   @Override
@@ -82,7 +71,15 @@ class ReverseSearchQuery extends ExtendedQueryBase {
 
   @Override
   public int hashCode() {
-    return Objects.hash(reverseSearchContext, presearchQuery);
+    return System.identityHashCode(this);
+  }
+
+  @Override
+  public String toString(String field) {
+    return this.getClass().getSimpleName()
+        + "(presearchQuery="
+        + presearchQuery.toString(field)
+        + ")";
   }
 
   @Override
@@ -286,21 +283,6 @@ class ReverseSearchQuery extends ExtendedQueryBase {
       this.queryCache = queryCache;
       this.queryDecoder = queryDecoder;
       this.solrMatcherSink = solrMatcherSink;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      ReverseSearchContext that = (ReverseSearchContext) o;
-      return Objects.equals(queryCache, that.queryCache)
-          && Objects.equals(queryDecoder, that.queryDecoder)
-          && Objects.equals(solrMatcherSink, that.solrMatcherSink);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(queryCache, queryDecoder, solrMatcherSink);
     }
   }
 
