@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.store.rest;
+package org.apache.solr.llm.texttovector.store.rest;
 
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
@@ -26,9 +26,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.embedding.SolrEmbeddingModel;
-import org.apache.solr.llm.store.EmbeddingModelException;
-import org.apache.solr.llm.store.EmbeddingModelStore;
+import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
+import org.apache.solr.llm.texttovector.store.TextToVectorModelException;
+import org.apache.solr.llm.texttovector.store.TextToVectorModelStore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.rest.ManagedResource;
@@ -37,14 +37,14 @@ import org.apache.solr.rest.ManagedResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Managed Resource wrapper for the the {@link EmbeddingModelStore} to expose it via REST */
+/** Managed Resource wrapper for the the {@link TextToVectorModelStore} to expose it via REST */
 @ThreadSafe
-public class ManagedEmbeddingModelStore extends ManagedResource
+public class ManagedTextToVectorModelStore extends ManagedResource
     implements ManagedResource.ChildResourceSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** the model store rest endpoint */
-  public static final String REST_END_POINT = "/schema/embedding-model-store";
+  public static final String REST_END_POINT = "/schema/text-to-vector-model-store";
 
   /** Managed model store: the name of the attribute containing all the models of a model store */
   private static final String MODELS_JSON_FIELD = "models";
@@ -58,16 +58,16 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   /** name of the attribute containing parameters */
   static final String PARAMS_KEY = "params";
 
-  public static void registerManagedEmbeddingModelStore(
+  public static void registerManagedTextToVectorModelStore(
       SolrResourceLoader solrResourceLoader, ManagedResourceObserver managedResourceObserver) {
     solrResourceLoader
         .getManagedResourceRegistry()
         .registerManagedResource(
-            REST_END_POINT, ManagedEmbeddingModelStore.class, managedResourceObserver);
+            REST_END_POINT, ManagedTextToVectorModelStore.class, managedResourceObserver);
   }
 
-  public static ManagedEmbeddingModelStore getManagedModelStore(SolrCore core) {
-    return (ManagedEmbeddingModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
+  public static ManagedTextToVectorModelStore getManagedModelStore(SolrCore core) {
+    return (ManagedTextToVectorModelStore) core.getRestManager().getManagedResource(REST_END_POINT);
   }
 
   /**
@@ -77,23 +77,23 @@ public class ManagedEmbeddingModelStore extends ManagedResource
    *
    * @return the available models as a list of Maps objects
    */
-  private static List<Object> modelsAsManagedResources(List<SolrEmbeddingModel> models) {
+  private static List<Object> modelsAsManagedResources(List<SolrTextToVectorModel> models) {
     return models.stream()
-        .map(ManagedEmbeddingModelStore::toEmbeddingModelMap)
+        .map(ManagedTextToVectorModelStore::toModelMap)
         .collect(Collectors.toList());
   }
 
   @SuppressWarnings("unchecked")
-  public static SolrEmbeddingModel fromEmbeddingModelMap(
+  public static SolrTextToVectorModel fromModelMap(
       SolrResourceLoader solrResourceLoader, Map<String, Object> embeddingModel) {
-    return SolrEmbeddingModel.getInstance(
+    return SolrTextToVectorModel.getInstance(
         solrResourceLoader,
         (String) embeddingModel.get(CLASS_KEY), // modelClassName
         (String) embeddingModel.get(NAME_KEY), // modelName
         (Map<String, Object>) embeddingModel.get(PARAMS_KEY));
   }
 
-  private static LinkedHashMap<String, Object> toEmbeddingModelMap(SolrEmbeddingModel model) {
+  private static LinkedHashMap<String, Object> toModelMap(SolrTextToVectorModel model) {
     final LinkedHashMap<String, Object> modelMap = new LinkedHashMap<>(5, 1.0f);
     modelMap.put(NAME_KEY, model.getName());
     modelMap.put(CLASS_KEY, model.getEmbeddingModelClassName());
@@ -101,14 +101,14 @@ public class ManagedEmbeddingModelStore extends ManagedResource
     return modelMap;
   }
 
-  private final EmbeddingModelStore store;
+  private final TextToVectorModelStore store;
   private Object managedData;
 
-  public ManagedEmbeddingModelStore(
+  public ManagedTextToVectorModelStore(
       String resourceId, SolrResourceLoader loader, ManagedResourceStorage.StorageIO storageIO)
       throws SolrException {
     super(resourceId, loader, storageIO);
-    store = new EmbeddingModelStore();
+    store = new TextToVectorModelStore();
   }
 
   @Override
@@ -129,28 +129,28 @@ public class ManagedEmbeddingModelStore extends ManagedResource
 
     if ((managedData != null) && (managedData instanceof List)) {
       @SuppressWarnings({"unchecked"})
-      final List<Map<String, Object>> embeddingModels = (List<Map<String, Object>>) managedData;
-      for (final Map<String, Object> embeddingModel : embeddingModels) {
-        addModelFromMap(embeddingModel);
+      final List<Map<String, Object>> textToVectorModels = (List<Map<String, Object>>) managedData;
+      for (final Map<String, Object> textToVectorModel : textToVectorModels) {
+        addModelFromMap(textToVectorModel);
       }
     }
   }
 
   private void addModelFromMap(Map<String, Object> modelMap) {
     try {
-      addModel(fromEmbeddingModelMap(solrResourceLoader, modelMap));
-    } catch (final EmbeddingModelException e) {
+      addModel(fromModelMap(solrResourceLoader, modelMap));
+    } catch (final TextToVectorModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
 
-  public void addModel(SolrEmbeddingModel model) throws EmbeddingModelException {
+  public void addModel(SolrTextToVectorModel model) throws TextToVectorModelException {
     try {
       if (log.isInfoEnabled()) {
         log.info("adding model {}", model.getName());
       }
       store.addModel(model);
-    } catch (final EmbeddingModelException e) {
+    } catch (final TextToVectorModelException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
@@ -159,9 +159,9 @@ public class ManagedEmbeddingModelStore extends ManagedResource
   @Override
   protected Object applyUpdatesToManagedData(Object updates) {
     if (updates instanceof List) {
-      final List<Map<String, Object>> embeddingModels = (List<Map<String, Object>>) updates;
-      for (final Map<String, Object> embeddingModel : embeddingModels) {
-        addModelFromMap(embeddingModel);
+      final List<Map<String, Object>> textToVectorModels = (List<Map<String, Object>>) updates;
+      for (final Map<String, Object> textToVectorModel : textToVectorModels) {
+        addModelFromMap(textToVectorModel);
       }
     }
 
@@ -189,7 +189,7 @@ public class ManagedEmbeddingModelStore extends ManagedResource
     response.add(MODELS_JSON_FIELD, modelsAsManagedResources(store.getModels()));
   }
 
-  public SolrEmbeddingModel getModel(String modelName) {
+  public SolrTextToVectorModel getModel(String modelName) {
     return store.getModel(modelName);
   }
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.search;
+package org.apache.solr.llm.texttovector.search;
 
 import java.io.IOException;
 import org.apache.lucene.index.VectorEncoding;
@@ -26,8 +26,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.llm.embedding.SolrEmbeddingModel;
-import org.apache.solr.llm.store.rest.ManagedEmbeddingModelStore;
+import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
+import org.apache.solr.llm.texttovector.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
@@ -46,7 +46,7 @@ import org.apache.solr.search.neural.KnnQParser;
 public class TextToVectorQParserPlugin extends QParserPlugin
     implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String EMBEDDING_MODEL_PARAM = "model";
-  private ManagedEmbeddingModelStore modelStore = null;
+  private ManagedTextToVectorModelStore modelStore = null;
 
   @Override
   public QParser createParser(
@@ -57,14 +57,14 @@ public class TextToVectorQParserPlugin extends QParserPlugin
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     final SolrResourceLoader solrResourceLoader = (SolrResourceLoader) loader;
-    ManagedEmbeddingModelStore.registerManagedEmbeddingModelStore(solrResourceLoader, this);
+    ManagedTextToVectorModelStore.registerManagedTextToVectorModelStore(solrResourceLoader, this);
   }
 
   @Override
   public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
       throws SolrException {
-    if (res instanceof ManagedEmbeddingModelStore) {
-      modelStore = (ManagedEmbeddingModelStore) res;
+    if (res instanceof ManagedTextToVectorModelStore) {
+      modelStore = (ManagedTextToVectorModelStore) res;
     }
     if (modelStore != null) {
       modelStore.loadStoredModels();
@@ -83,7 +83,7 @@ public class TextToVectorQParserPlugin extends QParserPlugin
       checkParam(qstr, "Query string is empty, nothing to vectorise");
       final String embeddingModelName = localParams.get(EMBEDDING_MODEL_PARAM);
       checkParam(embeddingModelName, "The 'model' parameter is missing");
-      SolrEmbeddingModel textToVector = modelStore.getModel(embeddingModelName);
+      SolrTextToVectorModel textToVector = modelStore.getModel(embeddingModelName);
 
       if (textToVector != null) {
         final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
@@ -103,7 +103,7 @@ public class TextToVectorQParserPlugin extends QParserPlugin
           default:
             throw new SolrException(
                 SolrException.ErrorCode.SERVER_ERROR,
-                "Vector Encoding not supported in automatic text embedding: " + vectorEncoding);
+                "Vector Encoding not supported : " + vectorEncoding);
         }
       } else {
         throw new SolrException(
@@ -111,7 +111,7 @@ public class TextToVectorQParserPlugin extends QParserPlugin
             "The model requested '"
                 + embeddingModelName
                 + "' can't be found in the store: "
-                + ManagedEmbeddingModelStore.REST_END_POINT);
+                + ManagedTextToVectorModelStore.REST_END_POINT);
       }
     }
   }

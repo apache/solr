@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.embedding;
+package org.apache.solr.llm.texttovector.model;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -59,6 +59,7 @@ public class DummyEmbeddingModel implements EmbeddingModel {
   public static class DummyEmbeddingModelBuilder {
     private float[] builderEmbeddings;
     private int intValue;
+
     public DummyEmbeddingModelBuilder() {}
 
     public DummyEmbeddingModelBuilder embedding(ArrayList<Double> embeddings) {
