@@ -93,27 +93,7 @@ public class TestLlmBase extends RestTestBase {
     }
     System.clearProperty("managed.schema.mutable");
   }
-
-  /** produces a model encoded in json * */
-  public static String getModelInJson(String name, String className, String params) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("{\n");
-    sb.append("\"name\":").append('"').append(name).append('"').append(",\n");
-    sb.append("\"class\":").append('"').append(className).append('"').append(",\n");
-    if (params != null) {
-      sb.append(",\n");
-      sb.append("\"params\":").append(params);
-    }
-    sb.append("\n}\n");
-    return sb.toString();
-  }
-
-  protected static void loadModel(String name, String className, String params) throws Exception {
-    final String model = getModelInJson(name, className, params);
-    log.info("loading model \n{} ", model);
-    assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==0");
-  }
-
+  
   public static void loadModel(String fileName, String status) throws Exception {
     final URL url = TestLlmBase.class.getResource("/modelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
