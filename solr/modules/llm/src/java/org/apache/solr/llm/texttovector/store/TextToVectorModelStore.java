@@ -14,25 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.llm.store;
+package org.apache.solr.llm.texttovector.store;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.llm.embedding.SolrEmbeddingModel;
+import org.apache.solr.llm.texttovector.model.SolrTextToVectorModel;
 
-/** Simple store to manage CRUD operations on the {@link SolrEmbeddingModel} */
-public class EmbeddingModelStore {
+/** Simple store to manage CRUD operations on the {@link SolrTextToVectorModel} */
+public class TextToVectorModelStore {
 
-  private final Map<String, SolrEmbeddingModel> availableModels;
+  private final Map<String, SolrTextToVectorModel> availableModels;
 
-  public EmbeddingModelStore() {
+  public TextToVectorModelStore() {
     availableModels = Collections.synchronizedMap(new LinkedHashMap<>());
   }
 
-  public SolrEmbeddingModel getModel(String name) {
+  public SolrTextToVectorModel getModel(String name) {
     return availableModels.get(name);
   }
 
@@ -40,9 +40,9 @@ public class EmbeddingModelStore {
     availableModels.clear();
   }
 
-  public List<SolrEmbeddingModel> getModels() {
-    final List<SolrEmbeddingModel> availableModelsValues =
-        new ArrayList<SolrEmbeddingModel>(availableModels.values());
+  public List<SolrTextToVectorModel> getModels() {
+    final List<SolrTextToVectorModel> availableModelsValues =
+        new ArrayList<SolrTextToVectorModel>(availableModels.values());
     return Collections.unmodifiableList(availableModelsValues);
   }
 
@@ -51,14 +51,14 @@ public class EmbeddingModelStore {
     return "ModelStore [availableModels=" + availableModels.keySet() + "]";
   }
 
-  public SolrEmbeddingModel delete(String modelName) {
+  public SolrTextToVectorModel delete(String modelName) {
     return availableModels.remove(modelName);
   }
 
-  public void addModel(SolrEmbeddingModel modeldata) throws EmbeddingModelException {
+  public void addModel(SolrTextToVectorModel modeldata) throws TextToVectorModelException {
     final String name = modeldata.getName();
     if (availableModels.putIfAbsent(modeldata.getName(), modeldata) != null) {
-      throw new EmbeddingModelException(
+      throw new TextToVectorModelException(
           "model '" + name + "' already exists. Please use a different name");
     }
   }

@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** APIs and classes for implementing embedding logic. */
-package org.apache.solr.llm.embedding;
+/** Contains the {@link org.apache.solr.rest.ManagedResource} that encapsulate the model stores. */
+package org.apache.solr.llm.texttovector.store.rest;

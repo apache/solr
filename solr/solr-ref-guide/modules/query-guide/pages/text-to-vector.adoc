@@ -20,22 +20,21 @@ This module brings the power of *Large Language Models* (*LLM*s) to Solr.  More 
 _Without_ this module, vectors must be supplied _to_ Solr for indexing & searching, possibly coordinating with such services.
 
 
-== Text Embedding Concepts
+== Main Concepts
 
 === From Text to Vector
 
-The task of sentence similarity aims to encode text to numerical vectors in a way that semantically similar sentences are encoded to vectors close in a vector space.
-Vector distance metrics (algorithms) compute a pairwise similarity, producing a score.
+The aim of encoding text to numerical vectors is to represent text in a way that semantically similar sentences are encoded to vectors close in a vector space.
+Vector distance metrics (algorithms) can then be used to compute a pairwise similarity, producing a score.
 
 
 === Large Language Models 
 
-Large Language Models can be fine-tuned for such a task.
-The resulting model is able to encode text to a numerical vector.
+Specific Large Language Models are able to encode text to a numerical vector.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
 
-==== Embedding Services
+==== Text to Vector Online Services
 
 Training, fine-tuning and operating such Large Language Models is expensive.
 
@@ -45,7 +44,10 @@ Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to conn
 
 [IMPORTANT]
 ====
-At the moment a subset of the embedding models supported by LangChain4j is supported by Solr.
+This module sends your documents and queries off to some hosted service on the internet. 
+There are cost, privacy, performance, and service availability implications on such a strong dependency that should be diligently examined before employing this module in a serious way.
+
+At the moment a subset of the text vectorisation services supported by LangChain4j is supported by Solr.
 
 *Disclaimer*: Apache Solr is *in no way* affiliated to any of these corporations or services.
 
@@ -58,11 +60,6 @@ If you want to add support for additional services or improve the support for th
 
 This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
-At the moment the only supported way to interact with Large Language Models is via embedding text.
-
-In the future additional components to empower Solr with LLM will be added.
-
-
 == LLM Configuration
 
 Large-Language-Model is a module and therefore its plugins must be configured in `solrconfig.xml`.
@@ -73,18 +70,18 @@ Large-Language-Model is a module and therefore its plugins must be configured in
 +
 [source,xml]
 ----
-<queryParser name="text_to_vector" class="org.apache.solr.llm.search.TextToVectorQParserPlugin"/>
+<queryParser name="text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
 ----
 
-== Text Embedding Lifecycle
+== Text Vectorisation Lifecycle
 
 
 === Models
 
 * A model encodes text to a vector.
-* A model in Solr is a reference to an external API that runs the Large Language Model responsible for text embedding.
+* A model in Solr is a reference to an external API that runs the Large Language Model responsible for text vectorisation.
 
-*N.B.* the Solr embedding model specifies the parameters to access the APIs, the model doesn't run internally in Solr
+*N.B.* the Solr vectorisation model specifies the parameters to access the APIs, the model doesn't run internally in Solr
 
 
 A model is described by these parameters:
@@ -123,11 +120,11 @@ The identifier of your model, this is used by any component that intends to use 
 |===
 +
 Each model class has potentially different params.
-Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/embedding-models[Embedding Models in LangChain4j].
+Many are shared but for the full set of parameters of the model you are interested in please refer to the official documentation of the LangChain4j version included in Solr: https://docs.langchain4j.dev/category/embedding-models[Vectorisationm Models in LangChain4j].
 
 
 === Supported Models
-Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support text embedding.
+Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to support text vectorisation.
 The models currently supported are:
 
 [tabs#supported-models]
@@ -143,7 +140,7 @@ Hugging Face::
   "name": "<a-name-for-your-model>",
   "params": {
     "accessToken": "<your-huggingface-api-key>",
-    "modelId": "<a-huggingface-embedding-model>"
+    "modelId": "<a-huggingface-vectorisation-model>"
   }
 }
 ----
@@ -160,7 +157,7 @@ MistralAI::
   "params": {
     "baseUrl": "https://api.mistral.ai/v1",
     "apiKey": "<your-mistralAI-api-key>",
-    "modelName": "<a-mistralAI-embedding-model>",
+    "modelName": "<a-mistralAI-vectorisation-model>",
     "timeout": 60,
     "logRequests": true,
     "logResponses": true,
@@ -181,7 +178,7 @@ OpenAI::
   "params": {
     "baseUrl": "https://api.openai.com/v1",
     "apiKey": "<your-openAI-api-key>",
-    "modelName": "<a-openAI-embedding-model>",
+    "modelName": "<a-openAI-vectorisation-model>",
     "timeout": 60,
     "logRequests": true,
     "logResponses": true,
@@ -202,7 +199,7 @@ Cohere::
   "params": {
     "baseUrl": "https://api.cohere.ai/v1/",
     "apiKey": "<your-cohere-api-key>",
-    "modelName": "<a-cohere-embedding-model>",
+    "modelName": "<a-cohere-vectorisation-model>",
     "inputType": "search_document",
     "timeout": 60,
     "logRequests": true,
@@ -219,27 +216,27 @@ To upload the model in a `/path/myModel.json` file, please run:
 
 [source,bash]
 ----
-curl -XPUT 'http://localhost:8983/solr/techproducts/schema/embedding-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
+curl -XPUT 'http://localhost:8983/solr/techproducts/schema/vectorisation-model-store' --data-binary "@/path/myModel.json" -H 'Content-type:application/json'
 ----
 
 
 To view all models:
 
 [source,text]
-http://localhost:8983/solr/techproducts/schema/embedding-model-store
+http://localhost:8983/solr/techproducts/schema/vectorisation-model-store
 
 To delete the `currentModel` model:
 
 [source,bash]
 ----
-curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/embedding-model-store/currentModel'
+curl -XDELETE 'http://localhost:8983/solr/techproducts/schema/vectorisation-model-store/currentModel'
 ----
 
 
 To view the model you just uploaded please open the following URL in a browser:
 
 [source,text]
-http://localhost:8983/solr/techproducts/schema/embedding-model-store
+http://localhost:8983/solr/techproducts/schema/vectorisation-model-store
 
 .Example: /path/myModel.json
 [source,json]
@@ -260,7 +257,7 @@ http://localhost:8983/solr/techproducts/schema/embedding-model-store
 
 ----
 
-=== Running an embedding Query
+=== Running an Text to Vector Query
 To run a query that embeds your query text, using a model you previously uploaded is simple:
 
 [source,text]
