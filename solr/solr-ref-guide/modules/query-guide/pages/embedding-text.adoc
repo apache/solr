@@ -24,7 +24,8 @@ _Without_ this module, vectors must be supplied _to_ Solr for indexing & searchi
 
 === From Text to Vector
 
-The task of sentence similarity aims to encode text to vector in a way that sentences semantically similar are encoded to vectors close in a vector space (using a vector distance metric).
+The task of sentence similarity aims to encode text to numerical vectors in a way that semantically similar sentences are encoded to vectors close in a vector space.
+Vector distance metrics (algorithms) compute a pairwise similarity, producing a score.
 
 
 === Large Language Models 
