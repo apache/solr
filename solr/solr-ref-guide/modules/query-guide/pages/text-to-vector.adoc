@@ -47,6 +47,8 @@ Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to conn
 This module sends your documents and queries off to some hosted service on the internet. 
 There are cost, privacy, performance, and service availability implications on such a strong dependency that should be diligently examined before employing this module in a serious way.
 
+====
+
 At the moment a subset of the text vectorisation services supported by LangChain4j is supported by Solr.
 
 *Disclaimer*: Apache Solr is *in no way* affiliated to any of these corporations or services.
@@ -54,7 +56,6 @@ At the moment a subset of the text vectorisation services supported by LangChain
 If you want to add support for additional services or improve the support for the existing ones, feel free to contribute:
 
 * https://github.com/apache/solr/blob/main/CONTRIBUTING.md[Contributing to Solr]
-====
 
 == Module
 
@@ -62,9 +63,7 @@ This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr M
 
 == LLM Configuration
 
-Large-Language-Model is a module and therefore its plugins must be configured in `solrconfig.xml`.
-
-=== Minimum Requirements
+You need to register / configure the plugins provided by the LLM module that you want to use. This is done in `solrconfig.xml`. 
 
 * Declaration of the `text_to_vector` query parser.
 +
@@ -73,7 +72,7 @@ Large-Language-Model is a module and therefore its plugins must be configured in
 <queryParser name="text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
 ----
 
-== Text Vectorisation Lifecycle
+== Text to Vector Lifecycle
 
 
 === Models
@@ -81,8 +80,11 @@ Large-Language-Model is a module and therefore its plugins must be configured in
 * A model encodes text to a vector.
 * A model in Solr is a reference to an external API that runs the Large Language Model responsible for text vectorisation.
 
-*N.B.* the Solr vectorisation model specifies the parameters to access the APIs, the model doesn't run internally in Solr
+[IMPORTANT]
+====
+the Solr vectorisation model specifies the parameters to access the APIs, the model doesn't run internally in Solr
 
+====
 
 A model is described by these parameters:
 
