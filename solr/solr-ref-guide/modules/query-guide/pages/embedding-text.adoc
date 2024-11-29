@@ -30,7 +30,7 @@ Vector distance metrics (algorithms) compute a pairwise similarity, producing a 
 
 === Large Language Models 
 
-Large Language Models can be fine-tuned for such task.
+Large Language Models can be fine-tuned for such a task.
 The resulting model is able to encode text to a numerical vector.
 
 For additional information you can refer to this https://sease.io/2021/12/using-bert-to-improve-search-relevance.html[blog post].
