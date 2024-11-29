@@ -57,10 +57,9 @@ public class EmbeddingModelStore {
 
   public void addModel(SolrEmbeddingModel modeldata) throws EmbeddingModelException {
     final String name = modeldata.getName();
-    if (availableModels.containsKey(name)) {
+    if (availableModels.putIfAbsent(modeldata.getName(), modeldata) != null) {
       throw new EmbeddingModelException(
           "model '" + name + "' already exists. Please use a different name");
     }
-    availableModels.put(modeldata.getName(), modeldata);
   }
 }
