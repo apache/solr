@@ -41,9 +41,11 @@ public class TextToVectorModelStore {
   }
 
   public List<SolrTextToVectorModel> getModels() {
-    final List<SolrTextToVectorModel> availableModelsValues =
-        new ArrayList<SolrTextToVectorModel>(availableModels.values());
-    return Collections.unmodifiableList(availableModelsValues);
+    synchronized (availableModels) {
+      final List<SolrTextToVectorModel> availableModelsValues =
+          new ArrayList<SolrTextToVectorModel>(availableModels.values());
+      return Collections.unmodifiableList(availableModelsValues);
+    }
   }
 
   @Override
