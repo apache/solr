@@ -202,4 +202,22 @@ public class TestModelManager extends TestLlmBase {
 
     restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
   }
+
+  @Test
+  public void loadModel_dummyUnsupportedParam_shouldRaiseError() throws Exception {
+    loadModel("dummy-model-unsupported.json", "400");
+  }
+
+  @Test
+  public void loadModel_dummyAmbiguousParam_shouldDefaultToString() throws Exception {
+    loadModel("dummy-model-ambiguous.json");
+
+    final String modelName = "dummy-1";
+    assertJQ(ManagedEmbeddingModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
+    assertJQ(
+            ManagedEmbeddingModelStore.REST_END_POINT,
+            "/models/[0]/params/ambiguous==10");
+
+    restTestHarness.delete(ManagedEmbeddingModelStore.REST_END_POINT + "/" + modelName);
+  }
 }

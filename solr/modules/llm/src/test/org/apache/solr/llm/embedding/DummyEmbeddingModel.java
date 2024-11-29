@@ -58,7 +58,7 @@ public class DummyEmbeddingModel implements EmbeddingModel {
 
   public static class DummyEmbeddingModelBuilder {
     private float[] builderEmbeddings;
-
+    private int intValue;
     public DummyEmbeddingModelBuilder() {}
 
     public DummyEmbeddingModelBuilder embedding(ArrayList<Double> embeddings) {
@@ -66,6 +66,20 @@ public class DummyEmbeddingModel implements EmbeddingModel {
       for (int i = 0; i < embeddings.size(); i++) {
         this.builderEmbeddings[i] = embeddings.get(i).floatValue();
       }
+      return this;
+    }
+
+    public DummyEmbeddingModelBuilder unsupported(Integer input) {
+      return this;
+    }
+
+    public DummyEmbeddingModelBuilder ambiguous(int input) {
+      this.intValue = input;
+      return this;
+    }
+
+    public DummyEmbeddingModelBuilder ambiguous(String input) {
+      this.intValue = Integer.valueOf(input);
       return this;
     }
 
