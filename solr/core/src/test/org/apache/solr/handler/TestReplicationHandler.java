@@ -462,7 +462,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(followerClient, "id", 555, "name", "name = " + 555);
     followerClient.commit(true, true);
 
-    // this doc is added to follower, so it should show an item w/ that result
+    // this doc is added to follower so it should show an item w/ that result
     assertEquals(1, numFound(rQuery(1, "id:555", followerClient)));
 
     // Let's fetch the index rather than rely on the polling.
@@ -531,7 +531,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     followerJetty.stop();
 
-    // set up a subdirectory /foo/ in order to force subdirectory file replication
+    // setup an sub directory /foo/ in order to force subdir file replication
     File leaderFooDir = new File(leader.getConfDir() + File.separator + "foo");
     File leaderBarFile = new File(leaderFooDir, "bar.txt");
     assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
@@ -599,8 +599,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // get docs from leader and check if number is equal to leader
     assertEquals(nDocs + 1, numFound(rQuery(nDocs + 1, "*:*", leaderClient)));
 
-    // NOTE: this test is weird, we want to verify it DOESN'T replicate...
-    // for now, add a sleep for this..., but the logic is weird.
+    // NOTE: this test is wierd, we want to verify it DOESNT replicate...
+    // for now, add a sleep for this.., but the logic is wierd.
     Thread.sleep(3000);
 
     // get docs from follower and check if number is not equal to leader; polling is disabled
@@ -1002,7 +1002,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     CoreContainer cores = jetty.getCoreContainer();
     Collection<SolrCore> theCores = cores.getCores();
     for (SolrCore core : theCores) {
-      String dataDir = core.getDataDir();
+      String ddir = core.getDataDir();
       CachingDirectoryFactory dirFactory = getCachingDirectoryFactory(core);
       synchronized (dirFactory) {
         Set<String> livePaths = dirFactory.getLivePaths();
@@ -1019,23 +1019,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // :TODO: assert that one of the paths is a subpath of hte other
       }
       if (dirFactory instanceof StandardDirectoryFactory) {
-        System.out.println(Arrays.asList(new File(dataDir).list()));
+        System.out.println(Arrays.asList(new File(ddir).list()));
         // we also allow one extra index dir - it may not be removed until the core is closed
-        int cnt = indexDirCount(dataDir);
+        int cnt = indexDirCount(ddir);
         // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
         if (afterReload) {
-          assertTrue(
-              "found:" + cnt + Arrays.asList(new File(dataDir).list()), 1 == cnt || 2 == cnt);
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()), 1 == cnt || 2 == cnt);
         } else {
-          assertEquals("found:" + cnt + Arrays.asList(new File(dataDir).list()), 1, cnt);
+          assertEquals("found:" + cnt + Arrays.asList(new File(ddir).list()), 1, cnt);
         }
       }
     }
   }
 
-  private int indexDirCount(String dir) {
+  private int indexDirCount(String ddir) {
     String[] list =
-        new File(dir)
+        new File(ddir)
             .list(
                 new FilenameFilter() {
                   @Override
@@ -1587,7 +1586,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     index(leaderClient, "id", "1", "name", "foo");
 
-    { // second backup w/ uncommitted doc
+    { // second backup w/uncommited doc
       final String backupName = "empty_backup2";
       final GenericSolrRequest req =
           new GenericSolrRequest(
@@ -1699,7 +1698,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             return startTime;
           }
         } catch (SolrException e) {
-          // workaround for SOLR-4668
+          // workarround for SOLR-4668
           if (500 != e.code()) {
             throw e;
           } // else server possibly from the core reload in progress...
@@ -1709,7 +1708,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         Thread.sleep(sleepInterval);
       }
       fail("timed out waiting for collection1 startAt time to exceed: " + min);
-      return min; // compilation necessity
+      return min; // compilation neccessity
     }
   }
 
