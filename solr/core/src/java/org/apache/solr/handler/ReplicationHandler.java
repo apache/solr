@@ -366,16 +366,6 @@ public class ReplicationHandler extends RequestHandlerBase
         solrParams.getLong(GENERATION));
   }
 
-  @SuppressWarnings("unchecked")
-  public static <T> T getObjectWithBackwardCompatibility(
-      NamedList<?> params, String preferredKey, String alternativeKey) {
-    Object value = params.get(preferredKey);
-    if (value != null) {
-      return (T) value;
-    }
-    return (T) params.get(alternativeKey);
-  }
-
   private void reportErrorOnResponse(SolrQueryResponse response, String message, Exception e) {
     response.add(STATUS, ERR_STATUS);
     response.add(MESSAGE, message);
