@@ -13,6 +13,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
     # Run only on PRs created by dependabot, this prevents users from misusing branch names
     # prefixed with dependabot/**
     if: github.actor == 'dependabot[bot]'
