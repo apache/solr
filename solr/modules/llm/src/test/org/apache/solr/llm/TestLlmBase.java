@@ -114,6 +114,15 @@ public class TestLlmBase extends RestTestBase {
     assertJPut(ManagedEmbeddingModelStore.REST_END_POINT, model, "/responseHeader/status==0");
   }
 
+  public static void loadModel(String fileName, String status) throws Exception {
+    final URL url = TestLlmBase.class.getResource("/modelExamples/" + fileName);
+    final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
+
+    assertJPut(
+            ManagedEmbeddingModelStore.REST_END_POINT, multipleModels, "/responseHeader/status=="+status);
+    
+  }
+  
   public static void loadModel(String fileName) throws Exception {
     final URL url = TestLlmBase.class.getResource("/modelExamples/" + fileName);
     final String multipleModels = Files.readString(Path.of(url.toURI()), StandardCharsets.UTF_8);
