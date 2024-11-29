@@ -1557,14 +1557,6 @@ public class ReplicationHandler extends RequestHandlerBase
   // state from leader
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
 
-  /**
-   * @deprecated Only used for backwards compatibility. Use {@link
-   *     #SKIP_COMMIT_ON_LEADER_VERSION_ZERO}
-   */
-  @Deprecated
-  public static final String LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO =
-      "skipCommitOnMasterVersionZero";
-
   public static final String MESSAGE = "message";
 
   public static final String COMMAND = "command";
