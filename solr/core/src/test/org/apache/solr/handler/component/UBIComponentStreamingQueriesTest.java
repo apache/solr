@@ -121,8 +121,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
       assertNotNull(Instant.parse(tuples.get(0).getString("timestamp")));
 
-      // assertNotFields(tuples, "user_query", "event_attributes");
-
       // Include another field to see what is returned
       ubiQuery = new UBIQuery("234");
       ubiQuery.setApplication("typeahead");
@@ -309,10 +307,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  protected void assertOrder(List<Tuple> tuples, int... ids) throws Exception {
-    assertOrderOf(tuples, "id", ids);
-  }
-
   protected void assertOrderOf(List<Tuple> tuples, String fieldName, int... ids) throws Exception {
     int i = 0;
     for (int val : ids) {
@@ -362,20 +356,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
         }
       }
     }
-  }
-
-  protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
-    List<?> group = (List<?>) tuple.get("tuples");
-    int i = 0;
-    for (int val : ids) {
-      Map<?, ?> t = (Map<?, ?>) group.get(i);
-      Long tip = (Long) t.get("id");
-      if (tip.intValue() != val) {
-        throw new Exception("Found value:" + tip.intValue() + " expecting:" + val);
-      }
-      ++i;
-    }
-    return true;
   }
 
   private static SolrCore findSolrCore() {

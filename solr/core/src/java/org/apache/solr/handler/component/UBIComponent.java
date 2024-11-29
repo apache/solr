@@ -42,6 +42,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.LoggingStream;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -226,7 +227,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    System.out.println("PROCESSS STAGE: " + rb.stage);
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
@@ -237,9 +237,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    System.out.println("STAGE: " + rb.stage);
-    System.out.println("STAGE rb.getResults(): " + (rb.getResults() != null));
-    System.out.println("getResponseDocs.size" + rb.getResponseDocs().size());
 
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
@@ -255,29 +252,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     return ResponseBuilder.STAGE_DONE;
   }
 
-  //  @Override
-  //  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
-  //    SolrParams params = rb.req.getParams();
-  //    // rb.setNeedDocList(true);
-  //    if (!params.getBool(COMPONENT_NAME, false)) {
-  //      return;
-  //    }
-  //
-  //    // Turn on UBI only when retrieving fields
-  //    if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
-  //      // should already be true...
-  //      sreq.params.set("ubi", "true");
-  //    } else {
-  //      sreq.params.set("ubi", "false");
-  //    }
-  //  }
-
   public void doStuff(ResponseBuilder rb) throws IOException {
 
+    // not sure why but sometimes we get it twoice...  how can a response have the
+    // the same component run twice?
+    if (rb.rsp.getValues().get("ubi") != null) {
+      return;
+    }
     SolrParams params = rb.req.getParams();
-    // if (!params.getBool(COMPONENT_NAME, false)) {
-    //  return;
-    // }
 
     SolrIndexSearcher searcher = rb.req.getSearcher();
 
@@ -311,9 +293,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       }
     }
 
-    // ResultContext rc = (ResultContext) rb.rsp.getResponse();
-    // DocList docs = rc.getDocList();
-    DocList docs = rb.getResults().docList;
+    ResultContext rc = (ResultContext) rb.rsp.getResponse();
+    DocList docs = rc.getDocList();
+    // DocList docs = rb.getResults().docList;
 
     String docIds = extractDocIds(docs, searcher);
     ubiQuery.setDocIds(docIds);
