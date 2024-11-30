@@ -16,6 +16,8 @@
  */
 package org.apache.solr.hdfs;
 
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.google.common.annotations.VisibleForTesting;
@@ -38,6 +40,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
@@ -99,6 +102,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
 
   public static final String LOCALITYMETRICS_ENABLED = "solr.hdfs.locality.metrics.enabled";
 
+  public static final String KERBEROS_ENABLED = "solr.hdfs.security.kerberos.enabled";
+  public static final String KERBEROS_KEYTAB = "solr.hdfs.security.kerberos.keytabfile";
+  public static final String KERBEROS_PRINCIPAL = "solr.hdfs.security.kerberos.principal";
+
   public static final String HDFS_HOME = "solr.hdfs.home";
 
   public static final String CONFIG_DIRECTORY = "solr.hdfs.confdir";
@@ -121,6 +128,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   private static BlockCache globalBlockCache;
 
   public static Metrics metrics;
+  private static Boolean kerberosInit;
 
   // we use this cache for FileSystem instances when we don't have access to a long lived instance
   private final com.github.benmanes.caffeine.cache.Cache<String, FileSystem> tmpFsCache =
@@ -171,7 +179,13 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     }
     cacheMerges = getConfig(CACHE_MERGES, false);
     cacheReadOnce = getConfig(CACHE_READONCE, false);
-
+    boolean kerberosEnabled = getConfig(KERBEROS_ENABLED, false);
+    if (log.isInfoEnabled()) {
+      log.info("Solr Kerberos Authentication {}", (kerberosEnabled ? "enabled" : "disabled"));
+    }
+    if (kerberosEnabled) {
+      initKerberos();
+    }
     if (StrUtils.isNullOrEmpty(
         EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
@@ -514,6 +528,49 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
 
   public String getConfDir() {
     return confDir;
+  }
+
+  private void initKerberos() {
+    String keytabFile = getConfig(KERBEROS_KEYTAB, "").trim();
+    if (keytabFile.length() == 0) {
+      throw new IllegalArgumentException(
+          KERBEROS_KEYTAB + " required because " + KERBEROS_ENABLED + " set to true");
+    }
+    String principal = getConfig(KERBEROS_PRINCIPAL, "");
+    if (principal.length() == 0) {
+      throw new IllegalArgumentException(
+          KERBEROS_PRINCIPAL + " required because " + KERBEROS_ENABLED + " set to true");
+    }
+    synchronized (HdfsDirectoryFactory.class) {
+      if (kerberosInit == null) {
+        kerberosInit = Boolean.TRUE;
+        final Configuration conf = getConf(null);
+        final String authVal = conf.get(HADOOP_SECURITY_AUTHENTICATION);
+        final String kerberos = "kerberos";
+        if (authVal != null && !authVal.equals(kerberos)) {
+          throw new IllegalArgumentException(
+              HADOOP_SECURITY_AUTHENTICATION
+                  + " set to: "
+                  + authVal
+                  + ", not kerberos, but attempting to "
+                  + " connect to HDFS via kerberos");
+        }
+        // let's avoid modifying the supplied configuration, just to be conservative
+        final Configuration ugiConf = new Configuration(getConf(null));
+        ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, kerberos);
+        UserGroupInformation.setConfiguration(ugiConf);
+        log.info(
+            "Attempting to acquire kerberos ticket with keytab: {}, principal: {} ",
+            keytabFile,
+            principal);
+        try {
+          UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+        log.info("Got Kerberos ticket");
+      }
+    }
   }
 
   @Override
