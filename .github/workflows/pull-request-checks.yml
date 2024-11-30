@@ -1,0 +1,323 @@
+name: Pull Request Checks
+
+# This workflow makes use of labels to selectively run jobs. However, when a PR is opened and triggers
+# this workflow, the labels are not yet available. This means that we need to run this workflow twice
+# with different jobs "enabled".
+# If we add a dependency to the labeler, we would have to handle the label event separately, so we
+# add instead the labeled/unlabeled types to the pull_request event.
+
+# A dependency to the labeler workflow is necessary, but at the time the labels are needed,
+# the labeler should have finished its job.
+
+# IMPORTANT NOTE: If not enough action runners are available, and the labeler workflow is scheduled
+# after this workflow, tests will be skipped.
+# If we add a workflow dependency to the labeler, we would have to handle the label event separately.
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'branch_*'
+
+jobs:
+  # Dependabot job that runs only for dependabot PRs
+  # This job is writing locks, updates checksums, and commits the changes on the dependabot PRs.
+  lock-and-verify:
+    name: Lock and verify
+
+    runs-on: ubuntu-latest
+
+    # Run only on PRs created by dependabot, this prevents users from misusing branch names
+    # prefixed with dependabot/**
+    if: github.actor == 'dependabot[bot]'
+
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
+    # Give the default GITHUB_TOKEN write permission to commit
+    # and push the changed files back to the repository.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          java-package: jdk
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Use Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('versions.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-precommit-
+            ${{ runner.os }}-gradle-
+
+      - name: Write locks
+        run: ./gradlew writeLocks
+
+      - name: Update licenses / checksums
+        run: ./gradlew updateLicenses
+
+      - name: Commit and push changes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -m "Write locks and update checksums"
+          git push origin ${{ github.head_ref }}
+
+  # Pre-commit checks that allow quick failure on issues and prevent
+  # other jobs to run if they are going to fail anyway.
+  pre-commit-checks:
+    name: Gradle pre-commit Check
+
+    runs-on: ubuntu-latest
+    needs: lock-and-verify
+
+    # Always run, even if lock-and-verify is skipped
+    # Run only when lock-and-verify is success or skipped
+    if: always() &&
+      (needs.lock-and-verify.result == 'success' || needs.lock-and-verify.result == 'skipped')
+
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
+    steps:
+      # Setup
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          java-package: jdk
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-precommit-${{ hashFiles('versions.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-precommit-
+            ${{ runner.os }}-gradle-
+
+      - name: Run gradle check (without tests)
+        run: ./gradlew check -x test -Ptask.times=true
+
+      - uses: gradle/wrapper-validation-action@v3
+
+  # Runs docker-related tests
+  docker-test:
+    name: Build and test Docker image
+
+    runs-on: ubuntu-latest
+    # Run this job after pre-commit-checks were successful.
+    needs: pre-commit-checks
+
+    # Run this job always, even if any of the previous jobs were skipped.
+    # This job is executed only if the pre-commit-checks job is successful.
+    # Run this job only if docker-related files were modified, that is, when label present.
+    if: always() &&
+      needs.pre-commit-checks.result == 'success' &&
+      contains(github.event.pull_request.labels.*.name, 'docker')
+
+    env:
+      SOLR_DOCKER_IMAGE_REPO: github-pr/solr
+      SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
+    steps:
+      # Setup
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          java-package: jdk
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install ACL
+        run: sudo apt-get install acl
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-docker-${{ hashFiles('versions.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-docker-
+            ${{ runner.os }}-gradle-
+
+      - name: Build Docker image with Gradle
+        run: ./gradlew solr:docker:docker
+
+      - name: Run tests on Docker image
+        run: ./gradlew solr:docker:testDocker
+
+  # SolrJ tests
+  solrj-test:
+    name: Run SolrJ Tests
+
+    runs-on: ubuntu-latest
+    # Run this job after pre-commit-checks were successful.
+    needs: pre-commit-checks
+
+    # Run this job always, even if any of the previous jobs were skipped.
+    # This job is executed only if the pre-commit-checks job is successful.
+    # Run this job only if solrj-related files were modified, that is, when label present.
+    if: always() &&
+      needs.pre-commit-checks.result == 'success' &&
+      contains(github.event.pull_request.labels.*.name, 'solrj')
+
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
+    steps:
+      # Setup
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          java-package: jdk
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-solrj-${{ hashFiles('versions.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-solrj-
+            ${{ runner.os }}-gradle-
+
+      - name: Test the SolrJ Package
+        run: ./gradlew solr:solrj:test
+
+  # Script tests
+  script-test:
+    name: Run Solr Script Tests
+
+    runs-on: ubuntu-latest
+    # Run this job after pre-commit-checks were successful.
+    needs: pre-commit-checks
+
+    # Run this job always, even if any of the previous jobs were skipped.
+    # This job is executed only if the pre-commit-checks job is successful.
+    # Run this job only if script-related files were modified, that is, when label present.
+    if: always() &&
+      needs.pre-commit-checks.result == 'success' &&
+      contains(github.event.pull_request.labels.*.name, 'start-scripts')
+
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
+    steps:
+      # Setup
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          java-package: jdk
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-binsolr-${{ hashFiles('versions.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-binsolr-
+            ${{ runner.os }}-gradle-
+
+      - name: Test the bin/solr script
+        run: ./gradlew integrationTests
+
+      - name: Archive logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: solr/packaging/build/test-output
+
+  crave-test:
+    name: Run Solr Tests using Crave.io resources
+
+    runs-on: self-hosted
+    # Run this job after pre-commit-checks were successful.
+    needs: pre-commit-checks
+
+    # Run this job always, even if any of the previous jobs were skipped.
+    # This job is executed only if the pre-commit-checks job is successful.
+    if: always() && needs.pre-commit-checks.result == 'success'
+
+    steps:
+      - name: Destroy previous clone
+        run: crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER} || echo "Clone did not exist"
+        continue-on-error: true
+      - name: Crave clone sources
+        run: crave clone create --projectID 39 /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
+      - name: Checkout the correct branch
+        # TODO See if below run checks out latest commit
+        run: |
+          git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER} fetch origin ${GITHUB_REF}:${GITHUB_REF}
+          git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER} checkout ${GITHUB_REF}
+      - name: Initialize, build, test
+        run: |
+          cd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
+          crave run --clean
+      - name: Delete Clone
+        run: crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
