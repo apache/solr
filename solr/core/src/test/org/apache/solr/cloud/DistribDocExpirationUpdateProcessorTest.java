@@ -39,7 +39,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactory;
 import org.apache.solr.util.SecurityJson;
@@ -337,7 +337,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     final QueryRequest req = setAuthIfNeeded(new QueryRequest(params));
     final TimeOut timeout =
-        new TimeOut(maxTimeLimitSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        new TimeOut(maxTimeLimitSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME);
 
     long numFound = req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound();
     while (0L < numFound && !timeout.hasTimedOut()) {

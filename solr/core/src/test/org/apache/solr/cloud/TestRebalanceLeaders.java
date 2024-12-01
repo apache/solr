@@ -40,7 +40,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -203,7 +203,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // Fail if we have replicas with the preferredLeader property are _not_ also the leaders.
   private void checkPreferredsAreLeaders() throws InterruptedException, KeeperException {
     // Make sure that the shard unique are where you expect.
-    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSources.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
       if (checkPreferredsAreLeaders(false)) {

@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -62,11 +62,11 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     collectionStates.put(
         "collection1",
         DocCollection.create(
-            "collection1", slices, props, DocRouter.DEFAULT, 0, Instant.EPOCH, null));
+            "collection1", slices, props, DocRouters.DEFAULT, 0, Instant.EPOCH, null));
     collectionStates.put(
         "collection2",
         DocCollection.create(
-            "collection2", slices, props, DocRouter.DEFAULT, 0, Instant.EPOCH, null));
+            "collection2", slices, props, DocRouters.DEFAULT, 0, Instant.EPOCH, null));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     assertFalse(clusterState.getCollection("collection1").getProperties().containsKey("shards"));

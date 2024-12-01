@@ -135,6 +135,7 @@ import org.apache.solr.response.SchemaXmlResponseWriter;
 import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
+import org.apache.solr.response.transform.TransformerFactories;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -144,9 +145,11 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QParserPlugins;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.ValueSourceParsers;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.DefaultSolrCoreState;
@@ -1128,9 +1131,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
       initIndex(prev != null, reload);
 
       initWriters();
-      qParserPlugins.init(QParserPlugin.standardPlugins, this);
-      valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
-      transformerFactories.init(TransformerFactory.defaultFactories, this);
+      qParserPlugins.init(QParserPlugins.standardPlugins, this);
+      valueSourceParsers.init(ValueSourceParsers.standardValueSourceParsers, this);
+      transformerFactories.init(TransformerFactories.defaultFactories, this);
       loadSearchComponents();
       updateProcessors.init(Collections.emptyMap(), this);
 

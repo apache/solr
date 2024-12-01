@@ -37,7 +37,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
@@ -526,7 +526,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     try {
       // We have to poll the daemon 'list' to know once it's run...
       long iterations = 0;
-      final TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      final TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       while (!timeout.hasTimedOut()) {
         final SolrStream daemonCheck =
             new SolrStream(
@@ -590,7 +590,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       try {
         // We have to poll the daemon 'list' to know once it's run / terminated...
         Object state = null;
-        final TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+        final TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSources.NANO_TIME);
         while (!timeout.hasTimedOut()) {
           final SolrStream daemonCheck =
               new SolrStream(

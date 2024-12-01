@@ -35,7 +35,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.TimeOut;
@@ -172,7 +172,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     Set<String> errmessages = new HashSet<>();
     // don't close harness - gets closed at teardown
     RestTestHarness harness = randomRestTestHarness(r);
-    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       errmessages.clear();
       Map<?, ?> m = getObj(harness, aField, "fields");
@@ -252,7 +252,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     Set<String> errmessages = new HashSet<>();
     // don't close harness - gets closed at teardown
     RestTestHarness harness = randomRestTestHarness(r);
-    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       errmessages.clear();
       Map<?, ?> m = getObj(harness, aField, "fields");
@@ -325,7 +325,7 @@ public class TestBulkSchemaConcurrent extends AbstractFullDistribZkTestBase {
     Set<String> errmessages = new HashSet<>();
     // don't close harness - gets closed at teardown
     RestTestHarness harness = randomRestTestHarness(r);
-    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(TIMEOUT, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       errmessages.clear();
       Map<?, ?> m = getObj(harness, aField, "fields");

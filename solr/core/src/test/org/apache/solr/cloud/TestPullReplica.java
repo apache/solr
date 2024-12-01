@@ -52,7 +52,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -714,7 +714,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   static void waitForNumDocsInAllReplicas(
       int numDocs, Collection<Replica> replicas, String query, String user, String pass)
       throws IOException, SolrServerException, InterruptedException {
-    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     for (Replica r : replicas) {
       String replicaUrl = r.getCoreUrl();
       try (SolrClient replicaClient = getHttpSolrClient(r)) {

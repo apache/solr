@@ -198,7 +198,7 @@ public class ExecutorUtilTest extends SolrTestCase {
     public Boolean call() {
       // absolute last resort timeout to prevent infinite while loop
       final TimeOut threadTimeout =
-          new TimeOut(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+          new TimeOut(MAX_SANE_WAIT_DURATION_MS, TimeUnit.MILLISECONDS, TimeSources.NANO_TIME);
 
       while (!threadTimeout.hasTimedOut()) {
         try {

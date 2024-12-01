@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -67,8 +68,8 @@ public class ClusterStateMutator {
 
     Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
     String routerName =
-        routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);
-    DocRouter router = DocRouter.getDocRouter(routerName);
+        routerSpec.get(NAME) == null ? DocRouters.DEFAULT_NAME : (String) routerSpec.get(NAME);
+    DocRouter router = DocRouters.getDocRouter(routerName);
 
     Object messageShardsObj = message.get("shards");
 
@@ -80,7 +81,7 @@ public class ClusterStateMutator {
       List<String> shardNames = new ArrayList<>();
 
       if (router instanceof ImplicitDocRouter) {
-        getShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
+        getShardNames(shardNames, message.getStr("shards", DocRouters.DEFAULT_NAME));
       } else {
         int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
         if (numShards < 1)

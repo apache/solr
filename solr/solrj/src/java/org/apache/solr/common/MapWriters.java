@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
 
-import org.apache.lucene.queries.function.ValueSource;
-import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+package org.apache.solr.common;
 
-/**
- * A factory that parses user queries to generate ValueSource instances. Intended usage is to create
- * pluggable, named functions for use in function queries.
- */
-public abstract class ValueSourceParser implements NamedListInitializedPlugin {
-  /** Parse the user input into a ValueSource. */
-  public abstract ValueSource parse(FunctionQParser fp) throws SyntaxError;
+import java.util.Collections;
+
+public class MapWriters {
+
+  private MapWriters() {}
+
+  public static MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
 }

@@ -29,7 +29,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
@@ -149,7 +149,8 @@ class TransformerProvider {
 
     lastFilename = filename;
     lastTemplates = result;
-    cacheExpiresTimeout = new TimeOut(cacheLifetimeSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    cacheExpiresTimeout =
+        new TimeOut(cacheLifetimeSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME);
 
     return result;
   }

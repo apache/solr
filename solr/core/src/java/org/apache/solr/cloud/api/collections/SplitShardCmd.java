@@ -59,6 +59,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaCount;
@@ -1010,7 +1011,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       AtomicReference<String> slice,
       String splitKey) {
     DocCollection collection = clusterState.getCollection(collectionName);
-    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouters.DEFAULT;
 
     Slice parentSlice;
 
@@ -1076,7 +1077,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     if (range == null) {
       range = new PlainIdRouter().fullRange();
     }
-    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+    DocRouter router = collection.getRouter() != null ? collection.getRouter() : DocRouters.DEFAULT;
     if (rangesStr != null) {
       String[] ranges = rangesStr.split(",");
       if (ranges.length == 0 || ranges.length == 1) {
@@ -1087,7 +1088,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         for (int i = 0; i < ranges.length; i++) {
           String r = ranges[i];
           try {
-            subRanges.add(DocRouter.DEFAULT.fromString(r));
+            subRanges.add(DocRouters.DEFAULT.fromString(r));
           } catch (Exception e) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

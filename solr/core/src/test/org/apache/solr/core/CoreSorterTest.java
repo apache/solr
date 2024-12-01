@@ -33,7 +33,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouters;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -146,7 +146,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
               sliceMap,
               Collections.singletonMap(
                   ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-              DocRouter.DEFAULT);
+              DocRouters.DEFAULT);
       collToState.put(collection, col);
     }
     // reverse map

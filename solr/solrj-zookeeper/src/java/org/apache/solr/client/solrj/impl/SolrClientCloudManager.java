@@ -30,6 +30,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
 
   @Override
   public TimeSource getTimeSource() {
-    return TimeSource.NANO_TIME;
+    return TimeSources.NANO_TIME;
   }
 
   @Override

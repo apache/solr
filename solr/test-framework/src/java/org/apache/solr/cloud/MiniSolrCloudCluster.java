@@ -76,7 +76,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.TracerConfigurator;
 import org.apache.solr.embedded.JettyConfig;
@@ -354,7 +354,7 @@ public class MiniSolrCloudCluster {
     if (timeoutSeconds == 0) {
       timeoutSeconds = DEFAULT_TIMEOUT;
     }
-    TimeOut timeout = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME);
 
     synchronized (startupWait) {
       while (numServers != (numRunning = numRunningJetty(getJettySolrRunners()))) {
@@ -602,7 +602,7 @@ public class MiniSolrCloudCluster {
 
     // may be deleted, but may not be gone yet - we only wait to not see it in ZK, not for core
     // unloads
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     while (true) {
 
       if (timeout.hasTimedOut()) {

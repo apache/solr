@@ -60,7 +60,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
@@ -453,7 +453,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     Utils.consumeFully(r.getEntity());
 
     // HACK (continued)...
-    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
     timeout.waitFor(
         "core containers never fully updated their auth plugins",
         () -> {

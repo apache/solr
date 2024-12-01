@@ -32,7 +32,7 @@ import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -78,7 +78,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
           getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
       // currently, removing a collection does not wait for cores to be unloaded
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSources.NANO_TIME);
       while (true) {
 
         if (timeout.hasTimedOut()) {

@@ -290,7 +290,7 @@ allprojects { prj ->
             '-Xep:ChainedAssertionLosesContext:WARN',
             '-Xep:CharacterGetNumericValue:WARN',
             '-Xep:ClassCanBeStatic:WARN',
-            // '-Xep:ClassInitializationDeadlock:WARN', // todo check if useful or comment why not
+            '-Xep:ClassInitializationDeadlock:WARN',
             '-Xep:ClassNewInstance:WARN',
             // '-Xep:CloseableProvides:OFF', // we don't use this annotation
             '-Xep:ClosingStandardOutputStreams:WARN',

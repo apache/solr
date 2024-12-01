@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.TimeSources;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +66,7 @@ public final class BackupStatusChecker {
   public String waitForBackupSuccess(final String backupName, final int timeLimitInSeconds)
       throws Exception {
     return waitForBackupSuccess(
-        backupName, new TimeOut(timeLimitInSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+        backupName, new TimeOut(timeLimitInSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME));
   }
 
   /**
@@ -111,7 +111,7 @@ public final class BackupStatusChecker {
       throws Exception {
 
     return waitForDifferentBackupDir(
-        directoryName, new TimeOut(timeLimitInSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+        directoryName, new TimeOut(timeLimitInSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME));
   }
 
   /**
@@ -221,7 +221,7 @@ public final class BackupStatusChecker {
   public void waitForBackupDeletionSuccess(final String backupName, final int timeLimitInSeconds)
       throws Exception {
     waitForBackupDeletionSuccess(
-        backupName, new TimeOut(timeLimitInSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+        backupName, new TimeOut(timeLimitInSeconds, TimeUnit.SECONDS, TimeSources.NANO_TIME));
   }
 
   /**
