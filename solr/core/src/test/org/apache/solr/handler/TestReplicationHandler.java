@@ -72,6 +72,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -1518,9 +1519,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         Arrays.asList(absFile, "../dir/traversal", "illegal\rfile\nname\t");
     List<String> params =
         Arrays.asList(
-            ReplicationHandler.FILE,
-            ReplicationHandler.CONF_FILE_SHORT,
-            ReplicationHandler.TLOG_FILE);
+            ReplicationAPIBase.FILE,
+            ReplicationAPIBase.CONF_FILE_SHORT,
+            ReplicationAPIBase.TLOG_FILE);
     for (String param : params) {
       for (String filename : illegalFilenames) {
         expectThrows(

@@ -27,17 +27,17 @@ To run it, open a terminal and enter:
 
 [,console]
 ----
-$ bin/solr stream --header -c techproducts --delimiter=\| 'search(techproducts,q="name:memory",fl="name,price")'
+$ bin/solr stream -c techproducts --header --fields price,name --delimiter=\| 'search(techproducts,q="iPod",fl="name,price")'
 ----
 
 This will run the provided streaming expression on the `techproducts` collection on your local Solr and produce:  
 
 [,console]
 ----
-name|price
-CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail|185.0
-CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail|74.99
-A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM|
+price|name
+11.5|iPod & iPod Mini USB 2.0 Cable
+19.95|Belkin Mobile Power Cord for iPod w/ Dock
+399.0|Apple 60 GB iPod with Video Playback Black
 ----
 
 TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe within the shell script.
@@ -50,13 +50,22 @@ Assuming you have create the file `stream.expr` with the contents:
 ----
 # Stream a search
 
+/*
+ You can have
+ multi-line comments as well.
+*/
+
 search(
   techproducts,
   q="name:memory",
   fl="name,price",
   sort="price desc"
 )
+
+// the end
 ----
+
+Notice the various ways to format comments in the file?
 
 Then you can run it on the Solr collection `techproducts`, specifying you want a header row:
 
@@ -83,7 +92,7 @@ The `--help` (or simply `-h`) option will output information on its usage (i.e.,
 
 [source,plain]
 ----
-usage: bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [-e <ENVIRONMENT>] [-f
+usage: bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields
        <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]
 
 List of options:
@@ -91,9 +100,9 @@ List of options:
  -c,--name <NAME>                   Name of the specific collection to execute expression on if the execution is set
                                     to 'remote'. Required for 'remote' execution environment.
     --delimiter <CHARACTER>         The output delimiter. Default to using three spaces.
- -e,--execution <ENVIRONMENT>       Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr
+    --execution <ENVIRONMENT>       Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr
                                     server. Default environment is 'remote'.
- -f,--fields <FIELDS>               The fields in the tuples to output. Defaults to fields in the first tuple of result
+    --fields <FIELDS>               The fields in the tuples to output. Defaults to fields in the first tuple of result
                                     set.
  -h,--help                          Print this message.
     --header                        Specify to include a header line.
@@ -173,4 +182,21 @@ $ bin/solr stream -c techproducts 'echo("$1")' "Hello World"
 Hello World
 ----
 
-This also works when using `.expr` files.
+This also works when using `.expr` files.  You can nest as many variables you want.
+Here is an example of passing in both the file and the number of lines to process:
+
+----
+# Index CSV File
+
+update(
+  gettingstarted,
+  parseCSV(
+    cat($1, maxLines=$2)
+  )
+)
+----
+
+[,console]
+----
+$ bin/solr stream -c techproducts file.expr ./example/exampledocs/books.csv 10
+----

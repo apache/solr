@@ -1174,11 +1174,9 @@ for %%a in (%*) do (
       if "!arg:~0,1!" equ "-" set "option=!arg!"
    ) else (
       set "option!option!=%%a"
-      if "!option!" equ "-s" set "SOLR_HOME=%%a"
       if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"
-      if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
-      if not "!option!" equ "-s" if not "!option!" equ "--solr-home" if not "!option!" equ "-d" if not "!option!" equ "--server-dir" (
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
+      if not "!option!" equ "--solr-home" if not "!option!" equ "--server-dir" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )
       set "option="

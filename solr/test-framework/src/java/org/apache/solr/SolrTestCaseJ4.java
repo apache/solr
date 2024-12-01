@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -292,7 +291,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
 
-    System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -340,7 +338,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty(URL_SCHEME);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
-      System.clearProperty(ZK_WHITELIST_PROPERTY);
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
 

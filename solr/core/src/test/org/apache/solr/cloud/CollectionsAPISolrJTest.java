@@ -133,10 +133,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String COLL_NAME = "CollWithDefaultClusterProperties";
     try {
       V2Response rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
               .withPayload(
-                  "{set-obj-property:{defaults : {collection:{numShards : 2 , nrtReplicas : 2}}}}")
+                  "{\"defaults\": {\"collection\": {\"numShards\": 2, \"nrtReplicas\": 2}}}")
               .build()
               .process(cluster.getSolrClient());
 
@@ -172,15 +172,13 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
       // unset only a single value
       rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
               .withPayload(
                   "{\n"
-                      + "  \"set-obj-property\": {\n"
-                      + "    \"defaults\" : {\n"
-                      + "      \"collection\": {\n"
-                      + "        \"nrtReplicas\": null\n"
-                      + "      }\n"
+                      + "  \"defaults\" : {\n"
+                      + "    \"collection\": {\n"
+                      + "      \"nrtReplicas\": null\n"
                       + "    }\n"
                       + "  }\n"
                       + "}")
@@ -199,9 +197,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertNull(clusterProperty);
 
       rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
-              .withPayload("{set-obj-property:{defaults: {collection:null}}}")
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
+              .withPayload("{\"defaults\": {\"collection\": null}}")
               .build()
               .process(cluster.getSolrClient());
       // assert that it is really gone in both old and new paths
@@ -216,9 +214,9 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertNull(clusterProperty);
     } finally {
       V2Response rsp =
-          new V2Request.Builder("/cluster")
-              .withMethod(SolrRequest.METHOD.POST)
-              .withPayload("{set-obj-property:{defaults: null}}")
+          new V2Request.Builder("/cluster/properties")
+              .withMethod(SolrRequest.METHOD.PUT)
+              .withPayload("{\"defaults\": null}")
               .build()
               .process(cluster.getSolrClient());
     }
