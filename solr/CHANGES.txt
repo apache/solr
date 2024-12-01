@@ -130,6 +130,11 @@ Other Changes
 
 * SOLR-16903: Update CLI tools to use java.nio.file.Path instead of java.io.File (Andrey Bozhko)
 
+* SOLR-16427: Address potential class initialization deadlocks reported by error-prone for TimeSource, DocRouter,
+  MapWriter, QParserPlugin, ValueSourceParser and TransformerFactory. Static members are therefore moved to the new
+  classes TimeSources, DocRouters, MapWriters, QParserPlugins, ValueSourceParsers and TransformerFactories accordingly.
+  (Christos Malliaridis, David Smiley)
+
 ==================  9.8.0 ==================
 New Features
 ---------------------
