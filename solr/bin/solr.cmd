@@ -370,7 +370,7 @@ goto done
 @echo   -m memory     Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g
 @echo                   results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m
 @echo.
-@echo   --solr.home dir  Sets the solr.solr.home system property; Solr will create core directories under
+@echo   --solr-home dir  Sets the solr.solr.home system property; Solr will create core directories under
 @echo                   this directory. This allows you to run multiple Solr instances on the same host
 @echo                   while reusing the same server directory set using the --server-dir parameter. If set, the
 @echo                   specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
@@ -1565,11 +1565,9 @@ for %%a in (%*) do (
       if "!arg:~0,1!" equ "-" set "option=!arg!"
    ) else (
       set "option!option!=%%a"
-      if "!option!" equ "-s" set "SOLR_HOME=%%a"
-      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"        
-      if "!option!" equ "-d" set "SOLR_SERVER_DIR=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
-      if not "!option!" equ "-s" if not "!option!" equ "--solr-home" if not "!option!" equ "-d" if not "!option!" equ "--server-dir" (
+      if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
+      if not "!option!" equ "--solr-home" if not "!option!" equ "--server-dir" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )
       set "option="
