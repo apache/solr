@@ -21,7 +21,7 @@ package org.apache.solr.monitor.search;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.QueryMatch;
@@ -32,23 +32,18 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
   private final Function<IndexSearcher, CandidateMatcher<T>> matcherFactory;
   private final IndexSearcher docBatchSearcher;
-  private final Consumer<SyncSolrMatcherSink<T>> sinkConsumer;
-
-  private int queriesRun;
+  private final ConcurrentHashMap.KeySetView<ReverseSearchQuery.Metadata, Boolean> metadataSet =
+      ConcurrentHashMap.newKeySet();
 
   SyncSolrMatcherSink(
-      Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
-      IndexSearcher docBatchSearcher,
-      Consumer<SyncSolrMatcherSink<T>> sinkConsumer) {
+      Function<IndexSearcher, CandidateMatcher<T>> matcherFactory, IndexSearcher docBatchSearcher) {
     this.matcherFactory = matcherFactory;
     this.docBatchSearcher = docBatchSearcher;
-    this.sinkConsumer = sinkConsumer;
   }
 
   @Override
   public boolean matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
       throws IOException {
-    queriesRun++;
     var matcher = matcherFactory.apply(docBatchSearcher);
     matcher.matchQuery(queryId, matchQuery, metadata);
     var matches = matcher.finish(Long.MIN_VALUE, 1);
@@ -62,11 +57,13 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
   }
 
   @Override
-  public void complete() {
-    sinkConsumer.accept(this);
+  public void captureMetadata(ReverseSearchQuery.Metadata metadata) {
+    metadataSet.add(metadata);
   }
 
-  public int getQueriesRun() {
-    return queriesRun;
+  @Override
+  public ReverseSearchQuery.Metadata getMetadata() {
+    return metadataSet.stream()
+        .reduce(ReverseSearchQuery.Metadata.IDENTITY, ReverseSearchQuery.Metadata::add);
   }
 }

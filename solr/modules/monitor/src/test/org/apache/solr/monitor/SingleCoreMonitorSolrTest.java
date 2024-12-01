@@ -188,6 +188,8 @@ public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
           CommonParams.QT,
           "/reverseSearch",
           CommonParams.DEBUG_QUERY,
+          "true",
+          "multiThreaded",
           "true"
         };
 

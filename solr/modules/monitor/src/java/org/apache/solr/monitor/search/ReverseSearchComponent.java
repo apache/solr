@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiPredicate;
 import org.apache.lucene.document.Document;
@@ -97,9 +96,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       final MonitorQueryCache monitorQueryCache =
           (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
 
-      final MonitorPostFilter monitorPostFilter =
-          monitorPostFilter(rb, documentBatch, monitorQueryCache);
-
       final BiPredicate<String, BytesRef> termAcceptor;
       if (monitorQueryCache == null) {
         termAcceptor = (__, ___) -> true;
@@ -107,47 +103,48 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
         termAcceptor = monitorQueryCache::acceptTerm;
       }
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
-
-      final List<Query> mutableFilters =
-          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
-
-      mutableFilters.add(preFilterQuery);
-      mutableFilters.add(monitorPostFilter);
-
-      rb.setFilters(mutableFilters);
+      rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, monitorQueryCache));
     }
   }
 
-  private static MonitorPostFilter monitorPostFilter(
-      ResponseBuilder rb, LeafReader documentBatch, MonitorQueryCache monitorQueryCache) {
+  private static ReverseSearchQuery reverseSearchQuery(
+      Query preFilterQuery,
+      ResponseBuilder rb,
+      LeafReader documentBatch,
+      MonitorQueryCache monitorQueryCache) {
     final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
         new SolrMonitorQueryDecoder(rb.req.getCore());
 
     final SolrMatcherSink solrMatcherSink =
         new SyncSolrMatcherSink<>(
-            QueryMatch.SIMPLE_MATCHER::createMatcher,
-            new IndexSearcher(documentBatch),
-            matcherSink -> {
-              if (rb.isDebug()) {
-                DebugComponent.CustomDebugInfoSources debugInfoSources =
-                    (DebugComponent.CustomDebugInfoSources)
-                        rb.req
-                            .getContext()
-                            .computeIfAbsent(
-                                DebugComponent.CustomDebugInfoSources.KEY,
-                                key -> new DebugComponent.CustomDebugInfoSources());
-                var info = new SimpleOrderedMap<>();
-                info.add("queriesRun", matcherSink.getQueriesRun());
-                debugInfoSources.add(
-                    new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
-              }
-            });
+            QueryMatch.SIMPLE_MATCHER::createMatcher, new IndexSearcher(documentBatch));
+    rb.req.getContext().put(SolrMatcherSink.class.getSimpleName(), solrMatcherSink);
 
-    final SolrMonitorQueryCollector.CollectorContext collectorContext =
-        new SolrMonitorQueryCollector.CollectorContext(
+    final ReverseSearchQuery.ReverseSearchContext context =
+        new ReverseSearchQuery.ReverseSearchContext(
             monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
 
-    return new MonitorPostFilter(collectorContext);
+    return new ReverseSearchQuery(context, preFilterQuery);
+  }
+
+  @Override
+  public void process(ResponseBuilder rb) throws IOException {
+    super.process(rb);
+    SolrMatcherSink solrMatcherSink =
+        (SolrMatcherSink) rb.req.getContext().get(SolrMatcherSink.class.getSimpleName());
+    if (rb.isDebug() && solrMatcherSink != null) {
+      ReverseSearchQuery.Metadata metadata = solrMatcherSink.getMetadata();
+      DebugComponent.CustomDebugInfoSources debugInfoSources =
+          (DebugComponent.CustomDebugInfoSources)
+              rb.req
+                  .getContext()
+                  .computeIfAbsent(
+                      DebugComponent.CustomDebugInfoSources.KEY,
+                      key -> new DebugComponent.CustomDebugInfoSources());
+      var info = new SimpleOrderedMap<>();
+      info.add("queriesRun", metadata.getQueriesRun());
+      debugInfoSources.add(new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
+    }
   }
 
   @SuppressWarnings({"unchecked"})
