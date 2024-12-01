@@ -973,7 +973,8 @@ set SCRIPT_SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SCRIPT_SOLR_OPTS%
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
 IF "%GC_TUNE%"=="" (
-  set GC_TUNE=-XX:+PerfDisableSharedMem ^
+  set GC_TUNE=-XX:+UseG1GC ^
+    -XX:+PerfDisableSharedMem ^
     -XX:+ParallelRefProcEnabled ^
     -XX:MaxGCPauseMillis=250 ^
     -XX:+UseLargePages ^

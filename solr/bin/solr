@@ -1187,7 +1187,8 @@ function start_solr() {
 
   # define default GC_TUNE
   if [ -z "${GC_TUNE}" ]; then
-      GC_TUNE_ARR=('-XX:+PerfDisableSharedMem' \
+      GC_TUNE_ARR=('-XX:+UseG1GC' \
+        '-XX:+PerfDisableSharedMem' \
         '-XX:+ParallelRefProcEnabled' \
         '-XX:MaxGCPauseMillis=250' \
         '-XX:+UseLargePages' \
