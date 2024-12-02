@@ -1585,8 +1585,6 @@ public class ReplicationHandler extends RequestHandlerBase
 
   public static final String ALIAS = "alias";
 
-  public static final String CONF_CHECKSUM = "confchecksum";
-
   public static final String CONF_FILES = "confFiles";
 
   public static final String REPLICATE_AFTER = "replicateAfter";
