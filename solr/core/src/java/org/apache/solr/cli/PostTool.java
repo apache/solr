@@ -22,9 +22,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,10 +38,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,8 +53,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -202,7 +204,7 @@ public class PostTool extends ToolBase {
   private int currentDepth;
 
   static HashMap<String, String> mimeMap;
-  FileFilter fileFilter;
+  Predicate<Path> fileFilter;
   // Backlog for crawling
   List<LinkedHashSet<URI>> backlog = new ArrayList<>();
   Set<URI> visited = new HashSet<>();
@@ -350,7 +352,7 @@ public class PostTool extends ToolBase {
     displayTiming((long) timer.getTime());
   }
 
-  private void doFilesMode() {
+  private void doFilesMode() throws IOException {
     currentDepth = 0;
 
     info(
@@ -434,8 +436,16 @@ public class PostTool extends ToolBase {
     CLIO.out("Time spent: " + df.format(new Date(millis)));
   }
 
-  private boolean checkIsValidPath(File srcFile) {
-    return Files.exists(srcFile.toPath());
+  private boolean checkIsValidPath(Path srcFile) {
+    return Files.exists(srcFile);
+  }
+
+  private static Collection<Path> listFiles(Path directory, Predicate<Path> fileFilter)
+      throws IOException {
+    Predicate<Path> filter = fileFilter != null ? fileFilter : p -> true;
+    try (Stream<Path> directoryFiles = Files.list(directory)) {
+      return directoryFiles.filter(filter).collect(Collectors.toList());
+    }
   }
 
   /**
@@ -448,8 +458,8 @@ public class PostTool extends ToolBase {
   boolean recursionPossible(String[] args) {
     boolean recursionPossible = false;
     for (String arg : args) {
-      File f = new File(arg);
-      if (f.isDirectory()) {
+      Path f = Path.of(arg);
+      if (Files.isDirectory(f)) {
         recursionPossible = true;
       }
     }
@@ -464,26 +474,29 @@ public class PostTool extends ToolBase {
    * @param out output stream to post data to
    * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
+   * @throws IOException if an I/O error occurs
    */
-  public int postFiles(String[] args, int startIndexInArgs, OutputStream out, String type) {
+  public int postFiles(String[] args, int startIndexInArgs, OutputStream out, String type)
+      throws IOException {
     reset();
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
-      File srcFile = new File(args[j]);
-      filesPosted = getFilesPosted(out, type, srcFile);
+      filesPosted = getFilesPosted(out, type, args[j]);
     }
     return filesPosted;
   }
 
-  private int getFilesPosted(final OutputStream out, final String type, final File srcFile) {
+  private int getFilesPosted(final OutputStream out, final String type, final String src)
+      throws IOException {
     int filesPosted = 0;
+    Path srcFile = Path.of(src).toAbsolutePath();
     boolean isValidPath = checkIsValidPath(srcFile);
-    if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
+    if (isValidPath && Files.isDirectory(srcFile) && Files.isReadable(srcFile)) {
       filesPosted += postDirectory(srcFile, out, type);
-    } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-      filesPosted += postFiles(new File[] {srcFile}, out, type);
+    } else if (isValidPath && Files.isRegularFile(srcFile) && Files.isReadable(srcFile)) {
+      filesPosted += postFiles(List.of(srcFile), out, type);
     } else {
-      filesPosted += handleGlob(srcFile, out, type);
+      filesPosted += handleGlob(src, out, type);
     }
     return filesPosted;
   }
@@ -493,42 +506,40 @@ public class PostTool extends ToolBase {
    *
    * @return number of files posted total
    */
-  private int postDirectory(File dir, OutputStream out, String type) {
-    if (dir.isHidden() && !dir.getName().equals(".")) {
-      return (0);
+  private int postDirectory(Path dir, OutputStream out, String type) throws IOException {
+    if (Files.isHidden(dir) && !dir.getFileName().toString().equals(".")) {
+      return 0;
     }
     info(
         "Indexing directory "
-            + dir.getPath()
+            + dir
             + " ("
-            + dir.listFiles(fileFilter).length
+            + listFiles(dir, fileFilter).size()
             + " files, depth="
             + currentDepth
             + ")");
     int posted = 0;
-    posted += postFiles(dir.listFiles(fileFilter), out, type);
+    posted += postFiles(listFiles(dir, fileFilter), out, type);
     if (recursive > currentDepth) {
-      for (File d : dir.listFiles()) {
-        if (d.isDirectory()) {
-          currentDepth++;
-          posted += postDirectory(d, out, type);
-          currentDepth--;
-        }
+      for (Path d : listFiles(dir, Files::isDirectory)) {
+        currentDepth++;
+        posted += postDirectory(d, out, type);
+        currentDepth--;
       }
     }
     return posted;
   }
 
   /**
-   * Posts a list of file names
+   * Posts a collection of files identified by their paths
    *
    * @return number of files posted
    */
-  int postFiles(File[] files, OutputStream out, String type) {
+  int postFiles(Collection<Path> files, OutputStream out, String type) throws IOException {
     int filesPosted = 0;
-    for (File srcFile : files) {
+    for (Path srcFile : files) {
       try {
-        if (!srcFile.isFile() || srcFile.isHidden()) {
+        if (!Files.isRegularFile(srcFile) || Files.isHidden(srcFile)) {
           continue;
         }
         postFile(srcFile, out, type);
@@ -544,22 +555,24 @@ public class PostTool extends ToolBase {
   /**
    * This only handles file globs not full path globbing.
    *
-   * @param globFile file holding glob path
+   * @param globPathPattern glob pattern
    * @param out outputStream to write results to
    * @param type default content-type to use when posting (this may be overridden in auto mode)
    * @return number of files posted
+   * @throws IOException if an I/O error occurs
    */
-  int handleGlob(File globFile, OutputStream out, String type) {
+  int handleGlob(String globPathPattern, OutputStream out, String type) throws IOException {
     int filesPosted = 0;
-    File parent = globFile.getParentFile();
+    Path globPath = Path.of(globPathPattern);
+    Path parent = globPath.getParent();
     if (parent == null) {
-      parent = new File(".");
+      parent = Path.of(".");
     }
-    String fileGlob = globFile.getName();
-    PostTool.GlobFileFilter ff = new PostTool.GlobFileFilter(fileGlob, false);
-    File[] fileList = parent.listFiles(ff);
-    if (fileList == null || fileList.length == 0) {
-      warn("No files or directories matching " + globFile);
+    String fileGlob = globPath.getFileName().toString();
+    GlobFilter ff = new GlobFilter(fileGlob, false);
+    Collection<Path> fileList = listFiles(parent, ff);
+    if (fileList.isEmpty()) {
+      warn("No files or directories matching " + globPath);
     } else {
       filesPosted = postFiles(fileList, out, type);
     }
@@ -810,7 +823,7 @@ public class PostTool extends ToolBase {
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type)
+  public void postFile(Path file, OutputStream output, String type)
       throws MalformedURLException, URISyntaxException {
     InputStream is = null;
 
@@ -838,11 +851,14 @@ public class PostTool extends ToolBase {
         if (!urlStr.contains("resource.name")) {
           urlStr =
               appendParam(
-                  urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+                  urlStr,
+                  "resource.name=" + URLEncoder.encode(file.toAbsolutePath().toString(), UTF_8));
         }
         if (!urlStr.contains("literal.id")) {
           urlStr =
-              appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+              appendParam(
+                  urlStr,
+                  "literal.id=" + URLEncoder.encode(file.toAbsolutePath().toString(), UTF_8));
         }
         uri = new URI(urlStr);
       }
@@ -854,7 +870,7 @@ public class PostTool extends ToolBase {
     if (dryRun) {
       info(
           "DRY RUN of POSTing file "
-              + file.getName()
+              + file.getFileName()
               + (auto ? " (" + type + ")" : "")
               + " to [base]"
               + suffix);
@@ -862,12 +878,12 @@ public class PostTool extends ToolBase {
       try {
         info(
             "POSTing file "
-                + file.getName()
+                + file.getFileName()
                 + (auto ? " (" + type + ")" : "")
                 + " to [base]"
                 + suffix);
-        is = new FileInputStream(file);
-        postData(is, file.length(), output, type, uri);
+        is = Files.newInputStream(file);
+        postData(is, Files.size(file), output, type, uri);
       } catch (IOException e) {
         warn("Can't open/read file: " + file);
       } finally {
@@ -909,11 +925,11 @@ public class PostTool extends ToolBase {
    * Guesses the type of file, based on file name suffix Returns "application/octet-stream" if no
    * corresponding mimeMap type.
    *
-   * @param file the file
+   * @param path path to the file
    * @return the content-type guessed
    */
-  protected static String guessType(File file) {
-    String name = file.getName();
+  protected static String guessType(Path path) {
+    String name = path.getFileName().toString();
     String suffix = name.substring(name.lastIndexOf('.') + 1);
     String type = mimeMap.get(suffix.toLowerCase(Locale.ROOT));
     return (type != null) ? type : "application/octet-stream";
@@ -930,7 +946,7 @@ public class PostTool extends ToolBase {
       return true;
     }
 
-    if (params.length() > 0) {
+    if (!params.isEmpty()) {
       try {
         uri = new URI(appendParam(uri.toString(), params));
       } catch (URISyntaxException e) {
@@ -1078,14 +1094,14 @@ public class PostTool extends ToolBase {
     dest.flush();
   }
 
-  public FileFilter getFileFilterFromFileTypes(String fileTypes) {
+  public Predicate<Path> getFileFilterFromFileTypes(String fileTypes) {
     String glob;
     if (fileTypes.equals("*")) {
       glob = ".*";
     } else {
       glob = "^.*\\.(" + fileTypes.replace(",", "|") + ")$";
     }
-    return new PostTool.GlobFileFilter(glob, true);
+    return new GlobFilter(glob, true);
   }
 
   //
@@ -1131,10 +1147,10 @@ public class PostTool extends ToolBase {
   }
 
   /** Inner class to filter files based on glob wildcards */
-  static class GlobFileFilter implements FileFilter {
+  static class GlobFilter implements Predicate<Path> {
     private final Pattern p;
 
-    public GlobFileFilter(String pattern, boolean isRegex) {
+    public GlobFilter(String pattern, boolean isRegex) {
       String _pattern = pattern;
       if (!isRegex) {
         _pattern =
@@ -1159,8 +1175,8 @@ public class PostTool extends ToolBase {
     }
 
     @Override
-    public boolean accept(File file) {
-      return p.matcher(file.getName()).find();
+    public boolean test(Path path) {
+      return p.matcher(path.getFileName().toString()).find();
     }
   }
 
