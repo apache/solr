@@ -38,7 +38,6 @@ import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
@@ -86,10 +85,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     super.prepare(rb);
-
-    rb.setQuery(new MatchAllDocsQuery());
-
-    try (final var documentBatchVisitor =
+    try (final DocumentBatchVisitor documentBatchVisitor =
         documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema())) {
       final LeafReader documentBatch = documentBatchVisitor.get();
 
@@ -141,7 +137,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
                   .computeIfAbsent(
                       DebugComponent.CustomDebugInfoSources.KEY,
                       key -> new DebugComponent.CustomDebugInfoSources());
-      var info = new SimpleOrderedMap<>();
+      SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
       info.add("queriesRun", metadata.getQueriesRun());
       debugInfoSources.add(new DebugComponent.CustomDebugInfoSource("reverse-search-debug", info));
     }
@@ -154,19 +150,19 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     if (!(jsonParams instanceof Map)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need params");
     }
-    var paramMap = (Map<?, ?>) jsonParams;
-    var documents = paramMap.get(MONITOR_DOCUMENTS_KEY);
+    Map<?, ?> paramMap = (Map<?, ?>) jsonParams;
+    Object documents = paramMap.get(MONITOR_DOCUMENTS_KEY);
     if (!(documents instanceof List)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need documents list");
     }
     List<Document> luceneDocs = new ArrayList<>();
-    for (var document : (List<?>) documents) {
+    for (Object document : (List<?>) documents) {
       if (!(document instanceof Map)
           || !((Map<?, ?>) document).keySet().stream().allMatch(key -> key instanceof String)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "document needs to be a string-keyed map");
       }
-      var docAsMap = (Map<Object, Object>) document;
+      Map<Object, Object> docAsMap = (Map<Object, Object>) document;
       docAsMap.putIfAbsent(indexSchema.getUniqueKeyField().getName(), UUID.randomUUID().toString());
       var solrInputDoc = JsonLoader.buildDoc((Map<String, Object>) document);
       var luceneDoc = DocumentBuilder.toDocument(solrInputDoc, indexSchema);
