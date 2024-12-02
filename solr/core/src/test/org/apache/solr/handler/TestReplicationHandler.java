@@ -134,8 +134,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
             buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
-
-    System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
 
   public void clearIndexWithReplication() throws Exception {
@@ -168,7 +166,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerClient.close();
       followerClient = null;
     }
-    System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
