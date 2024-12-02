@@ -138,6 +138,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17556: "home" and "data" directories used by Solr examples have been updated to align with documented best practices. (Eric Pugh, Houston Putman)
 
+* SOLR-17577: Remove "solr.indexfetcher.sotimeout" system property that was for optimizing replication tests.  It was disabled, but not removed. (Eric Pugh)
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------
