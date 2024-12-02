@@ -179,9 +179,6 @@ allprojects {
                 handler.add(conf.name, libs.apache.httpcomponents.httpmime, {
                     because 'version alignment for consistency across project'
                 })
-                handler.add(conf.name, libs.apache.kerby.core, {
-                    because 'version alignment for consistency across project'
-                })
                 handler.add(conf.name, libs.apache.zookeeper.zookeeper, {
                     because 'version alignment for consistency across project'
                 })

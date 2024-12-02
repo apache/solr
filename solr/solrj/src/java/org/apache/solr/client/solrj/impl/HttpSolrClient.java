@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -870,17 +869,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       return this;
     }
 
-    /** Use a delegation token for authenticating via the KerberosPlugin */
-    public Builder withKerberosDelegationToken(String delegationToken) {
-      if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) != null) {
-        throw new IllegalStateException(
-            DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM + " is already defined!");
-      }
-      this.invariantParams.add(
-          DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, delegationToken);
-      return this;
-    }
-
     /**
      * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
      *
@@ -907,20 +895,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             "Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
 
-      if (this.invariantParams.get(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM) == null) {
-        return new HttpSolrClient(this);
-      } else {
-        urlParamNames =
-            urlParamNames == null
-                ? Set.of(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)
-                : urlParamNames;
-        if (!urlParamNames.contains(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM)) {
-          urlParamNames = new HashSet<>(urlParamNames);
-          urlParamNames.add(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM);
-        }
-        urlParamNames = Set.copyOf(urlParamNames);
-        return new DelegationTokenHttpSolrClient(this);
-      }
+      return new HttpSolrClient(this);
     }
 
     @Override

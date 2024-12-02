@@ -106,10 +106,6 @@ allprojects {
                     exclude "src/test-files/META-INF/services/*"
                     break
 
-                case ":solr:modules:hadoop-auth":
-                    exclude "src/test-files/**/*.conf"
-                    break
-
                 case ":solr:modules:hdfs":
                     exclude "src/test-files/**/*.aff"
                     exclude "src/test-files/**/*.dic"

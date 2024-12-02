@@ -93,6 +93,8 @@ Deprecation Removals
 
 * SOLR-17564: Remove code in Assign used for backwards compatibility with Collections created prior to 7.0 (Paul McArthur)
 
+* SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)

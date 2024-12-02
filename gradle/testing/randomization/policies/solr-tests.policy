@@ -100,7 +100,7 @@ grant {
   permission java.lang.RuntimePermission "closeClassLoader";
   // needed by HttpSolrClient
   permission java.lang.RuntimePermission "getFileSystemAttributes";
-  // needed by hadoop auth (TODO: there is a cleaner way to handle this)
+  // needed by hadoop hdfs (TODO: there is a cleaner way to handle this)
   permission java.lang.RuntimePermission "loadLibrary.jaas";
   permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
   permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
@@ -135,17 +135,19 @@ grant {
   permission javax.management.MBeanServerPermission "findMBeanServer";
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
-
-  // needed by hadoop auth
+  
+  // needed by hadoop hdfs
   permission javax.security.auth.AuthPermission "getSubject";
   permission javax.security.auth.AuthPermission "modifyPrincipals";
   permission javax.security.auth.AuthPermission "doAs";
-  permission javax.security.auth.AuthPermission "getLoginConfiguration";
-  permission javax.security.auth.AuthPermission "setLoginConfiguration";
   permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
   permission javax.security.auth.AuthPermission "modifyPublicCredentials";
   permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
 
+  // needed by crossdc
+  permission javax.security.auth.AuthPermission "getLoginConfiguration";
+  permission javax.security.auth.AuthPermission "setLoginConfiguration";
+  
   // needed by hadoop security
   permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
   permission java.security.SecurityPermission "insertProvider";

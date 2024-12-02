@@ -890,23 +890,5 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
             .build()) {
       assertEquals(2, createdClient.getInvariantParams().getParams("fq").length);
     }
-
-    try (SolrClient createdClient =
-        new HttpSolrClient.Builder()
-            .withBaseSolrUrl(getBaseUrl())
-            .withKerberosDelegationToken("mydt")
-            .withInvariantParams(
-                SolrTestCaseJ4.params(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, "mydt"))
-            .build()) {
-      fail();
-    } catch (Exception ex) {
-      if (!ex.getMessage()
-          .equals(
-              "parameter "
-                  + DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM
-                  + " is redefined.")) {
-        throw ex;
-      }
-    }
   }
 }
