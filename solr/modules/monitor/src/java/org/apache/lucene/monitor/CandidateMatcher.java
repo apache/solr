@@ -95,7 +95,7 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   public abstract T resolve(T match1, T match2);
 
   /** Called by the Monitor if running a query throws an Exception */
-  void reportError(String queryId, Exception e) {
+  public void reportError(String queryId, Exception e) {
     this.errors.put(queryId, e);
   }
 
