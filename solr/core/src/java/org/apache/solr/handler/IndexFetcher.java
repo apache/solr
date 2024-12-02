@@ -27,8 +27,6 @@ import static org.apache.solr.handler.ReplicationHandler.COMMAND;
 import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
-import static org.apache.solr.handler.ReplicationHandler.LEGACY_LEADER_URL;
-import static org.apache.solr.handler.ReplicationHandler.LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.CHECKSUM;
@@ -279,17 +277,11 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnLeaderVersionZero =
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            initArgs,
-            SKIP_COMMIT_ON_LEADER_VERSION_ZERO,
-            LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
+    Object skipCommitOnLeaderVersionZero = initArgs.get(SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
     if (skipCommitOnLeaderVersionZero != null && skipCommitOnLeaderVersionZero instanceof Boolean) {
       this.skipCommitOnLeaderVersionZero = (boolean) skipCommitOnLeaderVersionZero;
     }
-    String leaderUrl =
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            initArgs, LEADER_URL, LEGACY_LEADER_URL);
+    String leaderUrl = (String) initArgs.get(LEADER_URL);
     if (leaderUrl == null && !this.fetchFromLeader)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "'leaderUrl' is required for a follower");
