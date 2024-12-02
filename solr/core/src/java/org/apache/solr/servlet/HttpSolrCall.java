@@ -278,7 +278,7 @@ public class HttpSolrCall {
         } else {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
-            extractRemotePath(collectionName, origCorename);
+            extractRemotePath(collectionName);
             if (action == REMOTEQUERY) {
               path = path.substring(idx);
               return;
@@ -461,10 +461,10 @@ public class HttpSolrCall {
     }
   }
 
-  protected void extractRemotePath(String collectionName, String origCorename)
+  protected void extractRemotePath(String collectionName)
       throws KeeperException, InterruptedException, SolrException {
     assert core == null;
-    coreUrl = getRemoteCoreUrl(collectionName, origCorename);
+    coreUrl = getRemoteCoreUrl(collectionName);
     // don't proxy for internal update requests
     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
@@ -1089,15 +1089,13 @@ public class HttpSolrCall {
     return core;
   }
 
-  protected String getRemoteCoreUrl(String collectionName, String origCorename)
-      throws SolrException {
+  protected String getRemoteCoreUrl(String collectionName) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     if (docCollection == null) {
       return null;
     }
     Collection<Slice> activeSlices = docCollection.getActiveSlices();
-    boolean byCoreName = false;
 
     int totalReplicas = 0;
 
@@ -1123,23 +1121,17 @@ public class HttpSolrCall {
           "No active replicas found for collection: " + collectionName);
     }
 
-    String coreUrl = getCoreUrl(origCorename, clusterState, activeSlices, byCoreName, true);
+    String coreUrl = getCoreUrl(activeSlices, true, clusterState.getLiveNodes());
 
     if (coreUrl == null) {
-      coreUrl = getCoreUrl(origCorename, clusterState, activeSlices, byCoreName, false);
+      coreUrl = getCoreUrl(activeSlices, false, clusterState.getLiveNodes());
     }
 
     return coreUrl;
   }
 
   private String getCoreUrl(
-      String origCorename,
-      ClusterState clusterState,
-      Collection<Slice> slices,
-      boolean byCoreName,
-      boolean activeReplicas) {
-    String coreUrl;
-    Set<String> liveNodes = clusterState.getLiveNodes();
+      Collection<Slice> slices, boolean activeReplicas, Set<String> liveNodes) {
 
     Iterator<Slice> shuffledSlices = new RandomIterator<>(Utils.RANDOM, slices);
     while (shuffledSlices.hasNext()) {
@@ -1153,10 +1145,6 @@ public class HttpSolrCall {
             || (liveNodes.contains(replica.getNodeName())
                 && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !Objects.equals(origCorename, replica.getStr(CORE_NAME_PROP))) {
-            // if it's by core name, make sure they match
-            continue;
-          }
           if (Objects.equals(replica.getBaseUrl(), cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
