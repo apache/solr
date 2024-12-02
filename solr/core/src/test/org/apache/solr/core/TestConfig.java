@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.core.SolrConfig.LIB_ENABLED_SYSPROP;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -38,6 +40,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty(LIB_ENABLED_SYSPROP, "true");
     initCore("solrconfig-test-misc.xml", "schema-reversed.xml");
   }
 

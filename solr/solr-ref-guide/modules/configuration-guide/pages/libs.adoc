@@ -50,6 +50,13 @@ Solr plugins won't work in these locations.
 
 == Lib Directives in SolrConfig
 
+[WARNING]
+====
+`<lib/>` directives are deprecated and will be removed in Solr 10.0.
+In the interim, Solr disables this feature by default in order to minimize the security exposure of our users.
+Expert users who wish to enable `<lib/>` directives in their deployment may do so by specifying setting the `solr.config.lib.enabled` sysprop to `true`.
+====
+
 _Both_ plugin and xref:resource-loading.adoc[resource] file paths are configurable via `<lib/>` directives in `solrconfig.xml`.
 When a directive matches a directory, then resources can be resolved from it.
 When a directive matches a `.jar` file, Solr plugins and their dependencies are resolved from it.

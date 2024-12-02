@@ -17,6 +17,8 @@
 
 package org.apache.solr.hdfs.cloud;
 
+import static org.apache.solr.core.SolrConfig.LIB_ENABLED_SYSPROP;
+
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -49,6 +51,7 @@ public class HdfsCollectionsApiTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty(LIB_ENABLED_SYSPROP, "true");
     configureCluster(2).configure();
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());

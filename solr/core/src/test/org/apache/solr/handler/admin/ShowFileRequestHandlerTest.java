@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.core.SolrConfig.LIB_ENABLED_SYSPROP;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -46,6 +48,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    System.setProperty(LIB_ENABLED_SYSPROP, "true");
     initCore("solrconfig.xml", "schema.xml");
     createAndStartJetty(legacyExampleCollection1SolrHome());
   }
