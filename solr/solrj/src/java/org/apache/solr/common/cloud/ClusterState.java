@@ -51,8 +51,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Immutable state of the cloud. Normally you can get the state by using {@code
  * ZkStateReader#getClusterState()}.
- * <p>
- * However, the {@link #setLiveNodes list of live nodes} is updated when nodes go up and down.
+ *
+ * <p>However, the {@link #setLiveNodes list of live nodes} is updated when nodes go up and down.
  *
  * @lucene.experimental
  */

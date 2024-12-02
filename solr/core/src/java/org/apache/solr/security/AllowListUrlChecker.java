@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.core.NodeConfig;
@@ -86,6 +85,7 @@ public class AllowListUrlChecker {
 
   /** Allow list of hosts. Elements in the list will be host:port (no protocol or context). */
   private final Set<String> hostAllowList;
+
   private volatile Set<String> liveHostUrlsCache;
   private volatile Set<String> liveNodesCache;
 
@@ -158,17 +158,21 @@ public class AllowListUrlChecker {
   }
 
   /**
-   * Gets the set of live hosts urls (host:port) built from the set of live nodes.
-   * The set is cached to be reused until the live nodes change.
+   * Gets the set of live hosts urls (host:port) built from the set of live nodes. The set is cached
+   * to be reused until the live nodes change.
    */
   private Set<String> getLiveHostUrls(ClusterState clusterState) {
     if (clusterState == null) {
       return Set.of();
     }
-    Set<String> liveNodes = clusterState.getLiveNodes();
-    if (liveHostUrlsCache == null || liveNodes != liveNodesCache) {
-      liveHostUrlsCache = buildLiveHostUrls(liveNodes);
-      liveNodesCache = liveNodes;
+    if (liveHostUrlsCache == null || clusterState.getLiveNodes() != liveNodesCache) {
+      synchronized (this) {
+        Set<String> liveNodes = clusterState.getLiveNodes();
+        if (liveHostUrlsCache == null || liveNodes != liveNodesCache) {
+          liveHostUrlsCache = buildLiveHostUrls(liveNodes);
+          liveNodesCache = liveNodes;
+        }
+      }
     }
     return liveHostUrlsCache;
   }
