@@ -60,6 +60,12 @@ Users who previously relied on collection-specific URLs to avoid including the c
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
 
+=== SolrCloud request routing
+
+HTTP requests to SolrCloud that are for a specific core must be delivered to the node with that core, or else an HTTP 404 Not Found response will occur.
+Previously, SolrCloud would try too hard scanning the cluster's state to look for it and internally route/proxy it.
+If only one node is exposed to a client, and if the client uses the bin/solr export tool, it probably won't work.
+
 === Deprecation removals
 
 * The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.

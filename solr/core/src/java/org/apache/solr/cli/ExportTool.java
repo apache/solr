@@ -660,8 +660,8 @@ public class ExportTool extends ToolBase {
       }
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
-
-        try (SolrClient client = CLIUtils.getSolrClient(baseurl, credentials)) {
+        // reference the replica's node URL, not the baseUrl in scope, which could be anywhere
+        try (SolrClient client = CLIUtils.getSolrClient(replica.getBaseUrl(), credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
           QueryRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
