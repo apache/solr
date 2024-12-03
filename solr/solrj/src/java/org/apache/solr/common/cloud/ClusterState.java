@@ -386,7 +386,7 @@ public class ClusterState implements MapWriter {
 
   /** Internal API used only by ZkStateReader */
   void setLiveNodes(Set<String> liveNodes) {
-    this.liveNodes = Set.of(liveNodes.toArray(new String[0]));
+    this.liveNodes = Set.copyOf(liveNodes);
   }
 
   /**
