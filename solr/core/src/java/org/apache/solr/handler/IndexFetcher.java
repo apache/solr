@@ -305,13 +305,8 @@ public class IndexFetcher {
     useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
     useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
+    soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
 
-    // allow a leader override for tests - you specify this in /replication follower section of
-    // solrconfig and some test don't want to define this
-    soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
-    if (soTimeout == -1) {
-      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
-    }
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     solrClient =
