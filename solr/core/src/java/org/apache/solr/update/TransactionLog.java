@@ -38,6 +38,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
@@ -92,8 +93,7 @@ public class TransactionLog implements Closeable {
       new JavaBinCodec.ObjectResolver() {
         @Override
         public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-          if (o instanceof BytesRef) {
-            BytesRef br = (BytesRef) o;
+          if (o instanceof BytesRef br) {
             codec.writeByteArray(br.bytes, br.offset, br.length);
             return null;
           }
@@ -160,8 +160,7 @@ public class TransactionLog implements Closeable {
 
     @Override
     public boolean writePrimitive(Object val) throws IOException {
-      if (val instanceof java.util.UUID) {
-        java.util.UUID uuid = (java.util.UUID) val;
+      if (val instanceof java.util.UUID uuid) {
         daos.writeByte(UUID);
         daos.writeLong(uuid.getMostSignificantBits());
         daos.writeLong(uuid.getLeastSignificantBits());
@@ -221,8 +220,9 @@ public class TransactionLog implements Closeable {
         }
       } else {
         if (Files.exists(tlog)) {
-          log.warn("New transaction log already exists:{} size={}", tlog, Files.size(tlog));
-          return;
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "New transaction log already exists:" + tlog + " size=" + Files.size(tlog));
         }
 
         channel =
@@ -238,9 +238,6 @@ public class TransactionLog implements Closeable {
       }
 
       success = true;
-
-      assert ObjectReleaseTracker.track(this);
-
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
@@ -252,6 +249,7 @@ public class TransactionLog implements Closeable {
         }
       }
     }
+    assert ObjectReleaseTracker.track(this);
   }
 
   // for subclasses

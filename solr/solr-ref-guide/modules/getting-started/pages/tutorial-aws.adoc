@@ -29,7 +29,7 @@ In this guide we are going to:
 * Create new _Security Group_
 * Configure instances and launch
 . Install, configure and start Solr on newly launched EC2 instances
-* Install system prerequisites: Java 11 or later
+* Install system prerequisites: Java 21 or later
 * Download latest version of Solr
 * Start the Solr nodes in SolrCloud mode
 . Create a collection, index documents, and query the system
@@ -129,20 +129,20 @@ $ ssh-add aws-key.pem
 $ ssh -A ec2-user@<instance-public-dns>
 ----
 +
-. While logged in to each of the AWS EC2 instances, configure Java 11 and download Solr:
+. While logged in to each of the AWS EC2 instances, configure Java 21 and download Solr:
 +
 [,console]
 ----
 # check if the AWS instance already has java installed
 $ java -version
 
-# install JDK 11
-$ sudo yum install java-11
+# install JDK 21
+$ sudo yum install java-21
 
-# configure JDK 11 as the default
+# configure JDK 21 as the default
 $ sudo /usr/sbin/alternatives --config java
 
-# verify that the default java version is now 11
+# verify that the default java version is now 21
 $ java -version
 ----
 +

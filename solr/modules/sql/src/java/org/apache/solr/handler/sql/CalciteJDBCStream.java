@@ -62,8 +62,7 @@ public class CalciteJDBCStream extends JDBCStream {
                 if (resultSet.wasNull()) {
                   return null;
                 }
-                if (o instanceof Array) {
-                  Array array = (Array) o;
+                if (o instanceof Array array) {
                   return array.getArray();
                 } else {
                   return o;

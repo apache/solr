@@ -57,9 +57,10 @@ teardown() {
   assert_output --partial '"numFound":0'
   
   # Test delete
-  run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} --verbose
+  run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} --delete-config --verbose
   assert_output --partial "Deleted collection 'COLL_NAME'"
   refute collection_exists "COLL_NAME"
+  refute config_exists "COLL_NAME"
   
 }
 
@@ -69,15 +70,15 @@ run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
-  run solr post -u name:password -t application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -u name:password -t application/xml --solr-url http://localhost:${SOLR_PORT} --name monitors ${SOLR_TIP}/example/exampledocs/monitor.xml
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
-  run solr postlogs -u name:password --solr-collection-url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
   
   # Test export
-  #run solr export -u name:password --solr-collection-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
+  #run solr export -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --query "*:*" --output "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
   
 }

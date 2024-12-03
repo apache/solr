@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,6 +54,7 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -88,49 +88,76 @@ import org.noggit.JSONWriter;
 
 /** Supports export command in the bin/solr script. */
 public class ExportTool extends ToolBase {
+
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("NAME")
+          .desc("Name of the collection.")
+          .build();
+
+  private static final Option OUTPUT_OPTION =
+      Option.builder()
+          .longOpt("output")
+          .hasArg()
+          .argName("PATH")
+          .desc(
+              "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
+          .build();
+
+  private static final Option FORMAT_OPTION =
+      Option.builder()
+          .longOpt("format")
+          .hasArg()
+          .argName("FORMAT")
+          .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+          .build();
+
+  private static final Option COMPRESS_OPTION =
+      Option.builder().longOpt("compress").desc("Compress the output. Defaults to false.").build();
+
+  private static final Option LIMIT_OPTION =
+      Option.builder()
+          .longOpt("limit")
+          .hasArg()
+          .argName("#")
+          .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+          .build();
+
+  private static final Option QUERY_OPTION =
+      Option.builder()
+          .longOpt("query")
+          .hasArg()
+          .argName("QUERY")
+          .desc("A custom query, default is '*:*'.")
+          .build();
+
+  private static final Option FIELDS_OPTION =
+      Option.builder()
+          .longOpt("fields")
+          .hasArg()
+          .argName("FIELDA,FIELDB")
+          .desc("Comma separated list of fields to export. By default all fields are fetched.")
+          .build();
+
   @Override
   public String getName() {
     return "export";
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("url")
-            .longOpt("solr-collection-url")
-            .hasArg()
-            .argName("URL")
-            .required()
-            .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
-            .build(),
-        Option.builder("out")
-            .hasArg()
-            .argName("PATH")
-            .desc(
-                "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
-            .build(),
-        Option.builder("format")
-            .hasArg()
-            .argName("FORMAT")
-            .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-            .build(),
-        Option.builder("compress").desc("Compress the output.").build(),
-        Option.builder("limit")
-            .hasArg()
-            .argName("#")
-            .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-            .build(),
-        Option.builder("query")
-            .hasArg()
-            .argName("QUERY")
-            .desc("A custom query, default is '*:*'.")
-            .build(),
-        Option.builder("fields")
-            .hasArg()
-            .argName("FIELDA,FIELDB")
-            .desc("Comma separated list of fields to export. By default all fields are fetched.")
-            .build(),
-        SolrCLI.OPTION_CREDENTIALS);
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(OUTPUT_OPTION)
+        .addOption(FORMAT_OPTION)
+        .addOption(COMPRESS_OPTION)
+        .addOption(LIMIT_OPTION)
+        .addOption(QUERY_OPTION)
+        .addOption(FIELDS_OPTION)
+        .addOption(CommonCLIOptions.SOLR_URL_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
   public abstract static class Info {
@@ -250,14 +277,28 @@ public class ExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("solr-collection-url");
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    String url = null;
+    if (cli.hasOption(CommonCLIOptions.SOLR_URL_OPTION)) {
+      if (!cli.hasOption(COLLECTION_NAME_OPTION)) {
+        throw new IllegalArgumentException(
+            "Must specify -c / --name parameter with --solr-url to post documents.");
+      }
+      url = CLIUtils.normalizeSolrUrl(cli) + "/solr/" + cli.getOptionValue(COLLECTION_NAME_OPTION);
+
+    } else {
+      // think about support --zk-host someday.
+      throw new IllegalArgumentException("Must specify --solr-url.");
+    }
+    String credentials = cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION);
     Info info = new MultiThreadedRunner(url, credentials);
-    info.query = cli.getOptionValue("query", "*:*");
+    info.query = cli.getOptionValue(QUERY_OPTION, "*:*");
+
     info.setOutFormat(
-        cli.getOptionValue("out"), cli.getOptionValue("format"), cli.hasOption("compress"));
-    info.fields = cli.getOptionValue("fields");
-    info.setLimit(cli.getOptionValue("limit", "100"));
+        cli.getOptionValue(OUTPUT_OPTION),
+        cli.getOptionValue(FORMAT_OPTION),
+        cli.hasOption(COMPRESS_OPTION));
+    info.fields = cli.getOptionValue(FIELDS_OPTION);
+    info.setLimit(cli.getOptionValue(LIMIT_OPTION, "100"));
     info.output = super.stdout;
     info.exportDocs();
   }
@@ -321,8 +362,7 @@ public class ExportTool extends ToolBase {
               }
             }
             field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
+            if (field instanceof List<?> list) {
               if (hasdate(list)) {
                 ArrayList<Object> listCopy = new ArrayList<>(list.size());
                 for (Object o : list) listCopy.add(constructDateStr(o));
@@ -401,8 +441,7 @@ public class ExportTool extends ToolBase {
               }
             }
             field = constructDateStr(field);
-            if (field instanceof List) {
-              List<?> list = (List<?>) field;
+            if (field instanceof List<?> list) {
               if (hasdate(list)) {
                 ArrayList<Object> listCopy = new ArrayList<>(list.size());
                 for (Object o : list) listCopy.add(constructDateStr(o));
@@ -559,7 +598,7 @@ public class ExportTool extends ToolBase {
         consumerThreadpool.shutdownNow();
         if (failed) {
           try {
-            Files.delete(new File(out).toPath());
+            Files.delete(Path.of(out));
           } catch (IOException e) {
             // ignore
           }
@@ -621,8 +660,8 @@ public class ExportTool extends ToolBase {
       }
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
-
-        try (SolrClient client = SolrCLI.getSolrClient(baseurl, credentials)) {
+        // reference the replica's node URL, not the baseUrl in scope, which could be anywhere
+        try (SolrClient client = CLIUtils.getSolrClient(replica.getBaseUrl(), credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
           QueryRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();

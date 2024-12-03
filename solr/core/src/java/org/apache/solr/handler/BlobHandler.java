@@ -58,6 +58,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -194,7 +195,7 @@ public class BlobHandler extends RequestHandlerBase
           return;
         }
       }
-      if (ReplicationHandler.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
+      if (ReplicationAPIBase.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
         if (blobName == null) {
           throw new SolrException(
               SolrException.ErrorCode.NOT_FOUND,
@@ -211,7 +212,7 @@ public class BlobHandler extends RequestHandlerBase
                       new Sort(new SortField("version", SortField.Type.LONG, true)));
           if (docs.totalHits.value > 0) {
             rsp.add(
-                ReplicationHandler.FILE_STREAM,
+                ReplicationAPIBase.FILE_STREAM,
                 new SolrCore.RawWriter() {
 
                   @Override

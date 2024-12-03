@@ -98,8 +98,7 @@ public abstract class DualDoubleFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof DualDoubleFunction)) return false;
-    DualDoubleFunction other = (DualDoubleFunction) o;
+    if (!(o instanceof DualDoubleFunction other)) return false;
     return Objects.equals(this.a, other.a) && Objects.equals(this.b, other.b);
   }
 }

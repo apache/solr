@@ -40,7 +40,6 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.NodesDownEvent;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -168,38 +167,44 @@ public class CollectionsRepairEventListener
     // collection / positions
     Map<String, List<ReplicaPosition>> newPositions = new HashMap<>();
     try {
-      ClusterState clusterState = solrCloudManager.getClusterState();
-      clusterState.forEachCollection(
-          coll -> {
-            // shard / number of replicas per type
-            Map<String, ReplicaCount> lostReplicas = new HashMap<>();
-            coll.forEachReplica(
-                (shard, replica) -> {
-                  if (reallyLostNodes.contains(replica.getNodeName())) {
-                    lostReplicas
-                        .computeIfAbsent(shard, s -> ReplicaCount.empty())
-                        .increment(replica.type);
-                  }
-                });
-            Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc);
-            lostReplicas.forEach(
-                (shard, types) -> {
-                  Assign.AssignRequest assignRequest =
-                      new Assign.AssignRequestBuilder()
-                          .forCollection(coll.getName())
-                          .forShard(Collections.singletonList(shard))
-                          .assignReplicas(types)
-                          .build();
-                  try {
-                    List<ReplicaPosition> positions =
-                        assignStrategy.assign(solrCloudManager, assignRequest);
-                    newPositions.put(coll.getName(), positions);
-                  } catch (Exception e) {
-                    log.warn(
-                        "Exception computing positions for {}/{}: {}", coll.getName(), shard, e);
-                  }
-                });
-          });
+      // shard / number of replicas per type
+      solrCloudManager
+          .getClusterState()
+          .collectionStream()
+          .forEach(
+              coll -> {
+                // shard / number of replicas per type
+                Map<String, ReplicaCount> lostReplicas = new HashMap<>();
+                coll.forEachReplica(
+                    (shard, replica) -> {
+                      if (reallyLostNodes.contains(replica.getNodeName())) {
+                        lostReplicas
+                            .computeIfAbsent(shard, s -> ReplicaCount.empty())
+                            .increment(replica.type);
+                      }
+                    });
+                Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc);
+                lostReplicas.forEach(
+                    (shard, types) -> {
+                      Assign.AssignRequest assignRequest =
+                          new Assign.AssignRequestBuilder()
+                              .forCollection(coll.getName())
+                              .forShard(Collections.singletonList(shard))
+                              .assignReplicas(types)
+                              .build();
+                      try {
+                        List<ReplicaPosition> positions =
+                            assignStrategy.assign(solrCloudManager, assignRequest);
+                        newPositions.put(coll.getName(), positions);
+                      } catch (Exception e) {
+                        log.warn(
+                            "Exception computing positions for {}/{}: {}",
+                            coll.getName(),
+                            shard,
+                            e);
+                      }
+                    });
+              });
     } catch (IOException e) {
       log.warn("Exception getting cluster state", e);
       return;

@@ -48,8 +48,7 @@ public class JWTPrincipalWithUserRoles extends JWTPrincipal implements VerifiedU
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof JWTPrincipalWithUserRoles)) return false;
-    JWTPrincipalWithUserRoles that = (JWTPrincipalWithUserRoles) o;
+    if (!(o instanceof JWTPrincipalWithUserRoles that)) return false;
     return super.equals(o) && roles.equals(that.roles);
   }
 

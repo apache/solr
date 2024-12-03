@@ -32,7 +32,7 @@ public class IndexOfEvaluator extends RecursiveObjectEvaluator implements TwoVal
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if (!(value1 instanceof List)) {
+    if (!(value1 instanceof List<?> list)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -40,7 +40,6 @@ public class IndexOfEvaluator extends RecursiveObjectEvaluator implements TwoVal
               toExpression(constructingFactory),
               value1.getClass().getSimpleName()));
     } else {
-      List<?> list = (List<?>) value1;
       String find = value2.toString().replace("\"", "");
       for (int i = 0; i < list.size(); i++) {
         Object o = list.get(i);

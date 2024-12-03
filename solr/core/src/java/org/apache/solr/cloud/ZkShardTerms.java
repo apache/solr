@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -398,16 +397,6 @@ public class ZkShardTerms implements AutoCloseable {
         return;
       } catch (KeeperException e) {
         log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
-        try {
-          zkClient.getConnectionManager().waitForConnected(zkClient.getZkClientTimeout());
-        } catch (TimeoutException te) {
-          if (Thread.interrupted()) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Error watching shard term for collection: " + collection,
-                te);
-          }
-        }
       }
     }
   }
@@ -416,18 +405,22 @@ public class ZkShardTerms implements AutoCloseable {
   private void registerWatcher() throws KeeperException {
     Watcher watcher =
         event -> {
+          // Don't do anything if we are closed
+          if (isClosed.get() || !event.getState().equals(Watcher.Event.KeeperState.SyncConnected)) {
+            return;
+          }
           // session events are not change events, and do not remove the watcher
           if (Watcher.Event.EventType.None == event.getType()) {
             return;
           }
-          retryRegisterWatcher();
-          // if term node is deleted, refresh cannot possibly succeed
-          if (Watcher.Event.EventType.NodeDeleted == event.getType()) {
-            return;
-          }
-          // Some events may be missed during register a watcher, so it is safer to refresh terms
+          // Some events may be missed during registering a watcher, so it is safer to refresh terms
           // after registering watcher
-          refreshTerms();
+          retryRegisterWatcher();
+          // Only refresh the data if the node was created or its data changed.
+          if (Watcher.Event.EventType.NodeCreated == event.getType()
+              || Watcher.Event.EventType.NodeDataChanged == event.getType()) {
+            refreshTerms();
+          }
         };
     try {
       // exists operation is faster than getData operation

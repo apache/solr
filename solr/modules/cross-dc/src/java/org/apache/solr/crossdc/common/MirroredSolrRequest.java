@@ -267,8 +267,7 @@ public class MirroredSolrRequest<T extends SolrResponse> {
     sb.append(type.toString());
     sb.append(", method=" + solrRequest.getMethod());
     sb.append(", params=" + solrRequest.getParams());
-    if (solrRequest instanceof UpdateRequest) {
-      UpdateRequest req = (UpdateRequest) solrRequest;
+    if (solrRequest instanceof UpdateRequest req) {
       sb.append(", add=" + (req.getDocuments() != null ? req.getDocuments().size() : "0"));
       sb.append(", del=" + (req.getDeleteByIdMap() != null ? req.getDeleteByIdMap().size() : "0"));
       sb.append(", dbq=" + (req.getDeleteQuery() != null ? req.getDeleteQuery().size() : "0"));
