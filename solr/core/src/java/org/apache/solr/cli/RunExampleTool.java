@@ -648,7 +648,7 @@ public class RunExampleTool extends ToolBase {
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
     final var syspropArg =
-        ("techproducts".equals(cli.getOptionValue("example")))
+        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION)))
             ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
 
