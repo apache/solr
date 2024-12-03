@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update;
 
-import static org.apache.solr.core.SolrConfig.LIB_ENABLED_SYSPROP;
-
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,7 +61,6 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty(LIB_ENABLED_SYSPROP, "true");
     compoundMergePolicySort = random().nextBoolean();
     if (compoundMergePolicySort) {
       System.setProperty("mergePolicySort", "timestamp_i_dvo desc, id asc");
