@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.core.SolrConfig.LIB_ENABLED_SYSPROP;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -72,7 +70,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         Paths.get(".").toAbsolutePath().toString().contains(" "));
     // to be true
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
-    System.setProperty(LIB_ENABLED_SYSPROP, "true");
   }
 
   @AfterClass
