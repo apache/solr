@@ -17,21 +17,16 @@
 package org.apache.solr.handler.component;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -153,18 +148,6 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
       if (cc != null) cc.shutdown();
       System.clearProperty(TEST_URL_ALLOW_LIST);
     }
-  }
-
-  @Test
-  public void testLiveNodesToHostUrl() {
-    Set<String> liveNodes =
-        new HashSet<>(Arrays.asList("1.2.3.4:8983_solr", "1.2.3.4:9000_", "1.2.3.4:9001_solr-2"));
-    ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
-    Set<String> hostSet = cs.getHostAllowList();
-    assertThat(hostSet.size(), is(3));
-    assertThat(hostSet, hasItem("1.2.3.4:8983"));
-    assertThat(hostSet, hasItem("1.2.3.4:9000"));
-    assertThat(hostSet, hasItem("1.2.3.4:9001"));
   }
 
   @Test

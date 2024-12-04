@@ -105,6 +105,8 @@ Bug Fixes
 
 * SOLR-17575: Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid. (Jan Høydahl, Alexander Zagniotov)
 
+* SOLR-17574: Fix AllowListUrlChecker when liveNodes changes. Remove ClusterState.getHostAllowList (Bruno Roustant, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
