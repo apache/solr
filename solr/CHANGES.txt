@@ -96,6 +96,10 @@ Deprecation Removals
 
 * SOLR-17576: Remove deprecated master/slave option language from ReplicationHandler. (Eric Pugh)
 
+* SOLR-16781: Support for `<lib/>` directives (used in solrconfig.xml to add JARs on a core-by-core basis) has been removed.  Users
+  looking for similar functionality can use Solr's package manager.  Users that don't need to vary JAR access on a per-core basis
+  have many options, including the `<sharedLib/>` tag and directly modifying Solr's classpath prior to JVM startup. (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)

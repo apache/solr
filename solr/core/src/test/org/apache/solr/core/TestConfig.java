@@ -45,20 +45,6 @@ public class TestConfig extends SolrTestCaseJ4 {
   public void testLib() throws IOException {
     SolrResourceLoader loader = h.getCore().getResourceLoader();
     InputStream data = null;
-    String[] expectedFiles =
-        new String[] {
-          "empty-file-main-lib.txt",
-          "empty-file-a1.txt",
-          "empty-file-a2.txt",
-          "empty-file-b1.txt",
-          "empty-file-b2.txt",
-          "empty-file-c1.txt"
-        };
-    for (String f : expectedFiles) {
-      data = loader.openResource(f);
-      assertNotNull("Should have found file " + f, data);
-      data.close();
-    }
     String[] unexpectedFiles = new String[] {"empty-file-c2.txt", "empty-file-d2.txt"};
     for (String f : unexpectedFiles) {
       data = null;
