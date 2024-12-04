@@ -66,10 +66,10 @@
       autowarmCount="10"
       regenerator="solr.NoOpRegenerator"/>
     <cache name="mySolrMonitorCache"
-      class="org.apache.solr.monitor.cache.SharedMonitorCache"
+      class="solr.savedsearch.cache.SharedMonitorCache"
       async="false"
       maxRamMB="1"
-      regenerator="org.apache.solr.monitor.cache.SharedMonitorCacheLatestRegenerator"/>
+      regenerator="solr.savedsearch.cache.SharedMonitorCacheLatestRegenerator"/>
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
     <queryResultWindowSize>20</queryResultWindowSize>
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
@@ -86,7 +86,7 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
+  <requestHandler name="/reverseSearch" class="solr.savedsearch.search.ReverseSearchHandler"/>
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -122,7 +122,7 @@
   </requestHandler>
 
   <searchComponent name="reverseSearch"
-    class="org.apache.solr.monitor.search.ReverseSearchComponent">
+    class="solr.savedsearch.search.ReverseSearchComponent">
     <str name="solrMonitorCacheName">mySolrMonitorCache</str>
     <str name="presearcherType">MultipassTermFilteredPresearcher</str>
     <bool name="applyFieldNameAlias">true</bool>
@@ -133,7 +133,7 @@
   <updateRequestProcessorChain name="monitor">
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
-    <processor class="org.apache.solr.monitor.update.MonitorUpdateProcessorFactory"/>
+    <processor class="solr.savedsearch.update.MonitorUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
   <updateRequestProcessorChain name="regular-ole-document">

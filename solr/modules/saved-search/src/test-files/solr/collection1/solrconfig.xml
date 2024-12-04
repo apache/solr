@@ -66,9 +66,9 @@
       autowarmCount="10"
       regenerator="solr.NoOpRegenerator"/>
     <cache name="solrMonitorCache"
-      class="org.apache.solr.monitor.cache.SharedMonitorCache"
+      class="solr.savedsearch.cache.SharedMonitorCache"
       async="false"
-      regenerator="org.apache.solr.monitor.cache.SharedMonitorCacheLatestRegenerator"
+      regenerator="solr.savedsearch.cache.SharedMonitorCacheLatestRegenerator"
       maxSize="2"
       maxIdleTime="100000"/>
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
@@ -87,7 +87,7 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
+  <requestHandler name="/reverseSearch" class="solr.savedsearch.search.ReverseSearchHandler"/>
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -123,14 +123,14 @@
   </requestHandler>
 
   <searchComponent name="reverseSearch"
-    class="org.apache.solr.monitor.search.ReverseSearchComponent">
+    class="solr.savedsearch.search.ReverseSearchComponent">
     <str name="presearcherType">TermFilteredPresearcher</str>
   </searchComponent>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <updateRequestProcessorChain>
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
-    <processor class="org.apache.solr.monitor.update.MonitorUpdateProcessorFactory"/>
+    <processor class="solr.savedsearch.update.MonitorUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
   <queryResponseWriter name="json" class="solr.JSONResponseWriter">
