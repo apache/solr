@@ -500,21 +500,10 @@ public abstract class LBSolrClient extends SolrClient {
     return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
   }
 
-  // TODO SOLR-17541 should remove the need for the special-casing below; remove as a part of that
-  // ticket.
+  //TODO remove this method NOCOMMIT
   private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
-    // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
-    // the appropriate URL is provided.
-    if (solrClient instanceof Http2SolrClient httpSolrClient) {
-      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
-    } else if (solrClient instanceof HttpJdkSolrClient) {
-      return ((HttpJdkSolrClient) solrClient).requestWithBaseUrl(baseUrl, solrRequest, collection);
-    }
-
-    // Assume provided client already uses 'baseUrl'
     return solrClient.request(solrRequest, collection);
   }
 

@@ -16,25 +16,32 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
+
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
  * This "LoadBalanced Http Solr Client" is a load balancing wrapper around a Http Solr Client. This
@@ -94,35 +101,55 @@ import org.slf4j.MDC;
  *
  * @since solr 8.0
  */
-public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClient {
+public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends LBSolrClient {
 
-  protected final C solrClient;
+  private final Map<String, HttpSolrClientBase> urlToClient;
+  private final Set<String> urlParamNames;
 
   @SuppressWarnings("unchecked")
   private LBHttp2SolrClient(Builder<?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
-    this.solrClient = (C) builder.solrClient;
+
+    String tmpBaseSolrUrl = builder.solrClientBuilder.baseSolrUrl;
+    Map<String, HttpSolrClientBase> buildUrlToClient = new HashMap<>();
+    for(LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
+      builder.solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
+      buildUrlToClient.put(endpoint.toString(), builder.solrClientBuilder.build());
+    }
+    builder.solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
+    this.urlToClient = Collections.unmodifiableMap(buildUrlToClient);
+
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
     this.defaultCollection = builder.defaultCollection;
+    this.urlParamNames = Collections.unmodifiableSet(builder.solrClientBuilder.urlParamNames);
+
   }
 
   @Override
-  protected SolrClient getClient(Endpoint endpoint) {
-    return solrClient;
+  protected HttpSolrClientBase getClient(Endpoint endpoint) {
+    return urlToClient.get(endpoint.toString());
   }
 
   @Override
   public ResponseParser getParser() {
-    return solrClient.getParser();
+    return urlToClient.isEmpty() ? null : urlToClient.values().iterator().next().getParser();
   }
 
   @Override
   public RequestWriter getRequestWriter() {
-    return solrClient.getRequestWriter();
+    return urlToClient.isEmpty() ? null : urlToClient.values().iterator().next().getRequestWriter();
   }
 
   public Set<String> getUrlParamNames() {
-    return solrClient.getUrlParamNames();
+    return urlParamNames;
+  }
+
+  @Override
+  public void close() {
+    super.close();
+    for(HttpSolrClientBase client : urlToClient.values()) {
+      IOUtils.closeQuietly(client);
+    }
   }
 
   /**
@@ -290,16 +317,17 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
     }
   }
 
-  public static class Builder<C extends HttpSolrClientBase> {
+  public static class Builder<B extends HttpSolrClientBuilderBase<?,?>> {
 
-    private final C solrClient;
+    private final B solrClientBuilder;
+
     private final LBSolrClient.Endpoint[] solrEndpoints;
     private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
     protected String defaultCollection;
 
-    public Builder(C solrClient, Endpoint... endpoints) {
-      this.solrClient = solrClient;
+    public Builder(B solrClientBuilder, Endpoint... endpoints) {
+      this.solrClientBuilder = solrClientBuilder;
       this.solrEndpoints = endpoints;
     }
 
@@ -309,7 +337,7 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
      *
      * @param aliveCheckInterval how often to ping for aliveness
      */
-    public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
+    public Builder<B> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
       if (aliveCheckInterval <= 0) {
         throw new IllegalArgumentException(
             "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
@@ -319,13 +347,13 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
     }
 
     /** Sets a default for core or collection based requests. */
-    public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
+    public Builder<B> withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 
-    public LBHttp2SolrClient<C> build() {
-      return new LBHttp2SolrClient<C>(this);
+    public LBHttp2SolrClient<B> build() {
+      return new LBHttp2SolrClient<B>(this);
     }
   }
 }
