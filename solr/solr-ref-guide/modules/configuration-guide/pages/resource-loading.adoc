@@ -37,7 +37,7 @@ Prefer to put resources here.
 
 == Resources in Other Places
 
-Resources can also be placed in an arbitrary directory and xref:libs.adoc#lib-directives-in-solrconfig[referenced] from a `<lib />` directive in `solrconfig.xml`, provided the directive refers to a directory and not the actual resource file.
+Users who have enabled Solr's `<lib/>` directive feature may place resources in an arbitrary directory xref:libs.adoc#lib-directives-in-solrconfig[referenced] from a `<lib />` directive in `solrconfig.xml`, provided the directive refers to a directory and not the actual resource file.
 Example: `<lib path="/volume/models/" />`
 This choice may make sense if the resource is too large for a configset in ZooKeeper.
 However it's up to you to somehow ensure that all nodes in your cluster have access to these resources.

@@ -142,6 +142,8 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17577: Remove "solr.indexfetcher.sotimeout" system property that was for optimizing replication tests.  It was disabled, but not removed. (Eric Pugh)
 
+* SOLR-16781: "<lib/>" tags in solrconfig.xml are now quietly ignored by default unless explicitly enabled with the `SOLR_CONFIG_LIB_ENABLED=true` enviroment variable (or corresponding sysprop).  These tags are now considered deprecated and will be removed in Solr 10.
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------
