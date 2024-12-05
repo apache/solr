@@ -63,7 +63,7 @@ public class SolrTextToVectorModel implements Accountable {
       Class<?> modelClass = solrResourceLoader.findClass(className, EmbeddingModel.class);
       var builder = modelClass.getMethod("builder").invoke(null);
       if (params != null) {
-        /**
+        /*
          * This block of code has the responsibility of instantiate a {@link
          * dev.langchain4j.model.embedding.EmbeddingModel} using the params provided.classes have
          * params of The specific implementation of {@link
