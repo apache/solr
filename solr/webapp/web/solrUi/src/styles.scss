@@ -16,6 +16,9 @@
  *
  */
 
+
+@use "app/app.component";
+
 $color_1: #333;
 $color_2: #ffffff;
 $color_3: #fff;
@@ -502,11 +505,9 @@ pre.syntax.language-json {
 }
 .new-ui-warning {
   span.help {
-    background-image: url(../../img/ico/information-white.png );
+    background-image: url(../../img/ico/information-white.png);
     right: 0px;
     padding-left: 16px;
   }
 }
-
-@import "app/app.component";
 

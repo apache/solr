@@ -16,6 +16,8 @@
  *
  */
 
+@use "modules/dashboard/components/main/main.component";
+
 $color_1: #c0c0c0;
 $color_2: #fff;
 $color_3: #4D4D4D;
@@ -205,5 +207,3 @@ $border-color_1: #c0c0c0;
     padding: 5px;
   }
 }
-
-@import "modules/dashboard/components/main/main.component";

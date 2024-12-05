@@ -26,7 +26,8 @@ import {SharedModule} from "../../../common/shared.module";
 @Component({
   selector: 'app-dashboard',
   templateUrl: './main.component.html',
-  styleUrl: './main.component.scss'
+  styleUrl: './main.component.scss',
+  standalone: false
 })
 export class MainComponent {
 

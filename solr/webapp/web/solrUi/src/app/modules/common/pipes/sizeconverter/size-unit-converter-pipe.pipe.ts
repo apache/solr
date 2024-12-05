@@ -19,7 +19,8 @@ import {Pipe, PipeTransform} from '@angular/core';
 
 
 @Pipe({
-  name: 'sizeUnitConverter'
+  name: 'sizeUnitConverter',
+  standalone: false
 })
 export class SizeUnitConverterPipe implements PipeTransform {
   private readonly unitNames: {short:string, long:string}[]= [

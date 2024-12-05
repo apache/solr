@@ -19,7 +19,8 @@
 import {Pipe, PipeTransform} from '@angular/core';
 
 @Pipe({
-  name: 'timeAgo'
+  name: 'timeAgo',
+  standalone: false
 })
 export class TimeAgoPipe implements PipeTransform {
   private static YEAR_MS: number = 1000 * 60 * 60 * 24 * 7 * 4 * 12;
