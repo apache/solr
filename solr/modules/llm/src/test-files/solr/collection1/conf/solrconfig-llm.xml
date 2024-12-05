@@ -22,7 +22,7 @@
  </requestDispatcher>
 
  <!-- Query parser used to run neural queries-->
- <queryParser name="text_to_vector"
+ <queryParser name="knn_text_to_vector"
   class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin" />
 
  <query>
