@@ -26,6 +26,7 @@ dependencies {
     implementation libs.apache.lucene.core
     implementation libs.apache.lucene.monitor
     implementation libs.benmanes.caffeine
+    implementation libs.dropwizard.metrics.core
     testImplementation project(':solr:test-framework')
     testImplementation libs.junit.junit
 }
