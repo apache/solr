@@ -28,8 +28,7 @@ import org.apache.lucene.monitor.Presearcher;
 import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.monitor.TermWeightor;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.savedsearch.AliasingMultipassTermFilteredPresearcher;
-import org.apache.solr.savedsearch.AliasingTermFilteredPresearcher;
+import org.apache.solr.savedsearch.AliasingPresearcher;
 
 public class PresearcherFactory {
 
@@ -39,7 +38,7 @@ public class PresearcherFactory {
   // https://cwiki.apache.org/confluence/display/solr/SchemaXml#Dynamic_fields:~:text=Longer%20patterns%20will%20be%20matched%20first}
   // In the worst case this can be overridden by the user but ideally this never comes up.
   public static final String DEFAULT_ALIAS_PREFIX =
-      "_________________________________________________monitor_alias_";
+      "_________________________________________________saved_search_alias_";
 
   public static final String TERM_FILTERED = TermFilteredPresearcher.class.getSimpleName();
   public static final String MULTI_PASS_TERM_FILTERED =
@@ -63,7 +62,7 @@ public class PresearcherFactory {
       if (TERM_FILTERED.equals(type)) {
         if (presearcherParameters.applyFieldNameAlias) {
           presearcher =
-              AliasingTermFilteredPresearcher.build(
+              AliasingPresearcher.TermFiltered.build(
                   weightor, customQueryHandlers, filterFields, presearcherParameters.aliasPrefix);
         } else {
           presearcher = new TermFilteredPresearcher(weightor, customQueryHandlers, filterFields);
@@ -71,7 +70,7 @@ public class PresearcherFactory {
       } else {
         if (presearcherParameters.applyFieldNameAlias) {
           presearcher =
-              AliasingMultipassTermFilteredPresearcher.build(
+              AliasingPresearcher.MultiPassTermFiltered.build(
                   presearcherParameters.numberOfPasses,
                   presearcherParameters.minWeight,
                   weightor,

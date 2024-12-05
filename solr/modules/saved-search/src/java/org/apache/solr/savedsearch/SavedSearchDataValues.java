@@ -28,7 +28,7 @@ import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.params.CommonParams;
 
-public class MonitorDataValues {
+public class SavedSearchDataValues {
 
   private final SortedDocValues queryIdIt;
   private final SortedDocValues cacheIdIt;
@@ -37,7 +37,7 @@ public class MonitorDataValues {
   private final LeafReader reader;
   private int currentDoc;
 
-  public MonitorDataValues(LeafReaderContext context) throws IOException {
+  public SavedSearchDataValues(LeafReaderContext context) throws IOException {
     reader = context.reader();
     cacheIdIt = reader.getSortedDocValues(MonitorFields.CACHE_ID);
     queryIdIt = reader.getSortedDocValues(MonitorFields.QUERY_ID);

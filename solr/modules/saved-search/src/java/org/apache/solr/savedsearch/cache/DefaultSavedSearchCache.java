@@ -38,17 +38,17 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.savedsearch.MonitorDataValues;
-import org.apache.solr.savedsearch.SolrMonitorQueryDecoder;
+import org.apache.solr.savedsearch.SavedSearchDataValues;
+import org.apache.solr.savedsearch.SavedSearchDecoder;
 import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrCacheBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.IOFunction;
 
-public class SharedMonitorCache extends SolrCacheBase
+public class DefaultSavedSearchCache extends SolrCacheBase
     implements SolrCache<String, VersionedQueryCacheEntry>,
-        MonitorQueryCache,
+        SavedSearchCache,
         RemovalListener<String, VersionedQueryCacheEntry> {
 
   private static final long START_HIGH_WATER_MARK = -1;
@@ -75,7 +75,7 @@ public class SharedMonitorCache extends SolrCacheBase
 
   @Override
   public VersionedQueryCacheEntry computeIfStale(
-      MonitorDataValues dataValues, SolrMonitorQueryDecoder decoder) throws IOException {
+      SavedSearchDataValues dataValues, SavedSearchDecoder decoder) throws IOException {
     return mqCacheMap()
         .compute(
             dataValues.getCacheId(),
@@ -173,11 +173,11 @@ public class SharedMonitorCache extends SolrCacheBase
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache<String, VersionedQueryCacheEntry> old) {
     try {
-      SharedMonitorCache oldSharedMonitorCache =
-          old instanceof SharedMonitorCache ? (SharedMonitorCache) old : null;
-      if (oldSharedMonitorCache != null) {
-        mqCache = oldSharedMonitorCache.mqCache;
-        versionHighWaterMark = oldSharedMonitorCache.versionHighWaterMark;
+      DefaultSavedSearchCache oldDefaultSavedSearchCache =
+          old instanceof DefaultSavedSearchCache ? (DefaultSavedSearchCache) old : null;
+      if (oldDefaultSavedSearchCache != null) {
+        mqCache = oldDefaultSavedSearchCache.mqCache;
+        versionHighWaterMark = oldDefaultSavedSearchCache.versionHighWaterMark;
       }
       if (regenerator != null) {
         long nanoStart = System.nanoTime();
@@ -185,13 +185,13 @@ public class SharedMonitorCache extends SolrCacheBase
         generationTimeMs = NANOSECONDS.toMillis(System.nanoTime() - nanoStart);
       }
       termAcceptor = new QueryTermFilterVisitor(searcher.getIndexReader());
-      if (oldSharedMonitorCache != null) {
-        var oldStats = oldSharedMonitorCache.currentStats.get();
-        priorHits = oldSharedMonitorCache.priorHits + oldStats.hits;
-        priorLookups = oldSharedMonitorCache.priorLookups + oldStats.lookups;
+      if (oldDefaultSavedSearchCache != null) {
+        var oldStats = oldDefaultSavedSearchCache.currentStats.get();
+        priorHits = oldDefaultSavedSearchCache.priorHits + oldStats.hits;
+        priorLookups = oldDefaultSavedSearchCache.priorLookups + oldStats.lookups;
         cumulativeGenerationTimeMs =
-            generationTimeMs + oldSharedMonitorCache.cumulativeGenerationTimeMs;
-        cumulativeDocVisits = oldSharedMonitorCache.cumulativeDocVisits + docVisits;
+            generationTimeMs + oldDefaultSavedSearchCache.cumulativeGenerationTimeMs;
+        cumulativeDocVisits = oldDefaultSavedSearchCache.cumulativeDocVisits + docVisits;
       }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "could not boostrap cache", e);
@@ -274,8 +274,8 @@ public class SharedMonitorCache extends SolrCacheBase
   private VersionedQueryCacheEntry compute(
       String cacheId,
       VersionedQueryCacheEntry prevEntry,
-      MonitorDataValues dataValues,
-      SolrMonitorQueryDecoder decoder) {
+      SavedSearchDataValues dataValues,
+      SavedSearchDecoder decoder) {
     try {
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
@@ -290,7 +290,7 @@ public class SharedMonitorCache extends SolrCacheBase
       }
       return prevEntry;
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.INVALID_STATE, "Failed to update MonitorQueryCache", e);
+      throw new SolrException(ErrorCode.INVALID_STATE, "Failed to update SavedSearchCache", e);
     }
   }
 

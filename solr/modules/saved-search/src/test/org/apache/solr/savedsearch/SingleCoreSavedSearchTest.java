@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SingleCoreMonitorSolrTest extends SolrTestCaseJ4 {
+public class SingleCoreSavedSearchTest extends SolrTestCaseJ4 {
 
   private final String monitorChain = "monitor";
 

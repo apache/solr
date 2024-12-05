@@ -23,7 +23,7 @@ import org.apache.lucene.monitor.MonitorFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class StoredMonitorSolrQueryTest extends MonitorSolrQueryTest {
+public class StoredSavedSearchTest extends SavedSearchTest {
 
   @BeforeClass
   public static void beforeSuperClass() {

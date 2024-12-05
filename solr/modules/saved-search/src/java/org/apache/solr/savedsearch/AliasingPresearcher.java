@@ -19,23 +19,29 @@
 
 package org.apache.solr.savedsearch;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.monitor.CustomQueryHandler;
+import org.apache.lucene.monitor.MultipassTermFilteredPresearcher;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.lucene.monitor.TermFilteredPresearcher;
+import org.apache.lucene.monitor.TermWeightor;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * The motivation behind this is to map each document field to its corresponding, presearcher-owned
- * equivalent. By prefixing fields we ensure "presearcher fields" don't inadvertently affect the
- * scores of "real" document fields. Another issue is that the presearcher can dynamically create
- * field configurations for a given field name that might not be compatible with the pre-existing
- * schema definition, see {\@link
- * org.apache.solr.monitor.ParallelMonitorSolrQueryTest#coexistWithRegularDocumentsTest}. In the
+ * equivalent. By prefixing we ensure "presearcher fields" don't inadvertently affect the scores of
+ * "real" document fields. Another issue is that the presearcher can dynamically create field
+ * configurations for a given field name that might not be compatible with the pre-existing schema
+ * definition, see {\@link
+ * org.apache.solr.savedsearch.SingleCoreSavedSearchTest#coexistWithRegularDocumentsTest}. In the
  * case of {@link org.apache.lucene.monitor.MultipassTermFilteredPresearcher#field(String, int)},
  * the presearcher is capable of creating new fields by adding an ordinal suffix to an existing
  * field name. This could also clash with user-defined name patterns, hence the existence of this
@@ -82,5 +88,89 @@ public class AliasingPresearcher extends Presearcher {
       }
     }
     return out;
+  }
+
+  public static class MultiPassTermFiltered extends MultipassTermFilteredPresearcher {
+
+    private final String prefix;
+
+    private MultiPassTermFiltered(
+        int passes,
+        float minWeight,
+        TermWeightor weightor,
+        List<CustomQueryHandler> queryHandlers,
+        Set<String> filterFields,
+        String prefix) {
+      super(passes, minWeight, weightor, queryHandlers, filterFields);
+      this.prefix = prefix;
+    }
+
+    @Override
+    protected DocumentQueryBuilder getQueryBuilder() {
+      return new TermFiltered.AliasingDocumentQueryBuilder(super.getQueryBuilder(), prefix);
+    }
+
+    public static AliasingPresearcher build(
+        int passes,
+        float minWeight,
+        TermWeightor weightor,
+        List<CustomQueryHandler> queryHandlers,
+        Set<String> filterFields,
+        String prefix) {
+      return new AliasingPresearcher(
+          new MultiPassTermFiltered(
+              passes, minWeight, weightor, queryHandlers, filterFields, prefix),
+          prefix);
+    }
+  }
+
+  public static class TermFiltered extends TermFilteredPresearcher {
+
+    private final String prefix;
+
+    TermFiltered(
+        TermWeightor weightor,
+        List<CustomQueryHandler> customQueryHandlers,
+        Set<String> filterFields,
+        String prefix) {
+      super(weightor, customQueryHandlers, filterFields);
+      this.prefix = prefix;
+    }
+
+    public static AliasingPresearcher build(
+        TermWeightor weightor,
+        List<CustomQueryHandler> queryHandlers,
+        Set<String> filterFields,
+        String prefix) {
+      return new AliasingPresearcher(
+          new TermFiltered(weightor, queryHandlers, filterFields, prefix), prefix);
+    }
+
+    @Override
+    protected DocumentQueryBuilder getQueryBuilder() {
+      return new AliasingDocumentQueryBuilder(super.getQueryBuilder(), prefix);
+    }
+
+    static class AliasingDocumentQueryBuilder implements DocumentQueryBuilder {
+
+      private final DocumentQueryBuilder documentQueryBuilder;
+      private final String prefix;
+
+      public AliasingDocumentQueryBuilder(
+          DocumentQueryBuilder documentQueryBuilder, String prefix) {
+        this.documentQueryBuilder = documentQueryBuilder;
+        this.prefix = prefix;
+      }
+
+      @Override
+      public void addTerm(String field, BytesRef term) throws IOException {
+        documentQueryBuilder.addTerm(prefix + field, term);
+      }
+
+      @Override
+      public Query build() {
+        return documentQueryBuilder.build();
+      }
+    }
   }
 }

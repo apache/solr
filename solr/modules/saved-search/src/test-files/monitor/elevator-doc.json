@@ -1,6 +1,6 @@
 {
   "params": {
-    "monitorDocuments": [
+    "reverseSearchDocuments": [
       {
         "id": "0",
         "content0_s": "elevator stairs",

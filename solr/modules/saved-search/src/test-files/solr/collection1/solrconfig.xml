@@ -65,10 +65,10 @@
       initialSize="0"
       autowarmCount="10"
       regenerator="solr.NoOpRegenerator"/>
-    <cache name="solrMonitorCache"
-      class="solr.SharedMonitorCache"
+    <cache name="savedSearchCache"
+      class="solr.DefaultSavedSearchCache"
       async="false"
-      regenerator="solr.SharedMonitorCacheLatestRegenerator"
+      regenerator="solr.SavedSearchLatestRegenerator"
       maxSize="2"
       maxIdleTime="100000"/>
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
@@ -130,7 +130,7 @@
   <updateRequestProcessorChain>
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
-    <processor class="solr.MonitorUpdateProcessorFactory"/>
+    <processor class="solr.SavedSearchUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
   <queryResponseWriter name="json" class="solr.JSONResponseWriter">

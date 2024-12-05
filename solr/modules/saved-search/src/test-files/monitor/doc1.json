@@ -1,6 +1,6 @@
 {
   "params": {
-    "monitorDocuments": [
+    "reverseSearchDocuments": [
       {
         "content_s": "something else"
       }

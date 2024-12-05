@@ -28,9 +28,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
@@ -49,9 +52,9 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.savedsearch.AliasingPresearcher;
-import org.apache.solr.savedsearch.SolrMonitorQueryDecoder;
-import org.apache.solr.savedsearch.cache.MonitorQueryCache;
-import org.apache.solr.savedsearch.cache.SharedMonitorCache;
+import org.apache.solr.savedsearch.SavedSearchDecoder;
+import org.apache.solr.savedsearch.cache.DefaultSavedSearchCache;
+import org.apache.solr.savedsearch.cache.SavedSearchCache;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.DocumentBuilder;
@@ -62,10 +65,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   public static final String COMPONENT_NAME = "reverseSearch";
 
-  private static final String SOLR_MONITOR_CACHE_NAME_KEY = "solrMonitorCacheName";
-  private static final String SOLR_MONITOR_CACHE_NAME_DEFAULT = "solrMonitorCache";
-  private static final String MONITOR_DOCUMENTS_KEY = "monitorDocuments";
-  private String solrMonitorCacheName = SOLR_MONITOR_CACHE_NAME_DEFAULT;
+  private static final String SAVED_SEARCH_CACHE_NAME_KEY = "savedSearchCacheName";
+  private static final String SAVED_SEARCH_CACHE_NAME_DEFAULT = "savedSearchCache";
+  private static final String REVERSE_SEARCH_DOCUMENTS_KEY = "reverseSearchDocuments";
+  private String savedSearchCacheName = SAVED_SEARCH_CACHE_NAME_DEFAULT;
 
   private QueryDecomposer queryDecomposer;
   private Presearcher presearcher;
@@ -74,9 +77,9 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    Object solrMonitorCacheName = args.remove(SOLR_MONITOR_CACHE_NAME_KEY);
-    if (solrMonitorCacheName != null) {
-      this.solrMonitorCacheName = (String) solrMonitorCacheName;
+    Object savedSearchCacheName = args.remove(SAVED_SEARCH_CACHE_NAME_KEY);
+    if (savedSearchCacheName != null) {
+      this.savedSearchCacheName = (String) savedSearchCacheName;
     }
     presearcherParameters = new PresearcherFactory.PresearcherParameters();
     SolrPluginUtils.invokeSetters(presearcherParameters, args);
@@ -89,17 +92,17 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
         documentBatchVisitor(rb.req.getJSON(), rb.req.getSchema())) {
       final LeafReader documentBatch = documentBatchVisitor.get();
 
-      final MonitorQueryCache monitorQueryCache =
-          (SharedMonitorCache) rb.req.getSearcher().getCache(this.solrMonitorCacheName);
+      final SavedSearchCache savedSearchCache =
+          (DefaultSavedSearchCache) rb.req.getSearcher().getCache(this.savedSearchCacheName);
 
       final BiPredicate<String, BytesRef> termAcceptor;
-      if (monitorQueryCache == null) {
+      if (savedSearchCache == null) {
         termAcceptor = (__, ___) -> true;
       } else {
-        termAcceptor = monitorQueryCache::acceptTerm;
+        termAcceptor = savedSearchCache::acceptTerm;
       }
       final Query preFilterQuery = presearcher.buildQuery(documentBatch, termAcceptor);
-      rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, monitorQueryCache));
+      rb.setQuery(reverseSearchQuery(preFilterQuery, rb, documentBatch, savedSearchCache));
     }
   }
 
@@ -107,18 +110,17 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       Query preFilterQuery,
       ResponseBuilder rb,
       LeafReader documentBatch,
-      MonitorQueryCache monitorQueryCache) {
-    final SolrMonitorQueryDecoder solrMonitorQueryDecoder =
-        new SolrMonitorQueryDecoder(rb.req.getCore());
+      SavedSearchCache savedSearchCache) {
+    final SavedSearchDecoder savedSearchDecoder = new SavedSearchDecoder(rb.req.getCore());
 
     final SolrMatcherSink solrMatcherSink =
-        new SyncSolrMatcherSink<>(
+        new DefaultSolrMatcherSink<>(
             QueryMatch.SIMPLE_MATCHER::createMatcher, new IndexSearcher(documentBatch));
     rb.req.getContext().put(SolrMatcherSink.class.getSimpleName(), solrMatcherSink);
 
     final ReverseSearchQuery.ReverseSearchContext context =
         new ReverseSearchQuery.ReverseSearchContext(
-            monitorQueryCache, solrMonitorQueryDecoder, solrMatcherSink);
+            savedSearchCache, savedSearchDecoder, solrMatcherSink);
 
     return new ReverseSearchQuery(context, preFilterQuery);
   }
@@ -151,7 +153,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need params");
     }
     Map<?, ?> paramMap = (Map<?, ?>) jsonParams;
-    Object documents = paramMap.get(MONITOR_DOCUMENTS_KEY);
+    Object documents = paramMap.get(REVERSE_SEARCH_DOCUMENTS_KEY);
     if (!(documents instanceof List)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "need documents list");
     }
@@ -237,5 +239,46 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   public Presearcher getPresearcher() {
     return presearcher;
+  }
+
+  static class DefaultSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
+
+    private final Function<IndexSearcher, CandidateMatcher<T>> matcherFactory;
+    private final IndexSearcher docBatchSearcher;
+    private final ConcurrentHashMap.KeySetView<ReverseSearchQuery.Metadata, Boolean> metadataSet =
+        ConcurrentHashMap.newKeySet();
+
+    DefaultSolrMatcherSink(
+        Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
+        IndexSearcher docBatchSearcher) {
+      this.matcherFactory = matcherFactory;
+      this.docBatchSearcher = docBatchSearcher;
+    }
+
+    @Override
+    public boolean matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
+        throws IOException {
+      var matcher = matcherFactory.apply(docBatchSearcher);
+      matcher.matchQuery(queryId, matchQuery, metadata);
+      var matches = matcher.finish(Long.MIN_VALUE, 1);
+      for (int doc = 0; doc < matches.getBatchSize(); doc++) {
+        var match = matches.getMatches(doc);
+        if (!match.isEmpty()) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public void captureMetadata(ReverseSearchQuery.Metadata metadata) {
+      metadataSet.add(metadata);
+    }
+
+    @Override
+    public ReverseSearchQuery.Metadata getMetadata() {
+      return metadataSet.stream()
+          .reduce(ReverseSearchQuery.Metadata.IDENTITY, ReverseSearchQuery.Metadata::add);
+    }
   }
 }

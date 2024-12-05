@@ -21,7 +21,7 @@ package org.apache.solr.savedsearch;
 
 import org.junit.BeforeClass;
 
-public class NoCacheMonitorSolrQueryTest extends MonitorSolrQueryTest {
+public class NoCacheSavedSearchTest extends SavedSearchTest {
 
   @BeforeClass
   public static void beforeSuperClass() {

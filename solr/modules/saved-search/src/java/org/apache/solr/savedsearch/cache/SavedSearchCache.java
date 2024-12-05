@@ -17,33 +17,17 @@
  *
  */
 
-package org.apache.solr.savedsearch;
+package org.apache.solr.savedsearch.cache;
 
-import org.apache.lucene.monitor.MonitorFields;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
+import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.savedsearch.SavedSearchDataValues;
+import org.apache.solr.savedsearch.SavedSearchDecoder;
 
-public class MonitorSchemaFields {
+public interface SavedSearchCache {
 
-  private final SchemaField cacheId;
-  private final SchemaField queryId;
-  private final SchemaField monitorQuery;
+  VersionedQueryCacheEntry computeIfStale(
+      SavedSearchDataValues dataValues, SavedSearchDecoder decoder) throws IOException;
 
-  public MonitorSchemaFields(IndexSchema indexSchema) {
-    this.cacheId = indexSchema.getField(MonitorFields.CACHE_ID);
-    this.queryId = indexSchema.getField(MonitorFields.QUERY_ID);
-    this.monitorQuery = indexSchema.getField(MonitorFields.MONITOR_QUERY);
-  }
-
-  public SchemaField getCacheId() {
-    return cacheId;
-  }
-
-  public SchemaField getQueryId() {
-    return queryId;
-  }
-
-  public SchemaField getMonitorQuery() {
-    return monitorQuery;
-  }
+  boolean acceptTerm(String field, BytesRef value);
 }

@@ -25,13 +25,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.savedsearch.MonitorDataValues;
-import org.apache.solr.savedsearch.SolrMonitorQueryDecoder;
+import org.apache.solr.savedsearch.SavedSearchDataValues;
+import org.apache.solr.savedsearch.SavedSearchDecoder;
 import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 
-public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
+public class SavedSearchLatestRegenerator implements CacheRegenerator {
 
   private static final int MAX_BATCH_SIZE = 1 << 10;
 
@@ -43,13 +43,13 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
       K oldKey,
       V oldVal)
       throws IOException {
-    if (!(newCache instanceof SharedMonitorCache)) {
+    if (!(newCache instanceof DefaultSavedSearchCache)) {
       throw new IllegalArgumentException(
           this.getClass().getSimpleName()
               + " only supports "
-              + SharedMonitorCache.class.getSimpleName());
+              + DefaultSavedSearchCache.class.getSimpleName());
     }
-    var cache = (SharedMonitorCache) newCache;
+    var cache = (DefaultSavedSearchCache) newCache;
     var reader = searcher.getIndexReader();
     int batchSize = Math.min(MAX_BATCH_SIZE, cache.getInitialSize());
     var topDocs =
@@ -57,11 +57,11 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
             .search(versionRangeQuery(cache), batchSize)
             .scoreDocs;
     int batchesRemaining = cache.getInitialSize() / batchSize - 1;
-    SolrMonitorQueryDecoder decoder = new SolrMonitorQueryDecoder(searcher.getCore());
+    SavedSearchDecoder decoder = new SavedSearchDecoder(searcher.getCore());
     while (topDocs.length > 0 && batchesRemaining > 0) {
       int docIndex = 0;
       for (LeafReaderContext ctx : reader.leaves()) {
-        MonitorDataValues dataValues = new MonitorDataValues(ctx);
+        SavedSearchDataValues dataValues = new SavedSearchDataValues(ctx);
         int shiftedMax = ctx.reader().maxDoc() + ctx.docBase;
         while (docIndex < topDocs.length
             && topDocs[docIndex].doc >= ctx.docBase
@@ -86,7 +86,7 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
     return false;
   }
 
-  private static Query versionRangeQuery(SharedMonitorCache cache) {
+  private static Query versionRangeQuery(DefaultSavedSearchCache cache) {
     return LongPoint.newRangeQuery(
         CommonParams.VERSION_FIELD, cache.versionHighWaterMark, Long.MAX_VALUE);
   }

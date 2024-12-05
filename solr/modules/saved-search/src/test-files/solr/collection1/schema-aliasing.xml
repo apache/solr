@@ -96,6 +96,6 @@
   <field name="_mq_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
   <field name="__anytokenfield" type="text" indexed="true" stored="false" docValues="false" multiValued="true"/>
-  <dynamicField name="_________________________________________________monitor_alias_*" type="text" multiValued="true"/>
+  <dynamicField name="_________________________________________________saved_search_alias_*" type="text" multiValued="true"/>
 
 </schema>

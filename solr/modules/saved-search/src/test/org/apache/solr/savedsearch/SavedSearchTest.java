@@ -34,7 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
+public class SavedSearchTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testMonitorQuery() throws Exception {

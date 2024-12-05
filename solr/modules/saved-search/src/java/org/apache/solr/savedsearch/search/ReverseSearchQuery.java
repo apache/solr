@@ -36,9 +36,9 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.savedsearch.MonitorDataValues;
-import org.apache.solr.savedsearch.SolrMonitorQueryDecoder;
-import org.apache.solr.savedsearch.cache.MonitorQueryCache;
+import org.apache.solr.savedsearch.SavedSearchDataValues;
+import org.apache.solr.savedsearch.SavedSearchDecoder;
+import org.apache.solr.savedsearch.cache.SavedSearchCache;
 
 class ReverseSearchQuery extends Query {
 
@@ -160,11 +160,11 @@ class ReverseSearchQuery extends Query {
     private static final float MATCH_COST = 100.0f;
 
     private final Scorer presearchScorer;
-    private final MonitorQueryCache monitorQueryCache;
-    private final SolrMonitorQueryDecoder queryDecoder;
+    private final SavedSearchCache savedSearchCache;
+    private final SavedSearchDecoder queryDecoder;
     private final SolrMatcherSink matcherSink;
     private final Metadata metadata;
-    private final MonitorDataValues dataValues;
+    private final SavedSearchDataValues dataValues;
 
     ReverseSearchScorer(
         Scorer presearchScorer,
@@ -173,12 +173,12 @@ class ReverseSearchQuery extends Query {
         throws IOException {
       super(presearchScorer.getWeight());
       this.presearchScorer = presearchScorer;
-      this.monitorQueryCache = reverseSearchContext.queryCache;
+      this.savedSearchCache = reverseSearchContext.queryCache;
       this.queryDecoder = reverseSearchContext.queryDecoder;
       this.matcherSink = reverseSearchContext.solrMatcherSink;
       this.metadata = new Metadata();
       matcherSink.captureMetadata(metadata);
-      this.dataValues = new MonitorDataValues(leafReaderContext);
+      this.dataValues = new SavedSearchDataValues(leafReaderContext);
     }
 
     @Override
@@ -252,11 +252,11 @@ class ReverseSearchQuery extends Query {
           return false;
         }
 
-        private QCEVisitor getEntry(MonitorDataValues dataValues) throws IOException {
+        private QCEVisitor getEntry(SavedSearchDataValues dataValues) throws IOException {
           var versionedEntry =
-              monitorQueryCache == null
+              savedSearchCache == null
                   ? null
-                  : monitorQueryCache.computeIfStale(dataValues, queryDecoder);
+                  : savedSearchCache.computeIfStale(dataValues, queryDecoder);
           return (versionedEntry == null || versionedEntry.version != dataValues.getVersion())
               ? queryDecoder.getComponent(dataValues, dataValues.getCacheId())
               : versionedEntry.entry;
@@ -272,13 +272,13 @@ class ReverseSearchQuery extends Query {
 
   static class ReverseSearchContext {
 
-    private final MonitorQueryCache queryCache;
-    private final SolrMonitorQueryDecoder queryDecoder;
+    private final SavedSearchCache queryCache;
+    private final SavedSearchDecoder queryDecoder;
     private final SolrMatcherSink solrMatcherSink;
 
     ReverseSearchContext(
-        MonitorQueryCache queryCache,
-        SolrMonitorQueryDecoder queryDecoder,
+        SavedSearchCache queryCache,
+        SavedSearchDecoder queryDecoder,
         SolrMatcherSink solrMatcherSink) {
       this.queryCache = queryCache;
       this.queryDecoder = queryDecoder;

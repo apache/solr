@@ -17,36 +17,43 @@
  *
  */
 
-package org.apache.solr.savedsearch.update;
+package org.apache.solr.savedsearch;
 
-import org.apache.lucene.monitor.Presearcher;
+import java.io.IOException;
+import java.util.Map;
+import org.apache.lucene.monitor.MonitorQuery;
+import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.savedsearch.search.ReverseSearchComponent;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
-    implements SolrCoreAware {
+public class SavedSearchDecoder {
 
-  private QueryDecomposer queryDecomposer;
-  private Presearcher presearcher;
+  private final SolrCore core;
+  private final QueryDecomposer queryDecomposer;
 
-  @Override
-  public UpdateRequestProcessor getInstance(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return new MonitorUpdateRequestProcessor(next, req.getCore(), queryDecomposer, presearcher);
-  }
-
-  @Override
-  public void inform(SolrCore core) {
+  public SavedSearchDecoder(SolrCore core) {
+    this.core = core;
     ReverseSearchComponent rsc =
         (ReverseSearchComponent)
             core.getSearchComponents().get(ReverseSearchComponent.COMPONENT_NAME);
-    presearcher = rsc.getPresearcher();
-    queryDecomposer = rsc.getQueryDecomposer();
+    this.queryDecomposer = rsc.getQueryDecomposer();
+  }
+
+  private MonitorQuery decode(SavedSearchDataValues savedSearchDataValues) throws IOException {
+    String id = savedSearchDataValues.getQueryId();
+    String queryStr = savedSearchDataValues.getMq();
+    var query = SimpleQueryParser.parse(queryStr, core);
+    return new MonitorQuery(id, query, queryStr, Map.of());
+  }
+
+  public QCEVisitor getComponent(SavedSearchDataValues dataValues, String cacheId)
+      throws IOException {
+    for (QCEVisitor qce : QCEVisitor.decompose(decode(dataValues), queryDecomposer)) {
+      if (qce.getCacheId().equals(cacheId)) {
+        return qce;
+      }
+    }
+    throw new IllegalArgumentException("Corrupt monitorQuery value in index");
   }
 }
