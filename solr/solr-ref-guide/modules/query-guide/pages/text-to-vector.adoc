@@ -259,7 +259,7 @@ http://localhost:8983/solr/techproducts/schema/vectorisation-model-store
 
 ----
 
-=== Running an Text to Vector Query
+=== Running a Text-to-Vector Query
 To run a query that embeds your query text, using a model you previously uploaded is simple:
 
 [source,text]
