@@ -204,7 +204,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
             // With i>0,
             //     With j=0 and i>0, it only tries "endpoint two".
             //     With j=1 and i>0, it only tries "endpoint one".
-            assertEquals(iterMessage, 1, successEndpointLastBasePaths);
+            assertEquals(iterMessage, 1, successEndpointLastBasePaths.size());
             assertTrue(iterMessage, failEndpointLastBasePaths.isEmpty());
           }
           successEndpointLastBasePaths.clear();

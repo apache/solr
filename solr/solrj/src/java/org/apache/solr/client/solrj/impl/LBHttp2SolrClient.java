@@ -121,8 +121,12 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
 
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
     this.defaultCollection = builder.defaultCollection;
-    this.urlParamNames = Collections.unmodifiableSet(builder.solrClientBuilder.urlParamNames);
 
+    if(builder.solrClientBuilder.urlParamNames == null) {
+      this.urlParamNames = Collections.emptySet();
+    } else {
+      this.urlParamNames = Collections.unmodifiableSet(builder.solrClientBuilder.urlParamNames);
+    }
   }
 
   @Override
@@ -237,23 +241,17 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
       RetryListener listener) {
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
-    final var client = (Http2SolrClient) getClient(endpoint);
-    try {
-      CompletableFuture<NamedList<Object>> future =
-          client.requestWithBaseUrl(baseUrl, (c) -> c.requestAsync(req.getRequest()));
-      future.whenComplete(
-          (result, throwable) -> {
-            if (!future.isCompletedExceptionally()) {
-              onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
-            } else if (!future.isCancelled()) {
-              onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
-            }
-          });
-      return future;
-    } catch (SolrServerException | IOException e) {
-      // Unreachable, since 'requestWithBaseUrl' above is running the request asynchronously
-      throw new RuntimeException(e);
-    }
+    final var client = getClient(endpoint);
+    CompletableFuture<NamedList<Object>> future = client.requestAsync(req.getRequest());
+    future.whenComplete(
+        (result, throwable) -> {
+          if (!future.isCompletedExceptionally()) {
+            onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
+          } else if (!future.isCancelled()) {
+            onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
+          }
+        });
+    return future;
   }
 
   private void onSuccessfulRequest(
