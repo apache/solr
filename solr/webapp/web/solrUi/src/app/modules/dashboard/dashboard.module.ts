@@ -28,4 +28,4 @@ import {SystemInformationService} from "./services/system-information.service";
   providers:[SystemInformationService],
   exports: [ MainComponent ]
 })
-export class DashboardModule { }
+export class DashboardModule {}

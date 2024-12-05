@@ -21,6 +21,7 @@ import {DateConverter} from "../../../common/utils/DateConverter";
 import {SystemInformationService} from "../../services/system-information.service";
 import {ISystemInfoResponse} from "../../models/systeminfo/ISystemInfoResponse";
 import {SharedModule} from "../../../common/shared.module";
+import {Title} from "@angular/platform-browser";
 
 
 @Component({
@@ -34,10 +35,11 @@ export class MainComponent {
 
   private _info!: ISystemInfoResponse;
 
-  constructor(private _systemInformationService: SystemInformationService) {
+  constructor(private titleService: Title, private _systemInformationService: SystemInformationService) {
   }
 
   ngOnInit() {
+    this.titleService.setTitle(`${this.titleService.getTitle()}: Dashboard`);
     this._systemInformationService.getSystemInfo()
       .then(r => this._info = r);
   }
