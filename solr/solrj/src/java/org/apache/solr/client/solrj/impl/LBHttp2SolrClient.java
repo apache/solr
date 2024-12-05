@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 /**
- * This "LoadBalanced Http Solr Client" is a load balancing wrapper around a Http Solr Client. This
+ * This "LoadBalanced Http Solr Client" is a load balancer for multiple Http Solr Clients. This
  * is useful when you have multiple Solr endpoints and requests need to be Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
@@ -63,7 +63,7 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
  * <blockquote>
  *
  * <pre>
- * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClientBuilder,
  *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
  *     .build();
  * </pre>
@@ -76,7 +76,7 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
  * <blockquote>
  *
  * <pre>
- * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClientBuilder,
  *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
  *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
  *     .build();
@@ -324,6 +324,16 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
     protected String defaultCollection;
 
+    /**
+     * <p>Use this Builder to configure an LBHttp2SolrClient.  The passed-in Solr Client Builder will be used to
+     * generate an internal client per specified Endpoint.
+     *
+     * <p>Implementation Note: During construction LBHttp2SolrClient will temporarily modify
+     * the Builder's {@link HttpSolrClientBuilderBase#baseSolrUrl}.
+     *
+     * @param solrClientBuilder A Builder like {@link Http2SolrClient.Builder} used to generate the internal clients
+     * @param endpoints the various Solr Endpoints to load balance
+     */
     public Builder(B solrClientBuilder, Endpoint... endpoints) {
       this.solrClientBuilder = solrClientBuilder;
       this.solrEndpoints = endpoints;
