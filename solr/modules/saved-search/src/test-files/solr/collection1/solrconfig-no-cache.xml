@@ -81,7 +81,7 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/reverseSearch" class="solr.savedsearch.search.ReverseSearchHandler">
+  <requestHandler name="/reverseSearch" class="solr.ReverseSearchHandler">
     <arr name="components">
       <str>reverseSearch</str>
     </arr>
@@ -121,7 +121,7 @@
   </requestHandler>
 
   <searchComponent name="reverseSearch"
-                   class="solr.savedsearch.search.ReverseSearchComponent">
+                   class="solr.ReverseSearchComponent">
     <str name="presearcherType">TermFilteredPresearcher</str>
     <bool name="applyFieldNameAlias">true</bool>
   </searchComponent>
@@ -129,7 +129,7 @@
   <updateRequestProcessorChain>
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
-    <processor class="solr.savedsearch.update.MonitorUpdateProcessorFactory"/>
+    <processor class="solr.MonitorUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
   <queryResponseWriter name="json" class="solr.JSONResponseWriter">
