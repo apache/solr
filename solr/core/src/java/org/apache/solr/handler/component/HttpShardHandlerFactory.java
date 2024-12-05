@@ -305,7 +305,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             sb);
     int soTimeout =
         getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
-    var defaultClientBuilder = new Http2SolrClient.Builder()
+    var defaultClientBuilder =
+        new Http2SolrClient.Builder()
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
@@ -313,7 +314,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     this.defaultClient = defaultClientBuilder.build();
 
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient.Builder<Http2SolrClient.Builder>(defaultClientBuilder).build();
+    this.loadbalancer =
+        new LBHttp2SolrClient.Builder<Http2SolrClient.Builder>(defaultClientBuilder).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 

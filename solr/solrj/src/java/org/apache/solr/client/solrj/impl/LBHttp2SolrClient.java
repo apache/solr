@@ -16,15 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.NamedList;
-import org.slf4j.MDC;
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -33,19 +25,23 @@ import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
+import org.slf4j.MDC;
 
 /**
- * This "LoadBalanced Http Solr Client" is a load balancer for multiple Http Solr Clients. This
- * is useful when you have multiple Solr endpoints and requests need to be Load Balanced among them.
+ * This "LoadBalanced Http Solr Client" is a load balancer for multiple Http Solr Clients. This is
+ * useful when you have multiple Solr endpoints and requests need to be Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
  * sent to the correct leader; no inter-node routing is done.
@@ -101,7 +97,7 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
  *
  * @since solr 8.0
  */
-public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends LBSolrClient {
+public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extends LBSolrClient {
 
   private final Map<String, HttpSolrClientBase> urlToClient;
   private final Set<String> urlParamNames;
@@ -112,7 +108,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
 
     String tmpBaseSolrUrl = builder.solrClientBuilder.baseSolrUrl;
     Map<String, HttpSolrClientBase> buildUrlToClient = new HashMap<>();
-    for(LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
+    for (LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
       builder.solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
       buildUrlToClient.put(endpoint.toString(), builder.solrClientBuilder.build());
     }
@@ -122,7 +118,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
     this.defaultCollection = builder.defaultCollection;
 
-    if(builder.solrClientBuilder.urlParamNames == null) {
+    if (builder.solrClientBuilder.urlParamNames == null) {
       this.urlParamNames = Collections.emptySet();
     } else {
       this.urlParamNames = Collections.unmodifiableSet(builder.solrClientBuilder.urlParamNames);
@@ -151,7 +147,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
   @Override
   public void close() {
     super.close();
-    for(HttpSolrClientBase client : urlToClient.values()) {
+    for (HttpSolrClientBase client : urlToClient.values()) {
       IOUtils.closeQuietly(client);
     }
   }
@@ -315,7 +311,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
     }
   }
 
-  public static class Builder<B extends HttpSolrClientBuilderBase<?,?>> {
+  public static class Builder<B extends HttpSolrClientBuilderBase<?, ?>> {
 
     private final B solrClientBuilder;
 
@@ -325,13 +321,14 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?,?>> extends
     protected String defaultCollection;
 
     /**
-     * <p>Use this Builder to configure an LBHttp2SolrClient.  The passed-in Solr Client Builder will be used to
-     * generate an internal client per specified Endpoint.
+     * Use this Builder to configure an LBHttp2SolrClient. The passed-in Solr Client Builder will be
+     * used to generate an internal client per specified Endpoint.
      *
-     * <p>Implementation Note: During construction LBHttp2SolrClient will temporarily modify
-     * the Builder's {@link HttpSolrClientBuilderBase#baseSolrUrl}.
+     * <p>Implementation Note: During construction LBHttp2SolrClient will temporarily modify the
+     * Builder's {@link HttpSolrClientBuilderBase#baseSolrUrl}.
      *
-     * @param solrClientBuilder A Builder like {@link Http2SolrClient.Builder} used to generate the internal clients
+     * @param solrClientBuilder A Builder like {@link Http2SolrClient.Builder} used to generate the
+     *     internal clients
      * @param endpoints the various Solr Endpoints to load balance
      */
     public Builder(B solrClientBuilder, Endpoint... endpoints) {

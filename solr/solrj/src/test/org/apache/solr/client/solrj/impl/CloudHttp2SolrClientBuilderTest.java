@@ -189,9 +189,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   }
 
   private void testHttpClientConsistency(
-      List<String> solrUrls,
-      Http2SolrClient.Builder internalClientBuilder)
-      throws IOException {
+      List<String> solrUrls, Http2SolrClient.Builder internalClientBuilder) throws IOException {
     CloudHttp2SolrClient.Builder clientBuilder = new CloudHttp2SolrClient.Builder(solrUrls);
 
     if (internalClientBuilder != null) {

@@ -497,14 +497,7 @@ public abstract class LBSolrClient extends SolrClient {
   private NamedList<Object> doRequest(Endpoint endpoint, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
     final var solrClient = getClient(endpoint);
-    return doRequest(solrClient, endpoint.getBaseUrl(), endpoint.getCore(), solrRequest);
-  }
-
-  //TODO remove this method NOCOMMIT
-  private NamedList<Object> doRequest(
-      SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
-      throws SolrServerException, IOException {
-    return solrClient.request(solrRequest, collection);
+    return solrClient.request(solrRequest, endpoint.getCore());
   }
 
   protected Exception doRequest(
@@ -614,12 +607,7 @@ public abstract class LBSolrClient extends SolrClient {
       // First the one on the endpoint, then the default collection
       final String effectiveCollection =
           Objects.requireNonNullElse(zombieEndpoint.getCore(), getDefaultCollection());
-      final var responseRaw =
-          doRequest(
-              getClient(zombieEndpoint),
-              zombieEndpoint.getBaseUrl(),
-              effectiveCollection,
-              queryRequest);
+      final var responseRaw = getClient(zombieEndpoint).request(queryRequest, effectiveCollection);
       QueryResponse resp = new QueryResponse();
       resp.setResponse(responseRaw);
 
@@ -723,7 +711,7 @@ public abstract class LBSolrClient extends SolrClient {
         // Choose the endpoint's core/collection over any specified by the user
         final var effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        return doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+        return getClient(endpoint).request(request, effectiveCollection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -764,8 +752,7 @@ public abstract class LBSolrClient extends SolrClient {
         ++numServersTried;
         final String effectiveCollection =
             endpoint.getCore() == null ? collection : endpoint.getCore();
-        NamedList<Object> rsp =
-            doRequest(getClient(endpoint), endpoint.getBaseUrl(), effectiveCollection, request);
+        NamedList<Object> rsp = getClient(endpoint).request(request, effectiveCollection);
         // remove from zombie list *before* adding to the alive list to avoid a race that could lose
         // a server
         zombieServers.remove(endpoint.getUrl());

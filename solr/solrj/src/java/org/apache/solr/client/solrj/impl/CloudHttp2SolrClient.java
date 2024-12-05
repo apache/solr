@@ -400,7 +400,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       return this;
     }
 
-
     /**
      * If provided, the CloudHttp2SolrClient will build it's internal Http2SolrClient using this
      * builder (instead of the empty default one). Providing this builder allows users to configure

@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -316,9 +315,9 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   private static class LBClientHolder implements AutoCloseable {
 
     final LBHttp2SolrClient<?> lbClient;
-    final HttpSolrClientBuilderBase<?,?> delegate;
+    final HttpSolrClientBuilderBase<?, ?> delegate;
 
-    LBClientHolder(LBHttp2SolrClient<?> lbClient, HttpSolrClientBuilderBase<?,?> delegate) {
+    LBClientHolder(LBHttp2SolrClient<?> lbClient, HttpSolrClientBuilderBase<?, ?> delegate) {
       this.lbClient = lbClient;
       this.delegate = delegate;
     }

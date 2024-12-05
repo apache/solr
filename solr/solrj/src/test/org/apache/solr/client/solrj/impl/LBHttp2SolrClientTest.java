@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -53,9 +52,12 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     Set<String> urlParamNames = new HashSet<>(2);
     urlParamNames.add("param1");
 
-    var httpClientBuilder = new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames);
+    var httpClientBuilder =
+        new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames);
     var endpoint = new LBSolrClient.Endpoint(url);
-    try (var testClient = new LBHttp2SolrClient.Builder<Http2SolrClient.Builder>(httpClientBuilder, endpoint).build()) {
+    try (var testClient =
+        new LBHttp2SolrClient.Builder<Http2SolrClient.Builder>(httpClientBuilder, endpoint)
+            .build()) {
 
       assertArrayEquals(
           "Wrong urlParamNames found in lb client.",
@@ -74,10 +76,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    var httpClientBuilder = new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
+    var httpClientBuilder =
+        new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient =
-            new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
+        new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
 
       String lastEndpoint = null;
       for (int i = 0; i < 10; i++) {
@@ -101,10 +104,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    var httpClientBuilder = new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
+    var httpClientBuilder =
+        new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient =
-            new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
+        new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
 
       setEndpointToFail(testClient, ep1);
       setEndpointToSucceed(testClient, ep2);
@@ -150,10 +154,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    var httpClientBuilder = new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
+    var httpClientBuilder =
+        new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient =
-            new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
+        new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
 
       for (int j = 0; j < 2; j++) {
         // first time Endpoint One will return error code 500.
@@ -172,7 +177,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           endpointToSucceed = ep1;
           endpointToFail = ep2;
         }
-        List<String> successEndpointLastBasePaths = basePathsForEndpoint(testClient, endpointToSucceed);
+        List<String> successEndpointLastBasePaths =
+            basePathsForEndpoint(testClient, endpointToSucceed);
         List<String> failEndpointLastBasePaths = basePathsForEndpoint(testClient, endpointToFail);
 
         for (int i = 0; i < 10; i++) {
@@ -213,16 +219,18 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       }
     }
   }
+
   @Test
   public void testAsync() {
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    var httpClientBuilder = new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
+    var httpClientBuilder =
+        new MockHttpSolrClientBuilder().withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient =
-                 new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
+        new LBHttp2SolrClient.Builder<>(httpClientBuilder, ep1, ep2).build()) {
 
       int limit = 10; // For simplicity use an even limit
       List<CompletableFuture<LBSolrClient.Rsp>> responses = new ArrayList<>();
@@ -273,32 +281,37 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
   private void checkSynchonousResponseContent(LBSolrClient.Rsp response, String qValue) {
     assertEquals("There should be one element in the response.", 1, response.getResponse().size());
     assertEquals(
-            "The response key 'response' should echo the query.",
-            qValue,
-            response.getResponse().get("response"));
+        "The response key 'response' should echo the query.",
+        qValue,
+        response.getResponse().get("response"));
   }
 
-  private void setEndpointToFail(LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint ep) {
+  private void setEndpointToFail(
+      LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint ep) {
     ((MockHttpSolrClient) testClient.getClient(ep)).allRequestsShallFail = true;
   }
 
-  private void setEndpointToSucceed(LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint ep) {
+  private void setEndpointToSucceed(
+      LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint ep) {
     ((MockHttpSolrClient) testClient.getClient(ep)).allRequestsShallFail = false;
   }
 
-  private List<String> basePathsForEndpoint(LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint ep) {
+  private List<String> basePathsForEndpoint(
+      LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint ep) {
     return ((MockHttpSolrClient) testClient.getClient(ep)).lastBasePaths;
   }
 
-  private List<SolrRequest<?>> lastSolrRequests(LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint... endpoints) {
+  private List<SolrRequest<?>> lastSolrRequests(
+      LBHttp2SolrClient<MockHttpSolrClientBuilder> testClient, LBSolrClient.Endpoint... endpoints) {
     return Arrays.stream(endpoints)
-            .map(testClient::getClient)
-            .map(MockHttpSolrClient.class::cast)
-            .flatMap(c -> c.lastSolrRequests.stream())
-            .toList();
+        .map(testClient::getClient)
+        .map(MockHttpSolrClient.class::cast)
+        .flatMap(c -> c.lastSolrRequests.stream())
+        .toList();
   }
 
-  public static class MockHttpSolrClientBuilder extends HttpSolrClientBuilderBase<MockHttpSolrClientBuilder, MockHttpSolrClient> {
+  public static class MockHttpSolrClientBuilder
+      extends HttpSolrClientBuilderBase<MockHttpSolrClientBuilder, MockHttpSolrClient> {
 
     @Override
     public MockHttpSolrClient build() {
@@ -368,18 +381,20 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
 
     @Override
-    protected boolean processorAcceptsMimeType(Collection<String> processorSupportedContentTypes, String mimeType) {
+    protected boolean processorAcceptsMimeType(
+        Collection<String> processorSupportedContentTypes, String mimeType) {
       return false;
     }
 
     @Override
-    protected String allProcessorSupportedContentTypesCommaDelimited(Collection<String> processorSupportedContentTypes) {
+    protected String allProcessorSupportedContentTypesCommaDelimited(
+        Collection<String> processorSupportedContentTypes) {
       return null;
     }
 
     @Override
     protected void updateDefaultMimeTypeForParser() {
-      //no-op
+      // no-op
     }
   }
 }
