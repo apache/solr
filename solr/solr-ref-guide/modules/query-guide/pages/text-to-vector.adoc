@@ -65,11 +65,11 @@ This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr M
 
 You need to register / configure the plugins provided by the LLM module that you want to use. This is done in `solrconfig.xml`. 
 
-* Declaration of the `text_to_vector` query parser.
+* Declaration of the `knn_text_to_vector` query parser.
 +
 [source,xml]
 ----
-<queryParser name="text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
+<queryParser name="knn_text_to_vector" class="org.apache.solr.llm.texttovector.search.TextToVectorQParserPlugin"/>
 ----
 
 == Text to Vector Lifecycle
@@ -112,7 +112,7 @@ Accepted values:
 s|Required |Default: none
 |===
 +
-The identifier of your model, this is used by any component that intends to use the model (`text_to_vector` query parser).
+The identifier of your model, this is used by any component that intends to use the model (`knn_text_to_vector` query parser).
 
 `params`::
 +
@@ -263,7 +263,7 @@ http://localhost:8983/solr/techproducts/schema/vectorisation-model-store
 To run a query that embeds your query text, using a model you previously uploaded is simple:
 
 [source,text]
-?q={!text_to_vector model=a-model f=vector topK=10}hello world query
+?q={!knn_text_to_vector model=a-model f=vector topK=10}hello world query
 
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
 
