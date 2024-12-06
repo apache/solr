@@ -164,11 +164,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private DocCollection getDocCollectionFromObjects(
       String collectionName, Map<String, Object> collStateMap, int zNodeVersion) {
 
-    Long creationTimeMillisFromClusterStatus = (Long) collStateMap.get("creationTimeMillis");
+    Long creationTimeMillis = (Long) collStateMap.get("creationTimeMillis");
     Instant creationTime =
-        creationTimeMillisFromClusterStatus == null
+        creationTimeMillis == null
             ? Instant.EPOCH
-            : Instant.ofEpochMilli(creationTimeMillisFromClusterStatus);
+            : Instant.ofEpochMilli(creationTimeMillis);
     return fillPrs(collectionName, collStateMap, creationTime, zNodeVersion);
   }
 
