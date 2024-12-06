@@ -16,9 +16,6 @@
  <directoryFactory name="DirectoryFactory"
   class="${solr.directoryFactory:solr.MockDirectoryFactory}" />
 
- <!-- for use with the DefaultWrapperModel class -->
- <lib dir="${solr.solr.home:.}/models" />
-
  <schemaFactory class="ClassicIndexSchemaFactory" />
 
  <requestDispatcher>

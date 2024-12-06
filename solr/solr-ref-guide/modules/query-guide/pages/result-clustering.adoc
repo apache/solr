@@ -123,7 +123,7 @@ To enable the clustering component extension and the dedicated search handler co
 
 [source,bash]
 ----
-bin/solr start -e techproducts -Dsolr.clustering.enabled=true
+bin/solr start -e techproducts -Dsolr.modules=clustering -Dsolr.clustering.enabled=true
 ----
 
 You can now try out the clustering handler by opening the following URL in a browser:

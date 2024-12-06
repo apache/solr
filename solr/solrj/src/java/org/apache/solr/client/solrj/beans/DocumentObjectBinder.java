@@ -112,8 +112,7 @@ public class DocumentObjectBinder {
   private void addChild(Object obj, DocField field, SolrInputDocument doc) {
     Object val = field.get(obj);
     if (val == null) return;
-    if (val instanceof Collection) {
-      Collection<?> collection = (Collection<?>) val;
+    if (val instanceof Collection<?> collection) {
       for (Object o : collection) {
         SolrInputDocument child = toSolrInputDocument(o);
         doc.addChildDocument(child);
@@ -285,9 +284,8 @@ public class DocumentObjectBinder {
         // assigned a default type
         type = Object.class;
         if (field != null) {
-          if (field.getGenericType() instanceof ParameterizedType) {
+          if (field.getGenericType() instanceof ParameterizedType parameterizedType) {
             // check what are the generic values
-            ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
             Type[] types = parameterizedType.getActualTypeArguments();
             if (types != null && types.length == 2 && types[0] == String.class) {
               // the key should always be String

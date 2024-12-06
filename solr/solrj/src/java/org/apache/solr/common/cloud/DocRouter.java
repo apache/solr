@@ -136,8 +136,7 @@ public abstract class DocRouter {
 
     @Override
     public boolean equals(Object obj) {
-      if (!(obj instanceof Range)) return false;
-      Range other = (Range) obj;
+      if (!(obj instanceof Range other)) return false;
       return this.min == other.min && this.max == other.max;
     }
 

@@ -134,9 +134,8 @@ public class RptWithGeometrySpatialField
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof CachingShapeValuesource)) return false;
+      if (!(o instanceof CachingShapeValuesource that)) return false;
 
-      CachingShapeValuesource that = (CachingShapeValuesource) o;
       return Objects.equals(targetValueSource, that.targetValueSource)
           && Objects.equals(fieldName, that.fieldName);
     }
@@ -217,9 +216,7 @@ public class RptWithGeometrySpatialField
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof PerSegCacheKey)) return false;
-
-      PerSegCacheKey that = (PerSegCacheKey) o;
+      if (!(o instanceof PerSegCacheKey that)) return false;
 
       if (docId != that.docId) return false;
 

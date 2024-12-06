@@ -56,14 +56,13 @@ public class TopLevelJoinQuery extends JoinQuery {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
-    if (!(searcher instanceof SolrIndexSearcher)) {
+    if (!(searcher instanceof SolrIndexSearcher solrSearcher)) {
       log.debug(
           "Falling back to JoinQueryWeight because searcher [{}] is not the required SolrIndexSearcher",
           searcher);
       return super.createWeight(searcher, scoreMode, boost);
     }
 
-    final SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
     final JoinQueryWeight weight =
         new JoinQueryWeight(solrSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
     final SolrIndexSearcher fromSearcher = weight.fromSearcher;

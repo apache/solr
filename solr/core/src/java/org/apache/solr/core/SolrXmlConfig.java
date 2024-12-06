@@ -760,8 +760,7 @@ public class SolrXmlConfig {
   }
 
   private static Object decodeNullValue(Object o) {
-    if (o instanceof String) { // check if it's a JSON object
-      String str = (String) o;
+    if (o instanceof String str) { // check if it's a JSON object
       if (!str.isBlank() && (str.startsWith("{") || str.startsWith("["))) {
         try {
           o = Utils.fromJSONString((String) o);
