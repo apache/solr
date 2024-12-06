@@ -238,7 +238,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private void testDeleteNamedBackup(String backupNames[]) throws Exception {
+  private void testDeleteNamedBackup(String[] backupNames) throws Exception {
     final BackupStatusChecker backupStatus =
         new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
