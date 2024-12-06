@@ -655,7 +655,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d --solr-home \"%s\" %s %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
