@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -102,18 +103,17 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
   private final Map<String, HttpSolrClientBase> urlToClient;
   private final Set<String> urlParamNames;
 
+  private final Builder<?> builder;
+
   @SuppressWarnings("unchecked")
   private LBHttp2SolrClient(Builder<?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
+    this.builder = builder;
 
-    String tmpBaseSolrUrl = builder.solrClientBuilder.baseSolrUrl;
-    Map<String, HttpSolrClientBase> buildUrlToClient = new HashMap<>();
+    this.urlToClient = new ConcurrentHashMap<>();
     for (LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
-      builder.solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
-      buildUrlToClient.put(endpoint.toString(), builder.solrClientBuilder.build());
+      buildClient(endpoint);
     }
-    builder.solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
-    this.urlToClient = Collections.unmodifiableMap(buildUrlToClient);
 
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
     this.defaultCollection = builder.defaultCollection;
@@ -125,9 +125,25 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
     }
   }
 
+  private synchronized HttpSolrClientBase buildClient(Endpoint endpoint) {
+    var client = urlToClient.get(endpoint.toString());
+    if(client == null) {
+      String tmpBaseSolrUrl = builder.solrClientBuilder.baseSolrUrl;
+      builder.solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
+      client = builder.solrClientBuilder.build();
+      urlToClient.put(endpoint.getBaseUrl(), client);
+      builder.solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
+    }
+    return client;
+  }
+
   @Override
   protected HttpSolrClientBase getClient(Endpoint endpoint) {
-    return urlToClient.get(endpoint.toString());
+    var client =  urlToClient.get(endpoint.getBaseUrl());
+    if(client == null) {
+      return buildClient(endpoint);
+    }
+    return client;
   }
 
   @Override
@@ -238,7 +254,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
     final var client = getClient(endpoint);
-    CompletableFuture<NamedList<Object>> future = client.requestAsync(req.getRequest());
+    CompletableFuture<NamedList<Object>> future = client.requestAsync(req.getRequest(), endpoint.getCore());
     future.whenComplete(
         (result, throwable) -> {
           if (!future.isCompletedExceptionally()) {
@@ -322,14 +338,14 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
 
     /**
      * Use this Builder to configure an LBHttp2SolrClient. The passed-in Solr Client Builder will be
-     * used to generate an internal client per specified Endpoint.
+     * used to generate an internal client per Endpoint.
      *
-     * <p>Implementation Note: During construction LBHttp2SolrClient will temporarily modify the
-     * Builder's {@link HttpSolrClientBuilderBase#baseSolrUrl}.
+     * <p>Implementation Note: LBHttp2SolrClient will temporarily modify the passed-in Builder's
+     * {@link HttpSolrClientBuilderBase#baseSolrUrl} whenever it needs to generate a new Http Solr Client.
      *
      * @param solrClientBuilder A Builder like {@link Http2SolrClient.Builder} used to generate the
      *     internal clients
-     * @param endpoints the various Solr Endpoints to load balance
+     * @param endpoints the initial Solr Endpoints to load balance
      */
     public Builder(B solrClientBuilder, Endpoint... endpoints) {
       this.solrClientBuilder = solrClientBuilder;
