@@ -145,7 +145,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
 
     for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
-      cs = cs.copyWith(e.getKey(), getDocCollectionFromObjects(e, -1));
+      String collectionName = e.getKey();
+      Map<String, Object> collStateMap = (Map<String, Object>) e.getValue();
+      cs =
+          cs.copyWith(
+              collectionName, getDocCollectionFromObjects(collectionName, collStateMap, -1));
     }
 
     if (clusterProperties != null) {
@@ -157,15 +161,15 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     return cs;
   }
 
-  private DocCollection getDocCollectionFromObjects(Map.Entry<String, Object> e, int zNodeVersion) {
-    @SuppressWarnings("rawtypes")
-    Map m = (Map) e.getValue();
-    Long creationTimeMillisFromClusterStatus = (Long) m.get("creationTimeMillis");
+  private DocCollection getDocCollectionFromObjects(
+      String collectionName, Map<String, Object> collStateMap, int zNodeVersion) {
+
+    Long creationTimeMillisFromClusterStatus = (Long) collStateMap.get("creationTimeMillis");
     Instant creationTime =
         creationTimeMillisFromClusterStatus == null
             ? Instant.EPOCH
             : Instant.ofEpochMilli(creationTimeMillisFromClusterStatus);
-    return fillPrs(zNodeVersion, e, creationTime, m);
+    return fillPrs(collectionName, collStateMap, creationTime, zNodeVersion);
   }
 
   private DocCollection fetchCollectionState(SolrClient client, String collection)
@@ -180,12 +184,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
     int znodeVersion = -1;
     @SuppressWarnings("unchecked")
-    Map<String, Object> collFromStatus = (Map<String, Object>) (collectionsMap).get(collection);
-    if (collFromStatus == null) {
+    Map<String, Object> collStateMap = (Map<String, Object>) (collectionsMap).get(collection);
+    if (collStateMap == null) {
       throw new NotACollectionException(); // probably an alias
     }
-    znodeVersion = (int) collFromStatus.get("znodeVersion");
-    return getDocCollectionFromObjects(Map.entry(collection, collFromStatus), znodeVersion);
+    znodeVersion = (int) collStateMap.get("znodeVersion");
+    return getDocCollectionFromObjects(collection, collStateMap, znodeVersion);
   }
 
   private SimpleOrderedMap<?> submitClusterStateRequest(
@@ -215,12 +219,15 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     return (SimpleOrderedMap<?>) client.request(request).get("cluster");
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"unchecked"})
   private DocCollection fillPrs(
-      int znodeVersion, Map.Entry<String, Object> e, Instant creationTime, Map m) {
+      String collectionName,
+      Map<String, Object> collStateMap,
+      Instant creationTime,
+      int znodeVersion) {
     DocCollection.PrsSupplier prsSupplier = null;
-    if (m.containsKey("PRS")) {
-      Map prs = (Map) m.remove("PRS");
+    if (collStateMap.containsKey("PRS")) {
+      Map<String, Object> prs = (Map<String, Object>) collStateMap.remove("PRS");
       prsSupplier =
           () ->
               new PerReplicaStates(
@@ -228,9 +235,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
                   (Integer) prs.get("cversion"),
                   (List<String>) prs.get("states"));
     }
-
     return ClusterState.collectionFromObjects(
-        e.getKey(), m, znodeVersion, creationTime, prsSupplier);
+        collectionName, collStateMap, znodeVersion, creationTime, prsSupplier);
   }
 
   @Override
