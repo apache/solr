@@ -102,12 +102,12 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
   private final Map<String, HttpSolrClientBase> urlToClient;
   private final Set<String> urlParamNames;
 
-  private final Builder<?> builder;
+  private final HttpSolrClientBuilderBase<?, ?> solrClientBuilder;
 
   @SuppressWarnings("unchecked")
   private LBHttp2SolrClient(Builder<?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
-    this.builder = builder;
+    this.solrClientBuilder = builder.solrClientBuilder;
 
     this.urlToClient = new ConcurrentHashMap<>();
     for (LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
@@ -127,11 +127,11 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
   private synchronized HttpSolrClientBase buildClient(Endpoint endpoint) {
     var client = urlToClient.get(endpoint.toString());
     if (client == null) {
-      String tmpBaseSolrUrl = builder.solrClientBuilder.baseSolrUrl;
-      builder.solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
-      client = builder.solrClientBuilder.build();
+      String tmpBaseSolrUrl = solrClientBuilder.baseSolrUrl;
+      solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
+      client = solrClientBuilder.build();
       urlToClient.put(endpoint.getBaseUrl(), client);
-      builder.solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
+      solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
     }
     return client;
   }
