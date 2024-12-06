@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -163,7 +162,7 @@ public class ZkCLI implements CLIO {
     CommandLineParser parser =
         DefaultParser.builder()
             // Override deprecation handler since the default one prints to stdout, we want stderr
-            .setDeprecatedHandler(o -> System.err.println(toDeprecatedString(o)))
+            .setDeprecatedHandler(SolrCLI::deprecatedHandlerStdErr)
             .build();
     Options options = new Options();
 
@@ -720,14 +719,6 @@ public class ZkCLI implements CLIO {
     } catch (ParseException exp) {
       stdout.println("Unexpected exception:" + exp.getMessage());
     }
-  }
-
-  // TODO: Override toDeprecatedString since Option.toDeprecatedString has private visibility in
-  // Commons-CLI
-  private static String toDeprecatedString(Option o) {
-    return o.isDeprecated()
-        ? String.format(Locale.ROOT, "Option '%s': %s", o.getArgName(), o.getDeprecated())
-        : "";
   }
 
   private static boolean shouldCompressData(
