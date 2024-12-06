@@ -41,6 +41,9 @@ plugins {
 rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java.min.get())
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
 
+// Enable development mode for entire project (unset defaults to true)
+rootProject.ext.development = !project.hasProperty('development') || project.findProperty('development') == 'true'
+
 apply from: file('gradle/globals.gradle')
 
 // General metadata.

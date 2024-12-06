@@ -151,9 +151,9 @@ war {
     into "libs/solr"
   })
 
-  // Include new UI files in webapp
-  // def isDevelopment = project.findProperty('development') == 'true'
-  if (project.findProperty('development')) {
+  // Include new Admin UI files in webapp
+  // By default, we always build dev that does not optimize generated files for release to reduce build times.
+  if (rootProject.ext.development) {
     from (tasks.generateComposeUiDevFiles) {
       into "compose"
     }

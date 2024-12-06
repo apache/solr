@@ -140,10 +140,10 @@ jaxb = "2.3.8"
 jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
 jersey = "3.1.9"
-# @keep for version alignment
-jetbrains-annotations = "23.0.0"
 # TODO Sync with jersey versions
 jersey-containers = "2.39.1"
+# @keep for version alignment
+jetbrains-annotations = "23.0.0"
 # @keep for version alignment
 joda-time = "2.8.1"
 junit = "4.13.2"
