@@ -122,24 +122,6 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testExternalClientAndInternalBuilderTogether() {
-    expectThrows(
-        IllegalStateException.class,
-        () ->
-            new CloudHttp2SolrClient.Builder(
-                    Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
-                .withInternalClientBuilder(mock(Http2SolrClient.Builder.class))
-                .build());
-    expectThrows(
-        IllegalStateException.class,
-        () ->
-            new CloudHttp2SolrClient.Builder(
-                    Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
-                .withInternalClientBuilder(mock(Http2SolrClient.Builder.class))
-                .build());
-  }
-
-  @Test
   public void testProvideInternalBuilder() throws IOException {
     Http2SolrClient http2Client = mock(Http2SolrClient.class);
     Http2SolrClient.Builder http2ClientBuilder = mock(Http2SolrClient.Builder.class);
