@@ -24,7 +24,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -127,7 +126,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
 
   private synchronized HttpSolrClientBase buildClient(Endpoint endpoint) {
     var client = urlToClient.get(endpoint.toString());
-    if(client == null) {
+    if (client == null) {
       String tmpBaseSolrUrl = builder.solrClientBuilder.baseSolrUrl;
       builder.solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
       client = builder.solrClientBuilder.build();
@@ -139,8 +138,8 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
 
   @Override
   protected HttpSolrClientBase getClient(Endpoint endpoint) {
-    var client =  urlToClient.get(endpoint.getBaseUrl());
-    if(client == null) {
+    var client = urlToClient.get(endpoint.getBaseUrl());
+    if (client == null) {
       return buildClient(endpoint);
     }
     return client;
@@ -254,7 +253,8 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
     final var client = getClient(endpoint);
-    CompletableFuture<NamedList<Object>> future = client.requestAsync(req.getRequest(), endpoint.getCore());
+    CompletableFuture<NamedList<Object>> future =
+        client.requestAsync(req.getRequest(), endpoint.getCore());
     future.whenComplete(
         (result, throwable) -> {
           if (!future.isCompletedExceptionally()) {
@@ -341,7 +341,8 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
      * used to generate an internal client per Endpoint.
      *
      * <p>Implementation Note: LBHttp2SolrClient will temporarily modify the passed-in Builder's
-     * {@link HttpSolrClientBuilderBase#baseSolrUrl} whenever it needs to generate a new Http Solr Client.
+     * {@link HttpSolrClientBuilderBase#baseSolrUrl} whenever it needs to generate a new Http Solr
+     * Client.
      *
      * @param solrClientBuilder A Builder like {@link Http2SolrClient.Builder} used to generate the
      *     internal clients
