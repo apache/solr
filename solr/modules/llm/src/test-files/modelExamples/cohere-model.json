@@ -1,0 +1,13 @@
+{
+  "class": "dev.langchain4j.model.cohere.CohereEmbeddingModel",
+  "name": "cohere-1",
+  "params": {
+    "baseUrl": "https://api.cohere.ai/v1/",
+    "apiKey": "apiKey-cohere",
+    "modelName": "embed-english-light-v3.0",
+    "inputType": "search_document",
+    "timeout": 60,
+    "logRequests": true,
+    "logResponses": true
+  }
+}
