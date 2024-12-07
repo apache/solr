@@ -1983,7 +1983,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   /** Register the default search components */
   private void loadSearchComponents() {
-    Map<String, SearchComponent> instances = createInstances(SearchComponent.standard_components);
+    Map<String, SearchComponent> instances = createInstances(SearchComponent.STANDARD_COMPONENTS);
     for (Map.Entry<String, SearchComponent> e : instances.entrySet())
       e.getValue().setName(e.getKey());
     searchComponents.init(instances, this);
