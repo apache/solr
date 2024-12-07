@@ -73,10 +73,9 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
           "shard1",
           jetty
               .getCoreContainer()
-              .getCores()
+              .getCoreDescriptors()
               .iterator()
               .next()
-              .getCoreDescriptor()
               .getCloudDescriptor()
               .getShardId());
       String jettyNodeName = jetty.getNodeName(); // must get before shutdown

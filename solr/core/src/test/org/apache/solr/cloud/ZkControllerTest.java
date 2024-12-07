@@ -166,8 +166,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
       try {
         CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
-        zkController =
-            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
+        zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig);
       } catch (IllegalArgumentException e) {
         fail("ZkController did not normalize host name correctly");
       } finally {
@@ -233,8 +232,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
                     Boolean.getBoolean("solr.distributedCollectionConfigSetExecution"))
                 .build();
         zkController =
-            new ZkController(
-                cc, cluster.getZkServer().getZkAddress(), TIMEOUT, cloudConfig, () -> null);
+            new ZkController(cc, cluster.getZkServer().getZkAddress(), TIMEOUT, cloudConfig);
         zkControllerRef.set(zkController);
 
         zkController
@@ -399,7 +397,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         try {
           CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
           try (ZkController zkController =
-              new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null)) {
+              new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
             final Path dir = createTempDir();
             final String configsetName = "testconfigset";
             try (ZkSolrResourceLoader loader =
@@ -478,8 +476,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
                         cc,
                         server.getZkAddress(),
                         TIMEOUT,
-                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index).build(),
-                        () -> null);
+                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index).build());
               } catch (Exception e) {
                 exception.compareAndSet(null, e);
               } finally {
