@@ -116,6 +116,18 @@ task assemblePackaging(type: Sync) {
     include "scripts/**"
     include "solr/**"
     include "README.md"
+
+    if (rootProject.ext.development) {
+      rename { String fileName ->
+        // Allow duplicates to overwrite previous files
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        // For development builds we overwrite configurations with dev configs
+        fileName.replace("-dev.xml", ".xml")
+      }
+    } else {
+      // For release builds we exclude all dev configurations
+      exclude "**-dev.*"
+    }
   })
 
   // Add in the intersection of serverLib and solrCore
