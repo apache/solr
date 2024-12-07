@@ -365,6 +365,11 @@ public class DenseVectorField extends FloatPointField {
 
   public Query getKnnVectorQuery(
       String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+    return getKnnVectorQuery(fieldName, vectorToSearch, topK, filterQuery, null);
+  }
+
+  public Query getKnnVectorQuery(
+      String fieldName, String vectorToSearch, int topK, Query filterQuery, Query seedQuery) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
@@ -372,9 +377,10 @@ public class DenseVectorField extends FloatPointField {
     switch (vectorEncoding) {
       case FLOAT32:
         return new KnnFloatVectorQuery(
-            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery /*, seedQuery */);
       case BYTE:
-        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+        return new KnnByteVectorQuery(
+            fieldName, vectorBuilder.getByteVector(), topK, filterQuery /*, seedQuery */);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
