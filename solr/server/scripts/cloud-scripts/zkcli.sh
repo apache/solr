@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "WARNING: The zkcli.sh script has been deprecated in favour of the bin/solr equivalent commands."
+>&2 echo "WARNING: The zkcli.sh script has been deprecated in favour of the bin/solr equivalent commands."
 
 # You can override pass the following parameters to this script:
 #
