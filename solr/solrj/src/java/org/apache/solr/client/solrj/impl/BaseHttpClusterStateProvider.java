@@ -23,16 +23,18 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -128,37 +130,28 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @SuppressWarnings("unchecked")
-  private ClusterState fetchClusterState(SolrClient client, Map<String, Object> clusterProperties)
+  private ClusterState fetchClusterState(SolrClient client)
       throws SolrServerException, IOException, NotACollectionException {
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_CLUSTER_STATE);
 
-    Map<String, Object> collectionsMap = ((NamedList<?>) cluster.get("collections")).asMap(10);
-
-    ClusterState cs = new ClusterState(this.liveNodes, new HashMap<>());
     List<String> liveNodesList = (List<String>) cluster.get("live_nodes");
     if (liveNodesList != null) {
-      Set<String> liveNodes = new HashSet<>(liveNodesList);
-      this.liveNodes = liveNodes;
+      this.liveNodes = Set.copyOf(liveNodesList);
       liveNodesTimestamp = System.nanoTime();
-      cs = new ClusterState(liveNodes, new HashMap<>());
     }
 
-    for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
-      String collectionName = e.getKey();
-      Map<String, Object> collStateMap = (Map<String, Object>) e.getValue();
-      cs =
-          cs.copyWith(
-              collectionName, getDocCollectionFromObjects(collectionName, collStateMap, -1));
+    var collectionsNl = (NamedList<NamedList<?>>) cluster.get("collections");
+
+    Map<String, DocCollection> collStateByName = new LinkedHashMap<>(collectionsNl.size());
+    for (Entry<String, NamedList<?>> entry : collectionsNl) {
+      final var collStateMap = entry.getValue().asMap(10);
+      final int zNodeVersion = (int) collStateMap.get("znodeVersion");
+      collStateByName.put(
+          entry.getKey(), getDocCollectionFromObjects(entry.getKey(), collStateMap, zNodeVersion));
     }
 
-    if (clusterProperties != null) {
-      Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
-      if (properties != null) {
-        clusterProperties.putAll(properties);
-      }
-    }
-    return cs;
+    return new ClusterState(this.liveNodes, collStateByName);
   }
 
   private DocCollection getDocCollectionFromObjects(
@@ -197,23 +190,18 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "CLUSTERSTATUS");
 
-    if (requestType == ClusterStateRequestType.FETCH_COLLECTION && collection != null) {
-      params.set("collection", collection);
-    } else if (requestType == ClusterStateRequestType.FETCH_LIVE_NODES) {
-      params.set("liveNodes", "true");
-    } else if (requestType == ClusterStateRequestType.FETCH_CLUSTER_PROP) {
-      params.set("clusterProperties", "true");
-    } else if (requestType == ClusterStateRequestType.FETCH_NODE_ROLES) {
-      params.set("roles", "true");
+    params.set("includeAll", false); // will flip flor CLUSTER_STATE
+    switch (requestType) {
+      case FETCH_CLUSTER_STATE -> params.set("includeAll", true);
+      case FETCH_COLLECTION -> {
+        if (collection != null) params.set("collection", collection);
+      }
+      case FETCH_LIVE_NODES -> params.set("liveNodes", true);
+      case FETCH_CLUSTER_PROP -> params.set("clusterProperties", true);
+      case FETCH_NODE_ROLES -> params.set("roles", true);
     }
-    if (requestType == ClusterStateRequestType.FETCH_CLUSTER_STATE) {
-      params.set("includeAll", "true");
-    } else {
-      params.set("includeAll", "false");
-    }
-    params.set("prs", "true");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    params.set("prs", true);
+    var request = new GenericSolrRequest(METHOD.GET, "/admin/collections", params);
     return (SimpleOrderedMap<?>) client.request(request).get("cluster");
   }
 
@@ -359,7 +347,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     for (String nodeName : liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
-        return fetchClusterState(client, null);
+        return fetchClusterState(client);
       } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
