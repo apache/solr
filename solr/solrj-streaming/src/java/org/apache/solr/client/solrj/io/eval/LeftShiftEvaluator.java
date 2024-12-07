@@ -41,8 +41,7 @@ public class LeftShiftEvaluator extends RecursiveObjectEvaluator implements TwoV
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if (value1 instanceof List && value2 instanceof Number) {
-      List<?> actual = (List<?>) value1;
+    if (value1 instanceof List<?> actual && value2 instanceof Number) {
       int val = ((Number) value2).intValue();
 
       List<Object> shifted = new ArrayList<>();

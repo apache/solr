@@ -740,10 +740,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
-    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
+    } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
       // XXX concurrentupdatesolrserver reports errors differently
-      ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-          (ErrorTrackingConcurrentUpdateSolrClient) client;
       concurrentClient.lastError = null;
       concurrentClient.add(doc);
       concurrentClient.blockUntilFinished();
@@ -2425,20 +2423,18 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       if (client instanceof HttpSolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
-      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
+      } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
-        ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-            (ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
             concurrentClient.lastError.getMessage().contains("Conflict"));
       } else if (client
-          instanceof SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) {
+          instanceof
+          SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
+          concurrentClient) {
         client.commit(); // just to be sure the client has sent the doc
-        SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient concurrentClient =
-            (SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient) client;
         assertNotNull(
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(

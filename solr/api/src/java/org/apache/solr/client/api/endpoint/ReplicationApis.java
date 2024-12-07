@@ -16,11 +16,18 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.OMIT_FROM_CODEGEN_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import org.apache.solr.client.api.model.FileListResponse;
 import org.apache.solr.client.api.model.IndexVersionResponse;
@@ -47,4 +54,43 @@ public interface ReplicationApis {
       @Parameter(description = "The generation number of the index", required = true)
           @QueryParam("generation")
           long gen);
+
+  @GET
+  @CoreApiParameters
+  @Operation(
+      summary = "Get a stream of a specific file path of a core",
+      tags = {"core-replication"},
+      extensions = { // TODO Remove as a part of SOLR-17562
+        @Extension(
+            properties = {@ExtensionProperty(name = OMIT_FROM_CODEGEN_PROPERTY, value = "true")})
+      })
+  @Path("/files/{filePath}")
+  StreamingOutput fetchFile(
+      @PathParam("filePath") String filePath,
+      @Parameter(
+              description =
+                  "Directory type for specific filePath (cf or tlogFile). Defaults to Lucene index (file) directory if empty",
+              required = true)
+          @QueryParam("dirType")
+          String dirType,
+      @Parameter(description = "Output stream read/write offset", required = false)
+          @QueryParam("offset")
+          String offset,
+      @Parameter(required = false) @QueryParam("len") String len,
+      @Parameter(description = "Compress file output", required = false)
+          @QueryParam("compression")
+          @DefaultValue("false")
+          Boolean compression,
+      @Parameter(description = "Write checksum with output stream", required = false)
+          @QueryParam("checksum")
+          @DefaultValue("false")
+          Boolean checksum,
+      @Parameter(
+              description = "Limit data write per seconds. Defaults to no throttling",
+              required = false)
+          @QueryParam("maxWriteMBPerSec")
+          double maxWriteMBPerSec,
+      @Parameter(description = "The generation number of the index", required = false)
+          @QueryParam("generation")
+          Long gen);
 }

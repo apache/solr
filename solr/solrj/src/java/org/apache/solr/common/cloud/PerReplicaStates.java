@@ -291,8 +291,7 @@ public class PerReplicaStates implements ReflectMapWriter {
 
     @Override
     public boolean equals(Object o) {
-      if (o instanceof State) {
-        State that = (State) o;
+      if (o instanceof State that) {
         return Objects.equals(this.asString, that.asString);
       }
       return false;

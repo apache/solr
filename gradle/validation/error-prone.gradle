@@ -457,7 +457,7 @@ allprojects { prj ->
             '-Xep:Overrides:WARN',
             // '-Xep:OverridesGuiceInjectableMethod:OFF', // we don't use guice
             '-Xep:ParameterName:WARN',
-            // '-Xep:PatternMatchingInstanceof:WARN', // todo check if useful or comment why not
+            '-Xep:PatternMatchingInstanceof:WARN',
             '-Xep:PreconditionsCheckNotNullRepeated:WARN',
             '-Xep:PrimitiveAtomicReference:WARN',
             '-Xep:ProtectedMembersInFinalClass:WARN',

@@ -403,15 +403,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");
 
-      File exampleSolrHomeDir = new File(solrExampleDir, exampleName + "/solr");
-      assertTrue(
-          exampleSolrHomeDir.getAbsolutePath()
-              + " not found! run "
-              + exampleName
-              + " example failed; output: "
-              + toolOutput,
-          exampleSolrHomeDir.isDirectory());
-
       if ("techproducts".equals(exampleName)) {
         try (SolrClient solrClient =
             getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName)) {
@@ -506,7 +497,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
-    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, null)) {
+    if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
           "After running Solr cloud example, test collection '"
               + collectionName

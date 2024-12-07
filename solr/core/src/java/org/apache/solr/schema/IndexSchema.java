@@ -2017,8 +2017,7 @@ public class IndexSchema {
       informResourceLoaderAwareObjectsInChain((TokenizerChain) queryAnalyzer);
 
     // if fieldType is a TextField, it might have a multi-term analyzer
-    if (fieldType instanceof TextField) {
-      TextField textFieldType = (TextField) fieldType;
+    if (fieldType instanceof TextField textFieldType) {
       Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
       if (multiTermAnalyzer != null
           && multiTermAnalyzer != indexAnalyzer

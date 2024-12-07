@@ -338,9 +338,8 @@ public class DebugComponent extends SearchComponent {
       }
     }
 
-    if (source instanceof NamedList && dest instanceof NamedList) {
+    if (source instanceof NamedList<?> sl && dest instanceof NamedList) {
       NamedList<Object> tmp = new NamedList<>();
-      NamedList<?> sl = (NamedList<?>) source;
       @SuppressWarnings("unchecked")
       NamedList<Object> dl = (NamedList<Object>) dest;
       for (int i = 0; i < sl.size(); i++) {

@@ -20,7 +20,7 @@ load bats_helper
 setup_file() {
   common_clean_setup
   solr start -e techproducts
-  solr auth enable --type basicAuth --credentials name:password
+  solr auth enable --type basicAuth --credentials name:password --solr-include-file /force/credentials/to/be/supplied
 }
 
 teardown_file() {
@@ -62,7 +62,7 @@ teardown() {
   echo 'sort="price desc"' >> "${solr_stream_file}"
   echo ')' >> "${solr_stream_file}"
   
-  run solr stream -e remote --name techproducts --solr-url http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
+  run solr stream --name techproducts --solr-url http://localhost:${SOLR_PORT} --header --credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
   assert_output --partial 'CORSAIR  XMS'
@@ -83,4 +83,18 @@ teardown() {
   assert_output --partial 'name   price'
   assert_output --partial 'Apple 60 GB iPod'
   refute_output --partial 'ERROR'
+}
+
+@test "searching solr without credentials fails with error" {
+
+  local solr_stream_file="${BATS_TEST_TMPDIR}/search.expr"
+  echo 'search(techproducts,' > "${solr_stream_file}"
+  echo 'q="name:memory",' >> "${solr_stream_file}"
+  echo 'fl="name,price",' >> "${solr_stream_file}"
+  echo 'sort="price desc"' >> "${solr_stream_file}"
+  echo ')' >> "${solr_stream_file}"
+
+  run ! solr stream --execution local --header ${solr_stream_file}
+
+  assert_output --partial 'ERROR'
 }

@@ -18,8 +18,6 @@
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -188,25 +186,15 @@ public class StatusTool extends ToolBase {
     CLIO.out("");
   }
 
-  private Integer portFromUrl(String solrUrl) {
-    try {
-      URI uri = new URI(solrUrl);
-      int port = uri.getPort();
-      if (port == -1) {
-        return uri.getScheme().equals("https") ? 443 : 80;
-      } else {
-        return port;
-      }
-    } catch (URISyntaxException e) {
-      CLIO.err("Invalid URL provided, does not contain port");
-      System.exit(1);
-      return null;
-    }
-  }
-
   public void waitForSolrUpAndPrintStatus(String solrUrl, CommandLine cli, int maxWaitSecs)
       throws Exception {
-    int solrPort = portFromUrl(solrUrl);
+    int solrPort = -1;
+    try {
+      solrPort = CLIUtils.portFromUrl(solrUrl);
+    } catch (Exception e) {
+      CLIO.err("Invalid URL provided, does not contain port");
+      SolrCLI.exit(1);
+    }
     echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
     boolean solrUp = waitForSolrUp(solrUrl, cli, maxWaitSecs);
     if (solrUp) {
@@ -268,10 +256,10 @@ public class StatusTool extends ToolBase {
           .write(getStatus(solrUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION)));
       return arr.toString();
     } catch (Exception exc) {
-      if (SolrCLI.exceptionIsAuthRelated(exc)) {
+      if (CLIUtils.exceptionIsAuthRelated(exc)) {
         throw exc;
       }
-      if (SolrCLI.checkCommunicationError(exc)) {
+      if (CLIUtils.checkCommunicationError(exc)) {
         // this is not actually an error from the tool as it's ok if Solr is not online.
         return null;
       } else {
@@ -289,7 +277,7 @@ public class StatusTool extends ToolBase {
       try {
         return getStatus(solrUrl, credentials);
       } catch (Exception exc) {
-        if (SolrCLI.exceptionIsAuthRelated(exc)) {
+        if (CLIUtils.exceptionIsAuthRelated(exc)) {
           throw exc;
         }
         try {
@@ -308,7 +296,7 @@ public class StatusTool extends ToolBase {
   }
 
   public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       return getStatus(solrClient);
     }
   }

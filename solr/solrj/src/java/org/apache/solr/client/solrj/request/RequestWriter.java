@@ -51,8 +51,7 @@ public class RequestWriter {
    * to do a pull write.
    */
   public ContentWriter getContentWriter(SolrRequest<?> req) {
-    if (req instanceof UpdateRequest) {
-      UpdateRequest updateRequest = (UpdateRequest) req;
+    if (req instanceof UpdateRequest updateRequest) {
       if (isEmpty(updateRequest)) return null;
       return new ContentWriter() {
         @Override
@@ -90,8 +89,7 @@ public class RequestWriter {
   }
 
   public void write(SolrRequest<?> request, OutputStream os) throws IOException {
-    if (request instanceof UpdateRequest) {
-      UpdateRequest updateRequest = (UpdateRequest) request;
+    if (request instanceof UpdateRequest updateRequest) {
       BufferedWriter writer =
           new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
       updateRequest.writeXML(writer);

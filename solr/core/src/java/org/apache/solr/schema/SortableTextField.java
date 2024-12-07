@@ -101,8 +101,7 @@ public class SortableTextField extends TextField {
     if (!field.hasDocValues()) {
       return Collections.singletonList(f);
     }
-    if (value instanceof ByteArrayUtf8CharSequence) {
-      ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
+    if (value instanceof ByteArrayUtf8CharSequence utf8) {
       if (utf8.size() < maxCharsForDocValues) {
         BytesRef bytes = new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
         return getIndexableFields(field, f, bytes);

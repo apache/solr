@@ -341,8 +341,7 @@ public class MissingDoclet extends StandardDoclet {
     }
 
     // Check for methods up the types tree.
-    if (element instanceof ExecutableElement) {
-      ExecutableElement thisMethod = (ExecutableElement) element;
+    if (element instanceof ExecutableElement thisMethod) {
       Iterable<Element> superTypes =
           () -> superTypeForInheritDoc(thisMethod.getEnclosingElement()).iterator();
 

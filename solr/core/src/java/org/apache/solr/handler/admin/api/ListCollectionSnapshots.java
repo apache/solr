@@ -16,20 +16,13 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.solr.client.api.model.AsyncJerseyResponse;
+import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
+import org.apache.solr.client.api.model.ListCollectionSnapshotsResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
@@ -39,12 +32,11 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API for Listing Collection Snapshots. */
-@Path("/collections/{collName}/snapshots")
-public class ListCollectionSnapshotsAPI extends AdminAPIBase {
+/** V2 API implementation for Listing Collection Snapshots. */
+public class ListCollectionSnapshots extends AdminAPIBase implements CollectionSnapshotApis.List {
 
   @Inject
-  public ListCollectionSnapshotsAPI(
+  public ListCollectionSnapshots(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
@@ -52,16 +44,12 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
   }
 
   /** This API is analogous to V1's (POST /solr/admin/collections?action=LISTSNAPSHOTS) */
-  @GET
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_READ_PERM)
-  public ListSnapshotsResponse listSnapshots(
-      @Parameter(description = "The name of the collection.", required = true)
-          @PathParam("collName")
-          String collName)
-      throws Exception {
+  public ListCollectionSnapshotsResponse listSnapshots(String collName) throws Exception {
 
-    final ListSnapshotsResponse response = instantiateJerseyResponse(ListSnapshotsResponse.class);
+    final ListCollectionSnapshotsResponse response =
+        instantiateJerseyResponse(ListCollectionSnapshotsResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
@@ -71,20 +59,12 @@ public class ListCollectionSnapshotsAPI extends AdminAPIBase {
     Collection<CollectionSnapshotMetaData> m =
         SolrSnapshotManager.listSnapshots(client, collectionName);
 
-    Map<String, CollectionSnapshotMetaData> snapshots = CollectionUtil.newHashMap(m.size());
+    final Map<String, Object> snapshots = CollectionUtil.newHashMap(m.size());
     for (CollectionSnapshotMetaData metaData : m) {
       snapshots.put(metaData.getName(), metaData);
     }
-
     response.snapshots = snapshots;
 
     return response;
-  }
-
-  /** The Response for {@link ListCollectionSnapshotsAPI}'s {@link #listSnapshots(String)} */
-  public static class ListSnapshotsResponse extends AsyncJerseyResponse {
-    @Schema(description = "The snapshots for the collection.")
-    @JsonProperty(SolrSnapshotManager.SNAPSHOTS_INFO)
-    public Map<String, CollectionSnapshotMetaData> snapshots;
   }
 }
