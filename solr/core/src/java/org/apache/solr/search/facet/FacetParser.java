@@ -33,7 +33,7 @@ import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 
-abstract class FacetParser<T extends FacetRequest> {
+public abstract class FacetParser<T extends FacetRequest> {
   protected T facet;
   protected FacetParser<?> parent;
   protected String key;
