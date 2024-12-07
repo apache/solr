@@ -101,10 +101,13 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
   @Test
   public void testUBIQueryStream() throws Exception {
     cluster.getSolrClient(COLLECTIONORALIAS).add(List.of(new SolrInputDocument("id", "1", "subject", "aa"),
-            new SolrInputDocument("id", "two", "subject", "aa"),
+            new SolrInputDocument("id", "2" /*"two"*/, "subject", "aa"),
             new SolrInputDocument("id", "3", "subject", "aa")));
     cluster.getSolrClient(COLLECTIONORALIAS).commit(true, true);
-    QueryResponse queryResponse = cluster.getSolrClient(COLLECTIONORALIAS).query(new MapSolrParams(Map.of("q", "aa", "rows", "2", "ubi", "true")));
-    System.out.println(queryResponse);
+    QueryResponse queryResponse = cluster.getSolrClient(COLLECTIONORALIAS).query(new MapSolrParams(
+            Map.of("q", "aa", "df","subject", "rows", "2", "ubi", "true"
+            )));
+    System.out.println(queryResponse.getResponse().get("ubi"));
+    // TODO check that ids were recorded
   }
 }

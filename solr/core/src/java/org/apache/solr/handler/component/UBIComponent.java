@@ -51,6 +51,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.handler.RequestHandlerBase.isInternalShardRequest;
+
 /**
  * User Behavior Insights (UBI) is an open standard for gathering query and event data from users
  * and storing it in a structured format. UBI can be used for in session personalization, implicit
@@ -231,8 +233,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
-
-    doStuff(rb);
+    if (!isInternalShardRequest(rb.req)) { // subordinate shard req shouldn't yield logs
+      doStuff(rb);
+    }
   }
 
   @Override
