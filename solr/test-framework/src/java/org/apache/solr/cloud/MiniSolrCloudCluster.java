@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 import com.codahale.metrics.MetricRegistry;
+import io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -85,8 +86,8 @@ import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -993,10 +994,9 @@ public class MiniSolrCloudCluster {
     private volatile MetricRegistry metricRegistry;
 
     @Override
-    protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+    protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
       metricRegistry = new MetricRegistry();
-      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
-          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
+      InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }

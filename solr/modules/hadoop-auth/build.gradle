@@ -45,6 +45,7 @@ dependencies {
   implementation libs.apache.httpcomponents.httpcore
 
   implementation libs.eclipse.jetty.client
+  implementation libs.eclipse.jetty.http
 
   // ZooKeeper & Curator
   implementation(libs.apache.zookeeper.zookeeper, {
@@ -78,7 +79,6 @@ dependencies {
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
-
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })

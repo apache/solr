@@ -434,7 +434,12 @@ public class V2HttpCall extends HttpSolrCall {
         // SolrCore counter
         core.close();
         core = null;
-        response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
+        // Skip specific headers
+        // workaround for response.setHeader(name, null)
+        response.getHeaderNames().stream()
+            .filter(name -> !name.equalsIgnoreCase("Content-Length"))
+            .forEach(name -> response.setHeader(name, ""));
+        response.setContentLength(-1);
         invokeJerseyRequest(
             cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
       }

@@ -74,25 +74,25 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee8.servlet.FilterHolder;
+import org.eclipse.jetty.ee8.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.ee8.servlet.Source;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
@@ -350,7 +350,7 @@ public class JettySolrRunner {
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
 
       server.setConnectors(new Connector[] {connector});
-      server.setSessionIdManager(new DefaultSessionIdManager(server, new Random()));
+      server.addBean(new DefaultSessionIdManager(server, new Random()), true);
     } else {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector =
@@ -365,13 +365,12 @@ public class JettySolrRunner {
       server.setConnectors(new Connector[] {connector});
     }
 
-    HandlerWrapper chain;
+    Handler.Wrapper chain = new Handler.Wrapper();
     {
       // Initialize the servlets
       final ServletContextHandler root =
           new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
       root.setResourceBase(".");
-
       root.addEventListener(
           // Install CCP first.  Subclass CCP to do some pre-initialization
           new CoreContainerProvider() {
@@ -414,7 +413,7 @@ public class JettySolrRunner {
 
       // Default servlet as a fall-through
       root.addServlet(Servlet404.class, "/");
-      chain = root;
+      chain.setHandler(root);
     }
 
     chain = injectJettyHandlers(chain);
@@ -422,8 +421,8 @@ public class JettySolrRunner {
     if (config.enableV2) {
       RewriteHandler rwh = new RewriteHandler();
       rwh.setHandler(chain);
-      rwh.setRewriteRequestURI(true);
-      rwh.setRewritePathInfo(false);
+      // rwh.setRewriteRequestURI(true);
+      // rwh.setRewritePathInfo(false);
       rwh.setOriginalPathAttribute("requestedPath");
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;
@@ -442,7 +441,7 @@ public class JettySolrRunner {
    * descendants may inject own handler chaining it to the given root and then returning that own
    * one
    */
-  protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+  protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
     return chain;
   }
 

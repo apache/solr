@@ -65,7 +65,7 @@ import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.Auth
 import org.apache.solr.security.jwt.api.ModifyJWTAuthPluginConfigAPI;
 import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwt.JwtClaims;

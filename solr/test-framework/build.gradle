@@ -65,7 +65,9 @@ dependencies {
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
   implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.jetty10
+  implementation (libs.dropwizard.metrics.jetty12.ee10){
+    exclude group: 'jakarta.servlet', module: 'jakarta.servlet-api'
+  }
   implementation libs.commonscli.commonscli
   permitUnusedDeclared libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
@@ -74,7 +76,9 @@ dependencies {
 
   implementation libs.eclipse.jetty.toolchain.servletapi
   implementation libs.eclipse.jetty.server
-  api libs.eclipse.jetty.servlet
+  implementation libs.eclipse.jetty.ee8.nested
+  implementation libs.eclipse.jetty.session
+  api libs.eclipse.jetty.ee8.servlet
   implementation libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.alpnserver
   runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {
