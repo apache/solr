@@ -32,7 +32,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ResourceLoader;
@@ -387,7 +387,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         (p1 != null) ? p1.getCurrencyCode() : (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
-    final Query docsWithValues = new DocValuesFieldExistsQuery(getAmountField(field).getName());
+    final Query docsWithValues = new FieldExistsQuery(getAmountField(field).getName());
     final Query vsRangeFilter =
         new ValueSourceRangeFilter(
             new RawCurrencyValueSource(field, currencyCode, parser),
