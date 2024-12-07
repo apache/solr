@@ -115,7 +115,7 @@
       "com.zaxxer:SparseBitSet:1.2" : "50a667d1,refs=5",
       "commons-beanutils:commons-beanutils:1.9.4" : "4bf37e93,refs=3",
       "commons-cli:commons-cli:1.9.0" : "e19ba4dc,refs=87",
-      "commons-codec:commons-codec:1.17.1" : "fed35e7f,refs=107",
+      "commons-codec:commons-codec:1.17.1" : "35b14be1,refs=105",
       "commons-collections:commons-collections:3.2.2" : "acc31ef6,refs=6",
       "commons-digester:commons-digester:2.1" : "4bf37e93,refs=3",
       "commons-io:commons-io:2.15.1" : "7413b098,refs=124",
@@ -4157,6 +4157,428 @@
       },
       {
         "configuration" : "annotationProcessor",
+        "projectPath" : ":solr:modules:sql"
+      }
+    ],
+    "35b14be1" : [
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:api"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:benchmark"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:benchmark"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:benchmark"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:benchmark"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:core"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:core"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:core"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:core"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:core"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:cross-dc-manager"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:cross-dc-manager"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:cross-dc-manager"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:cross-dc-manager"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:prometheus-exporter"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:prometheus-exporter"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:prometheus-exporter"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:prometheus-exporter"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:prometheus-exporter"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:prometheus-exporter"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:server"
+      },
+      {
+        "configuration" : "solrCore",
+        "projectPath" : ":solr:server"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:solr-ref-guide"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:solrj"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:solrj"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:solrj"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:solrj"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:solrj-streaming"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:solrj-streaming"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:solrj-streaming"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:solrj-streaming"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:solrj-zookeeper"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:solrj-zookeeper"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:test-framework"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:test-framework"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:test-framework"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:test-framework"
+      },
+      {
+        "configuration" : "solrCore",
+        "projectPath" : ":solr:webapp"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:analysis-extras"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:clustering"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:clustering"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:clustering"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:clustering"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:cross-dc"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:cross-dc"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:cross-dc"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:cross-dc"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:extraction"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:gcs-repository"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:gcs-repository"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:gcs-repository"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:gcs-repository"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:gcs-repository"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:gcs-repository"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:hadoop-auth"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:hadoop-auth"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:hadoop-auth"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:hadoop-auth"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:hadoop-auth"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:hadoop-auth"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:hdfs"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:hdfs"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:hdfs"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:hdfs"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:hdfs"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:jwt-auth"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:jwt-auth"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:jwt-auth"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:jwt-auth"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:jwt-auth"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:jwt-auth"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:langid"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:ltr"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:ltr"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:ltr"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:ltr"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:opentelemetry"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:opentelemetry"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:opentelemetry"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:opentelemetry"
+      },
+      {
+        "configuration" : "compileClasspath",
+        "projectPath" : ":solr:modules:s3-repository"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:s3-repository"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:s3-repository"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:s3-repository"
+      },
+      {
+        "configuration" : "testCompileClasspath",
+        "projectPath" : ":solr:modules:s3-repository"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:s3-repository"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:scripting"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:scripting"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:scripting"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
+        "projectPath" : ":solr:modules:scripting"
+      },
+      {
+        "configuration" : "runtimeClasspath",
+        "projectPath" : ":solr:modules:sql"
+      },
+      {
+        "configuration" : "runtimeLibs",
+        "projectPath" : ":solr:modules:sql"
+      },
+      {
+        "configuration" : "solrPlatformLibs",
+        "projectPath" : ":solr:modules:sql"
+      },
+      {
+        "configuration" : "testRuntimeClasspath",
         "projectPath" : ":solr:modules:sql"
       }
     ],
@@ -19720,436 +20142,6 @@
       {
         "configuration" : "testRuntimeClasspath",
         "projectPath" : ":solr:prometheus-exporter"
-      }
-    ],
-    "fed35e7f" : [
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:api"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:benchmark"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:benchmark"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:benchmark"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:benchmark"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:core"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:core"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:core"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:core"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:core"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:cross-dc-manager"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:cross-dc-manager"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:cross-dc-manager"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:cross-dc-manager"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:prometheus-exporter"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:prometheus-exporter"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:prometheus-exporter"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:prometheus-exporter"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:prometheus-exporter"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:prometheus-exporter"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:server"
-      },
-      {
-        "configuration" : "solrCore",
-        "projectPath" : ":solr:server"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:solr-ref-guide"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:solrj"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:solrj"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:solrj"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:solrj"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:solrj-streaming"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:solrj-streaming"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:solrj-streaming"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:solrj-streaming"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:solrj-zookeeper"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:solrj-zookeeper"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:test-framework"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:test-framework"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:test-framework"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:test-framework"
-      },
-      {
-        "configuration" : "solrCore",
-        "projectPath" : ":solr:webapp"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:analysis-extras"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:clustering"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:clustering"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:clustering"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:clustering"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:cross-dc"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:cross-dc"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:cross-dc"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:cross-dc"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:cross-dc"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:cross-dc"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:extraction"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:gcs-repository"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:gcs-repository"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:gcs-repository"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:gcs-repository"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:gcs-repository"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:gcs-repository"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:hadoop-auth"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:hadoop-auth"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:hadoop-auth"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:hadoop-auth"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:hadoop-auth"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:hadoop-auth"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:hdfs"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:hdfs"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:hdfs"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:hdfs"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:hdfs"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:jwt-auth"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:jwt-auth"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:jwt-auth"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:jwt-auth"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:jwt-auth"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:jwt-auth"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:langid"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:ltr"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:ltr"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:ltr"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:ltr"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:opentelemetry"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:opentelemetry"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:opentelemetry"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:opentelemetry"
-      },
-      {
-        "configuration" : "compileClasspath",
-        "projectPath" : ":solr:modules:s3-repository"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:s3-repository"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:s3-repository"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:s3-repository"
-      },
-      {
-        "configuration" : "testCompileClasspath",
-        "projectPath" : ":solr:modules:s3-repository"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:s3-repository"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:scripting"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:scripting"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:scripting"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:scripting"
-      },
-      {
-        "configuration" : "runtimeClasspath",
-        "projectPath" : ":solr:modules:sql"
-      },
-      {
-        "configuration" : "runtimeLibs",
-        "projectPath" : ":solr:modules:sql"
-      },
-      {
-        "configuration" : "solrPlatformLibs",
-        "projectPath" : ":solr:modules:sql"
-      },
-      {
-        "configuration" : "testRuntimeClasspath",
-        "projectPath" : ":solr:modules:sql"
       }
     ]
   }
