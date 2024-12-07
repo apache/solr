@@ -166,9 +166,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
     Long creationTimeMillis = (Long) collStateMap.get("creationTimeMillis");
     Instant creationTime =
-        creationTimeMillis == null
-            ? Instant.EPOCH
-            : Instant.ofEpochMilli(creationTimeMillis);
+        creationTimeMillis == null ? Instant.EPOCH : Instant.ofEpochMilli(creationTimeMillis);
     return fillPrs(collectionName, collStateMap, creationTime, zNodeVersion);
   }
 
