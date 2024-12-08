@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -142,7 +142,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
     var collectionsNl = (NamedList<Map<String, Object>>) cluster.get("collections");
 
-    Map<String, DocCollection> collStateByName = new LinkedHashMap<>(collectionsNl.size());
+    Map<String, DocCollection> collStateByName =
+        CollectionUtil.newLinkedHashMap(collectionsNl.size());
     for (Entry<String, Map<String, Object>> entry : collectionsNl) {
       collStateByName.put(
           entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
@@ -154,15 +155,17 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @SuppressWarnings("unchecked")
   private DocCollection getDocCollectionFromObjects(
       String collectionName, Map<String, Object> collStateMap) {
-    int zNodeVersion = (int) collStateMap.get("znodeVersion");
+    collStateMap.remove("health");
 
-    Long creationTimeMillis = (Long) collStateMap.get("creationTimeMillis");
+    int zNodeVersion = (int) collStateMap.remove("znodeVersion");
+
+    Long creationTimeMillis = (Long) collStateMap.remove("creationTimeMillis");
     Instant creationTime =
         creationTimeMillis == null ? Instant.EPOCH : Instant.ofEpochMilli(creationTimeMillis);
 
     DocCollection.PrsSupplier prsSupplier = null;
-    if (collStateMap.containsKey("PRS")) {
-      Map<String, Object> prs = (Map<String, Object>) collStateMap.remove("PRS");
+    Map<String, Object> prs = (Map<String, Object>) collStateMap.remove("PRS");
+    if (prs != null) {
       prsSupplier =
           () ->
               new PerReplicaStates(
@@ -170,6 +173,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
                   (Integer) prs.get("cversion"),
                   (List<String>) prs.get("states"));
     }
+
     return ClusterState.collectionFromObjects(
         collectionName, collStateMap, zNodeVersion, creationTime, prsSupplier);
   }
