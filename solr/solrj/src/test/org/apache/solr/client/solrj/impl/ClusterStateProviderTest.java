@@ -17,10 +17,16 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -28,6 +34,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.NamedList;
+import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,17 +54,42 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         .configure();
   }
 
-  private ClusterStateProvider createClusterStateProvider() throws Exception {
-    return !usually() ? http2ClusterStateProvider() : zkClientClusterStateProvider();
+  @ParametersFactory
+  public static Iterable<String[]> parameters() throws NoSuchMethodException {
+    return List.of(
+        new String[] {"http2ClusterStateProvider"}, new String[] {"zkClientClusterStateProvider"});
   }
 
-  private ClusterStateProvider http2ClusterStateProvider() throws Exception {
-    return new Http2ClusterStateProvider(
-        List.of(cluster.getJettySolrRunner(0).getBaseUrl().toString()), null);
+  private static ClusterStateProvider http2ClusterStateProvider() {
+    try {
+      return new Http2ClusterStateProvider(
+          List.of(cluster.getJettySolrRunner(0).getBaseUrl().toString()), null);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  private ClusterStateProvider zkClientClusterStateProvider() {
+  private static ClusterStateProvider zkClientClusterStateProvider() {
     return new ZkClientClusterStateProvider(cluster.getZkStateReader());
+  }
+
+  private final Supplier<ClusterStateProvider> cspSupplier;
+
+  public ClusterStateProviderTest(String method) throws Exception {
+    this.cspSupplier =
+        () -> {
+          try {
+            return (ClusterStateProvider) getClass().getDeclaredMethod(method).invoke(getClass());
+          } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+          }
+        };
+
+    cluster.deleteAllCollections();
+  }
+
+  private ClusterStateProvider createClusterStateProvider() {
+    return cspSupplier.get();
   }
 
   @Test
@@ -116,5 +148,40 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     NamedList<Object> collections = (NamedList<Object>) cluster.get("collections");
     Map<String, Object> collection = (Map<String, Object>) collections.get(collectionName);
     return Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
+  }
+
+  @Test
+  public void testClusterStateProvider() throws SolrServerException, IOException {
+    // we'll test equivalency of the two cluster state providers
+
+    CollectionAdminRequest.setClusterProperty("ext.foo", "bar").process(cluster.getSolrClient());
+
+    createCollection("col1");
+    createCollection("col2");
+
+    try (var cspZk = zkClientClusterStateProvider();
+        var cspHttp = http2ClusterStateProvider()) {
+
+      assertThat(cspZk.getClusterProperties(), Matchers.hasEntry("ext.foo", "bar"));
+      assertThat(
+          cspZk.getClusterProperties().entrySet(),
+          containsInAnyOrder(cspHttp.getClusterProperties().entrySet().toArray()));
+
+      assertThat(cspHttp.getCollection("col1"), equalTo(cspZk.getCollection("col1")));
+
+      final var clusterStateZk = cspZk.getClusterState();
+      final var clusterStateHttp = cspHttp.getClusterState();
+      assertThat(
+          clusterStateHttp.getLiveNodes(),
+          containsInAnyOrder(clusterStateHttp.getLiveNodes().toArray()));
+      assertEquals(2, clusterStateZk.size());
+      assertEquals(clusterStateZk.size(), clusterStateHttp.size());
+      assertThat(
+          clusterStateHttp.collectionStream().toList(),
+          containsInAnyOrder(clusterStateHttp.collectionStream().toArray()));
+
+      assertThat(
+          clusterStateZk.getCollection("col2"), equalTo(clusterStateHttp.getCollection("col2")));
+    }
   }
 }
