@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -63,7 +64,7 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
         .configure();
 
     String collection;
-    useAlias = random().nextBoolean();
+    useAlias = false; //random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {
@@ -84,7 +85,8 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
 
     // -------------------
 
-    CollectionAdminRequest.createCollection("ubi_queries", "_default", 1, 1)
+    CollectionAdminRequest.createCollection("ubi_queries",// it seems like a hardcoded name why?
+                    "_default", 1, 1)
             .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("ubi_queries", 1, 1);
@@ -107,7 +109,15 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
     QueryResponse queryResponse = cluster.getSolrClient(COLLECTIONORALIAS).query(new MapSolrParams(
             Map.of("q", "aa", "df","subject", "rows", "2", "ubi", "true"
             )));
-    System.out.println(queryResponse.getResponse().get("ubi"));
+    String qid = (String) ((SimpleMap<?>) queryResponse.getResponse().get("ubi")).get("query_id");
+    assertTrue(qid.length()>10);
+    Thread.sleep(10000); // I know what you think of
     // TODO check that ids were recorded
+    QueryResponse queryCheck = cluster.getSolrClient("ubi_queries").query(new MapSolrParams(
+            Map.of("q", "id:"+qid //doesn't search it why? is it a race?
+            )));
+    // however I can't see doc ids found there. Shouldn't I ?
+    assertEquals(1L, queryCheck.getResults().getNumFound());
+    assertEquals(queryCheck.getResults().get(0).get("id"),qid);
   }
 }

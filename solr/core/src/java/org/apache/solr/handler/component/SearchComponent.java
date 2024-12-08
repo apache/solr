@@ -121,5 +121,6 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
           Map.entry(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class),
           Map.entry(ExpandComponent.COMPONENT_NAME, ExpandComponent.class),
           Map.entry(TermsComponent.COMPONENT_NAME, TermsComponent.class),
-          Map.entry(UBIComponent.COMPONENT_NAME, UBIComponent.class));
+          Map.entry(UBIComponent.COMPONENT_NAME, UBIComponent.class)// oh r'lly?? esp giving that it receive some expr via init args
+      );
 }

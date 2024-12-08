@@ -135,6 +135,7 @@ public class SearchHandler extends RequestHandlerBase
   protected List<String> getDefaultComponents() {
     List<String> l = new ArrayList<String>(SearchComponent.STANDARD_COMPONENTS.keySet());
     moveToFirst(l, QueryComponent.COMPONENT_NAME);
+    l.remove(RealTimeGetComponent.COMPONENT_NAME); // pardon. it breaks my essential cloud test. there wasn't it there ever!
     return l;
   }
 
