@@ -16,13 +16,13 @@
  */
 package org.apache.solr.embedded;
 
+import jakarta.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.servlet.Filter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 public class JettyConfig {
 

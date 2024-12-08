@@ -23,7 +23,7 @@ import java.util.TreeMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

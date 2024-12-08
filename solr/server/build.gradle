@@ -46,10 +46,10 @@ dependencies {
   serverLib libs.eclipse.jetty.rewrite
   serverLib libs.eclipse.jetty.security
   serverLib libs.eclipse.jetty.server
-  serverLib libs.eclipse.jetty.ee8.servlet
-  serverLib libs.eclipse.jetty.ee8.servlets
+  serverLib libs.eclipse.jetty.ee10.servlet
+  serverLib libs.eclipse.jetty.ee10.servlets
   serverLib libs.eclipse.jetty.util
-  serverLib libs.eclipse.jetty.ee8.webapp
+  serverLib libs.eclipse.jetty.ee10.webapp
   serverLib libs.eclipse.jetty.xml
   serverLib libs.eclipse.jetty.alpnserver
   serverLib(libs.eclipse.jetty.alpnjavaserver, {

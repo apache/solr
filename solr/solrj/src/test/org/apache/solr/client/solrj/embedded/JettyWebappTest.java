@@ -30,7 +30,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
-import org.eclipse.jetty.ee8.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -64,7 +64,8 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     var sessionHandler = new SessionHandler();
     sessionHandler.setSessionIdManager(
         new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, "/solr");
+    var webAppContext = new WebAppContext(path, "/solr");
+    webAppContext.setServer(server);
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);

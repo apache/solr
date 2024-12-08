@@ -19,7 +19,7 @@ package org.apache.solr.rest.schema;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.ee8.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

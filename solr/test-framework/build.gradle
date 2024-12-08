@@ -74,11 +74,10 @@ dependencies {
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
 
-  implementation libs.eclipse.jetty.toolchain.servletapi
+  implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
-  implementation libs.eclipse.jetty.ee8.nested
   implementation libs.eclipse.jetty.session
-  api libs.eclipse.jetty.ee8.servlet
+  api libs.eclipse.jetty.ee10.servlet
   implementation libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.alpnserver
   runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {

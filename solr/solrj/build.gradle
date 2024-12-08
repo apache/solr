@@ -73,11 +73,11 @@ dependencies {
   testImplementation libs.commonsio.commonsio
   testImplementation libs.fasterxml.jackson.dataformat.cbor
 
-  testImplementation libs.eclipse.jetty.toolchain.servletapi
+  testImplementation libs.jakarta.servlet.api
 
   testImplementation libs.eclipse.jetty.server
-  testImplementation libs.eclipse.jetty.ee8.servlet
-  testImplementation libs.eclipse.jetty.ee8.webapp
+  testImplementation libs.eclipse.jetty.ee10.servlet
+  testImplementation libs.eclipse.jetty.ee10.webapp
   testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
