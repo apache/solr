@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,46 +140,52 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       liveNodesTimestamp = System.nanoTime();
     }
 
-    var collectionsNl = (NamedList<NamedList<?>>) cluster.get("collections");
+    var collectionsNl = (NamedList<Map<String, Object>>) cluster.get("collections");
 
     Map<String, DocCollection> collStateByName = new LinkedHashMap<>(collectionsNl.size());
-    for (Entry<String, NamedList<?>> entry : collectionsNl) {
-      final var collStateMap = entry.getValue().asMap(10);
-      final int zNodeVersion = (int) collStateMap.get("znodeVersion");
+    for (Entry<String, Map<String, Object>> entry : collectionsNl) {
       collStateByName.put(
-          entry.getKey(), getDocCollectionFromObjects(entry.getKey(), collStateMap, zNodeVersion));
+          entry.getKey(), getDocCollectionFromObjects(entry.getKey(), entry.getValue()));
     }
 
     return new ClusterState(this.liveNodes, collStateByName);
   }
 
+  @SuppressWarnings("unchecked")
   private DocCollection getDocCollectionFromObjects(
-      String collectionName, Map<String, Object> collStateMap, int zNodeVersion) {
+      String collectionName, Map<String, Object> collStateMap) {
+    int zNodeVersion = (int) collStateMap.get("znodeVersion");
 
     Long creationTimeMillis = (Long) collStateMap.get("creationTimeMillis");
     Instant creationTime =
         creationTimeMillis == null ? Instant.EPOCH : Instant.ofEpochMilli(creationTimeMillis);
-    return fillPrs(collectionName, collStateMap, creationTime, zNodeVersion);
+
+    DocCollection.PrsSupplier prsSupplier = null;
+    if (collStateMap.containsKey("PRS")) {
+      Map<String, Object> prs = (Map<String, Object>) collStateMap.remove("PRS");
+      prsSupplier =
+          () ->
+              new PerReplicaStates(
+                  (String) prs.get("path"),
+                  (Integer) prs.get("cversion"),
+                  (List<String>) prs.get("states"));
+    }
+    return ClusterState.collectionFromObjects(
+        collectionName, collStateMap, zNodeVersion, creationTime, prsSupplier);
   }
 
+  @SuppressWarnings("unchecked")
   private DocCollection fetchCollectionState(SolrClient client, String collection)
       throws SolrServerException, IOException, NotACollectionException {
 
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
 
-    Map<String, Object> collectionsMap =
-        Collections.singletonMap(
-            collection, ((NamedList<?>) cluster.get("collections")).get(collection));
-
-    int znodeVersion = -1;
-    @SuppressWarnings("unchecked")
-    Map<String, Object> collStateMap = (Map<String, Object>) (collectionsMap).get(collection);
+    var collStateMap = (Map<String, Object>) cluster.findRecursive("collections", collection);
     if (collStateMap == null) {
       throw new NotACollectionException(); // probably an alias
     }
-    znodeVersion = (int) collStateMap.get("znodeVersion");
-    return getDocCollectionFromObjects(collection, collStateMap, znodeVersion);
+    return getDocCollectionFromObjects(collection, collStateMap);
   }
 
   private SimpleOrderedMap<?> submitClusterStateRequest(
@@ -203,26 +208,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     params.set("prs", true);
     var request = new GenericSolrRequest(METHOD.GET, "/admin/collections", params);
     return (SimpleOrderedMap<?>) client.request(request).get("cluster");
-  }
-
-  @SuppressWarnings({"unchecked"})
-  private DocCollection fillPrs(
-      String collectionName,
-      Map<String, Object> collStateMap,
-      Instant creationTime,
-      int znodeVersion) {
-    DocCollection.PrsSupplier prsSupplier = null;
-    if (collStateMap.containsKey("PRS")) {
-      Map<String, Object> prs = (Map<String, Object>) collStateMap.remove("PRS");
-      prsSupplier =
-          () ->
-              new PerReplicaStates(
-                  (String) prs.get("path"),
-                  (Integer) prs.get("cversion"),
-                  (List<String>) prs.get("states"));
-    }
-    return ClusterState.collectionFromObjects(
-        collectionName, collStateMap, znodeVersion, creationTime, prsSupplier);
   }
 
   @Override
@@ -261,12 +246,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
+  @SuppressWarnings({"unchecked"})
   private Set<String> fetchLiveNodes(SolrClient client) throws Exception {
-
     SimpleOrderedMap<?> cluster =
         submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_LIVE_NODES);
-    return (Set<String>) new HashSet((List<String>) (cluster.get("live_nodes")));
+    return Set.copyOf((List<String>) cluster.get("live_nodes"));
   }
 
   @Override
