@@ -24,6 +24,7 @@ dependencies {
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
+  testCompileOnly libs.spotbugs.annotations
   permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
@@ -64,6 +65,11 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly libs.aqute.bnd.annotation
+  testCompileOnly libs.aqute.bnd.annotation
+  compileOnly libs.osgi.annotation
+
   implementation libs.dropwizard.metrics.core
   implementation libs.dropwizard.metrics.jetty10
   implementation libs.commonscli.commonscli
