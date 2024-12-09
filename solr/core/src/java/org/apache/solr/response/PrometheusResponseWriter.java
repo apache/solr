@@ -25,12 +25,10 @@ import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
@@ -51,6 +49,13 @@ import org.slf4j.LoggerFactory;
 public class PrometheusResponseWriter extends RawResponseWriter {
   private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public enum PrometheusFormatterType {
+    CORE,
+    JVM,
+    JETTY,
+    NODE
+  }
 
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
@@ -124,21 +129,11 @@ public class PrometheusResponseWriter extends RawResponseWriter {
   }
 
   public static SolrPrometheusFormatter getFormatterType(String registryName) {
-    String coreName;
-    boolean cloudMode = false;
     String[] parsedRegistry = registryName.split("\\.");
 
     switch (parsedRegistry[1]) {
       case "core":
-        if (parsedRegistry.length == 3) {
-          coreName = parsedRegistry[2];
-        } else if (parsedRegistry.length == 5) {
-          coreName = Arrays.stream(parsedRegistry).skip(1).collect(Collectors.joining("_"));
-          cloudMode = true;
-        } else {
-          coreName = registryName;
-        }
-        return new SolrPrometheusCoreFormatter(coreName, cloudMode);
+        return new SolrPrometheusCoreFormatter();
       case "jvm":
         return new SolrPrometheusJvmFormatter();
       case "jetty":

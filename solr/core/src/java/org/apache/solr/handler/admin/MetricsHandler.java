@@ -26,6 +26,7 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -186,10 +187,20 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
         metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+
     Set<String> requestedRegistries = parseRegistries(params);
+    MetricRegistry mergedCoreRegistries = new MetricRegistry();
 
     for (String registryName : requestedRegistries) {
       MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
+
+      if (registryName.startsWith("solr.core")) {
+        mergedCoreRegistries.registerAll(
+            Arrays.stream(registryName.split("\\.")).skip(1).collect(Collectors.joining("_")),
+            dropwizardRegistry);
+        continue;
+      }
+
       PrometheusResponseWriter.toPrometheus(
           dropwizardRegistry,
           registryName,
@@ -203,6 +214,20 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             response.add(registryName, registry);
           });
     }
+
+    PrometheusResponseWriter.toPrometheus(
+        mergedCoreRegistries,
+        "solr.core",
+        metricFilters,
+        mustMatchFilter,
+        propertyFilter,
+        false,
+        false,
+        true,
+        (registry) -> {
+          response.add("solr.core", registry);
+        });
+
     return response;
   }
 

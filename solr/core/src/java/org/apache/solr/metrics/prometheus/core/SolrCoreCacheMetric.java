@@ -24,9 +24,8 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusFormatter;
 public class SolrCoreCacheMetric extends SolrCoreMetric {
   public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache";
 
-  public SolrCoreCacheMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrCoreCacheMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   /*
@@ -38,7 +37,7 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Gauge) {
-      labels.put("cacheType", parsedMetric[2]);
+      labels.put("cacheType", parsedMetric[3]);
     }
     return this;
   }
