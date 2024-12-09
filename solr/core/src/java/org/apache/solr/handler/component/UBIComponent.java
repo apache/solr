@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -32,9 +34,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -145,6 +144,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   public static final String QUERY_ATTRIBUTES = "query_attributes";
   public static final String USER_QUERY = "user_query";
   public static final String APPLICATION = "application";
+  public static final String DOC_IDS = "doc_ids";
 
   protected PluginInfo info = PluginInfo.EMPTY_INFO;
 
@@ -522,12 +522,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       if (this.userQuery != null) {
         map.put(USER_QUERY, this.userQuery);
       }
+      if (this.docIds != null) {
+        map.put(DOC_IDS, this.docIds);
+      }
       if (this.queryAttributes != null) {
 
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-          map.put(
-                  QUERY_ATTRIBUTES, objectMapper.writeValueAsString(this.queryAttributes));
+          map.put(QUERY_ATTRIBUTES, objectMapper.writeValueAsString(this.queryAttributes));
         } catch (JsonProcessingException e) {
           // eat it.
         }
@@ -541,9 +543,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
    * Converts a UBIQuery that is stored in the StreamContext under the key 'ubi-query' into a Tuple
    * and returns it.
    *
-   * <p>I suspect that if I had the right magic with a LetStream or a GetStream, I could somehow just
-   * use that to say "pluck the 'ubi-query' object out of the StreamContext and call .toTuple or make
-   * a map of it and that would be my tuple'.
+   * <p>I suspect that if I had the right magic with a LetStream or a GetStream, I could somehow
+   * just use that to say "pluck the 'ubi-query' object out of the StreamContext and call .toTuple
+   * or make a map of it and that would be my tuple'.
    */
   public static class UBIQueryStream extends TupleStream implements Expressible {
 
