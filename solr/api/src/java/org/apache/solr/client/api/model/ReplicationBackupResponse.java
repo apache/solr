@@ -14,20 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-// Declare script dependency versions outside of palantir's
-// version unification control. These are not our main dependencies
-// but are reused in buildSrc and across applied scripts.
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-ext {
-  scriptDepVersions = [
-      "min-java-version": "21",
-      "min-solrj-java-version" : "17",
-      "apache-rat": "0.15",
-      "commons-codec": "1.16.0",
-      "ecj": "3.39.0",
-      "javacc": "7.0.12",
-      "jgit": "6.7.0.202309050840-r",
-      "flexmark": "0.64.8",
-  ]
+/** Response for the v2 "replication backup" API */
+public class ReplicationBackupResponse extends SolrJerseyResponse {
+
+  @JsonProperty("result")
+  public Object result;
+
+  @JsonProperty("status")
+  public String status;
+
+  @JsonProperty("message")
+  public String message;
+
+  @JsonProperty("exception")
+  public Exception exception;
 }

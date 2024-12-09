@@ -155,18 +155,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         cluster
             .getSolrClient()
             .request(
-                new V2Request.Builder("/cluster")
-                    .withMethod(SolrRequest.METHOD.POST)
-                    .withPayload("{set-property: {name: maxCoresPerNode, val:42}}")
+                new V2Request.Builder("/cluster/properties/maxCoresPerNode")
+                    .withMethod(SolrRequest.METHOD.PUT)
+                    .withPayload("{\"value\": \"42\"}")
                     .build());
     assertTrue(resp.toString().contains("status=0"));
     resp =
         cluster
             .getSolrClient()
             .request(
-                new V2Request.Builder("/cluster")
-                    .withMethod(SolrRequest.METHOD.POST)
-                    .withPayload("{set-property: {name: maxCoresPerNode, val:null}}")
+                new V2Request.Builder("/cluster/properties/maxCoresPerNode")
+                    .withMethod(SolrRequest.METHOD.DELETE)
                     .build());
     assertTrue(resp.toString().contains("status=0"));
   }

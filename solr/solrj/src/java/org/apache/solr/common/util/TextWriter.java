@@ -99,8 +99,7 @@ public interface TextWriter extends PushWriter {
       writeArray(name, ((Iterable) val).iterator(), raw);
     } else if (val instanceof Object[]) {
       writeArray(name, (Object[]) val, raw);
-    } else if (val instanceof byte[]) {
-      byte[] arr = (byte[]) val;
+    } else if (val instanceof byte[] arr) {
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
       if (raw) {

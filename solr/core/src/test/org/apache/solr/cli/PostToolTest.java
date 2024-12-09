@@ -281,15 +281,15 @@ public class PostToolTest extends SolrCloudTestCase {
   @Test
   public void testGuessType() {
     File f = new File("foo.doc");
-    assertEquals("application/msword", PostTool.guessType(f));
+    assertEquals("application/msword", PostTool.guessType(f.toPath()));
     f = new File("foobar");
-    assertEquals("application/octet-stream", PostTool.guessType(f));
+    assertEquals("application/octet-stream", PostTool.guessType(f.toPath()));
     f = new File("foo.json");
-    assertEquals("application/json", PostTool.guessType(f));
+    assertEquals("application/json", PostTool.guessType(f.toPath()));
   }
 
   @Test
-  public void testDoFilesMode() {
+  public void testDoFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
@@ -311,7 +311,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRecursionAppliesToFilesMode() {
+  public void testRecursionAppliesToFilesMode() throws IOException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;

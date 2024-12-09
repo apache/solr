@@ -115,8 +115,8 @@ public class PackageTool extends ToolBase {
               + "don't print stack traces, hence special treatment is needed here.")
   public void runImpl(CommandLine cli) throws Exception {
     try {
-      String solrUrl = SolrCLI.normalizeSolrUrl(cli);
-      String zkHost = SolrCLI.getZkHost(cli);
+      String solrUrl = CLIUtils.normalizeSolrUrl(cli);
+      String zkHost = CLIUtils.getZkHost(cli);
       if (zkHost == null) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");
       }
@@ -125,7 +125,7 @@ public class PackageTool extends ToolBase {
 
       String cmd = cli.getArgs()[0];
 
-      try (SolrClient solrClient = SolrCLI.getSolrClient(cli, true)) {
+      try (SolrClient solrClient = CLIUtils.getSolrClient(cli, true)) {
         packageManager = new PackageManager(solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);

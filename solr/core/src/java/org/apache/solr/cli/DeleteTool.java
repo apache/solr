@@ -101,8 +101,8 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    try (var solrClient = SolrCLI.getSolrClient(cli)) {
-      if (SolrCLI.isCloudMode(solrClient)) {
+    try (var solrClient = CLIUtils.getSolrClient(cli)) {
+      if (CLIUtils.isCloudMode(solrClient)) {
         deleteCollection(cli);
       } else {
         deleteCore(cli, solrClient);
@@ -119,8 +119,8 @@ public class DeleteTool extends ToolBase {
             .withOptionalBasicAuthCredentials(
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
-    String zkHost = SolrCLI.getZkHost(cli);
-    try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
+    String zkHost = CLIUtils.getZkHost(cli);
+    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);

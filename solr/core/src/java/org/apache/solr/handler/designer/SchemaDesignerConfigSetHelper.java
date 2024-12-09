@@ -324,8 +324,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     // nice, the json for this field looks like
     // "synonymQueryStyle":
     // "org.apache.solr.parser.SolrQueryParserBase$SynonymQueryStyle:AS_SAME_TERM"
-    if (typeAttrs.get("synonymQueryStyle") instanceof String) {
-      String synonymQueryStyle = (String) typeAttrs.get("synonymQueryStyle");
+    if (typeAttrs.get("synonymQueryStyle") instanceof String synonymQueryStyle) {
       if (synonymQueryStyle.lastIndexOf(':') != -1) {
         typeAttrs.put(
             "synonymQueryStyle",
@@ -678,9 +677,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   SolrConfig loadSolrConfig(String configSet) {
     ZkSolrResourceLoader zkLoader = zkLoaderForConfigSet(configSet);
-    boolean trusted = isConfigSetTrusted(configSet);
-
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, trusted, null);
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {

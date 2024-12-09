@@ -217,8 +217,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   // Set a buffered entity based request interceptor
   private HttpRequestInterceptor bufferedEntityInterceptor =
       (request, context) -> {
-        if (request instanceof HttpEntityEnclosingRequest) {
-          HttpEntityEnclosingRequest enclosingRequest = ((HttpEntityEnclosingRequest) request);
+        if (request instanceof HttpEntityEnclosingRequest enclosingRequest) {
           HttpEntity requestEntity = enclosingRequest.getEntity();
           enclosingRequest.setEntity(new BufferedHttpEntity(requestEntity));
         }

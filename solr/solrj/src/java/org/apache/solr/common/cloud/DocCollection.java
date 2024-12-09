@@ -514,8 +514,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public boolean equals(Object that) {
-    if (!(that instanceof DocCollection)) return false;
-    DocCollection other = (DocCollection) that;
+    if (!(that instanceof DocCollection other)) return false;
     return super.equals(that)
         && Objects.equals(this.name, other.name)
         && this.znodeVersion == other.znodeVersion

@@ -421,13 +421,8 @@ Also see the section <<Defining XPath Expressions>> for an example.
 
 If you have started Solr with one of the supplied xref:configuration-guide:config-sets.adoc[example configsets], you may already have the `ExtractingRequestHandler` configured by default.
 
-First, you must enable the xref:#module[Module].
-If `solrconfig.xml` is not already configured, you will need to modify it to find the `ExtractingRequestHandler` and its dependencies:
-
-[source,xml]
-----
-  <lib dir="${solr.install.dir:../../..}/modules/extraction/lib" regex=".*\.jar" />
-----
+First, the `extraction` xref:#module[module] must be enabled.
+This can be done by specifying the environment variable `SOLR_MODULES=extraction` in your startup configuration.
 
 You can then configure the `ExtractingRequestHandler` in `solrconfig.xml`.
 The following is the default configuration found in Solr's `sample_techproducts_configs` configset, which you can modify as needed:

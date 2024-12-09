@@ -113,8 +113,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       Directory dir = c.getDirectory();
-      if (dir instanceof FSDirectory) {
-        FSDirectory fsd = (FSDirectory) dir;
+      if (dir instanceof FSDirectory fsd) {
         sb.append("dir=").append(fsd.getDirectory());
       } else {
         sb.append("dir=").append(dir);
@@ -198,8 +197,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
     // For anything persistent, make something that will
     // be the same, regardless of the Directory instance.
-    if (dir instanceof FSDirectory) {
-      FSDirectory fsd = (FSDirectory) dir;
+    if (dir instanceof FSDirectory fsd) {
       File fdir = fsd.getDirectory().toFile();
       sb.append(fdir.getPath());
     } else {

@@ -49,13 +49,11 @@ public final class QueryResponseWriterUtil {
       String contentType)
       throws IOException {
 
-    if (responseWriter instanceof JacksonJsonWriter) {
-      JacksonJsonWriter binWriter = (JacksonJsonWriter) responseWriter;
+    if (responseWriter instanceof JacksonJsonWriter binWriter) {
       BufferedOutputStream bos = new BufferedOutputStream(new NonFlushingStream(outputStream));
       binWriter.write(bos, solrRequest, solrResponse);
       bos.flush();
-    } else if (responseWriter instanceof BinaryQueryResponseWriter) {
-      BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
+    } else if (responseWriter instanceof BinaryQueryResponseWriter binWriter) {
       binWriter.write(outputStream, solrRequest, solrResponse);
     } else {
       OutputStream out = new NonFlushingStream(outputStream);
