@@ -64,7 +64,9 @@ Optimizations
   that which consumes almost no memory, saving 1MB of memory per SolrCore.  (David Smiley)
 
 * SOLR-17381: Make CLUSTERSTATUS request configurable to improve performance by allowing retrieval of specific information,
-  reducing unnecessary data fetching. (Aparna Suresh, David Smiley)
+  reducing unnecessary data fetching.  Enhanced CloudSolrClient's HTTP ClusterStateProvider to use it, and to scale to
+  more collections better as well.
+   (Aparna Suresh, David Smiley)
 
 * SOLR-17396: Reduce thread contention in ZkStateReader.getCollectionProperties(). (Aparna Suresh, David Smiley, Paul McArthur)
 
