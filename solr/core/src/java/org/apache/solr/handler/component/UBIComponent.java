@@ -308,7 +308,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     ResultContext rc = (ResultContext) rb.rsp.getResponse();
     DocList docs = rc.getDocList();
-    // DocList docs = rb.getResults().docList;
 
     String docIds = extractDocIds(docs, searcher);
     ubiQuery.setDocIds(docIds);
