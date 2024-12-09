@@ -35,4 +35,5 @@ public interface PrometheusCoreFormatterInfo {
 
   Pattern CLOUD_CORE_PATTERN =
       Pattern.compile("(^core_(.*)_(shard[0-9]+)_(replica_.[0-9]+)).(.*)$");
+  Pattern STANDALONE_CORE_PATTERN = Pattern.compile("^core_(.*)\\.(.*)\\.(.*)\\.(.*)$");
 }

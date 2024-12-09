@@ -17,23 +17,30 @@
 package org.apache.solr.metrics.prometheus.core;
 
 import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.PrometheusCoreFormatterInfo.STANDALONE_CORE_PATTERN;
 
 import com.codahale.metrics.Metric;
 import java.util.regex.Matcher;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 
 /** Base class is a wrapper to export a solr.core {@link com.codahale.metrics.Metric} */
 public abstract class SolrCoreMetric extends SolrMetric {
   public SolrCoreMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
-    Matcher m = CLOUD_CORE_PATTERN.matcher(metricName);
-    if (m.find()) {
-      labels.put("core", m.group(1));
-      labels.put("collection", m.group(2));
-      labels.put("shard", m.group(3));
-      labels.put("replica", m.group(4));
+    Matcher cloudPattern = CLOUD_CORE_PATTERN.matcher(metricName);
+    Matcher standalonePattern = STANDALONE_CORE_PATTERN.matcher(metricName);
+    if (cloudPattern.find()) {
+      labels.put("core", standalonePattern.group(1));
+      labels.put("collection", standalonePattern.group(2));
+      labels.put("shard", standalonePattern.group(3));
+      labels.put("replica", standalonePattern.group(4));
+    } else if (standalonePattern.find()) {
+      labels.put("core", standalonePattern.group(1));
     } else {
-      labels.put("core", metricName.split("\\.")[0]);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Core name does not match pattern for parsing " + metricName);
     }
   }
 }
