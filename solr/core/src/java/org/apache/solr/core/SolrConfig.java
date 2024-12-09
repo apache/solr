@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
 import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
 import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
@@ -31,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,7 +94,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Provides a static reference to a Config object modeling the main configuration data for a Solr
- * instance -- typically found in "solrconfig.xml".
+ * core -- typically found in "solrconfig.xml".
  */
 public class SolrConfig implements MapSerializable {
 
@@ -143,16 +141,13 @@ public class SolrConfig implements MapSerializable {
    * @param name the configuration name used by the loader if the stream is null
    */
   public SolrConfig(Path instanceDir, String name) throws IOException {
-    this(new SolrResourceLoader(instanceDir), name, true, null);
+    this(new SolrResourceLoader(instanceDir), name, null);
   }
 
   public static SolrConfig readFromResourceLoader(
-      SolrResourceLoader loader,
-      String name,
-      boolean isConfigsetTrusted,
-      Properties substitutableProperties) {
+      SolrResourceLoader loader, String name, Properties substitutableProperties) {
     try {
-      return new SolrConfig(loader, name, isConfigsetTrusted, substitutableProperties);
+      return new SolrConfig(loader, name, substitutableProperties);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -196,15 +191,9 @@ public class SolrConfig implements MapSerializable {
    *
    * @param loader the resource loader
    * @param name the configuration name
-   * @param isConfigsetTrusted false if configset was uploaded using unsecured configset upload API,
-   *     true otherwise
    * @param substitutableProperties optional properties to substitute into the XML
    */
-  private SolrConfig(
-      SolrResourceLoader loader,
-      String name,
-      boolean isConfigsetTrusted,
-      Properties substitutableProperties) {
+  private SolrConfig(SolrResourceLoader loader, String name, Properties substitutableProperties) {
     this.resourceLoader = loader;
     this.resourceName = name;
     this.substituteProperties = substitutableProperties;
@@ -237,7 +226,7 @@ public class SolrConfig implements MapSerializable {
       rootDataHashCode = this.root.txt().hashCode();
 
       getRequestParams();
-      initLibs(loader, isConfigsetTrusted);
+      initLibs(loader);
       String val =
           root.child(
                   IndexSchema.LUCENE_MATCH_VERSION_PARAM,
@@ -934,11 +923,10 @@ public class SolrConfig implements MapSerializable {
         SolrException.ErrorCode.SERVER_ERROR, "Multiple plugins configured for type: " + type);
   }
 
-  private void initLibs(SolrResourceLoader loader, boolean isConfigsetTrusted) {
+  private void initLibs(SolrResourceLoader loader) {
     // TODO Want to remove SolrResourceLoader.getInstancePath; it can be on a Standalone subclass.
     // For Zk subclass, it's needed for the time being as well.  We could remove that one if we
-    // remove two things in SolrCloud: (1) instancePath/lib  and (2) solrconfig lib directives with
-    // relative paths. Can wait till 9.0.
+    // remove "instancePath/lib" in SolrCloud. Can wait till 9.0.
     Path instancePath = loader.getInstancePath();
     List<URL> urls = new ArrayList<>();
 
@@ -950,47 +938,14 @@ public class SolrConfig implements MapSerializable {
         log.warn("Couldn't add files from {} to classpath: {}", libPath, e);
       }
     }
-
-    List<ConfigNode> nodes = root.getAll("lib");
-    if (nodes != null && nodes.size() > 0) {
-      if (!isConfigsetTrusted) {
-        throw new SolrException(
-            ErrorCode.UNAUTHORIZED,
-            "The configset for this collection was uploaded without any authentication in place,"
-                + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-                + " after enabling authentication and authorization.");
-      }
-
-      for (int i = 0; i < nodes.size(); i++) {
-        ConfigNode node = nodes.get(i);
-        String baseDir = node.attr("dir");
-        String path = node.attr(PATH);
-        if (null != baseDir) {
-          // :TODO: add support for a simpler 'glob' mutually exclusive of regex
-          Path dir = instancePath.resolve(baseDir);
-          String regex = node.attr("regex");
-          try {
-            if (regex == null) urls.addAll(SolrResourceLoader.getURLs(dir));
-            else urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
-          } catch (IOException e) {
-            log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
-          }
-        } else if (null != path) {
-          final Path dir = instancePath.resolve(path);
-          try {
-            urls.add(dir.toUri().toURL());
-          } catch (MalformedURLException e) {
-            log.warn("Couldn't add file {} to classpath: {}", dir, e);
-          }
-        } else {
-          throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
-        }
-      }
-    }
-
     if (!urls.isEmpty()) {
       loader.addToClassLoader(urls);
       loader.reloadLuceneSPI();
+    }
+
+    List<ConfigNode> nodes = root.getAll("lib");
+    if (nodes != null && nodes.size() > 0) {
+      log.warn("<lib/> entries no longer supported in solrconfig.xml; ignoring...");
     }
   }
 

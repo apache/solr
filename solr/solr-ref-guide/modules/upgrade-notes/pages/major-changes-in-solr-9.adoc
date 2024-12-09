@@ -380,7 +380,7 @@ Other relevant placement strategies should be used instead, such as autoscaling 
 ** The `solrj-deps` (SolrJ Dependencies) are no longer separated out from the other Server jars.
 ** Please refer to the SolrJ Maven artifact to see the exact dependencies you need to include from `server/solr-webapp/webapp/WEB-INF/lib/` and `server/lib/ext/` if you are loading in SolrJ manually.
 If you plan on using SolrJ as a JDBC driver, please refer to the xref:query-guide:sql-query.adoc#generic-clients[JDBC documentation]
-** More information can be found in the xref:configuration-guide:libs.adoc#lib-directives-in-solrconfig[Libs documentation].
+** More information can be found in the xref:configuration-guide:libs.adoc[Libs documentation].
 
 * SolrJ class `CloudSolrClient` now supports HTTP2. It has a new Builder. See `CloudLegacySolrClient` for the 8.x version of this class.
 * In Backup request responses, the `response` key now uses a map to return information instead of a list. This is only applicable for users returning information in JSON format, which is the default behavior.
