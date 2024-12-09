@@ -194,6 +194,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (String registryName : requestedRegistries) {
       MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
 
+      // Merge all core registries metrics into a single registry for formatting
       if (registryName.startsWith("solr.core")) {
         mergedCoreRegistries.registerAll(
             Arrays.stream(registryName.split("\\.")).skip(1).collect(Collectors.joining("_")),
@@ -215,18 +216,20 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
           });
     }
 
-    PrometheusResponseWriter.toPrometheus(
-        mergedCoreRegistries,
-        "solr.core",
-        metricFilters,
-        mustMatchFilter,
-        propertyFilter,
-        false,
-        false,
-        true,
-        (registry) -> {
-          response.add("solr.core", registry);
-        });
+    if (!mergedCoreRegistries.getMetrics().isEmpty()) {
+      PrometheusResponseWriter.toPrometheus(
+          mergedCoreRegistries,
+          "solr.core",
+          metricFilters,
+          mustMatchFilter,
+          propertyFilter,
+          false,
+          false,
+          true,
+          (registry) -> {
+            response.add("solr.core", registry);
+          });
+    }
 
     return response;
   }

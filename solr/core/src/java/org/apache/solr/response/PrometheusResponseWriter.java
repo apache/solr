@@ -50,13 +50,6 @@ public class PrometheusResponseWriter extends RawResponseWriter {
   private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public enum PrometheusFormatterType {
-    CORE,
-    JVM,
-    JETTY,
-    NODE
-  }
-
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
