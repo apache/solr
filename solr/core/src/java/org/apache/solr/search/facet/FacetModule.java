@@ -193,7 +193,13 @@ public class FacetModule extends SearchComponent {
 
     assert rb.shards.length == facetState.mcontext.numShards;
     for (String shard : rb.shards) {
-      facetState.mcontext.setShard(shard);
+      if (!facetState.mcontext.setShard(shard)) {
+        // for some reason or another (most likely a failed shard request),
+        // we do not know about this shard
+        // there is no need to make a refinement request
+        // as we didn't even complete the initial request
+        continue;
+      }
 
       // shard-specific refinement
       Map<String, Object> refinement = facetState.merger.getRefinement(facetState.mcontext);
@@ -316,7 +322,12 @@ public class FacetModule extends SearchComponent {
         // System.err.println("REFINE FACET RESULT FROM SHARD = " + facet);
         // call merge again with a diff flag set on the context???
         facetState.mcontext.root = facet;
-        facetState.mcontext.setShard(shardRsp.getShard()); // TODO: roll newShard into setShard?
+        if (!facetState.mcontext.setShard(
+            shardRsp.getShard())) { // TODO: roll newShard into setShard?
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "received refinement results for unknown shard: " + shardRsp.getShard());
+        }
         facetState.merger.merge(facet, facetState.mcontext);
         return;
       }

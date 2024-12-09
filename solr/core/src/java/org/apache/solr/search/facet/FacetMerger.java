@@ -67,8 +67,11 @@ public abstract class FacetMerger {
       this.bucketWasMissing = false;
     }
 
-    public void setShard(String shard) {
-      this.shardNum = shardmap.get(shard);
+    public boolean setShard(String shard) {
+      Integer shardNum = shardmap.get(shard);
+      boolean hasShard = shardNum != null;
+      this.shardNum = hasShard ? shardNum : -1;
+      return hasShard;
     }
 
     public int getNewBucketNumber() {
