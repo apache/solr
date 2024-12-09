@@ -819,6 +819,58 @@ public class SolrQuery extends ModifiableSolrParams {
   }
 
   /**
+   * Enable User Behavior Insights tracking for this query.
+   *
+   * @param b
+   */
+  public SolrQuery setUBITracking(boolean b) {
+    if (b) {
+      this.set("ubi", true);
+    } else {
+      // makes me wonder if this should be all under ubi.* namespace.
+      // so ubi.application, ubi.query_id....
+      this.remove("ubi");
+      this.remove("application");
+      this.remove("query_id");
+      this.remove("client_id");
+      this.remove("user_query");
+      // this.remove("object_id_fields");
+      this.remove("query_attributes");
+    }
+    return this;
+  }
+
+  /** Determine status of User Behavior Insights tracking for this query. */
+  public boolean getUBITracking() {
+    return this.getBool("ubi", false);
+  }
+
+  public SolrQuery setApplication(String application) {
+    this.set("application", application);
+    return this;
+  }
+
+  public SolrQuery setQueryId(String queryId) {
+    this.set("query_id", queryId);
+    return this;
+  }
+
+  public SolrQuery setClientId(String clientId) {
+    this.set("client_id", clientId);
+    return this;
+  }
+
+  public SolrQuery setUserQuery(String userQuery) {
+    this.set("user_query", userQuery);
+    return this;
+  }
+
+  /**
+   * public SolrQuery setQueryAttributes(Map queryAttributes) { this.set("query_attributes",
+   * queryAttributes); return this; }
+   */
+
+  /**
    * Add field for MoreLikeThis. Automatically enables MoreLikeThis.
    *
    * @param field the names of the field to be added
