@@ -30,14 +30,17 @@ public abstract class SolrCoreMetric extends SolrMetric {
     super(dropwizardMetric, metricName);
     Matcher cloudPattern = CLOUD_CORE_PATTERN.matcher(metricName);
     Matcher standalonePattern = STANDALONE_CORE_PATTERN.matcher(metricName);
-    if (cloudPattern.find()) {
-      labels.put("core", standalonePattern.group(1));
-      labels.put("collection", standalonePattern.group(2));
-      labels.put("shard", standalonePattern.group(3));
-      labels.put("replica", standalonePattern.group(4));
-    } else if (standalonePattern.find()) {
-      labels.put("core", standalonePattern.group(1));
-    } else {
+    try {
+      if (cloudPattern.find()) {
+        labels.put("core", cloudPattern.group(1));
+        labels.put("collection", cloudPattern.group(2));
+        labels.put("shard", cloudPattern.group(3));
+        labels.put("replica", cloudPattern.group(4));
+      } else {
+        standalonePattern.find();
+        labels.put("core", standalonePattern.group(1));
+      }
+    } catch (IllegalStateException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Core name does not match pattern for parsing " + metricName);
