@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
-import org.eclipse.jetty.session.SessionHandler;
 
 /**
  * @since solr 1.3
@@ -61,11 +60,9 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
 
     server = new Server(port);
     // insecure: only use for tests!!!!
-    var sessionHandler = new SessionHandler();
-    sessionHandler.setSessionIdManager(
-        new DefaultSessionIdManager(server, new Random(random().nextLong())));
+    server.addBean(new DefaultSessionIdManager(server, new Random(random().nextLong())));
     var webAppContext = new WebAppContext(path, "/solr");
-    webAppContext.setServer(server);
+    server.setHandler(webAppContext);
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
