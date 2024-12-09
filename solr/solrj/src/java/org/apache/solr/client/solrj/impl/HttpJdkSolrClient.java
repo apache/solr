@@ -157,6 +157,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
+  @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     PreparedRequest pReq = prepareRequest(solrRequest, collection);
