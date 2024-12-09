@@ -95,7 +95,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   @Test
   public void testUBIQueryStream() throws Exception {
 
-    UBIQuery ubiQuery;
+    UBIComponent.UBIQuery ubiQuery;
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
@@ -105,13 +105,13 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     try (solrClientCache) {
       streamContext.setSolrClientCache(solrClientCache);
       StreamFactory factory =
-          new StreamFactory().withFunctionName("ubiQuery", UBIQueryStream.class);
+          new StreamFactory().withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class);
       // Basic test
-      ubiQuery = new UBIQuery("123");
+      ubiQuery = new UBIComponent.UBIQuery("123");
 
       expression = StreamExpressionParser.parse("ubiQuery()");
       streamContext.put("ubi-query", ubiQuery);
-      stream = new UBIQueryStream(expression, factory);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -122,11 +122,11 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       assertNotNull(Instant.parse(tuples.get(0).getString("timestamp")));
 
       // Include another field to see what is returned
-      ubiQuery = new UBIQuery("234");
+      ubiQuery = new UBIComponent.UBIQuery("234");
       ubiQuery.setApplication("typeahead");
 
       streamContext.put("ubi-query", ubiQuery);
-      stream = new UBIQueryStream(expression, factory);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -136,7 +136,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       assertString(tuples.get(0), "application", "typeahead");
 
       // Introduce event_attributes map of data
-      ubiQuery = new UBIQuery("345");
+      ubiQuery = new UBIComponent.UBIQuery("345");
 
       @SuppressWarnings({"unchecked", "rawtypes"})
       Map<String, Object> queryAttributes = new HashMap();
@@ -145,7 +145,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       ubiQuery.setQueryAttributes(queryAttributes);
 
       streamContext.put("ubi-query", ubiQuery);
-      stream = new UBIQueryStream(expression, factory);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -159,7 +159,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   @Test
   public void testWritingToLogUbiQueryStream() throws Exception {
     // Test that we can write out UBIQuery data cleanly to the jsonl file
-    UBIQuery ubiQuery = new UBIQuery("345");
+    UBIComponent.UBIQuery ubiQuery = new UBIComponent.UBIQuery("345");
     ubiQuery.setUserQuery("Memory RAM");
     ubiQuery.setApplication("typeahead");
 
@@ -181,7 +181,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
           new StreamFactory()
               .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
               .withFunctionName("search", CloudSolrStream.class)
-              .withFunctionName("ubiQuery", UBIQueryStream.class)
+              .withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class)
               .withFunctionName("logging", LoggingStream.class);
 
       expression = StreamExpressionParser.parse("logging(test.jsonl,ubiQuery())");
@@ -221,7 +221,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
   public void testWritingToSolrUbiQueryStream() throws Exception {
     // Test that we can write out UBIQuery, especially the queryAttributes map, to Solr collection
 
-    UBIQuery ubiQuery = new UBIQuery("345");
+    UBIComponent.UBIQuery ubiQuery = new UBIComponent.UBIQuery("345");
     ubiQuery.setUserQuery("Memory RAM");
     ubiQuery.setApplication("typeahead");
 
@@ -248,7 +248,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("update", UpdateStream.class)
               .withFunctionName("select", SelectStream.class)
-              .withFunctionName("ubiQuery", UBIQueryStream.class);
+              .withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class);
 
       expression =
           StreamExpressionParser.parse(
