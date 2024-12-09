@@ -96,6 +96,7 @@ public class ClusterState implements MapWriter {
    * @param collectionName the name of the modified (or deleted) collection
    * @param collection the collection object. A null value deletes the collection from the state
    * @return the updated cluster state which preserves the current live nodes
+   * @lucene.internal
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
     LinkedHashMap<String, CollectionRef> collections = new LinkedHashMap<>(collectionStates);
@@ -223,6 +224,7 @@ public class ClusterState implements MapWriter {
     return null;
   }
 
+  @Deprecated
   public Map<String, List<Replica>> getReplicaNamesPerCollectionOnNode(final String nodeName) {
     Map<String, List<Replica>> replicaNamesPerCollectionOnNode = new HashMap<>();
     collectionStates.values().stream()
@@ -264,6 +266,7 @@ public class ClusterState implements MapWriter {
    *     {@link ClusterState}
    * @return the ClusterState
    */
+  @Deprecated
   public static ClusterState createFromJson(
       int version,
       byte[] bytes,
@@ -284,6 +287,7 @@ public class ClusterState implements MapWriter {
     return createFromJson(version, bytes, liveNodes, Instant.EPOCH, null);
   }
 
+  @Deprecated
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
@@ -313,6 +317,9 @@ public class ClusterState implements MapWriter {
     return createFromCollectionMap(version, stateMap, liveNodes, Instant.EPOCH, null);
   }
 
+  /**
+   * @lucene.internal
+   */
   // TODO move to static DocCollection.loadFromMap
   public static DocCollection collectionFromObjects(
       String name,
@@ -384,7 +391,9 @@ public class ClusterState implements MapWriter {
     } else return liveNodes.equals(other.liveNodes);
   }
 
-  /** Internal API used only by ZkStateReader */
+  /**
+   * @lucene.internal used only by ZkStateReader
+   */
   void setLiveNodes(Set<String> liveNodes) {
     this.liveNodes = Set.copyOf(liveNodes);
   }
@@ -473,6 +482,9 @@ public class ClusterState implements MapWriter {
   private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
       STANDARDOBJBUILDER;
 
+  /**
+   * @lucene.internal
+   */
   public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
     if (fun == null) return;
     STR_INTERNER_OBJ_BUILDER = fun;
