@@ -123,11 +123,6 @@ module:gcs-repository:
       - any-glob-to-any-file:
           - solr/modules/gcs-repository/**
 
-module:hadoop-auth:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/modules/hadoop-auth/**
-
 module:hdfs:
   - changed-files:
       - any-glob-to-any-file:

@@ -100,6 +100,8 @@ Deprecation Removals
   looking for similar functionality can use Solr's package manager.  Users that don't need to vary JAR access on a per-core basis
   have many options, including the `<sharedLib/>` tag and directly modifying Solr's classpath prior to JVM startup. (Jason Gerlowski)
 
+* SOLR-17540: Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
