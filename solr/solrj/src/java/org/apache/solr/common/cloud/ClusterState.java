@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -53,6 +52,8 @@ import org.slf4j.LoggerFactory;
  * Immutable state of the cloud. Normally you can get the state by using {@code
  * ZkStateReader#getClusterState()}.
  *
+ * <p>However, the {@link #setLiveNodes list of live nodes} is updated when nodes go up and down.
+ *
  * @lucene.experimental
  */
 public class ClusterState implements MapWriter {
@@ -63,8 +64,7 @@ public class ClusterState implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
-  private Set<String> liveNodes;
-  private Set<String> hostAllowList;
+  private volatile Set<String> liveNodes;
 
   /** Use this constr when ClusterState is meant for consumption. */
   public ClusterState(Set<String> liveNodes, Map<String, DocCollection> collectionStates) {
@@ -85,8 +85,7 @@ public class ClusterState implements MapWriter {
    * loaded (parameter order different from constructor above to have different erasures)
    */
   public ClusterState(Map<String, CollectionRef> collectionStates, Set<String> liveNodes) {
-    this.liveNodes = CollectionUtil.newHashSet(liveNodes.size());
-    this.liveNodes.addAll(liveNodes);
+    setLiveNodes(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
     this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
   }
@@ -189,7 +188,7 @@ public class ClusterState implements MapWriter {
 
   /** Get names of the currently live nodes. */
   public Set<String> getLiveNodes() {
-    return Collections.unmodifiableSet(liveNodes);
+    return liveNodes;
   }
 
   @Deprecated
@@ -387,7 +386,7 @@ public class ClusterState implements MapWriter {
 
   /** Internal API used only by ZkStateReader */
   void setLiveNodes(Set<String> liveNodes) {
-    this.liveNodes = liveNodes;
+    this.liveNodes = Set.copyOf(liveNodes);
   }
 
   /**
@@ -399,20 +398,6 @@ public class ClusterState implements MapWriter {
   @Deprecated
   public Map<String, CollectionRef> getCollectionStates() {
     return immutableCollectionStates;
-  }
-
-  /**
-   * Gets the set of allowed hosts (host:port) built from the set of live nodes. The set is cached
-   * to be reused.
-   */
-  public Set<String> getHostAllowList() {
-    if (hostAllowList == null) {
-      hostAllowList =
-          getLiveNodes().stream()
-              .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
-              .collect(Collectors.toSet());
-    }
-    return hostAllowList;
   }
 
   /**

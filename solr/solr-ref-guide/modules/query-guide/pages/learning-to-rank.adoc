@@ -111,10 +111,6 @@ In the form of JSON files your trained model or models (e.g., different models f
 |(custom) |(custom class extending {solr-javadocs}/modules/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
-== Module
-
-This is provided via the `ltr` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
-
 == Installation of LTR
 
 The ltr module requires the `modules/ltr/lib/solr-ltr-*.jar` JARs.
@@ -125,13 +121,8 @@ Learning-To-Rank is a module and therefore its plugins must be configured in `so
 
 === Minimum Requirements
 
-* Include the required module JARs.
-Note that by default paths are relative to the Solr core, so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`.
-+
-[source,xml]
-----
-<lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
-----
+* Enable the `ltr` module to make the LTR classes available on Solr's classpath.
+See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 
 * Declaration of the `ltr` query parser.
 +
@@ -248,11 +239,11 @@ Assuming that you consider to use a large model placed at `/path/to/models/myMod
 }
 ----
 
-First, add the directory to Solr's resource paths with a xref:configuration-guide:libs.adoc#lib-directives-in-solrconfig[`<lib/>` directive]:
+First, add the directory to Solr's resource paths with a xref:configuration-guide:configuring-solr-xml.adoc#the-solr-element[solr.xml `<sharedLib/>` directive]:
 
 [source,xml]
 ----
-  <lib dir="/path/to" regex="models" />
+  <sharedLib>/path/to/models"</sharedLib>
 ----
 
 Then, configure `DefaultWrapperModel` to wrap `myModel.json`:
@@ -272,8 +263,6 @@ Then, configure `DefaultWrapperModel` to wrap `myModel.json`:
 `myModel.json` will be loaded during the initialization and be able to use by specifying `model=myWrapperModel`.
 
 NOTE: No `"features"` are configured in `myWrapperModel` because the features of the wrapped model (`myModel`) will be used; also note that the `"store"` configured for the wrapper model must match that of the wrapped model i.e., in this example the feature store called `largeModelsFeatureStore` is used.
-
-CAUTION: `<lib dir="/path/to/models" regex=".*\.json" />` doesn't work as expected in this case, because `SolrResourceLoader` considers given resources as JAR if `<lib />` indicates files.
 
 As an alternative to the above-described `DefaultWrapperModel`, it is possible to xref:deployment-guide:zookeeper-ensemble.adoc#increasing-the-file-size-limit[increase ZooKeeper's file size limit].
 

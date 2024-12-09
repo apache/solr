@@ -272,7 +272,7 @@ public abstract class ConfigSetService {
       NamedList<?> properties = loadConfigSetProperties(dcore, coreLoader);
       boolean trusted = isConfigSetTrusted(coreLoader);
 
-      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
+      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader);
       return new ConfigSet(
           configSetName(dcore),
           solrConfig,
@@ -314,13 +314,12 @@ public abstract class ConfigSetService {
    *
    * @param cd the core's CoreDescriptor
    * @param loader the core's resource loader
-   * @param isTrusted is the configset trusted?
    * @return a SolrConfig object
    */
-  protected SolrConfig createSolrConfig(
-      CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) throws IOException {
+  protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader)
+      throws IOException {
     return SolrConfig.readFromResourceLoader(
-        loader, cd.getConfigName(), isTrusted, cd.getSubstitutableProperties());
+        loader, cd.getConfigName(), cd.getSubstitutableProperties());
   }
 
   /**

@@ -60,6 +60,12 @@ Users who previously relied on collection-specific URLs to avoid including the c
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
 
+=== SolrCloud request routing
+
+HTTP requests to SolrCloud that are for a specific core must be delivered to the node with that core, or else an HTTP 404 Not Found response will occur.
+Previously, SolrCloud would try too hard scanning the cluster's state to look for it and internally route/proxy it.
+If only one node is exposed to a client, and if the client uses the bin/solr export tool, it probably won't work.
+
 === Deprecation removals
 
 * The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
@@ -87,3 +93,7 @@ Please note this also removes the ability to share resource intensive objects ac
 The removed writer types (invoked as part of the `wt` parameter) include `python`, `ruby`, `php`, and `phps`.
 
 * The deprecated support for configuring replication using master/slave terminology is removed.  Use leader/follower.
+
+* Support for the `<lib/>` directive, which historically could be used in solrconfig.xml to add JARs on a core-by-core basis, was deprecated in 9.8 and has now been removed.
+Users that need to vary JAR accessibility on a per-core basis can use Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
+Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.

@@ -76,7 +76,6 @@ import org.apache.solr.client.api.model.IndexVersionResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -344,14 +343,6 @@ public class ReplicationHandler extends RequestHandlerBase
           rsp,
           "Missing file parameter",
           new SolrException(SolrException.ErrorCode.BAD_REQUEST, "File not specified in request"));
-      return;
-    }
-
-    if (solrParams.getParams(CommonParams.WT) == null) {
-      reportErrorOnResponse(
-          rsp,
-          "Missing wt parameter",
-          new SolrException(SolrException.ErrorCode.BAD_REQUEST, "wt not specified in request"));
       return;
     }
 

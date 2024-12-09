@@ -36,7 +36,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17568: The CLI bin/solr export tool now contacts the appropriate nodes directly for data instead of proxying through one.
+ (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -95,6 +96,10 @@ Deprecation Removals
 
 * SOLR-17576: Remove deprecated master/slave option language from ReplicationHandler. (Eric Pugh)
 
+* SOLR-16781: Support for `<lib/>` directives (used in solrconfig.xml to add JARs on a core-by-core basis) has been removed.  Users
+  looking for similar functionality can use Solr's package manager.  Users that don't need to vary JAR access on a per-core basis
+  have many options, including the `<sharedLib/>` tag and directly modifying Solr's classpath prior to JVM startup. (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -131,6 +136,8 @@ Other Changes
 * SOLR-17321: Minimum Java version for Apache Solr is now 21, and for SolrJ, it is 17. (Sanjay Dutt, David Smiley)
 
 * SOLR-16903: Update CLI tools to use java.nio.file.Path instead of java.io.File (Andrey Bozhko)
+
+* SOLR-17568: SolrCloud no longer reroutes/proxies a core request to another node if not found locally. (David Smiley)
 
 ==================  9.8.0 ==================
 New Features
@@ -230,6 +237,8 @@ Bug Fixes
   is enabled (Shawn Heisey, Stephen Zhou, Eric Pugh, Christine Poerschke, David Smiley)
 
 * SOLR-17575: Fixed broken backwards compatibility with the legacy "langid.whitelist" config in Solr Langid. (Jan Høydahl, Alexander Zagniotov)
+
+* SOLR-17574: Fix AllowListUrlChecker when liveNodes changes. Remove ClusterState.getHostAllowList (Bruno Roustant, David Smiley)
 
 Dependency Upgrades
 ---------------------
