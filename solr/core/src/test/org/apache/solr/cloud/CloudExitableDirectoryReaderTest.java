@@ -106,7 +106,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
           ((Metered)
                   metricRegistry
                       .getMetrics()
-                      .get("org.eclipse.jetty.servlet.ServletContextHandler.2xx-responses"))
+                      .get("org.eclipse.jetty.server.Handler$Wrapper.2xx-responses"))
               .getCount();
 
       Metered old =
@@ -115,7 +115,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
               (Metered)
                   metricRegistry
                       .getMetrics()
-                      .get("org.eclipse.jetty.servlet.ServletContextHandler.5xx-responses"));
+                      .get("org.eclipse.jetty.server.Handler$Wrapper.5xx-responses"));
       assertNull("expecting uniq nodenames", old);
     }
     assertTrue("expecting some http activity during collection creation", httpOk > 0);

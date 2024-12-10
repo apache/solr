@@ -160,6 +160,7 @@ grant {
 
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+  permission java.lang.RuntimePermission "accessSystemModules";
 
   // needed for kafka mockito
   permission java.lang.RuntimePermission "manageProcess";
@@ -254,8 +255,15 @@ grant {
   permission java.io.FilePermission "${aws.configFile}", "read,readlink";
   permission java.io.FilePermission "${user.home}${/}.aws${/}-", "read,readlink";
 
+  // GCS
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}properties", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}active_config", "read,readlink";
+  permission java.io.FilePermission "${user.home}${/}.config${/}gcloud${/}configurations${/}config_default", "read,readlink";
+
+
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "metadata.google.internal:80", "connect,resolve";
 
   // Run java
   permission java.io.FilePermission "${java.home}${/}-", "execute";

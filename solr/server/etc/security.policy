@@ -108,6 +108,7 @@ grant {
   permission java.lang.RuntimePermission "getProtectionDomain";
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
+  permission java.lang.RuntimePermission "accessSystemModules";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
