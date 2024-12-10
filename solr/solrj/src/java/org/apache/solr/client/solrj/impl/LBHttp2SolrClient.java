@@ -120,25 +120,23 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
     if (builder.solrClientBuilder.urlParamNames == null) {
       this.urlParamNames = Collections.emptySet();
     } else {
-      this.urlParamNames = Collections.unmodifiableSet(builder.solrClientBuilder.urlParamNames);
+      this.urlParamNames = Set.copyOf(builder.solrClientBuilder.urlParamNames);
     }
   }
 
-  private synchronized HttpSolrClientBase buildClient(Endpoint endpoint) {
-    var client = urlToClient.get(endpoint.toString());
-    if (client == null) {
-      String tmpBaseSolrUrl = solrClientBuilder.baseSolrUrl;
-      solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
-      client = solrClientBuilder.build();
-      urlToClient.put(endpoint.getBaseUrl(), client);
-      solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
-    }
+  private HttpSolrClientBase buildClient(Endpoint endpoint) {
+    String tmpBaseSolrUrl = solrClientBuilder.baseSolrUrl;
+    solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
+    var client = solrClientBuilder.build();
+    urlToClient.put(endpoint.getBaseUrl(), client);
+    solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
     return client;
   }
 
   @Override
-  protected HttpSolrClientBase getClient(Endpoint endpoint) {
-    var client = urlToClient.get(endpoint.getBaseUrl());
+  protected HttpSolrClientBase getClient(final Endpoint endpoint) {
+    var client =
+        urlToClient.computeIfAbsent(endpoint.getBaseUrl(), s -> this.buildClient(endpoint));
     if (client == null) {
       return buildClient(endpoint);
     }
@@ -162,9 +160,7 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
   @Override
   public void close() {
     super.close();
-    for (HttpSolrClientBase client : urlToClient.values()) {
-      IOUtils.closeQuietly(client);
-    }
+    urlToClient.values().forEach(IOUtils::closeQuietly);
   }
 
   /**
