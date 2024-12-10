@@ -22,6 +22,7 @@ import java.io.InputStream;
 import org.apache.solr.common.SolrException;
 
 /** A binary resource. The impl is agnostic of the content type */
+@Deprecated
 public interface Resource {
   /** This is a full path. e.g schema.xml, solrconfig.xml, lang/stopwords.txt etc */
   String name();

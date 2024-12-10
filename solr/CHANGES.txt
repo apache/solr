@@ -300,6 +300,10 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-17577: Remove "solr.indexfetcher.sotimeout" system property that was for optimizing replication tests.  It was disabled, but not removed. (Eric Pugh)
 
+* SOLR-14680: NamedList: deprecating methods: forEachEntry, forEachKey, abortableForEachKey, abortableForEach,
+ asMap (no-arg only), get(key, default).  Added getOrDefault.  Deprecated the SimpleMap interface as well as the
+ entirety of the SolrJ package org.apache.solr.cluster.api, which wasn't used except for SimpleMap.  (David Smiley)
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------

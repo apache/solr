@@ -346,13 +346,14 @@ public class StatusTool extends ToolBase {
     Map<String, String> cloudStatus = new LinkedHashMap<>();
     cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
+    // TODO add booleans to request just what we want; not everything
     NamedList<Object> json = solrClient.request(new CollectionAdminRequest.ClusterStatus());
 
     List<String> liveNodes = (List<String>) json.findRecursive("cluster", "live_nodes");
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
-    Map<String, Object> collections =
-        ((NamedList<Object>) json.findRecursive("cluster", "collections")).asMap();
+    // TODO get this as a metric from the metrics API instead, or something else.
+    var collections = (NamedList<Object>) json.findRecursive("cluster", "collections");
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

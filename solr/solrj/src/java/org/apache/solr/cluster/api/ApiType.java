@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** Types of API calls */
+@Deprecated
 public enum ApiType {
   V1("solr"),
   V2("api");

@@ -211,7 +211,7 @@ public class DeleteTool extends ToolBase {
     if (isVerbose() && response != null) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       echo(arr.toString());
       echo("\n");
     }

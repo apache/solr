@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** A range of hash that is stored in a shard */
+@Deprecated
 public interface HashRange {
 
   /** minimum value (inclusive) */

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import org.apache.solr.cluster.api.SimpleMap;
 
+@Deprecated
 public class WrappedSimpleMap<T> implements SimpleMap<T> {
   private final Map<String, T> delegate;
 

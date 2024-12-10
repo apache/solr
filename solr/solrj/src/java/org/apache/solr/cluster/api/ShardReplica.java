@@ -20,6 +20,7 @@ package org.apache.solr.cluster.api;
 import org.apache.solr.common.cloud.Replica;
 
 /** replica of a shard */
+@Deprecated
 public interface ShardReplica {
   /** Name of this replica */
   String name();

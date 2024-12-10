@@ -20,6 +20,7 @@ package org.apache.solr.cluster.api;
 import org.apache.solr.common.SolrException;
 
 /** Represents a Solr cluster */
+@Deprecated
 public interface SolrCluster {
 
   /** collections in the cluster */

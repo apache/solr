@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** A read only view of a Solr node */
+@Deprecated
 public interface SolrNode {
 
   /** The node name */

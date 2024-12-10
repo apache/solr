@@ -16,4 +16,5 @@
  */
 
 /** API interfaces for core SolrCloud classes */
+@Deprecated
 package org.apache.solr.cluster.api;

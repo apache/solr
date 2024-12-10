@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.api;
 
 /** identify shards for a given routing key or document id */
+@Deprecated
 public interface Router {
 
   /** shard name for a given routing key */
