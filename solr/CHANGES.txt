@@ -113,7 +113,17 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* PR#2702: chore(deps): update io.netty:* to v4.1.114.final (solrbot)
+
+* PR#2129: chore(deps): update dependency com.github.spotbugs:spotbugs-annotations to v4.8.6 (solrbot)
+
+* PR#2396: Update org.glassfish.jersey*:* to v3.1.9 (solrbot)
+
+* PR#2268: Update org.glassfish.hk2*:* to v3.1.1 (solrbot)
+
+* PR#2769: Update dependency com.fasterxml.jackson:jackson-bom to v2.18.0 (solrbot)
+
+* PR#2650: Update dependency commons-cli:commons-cli to v1.9.0 (solrbot)
 
 Other Changes
 ---------------------
