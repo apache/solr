@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.stream.IntStream;
-import org.apache.lucene.monitor.MonitorFields;
+import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;

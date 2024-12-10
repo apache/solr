@@ -22,7 +22,7 @@ package org.apache.solr.savedsearch.search;
 import java.io.IOException;
 import java.util.Collection;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.monitor.QCEVisitor;
+import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSetIterator;

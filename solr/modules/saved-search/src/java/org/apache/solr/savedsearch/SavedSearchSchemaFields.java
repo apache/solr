@@ -19,7 +19,7 @@
 
 package org.apache.solr.savedsearch;
 
-import org.apache.lucene.monitor.MonitorFields;
+import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 

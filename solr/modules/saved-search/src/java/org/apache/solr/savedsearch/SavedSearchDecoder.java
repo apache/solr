@@ -22,8 +22,8 @@ package org.apache.solr.savedsearch;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.monitor.MonitorQuery;
-import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.monitor.QueryDecomposer;
+import org.apache.lucene.monitor.Visitors.QCEVisitor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.savedsearch.search.ReverseSearchComponent;
 

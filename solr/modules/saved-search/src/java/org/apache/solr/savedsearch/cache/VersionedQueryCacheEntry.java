@@ -19,7 +19,7 @@
 
 package org.apache.solr.savedsearch.cache;
 
-import org.apache.lucene.monitor.QCEVisitor;
+import org.apache.lucene.monitor.Visitors.QCEVisitor;
 
 public class VersionedQueryCacheEntry {
 

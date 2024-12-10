@@ -24,7 +24,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.monitor.MonitorFields;
+import org.apache.lucene.monitor.Visitors.MonitorFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.params.CommonParams;
 
