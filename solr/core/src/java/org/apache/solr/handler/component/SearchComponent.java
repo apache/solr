@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -108,19 +109,21 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
     // By default, don't register any metrics - but prepare a child context
     this.solrMetricsContext = parentContext.getChildContext(this);
   }
+  
+  public static final Map<String, Class<? extends SearchComponent>> STANDARD_COMPONENTS;
 
-  public static final Map<String, Class<? extends SearchComponent>> STANDARD_COMPONENTS =
-      Map.ofEntries(
-          Map.entry(QueryComponent.COMPONENT_NAME, QueryComponent.class),
-          Map.entry(HighlightComponent.COMPONENT_NAME, HighlightComponent.class),
-          Map.entry(FacetComponent.COMPONENT_NAME, FacetComponent.class),
-          Map.entry(FacetModule.COMPONENT_NAME, FacetModule.class),
-          Map.entry(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class),
-          Map.entry(StatsComponent.COMPONENT_NAME, StatsComponent.class),
-          Map.entry(DebugComponent.COMPONENT_NAME, DebugComponent.class),
-          Map.entry(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class),
-          Map.entry(ExpandComponent.COMPONENT_NAME, ExpandComponent.class),
-          Map.entry(TermsComponent.COMPONENT_NAME, TermsComponent.class),
-          Map.entry(UBIComponent.COMPONENT_NAME, UBIComponent.class)// oh r'lly?? esp giving that it receive some expr via init args
-      );
+  static {
+    STANDARD_COMPONENTS = new HashMap<>();
+    STANDARD_COMPONENTS.put(HighlightComponent.COMPONENT_NAME, HighlightComponent.class);
+    STANDARD_COMPONENTS.put(QueryComponent.COMPONENT_NAME, QueryComponent.class);
+    STANDARD_COMPONENTS.put(FacetComponent.COMPONENT_NAME, FacetComponent.class);
+    STANDARD_COMPONENTS.put(FacetModule.COMPONENT_NAME, FacetModule.class);
+    STANDARD_COMPONENTS.put(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class);
+    STANDARD_COMPONENTS.put(StatsComponent.COMPONENT_NAME, StatsComponent.class);
+    STANDARD_COMPONENTS.put(DebugComponent.COMPONENT_NAME, DebugComponent.class);
+    STANDARD_COMPONENTS.put(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class);
+    STANDARD_COMPONENTS.put(ExpandComponent.COMPONENT_NAME, ExpandComponent.class);
+    STANDARD_COMPONENTS.put(TermsComponent.COMPONENT_NAME, TermsComponent.class);
+    STANDARD_COMPONENTS.put(UBIComponent.COMPONENT_NAME, UBIComponent.class);
+  }
 }

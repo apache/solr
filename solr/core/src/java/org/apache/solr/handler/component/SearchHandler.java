@@ -71,6 +71,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
@@ -133,17 +134,19 @@ public class SearchHandler extends RequestHandlerBase
    * @return A list of component names.
    */
   protected List<String> getDefaultComponents() {
-    List<String> l = new ArrayList<String>(SearchComponent.STANDARD_COMPONENTS.keySet());
-    moveToFirst(l, QueryComponent.COMPONENT_NAME);
-    l.remove(RealTimeGetComponent.COMPONENT_NAME); // pardon. it breaks my essential cloud test. there wasn't it there ever!
-    return l;
-  }
+    ArrayList<String> names = new ArrayList<>(9);
+    names.add(QueryComponent.COMPONENT_NAME);
+    names.add(FacetComponent.COMPONENT_NAME);
+    names.add(FacetModule.COMPONENT_NAME);
+    names.add(MoreLikeThisComponent.COMPONENT_NAME);
+    names.add(HighlightComponent.COMPONENT_NAME);
+    names.add(StatsComponent.COMPONENT_NAME);
+    names.add(DebugComponent.COMPONENT_NAME);
+    names.add(ExpandComponent.COMPONENT_NAME);
+    names.add(TermsComponent.COMPONENT_NAME);
+    names.add(UBIComponent.COMPONENT_NAME);
 
-  private static void moveToFirst(List<String> list, String target) {
-    int index = list.indexOf(target);
-    assert index != -1;
-    list.remove(index);
-    list.add(0, target);
+    return names;
   }
 
   @Override

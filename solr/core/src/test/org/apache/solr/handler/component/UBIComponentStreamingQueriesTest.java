@@ -55,9 +55,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
   private static final int TIMEOUT = DEFAULT_TIMEOUT;
-  private static final String id = "id";
-
-  private static boolean useAlias;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -67,7 +64,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
         .configure();
 
     String collection;
-    useAlias = random().nextBoolean();
+    boolean useAlias = random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {
@@ -92,10 +89,14 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
 
+  /**
+   * Test using the UBIQuery and UBIQueryStream classes independent of the UBIComponent to stream
+   * events.
+   */
   @Test
   public void testUBIQueryStream() throws Exception {
 
-    UBIQuery ubiQuery;
+    UBIComponent.UBIQuery ubiQuery;
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
@@ -105,13 +106,13 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     try (solrClientCache) {
       streamContext.setSolrClientCache(solrClientCache);
       StreamFactory factory =
-          new StreamFactory().withFunctionName("ubiQuery", UBIQueryStream.class);
+          new StreamFactory().withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class);
       // Basic test
-      ubiQuery = new UBIQuery("123");
+      ubiQuery = new UBIComponent.UBIQuery("123");
 
       expression = StreamExpressionParser.parse("ubiQuery()");
       streamContext.put("ubi-query", ubiQuery);
-      stream = new UBIQueryStream(expression, factory);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -121,12 +122,25 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
       assertNotNull(Instant.parse(tuples.get(0).getString("timestamp")));
 
+      // Introduce docIds
+      ubiQuery = new UBIComponent.UBIQuery("678");
+      ubiQuery.setDocIds(("1,2,3,doc_52"));
+      streamContext.put("ubi-query", ubiQuery);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+
+      assertEquals(1, tuples.size());
+      assertFields(tuples, "query_id", "doc_ids");
+      // assertEquals(new String[]{"1", "2", "3", "doc_52"}, tuples.get(0).getStrings("doc_ids"));
+      assertEquals("1,2,3,doc_52", tuples.get(0).getString("doc_ids"));
+
       // Include another field to see what is returned
-      ubiQuery = new UBIQuery("234");
+      ubiQuery = new UBIComponent.UBIQuery("234");
       ubiQuery.setApplication("typeahead");
 
       streamContext.put("ubi-query", ubiQuery);
-      stream = new UBIQueryStream(expression, factory);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -136,7 +150,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       assertString(tuples.get(0), "application", "typeahead");
 
       // Introduce event_attributes map of data
-      ubiQuery = new UBIQuery("345");
+      ubiQuery = new UBIComponent.UBIQuery("345");
 
       @SuppressWarnings({"unchecked", "rawtypes"})
       Map<String, Object> queryAttributes = new HashMap();
@@ -145,7 +159,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       ubiQuery.setQueryAttributes(queryAttributes);
 
       streamContext.put("ubi-query", ubiQuery);
-      stream = new UBIQueryStream(expression, factory);
+      stream = new UBIComponent.UBIQueryStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
@@ -158,8 +172,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
   @Test
   public void testWritingToLogUbiQueryStream() throws Exception {
-    // Test that we can write out UBIQuery data cleanly to the jsonl file
-    UBIQuery ubiQuery = new UBIQuery("345");
+    // Test that we can write out UBIQuery data cleanly to the JSON w Lines formatted log file.
+    UBIComponent.UBIQuery ubiQuery = new UBIComponent.UBIQuery("345");
     ubiQuery.setUserQuery("Memory RAM");
     ubiQuery.setApplication("typeahead");
 
@@ -181,7 +195,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
           new StreamFactory()
               .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
               .withFunctionName("search", CloudSolrStream.class)
-              .withFunctionName("ubiQuery", UBIQueryStream.class)
+              .withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class)
               .withFunctionName("logging", LoggingStream.class);
 
       expression = StreamExpressionParser.parse("logging(test.jsonl,ubiQuery())");
@@ -195,7 +209,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       assertFields(tuples, "totalIndexed");
       assertLong(tuples.get(0), "totalIndexed", 1);
 
-      // Someday when we have parseJSON() streaming expression we can replace this.
+      // Someday when we have a parseJSON() streaming expression we can replace this.
       Path filePath = stream.getFilePath();
       try (ReversedLinesFileReader reader =
           new ReversedLinesFileReader.Builder()
@@ -209,6 +223,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
         Map ubiQueryAsMap = objectMapper.readValue(jsonLine, Map.class);
         assertEquals(ubiQuery.getQueryId(), ubiQueryAsMap.get("query_id"));
         assertEquals(ubiQuery.getApplication(), ubiQueryAsMap.get("application"));
+        assertEquals(ubiQuery.getDocIds(), ubiQueryAsMap.get("doc_ids"));
         assertNotNull(ubiQueryAsMap.get("timestamp"));
         assertEquals(
             "{\"experiment\":\"secret\",\"marginBoost\":2.1,\"parsed_query\":\"memory OR ram\"}",
@@ -219,9 +234,10 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
   @Test
   public void testWritingToSolrUbiQueryStream() throws Exception {
-    // Test that we can write out UBIQuery, especially the queryAttributes map, to Solr collection
+    // Test that we can write out UBIQuery, especially the queryAttributes map, to a Solr
+    // collection.
 
-    UBIQuery ubiQuery = new UBIQuery("345");
+    UBIComponent.UBIQuery ubiQuery = new UBIComponent.UBIQuery("345");
     ubiQuery.setUserQuery("Memory RAM");
     ubiQuery.setApplication("typeahead");
 
@@ -248,7 +264,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
               .withFunctionName("search", CloudSolrStream.class)
               .withFunctionName("update", UpdateStream.class)
               .withFunctionName("select", SelectStream.class)
-              .withFunctionName("ubiQuery", UBIQueryStream.class);
+              .withFunctionName("ubiQuery", UBIComponent.UBIQueryStream.class);
 
       expression =
           StreamExpressionParser.parse(
@@ -257,6 +273,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
                   + ", batchSize=5, select(\n"
                   + "      ubiQuery(),\n"
                   + "      query_id as id,\n"
+                  + "      doc_ids,\n"
                   + "      timestamp,\n"
                   + "      application,\n"
                   + "      user_query,\n"
@@ -288,6 +305,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       assertEquals(ubiQuery.getQueryId(), tuple.get("id"));
       assertEquals(ubiQuery.getApplication(), tuple.get("application"));
       assertEquals(ubiQuery.getUserQuery(), tuple.get("user_query"));
+      assertEquals(ubiQuery.getDocIds(), tuple.get("doc_ids"));
       assertEquals(ubiQuery.getTimestamp().toInstant(), tuple.getDate("timestamp").toInstant());
       assertEquals(
           "{\"experiment\":\"secret\",\"marginBoost\":2.1,\"parsed_query\":\"memory OR ram\"}",
@@ -305,18 +323,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       }
     }
     return tuples;
-  }
-
-  protected void assertOrderOf(List<Tuple> tuples, String fieldName, int... ids) throws Exception {
-    int i = 0;
-    for (int val : ids) {
-      Tuple t = tuples.get(i);
-      String tip = t.getString(fieldName);
-      if (!tip.equals(Integer.toString(val))) {
-        throw new Exception("Found value:" + tip + " expecting:" + val);
-      }
-      ++i;
-    }
   }
 
   public boolean assertString(Tuple tuple, String fieldName, String expected) throws Exception {
@@ -343,16 +349,6 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
       for (String field : fields) {
         if (!tuple.getFields().containsKey(field)) {
           throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
-        }
-      }
-    }
-  }
-
-  protected void assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
-    for (Tuple tuple : tuples) {
-      for (String field : fields) {
-        if (tuple.getFields().containsKey(field)) {
-          throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
         }
       }
     }

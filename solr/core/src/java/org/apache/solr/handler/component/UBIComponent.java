@@ -16,21 +16,33 @@
  */
 package org.apache.solr.handler.component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -134,6 +146,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   public static final String QUERY_ATTRIBUTES = "query_attributes";
   public static final String USER_QUERY = "user_query";
   public static final String APPLICATION = "application";
+  public static final String DOC_IDS = "doc_ids";
 
   protected PluginInfo info = PluginInfo.EMPTY_INFO;
 
@@ -321,8 +334,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     // the same component run twice?
     UBIQuery ubiQuery = getUbiQuery(rb);
     if (ubiQuery == null) return;
-
-
     //String docIds = extractDocIds(docs, searcher);
     String docIds =String.join(",", rb.resultIds.keySet().stream().map(Object::toString).toList());
     ubiQuery.setDocIds(docIds);
@@ -447,5 +458,193 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   @Override
   public String getDescription() {
     return "A component that tracks the original user query and the resulting documents returned to understand the user.";
+  }
+
+  /**
+   * Handles all the data required for tracking a query using User Behavior Insights.
+   *
+   * <p>Compatible with the
+   * https://github.com/o19s/ubi/blob/main/schema/1.2.0/query.request.schema.json.
+   */
+  public static class UBIQuery {
+
+    private String application;
+    private String queryId;
+    private String userQuery;
+    private Date timestamp;
+
+    @SuppressWarnings("rawtypes")
+    private Map queryAttributes;
+
+    private String docIds;
+
+    public UBIQuery(String queryId) {
+
+      if (queryId == null) {
+        queryId = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
+      }
+      this.queryId = queryId;
+      this.timestamp = new Date();
+    }
+
+    public Date getTimestamp() {
+      return timestamp;
+    }
+
+    public void setApplication(String application) {
+      this.application = application;
+    }
+
+    public String getApplication() {
+      return this.application;
+    }
+
+    public String getQueryId() {
+      return queryId;
+    }
+
+    public void setQueryId(String queryId) {
+      this.queryId = queryId;
+    }
+
+    public String getUserQuery() {
+      return userQuery;
+    }
+
+    public void setUserQuery(String userQuery) {
+      this.userQuery = userQuery;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public Map getQueryAttributes() {
+      return queryAttributes;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void setQueryAttributes(Map queryAttributes) {
+      this.queryAttributes = queryAttributes;
+    }
+
+    public String getDocIds() {
+      return docIds;
+    }
+
+    public void setDocIds(String docIds) {
+      this.docIds = docIds;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public Map toMap() {
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      Map map = new HashMap();
+      map.put(QUERY_ID, this.queryId);
+      map.put(
+          "timestamp",
+          DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(this.timestamp.getTime())));
+      if (this.application != null) {
+        map.put(APPLICATION, this.application);
+      }
+      if (this.userQuery != null) {
+        map.put(USER_QUERY, this.userQuery);
+      }
+      if (this.docIds != null) {
+        map.put(DOC_IDS, this.docIds);
+      }
+      if (this.queryAttributes != null) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+          map.put(QUERY_ATTRIBUTES, objectMapper.writeValueAsString(this.queryAttributes));
+        } catch (JsonProcessingException e) {
+          // eat it.
+        }
+      }
+
+      return map;
+    }
+  }
+
+  /**
+   * Converts a UBIQuery that is stored in the StreamContext under the key 'ubi-query' into a Tuple
+   * and returns it.
+   *
+   * <p>I suspect that if I had the right magic with a LetStream or a GetStream, I could somehow
+   * just use that to say "pluck the 'ubi-query' object out of the StreamContext and call .toTuple
+   * or make a map of it and that would be my tuple'.
+   */
+  public static class UBIQueryStream extends TupleStream implements Expressible {
+
+    private StreamContext streamContext;
+    private boolean finished;
+
+    public UBIQueryStream(StreamExpression expression, StreamFactory factory) throws IOException {}
+
+    @Override
+    public StreamExpression toExpression(StreamFactory factory) throws IOException {
+      return toExpression(factory, true);
+    }
+
+    private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+        throws IOException {
+      // function name
+      StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
+
+      return expression;
+    }
+
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+      explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+      explanation.setImplementingClass(this.getClass().getName());
+      explanation.setExpressionType(Explanation.ExpressionType.STREAM_SOURCE);
+      explanation.setExpression(toExpression(factory, false).toString());
+
+      return explanation;
+    }
+
+    @Override
+    public void setStreamContext(StreamContext context) {
+      this.streamContext = context;
+    }
+
+    @Override
+    public List<TupleStream> children() {
+      List<TupleStream> l = new ArrayList<>();
+      return l;
+    }
+
+    @Override
+    public void open() throws IOException {}
+
+    @Override
+    public void close() throws IOException {}
+
+    @SuppressWarnings({"unchecked"})
+    @Override
+    public Tuple read() throws IOException {
+
+      if (finished) {
+        return Tuple.EOF();
+      } else {
+        finished = true;
+
+        UBIQuery ubiQuery = (UBIQuery) streamContext.get("ubi-query");
+
+        return new Tuple(ubiQuery.toMap());
+      }
+    }
+
+    /** Return the stream sort - ie, the order in which records are returned */
+    @Override
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    @Override
+    public int getCost() {
+      return 0;
+    }
   }
 }
