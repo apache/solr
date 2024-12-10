@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.handler.RequestHandlerBase.isInternalShardRequest;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -62,8 +64,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.handler.RequestHandlerBase.isInternalShardRequest;
 
 /**
  * User Behavior Insights (UBI) is an open standard for gathering query and event data from users
@@ -303,9 +303,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     ubiQuery.setApplication(params.get(APPLICATION));
     if (ubiQuery.getApplication() == null) {
       ubiQuery.setApplication(
-              rb.isDistrib
-                      ? rb.req.getCloudDescriptor().getCollectionName()
-                      : searcher.getCore().getName());
+          rb.isDistrib
+              ? rb.req.getCloudDescriptor().getCollectionName()
+              : searcher.getCore().getName());
     }
 
     String queryAttributes = params.get(QUERY_ATTRIBUTES);
@@ -334,8 +334,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     // the same component run twice?
     UBIQuery ubiQuery = getUbiQuery(rb);
     if (ubiQuery == null) return;
-    //String docIds = extractDocIds(docs, searcher);
-    String docIds =String.join(",", rb.resultIds.keySet().stream().map(Object::toString).toList());
+    // String docIds = extractDocIds(docs, searcher);
+    String docIds = String.join(",", rb.resultIds.keySet().stream().map(Object::toString).toList());
     ubiQuery.setDocIds(docIds);
 
     addUserBehaviorInsightsToResponse(ubiQuery, rb);
