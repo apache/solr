@@ -194,7 +194,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     for (String registryName : requestedRegistries) {
       MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
 
-      // Merge all core registries metrics into a single registry for formatting
+      // Merge all core registries into a single registry and
+      // append the core name to the metric to avoid duplicate metrics name
       if (registryName.startsWith("solr.core")) {
         mergedCoreRegistries.registerAll(
             Arrays.stream(registryName.split("\\.")).skip(1).collect(Collectors.joining("_")),
