@@ -74,6 +74,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private DistributedMap runningMap;
   private DistributedMap completedMap;
   private DistributedMap failureMap;
+  private DistributedMap asyncIdMap;
 
   /**
    * Set that maintains a list of all the tasks that are running. This is keyed on zk id of the
@@ -143,6 +144,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       DistributedMap runningMap,
       DistributedMap completedMap,
       DistributedMap failureMap,
+      DistributedMap asyncIdMap,
       SolrMetricsContext solrMetricsContext) {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
@@ -153,6 +155,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningMap = runningMap;
     this.completedMap = completedMap;
     this.failureMap = failureMap;
+    this.asyncIdMap = asyncIdMap;
     this.runningZKTasks = ConcurrentHashMap.newKeySet();
     this.runningTasks = ConcurrentHashMap.newKeySet();
     this.completedTasks = new ConcurrentHashMap<>();
@@ -324,11 +327,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             final String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
               if (head.getId().equals(oldestItemInWorkQueue)) hasLeftOverItems = false;
-              if (asyncId != null
-                  && (completedMap.contains(asyncId) || failureMap.contains(asyncId))) {
-                log.debug(
-                    "Found already processed task in workQueue, cleaning up. AsyncId [{}]",
-                    asyncId);
+              if (asyncId != null) {
+                if (completedMap.contains(asyncId) || failureMap.contains(asyncId)) {
+                  log.debug(
+                      "Found already processed task in workQueue, cleaning up. AsyncId [{}]",
+                      asyncId);
+                }
+                if (!asyncIdMap.contains(asyncId)) {
+                  log.debug("async id has been removed by canceling. AsyncId [{}]", asyncId);
+                }
                 workQueue.remove(head);
                 continue;
               }
