@@ -424,7 +424,7 @@ The {solr-javadocs}/modules/langid/index.html[`langid`] module provides::
 The {solr-javadocs}/modules/analysis-extras/index.html[`analysis-extras`] module provides::
 
 {solr-javadocs}/modules/analysis-extras/org/apache/solr/update/processor/OpenNLPExtractNamedEntitiesUpdateProcessorFactory.html[OpenNLPExtractNamedEntitiesUpdateProcessorFactory]::: Update document(s) to be indexed with named entities extracted using an OpenNLP NER model.
-Note that in order to use model files larger than 1MB on SolrCloud, you must either xref:deployment-guide:zookeeper-ensemble#increasing-the-file-size-limit[configure both ZooKeeper server and clients] or xref:libs.adoc#lib-directives-in-solrconfig[store the model files on the filesystem] on each node hosting a collection replica.
+Note that in order to use model files larger than 1MB on SolrCloud, you must xref:deployment-guide:zookeeper-ensemble#increasing-the-file-size-limit[configure both ZooKeeper server and clients].
 
 === Update Processor Factories You Should _Not_ Modify or Remove
 

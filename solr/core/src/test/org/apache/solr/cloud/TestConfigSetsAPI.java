@@ -1422,48 +1422,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUploadWithLibDirective() throws Exception {
-    final String untrustedSuffix = "-untrusted";
-    uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null);
-    // try to create a collection with the uploaded configset
-    ignoreException("without any authentication in place");
-    Throwable thrown =
-        expectThrows(
-            SolrClient.RemoteSolrException.class,
-            () -> {
-              createCollection(
-                  "newcollection3",
-                  "with-lib-directive" + untrustedSuffix,
-                  1,
-                  1,
-                  cluster.getSolrClient());
-            });
-    unIgnoreException("without any authentication in place");
-
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
-
-    // Authorization on
-    final String trustedSuffix = "-trusted";
-    uploadConfigSetWithAssertions("with-lib-directive", trustedSuffix, "solr");
-    // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp =
-        createCollection(
-            "newcollection3", "with-lib-directive" + trustedSuffix, 1, 1, cluster.getSolrClient());
-
-    SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    cluster.getSolrClient().add("newcollection3", doc);
-    cluster.getSolrClient().commit("newcollection3");
-    assertEquals(
-        "4055",
-        cluster
-            .getSolrClient()
-            .query("newcollection3", params("q", "*:*"))
-            .getResults()
-            .get(0)
-            .get("id"));
-  }
-
-  @Test
   public void testUploadWithForbiddenContent() throws Exception {
     // Uploads a config set containing a script, a class file and jar file, will return 400 error
     long res = uploadConfigSet("forbidden", "suffix", "foo", true, false, true, false, true);
