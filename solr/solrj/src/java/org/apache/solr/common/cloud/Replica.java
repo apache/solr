@@ -304,6 +304,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return state;
   }
 
+  @Deprecated
   public void setState(State state) {
     this.state = state;
     propMap.put(ReplicaStateProps.STATE, this.state.toString());
