@@ -253,6 +253,12 @@ public class NamedList<T>
     return get(name, 0);
   }
 
+  /** Like {@link #get(String)} but returns a default value if it would be null. */
+  public T getOrDefault(String name, T def) {
+    T val = get(name);
+    return val == null ? def : val;
+  }
+
   /**
    * Gets the value for the first instance of the specified name found starting at the specified
    * index.
@@ -486,7 +492,7 @@ public class NamedList<T>
 
       @Override
       public void forEach(BiConsumer action) {
-        NamedList.this.forEachEntry(action);
+        NamedList.this.forEach(action);
       }
     };
   }

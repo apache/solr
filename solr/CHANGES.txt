@@ -158,6 +158,10 @@ led to the suppression of exceptions. (Andrey Bozhko)
 
 * SOLR-16781: "<lib/>" tags in solrconfig.xml are now quietly ignored by default unless explicitly enabled with the `SOLR_CONFIG_LIB_ENABLED=true` enviroment variable (or corresponding sysprop).  These tags are now considered deprecated and will be removed in Solr 10.
 
+* SOLR-14680: NamedList: deprecating methods: forEachEntry, forEachKey, abortableForEachKey, abortableForEach,
+ asMap (no-arg only), get(key, default).  Added getOrDefault.  Deprecated the SimpleMap interface as well as the
+ entirety of the SolrJ package org.apache.solr.cluster.api, which wasn't used except for SimpleMap.  (David Smiley)
+
 ==================  9.7.1 ==================
 Bug Fixes
 ---------------------

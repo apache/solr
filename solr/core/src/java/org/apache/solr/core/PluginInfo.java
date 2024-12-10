@@ -118,7 +118,7 @@ public class PluginInfo implements MapSerializable {
     className = cName.className;
     pkgName = cName.pkg;
     initArgs = DOMUtil.childNodesToNamedList(node);
-    attributes = node.attributes().asMap();
+    attributes = node.attributes();
     children = loadSubPlugins(node);
     isFromSolrConfig = true;
   }
