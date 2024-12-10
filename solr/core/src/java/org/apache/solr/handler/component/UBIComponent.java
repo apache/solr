@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.handler.RequestHandlerBase.isInternalShardRequest;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -34,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -244,33 +247,46 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
-
-    doStuff(rb);
+    if (!isInternalShardRequest(rb.req)) { // subordinate shard req shouldn't yield logs
+      storeUbiDetails(
+          rb,
+          ubiQuery -> {
+            try {
+              DocList docList = ((ResultContext) rb.rsp.getResponse()).getDocList();
+              ubiQuery.setDocIds(extractDocIds(docList, rb.req.getSearcher()));
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
+    }
   }
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) {
       return ResponseBuilder.STAGE_DONE;
     }
 
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
-      return ResponseBuilder.STAGE_DONE;
+    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+      return ResponseBuilder.STAGE_GET_FIELDS;
     }
 
-    doStuff(rb);
+    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+      storeUbiDetails(
+          rb,
+          ubiQuery ->
+              ubiQuery.setDocIds(
+                  String.join(",", rb.resultIds.keySet().stream().map(Object::toString).toList())));
+      return ResponseBuilder.STAGE_DONE;
+    }
 
     return ResponseBuilder.STAGE_DONE;
   }
 
-  public void doStuff(ResponseBuilder rb) throws IOException {
-
-    // not sure why but sometimes we get it twoice...  how can a response have the
-    // the same component run twice?
+  private static UBIQuery getUbiQuery(ResponseBuilder rb) {
     if (rb.rsp.getValues().get("ubi") != null) {
-      return;
+      return null;
     }
     SolrParams params = rb.req.getParams();
 
@@ -305,13 +321,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
         }
       }
     }
+    return ubiQuery;
+  }
 
-    ResultContext rc = (ResultContext) rb.rsp.getResponse();
-    DocList docs = rc.getDocList();
-
-    String docIds = extractDocIds(docs, searcher);
-    ubiQuery.setDocIds(docIds);
-
+  private void storeUbiDetails(ResponseBuilder rb, Consumer<UBIQuery> docIdsSetter)
+      throws IOException {
+    UBIQuery ubiQuery = getUbiQuery(rb);
+    if (ubiQuery == null) return;
+    docIdsSetter.accept(ubiQuery);
     addUserBehaviorInsightsToResponse(ubiQuery, rb);
     recordQuery(ubiQuery);
   }
