@@ -146,28 +146,30 @@ public class SolrPrometheusFormatterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCloudCorePattern() {
-    String coreName = "core_test-core_shard2_replica_t123";
+    String coreName = "core_test-core_shard2_replica_t123.TEST./foobar/endpoint";
     Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);
     assertTrue(m.find());
-    assertEquals("test-core", m.group(1));
-    assertEquals("shard2", m.group(2));
-    assertEquals("replica_t123", m.group(3));
+    assertEquals("core_test-core_shard2_replica_t123", m.group(1));
+    assertEquals("test-core", m.group(2));
+    assertEquals("shard2", m.group(3));
+    assertEquals("replica_t123", m.group(4));
 
-    coreName = "core_foo_bar_shard24_replica_p8";
+    coreName = "core_foo_bar_shard24_replica_p8.QUERY.random.metric-name";
     m = CLOUD_CORE_PATTERN.matcher(coreName);
     assertTrue(m.matches());
-    assertEquals("foo_bar", m.group(1));
-    assertEquals("shard24", m.group(2));
-    assertEquals("replica_p8", m.group(3));
+    assertEquals("core_foo_bar_shard24_replica_p8", m.group(1));
+    assertEquals("foo_bar", m.group(2));
+    assertEquals("shard24", m.group(3));
+    assertEquals("replica_p8", m.group(4));
   }
 
   @Test
   public void testBadCloudCorePattern() {
-    String badCoreName = "core_solrtest_shard100_replica_xyz23";
+    String badCoreName = "core_solrtest_shard100_replica_xyz23.TEST./foobar/endpoint";
     Matcher m = CLOUD_CORE_PATTERN.matcher(badCoreName);
     assertFalse(m.matches());
 
-    badCoreName = "core_solrtest_shards100_replica_x23";
+    badCoreName = "core_solrtest_shards100_replica_x23.QUERY.random.metric-name";
     m = CLOUD_CORE_PATTERN.matcher(badCoreName);
     assertFalse(m.matches());
   }
