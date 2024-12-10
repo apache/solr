@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -219,10 +218,9 @@ public class CreateTool extends ToolBase {
 
     String coreRootDirectory; // usually same as solr home, but not always
 
-    Map<String, Object> systemInfo =
-        solrClient
-            .request(new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH))
-            .asMap();
+    NamedList<?> systemInfo =
+        solrClient.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
@@ -375,7 +373,7 @@ public class CreateTool extends ToolBase {
     if (verbose) {
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       echo(arr.toString());
     }
     String endMessage =
