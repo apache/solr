@@ -90,7 +90,13 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       Object o =
           Utils.executeGET(client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
       assertNotNull(o);
-      assertEquals(0, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
+
+      // When running in SSL mode, urlScheme property is auto-added by test framework in
+      // MiniSolrCloudCluster
+      // Make sure we always ignore this one when counting properties
+      int initCount = isSSLMode() ? 1 : 0;
+
+      assertEquals(initCount, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
 
       // Create a single cluster property
       String path = baseUrlV2ClusterProps + "/" + testClusterProperty;
@@ -103,10 +109,9 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       // List Properties, this time there should be 1
       o = Utils.executeGET(client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
       assertNotNull(o);
-      assertEquals(1, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
-      assertEquals(
-          testClusterProperty,
-          (String) ((List<?>) getObjectByPath(o, true, "clusterProperties")).get(0));
+      assertEquals(initCount + 1, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
+      assertTrue(
+          ((List<?>) getObjectByPath(o, true, "clusterProperties")).contains(testClusterProperty));
 
       // Fetch Cluster Property
       // Same path as used in the Create step above
@@ -125,7 +130,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
       // List Properties, should be back to 0
       o = Utils.executeGET(client.getHttpClient(), baseUrlV2ClusterProps, Utils.JSONCONSUMER);
       assertNotNull(o);
-      assertEquals(0, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
+      assertEquals(initCount, ((List<?>) getObjectByPath(o, true, "clusterProperties")).size());
     }
   }
 
