@@ -23,7 +23,9 @@ import com.codahale.metrics.SettableGauge;
 import com.codahale.metrics.SharedMetricRegistries;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -83,8 +85,23 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
       String output = (String) res.get("response");
+
+      Set<String> seenTypeInfo = new HashSet<>();
+
       List<String> filteredResponse =
-          output.lines().filter(line -> !line.startsWith("#")).collect(Collectors.toList());
+          output
+              .lines()
+              .filter(
+                  line -> {
+                    if (!line.startsWith("#")) {
+                      return true;
+                    }
+                    assertTrue(
+                        "Prometheus exposition format cannot have duplicate TYPE information",
+                        seenTypeInfo.add(line));
+                    return false;
+                  })
+              .collect(Collectors.toList());
       filteredResponse.forEach(
           (actualMetric) -> {
             String actualValue;
