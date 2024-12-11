@@ -152,7 +152,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17578: Remove ZkController internal core supplier, for slightly faster reconnection after Zookeeper session loss. (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
