@@ -100,6 +100,15 @@ In your JSON client you'll need to iterate each doc (tuple) and check for the EO
 
 Timeouts for Streaming Expressions can be configured with the `socketTimeout` and `connTimeout` startup parameters.
 
+=== Adding Custom Expressions
+
+Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solrj-streaming/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
+list of known mappings for the `/stream` and `/graph` handlers, you just need to declare it as a plugin in `solrconfig.xml` via:
+
+[source,xml]
+<expressible name="custom" class="org.example.CustomStreamingExpression"/>
+
+
 == Elements of the Language
 
 === Stream Sources
