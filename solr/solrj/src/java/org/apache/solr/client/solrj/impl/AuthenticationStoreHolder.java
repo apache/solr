@@ -18,9 +18,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.net.URI;
-import org.eclipse.jetty.client.HttpAuthenticationStore;
-import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.AuthenticationStore;
+import org.eclipse.jetty.client.Authentication;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 
 public class AuthenticationStoreHolder implements AuthenticationStore {
 
