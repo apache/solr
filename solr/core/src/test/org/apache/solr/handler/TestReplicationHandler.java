@@ -304,8 +304,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // check details on the follower a couple of times before & after fetching
     for (int i = 0; i < 3; i++) {
       NamedList<Object> details = getDetails(followerClient);
-      assertNotNull(i + ": " + details);
-      assertNotNull(i + ": " + details.toString(), details.get("follower"));
+      assertNotNull(i + ": " + details, details);
+      assertNotNull(i + ": " + details, details.get("follower"));
 
       if (i > 0) {
         rQuery(i, "*:*", followerClient);
@@ -459,7 +459,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(followerClient, "id", 555, "name", "name = " + 555);
     followerClient.commit(true, true);
 
-    // this doc is added to follower so it should show an item w/ that result
+    // this doc is added to follower, so it should show an item w/ that result
     assertEquals(1, numFound(rQuery(1, "id:555", followerClient)));
 
     // Let's fetch the index rather than rely on the polling.
@@ -528,7 +528,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     followerJetty.stop();
 
-    // setup an sub directory /foo/ in order to force subdir file replication
+    // set up a subdirectory /foo/ in order to force subdir file replication
     File leaderFooDir = new File(leader.getConfDir() + File.separator + "foo");
     File leaderBarFile = new File(leaderFooDir, "bar.txt");
     assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
@@ -551,7 +551,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerQueryRsp = rQuery(1, "*:*", followerClient);
     assertVersions(leaderClient, followerClient);
     SolrDocument d = ((SolrDocumentList) followerQueryRsp.get("response")).get(0);
-    assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
+    assertEquals("newname = 2000", d.getFieldValue("newname"));
 
     assertTrue(followerFooDir.isDirectory());
     assertTrue(followerBarFile.exists());
@@ -596,8 +596,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // get docs from leader and check if number is equal to leader
     assertEquals(nDocs + 1, numFound(rQuery(nDocs + 1, "*:*", leaderClient)));
 
-    // NOTE: this test is wierd, we want to verify it DOESNT replicate...
-    // for now, add a sleep for this.., but the logic is wierd.
+    // NOTE: this test is weird, we want to verify it DOESN'T replicate...
+    // for now, add a sleep for this... but the logic is weird.
     Thread.sleep(3000);
 
     // get docs from follower and check if number is not equal to leader; polling is disabled
@@ -1583,7 +1583,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     index(leaderClient, "id", "1", "name", "foo");
 
-    { // second backup w/uncommited doc
+    { // second backup w/uncommitted doc
       final String backupName = "empty_backup2";
       final GenericSolrRequest req =
           new GenericSolrRequest(
@@ -1695,7 +1695,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             return startTime;
           }
         } catch (SolrException e) {
-          // workarround for SOLR-4668
+          // workaround for SOLR-4668
           if (500 != e.code()) {
             throw e;
           } // else server possibly from the core reload in progress...
@@ -1705,7 +1705,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         Thread.sleep(sleepInterval);
       }
       fail("timed out waiting for collection1 startAt time to exceed: " + min);
-      return min; // compilation neccessity
+      return min; // compilation necessity
     }
   }
 
