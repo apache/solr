@@ -53,6 +53,8 @@ Improvements
 * SOLR-16470: Replication "fetch file" API now has a v2 equivalent, available at `GET /api/cores/coreName/replication/files/fileName`
   (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-17554: Suppress printing out of password to console when using auth CLI command. (Christos Malliaridis via Eric Pugh)
+
 
 Optimizations
 ---------------------
