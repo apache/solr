@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
@@ -99,7 +98,7 @@ public class ZkContainer {
           new SolrZkServer(
               stripChroot(zkRun),
               stripChroot(config.getZkHost()),
-              new File(zkDataHome),
+              Paths.get(zkDataHome),
               zkConfHome,
               config.getSolrHostPort());
       zkServer.parseConfig();
@@ -184,7 +183,7 @@ public class ZkContainer {
   }
 
   private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 

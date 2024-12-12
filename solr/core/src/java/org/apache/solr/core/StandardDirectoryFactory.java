@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -78,7 +77,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   public String normalize(String path) throws IOException {
-    return super.normalize(new File(path).getCanonicalPath());
+    return super.normalize(Path.of(path).toAbsolutePath().toString());
   }
 
   @Override

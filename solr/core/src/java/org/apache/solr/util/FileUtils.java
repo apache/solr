@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -37,14 +36,14 @@ public class FileUtils {
    * If path is absolute, then a File for that path is returned; if it's not absolute, then a File
    * is returned using "path" as a child of "base")
    */
-  public static File resolvePath(File base, String path) {
-    File r = new File(path);
-    return r.isAbsolute() ? r : new File(base, path);
+  public static Path resolvePath(Path base, String path) {
+    Path r = Path.of(path);
+    return r.isAbsolute() ? r : Path.of(base.toString(), path);
   }
 
-  public static void copyFile(File src, File destination) throws IOException {
-    try (FileChannel in = new FileInputStream(src).getChannel();
-        FileChannel out = new FileOutputStream(destination).getChannel()) {
+  public static void copyFile(Path src, Path destination) throws IOException {
+    try (FileChannel in = new FileInputStream(src.toFile()).getChannel();
+        FileChannel out = new FileOutputStream(destination.toFile()).getChannel()) {
       in.transferTo(0, in.size(), out);
     }
   }
@@ -55,8 +54,8 @@ public class FileUtils {
    * @param fullFile the File to be synced to disk
    * @throws IOException if the file could not be synced
    */
-  public static void sync(File fullFile) throws IOException {
-    if (fullFile == null || !fullFile.exists())
+  public static void sync(Path fullFile) throws IOException {
+    if (fullFile == null || !Files.exists(fullFile))
       throw new FileNotFoundException("File does not exist " + fullFile);
 
     boolean success = false;
@@ -64,7 +63,7 @@ public class FileUtils {
     IOException exc = null;
     while (!success && retryCount < 5) {
       retryCount++;
-      try (RandomAccessFile file = new RandomAccessFile(fullFile, "rw")) {
+      try (RandomAccessFile file = new RandomAccessFile(fullFile.toFile(), "rw")) {
         file.getFD().sync();
         success = true;
       } catch (IOException ioe) {
@@ -83,7 +82,7 @@ public class FileUtils {
   }
 
   public static boolean fileExists(String filePathString) {
-    return new File(filePathString).exists();
+    return Files.exists(Path.of(filePathString));
   }
 
   // Files.createDirectories has odd behavior if the path is a symlink and it already exists

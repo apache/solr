@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;

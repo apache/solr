@@ -20,7 +20,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -69,7 +69,8 @@ public abstract class ManagedResourceStorage {
   public static interface StorageIO {
     String getInfo();
 
-    void configure(SolrResourceLoader loader, NamedList<String> initArgs) throws SolrException;
+    void configure(SolrResourceLoader loader, NamedList<String> initArgs)
+        throws SolrException, IOException;
 
     boolean exists(String storedResourceId) throws IOException;
 
@@ -88,7 +89,8 @@ public abstract class ManagedResourceStorage {
    * running in cloud mode as well as initArgs.
    */
   public static StorageIO newStorageIO(
-      String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs) {
+      String collection, SolrResourceLoader resourceLoader, NamedList<String> initArgs)
+      throws IOException {
     StorageIO storageIO;
 
     SolrZkClient zkClient = null;
@@ -165,23 +167,23 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public void configure(SolrResourceLoader loader, NamedList<String> initArgs)
-        throws SolrException {
+        throws SolrException, IOException {
       String storageDirArg = initArgs.get(STORAGE_DIR_INIT_ARG);
 
       if (storageDirArg == null || storageDirArg.trim().length() == 0)
         throw new IllegalArgumentException(
             "Required configuration parameter '" + STORAGE_DIR_INIT_ARG + "' not provided!");
 
-      File dir = new File(storageDirArg);
-      if (!dir.isDirectory()) dir.mkdirs();
+      Path dir = Path.of(storageDirArg);
+      if (Files.isDirectory(dir)) Files.createDirectories(dir);
 
-      storageDir = dir.getAbsolutePath();
+      storageDir = dir.toAbsolutePath().toString();
       log.info("File-based storage initialized to use dir: {}", storageDir);
     }
 
     @Override
     public boolean exists(String storedResourceId) throws IOException {
-      return (new File(storageDir, storedResourceId)).exists();
+      return (Files.exists(Path.of(storageDir, storedResourceId)));
     }
 
     @Override
@@ -196,18 +198,20 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public boolean delete(String storedResourceId) throws IOException {
+      // TODO SOLR-8282 move to PATH
       File storedFile = new File(storageDir, storedResourceId);
-      return deleteIfFile(storedFile);
+      return deleteIfFile(storedFile.toPath());
     }
 
     // TODO: this interface should probably be changed, this simulates the old behavior,
     // only throw security exception, just return false otherwise
-    private boolean deleteIfFile(File f) {
-      if (!f.isFile()) {
+    private boolean deleteIfFile(Path p) {
+      //      File f = p.toFile();
+      if (!Files.isRegularFile(p)) {
         return false;
       }
       try {
-        Files.delete(f.toPath());
+        Files.delete(p);
         return true;
       } catch (IOException cause) {
         return false;

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -83,7 +83,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     indexDir = (String) config.get(INDEX_DIR);
     // If indexDir is relative then create index inside core.getDataDir()
     if (indexDir != null) {
-      if (!new File(indexDir).isAbsolute()) {
+      if (!Path.of(indexDir).isAbsolute()) {
         indexDir = core.getDataDir() + File.separator + indexDir;
       }
     }

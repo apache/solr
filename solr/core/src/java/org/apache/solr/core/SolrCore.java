@@ -22,7 +22,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1354,6 +1354,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           Category.CORE.toString());
     }
 
+    // TODO SOLR-8282 move to PATH
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
@@ -3202,7 +3203,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * stopwords to ZooKeeper if running in SolrCloud mode.
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected RestManager initRestManager() throws SolrException {
+  protected RestManager initRestManager() throws SolrException, IOException {
 
     PluginInfo restManagerPluginInfo = getSolrConfig().getPluginInfo(RestManager.class.getName());
 

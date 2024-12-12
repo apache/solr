@@ -17,7 +17,7 @@
 package org.apache.solr.core;
 
 import java.io.Closeable;
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -339,6 +339,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
 
   public void cleanupOldIndexDirectories(
       final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
+
+    // TODO SOLR-8282 move to PATH
     File dataDir = new File(dataDirPath);
     if (!dataDir.isDirectory()) {
       log.debug(

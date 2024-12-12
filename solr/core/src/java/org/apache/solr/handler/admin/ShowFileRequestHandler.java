@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
@@ -195,13 +195,13 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
   }
 
   // Return the file indicated (or the directory listing) from the local file system.
-  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) {
+  private void showFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     Path admin = getAdminFileFromFileSystem(req, rsp, hiddenFiles);
 
     if (admin == null) { // exception already recorded
       return;
     }
-
+    // TODO SOLR-8282 move to PATH
     File adminFile = admin.toFile();
     // Make sure the file exists, is readable and is not a hidden file
     if (!adminFile.exists()) {
@@ -252,7 +252,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
 
-      ContentStreamBase content = new ContentStreamBase.FileStream(adminFile);
+      ContentStreamBase content = new ContentStreamBase.FileStream(adminFile.toPath());
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
 
       rsp.add(RawResponseWriter.CONTENT, content);

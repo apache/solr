@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.io.File; // ALLOWED
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -401,7 +401,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             "On upgrading to managed schema, did not rename non-managed schema '{}' because it's the same as the managed schema's name.",
             resourceName);
       } else {
-        final File nonManagedSchemaFile = locateConfigFile(resourceName);
+        // TODO SOLR-8282 move to PATH
+        final File nonManagedSchemaFile = locateConfigFile(resourceName).toFile();
         if (null == nonManagedSchemaFile) {
           // Don't throw an exception for failure to rename the non-managed schema
           log.warn(
@@ -441,11 +442,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    *
    * @return the File for the named resource, or null if it can't be found
    */
-  private File locateConfigFile(String resource) {
+  private Path locateConfigFile(String resource) {
     String location = config.getResourceLoader().resourceLocation(resource);
     if (location == null || location.equals(resource) || location.startsWith("classpath:"))
       return null;
-    return new File(location);
+    return Path.of(location);
   }
 
   /**
