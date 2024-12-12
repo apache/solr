@@ -79,7 +79,7 @@ public class ApiTool extends ToolBase {
     URI uri = new URI(url.replace("+", "%20"));
     String solrUrl = getSolrUrlFromUri(uri);
     String path = uri.getPath();
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+    try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
       // For path parameter we need the path without the root so from the second / char
       // (because root can be configured)
       // E.g URL is http://localhost:8983/solr/admin/info/system path is
@@ -98,7 +98,7 @@ public class ApiTool extends ToolBase {
       NamedList<Object> response = solrClient.request(req);
       // pretty-print the response to stdout
       CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
+      new JSONWriter(arr, 2).write(response.asMap(10));
       return arr.toString();
     }
   }

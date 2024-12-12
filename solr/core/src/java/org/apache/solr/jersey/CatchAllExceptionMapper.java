@@ -65,8 +65,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         (SolrQueryResponse) containerRequestContext.getProperty(SOLR_QUERY_RESPONSE);
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) containerRequestContext.getProperty(SOLR_QUERY_REQUEST);
-    if (exception instanceof WebApplicationException) {
-      final WebApplicationException wae = (WebApplicationException) exception;
+    if (exception instanceof WebApplicationException wae) {
       final SolrException solrException =
           new SolrException(getErrorCode(wae.getResponse().getStatus()), wae.getMessage());
       solrQueryResponse.setException(solrException);

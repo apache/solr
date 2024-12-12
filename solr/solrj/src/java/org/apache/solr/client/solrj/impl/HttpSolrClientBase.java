@@ -112,12 +112,16 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
-    return ClientUtils.buildRequestUrl(solrRequest, requestWriter, serverBaseUrl, collection);
+    return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
   }
 
   protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
     // TODO add invariantParams support
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+  }
+
+  protected RequestWriter getRequestWriter() {
+    return requestWriter;
   }
 
   // TODO: Remove this for 10.0, there is a typo in the method name

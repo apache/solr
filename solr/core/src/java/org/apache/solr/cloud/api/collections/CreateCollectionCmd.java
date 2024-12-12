@@ -293,10 +293,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             Assign.buildSolrCoreName(
                 ccc.getSolrCloudManager().getDistribStateManager(),
                 collectionName,
-                ccc.getSolrCloudManager().getClusterState().getCollectionOrNull(collectionName),
                 replicaPosition.shard,
-                replicaPosition.type,
-                true);
+                replicaPosition.type);
         if (log.isDebugEnabled()) {
           log.debug(
               formatString(

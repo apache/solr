@@ -209,9 +209,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertEquals(unmarshalledObj.size(), matchObj.size());
     for (int i = 0; i < unmarshalledObj.size(); i++) {
 
-      if (unmarshalledObj.get(i) instanceof byte[] && matchObj.get(i) instanceof byte[]) {
-        byte[] b1 = (byte[]) unmarshalledObj.get(i);
-        byte[] b2 = (byte[]) matchObj.get(i);
+      if (unmarshalledObj.get(i) instanceof byte[] b1 && matchObj.get(i) instanceof byte[] b2) {
         assertArrayEquals(b1, b2);
       } else if (unmarshalledObj.get(i) instanceof SolrDocument
           && matchObj.get(i) instanceof SolrDocument) {

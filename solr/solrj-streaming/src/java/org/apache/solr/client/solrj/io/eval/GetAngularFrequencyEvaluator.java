@@ -33,7 +33,7 @@ public class GetAngularFrequencyEvaluator extends RecursiveObjectEvaluator
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof VectorFunction)) {
+    if (!(value instanceof VectorFunction vectorFunction)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -41,7 +41,6 @@ public class GetAngularFrequencyEvaluator extends RecursiveObjectEvaluator
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      VectorFunction vectorFunction = (VectorFunction) value;
       return vectorFunction.getFromContext("angularFrequency");
     }
   }

@@ -32,7 +32,7 @@ public class ColumnCountEvaluator extends RecursiveObjectEvaluator implements On
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof Matrix)) {
+    if (!(value instanceof Matrix matrix)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -40,7 +40,6 @@ public class ColumnCountEvaluator extends RecursiveObjectEvaluator implements On
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      Matrix matrix = (Matrix) value;
       return matrix.getColumnCount();
     }
   }

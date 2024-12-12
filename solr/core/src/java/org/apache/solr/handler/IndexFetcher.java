@@ -19,27 +19,23 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ReplicationHandler.ALIAS;
-import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
 import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
 import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
 import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
 import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
 import static org.apache.solr.handler.ReplicationHandler.COMMAND;
-import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
 import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
-import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
-import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
-import static org.apache.solr.handler.ReplicationHandler.FILE;
-import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-import static org.apache.solr.handler.ReplicationHandler.GENERATION;
-import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
-import static org.apache.solr.handler.ReplicationHandler.LEGACY_LEADER_URL;
-import static org.apache.solr.handler.ReplicationHandler.LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
-import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.CHECKSUM;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.COMPRESSION;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.CONF_FILE_SHORT;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
+import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -95,6 +91,7 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.api.model.FileMetaData;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -120,8 +117,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.ReplicationHandler.FileInfo;
-import org.apache.solr.handler.admin.api.CoreReplicationAPI;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -281,17 +277,11 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnLeaderVersionZero =
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            initArgs,
-            SKIP_COMMIT_ON_LEADER_VERSION_ZERO,
-            LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
+    Object skipCommitOnLeaderVersionZero = initArgs.get(SKIP_COMMIT_ON_LEADER_VERSION_ZERO);
     if (skipCommitOnLeaderVersionZero != null && skipCommitOnLeaderVersionZero instanceof Boolean) {
       this.skipCommitOnLeaderVersionZero = (boolean) skipCommitOnLeaderVersionZero;
     }
-    String leaderUrl =
-        ReplicationHandler.getObjectWithBackwardCompatibility(
-            initArgs, LEADER_URL, LEGACY_LEADER_URL);
+    String leaderUrl = (String) initArgs.get(LEADER_URL);
     if (leaderUrl == null && !this.fetchFromLeader)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "'leaderUrl' is required for a follower");
@@ -303,16 +293,11 @@ public class IndexFetcher {
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
-    useInternalCompression = INTERNAL.equals(compress);
-    useExternalCompression = EXTERNAL.equals(compress);
+    useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
+    useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
     connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
+    soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
 
-    // allow a leader override for tests - you specify this in /replication follower section of
-    // solrconfig and some test don't want to define this
-    soTimeout = Integer.getInteger("solr.indexfetcher.sotimeout", -1);
-    if (soTimeout == -1) {
-      soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
-    }
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     solrClient =
@@ -1575,7 +1560,7 @@ public class IndexFetcher {
     return new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(d);
   }
 
-  private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
+  private final Map<String, ReplicationHandler.FileInfo> confFileInfoCache = new HashMap<>();
 
   /**
    * The local conf files are compared with the conf files in the leader. If they are same (by
@@ -1599,10 +1584,10 @@ public class IndexFetcher {
       names.add(name, null);
     }
     // get the details of the local conf files with the same alias/name
-    List<CoreReplicationAPI.FileMetaData> localFilesInfo =
+    List<FileMetaData> localFilesInfo =
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
-    for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
+    for (FileMetaData fileInfo : localFilesInfo) {
       String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
@@ -1723,7 +1708,7 @@ public class IndexFetcher {
    * The class acts as a client for ReplicationHandler.FileStream. It understands the protocol of
    * wt=filestream
    *
-   * @see org.apache.solr.handler.ReplicationHandler.DirectoryFileStream
+   * <p>see org.apache.solr.handler.admin.api.ReplicationAPIBase.DirectoryFileStream
    */
   private class FileFetcher {
     private final FileInterface file;
@@ -1750,7 +1735,7 @@ public class IndexFetcher {
       this.file = file;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
-      buf = new byte[(int) Math.min(this.size, ReplicationHandler.PACKET_SZ)];
+      buf = new byte[(int) Math.min(this.size, ReplicationAPIBase.PACKET_SZ)];
       this.solrParamOutput = solrParamOutput;
       this.saveAs = saveAs;
       indexGen = latestGen;
@@ -2047,7 +2032,7 @@ public class IndexFetcher {
     }
   }
 
-  private class DirectoryFileFetcher extends FileFetcher {
+  protected class DirectoryFileFetcher extends FileFetcher {
     DirectoryFileFetcher(
         Directory tmpIndexDir,
         Map<String, Object> fileDetails,
@@ -2107,7 +2092,7 @@ public class IndexFetcher {
     }
   }
 
-  private class LocalFsFileFetcher extends FileFetcher {
+  protected class LocalFsFileFetcher extends FileFetcher {
     LocalFsFileFetcher(
         File dir,
         Map<String, Object> fileDetails,

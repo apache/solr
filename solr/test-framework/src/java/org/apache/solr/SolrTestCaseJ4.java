@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -292,7 +291,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
 
-    System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -340,7 +338,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty(URL_SCHEME);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
-      System.clearProperty(ZK_WHITELIST_PROPERTY);
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
 
@@ -1765,16 +1762,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof Doc)) return false;
-      Doc other = (Doc) o;
+      if (!(o instanceof Doc other)) return false;
       return this == other || Objects.equals(id, other.id);
     }
 
     @Override
     @SuppressWarnings({"unchecked"})
     public int compareTo(Object o) {
-      if (!(o instanceof Doc)) return this.getClass().hashCode() - o.getClass().hashCode();
-      Doc other = (Doc) o;
+      if (!(o instanceof Doc other)) return this.getClass().hashCode() - o.getClass().hashCode();
       return this.id.compareTo(other.id);
     }
 
@@ -2350,16 +2345,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public boolean compareSolrDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrDocument) || !(actual instanceof SolrDocument)) {
+    if (!(expected instanceof SolrDocument solrDocument1)
+        || !(actual instanceof SolrDocument solrDocument2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrDocument solrDocument1 = (SolrDocument) expected;
-    SolrDocument solrDocument2 = (SolrDocument) actual;
 
     if (solrDocument1.getFieldNames().size() != solrDocument2.getFieldNames().size()) {
       return false;
@@ -2401,16 +2394,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public boolean compareSolrDocumentList(Object expected, Object actual) {
-    if (!(expected instanceof SolrDocumentList) || !(actual instanceof SolrDocumentList)) {
+    if (!(expected instanceof SolrDocumentList list1)
+        || !(actual instanceof SolrDocumentList list2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrDocumentList list1 = (SolrDocumentList) expected;
-    SolrDocumentList list2 = (SolrDocumentList) actual;
 
     if (list1.getMaxScore() == null) {
       if (list2.getMaxScore() != null) {
@@ -2435,16 +2426,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public boolean compareSolrInputDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
+    if (!(expected instanceof SolrInputDocument sdoc1)
+        || !(actual instanceof SolrInputDocument sdoc2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrInputDocument sdoc1 = (SolrInputDocument) expected;
-    SolrInputDocument sdoc2 = (SolrInputDocument) actual;
 
     if (sdoc1.getFieldNames().size() != sdoc2.getFieldNames().size()) {
       return false;
@@ -2510,16 +2499,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
-    if (!(expected instanceof SolrInputField) || !(actual instanceof SolrInputField)) {
+    if (!(expected instanceof SolrInputField sif1) || !(actual instanceof SolrInputField sif2)) {
       return false;
     }
 
     if (expected == actual) {
       return true;
     }
-
-    SolrInputField sif1 = (SolrInputField) expected;
-    SolrInputField sif2 = (SolrInputField) actual;
 
     if (!sif1.getName().equals(sif2.getName())) {
       return false;
@@ -2944,8 +2930,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   private static boolean isChildDoc(Object o) {
-    if (o instanceof Collection) {
-      Collection<?> col = (Collection<?>) o;
+    if (o instanceof Collection<?> col) {
       if (col.size() == 0) {
         return false;
       }

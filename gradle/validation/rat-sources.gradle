@@ -24,7 +24,7 @@ configure(rootProject) {
     }
 
     dependencies {
-        ratDeps "org.apache.rat:apache-rat:${scriptDepVersions['apache-rat']}"
+        ratDeps libs.apache.rat.rat
     }
 }
 
@@ -104,10 +104,6 @@ allprojects {
 
                 case ":solr:modules:clustering":
                     exclude "src/test-files/META-INF/services/*"
-                    break
-
-                case ":solr:modules:hadoop-auth":
-                    exclude "src/test-files/**/*.conf"
                     break
 
                 case ":solr:modules:hdfs":

@@ -253,8 +253,7 @@ Note that specifying `sharedLib` will not remove `$SOLR_HOME/lib` from Solr's cl
 +
 Takes a list of bundled xref:solr-modules.adoc[] to enable
 on startup. This way of adding modules will add them to the shared class loader, making them
-available to every collection in Solr, unlike `<lib>` tag in `solrconfig.xml` which is only
-for that one collection. Example value: `extracting,ltr`. See the
+available to every collection in Solr.  Example value: `extracting,ltr`. See the
 xref:solr-modules.adoc[Solr Modules] chapter for more details.
 
 `allowPaths`::
@@ -506,7 +505,7 @@ Optional parameter to provide a compression implementation for state.json over t
 |===
 +
 The class to use for logging.
-The corresponding JAR file must be available to Solr, perhaps through a `<lib>` directive in `solrconfig.xml`.
+The corresponding JAR file must be available to Solr, perhaps through a `<sharedLib>` directive.
 
 `enabled`::
 +

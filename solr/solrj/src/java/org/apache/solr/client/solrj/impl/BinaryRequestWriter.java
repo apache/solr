@@ -37,8 +37,7 @@ public class BinaryRequestWriter extends RequestWriter {
 
   @Override
   public ContentWriter getContentWriter(SolrRequest<?> req) {
-    if (req instanceof UpdateRequest) {
-      UpdateRequest updateRequest = (UpdateRequest) req;
+    if (req instanceof UpdateRequest updateRequest) {
       if (isEmpty(updateRequest)) return null;
       return new ContentWriter() {
         @Override
@@ -58,8 +57,7 @@ public class BinaryRequestWriter extends RequestWriter {
 
   @Override
   public Collection<ContentStream> getContentStreams(SolrRequest<?> req) throws IOException {
-    if (req instanceof UpdateRequest) {
-      UpdateRequest updateRequest = (UpdateRequest) req;
+    if (req instanceof UpdateRequest updateRequest) {
       if (isEmpty(updateRequest)) return null;
       throw new RuntimeException("This Should not happen");
     } else {
@@ -74,8 +72,7 @@ public class BinaryRequestWriter extends RequestWriter {
 
   @Override
   public void write(SolrRequest<?> request, OutputStream os) throws IOException {
-    if (request instanceof UpdateRequest) {
-      UpdateRequest updateRequest = (UpdateRequest) request;
+    if (request instanceof UpdateRequest updateRequest) {
       new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
     }
   }

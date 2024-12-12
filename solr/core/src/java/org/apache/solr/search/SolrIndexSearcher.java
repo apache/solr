@@ -1230,8 +1230,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int end = 0; // size of "sets" and "neg"; parallel arrays
 
     for (Query q : queries) {
-      if (q instanceof ExtendedQuery) {
-        ExtendedQuery eq = (ExtendedQuery) q;
+      if (q instanceof ExtendedQuery eq) {
         if (!eq.getCache()) {
           if (eq.getCost() >= 100 && eq instanceof PostFilter) {
             if (postFilters == null) postFilters = new ArrayList<>(sets.length - end);
@@ -1608,8 +1607,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     int flags = cmd.getFlags();
     Query q = cmd.getQuery();
-    if (q instanceof ExtendedQuery) {
-      ExtendedQuery eq = (ExtendedQuery) q;
+    if (q instanceof ExtendedQuery eq) {
       if (!eq.getCache()) {
         flags |= (NO_CHECK_QCACHE | NO_SET_QCACHE | NO_CHECK_FILTERCACHE);
       }
@@ -1858,8 +1856,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throws IOException {
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
-    if (q instanceof RankQuery) {
-      RankQuery rq = (RankQuery) q;
+    if (q instanceof RankQuery rq) {
       return rq.getTopDocsCollector(len, cmd, this);
     }
 

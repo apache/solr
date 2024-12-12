@@ -143,7 +143,8 @@ public class InactiveShardRemover
   void deleteInactiveSlices() {
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
     Collection<Slice> inactiveSlices =
-        clusterState.getCollectionsMap().values().stream()
+        clusterState
+            .collectionStream()
             .flatMap(v -> collectInactiveSlices(v).stream())
             .collect(Collectors.toSet());
 

@@ -318,8 +318,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof QueueEvent)) return false;
-      QueueEvent other = (QueueEvent) obj;
+      if (!(obj instanceof QueueEvent other)) return false;
       return Objects.equals(id, other.id);
     }
 

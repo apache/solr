@@ -582,8 +582,7 @@ public class S3StorageClient {
    */
   static S3Exception handleAmazonException(SdkException sdke) {
 
-    if (sdke instanceof AwsServiceException) {
-      AwsServiceException ase = (AwsServiceException) sdke;
+    if (sdke instanceof AwsServiceException ase) {
       String errMessage =
           String.format(
               Locale.ROOT,

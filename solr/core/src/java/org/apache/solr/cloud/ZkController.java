@@ -50,7 +50,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.solrj.SolrClient;
@@ -180,8 +179,7 @@ public class ZkController implements Closeable {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof ContextKey)) return false;
-      ContextKey other = (ContextKey) obj;
+      if (!(obj instanceof ContextKey other)) return false;
       return Objects.equals(collection, other.collection)
           && Objects.equals(coreNodeName, other.coreNodeName);
     }
@@ -299,16 +297,12 @@ public class ZkController implements Closeable {
    * @param zkClientConnectTimeout timeout in ms
    * @param cloudConfig configuration for this controller. TODO: possibly redundant with
    *     CoreContainer
-   * @param descriptorsSupplier a supplier of the current core descriptors. used to know which cores
-   *     to re-register on reconnect
    */
-  @SuppressWarnings({"unchecked"})
   public ZkController(
       final CoreContainer cc,
       String zkServerAddress,
       int zkClientConnectTimeout,
-      CloudConfig cloudConfig,
-      final Supplier<List<CoreDescriptor>> descriptorsSupplier)
+      CloudConfig cloudConfig)
       throws InterruptedException, TimeoutException, IOException {
 
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
@@ -367,8 +361,8 @@ public class ZkController implements Closeable {
             .withUrl(zkServerAddress)
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
-            .withReconnectListener(() -> onReconnect(descriptorsSupplier))
-            .withBeforeConnect(() -> beforeReconnect(descriptorsSupplier))
+            .withReconnectListener(this::onReconnect)
+            .withDisconnectListener((sessionExpired) -> onDisconnect(sessionExpired))
             .withAclProvider(zkACLProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
@@ -404,21 +398,33 @@ public class ZkController implements Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  private void beforeReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
+  private void onDisconnect(boolean sessionExpired) {
     try {
       overseer.close();
     } catch (Exception e) {
       log.error("Error trying to stop any Overseer threads", e);
     }
-    closeOutstandingElections(descriptorsSupplier);
-    markAllAsNotLeader(descriptorsSupplier);
+
+    // Close outstanding leader elections
+    List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
+    for (CoreDescriptor descriptor : descriptors) {
+      closeExistingElectionContext(descriptor, sessionExpired);
+    }
+
+    // Mark all cores as not leader
+    for (CoreDescriptor descriptor : descriptors) {
+      descriptor.getCloudDescriptor().setLeader(false);
+      descriptor.getCloudDescriptor().setHasRegistered(false);
+    }
   }
 
-  private void onReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
+  private void onReconnect() {
     // on reconnect, reload cloud info
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
     try {
+      // Remove the live node in case it is still there
+      removeEphemeralLiveNode();
       // recreate our watchers first so that they exist even on any problems below
       zkStateReader.createClusterStateWatchersAndUpdate();
 
@@ -453,7 +459,7 @@ public class ZkController implements Closeable {
       cc.cancelCoreRecoveries();
 
       try {
-        registerAllCoresAsDown(descriptorsSupplier, false);
+        registerAllCoresAsDown(false);
       } catch (SessionExpiredException e) {
         // zk has to reconnect and this will all be tried again
         throw e;
@@ -466,26 +472,24 @@ public class ZkController implements Closeable {
       // we have to register as live first to pick up docs in the buffer
       createEphemeralLiveNode();
 
-      List<CoreDescriptor> descriptors = descriptorsSupplier.get();
+      List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
       // re register all descriptors
       ExecutorService executorService = (cc != null) ? cc.getCoreZkRegisterExecutorService() : null;
-      if (descriptors != null) {
-        for (CoreDescriptor descriptor : descriptors) {
-          // TODO: we need to think carefully about what happens when it was a leader
-          // that was expired - as well as what to do about leaders/overseers with
-          // connection loss
-          try {
-            // unload solr cores that have been 'failed over'
-            throwErrorIfReplicaReplaced(descriptor);
+      for (CoreDescriptor descriptor : descriptors) {
+        // TODO: we need to think carefully about what happens when it was a leader
+        // that was expired - as well as what to do about leaders/overseers with
+        // connection loss
+        try {
+          // unload solr cores that have been 'failed over'
+          throwErrorIfReplicaReplaced(descriptor);
 
-            if (executorService != null) {
-              executorService.submit(new RegisterCoreAsync(descriptor, true, true));
-            } else {
-              register(descriptor.getName(), descriptor, true, true, false);
-            }
-          } catch (Exception e) {
-            log.error("Error registering SolrCore", e);
+          if (executorService != null) {
+            executorService.submit(new RegisterCoreAsync(descriptor, true, true));
+          } else {
+            register(descriptor.getName(), descriptor, true, true, false);
           }
+        } catch (Exception e) {
+          log.error("Error registering SolrCore", e);
         }
       }
 
@@ -585,75 +589,72 @@ public class ZkController implements Closeable {
     return leaderConflictResolveWait;
   }
 
-  private void registerAllCoresAsDown(
-      final Supplier<List<CoreDescriptor>> registerOnReconnect, boolean updateLastPublished)
-      throws SessionExpiredException {
-    List<CoreDescriptor> descriptors = registerOnReconnect.get();
+  private void registerAllCoresAsDown(boolean updateLastPublished) throws SessionExpiredException {
+    List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
     if (isClosed) return;
-    if (descriptors != null) {
-      // before registering as live, make sure everyone is in a
-      // down state
-      publishNodeAsDown(getNodeName());
-      for (CoreDescriptor descriptor : descriptors) {
-        // if it looks like we are going to be the leader, we don't
-        // want to wait for the following stuff
-        CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
-        String collection = cloudDesc.getCollectionName();
-        String slice = cloudDesc.getShardId();
-        try {
 
-          int children =
-              zkStateReader
-                  .getZkClient()
-                  .getChildren(
-                      ZkStateReader.COLLECTIONS_ZKNODE
-                          + "/"
-                          + collection
-                          + "/leader_elect/"
-                          + slice
-                          + "/election",
-                      null,
-                      true)
-                  .size();
-          if (children == 0) {
-            log.debug(
-                "looks like we are going to be the leader for collection {} shard {}",
-                collection,
-                slice);
-            continue;
-          }
+    // before registering as live, make sure everyone is in a
+    // down state
+    publishNodeAsDown(getNodeName());
+    for (CoreDescriptor descriptor : descriptors) {
+      // if it looks like we are going to be the leader, we don't
+      // want to wait for the following stuff
+      CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
+      String collection = cloudDesc.getCollectionName();
+      String slice = cloudDesc.getShardId();
+      try {
 
-        } catch (NoNodeException e) {
+        int children =
+            zkStateReader
+                .getZkClient()
+                .getChildren(
+                    ZkStateReader.COLLECTIONS_ZKNODE
+                        + "/"
+                        + collection
+                        + "/leader_elect/"
+                        + slice
+                        + "/election",
+                    null,
+                    true)
+                .size();
+        if (children == 0) {
           log.debug(
               "looks like we are going to be the leader for collection {} shard {}",
               collection,
               slice);
           continue;
-        } catch (InterruptedException e2) {
-          Thread.currentThread().interrupt();
-        } catch (SessionExpiredException e) {
-          // zk has to reconnect
-          throw e;
-        } catch (KeeperException e) {
-          log.warn("", e);
-          Thread.currentThread().interrupt();
         }
 
-        final String coreZkNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-        try {
-          log.debug(
-              "calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}",
-              coreZkNodeName,
-              collection,
-              slice);
-          waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
-        } catch (Exception e) {
-          log.warn(
-              "There was a problem while making a best effort to ensure the leader has seen us as down, this is not unexpected as Zookeeper has just reconnected after a session expiration",
-              e);
-          if (isClosed) {
-            return;
-          }
+      } catch (NoNodeException e) {
+        log.debug(
+            "looks like we are going to be the leader for collection {} shard {}",
+            collection,
+            slice);
+        continue;
+      } catch (InterruptedException e2) {
+        Thread.currentThread().interrupt();
+      } catch (SessionExpiredException e) {
+        // zk has to reconnect
+        throw e;
+      } catch (KeeperException e) {
+        log.warn("", e);
+        Thread.currentThread().interrupt();
+      }
+
+      final String coreZkNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
+      try {
+        log.debug(
+            "calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}",
+            coreZkNodeName,
+            collection,
+            slice);
+        waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
+      } catch (Exception e) {
+        log.warn(
+            "There was a problem while making a best effort to ensure the leader has seen us as down, this is not unexpected as Zookeeper has just reconnected after a session expiration",
+            e);
+        if (isClosed) {
+          return;
         }
       }
     }
@@ -663,16 +664,7 @@ public class ZkController implements Closeable {
     return sysPropsCacher;
   }
 
-  private void closeOutstandingElections(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
-    List<CoreDescriptor> descriptors = registerOnReconnect.get();
-    if (descriptors != null) {
-      for (CoreDescriptor descriptor : descriptors) {
-        closeExistingElectionContext(descriptor);
-      }
-    }
-  }
-
-  private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
+  private ContextKey closeExistingElectionContext(CoreDescriptor cd, boolean sessionExpired) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
@@ -682,20 +674,14 @@ public class ZkController implements Closeable {
 
     if (prevContext != null) {
       prevContext.close();
-      electionContexts.remove(contextKey);
+      // Only remove the election contexts if the session expired, otherwise the ephemeral nodes
+      // will still exist
+      if (sessionExpired) {
+        electionContexts.remove(contextKey);
+      }
     }
 
     return contextKey;
-  }
-
-  private void markAllAsNotLeader(final Supplier<List<CoreDescriptor>> registerOnReconnect) {
-    List<CoreDescriptor> descriptors = registerOnReconnect.get();
-    if (descriptors != null) {
-      for (CoreDescriptor descriptor : descriptors) {
-        descriptor.getCloudDescriptor().setLeader(false);
-        descriptor.getCloudDescriptor().setHasRegistered(false);
-      }
-    }
   }
 
   public void preClose() {
@@ -1209,6 +1195,19 @@ public class ZkController implements Closeable {
     } catch (NoNodeException e) {
 
     }
+    cc.nodeRoles
+        .getRoles()
+        .forEach(
+            (role, mode) -> {
+              try {
+                zkClient.delete(
+                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName, -1, true);
+              } catch (KeeperException e) {
+
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
   }
 
   public String getNodeName() {
@@ -1740,6 +1739,14 @@ public class ZkController implements Closeable {
         cd.getCloudDescriptor().setLastPublished(state);
       }
       DocCollection coll = zkStateReader.getCollection(collection);
+      // extra handling for PRS, we need to write the PRS entries from this node directly,
+      // as overseer does not and should not handle those entries
+      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
+        PerReplicaStates perReplicaStates =
+            PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
+            .persist(coll.getZNode(), zkClient);
+      }
       if (forcePublish || updateStateDotJson(coll, coreNodeName)) {
         if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
           distributedClusterStateUpdater.doSingleStateUpdate(
@@ -1750,14 +1757,6 @@ public class ZkController implements Closeable {
         } else {
           overseerJobQueue.offer(m);
         }
-      }
-      // extra handling for PRS, we need to write the PRS entries from this node directly,
-      // as overseer does not and should not handle those entries
-      if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
-        PerReplicaStates perReplicaStates =
-            PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
-            .persist(coll.getZNode(), zkClient);
       }
     } finally {
       MDCLoggingContext.clear();
@@ -1944,7 +1943,7 @@ public class ZkController implements Closeable {
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
     try {
-      checkStateInZk(cd);
+      checkStateInZk(cd, null);
 
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
@@ -2001,7 +2000,7 @@ public class ZkController implements Closeable {
     return !replica.getNodeName().equals(getNodeName());
   }
 
-  private void checkStateInZk(CoreDescriptor cd)
+  private void checkStateInZk(CoreDescriptor cd, Replica.State state)
       throws InterruptedException, NotInClusterStateException {
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
     String nodeName = cloudDesc.getCoreNodeName();
@@ -2035,6 +2034,16 @@ public class ZkController implements Closeable {
                       + " does not exist in shard "
                       + cloudDesc.getShardId()
                       + ", ignore the exception if the replica was deleted");
+              return false;
+            }
+            if (state != null && !state.equals(replica.getState())) {
+              errorMessage.set(
+                  "coreNodeName "
+                      + coreNodeName
+                      + " does not have the expected state "
+                      + state
+                      + ", found state was: "
+                      + replica.getState());
               return false;
             }
             return true;
@@ -2120,10 +2129,15 @@ public class ZkController implements Closeable {
     if (!isLeader && !SKIP_AUTO_RECOVERY) {
       if (!getShardTerms(collection, shard).canBecomeLeader(myCoreNodeName)) {
         log.debug(
-            "Term of replica {} is already less than leader, so not waiting for leader to see down state.",
+            "Term of replica {} is already less than leader, so not waiting for leader to see down state."
+                + " Instead, make sure we can see the down state in Zookeeper.",
             myCoreNodeName);
+        try {
+          checkStateInZk(descriptor, Replica.State.DOWN);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
       } else {
-
         if (log.isInfoEnabled()) {
           log.info(
               "replica={} is making a best effort attempt to wait for leader={} to see it's DOWN state.",
@@ -2796,8 +2810,7 @@ public class ZkController implements Closeable {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof UnloadCoreOnDeletedWatcher)) return false;
-      UnloadCoreOnDeletedWatcher that = (UnloadCoreOnDeletedWatcher) o;
+      if (!(o instanceof UnloadCoreOnDeletedWatcher that)) return false;
       return Objects.equals(coreNodeName, that.coreNodeName)
           && Objects.equals(shard, that.shard)
           && Objects.equals(coreName, that.coreName);

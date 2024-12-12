@@ -391,7 +391,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
     int timeoutMs =
         objToInt(
-            info.initArgs.get("docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
+            info.initArgs.getOrDefault(
+                "docLockTimeoutMs", info.initArgs.get("versionBucketLockTimeoutMs")),
             EnvUtils.getPropertyAsLong("solr.update.docLockTimeoutMs", 0L).intValue());
     updateLocks = new UpdateLocks(timeoutMs);
 
@@ -1215,8 +1216,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 lookupVersion);
           }
 
-          if (obj != null && obj instanceof List) {
-            List<?> tmpEntry = (List<?>) obj;
+          if (obj != null && obj instanceof List<?> tmpEntry) {
             if (tmpEntry.size() >= 2
                 &&
                 // why not Objects.equals(lookupVersion, tmpEntry.get())?

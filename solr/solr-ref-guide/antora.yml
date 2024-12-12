@@ -47,7 +47,6 @@ asciidoc:
 
     dep-version-commons-codec: '1.15'
     dep-version-dropwizard: '4.2.12'
-    dep-version-hadoop: '3.3.4'
     dep-version-log4j: '2.19.0'
     dep-version-opennlp: '1.9.4'
     dep-version-tika: '1.28.4'

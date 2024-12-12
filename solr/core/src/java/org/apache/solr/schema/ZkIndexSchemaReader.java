@@ -257,8 +257,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   public boolean equals(Object other) {
     if (other == null) return false;
     if (other == this) return true;
-    if (!(other instanceof ZkIndexSchemaReader)) return false;
-    ZkIndexSchemaReader that = (ZkIndexSchemaReader) other;
+    if (!(other instanceof ZkIndexSchemaReader that)) return false;
     return this.managedSchemaPath.equals(that.managedSchemaPath)
         && this.uniqueCoreId.equals(that.uniqueCoreId);
   }
