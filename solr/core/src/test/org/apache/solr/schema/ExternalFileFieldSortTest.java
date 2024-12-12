@@ -26,7 +26,7 @@ import org.junit.Test;
 public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
   static void updateExternalFile() throws IOException {
-    final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
+    final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent().toString();
     String filename = "external_eff";
     Files.copy(Path.of(testHome, filename), Path.of(h.getCore().getDataDir(), filename));
   }

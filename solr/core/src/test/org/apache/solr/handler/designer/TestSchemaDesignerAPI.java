@@ -553,8 +553,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
-    stream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json").toPath());
+    stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -575,9 +574,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
     // switch a single-valued field to a multi-valued field, which triggers a full rebuild of the
     // "temp" collection
-    stream =
-        new ContentStreamBase.FileStream(
-            getFile("schema-designer/update-author-field.json").toPath());
+    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-author-field.json"));
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -595,8 +592,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
-    stream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json").toPath());
+    stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -622,7 +618,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-type.json").toPath());
+    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-type.json"));
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -718,7 +714,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
     ContentStreamBase.FileStream stream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json").toPath());
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -864,7 +860,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     Integer schemaVersion = rsp.getValues().toSolrParams().getInt(SCHEMA_VERSION_PARAM);
     reqParams.set(SCHEMA_VERSION_PARAM, schemaVersion);
     ContentStreamBase.FileStream fileStream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json").toPath());
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
     fileStream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
     rsp = new SolrQueryResponse();
@@ -875,8 +871,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // Add a new field type
     schemaVersion = rsp.getValues().toSolrParams().getInt(SCHEMA_VERSION_PARAM);
     reqParams.set(SCHEMA_VERSION_PARAM, schemaVersion);
-    fileStream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json").toPath());
+    fileStream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
     fileStream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
     rsp = new SolrQueryResponse();

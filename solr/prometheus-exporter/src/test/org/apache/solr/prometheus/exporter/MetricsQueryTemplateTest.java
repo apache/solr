@@ -83,7 +83,7 @@ public class MetricsQueryTemplateTest extends SolrTestCaseJ4 {
     Document config =
         DocumentBuilderFactory.newInstance()
             .newDocumentBuilder()
-            .parse(SolrTestCaseJ4.getFile("conf/test-config-with-templates.xml"));
+            .parse(SolrTestCaseJ4.getFile("conf/test-config-with-templates.xml").toFile());
     NodeList jqTemplates =
         (NodeList)
             (xpathFactory.newXPath())
@@ -95,7 +95,8 @@ public class MetricsQueryTemplateTest extends SolrTestCaseJ4 {
     assertNotNull(coreQueryTemplate);
 
     ObjectMapper objectMapper = new ObjectMapper();
-    JsonNode parsedMetrics = objectMapper.readTree(SolrTestCaseJ4.getFile("query-metrics.json"));
+    JsonNode parsedMetrics =
+        objectMapper.readTree(SolrTestCaseJ4.getFile("query-metrics.json").toFile());
     final String[] queryMetrics =
         new String[] {
           "$jq:core-query(1minRate, select(.key | endswith(\".distrib.requestTimes\")), 1minRate)",

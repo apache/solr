@@ -52,7 +52,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
           false);
     }
 
-    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
+    initCore(
+        "solrconfig.xml", "schema.xml", getFile("extraction/solr").toAbsolutePath().toString());
   }
 
   @Override
@@ -663,7 +664,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     ExtractingDocumentLoader loader = (ExtractingDocumentLoader) handler.newLoader(req, p);
     loader.load(
-        req, rsp, new ContentStreamBase.FileStream(getFile("extraction/version_control.txt").toPath()), p);
+        req, rsp, new ContentStreamBase.FileStream(getFile("extraction/version_control.txt")), p);
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(200, add.commitWithin);
@@ -1134,7 +1135,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<>();
-      cs.add(new ContentStreamBase.FileStream(getFile(filename).toPath()));
+      cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse(handler, req);
     } finally {

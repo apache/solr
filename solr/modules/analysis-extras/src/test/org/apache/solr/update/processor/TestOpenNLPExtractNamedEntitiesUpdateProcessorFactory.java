@@ -29,7 +29,7 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    FileUtils.copyDirectory(getFile("analysis-extras/solr").toFile(), testHome);
     initCore(
         "solrconfig-opennlp-extract.xml", "schema-opennlp-extract.xml", testHome.getAbsolutePath());
   }

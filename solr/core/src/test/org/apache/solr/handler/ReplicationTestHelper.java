@@ -97,9 +97,9 @@ public final class ReplicationTestHelper {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time
    * "TEST_PORT" is found.
    */
-  private static void copyFile(File src, File dst, Integer port, boolean internalCompression)
+  private static void copyFile(Path src, File dst, Integer port, boolean internalCompression)
       throws IOException {
-    try (BufferedReader in = Files.newBufferedReader(src.toPath(), StandardCharsets.UTF_8);
+    try (BufferedReader in = Files.newBufferedReader(src, StandardCharsets.UTF_8);
         Writer out = Files.newBufferedWriter(dst.toPath(), StandardCharsets.UTF_8)) {
       for (String line = in.readLine(); null != line; line = in.readLine()) {
         if (null != port) {

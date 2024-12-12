@@ -26,7 +26,7 @@ public class TestICUCollationFieldOptions extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    FileUtils.copyDirectory(getFile("analysis-extras/solr").toFile(), testHome);
     initCore(
         "solrconfig-icucollate.xml", "schema-icucollateoptions.xml", testHome.getAbsolutePath());
     // add some docs

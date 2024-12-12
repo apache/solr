@@ -287,7 +287,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
-    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);
@@ -1518,7 +1518,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
     // Read single file from sample configs. This should fail the unzipping
     return uploadGivenConfigSet(
-        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml"),
+        SolrTestCaseJ4.getFile("solr/configsets/upload/regular/solrconfig.xml").toFile(),
         configSetName,
         suffix,
         username,
@@ -1587,7 +1587,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       boolean v2)
       throws IOException {
     // Read single file from sample configs
-    final File file = SolrTestCaseJ4.getFile(localFilePath);
+    final File file = SolrTestCaseJ4.getFile(localFilePath).toFile();
 
     if (v2) {
       // TODO: switch to use V2Request
@@ -1640,7 +1640,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private File createTempZipFile(String directoryPath) {
     try {
       final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(directoryPath);
+      final File directory = SolrTestCaseJ4.getFile(directoryPath).toFile();
       if (log.isInfoEnabled()) {
         log.info("Directory: {}", directory.getAbsolutePath());
       }
@@ -1661,7 +1661,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private File createTempZipFileWithForbiddenTypes(String file) {
     try {
       final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(file);
+      final File directory = SolrTestCaseJ4.getFile(file).toFile();
       if (log.isInfoEnabled()) {
         log.info("Directory: {}", directory.getAbsolutePath());
       }
@@ -1679,7 +1679,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   private File createTempZipFileWithForbiddenContent(String resourcePath) {
     try {
       final File zipFile = createTempFile("configset", "zip").toFile();
-      final File directory = SolrTestCaseJ4.getFile(resourcePath);
+      final File directory = SolrTestCaseJ4.getFile(resourcePath).toFile();
       if (log.isInfoEnabled()) {
         log.info("Directory: {}", directory.getAbsolutePath());
       }
@@ -1850,7 +1850,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private byte[] readFile(String fname) throws IOException {
     byte[] buf = null;
-    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
+    try (FileInputStream fis = new FileInputStream(getFile(fname).toFile())) {
       buf = new byte[fis.available()];
       fis.read(buf);
     }
@@ -1861,7 +1861,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testDeleteErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
     tmpConfigDir.toFile().deleteOnExit();
     // Ensure ConfigSet is immutable
