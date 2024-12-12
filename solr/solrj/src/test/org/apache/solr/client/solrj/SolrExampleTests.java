@@ -960,7 +960,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           };
       up.addContentStream(contentStreamMock);
     } else {
-      up.addFile(file, "application/csv");
+      up.addFile(file.toPath(), "application/csv");
     }
 
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -1033,8 +1033,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    up.addFile(getFile("solrj/docs1.xml"), "application/xml"); // 2
-    up.addFile(getFile("solrj/docs2.xml"), "application/xml"); // 3
+    up.addFile(getFile("solrj/docs1.xml").toPath(), "application/xml"); // 2
+    up.addFile(getFile("solrj/docs2.xml").toPath(), "application/xml"); // 3
     up.setParam("a", "\u1234");
     up.setParam(CommonParams.HEADER_ECHO_PARAMS, CommonParams.EchoParamStyle.ALL.toString());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);

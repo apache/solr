@@ -62,7 +62,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
-    up.addFile(getFile("solrj/techproducts.xml"), "application/xml");
+    up.addFile(getFile("solrj/techproducts.xml").toPath(), "application/xml");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     UpdateResponse updateResponse = up.process(client);
     assertEquals(0, updateResponse.getStatus());

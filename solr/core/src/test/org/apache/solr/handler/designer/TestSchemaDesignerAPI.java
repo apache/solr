@@ -188,7 +188,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
       when(req.getParams()).thenReturn(reqParams);
 
       // POST some sample JSON docs
-      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next);
+      ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(next.toPath());
       stream.setContentType(TestSampleDocumentsLoader.guessContentTypeFromFilename(next.getName()));
       when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -300,7 +300,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
 
     // POST some sample XML docs
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml);
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(filmsXml.toPath());
     stream.setContentType("application/xml");
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -354,7 +354,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     // POST some sample JSON docs
     File booksJson = new File(ExternalPaths.SOURCE_HOME, "example/exampledocs/books.json");
-    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson);
+    ContentStreamBase.FileStream stream = new ContentStreamBase.FileStream(booksJson.toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -553,7 +553,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
+    stream =
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json").toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -574,7 +575,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     when(req.getParams()).thenReturn(reqParams);
     // switch a single-valued field to a multi-valued field, which triggers a full rebuild of the
     // "temp" collection
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-author-field.json"));
+    stream =
+        new ContentStreamBase.FileStream(
+            getFile("schema-designer/update-author-field.json").toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
 
@@ -592,7 +595,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
+    stream =
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json").toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -618,7 +622,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
-    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-type.json"));
+    stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-type.json").toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -714,7 +718,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     req = mock(SolrQueryRequest.class);
     when(req.getParams()).thenReturn(reqParams);
     ContentStreamBase.FileStream stream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json").toPath());
     stream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(stream));
     rsp = new SolrQueryResponse();
@@ -860,7 +864,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     Integer schemaVersion = rsp.getValues().toSolrParams().getInt(SCHEMA_VERSION_PARAM);
     reqParams.set(SCHEMA_VERSION_PARAM, schemaVersion);
     ContentStreamBase.FileStream fileStream =
-        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json"));
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-field.json").toPath());
     fileStream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
     rsp = new SolrQueryResponse();
@@ -871,7 +875,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // Add a new field type
     schemaVersion = rsp.getValues().toSolrParams().getInt(SCHEMA_VERSION_PARAM);
     reqParams.set(SCHEMA_VERSION_PARAM, schemaVersion);
-    fileStream = new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json"));
+    fileStream =
+        new ContentStreamBase.FileStream(getFile("schema-designer/add-new-type.json").toPath());
     fileStream.setContentType(JSON_MIME);
     when(req.getContentStreams()).thenReturn(Collections.singletonList(fileStream));
     rsp = new SolrQueryResponse();

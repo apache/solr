@@ -40,7 +40,7 @@ public class Helpers {
         Objects.requireNonNull(exampleDocsDir.listFiles((dir, name) -> name.endsWith(".xml")));
     for (File xml : xmlFiles) {
       ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
-      req.addFile(xml, "application/xml");
+      req.addFile(xml.toPath(), "application/xml");
       client.request(req, PrometheusExporterTestBase.COLLECTION);
     }
     client.commit(PrometheusExporterTestBase.COLLECTION);

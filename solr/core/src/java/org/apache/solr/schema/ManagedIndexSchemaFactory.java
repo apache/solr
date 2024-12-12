@@ -17,7 +17,7 @@
 package org.apache.solr.schema;
 
 import java.io.ByteArrayInputStream;
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;

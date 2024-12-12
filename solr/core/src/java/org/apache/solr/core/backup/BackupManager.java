@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core.backup;
 
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;

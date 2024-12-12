@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -55,8 +56,8 @@ public final class ReplicationTestHelper {
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
     FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        new File(instance.getHomeDir(), "solr.xml"));
+        Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
+        Path.of(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();

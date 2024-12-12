@@ -58,7 +58,7 @@ public class JsonQueryRequestIntegrationTest extends SolrCloudTestCase {
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
-    up.addFile(getFile("solrj/books.csv"), "application/csv");
+    up.addFile(getFile("solrj/books.csv").toPath(), "application/csv");
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     UpdateResponse updateResponse = up.process(cluster.getSolrClient());
     assertEquals(0, updateResponse.getStatus());

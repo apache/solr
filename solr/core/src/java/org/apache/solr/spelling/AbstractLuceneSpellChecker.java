@@ -16,7 +16,7 @@
  */
 package org.apache.solr.spelling;
 
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;

@@ -26,10 +26,10 @@ public class FileUtilsTest extends SolrTestCase {
   @Test
   public void testResolve() {
     String cwd = new File(".").getAbsolutePath();
-    assertEquals(new File("conf/data"), FileUtils.resolvePath(new File("conf"), "data"));
+    assertEquals(new File("conf/data"), FileUtils.resolvePath(Path.of("conf"), "data"));
     assertEquals(
-        new File(cwd + "/conf/data"), FileUtils.resolvePath(new File(cwd + "/conf"), "data"));
-    assertEquals(new File(cwd + "/data"), FileUtils.resolvePath(new File("conf"), cwd + "/data"));
+        new File(cwd + "/conf/data"), FileUtils.resolvePath(Path.of(cwd + "/conf"), "data"));
+    assertEquals(new File(cwd + "/data"), FileUtils.resolvePath(Path.of("conf"), cwd + "/data"));
   }
 
   @Test

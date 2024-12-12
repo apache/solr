@@ -41,7 +41,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     upload.setConfigSetName("name");
     verifyException(upload, "There must be a ContentStream");
 
-    upload.setUploadFile(tmpFile, "application/zip");
+    upload.setUploadFile(tmpFile.toPath(), "application/zip");
 
     assertEquals(1, upload.getContentStreams().size());
     assertEquals(
@@ -52,7 +52,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     assertNull(upload.getParams().get(ConfigSetParams.CLEANUP));
 
     upload
-        .setUploadFile(tmpFile, "application/xml")
+        .setUploadFile(tmpFile.toPath(), "application/xml")
         .setFilePath("solrconfig.xml")
         .setOverwrite(true);
 

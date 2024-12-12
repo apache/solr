@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;

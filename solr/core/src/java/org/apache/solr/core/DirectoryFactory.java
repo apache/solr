@@ -17,7 +17,7 @@
 package org.apache.solr.core;
 
 import java.io.Closeable;
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;

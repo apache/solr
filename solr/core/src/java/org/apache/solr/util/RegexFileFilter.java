@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.FileFilter;
 import java.util.regex.Pattern;
 

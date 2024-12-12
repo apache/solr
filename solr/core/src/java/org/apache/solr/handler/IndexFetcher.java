@@ -37,7 +37,7 @@ import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.OFFSET;
 
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -20,7 +20,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;

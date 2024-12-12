@@ -22,7 +22,7 @@ import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import java.io.Closeable;
-import java.io.File; // ALLOWED
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
