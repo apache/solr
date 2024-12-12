@@ -126,12 +126,14 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
 
   @Override
   protected HttpSolrClientBase getClient(final Endpoint endpoint) {
-    return urlToClient.computeIfAbsent(endpoint.getBaseUrl(), url -> {
-      synchronized (solrClientBuilder) {
-        solrClientBuilder.baseSolrUrl = url;
-        return solrClientBuilder.build();
-      }
-    });
+    return urlToClient.computeIfAbsent(
+        endpoint.getBaseUrl(),
+        url -> {
+          synchronized (solrClientBuilder) {
+            solrClientBuilder.baseSolrUrl = url;
+            return solrClientBuilder.build();
+          }
+        });
   }
 
   @Override
