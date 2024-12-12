@@ -102,17 +102,12 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
   private final Map<String, HttpSolrClientBase> urlToClient;
   private final Set<String> urlParamNames;
 
+  // must synchronize on this when building
   private final HttpSolrClientBuilderBase<?, ?> solrClientBuilder;
 
-  @SuppressWarnings("unchecked")
   private LBHttp2SolrClient(Builder<?> builder) {
     super(Arrays.asList(builder.solrEndpoints));
     this.solrClientBuilder = builder.solrClientBuilder;
-
-    this.urlToClient = new ConcurrentHashMap<>();
-    for (LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
-      buildClient(endpoint);
-    }
 
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
     this.defaultCollection = builder.defaultCollection;
@@ -122,25 +117,21 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
     } else {
       this.urlParamNames = Set.copyOf(builder.solrClientBuilder.urlParamNames);
     }
-  }
 
-  private HttpSolrClientBase buildClient(Endpoint endpoint) {
-    String tmpBaseSolrUrl = solrClientBuilder.baseSolrUrl;
-    solrClientBuilder.baseSolrUrl = endpoint.getBaseUrl();
-    var client = solrClientBuilder.build();
-    urlToClient.put(endpoint.getBaseUrl(), client);
-    solrClientBuilder.baseSolrUrl = tmpBaseSolrUrl;
-    return client;
+    this.urlToClient = new ConcurrentHashMap<>();
+    for (LBSolrClient.Endpoint endpoint : builder.solrEndpoints) {
+      getClient(endpoint);
+    }
   }
 
   @Override
   protected HttpSolrClientBase getClient(final Endpoint endpoint) {
-    var client =
-        urlToClient.computeIfAbsent(endpoint.getBaseUrl(), s -> this.buildClient(endpoint));
-    if (client == null) {
-      return buildClient(endpoint);
-    }
-    return client;
+    return urlToClient.computeIfAbsent(endpoint.getBaseUrl(), url -> {
+      synchronized (solrClientBuilder) {
+        solrClientBuilder.baseSolrUrl = url;
+        return solrClientBuilder.build();
+      }
+    });
   }
 
   @Override
@@ -159,8 +150,8 @@ public class LBHttp2SolrClient<B extends HttpSolrClientBuilderBase<?, ?>> extend
 
   @Override
   public void close() {
-    super.close();
     urlToClient.values().forEach(IOUtils::closeQuietly);
+    super.close();
   }
 
   /**
