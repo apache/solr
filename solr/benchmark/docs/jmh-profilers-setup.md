@@ -91,7 +91,6 @@ put it in the correct location at a minimum.
 
 <div style="z-index: 8;  background-color: #364850; border-style: solid; border-width: 1px; border-color: #3b4d56;border-radius: 0px; margin: 0px 5px 3px 10px; padding-bottom: 1px;padding-top: 5px;" data-code-wrap="true">
 
-![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 
 ```Shell
 ./jmh.sh BenchMark -prof async

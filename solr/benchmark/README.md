@@ -30,7 +30,6 @@
 - [](#)
   - [Table Of Content](#table-of-content)
   - [Overview](#overview)
-  - [The Module Contains a few Distinct Focuses](#the-module-contains-a-few-distinct-focuses)
   - [Getting Started](#getting-started)
     - [Running `jmh.sh` with no Arguments](#running-jmhsh-with-no-arguments)
     - [Pass a regex pattern or name after the command to select the benchmark(s) to run](#pass-a-regex-pattern-or-name-after-the-command-to-select-the-benchmarks-to-run)
@@ -69,7 +68,7 @@ simple boilerplate, the goal of JMH is to lift the developer off the
 microbenchmark floor and at least to their knees.
 
 JMH reaches out a hand to both the best and most regular among us in a solid, cautious
-effort to promote the willing into the real-world often obscured game of the microbenchmark.
+effort to promote the willing into the real, often-obscured world of the microbenchmark.
 
 ## Code Organization Breakdown
 
@@ -85,11 +84,10 @@ Running **JMH** is handled via the `jmh.sh` shell script. This script uses Gradl
 extract the correct classpath and configures a handful of helpful Java
 command prompt arguments and system properties. For the most part, `jmh.sh` script
 will pass any arguments it receives directly to JMH. You run the script
-from the root JMH module directory.
+from the root benchmark module directory (i.e. `solr/benchmark`).
 
 ### Running `jmh.sh` with no Arguments
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > # run all benchmarks found in subdirectories
@@ -98,7 +96,6 @@ from the root JMH module directory.
 
 ### Pass a regex pattern or name after the command to select the benchmark(s) to run
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > ./jmh.sh BenchmarkClass 
@@ -106,7 +103,6 @@ from the root JMH module directory.
 
 ### The argument `-l` will list all the available benchmarks
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > ./jmh.sh -l
@@ -117,7 +113,6 @@ from the root JMH module directory.
 Use the full benchmark class name, the simple class name, the benchmark
 method name, or a substring.
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > ./jmh.sh -l Ben
@@ -125,7 +120,6 @@ method name, or a substring.
 
 ### Further Pattern Examples
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```shell
 >./jmh.sh -l org.apache.solr.benchmark.search.BenchmarkClass
@@ -140,7 +134,6 @@ Here we tell JMH to run the trial iterations twice, forking a new JVM for each
 trial. We also explicitly set the number of warmup iterations and the
 measured iterations to 2.
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > ./jmh.sh -f 2 -wi 2 -i 2 BenchmarkClass
@@ -174,7 +167,6 @@ expand. You can pass multiple `-p`
 arguments and each will completely replace the behavior of any default
 annotation values.
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > # use 2000 docs instead of 1000
@@ -186,17 +178,16 @@ annotation values.
 >
 >
 > # run the benchmark enough times to satisfy every combination of two
-> multi-valued input parameters
+> # multi-valued input parameters
 > ./jmh.sh BenchmarkClass -p numDocs=10,20,30 -p docSize 250,500
 > ```
 
 ### Format and Write Results to Files
 
 Rather than just dumping benchmark results to the console, you can specify the
-\-rf argument to control the output format; for example, you can choose CSV or
-JSON. The -off argument will dictate the filename and output location.
+`-rf` argument to control the output format; for example, you can choose CSV or
+JSON. The `-rff` argument will dictate the filename and output location.
 
-> ![](https://user-images.githubusercontent.com/448788/137607441-f083e1fe-b3e5-4326-a9ca-2109c9cef985.png)
 >
 > ```zsh
 > # format output to JSON and write the file to the `work` directory relative to
@@ -415,9 +406,13 @@ JMH is highly configurable, and users are encouraged to look through the samples
 for exposure around what options are available. A good tutorial for learning JMH basics is
 found [here](http://tutorials.jenkov.com/java-performance/jmh.html#return-value-from-benchmark-method)
 
-## Continued Documentation
+## Additional Documentation
 
 ### 📚 Profilers
 
-- 📒 [docs/jmh-profilers.md](docs/docs/jmh-profilers.md)
-- 📒 [docs/jmh-profilers-setup.md](docs/docs/jmh-profilers-setup.md)
+JMH is compatible with a number of profilers that can be used both to (1)
+validate that benchmarks are measuring the things they intend to, and (2) to
+identify performance bottlenecks and hotspots.
+
+- 📒 [docs/jmh-profilers.md](docs/jmh-profilers.md)
+- 📒 [docs/jmh-profilers-setup.md](docs/jmh-profilers-setup.md)

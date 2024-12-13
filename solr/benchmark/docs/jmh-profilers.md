@@ -27,13 +27,13 @@
 
 ## Introduction
 
-Some may think that the appeal of a micro-benchmark is in the relative ease one
-can be put together. The often isolated nature of what is being measured. But
+Some may think that the appeal of a micro-benchmark is in the relatively easy
+learning curve and the often isolated nature of what is being measured. But
 this perspective is actually what can often make them dangerous. Benchmarking
 can be easy to approach from a non-rigorous, casual angle that results in the
 feeling that they are a relatively straightforward part of the developer's
 purview. From this viewpoint, microbenchmarks can appear downright easy. But good
-benchmarking is hard. Microbenchmarks are very hard. Java and HotSpot make hard
+benchmarking is hard. Microbenchmarks are very hard. Java and HotSpot make "hard"
 even harder.
 
 JMH was developed by engineers that understood the dark side of benchmarks very
